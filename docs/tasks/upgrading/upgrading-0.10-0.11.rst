@@ -53,8 +53,8 @@ A full table of annotations, including the old and new equivalents:
 | certmanager.k8s.io/acme-http01-ingress-class | acme.cert-manager.io/http01-ingress-class |
 | certmanager.k8s.io/issuer                    | cert-manager.io/issuer                    |
 | certmanager.k8s.io/cluster-issuer            | cert-manager.io/cluster-issuer            |
-| certmanager.k8s.io/acme-challenge-type       | DEPRECIATED                               |
-| certmanager.k8s.io/acme-dns01-provider       | DEPRECIATED                               |
+| certmanager.k8s.io/acme-challenge-type       | DEPRECATED                                |
+| certmanager.k8s.io/acme-dns01-provider       | DEPRECATED                                |
 | certmanager.k8s.io/alt-names                 | cert-manager.io/alt-names                 |
 | certmanager.k8s.io/ip-sans                   | cert-manager.io/ip-sans                   |
 | certmanager.k8s.io/common-name               | cert-manager.io/common-name               |
@@ -84,13 +84,13 @@ your cluster for you.
    $ TODO: Add link
 
    # Mark the binary as executable and run the binary against your cluster
-   $ chmod +x api-migration && ./api-migration --kubeconfig /path/to/my/kubeconfig
+   $ chmod +x api-migration && ./api-migration --kubeconfig /path/to/my/kubeconfig.yaml
 
    # Follow the CLI ouput and check for the difference that has been made in files
-   $ vim -d ingress.yaml ingress-migrated.yaml
+   $ diff ingress.yaml ingress-migrated.yaml
 
    # Finally, once the new ingress resources have been reviewed, apply the manifests
-   $ kubectl apply -f ingress-migrated --kubeconfig /path/to/my/kubeconfig
+   $ kubectl apply -f ingress-migrated --kubeconfig /path/to/my/kubeconfig.yaml
 
 You should make sure to update _all_ Ingress resources to ensure that your
 certificates continue to be kept up to date.

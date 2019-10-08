@@ -22,15 +22,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
-	networkingv1beta "k8s.io/api/networking/v1beta1"
+	networkingv1beta "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
+
 	// This package is required to be imported to register all client
 	// plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -58,7 +60,7 @@ var (
 		"certmanager.k8s.io/certificate-name": "cert-manager.io/certificate-name",
 	}
 
-	depreciations = []string{
+	deprecations = []string{
 		"certmanager.k8s.io/acme-challenge-type",
 		"certmanager.k8s.io/acme-dns01-provider",
 	}
@@ -81,7 +83,7 @@ var cmd = &cobra.Command{
 			return err
 		}
 
-		ingList, err := client.NetworkingV1beta1().Ingresses("").List(metav1.ListOptions{})
+		ingList, err := client.ExtensionsV1beta1().Ingresses("").List(metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -105,13 +107,13 @@ var cmd = &cobra.Command{
 			ingStr = strings.ReplaceAll(ingStr, oldA, newA)
 		}
 
-		for _, d := range depreciations {
+		for _, d := range deprecations {
 			count := strings.Count(ingStr, d)
 			if count == 0 {
 				continue
 			}
 
-			fmt.Printf("found %d instances of %q\tthis field is DEPRECIATED and will be deleted\n", count, d)
+			fmt.Printf("found %d instances of %q\tthis field is DEPRECATED and will be deleted\n", count, d)
 
 			lines := strings.Split(ingStr, "\n")
 
@@ -134,10 +136,29 @@ var cmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("written new ingresses to file %q\n", newFile)
-		fmt.Printf("\nPlease check for any missing or wrong annotations in your newly generated ingress manifests.\n")
-		fmt.Printf("You are encouraged to check the diff of the two files to determine what has changed (diff %s %s).\n",
-			origFile, newFile)
+		fmt.Printf("wrote new ingresses to file %q\n", newFile)
+
+		var buff bytes.Buffer
+		diffFile := fmt.Sprintf("%s.%s.diff", origFile, newFile)
+		eCmd := exec.Command("diff", origFile, newFile)
+		eCmd.Stdout = &buff
+
+		if err := eCmd.Run(); err != nil {
+			if exitErr, ok := err.(*exec.ExitError); !ok || exitErr.ExitCode() != 1 {
+				return err
+			}
+		}
+
+		if err := ioutil.WriteFile(diffFile, buff.Bytes(), 0644); err != nil {
+			return err
+		}
+
+		fmt.Printf("wrote diff to file %q\n", diffFile)
+
+		fmt.Printf("\nPlease check for any missing or incorrect annotations in your newly generated ingress manifests.\n")
+		fmt.Printf("You should now check the diff of the two files to determine what has changed - either by inspecting the diff file %q, or running the command yourself:\n\n",
+			diffFile)
+		fmt.Printf("$ diff %s %s\n", origFile, newFile)
 
 		return nil
 	},
@@ -150,17 +171,14 @@ func writeIngressToFile(ingList *networkingv1beta.IngressList, path string) (str
 	var buff bytes.Buffer
 
 	for _, ing := range ingList.Items {
-		_, err := buff.WriteString("apiVersion: networking.k8s.io/v1beta1\nkind: Ingress\n")
-		if err != nil {
-			return "", err
-		}
+		ing.Kind = "Ingress"
+		ing.APIVersion = "extensions/v1beta1"
 
 		if err := s.Encode(&ing, &buff); err != nil {
 			return "", err
 		}
 
-		_, err = buff.WriteString("---\n")
-		if err != nil {
+		if _, err := buff.WriteString("---\n"); err != nil {
 			return "", err
 		}
 	}
@@ -173,7 +191,6 @@ func writeIngressToFile(ingList *networkingv1beta.IngressList, path string) (str
 }
 
 func main() {
-
 	cmd.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "", "Path location to Kubeconfig")
 	cmd.PersistentFlags().StringVarP(&origFile, "original-file", "o", "ingress.yaml", "File path to store the current list of Ingress resources")
 	cmd.PersistentFlags().StringVarP(&newFile, "new-file", "n", "ingress-migrated.yaml", "File path to store the migrated Ingress resources")
