@@ -34,6 +34,7 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -1143,6 +1144,97 @@ func TestProcessCertificate(t *testing.T) {
 				ExpectedActions: []testpkg.Action{},
 				// We don't fire an event here as this could be called multiple times in quick succession
 				ExpectedEvents: []string{},
+			},
+		},
+		"with secret owner references enabled, should set the ownerReference field when generating a new private key Secret": {
+			certificate:             exampleBundle1.certificate,
+			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			builder: &testpkg.Builder{
+				Context: &controller.Context{
+					RootContext: context.Background(),
+					CertificateOptions: controller.CertificateOptions{
+						EnableOwnerRef: true,
+					},
+				},
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Annotations: map[string]string{
+									cmapi.CertificateNameKey:      "test",
+									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								},
+								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle1.certificate, certificateGvk)},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       nil,
+								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+								cmmeta.TLSCAKey:         nil,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+				// We don't fire an event here as this could be called multiple times in quick succession
+				ExpectedEvents: []string{
+					"Normal GeneratedKey Generated a new private key",
+				},
+			},
+		},
+		"with secret owner references enabled, should NOT set the ownerReference field when generating a new private key Secret if one already exists": {
+			certificate:             exampleBundle1.certificate,
+			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			builder: &testpkg.Builder{
+				Context: &controller.Context{
+					RootContext: context.Background(),
+					CertificateOptions: controller.CertificateOptions{
+						EnableOwnerRef: true,
+					},
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: gen.DefaultTestNamespace,
+							Name:      "output",
+						},
+						Type: corev1.SecretTypeTLS,
+					},
+				},
+				CertManagerObjects: []runtime.Object{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Annotations: map[string]string{
+									cmapi.CertificateNameKey:      "test",
+									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       nil,
+								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+								cmmeta.TLSCAKey:         nil,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+				// We don't fire an event here as this could be called multiple times in quick succession
+				ExpectedEvents: []string{
+					"Normal GeneratedKey Generated a new private key",
+				},
 			},
 		},
 	}

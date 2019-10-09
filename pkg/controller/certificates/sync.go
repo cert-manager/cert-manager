@@ -202,7 +202,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	if apierrors.IsNotFound(err) {
 		// If the secret does not exist, generate a new private key and store it.
 		dbg.Info("existing secret not found, generating and storing private key")
-		return c.generateAndStorePrivateKey(ctx, crt, nil, c.kubeClient.CoreV1().Secrets(crt.Namespace).Create)
+		return c.generateAndStorePrivateKey(ctx, crt, nil)
 	}
 	if err != nil {
 		return err
@@ -216,7 +216,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	existingKey := existingSecret.Data[corev1.TLSPrivateKeyKey]
 	if len(existingKey) == 0 {
 		log.Info("existing private key not found in Secret, generate a new private key")
-		return c.generateAndStorePrivateKey(ctx, crt, existingSecret, c.kubeClient.CoreV1().Secrets(crt.Namespace).Update)
+		return c.generateAndStorePrivateKey(ctx, crt, existingSecret)
 	}
 
 	// Ensure the the private key has the correct key algorithm and key size.
@@ -225,7 +225,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// If tls.key contains invalid data, we regenerate a new private key
 	if errors.IsInvalidData(err) {
 		log.Info("existing private key data is invalid, generating a new private key")
-		return c.generateAndStorePrivateKey(ctx, crt, existingSecret, c.kubeClient.CoreV1().Secrets(crt.Namespace).Update)
+		return c.generateAndStorePrivateKey(ctx, crt, existingSecret)
 	}
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// If the private key is not 'up to date', we generate a new private key
 	if !validKey {
 		log.Info("existing private key does not match requirements specified on Certificate resource, generating new private key")
-		return c.generateAndStorePrivateKey(ctx, crt, existingSecret, c.kubeClient.CoreV1().Secrets(crt.Namespace).Update)
+		return c.generateAndStorePrivateKey(ctx, crt, existingSecret)
 	}
 
 	// Attempt to fetch the CertificateRequest with the expected name computed above.
@@ -495,6 +495,10 @@ func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *c
 		},
 		Type: corev1.SecretTypeTLS,
 	}
+	// s will be overwritten by 'existingSecret' if existingSecret is non-nil
+	if c.enableSecretOwnerReferences {
+		s.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}
+	}
 	if existingSecret != nil {
 		s = existingSecret
 	}
@@ -721,9 +725,7 @@ func validatePrivateKeyUpToDate(log logr.Logger, pk []byte, crt *cmapi.Certifica
 	return true, nil
 }
 
-type secretSaveFn func(*corev1.Secret) (*corev1.Secret, error)
-
-func (c *certificateRequestManager) generateAndStorePrivateKey(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, saveFn secretSaveFn) error {
+func (c *certificateRequestManager) generateAndStorePrivateKey(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret) error {
 	keyData, err := c.generatePrivateKeyBytes(ctx, crt)
 	if err != nil {
 		// TODO: handle permanent failures caused by invalid spec

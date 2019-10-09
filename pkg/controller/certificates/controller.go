@@ -76,6 +76,12 @@ type certificateRequestManager struct {
 
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
+
+	// if true, Secret resources created by the controller will have an
+	// 'owner reference' set, meaning when the Certificate is deleted, the
+	// Secret resource will be automatically deleted.
+	// This option is disabled by default.
+	enableSecretOwnerReferences bool
 }
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
@@ -131,6 +137,7 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	// the localTemporarySigner is used to sign 'temporary certificates' during
 	// asynchronous certificate issuance flows
 	c.localTemporarySigner = generateLocallySignedTemporaryCertificate
+	c.enableSecretOwnerReferences = ctx.CertificateOptions.EnableOwnerRef
 
 	c.cmClient = ctx.CMClient
 	c.kubeClient = ctx.Client
