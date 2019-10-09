@@ -129,7 +129,7 @@ type IngressShimOptions struct {
 }
 
 type CertificateOptions struct {
-	// EnableOwnerRef controls wheter wheter the certificate is configured as an owner of
+	// EnableOwnerRef controls whether the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
 	EnableOwnerRef bool
 }
