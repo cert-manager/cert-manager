@@ -9,8 +9,8 @@ want to configure.
 .. toctree::
    :maxdepth: 2
 
-   uninstall/index
    issuers/index
    issuing-certificates/index
    backup-restore-crds
+   uninstall/index
    upgrading/index

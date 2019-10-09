@@ -45,19 +45,31 @@ you will need to update them to reflect the new API group.
 
 A full table of annotations, including the old and new equivalents:
 
++----------------------------------------------+-------------------------------------------+
 | Old Annotation                               | New Annotation                            |
-|----------------------------------------------|-------------------------------------------|
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/acme-http01-edit-in-place | acme.cert-manager.io/http01-edit-in-place |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/acme-http01-ingress-class | acme.cert-manager.io/http01-ingress-class |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/issuer                    | cert-manager.io/issuer                    |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/cluster-issuer            | cert-manager.io/cluster-issuer            |
-| certmanager.k8s.io/acme-challenge-type       | DEPRECATED                                |
-| certmanager.k8s.io/acme-dns01-provider       | DEPRECATED                                |
++----------------------------------------------+-------------------------------------------+
+| certmanager.k8s.io/acme-challenge-type       | DEPRECIATED                               |
++----------------------------------------------+-------------------------------------------+
+| certmanager.k8s.io/acme-dns01-provider       | DEPRECIATED                               |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/alt-names                 | cert-manager.io/alt-names                 |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/ip-sans                   | cert-manager.io/ip-sans                   |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/common-name               | cert-manager.io/common-name               |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/issuer-name               | cert-manager.io/issuer-name               |
++----------------------------------------------+-------------------------------------------+
 | certmanager.k8s.io/issuer-kind               | cert-manager.io/issuer-kind               |
++----------------------------------------------+-------------------------------------------+
 
 You can use the following bash magic to print a list of Ingress resources that
 still contain an old annotation:
