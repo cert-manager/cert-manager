@@ -120,14 +120,14 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 	defer resp.Body.Close()
 
 	vaultResult := certutil.Secret{}
-	resp.DecodeJSON(&vaultResult)
+	err = resp.DecodeJSON(&vaultResult)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to decode response returned by vault: %s", err)
+		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
 	parsedBundle, err := certutil.ParsePKIMap(vaultResult.Data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to decode response returned by vault: %s", err)
+		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
 	bundle, err := parsedBundle.ToCertBundle()
