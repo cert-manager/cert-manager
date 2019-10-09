@@ -242,7 +242,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should issue a certificate that defines a URI Name and URI SAN", func() {
+		It("should issue a certificate that defines a CommonName and URI SAN", func() {
 			s.checkFeatures(URISANsFeature)
 			s.checkFeatures(CommonNameFeature)
 
