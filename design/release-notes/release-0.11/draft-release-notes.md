@@ -53,9 +53,9 @@ A table of resources and their old and new `apiVersion`s:
 | Certificate        | `certmanager.k8s.io/v1alpha1` | `cert-manager.io/v1alpha2`      |
 | Issuer             | `certmanager.k8s.io/v1alpha1` | `cert-manager.io/v1alpha2`      |
 | ClusterIssuer      | `certmanager.k8s.io/v1alpha1` | `cert-manager.io/v1alpha2`      |
+| CertificateRequest | `certmanager.k8s.io/v1alpha1` | `cert-manager.io/v1alpha2`      |
 | Order              | `certmanager.k8s.io/v1alpha1` | `acme.cert-manager.io/v1alpha2` |
 | Challenge          | `certmanager.k8s.io/v1alpha1` | `acme.cert-manager.io/v1alpha2` |
-| CertificateRequest | `certmanager.k8s.io/v1alpha1` | `acme.cert-manager.io/v1alpha2` |
 
 You must also make sure to update all references to cert-manager in annotations to their
 new prefix:
@@ -80,9 +80,31 @@ users secure services running on Kubernetes.
 
 ### Renamed API group
 
-### Release v1alpha2
+Due to new policies in the upstream Kubernetes project, we have renamed the
+API group from `certmanager.k8s.io` to `cert-manager.io`.
 
-### Deprecated old config fields
+This is a breaking change to our API surface as mentioned above, but it
+is a long time coming. The original `k8s.io` suffix was used when the project
+first started as there was not official guidance or information on how
+`ThirdPartyResources` should be structured. Now that this area of the
+Kubernetes project has evolved further, we're retrospectively changing this to
+conform with the new requirements.
+
+### Moving to v1alpha2
+
+When cert-manager first started, we defined our APIs based on what we thought
+made sense for end-users.
+
+Over time, through gathering feedback and monitoring the way users are actually
+using cert-manager, we've identified some issues with our original API design.
+
+As part of the project moving towards v1, we've identified certain areas of our
+APIs that are not fit for purpose.
+
+In order to begin the process of moving towards `v1`, we first deprecated a
+number of fields in our `v1alpha1` API. We've now **dropped** these API fields
+in `v1alpha2`, in preparation for declaring this new API as `v1beta1` in the
+coming releases.
 
 ### New CertificateRequest resource type
 
@@ -124,6 +146,16 @@ in turn opens up all cert-manager issuer types as valid certificate providers in
 your istio PKI.
 
 ### Improved ACME Order controller design
+
+Some users may have noticed issues with the 'Order' resource not automatically
+detecting changes to their configure 'solvers' on their Issuer resources.
+
+In v0.11, we've rewritten the ACME Order handling code to:
+
+1) better handle updates to Issuers during an Order
+2) improve ACME API usage - we now cache more information about the ACME Order
+   process in the Kubernetes API, which allows us to act more reliably and
+   without causing excessive requests to the ACME server.
 
 ### No longer generating 'temporary certificates' by default
 
