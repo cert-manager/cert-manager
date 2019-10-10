@@ -68,7 +68,22 @@ new prefix:
 This release has seen code contributions from a number of people in the
 community :tada:
 
-TODO: add list
+* Adam Kunicki
+* Alpha
+* Brian Hong
+* Dan Farrell
+* Dig-Doug
+* Galo Navarro
+* Ingo Gottwald
+* James Munnelly
+* JoshVanL
+* Kevin Lefevre
+* Lachlan Cooper
+* Michel Blankleder
+* Toni Menzel
+* Wellington F Silva
+* Woz
+* dulltz
 
 As always, a big thank you to those opening issues, replying to issues and
 helping out in the Slack channel. As well as working in other projects to help
