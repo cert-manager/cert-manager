@@ -33,6 +33,7 @@ version number you want to install:
    # Install the cert-manager CustomResourceDefinition resources before
    # upgrading the Helm chart
    kubectl apply \
+        --validate=false \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/<version>/deploy/manifests/00-crds.yaml
 
    # Add the Jetstack Helm repository if you haven't already
@@ -67,15 +68,17 @@ version number you want to install:
 .. code:: shell
 
    kubectl apply \
+        --validate=false \
         -f https://github.com/jetstack/cert-manager/releases/download/<version>/cert-manager.yaml
 
 .. note::
-   If you are running kubectl v1.12 or below, you will need to add the
+   If you are running Kubernetes v1.15 or below, you will need to add the
    ``--validate=false`` flag to your ``kubectl apply`` command above else you
-   will receive a validation error relating to the ``caBundle`` field of the
-   ``ValidatingWebhookConfiguration`` resource.
-   This issue is resolved in Kubernetes 1.13 onwards. More details can be found
-   in `kubernetes/kubernetes#69590`_.
+   will receive a validation error relating to the
+   ``x-kubernetes-preserve-unknown-fields`` field in our
+   ``CustomResourceDefinition`` resources.
+   This is a benign error and occurs due to the way ``kubectl`` performs
+   resource validation.
 
 .. toctree::
    :maxdepth: 1
