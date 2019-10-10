@@ -21,7 +21,7 @@ This upgrade should be performed in a few steps:
 1) Back up existing cert-manager resources, as per the
    :doc:`backup and restore guide <../backup-restore-crds>`.
 
-2) :doc: `Uninstall cert-manager`<../uninstalling/index>`.
+2) :doc:`Uninstall cert-manager <../uninstall/index>`.
 
 3) Ensure the old cert-manager CRD resources have also been deleted: ``kubectl get crd | grep certmanager.k8s.io``
 
