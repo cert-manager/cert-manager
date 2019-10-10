@@ -95,7 +95,7 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 
 // Provision will actually deploy this instance of Pebble-ingress to the cluster.
 func (p *Certmanager) Provision() error {
-	if err := exec.Command(p.config.Kubectl, "apply", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
+	if err := exec.Command(p.config.Kubectl, "apply", "--validate=false", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
 		return fmt.Errorf("error install cert-manager CRD manifests: %v", err)
 	}
 
