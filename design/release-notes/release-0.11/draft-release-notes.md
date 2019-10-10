@@ -74,8 +74,6 @@ As always, a big thank you to those opening issues, replying to issues and
 helping out in the Slack channel. As well as working in other projects to help
 users secure services running on Kubernetes.
 
-## Action required
-
 ## Notable changes
 
 ### Renamed API group
@@ -178,3 +176,30 @@ annotation to `Certificate` resources if
 resource.
 
 ## Changelog
+
+## Action Required
+
+- Rename `certmanager.k8s.io` API group to `cert-manager.io` ([#2096](https://github.com/jetstack/cert-manager/pull/2096), [@munnerz](https://github.com/munnerz))
+- Move Order and Challenge resources to the acme.cert-manager.io API group ([#2093](https://github.com/jetstack/cert-manager/pull/2093), [@munnerz](https://github.com/munnerz))
+- Move v1alpha1 API to v1alpha2 ([#2087](https://github.com/jetstack/cert-manager/pull/2087), [@munnerz](https://github.com/munnerz))
+- Allow controlling whether temporary certificates are issued using a new annotation "certmanager.k8s.io/issue-temporary-certificate"
+  on Certificate resources. Previously, when an ACME certificate was requested, a temporary certificate would be issued in order
+  to improve compatibility with ingress-gce. ingress-shim has been updated to automatically set this annotation on managed Certificate
+  resources when using the 'edit-in-place' annotation, but users that have manually created their Certificate resources will need to
+  manually add the new annotation to their Certificate resources. ([#2089](https://github.com/jetstack/cert-manager/pull/2089), [@munnerz](https://github.com/munnerz))
+
+## Other Notable Changes
+
+- Change the default leader election namespace to 'kube-system' instead of the same namespace as the cert-manager pod, to avoid multiple copies of cert-manager accidentally being run at once ([#2155](https://github.com/jetstack/cert-manager/pull/2155), [@munnerz](https://github.com/munnerz))
+- Adds `URISANs` field to `Certificate.Spec` resource. ([#2085](https://github.com/jetstack/cert-manager/pull/2085), [@JoshVanL](https://github.com/JoshVanL))
+- Move status to a CRD Subresource ([#2097](https://github.com/jetstack/cert-manager/pull/2097), [@JoshVanL](https://github.com/JoshVanL))
+- Enables supporting out of tree issuers with ingress annotations ([#2105](https://github.com/jetstack/cert-manager/pull/2105), [@JoshVanL](https://github.com/JoshVanL))
+- Bump Kubernetes dependencies to 1.16.0 ([#2095](https://github.com/jetstack/cert-manager/pull/2095), [@munnerz](https://github.com/munnerz))
+- Adds Certificate conformance suite ([#2034](https://github.com/jetstack/cert-manager/pull/2034), [@JoshVanL](https://github.com/JoshVanL))
+- Build using Go 1.13.1 ([#2114](https://github.com/jetstack/cert-manager/pull/2114), [@munnerz](https://github.com/munnerz))
+- Adds Kubernetes authentication type for Vault Issue ([#2040](https://github.com/jetstack/cert-manager/pull/2040), [@JoshVanL](https://github.com/JoshVanL))
+- Service account annotation support in Helm chart ([#2086](https://github.com/jetstack/cert-manager/pull/2086), [@serialx](https://github.com/serialx))
+- Update AWS Go SDK to 1.24.1 to support IAM Roles for Service Accounts ([#2083](https://github.com/jetstack/cert-manager/pull/2083), [@serialx](https://github.com/serialx))
+- Remove deprecated API fields and functionality ([#2082](https://github.com/jetstack/cert-manager/pull/2082), [@munnerz](https://github.com/munnerz))
+- Update `hack/ci/run-dev-kind.sh` script to use the right path of cert-manager charts. ([#2074](https://github.com/jetstack/cert-manager/pull/2074), [@srvaroa](https://github.com/srvaroa))
+- Simplify, improve and rewrite the acmeorders controller ([#2041](https://github.com/jetstack/cert-manager/pull/2041), [@munnerz](https://github.com/munnerz))
