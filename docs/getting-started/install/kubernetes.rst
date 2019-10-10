@@ -61,12 +61,13 @@ are included in a single YAML manifest file:
    kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml
 
 .. note::
-   If you are running kubectl v1.12 or below, you will need to add the
+   If you are running Kubernetes v1.15 or below, you will need to add the
    ``--validate=false`` flag to your ``kubectl apply`` command above else you
-   will receive a validation error relating to the ``caBundle`` field of the
-   ``ValidatingWebhookConfiguration`` resource.
-   This issue is resolved in Kubernetes 1.13 onwards. More details can be found
-   in `kubernetes/kubernetes#69590`_.
+   will receive a validation error relating to the
+   ``x-kubernetes-preserve-unknown-fields`` field in our
+   ``CustomResourceDefinition`` resources.
+   This is a benign error and occurs due to the way ``kubectl`` performs
+   resource validation.
 
 .. note::
    When running on GKE (Google Kubernetes Engine), you may encounter a
@@ -116,7 +117,7 @@ In order to install the Helm chart, you must run:
 .. code-block:: shell
 
    # Install the CustomResourceDefinition resources separately
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
+   kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
 
    # Create the namespace for cert-manager
    kubectl create namespace cert-manager
