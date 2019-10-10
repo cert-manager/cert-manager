@@ -60,8 +60,25 @@ A table of resources and their old and new `apiVersion`s:
 You must also make sure to update all references to cert-manager in annotations to their
 new prefix:
 
-| Annotation | Affected resources | New annotation |
-|------------|--------------------|----------------|
+| Annotation                                   | Affected resources         | New annotation                              |
+|----------------------------------------------|----------------------------|---------------------------------------------|
+| certmanager.k8s.io/acme-http01-edit-in-place | Ingress                    | acme.cert-manager.io/http01-edit-in-place   |
+| certmanager.k8s.io/acme-http01-ingress-class | Ingress                    | acme.cert-manager.io/http01-ingress-class   |
+| certmanager.k8s.io/issuer                    | Ingress                    | cert-manager.io/issuer                      |
+| certmanager.k8s.io/cluster-issuer            | Ingress                    | cert-manager.io/cluster-issuer              |
+| certmanager.k8s.io/acme-challenge-type       | Ingress                    | REMOVED                                     |
+| certmanager.k8s.io/acme-dns01-provider       | Ingress                    | REMOVED                                     |
+| certmanager.k8s.io/alt-names                 | Ingress, Secret            | cert-manager.io/alt-names                   |
+| certmanager.k8s.io/ip-sans                   | Ingress, Secret            | cert-manager.io/ip-sans                     |
+| certmanager.k8s.io/common-name               | Ingress, Secret            | cert-manager.io/common-name                 |
+| certmanager.k8s.io/issuer-name               | Ingress, Secret            | cert-manager.io/issuer-name                 |
+|                                              | Ingress, Secret            | cert-manager.io/issuer-kind                 |
+|                                              | Ingress, Secret            | cert-manager.io/issuer-group                |
+|                                              | Ingress, Secret            | cert-manager.io/uri-sans                    |
+|                                              | Certificate                | cert-manager.io/issue-temporary-certificate |
+|                                              | CertificateRequest         | cert-manager.io/private-key-secret-name     |
+| certmanager.k8s.io/certificate-name          | CertificateRequest, Secret | cert-manager.io/certificate-name            |
+
 
 ## Contributors
 
