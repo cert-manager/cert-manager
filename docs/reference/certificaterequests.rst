@@ -10,11 +10,6 @@ signing request. 'CertificateRequets' are typically consumed and managed by
 controllers or other systems and should not be used by humans - unless
 specifically needed.
 
-.. note::
-   To enable cert-manager's internal CertificateRequest controllers, supply the
-   following feature gate:
-   `--feature-gates=CertificateRequestControllers=true`
-
 A simple CertificateRequest looks like the following:
 
 .. code-block:: yaml
