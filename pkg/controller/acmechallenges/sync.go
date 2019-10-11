@@ -229,6 +229,11 @@ func handleError(ch *cmacme.Challenge, err error) error {
 		// absorb the error as updating the challenge's status will trigger a sync
 		return nil
 	}
+	if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+		ch.Status.State = cmacme.Errored
+		ch.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
+		return nil
+	}
 
 	return err
 }
