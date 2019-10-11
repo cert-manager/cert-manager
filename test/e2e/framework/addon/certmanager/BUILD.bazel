@@ -10,6 +10,7 @@ go_library(
         "//test/e2e/framework/addon/chart:go_default_library",
         "//test/e2e/framework/addon/tiller:go_default_library",
         "//test/e2e/framework/config:go_default_library",
+        "//test/e2e/framework/log:go_default_library",
     ],
 )
 

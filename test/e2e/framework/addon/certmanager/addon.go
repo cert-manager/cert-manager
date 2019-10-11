@@ -23,6 +23,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/chart"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 // Certmanager defines an addon that installs an instance of certmanager in the
@@ -95,7 +96,10 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 
 // Provision will actually deploy this instance of Pebble-ingress to the cluster.
 func (p *Certmanager) Provision() error {
-	if err := exec.Command(p.config.Kubectl, "apply", "--validate=false", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
+	cmd := exec.Command(p.config.Kubectl, "apply", "--validate=false", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml")
+	cmd.Stdout = log.Writer
+	cmd.Stderr = log.Writer
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("error install cert-manager CRD manifests: %v", err)
 	}
 
