@@ -22,6 +22,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	acme "github.com/jetstack/cert-manager/pkg/acme/client"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
@@ -94,6 +95,12 @@ func (h *helperImpl) ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, e
 	acmeSpec := iss.GetSpec().ACME
 	if acmeSpec == nil {
 		return nil, fmt.Errorf("issuer %q is not an ACME issuer. Ensure the 'acme' stanza is correctly specified on your Issuer resource", iss.GetObjectMeta().Name)
+	}
+	if !apiutil.IssuerHasCondition(iss, cmapi.IssuerCondition{
+		Type:   cmapi.IssuerConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}) {
+		return nil, fmt.Errorf("issuer %q is not in a 'Ready' state. not constructing client until issuer is ready", iss.GetObjectMeta().Name)
 	}
 
 	ns := iss.GetObjectMeta().Namespace
