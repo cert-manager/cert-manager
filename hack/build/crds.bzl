@@ -43,6 +43,7 @@ def generated_crds(name, go_prefix, paths, out, visibility = [], deps = []):
             "output:crd:dir=$${output_dir};",
             "touch $$out;",
             "for file in $$(find \"$${output_dir}\" -type f | sort -V); do",
+            # concatenate all files while removing blank (^$) lines
             "  cat \"$$file\" | sed '/^$$/d' >> \"$$out\";",
             "done;",
         ]),
