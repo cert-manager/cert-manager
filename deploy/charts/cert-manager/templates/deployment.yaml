@@ -78,12 +78,6 @@ spec:
           {{- if .defaultIssuerGroup }}
           - --default-issuer-group={{ .defaultIssuerGroup }}
           {{- end }}
-          {{- if .defaultACMEChallengeType }}
-          - --default-acme-issuer-challenge-type={{ .defaultACMEChallengeType }}
-          {{- end }}
-          {{- if .defaultACMEDNS01ChallengeProvider }}
-          - --default-acme-issuer-dns01-provider-name={{ .defaultACMEDNS01ChallengeProvider }}
-          {{- end }}
           {{- end }}
           - --webhook-namespace=$(POD_NAMESPACE)
           - --webhook-ca-secret={{ include "webhook.rootCACertificate" . }}
