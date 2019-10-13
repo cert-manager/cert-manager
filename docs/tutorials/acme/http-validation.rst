@@ -56,9 +56,9 @@ change this email address to a valid one that you own. It is commonly used to
 send expiry notices when your certificates are coming up for renewal. The
 generated private key is stored in a Secret named ``letsencrypt-staging``.
 
-The presence of the ``http01`` field simply enables the HTTP-01 challenge for this
-Issuer.
-No further configuration is necessary or currently possible.
+We must provide one or more Solvers for handling the ACME challenge. In this case
+we want to use HTTP validation so we specify an ``http01`` Solver. We could
+optionally map different domains to use different Solver configurations.
 
 Once we have created the above Issuer we can use it to obtain a certificate.
 
