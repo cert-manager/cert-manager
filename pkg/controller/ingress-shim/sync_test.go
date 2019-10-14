@@ -111,7 +111,7 @@ func TestSync(t *testing.T) {
 					},
 					Annotations: map[string]string{
 						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
-						cmapi.IngressEditInPlaceAnnotationKey:       "true",
+						cmacme.IngressEditInPlaceAnnotationKey:      "true",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -162,7 +162,7 @@ func TestSync(t *testing.T) {
 					},
 					Annotations: map[string]string{
 						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
-						cmapi.IngressEditInPlaceAnnotationKey:       "true",
+						cmacme.IngressEditInPlaceAnnotationKey:      "true",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -337,7 +337,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
 						cmapi.IngressClassAnnotationKey:             "nginx-ing",
-						cmapi.IngressEditInPlaceAnnotationKey:       "false",
+						cmacme.IngressEditInPlaceAnnotationKey:      "false",
 					},
 					UID: types.UID("ingress-name"),
 				},
