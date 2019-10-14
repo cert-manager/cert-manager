@@ -97,8 +97,6 @@ ingressShim: {}
   # defaultIssuerName: ""
   # defaultIssuerKind: ""
   # defaultIssuerGroup: ""
-  # defaultACMEChallengeType: ""
-  # defaultACMEDNS01ChallengeProvider: ""
 
 prometheus:
   enabled: true
