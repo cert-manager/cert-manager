@@ -26,6 +26,11 @@ type TestType struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta
 
+	// TestField is used in tests.
+	// Validation doesn't allow this to be set to the value of TestFieldValueNotAllowed.
 	TestField    string
 	TestFieldPtr *string
+
+	// TestFieldImmutable cannot be changed after being set to a non-zero value
+	TestFieldImmutable string
 }

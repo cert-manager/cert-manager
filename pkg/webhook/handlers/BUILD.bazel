@@ -24,14 +24,21 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["mutation_test.go"],
+    srcs = [
+        "mutation_test.go",
+        "validation_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",
+        "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
+        "//pkg/webhook/handlers/testdata/apis/testgroup/validation:go_default_library",
         "@com_github_mattbaird_jsonpatch//:go_default_library",
         "@io_k8s_api//admission/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
-        "@io_k8s_klog//:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_klog//klogr:go_default_library",
         "@io_k8s_utils//diff:go_default_library",
     ],

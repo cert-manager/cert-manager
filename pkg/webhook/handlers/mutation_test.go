@@ -18,14 +18,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"flag"
 	"reflect"
 	"testing"
 
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/diff"
 
@@ -50,7 +48,6 @@ func TestDefaultCertificate(t *testing.T) {
 	install.Install(scheme)
 
 	log := klogr.New()
-	klog.InitFlags(flag.CommandLine)
 	c := NewSchemeBackedDefaulter(log, scheme)
 	tests := map[string]testT{
 		"apply defaults to TestType": {
@@ -75,6 +72,11 @@ func TestDefaultCertificate(t *testing.T) {
 					jsonpatch.JsonPatchOperation{
 						Operation: "add",
 						Path:      "/testField",
+						Value:     "",
+					},
+					jsonpatch.JsonPatchOperation{
+						Operation: "add",
+						Path:      "/testFieldImmutable",
 						Value:     "",
 					},
 					jsonpatch.JsonPatchOperation{
