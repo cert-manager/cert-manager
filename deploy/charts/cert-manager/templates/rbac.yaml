@@ -270,27 +270,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ template "cert-manager.fullname" . }}-leaderelection
-  labels:
-    app: {{ template "cert-manager.name" . }}
-    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-    app.kubernetes.io/instance:  {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    helm.sh/chart: {{ template "cert-manager.chart" . }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ template "cert-manager.fullname" . }}-leaderelection
-subjects:
-  - name: {{ template "cert-manager.serviceAccountName" . }}
-    namespace: {{ .Release.Namespace | quote }}
-    kind: ServiceAccount
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-issuers
   labels:
     app: {{ template "cert-manager.name" . }}
