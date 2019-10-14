@@ -38,5 +38,6 @@ const (
 )
 
 const (
-	OrderKind = "Order"
+	OrderKind     = "Order"
+	ChallengeKind = "Challenge"
 )
