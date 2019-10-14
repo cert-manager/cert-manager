@@ -11,7 +11,7 @@ An example of an Issuer type is ACME. A simple ACME issuer could be defined as:
 
 .. code-block:: yaml
    :linenos:
-   :emphasize-lines: 11, 16
+   :emphasize-lines: 11, 20
 
    apiVersion: cert-manager.io/v1alpha2
    kind: Issuer
@@ -27,8 +27,12 @@ An example of an Issuer type is ACME. A simple ACME issuer could be defined as:
        # Name of a secret used to store the ACME account private key
        privateKeySecretRef:
          name: letsencrypt-prod
-       # Enable HTTP01 validations
-       http01: {}
+       solvers:
+       # An empty 'selector' means that this solver matches all domains
+       - selector: {}
+         http01:
+           ingress:
+             class: nginx
 
 
 This is the simplest of ACME issuers - it specifies no DNS-01 challenge
@@ -70,7 +74,7 @@ those credentials to perform the ACME DNS01 challenge with route53.
 
 .. code-block:: yaml
    :linenos:
-   :emphasize-lines: 14-15
+   :emphasize-lines: 17-18
 
    apiVersion: cert-manager.io/v1alpha2
    kind: ClusterIssuer
@@ -82,11 +86,14 @@ those credentials to perform the ACME DNS01 challenge with route53.
        email: user@example.com
        privateKeySecretRef:
          name: letsencrypt-prod
-       dns01:
-         providers:
-         - name: route53
-           route53:
-             region: us-east-1
+       solvers:
+       # An empty 'selector' means that this solver matches all domains
+       - selector: {}
+         dns01:
+           providers:
+           - name: route53
+             route53:
+               region: us-east-1
 
 It is important to note that the ``route53`` section does not specify any
 ``accessKeyID`` or ``secretAccessKeySecretRef``. If either of these are
