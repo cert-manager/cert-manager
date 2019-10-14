@@ -88,6 +88,7 @@ esac
 
 rm -rf vendor
 "$go" mod tidy
+unset GOROOT
 "$gazelle" update-repos \
   --from_file=go.mod --to_macro=hack/build/repos.bzl%go_repositories \
   --build_file_generation=on --build_file_proto_mode=disable
