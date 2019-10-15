@@ -29,9 +29,6 @@ const (
 )
 
 const (
-	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
-	// of ingress on the created Certificate resource
-	IngressEditInPlaceAnnotationKey = "acme.cert-manager.io/http01-edit-in-place"
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.
 	IngressIssuerNameAnnotationKey = "cert-manager.io/issuer"

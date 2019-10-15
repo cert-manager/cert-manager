@@ -278,7 +278,7 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1b
 	}
 
 	// for ACME issuers
-	editInPlaceVal, _ := ingAnnotations[cmapi.IngressEditInPlaceAnnotationKey]
+	editInPlaceVal, _ := ingAnnotations[cmacme.IngressEditInPlaceAnnotationKey]
 	editInPlace := editInPlaceVal == "true"
 	if editInPlace {
 		if crt.Annotations == nil {
