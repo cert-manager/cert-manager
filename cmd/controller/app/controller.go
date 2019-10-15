@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
@@ -47,7 +48,6 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
 const controllerAgentName = "cert-manager"
@@ -141,10 +141,13 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
 	log := logf.FromContext(ctx, "build-context")
 	// Load the users Kubernetes config
-	kubeCfg, err := kube.KubeConfig(opts.APIServerHost)
+	kubeCfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.Kubeconfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating rest config: %s", err.Error())
 	}
+
+	// Add User-Agent to client
+	kubeCfg = rest.AddUserAgent(kubeCfg, util.CertManagerUserAgent)
 
 	// Create a cert-manager api client
 	intcl, err := clientset.NewForConfig(kubeCfg)

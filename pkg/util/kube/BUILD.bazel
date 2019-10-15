@@ -2,21 +2,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "config.go",
-        "pki.go",
-    ],
+    srcs = ["pki.go"],
     importpath = "github.com/jetstack/cert-manager/pkg/util/kube",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/logs:go_default_library",
-        "//pkg/util:go_default_library",
         "//pkg/util/errors:go_default_library",
         "//pkg/util/pki:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
-        "@io_k8s_client_go//rest:go_default_library",
-        "@io_k8s_client_go//tools/clientcmd:go_default_library",
     ],
 )
 
