@@ -103,8 +103,12 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	// 1. fetch solvers from issuer
 	solvers := issuer.GetSpec().ACME.Solvers
 
+	wc := false
+	if authz.Wildcard != nil {
+		wc = *authz.Wildcard
+	}
 	domainToFind := authz.Identifier
-	if authz.Wildcard {
+	if wc {
 		domainToFind = "*." + domainToFind
 	}
 
@@ -284,7 +288,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		Token:     selectedChallenge.Token,
 		Key:       key,
 		Solver:    selectedSolver,
-		Wildcard:  authz.Wildcard,
+		Wildcard:  wc,
 		IssuerRef: o.Spec.IssuerRef,
 	}, nil
 }

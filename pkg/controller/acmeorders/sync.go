@@ -302,7 +302,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 		}
 
 		authz.Identifier = acmeAuthz.Identifier.Value
-		authz.Wildcard = acmeAuthz.Wildcard
+		authz.Wildcard = &acmeAuthz.Wildcard
 		authz.Challenges = make([]cmacme.ACMEChallenge, len(acmeAuthz.Challenges))
 		for i, acmech := range acmeAuthz.Challenges {
 			authz.Challenges[i].URL = acmech.URL

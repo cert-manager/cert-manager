@@ -764,7 +764,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "example.com",
-				Wildcard:   true,
+				Wildcard:   pointer.BoolPtr(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
@@ -895,7 +895,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.example.com",
-				Wildcard:   true,
+				Wildcard:   pointer.BoolPtr(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
@@ -955,7 +955,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   true,
+				Wildcard:   pointer.BoolPtr(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
@@ -1015,7 +1015,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 			authz: &cmacme.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
-				Wildcard:   true,
+				Wildcard:   pointer.BoolPtr(true),
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
