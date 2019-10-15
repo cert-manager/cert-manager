@@ -135,7 +135,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	}
 
 	startLeaderElection(rootCtx, opts, leaderElectionClient, ctx.Recorder, run)
-	panic("unreachable")
 }
 
 func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
@@ -267,7 +266,7 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 	}
 
 	// Try and become the leader and start controller manager loops
-	leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
+	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock:          &rl,
 		LeaseDuration: opts.LeaderElectionLeaseDuration,
 		RenewDeadline: opts.LeaderElectionRenewDeadline,
