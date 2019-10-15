@@ -80,9 +80,6 @@ type ChallengeSpec struct {
 
 	// Solver contains the domain solving configuration that should be used to
 	// solve this challenge resource.
-	// Only **one** of 'config' or 'solver' may be specified, and if both are
-	// specified then no action will be performed on the Challenge resource.
-	// +optional
 	Solver *ACMEChallengeSolver `json:"solver,omitempty"`
 
 	// IssuerRef references a properly configured ACME-type Issuer which should
