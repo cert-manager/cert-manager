@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
+	"google.golang.org/api/option"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"k8s.io/klog"
@@ -71,11 +71,12 @@ func NewDNSProviderCredentials(project string, dns01Nameservers []string) (*DNSP
 		return nil, fmt.Errorf("Google Cloud project name missing")
 	}
 
-	client, err := google.DefaultClient(context.Background(), dns.NdevClouddnsReadwriteScope)
+	ctx := context.Background()
+	client, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get Google Cloud client: %v", err)
 	}
-	svc, err := dns.New(client)
+	svc, err := dns.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
 	}
@@ -117,9 +118,11 @@ func NewDNSProviderServiceAccountBytes(project string, saBytes []byte, dns01Name
 	if err != nil {
 		return nil, fmt.Errorf("Unable to acquire config: %v", err)
 	}
-	client := conf.Client(oauth2.NoContext)
 
-	svc, err := dns.New(client)
+	ctx := context.Background()
+	client := conf.Client(ctx)
+
+	svc, err := dns.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
 	}
