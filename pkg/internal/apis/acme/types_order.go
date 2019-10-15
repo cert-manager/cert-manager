@@ -136,7 +136,7 @@ type ACMEAuthorization struct {
 	// For example, if '*.example.com' is the DNS name being validated, this
 	// field will be 'true' and the 'identifier' field will be 'example.com'.
 	// +optional
-	Wildcard bool `json:"wildcard,omitempty"`
+	Wildcard *bool `json:"wildcard,omitempty"`
 
 	// Challenges specifies the challenge types offered by the ACME server.
 	// One of these challenge types will be selected when validating the DNS
