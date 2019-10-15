@@ -390,7 +390,7 @@ itself with the Venafi Cloud service).
      Normal  Ready   14s   cert-manager  Verified issuer with Venafi server
 
 
-.. _enroll page: https://ui.venafi.cloud/enroll
+.. _enroll page: https://www.venafi.com/platform/cloud/devops
 
 Request a Certificate
 =====================
