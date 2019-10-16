@@ -34,8 +34,6 @@ import (
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	"github.com/jetstack/cert-manager/test/e2e/util"
@@ -45,25 +43,8 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	f := framework.NewDefaultFramework("create-acme-certificate-request-http01")
 	h := f.Helper()
 
-	var (
-		tiller = &tiller.Tiller{
-			Name:               "tiller-deploy",
-			ClusterPermissions: false,
-		}
-		pebble = &pebble.Pebble{
-			Tiller: tiller,
-			Name:   "cm-e2e-create-acme-issuer",
-		}
-	)
-
-	BeforeEach(func() {
-		tiller.Namespace = f.Namespace.Name
-		pebble.Namespace = f.Namespace.Name
-	})
-
 	f.RequireGlobalAddon(addon.NginxIngress)
-	f.RequireAddon(tiller)
-	f.RequireAddon(pebble)
+	f.RequireGlobalAddon(addon.Pebble)
 
 	var acmeIngressDomain string
 	issuerName := "test-acme-issuer"
@@ -74,7 +55,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	fixedIngressName := "testingress"
 
 	BeforeEach(func() {
-		acmeURL := pebble.Details().Host
+		acmeURL := addon.Pebble.Details().Host
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
 		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
 			{

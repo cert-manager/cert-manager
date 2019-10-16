@@ -10,6 +10,7 @@ go_library(
         "//test/e2e/framework/addon/base:go_default_library",
         "//test/e2e/framework/addon/certmanager:go_default_library",
         "//test/e2e/framework/addon/nginxingress:go_default_library",
+        "//test/e2e/framework/addon/pebble:go_default_library",
         "//test/e2e/framework/addon/tiller:go_default_library",
         "//test/e2e/framework/config:go_default_library",
         "//test/e2e/framework/log:go_default_library",

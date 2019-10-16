@@ -25,6 +25,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
@@ -93,14 +94,6 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 func (a *acmeIssuerProvisioner) createHTTP01(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "http01")
 
-	a.pebble = &pebble.Pebble{
-		Tiller:    a.tiller,
-		Name:      "cm-e2e-create-acme-http01-issuer",
-		Namespace: f.Namespace.Name,
-	}
-	Expect(a.pebble.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup pebble")
-	Expect(a.pebble.Provision()).NotTo(HaveOccurred(), "failed to provision pebble")
-
 	By("Creating an ACME HTTP01 issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -109,7 +102,7 @@ func (a *acmeIssuerProvisioner) createHTTP01(f *framework.Framework) cmmeta.Obje
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				ACME: &cmacme.ACMEIssuer{
-					Server:        a.pebble.Details().Host,
+					Server:        addon.Pebble.Details().Host,
 					SkipTLSVerify: true,
 					PrivateKey: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
