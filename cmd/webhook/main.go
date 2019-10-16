@@ -18,22 +18,37 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
-	"github.com/openshift/generic-admission-server/pkg/cmd"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog"
+	"k8s.io/klog/klogr"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
+	"github.com/jetstack/cert-manager/pkg/webhook/server"
 )
 
 var (
 	GroupName = "webhook." + v1alpha2.SchemeGroupVersion.Group
+
+	securePort  int
+	healthzPort int
+	tlsCertFile string
+	tlsKeyFile  string
 )
+
+func init() {
+	flag.IntVar(&healthzPort, "healthz-port", 6080, "port number to listen on for insecure healthz connections")
+	flag.IntVar(&securePort, "secure-port", 6443, "port number to listen on for secure TLS connections")
+	flag.StringVar(&tlsCertFile, "tls-cert-file", "", "path to the file containing the TLS certificate to serve with")
+	flag.StringVar(&tlsKeyFile, "tls-private-key-file", "", "path to the file containing the TLS private key to serve with")
+}
 
 var (
 	validationFuncs = map[schema.GroupVersionKind]handlers.ValidationFunc{
@@ -44,50 +59,60 @@ var (
 	}
 )
 
-var validationHook cmd.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, GroupName, webhook.Scheme, validationFuncs)
-var mutationHook cmd.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, GroupName, webhook.Scheme)
+var validationHook handlers.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, GroupName, webhook.Scheme, validationFuncs)
+var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, GroupName, webhook.Scheme)
 
 func main() {
-	// Avoid "logging before flag.Parse" errors from glog
-	flag.CommandLine.Parse([]string{})
+	klog.InitFlags(flag.CommandLine)
+	flag.Parse()
 
-	// parse the command line flags to pull out the tls-cert-file
-	// argument. This flag will be parsed by code inside cmd.RunAdmissionServer
-	// so no need to pass it through the call stack or have nice errors
-	tlsflagSet := flag.NewFlagSet("tls", flag.ContinueOnError)
-	tlsflagVal := tlsflagSet.String("tls-cert-file", "", "")
-	tlsflagSet.Parse(os.Args[1:])
-	if *tlsflagVal != "" {
-		runfilewatch(*tlsflagVal)
+	log := klogr.New()
+	stopCh := setupSignalHandler()
+
+	var source server.CertificateSource
+	if tlsCertFile == "" || tlsKeyFile == "" {
+		log.Info("warning: serving insecurely as tls certificate data not provided")
+	} else {
+		log.Info("enabling TLS as certificate file flags specified")
+		source = &server.FileCertificateSource{
+			CertPath: tlsCertFile,
+			KeyPath:  tlsKeyFile,
+			Log:      log,
+		}
 	}
 
-	cmd.RunAdmissionServer(
-		validationHook,
-		mutationHook,
-	)
+	srv := server.Server{
+		ListenAddr:        fmt.Sprintf(":%d", securePort),
+		HealthzAddr:       fmt.Sprintf(":%d", healthzPort),
+		CertificateSource: source,
+		ValidationWebhook: validationHook,
+		MutationWebhook:   mutationHook,
+		Log:               log,
+	}
+	if err := srv.Run(stopCh); err != nil {
+		log.Error(err, "error running server")
+		os.Exit(1)
+	}
 }
 
-func runfilewatch(filename string) {
-	info, err := os.Stat(filename)
-	if err != nil {
-		// missing TLS cert file will get turned into a proper error later
-		return
-	}
-	modtime := info.ModTime()
+var shutdownSignals = []os.Signal{os.Interrupt, syscall.SIGTERM}
+var onlyOneSignalHandler = make(chan struct{})
+
+// setupSignalHandler registered for SIGTERM and SIGINT. A stop channel is returned
+// which is closed on one of these signals. If a second signal is caught, the program
+// is terminated with exit code 1.
+func setupSignalHandler() (stopCh <-chan struct{}) {
+	close(onlyOneSignalHandler) // panics when called twice
+
+	stop := make(chan struct{})
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, shutdownSignals...)
 	go func() {
-		for {
-			time.Sleep(1 * time.Minute)
-			info, err := os.Stat(filename)
-			if err != nil {
-				continue
-			}
-			if info.ModTime().After(modtime) {
-				// let the k8s scheduler restart us
-				// TODO(dmo): figure out if there's a way to do this with clean
-				// shutdown
-				klog.Infof("Detected change in TLS certificate %s. Restarting to pick up new certificate", filename)
-				os.Exit(0)
-			}
-		}
+		<-c
+		close(stop)
+		<-c
+		os.Exit(1) // second signal. Exit directly.
 	}()
+
+	return stop
 }

@@ -10,9 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "webhook.chart" . }}
   annotations:
-{{- if .Values.webhook.injectAPIServerCA }}
-    cert-manager.io/inject-apiserver-ca: "true"
-{{- end }}
+    cert-manager.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ include "webhook.servingCertificate" . }}"
 webhooks:
   - name: webhook.cert-manager.io
     rules:
@@ -34,7 +32,7 @@ webhooks:
     sideEffects: None
     clientConfig:
       service:
-        name: kubernetes
-        namespace: default
-        path: /apis/webhook.cert-manager.io/v1beta1/mutations
+        name: {{ include "webhook.fullname" . }}
+        namespace: {{ .Release.Namespace | quote }}
+        path: /mutate
 {{- end -}}

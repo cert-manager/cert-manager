@@ -77,7 +77,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
-	github.com/openshift/generic-admission-server v1.14.0
 	github.com/ory/dockertest v3.3.4+incompatible // indirect
 	github.com/pascaldekloe/goe v0.1.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
@@ -113,8 +112,6 @@ require (
 	sigs.k8s.io/controller-tools v0.2.0-beta.4
 	sigs.k8s.io/testing_frameworks v0.1.1
 )
-
-replace github.com/openshift/generic-admission-server => github.com/openshift/generic-admission-server v1.14.0
 
 replace sigs.k8s.io/controller-runtime => github.com/munnerz/controller-runtime v0.1.8-0.20190907105316-d02b94982e57
 

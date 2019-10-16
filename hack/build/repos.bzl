@@ -1332,15 +1332,6 @@ def go_repositories():
         version = "v0.1.1",
     )
     go_repository(
-        name = "com_github_openshift_generic_admission_server",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/openshift/generic-admission-server",
-        replace = "github.com/openshift/generic-admission-server",
-        sum = "h1:GAQy5JNVcbmUuIpPvLd39+2rPecxEm7WQ2sP7ACrse4=",
-        version = "v1.14.0",
-    )
-    go_repository(
         name = "com_github_ory_dockertest",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
