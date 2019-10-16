@@ -53,6 +53,10 @@ type Plugin struct {
 	// is used for Docker authentication
 	DockerConfig string
 
+	// If true, a multi-arch manifest list will be created for each set of
+	// images
+	CreateManifestList bool
+
 	// TODO: add GOOS support once the build system supports more than linux
 
 	// built is set to true if Build() has completed successfully
@@ -63,6 +67,7 @@ type Plugin struct {
 
 func (g *Plugin) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&g.ExportToDocker, "images.export", false, "if true, images will be exported to the currently configured docker daemon")
+	fs.BoolVar(&g.CreateManifestList, "images.publish-manifest-list", true, "if true, a multi-arch manifest list will be published when images are pushed")
 	fs.StringSliceVar(&g.Components, "images.components", []string{"acmesolver", "controller", "webhook", "cainjector"}, "the list of components to build images for")
 	fs.StringSliceVar(&g.GoArch, "images.goarch", []string{"amd64", "arm64", "arm"}, "list of architectures to build images for")
 	fs.StringVar(&g.DockerConfig, "images.docker-config", "", "path to a directory containing a docker config.json file used when pushing images")
@@ -243,6 +248,40 @@ func (p *Plugin) pushImages(ctx context.Context, targets imageTargets) error {
 		}
 	}
 
+	manifestsToCreate := make(map[string][]imageTarget)
+	for _, target := range targets {
+		manifestsToCreate[target.name] = append(manifestsToCreate[target.name], target)
+	}
+
+	if p.CreateManifestList {
+		for name, targets := range manifestsToCreate {
+			log := log.WithValues("component", name)
+			log.Info("creating manifest list for component")
+			manifestListName := manifestListNameForComponent(name)
+			manifestImages := make([]string, len(targets))
+			for i, target := range targets {
+				manifestImages[i] = target.taggedImageNames()[0]
+			}
+			log.Info("running manifest create", "manifest_name", manifestListName, "images", manifestImages)
+			cmd := exec.CommandContext(ctx, "docker", append([]string{"manifest", "create", manifestListName}, manifestImages...)...)
+			if err := util.RunE(log, cmd); err != nil {
+				return fmt.Errorf("failed to create manifest list: %v", err)
+			}
+			for _, target := range targets {
+				a := manifestListAnnotationsForTarget(target)
+				cmd := exec.CommandContext(ctx, "docker", "manifest", "annotate", "--os", a.os, "--arch", a.arch, "--variant", a.variant, manifestListName, target.taggedImageNames()[0])
+				if err := util.RunE(log, cmd); err != nil {
+					return fmt.Errorf("failed to annotate manifest list: %v", err)
+				}
+			}
+
+			cmd = exec.CommandContext(ctx, "docker", "manifest", "push", manifestListName)
+			if err := util.RunE(log, cmd); err != nil {
+				return fmt.Errorf("failed to push manifest list: %v", err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -290,6 +329,38 @@ func (i imageTargets) withOSArch(os, arch string) imageTargets {
 	return out
 }
 
+func manifestListNameForComponent(s string) string {
+	return fmt.Sprintf("%s/cert-manager-%s:%s", flags.Default.DockerRepo, s, flags.Default.AppVersion)
+}
+
+type manifestAnnotation struct {
+	os, arch, variant string
+}
+
+func manifestListAnnotationsForTarget(t imageTarget) manifestAnnotation {
+	if t.arch == "amd64" {
+		return manifestAnnotation{
+			os:   t.os,
+			arch: t.arch,
+		}
+	}
+	if t.arch == "arm" {
+		return manifestAnnotation{
+			os:      t.os,
+			arch:    "arm",
+			variant: "v7",
+		}
+	}
+	if t.arch == "arm64" {
+		return manifestAnnotation{
+			os:      t.os,
+			arch:    "arm64",
+			variant: "v8",
+		}
+	}
+	return manifestAnnotation{}
+}
+
 type imageTarget struct {
 	name, os, arch string
 }
@@ -307,13 +378,6 @@ func (i imageTarget) exportedImageName() string {
 }
 
 func (i imageTarget) taggedImageNames() []string {
-	if i.arch == "amd64" {
-		return []string{
-			fmt.Sprintf("%s/cert-manager-%s:%s", flags.Default.DockerRepo, i.name, flags.Default.AppVersion),
-			fmt.Sprintf("%s/cert-manager-%s:%s", flags.Default.DockerRepo, i.name, flags.Default.GitCommitRef),
-		}
-	}
-
 	return []string{
 		fmt.Sprintf("%s/cert-manager-%s-%s:%s", flags.Default.DockerRepo, i.name, i.arch, flags.Default.AppVersion),
 		fmt.Sprintf("%s/cert-manager-%s-%s:%s", flags.Default.DockerRepo, i.name, i.arch, flags.Default.GitCommitRef),
