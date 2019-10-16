@@ -44,5 +44,6 @@ echo "Testing kind apiserver connectivity"
 "${SCRIPT_ROOT}/lib/build_images.sh"
 
 make e2e_test \
-    KUBECONFIG=${KUBECONFIG} \
-    KUBECTL=${KUBECTL}
+    KUBECONFIG="${KUBECONFIG}" \
+    KUBECTL="${KUBECTL}" \
+    FLAKE_ATTEMPTS="${FLAKE_ATTEMPTS:-1}"

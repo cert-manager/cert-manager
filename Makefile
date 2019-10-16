@@ -24,6 +24,7 @@ GINKGO_FOCUS :=
 ## e2e test vars
 KUBECTL ?= kubectl
 KUBECONFIG ?= $$HOME/.kube/config
+FLAKE_ATTEMPTS ?= 1
 
 # Get a list of all binaries to be built
 CMDS := $(shell find ./cmd/ -maxdepth 1 -type d -exec basename {} \; | grep -v cmd)
@@ -91,6 +92,7 @@ e2e_test:
 	KUBECONFIG=$(KUBECONFIG) \
 		bazel run @com_github_onsi_ginkgo//ginkgo -- \
 			-nodes 10 \
+			-flakeAttempts $(FLAKE_ATTEMPTS) \
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
 			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
