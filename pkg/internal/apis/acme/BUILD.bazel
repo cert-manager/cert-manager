@@ -37,6 +37,7 @@ filegroup(
         "//pkg/internal/apis/acme/fuzzer:all-srcs",
         "//pkg/internal/apis/acme/install:all-srcs",
         "//pkg/internal/apis/acme/v1alpha2:all-srcs",
+        "//pkg/internal/apis/acme/validation:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

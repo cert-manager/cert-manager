@@ -23,11 +23,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
@@ -35,8 +33,6 @@ import (
 )
 
 var (
-	GroupName = "webhook." + v1alpha2.SchemeGroupVersion.Group
-
 	securePort  int
 	healthzPort int
 	tlsCertFile string
@@ -50,17 +46,8 @@ func init() {
 	flag.StringVar(&tlsKeyFile, "tls-private-key-file", "", "path to the file containing the TLS private key to serve with")
 }
 
-var (
-	validationFuncs = map[schema.GroupVersionKind]handlers.ValidationFunc{
-		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateKind):        webhook.ValidateCertificate,
-		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateRequestKind): webhook.ValidateCertificateRequest,
-		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.IssuerKind):             webhook.ValidateIssuer,
-		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterIssuerKind):      webhook.ValidateClusterIssuer,
-	}
-)
-
-var validationHook handlers.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, GroupName, webhook.Scheme, validationFuncs)
-var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, GroupName, webhook.Scheme)
+var validationHook handlers.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, webhook.Scheme, webhook.Validators)
+var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
 
 func main() {
 	klog.InitFlags(flag.CommandLine)

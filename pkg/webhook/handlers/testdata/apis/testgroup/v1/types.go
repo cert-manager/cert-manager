@@ -26,6 +26,15 @@ type TestType struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
+	// TestField is used in tests.
+	// Validation doesn't allow this to be set to the value of TestFieldValueNotAllowed.
 	TestField    string  `json:"testField"`
 	TestFieldPtr *string `json:"testFieldPtr"`
+
+	// TestFieldImmutable cannot be changed after being set to a non-zero value
+	TestFieldImmutable string `json:"testFieldImmutable"`
 }
+
+const (
+	TestFieldValueNotAllowed = "not-allowed-value"
+)

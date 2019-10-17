@@ -16,11 +16,37 @@ limitations under the License.
 
 package webhook
 
-import "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
+import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	acmeval "github.com/jetstack/cert-manager/pkg/internal/apis/acme/validation"
+	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
+)
+
+var Validators = map[schema.GroupKind]handlers.Validator{
+	gk(cmapi.SchemeGroupVersion, cmapi.CertificateKind):        certificateValidator,
+	gk(cmapi.SchemeGroupVersion, cmapi.CertificateRequestKind): certificateRequestValidator,
+	gk(cmapi.SchemeGroupVersion, cmapi.IssuerKind):             issuerValidator,
+	gk(cmapi.SchemeGroupVersion, cmapi.ClusterIssuerKind):      clusterIssuerValidator,
+	gk(cmacme.SchemeGroupVersion, cmacme.OrderKind):            orderValidator,
+	gk(cmacme.SchemeGroupVersion, cmacme.ChallengeKind):        challengeValidator,
+}
 
 var (
-	ValidateCertificate        = validation.ValidateCertificate
-	ValidateCertificateRequest = validation.ValidateCertificateRequest
-	ValidateIssuer             = validation.ValidateIssuer
-	ValidateClusterIssuer      = validation.ValidateClusterIssuer
+	certificateValidator        = handlers.ValidatorFunc(&cmapi.Certificate{}, validation.ValidateCertificate, nil)
+	certificateRequestValidator = handlers.ValidatorFunc(&cmapi.CertificateRequest{}, validation.ValidateCertificateRequest, nil)
+	issuerValidator             = handlers.ValidatorFunc(&cmapi.Issuer{}, validation.ValidateIssuer, nil)
+	clusterIssuerValidator      = handlers.ValidatorFunc(&cmapi.ClusterIssuer{}, validation.ValidateClusterIssuer, nil)
+	orderValidator              = handlers.ValidatorFunc(&cmacme.Order{}, nil, acmeval.ValidateOrderUpdate)
+	challengeValidator          = handlers.ValidatorFunc(&cmacme.Challenge{}, nil, acmeval.ValidateChallengeUpdate)
 )
+
+func gk(gv schema.GroupVersion, kind string) schema.GroupKind {
+	return schema.GroupKind{
+		Group: gv.Group,
+		Kind:  kind,
+	}
+}

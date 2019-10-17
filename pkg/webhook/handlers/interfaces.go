@@ -18,37 +18,16 @@ package handlers
 
 import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	restclient "k8s.io/client-go/rest"
 )
 
-type AdmissionHook interface {
-	// Initialize is called as a post-start hook
-	Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error
-}
-
 type ValidatingAdmissionHook interface {
-	AdmissionHook
-
-	// ValidatingResource is the resource to use for hosting your admission webhook. If the hook implements
-	// MutatingAdmissionHook as well, the two resources for validating and mutating admission must be different.
-	// Note: this is (usually) not the same as the payload resource!
-	ValidatingResource() (plural schema.GroupVersionResource, singular string)
-
 	// Validate is called to decide whether to accept the admission request. The returned AdmissionResponse
 	// must not use the Patch field.
 	Validate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
 }
 
 type MutatingAdmissionHook interface {
-	AdmissionHook
-
-	// MutatingResource is the resource to use for hosting your admission webhook. If the hook implements
-	// ValidatingAdmissionHook as well, the two resources for validating and mutating admission must be different.
-	// Note: this is (usually) not the same as the payload resource!
-	MutatingResource() (plural schema.GroupVersionResource, singular string)
-
 	// Admit is called to decide whether to accept the admission request. The returned AdmissionResponse may
 	// use the Patch field to mutate the object from the passed AdmissionRequest.
-	Admit(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
+	Mutate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
 }
