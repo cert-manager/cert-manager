@@ -240,7 +240,7 @@ func (s *Server) validate(obj runtime.Object) runtime.Object {
 
 func (s *Server) mutate(obj runtime.Object) runtime.Object {
 	review := obj.(*admissionv1beta1.AdmissionReview)
-	resp := s.MutationWebhook.Admit(review.Request)
+	resp := s.MutationWebhook.Mutate(review.Request)
 	review.Response = resp
 	return review
 }

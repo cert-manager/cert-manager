@@ -28,43 +28,29 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	restclient "k8s.io/client-go/rest"
 )
 
 type SchemeBackedDefaulter struct {
-	log       logr.Logger
-	groupName string
-	scheme    *runtime.Scheme
-	codec     runtime.Codec
+	log    logr.Logger
+	scheme *runtime.Scheme
+	codec  runtime.Codec
 }
 
-func NewSchemeBackedDefaulter(log logr.Logger, groupName string, scheme *runtime.Scheme) *SchemeBackedDefaulter {
+func NewSchemeBackedDefaulter(log logr.Logger, scheme *runtime.Scheme) *SchemeBackedDefaulter {
 	factory := serializer.NewCodecFactory(scheme)
 	serializer := apijson.NewSerializerWithOptions(apijson.DefaultMetaFactory, scheme, scheme, apijson.SerializerOptions{})
 	encoder := factory.WithoutConversion().EncoderForVersion(serializer, nil)
 	decoder := factory.UniversalDeserializer()
 	return &SchemeBackedDefaulter{
-		log:       log,
-		groupName: groupName,
-		scheme:    scheme,
-		codec:     runtime.NewCodec(encoder, decoder),
+		log:    log,
+		scheme: scheme,
+		codec:  runtime.NewCodec(encoder, decoder),
 	}
 }
 
-func (c *SchemeBackedDefaulter) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
-	return nil
-}
-
-func (c *SchemeBackedDefaulter) MutatingResource() (plural schema.GroupVersionResource, singular string) {
-	gv := admissionv1beta1.SchemeGroupVersion
-	gv.Group = c.groupName
-	return gv.WithResource("mutations"), "mutation"
-}
-
-func (c *SchemeBackedDefaulter) Admit(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
+func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	status := &admissionv1beta1.AdmissionResponse{}
 
 	// decode the raw object data

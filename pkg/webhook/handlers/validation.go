@@ -27,21 +27,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/client-go/rest"
 )
 
 type funcBackedValidator struct {
 	log         logr.Logger
-	groupName   string
 	decoder     runtime.Decoder
 	validations map[schema.GroupVersionKind]ValidationFunc
 }
 
-func NewFuncBackedValidator(log logr.Logger, groupName string, scheme *runtime.Scheme, fns map[schema.GroupVersionKind]ValidationFunc) *funcBackedValidator {
+func NewFuncBackedValidator(log logr.Logger, scheme *runtime.Scheme, fns map[schema.GroupVersionKind]ValidationFunc) *funcBackedValidator {
 	factory := serializer.NewCodecFactory(scheme)
 	return &funcBackedValidator{
-		log:       log,
-		groupName: groupName,
+		log: log,
 		// TODO: switch to using UniversalDecoder and make validation functions
 		//       run against the internal apiversion
 		decoder:     factory.UniversalDeserializer(),
@@ -50,16 +47,6 @@ func NewFuncBackedValidator(log logr.Logger, groupName string, scheme *runtime.S
 }
 
 type ValidationFunc func(runtime.Object) field.ErrorList
-
-func (c *funcBackedValidator) Initialize(kubeClientConfig *rest.Config, stopCh <-chan struct{}) error {
-	return nil
-}
-
-func (c *funcBackedValidator) ValidatingResource() (plural schema.GroupVersionResource, singular string) {
-	gv := admissionv1beta1.SchemeGroupVersion
-	gv.Group = c.groupName
-	return gv.WithResource("validations"), "validation"
-}
 
 func (c *funcBackedValidator) Validate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	status := &admissionv1beta1.AdmissionResponse{}

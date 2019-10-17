@@ -59,8 +59,8 @@ var (
 	}
 )
 
-var validationHook handlers.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, GroupName, webhook.Scheme, validationFuncs)
-var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, GroupName, webhook.Scheme)
+var validationHook handlers.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, webhook.Scheme, validationFuncs)
+var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
 
 func main() {
 	klog.InitFlags(flag.CommandLine)
