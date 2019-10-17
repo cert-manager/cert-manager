@@ -1,0 +1,37 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "server.go",
+        "source.go",
+        "tls_file_source.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/webhook/server",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/logs:go_default_library",
+        "//pkg/webhook/handlers:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
+        "@io_k8s_api//admission/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
