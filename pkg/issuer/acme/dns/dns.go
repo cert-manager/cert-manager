@@ -229,11 +229,10 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 		dbg.Info("preparing to create CloudDNS provider")
 		var keyData []byte
 
-		// if the serviceAccount.name field is set, we will load credentials from
-		// that secret.
-		// If it is not set, we will attempt to instantiate the provider using
-		// ambient credentials (if enabled).
-		if providerConfig.CloudDNS.ServiceAccount.Name != "" {
+		// if the serviceAccount field isn't nil we will load credentials from
+		// that secret.  If it is nil we will attempt to instantiate the
+		// provider using ambient credentials (if enabled).
+		if providerConfig.CloudDNS.ServiceAccount != nil {
 			saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
 			if err != nil {
 				return nil, nil, fmt.Errorf("error getting clouddns service account: %s", err)

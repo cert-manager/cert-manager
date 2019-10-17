@@ -24,10 +24,12 @@ import (
 	unsafe "unsafe"
 
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -675,10 +677,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01Pro
 }
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ServiceAccount, &out.ServiceAccount, 0); err != nil {
-		return err
-	}
+	out.ServiceAccount = (*meta.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
 	out.Project = in.Project
 	return nil
 }
@@ -689,10 +688,7 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01Pro
 }
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ServiceAccount, &out.ServiceAccount, 0); err != nil {
-		return err
-	}
+	out.ServiceAccount = (*metav1.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
 	out.Project = in.Project
 	return nil
 }
@@ -1127,7 +1123,7 @@ func autoConvert_v1alpha2_OrderStatus_To_acme_OrderStatus(in *v1alpha2.OrderStat
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.State = acme.State(in.State)
 	out.Reason = in.Reason
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -1143,7 +1139,7 @@ func autoConvert_acme_OrderStatus_To_v1alpha2_OrderStatus(in *acme.OrderStatus, 
 	out.State = v1alpha2.State(in.State)
 	out.Reason = in.Reason
 	out.Authorizations = *(*[]v1alpha2.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 

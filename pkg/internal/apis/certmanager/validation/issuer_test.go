@@ -31,7 +31,7 @@ import (
 
 var (
 	validCloudDNSProvider = cmacme.ACMEIssuerDNS01ProviderCloudDNS{
-		ServiceAccount: validSecretKeyRef,
+		ServiceAccount: &validSecretKeyRef,
 		Project:        "valid",
 	}
 	validSecretKeyRef = cmmeta.SecretKeySelector{
@@ -481,7 +481,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 		"missing clouddns project": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
-					ServiceAccount: validSecretKeyRef,
+					ServiceAccount: &validSecretKeyRef,
 				},
 			},
 			errs: []*field.Error{
@@ -492,7 +492,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
-					ServiceAccount: cmmeta.SecretKeySelector{
+					ServiceAccount: &cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{Name: "something"},
 						Key:                  "",
 					},
@@ -506,7 +506,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
-					ServiceAccount: cmmeta.SecretKeySelector{
+					ServiceAccount: &cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{Name: ""},
 						Key:                  "something",
 					},

@@ -227,8 +227,9 @@ type ACMEIssuerDNS01ProviderAkamai struct {
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
 // configuration for Google Cloud DNS
 type ACMEIssuerDNS01ProviderCloudDNS struct {
-	ServiceAccount cmmeta.SecretKeySelector `json:"serviceAccountSecretRef"`
-	Project        string                   `json:"project"`
+	// +optional
+	ServiceAccount *cmmeta.SecretKeySelector `json:"serviceAccountSecretRef,omitempty"`
+	Project        string                    `json:"project"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS

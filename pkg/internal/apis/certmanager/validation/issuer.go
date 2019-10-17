@@ -284,10 +284,10 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			el = append(el, field.Forbidden(fldPath.Child("clouddns"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
-			// if either of serviceAccount.name or serviceAccount.key is set, we
-			// validate the entire secret key selector
-			if p.CloudDNS.ServiceAccount.Name != "" || p.CloudDNS.ServiceAccount.Key != "" {
-				el = append(el, ValidateSecretKeySelector(&p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
+			// if service account is not nil we validate the entire secret key
+			// selector
+			if p.CloudDNS.ServiceAccount != nil {
+				el = append(el, ValidateSecretKeySelector(p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
 			}
 			if len(p.CloudDNS.Project) == 0 {
 				el = append(el, field.Required(fldPath.Child("clouddns", "project"), ""))
