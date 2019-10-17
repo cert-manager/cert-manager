@@ -43,6 +43,7 @@ import (
 
 type ControllerOptions struct {
 	APIServerHost            string
+	Kubeconfig               string
 	ClusterResourceNamespace string
 	Namespace                string
 
@@ -98,6 +99,7 @@ type ControllerOptions struct {
 
 const (
 	defaultAPIServerHost            = ""
+	defaultKubeconfig               = ""
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
 
@@ -199,6 +201,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.APIServerHost, "master", defaultAPIServerHost, ""+
 		"Optional apiserver host address to connect to. If not specified, autoconfiguration "+
 		"will be attempted.")
+	fs.StringVar(&s.Kubeconfig, "kubeconfig", defaultKubeconfig, ""+
+		"Paths to a kubeconfig. Only required if out-of-cluster.")
 	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
