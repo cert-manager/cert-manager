@@ -46,7 +46,7 @@ explicitly set a ``certificate.spec.acme`` field:
    :linenos:
    :emphasize-lines: 12-17, 28-52
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: certmanager.k8s.io/v1alpha1
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-staging
@@ -195,7 +195,7 @@ the following:
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: certmanager.k8s.io/v1alpha1
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-staging
