@@ -270,6 +270,76 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
+		"correctly persist ACME authorization error details as Challenge failure reason": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType("http-01"),
+				gen.SetChallengePresented(true),
+			),
+			httpSolver: &fakeSolver{
+				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+					return nil
+				},
+				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType("http-01"),
+					gen.SetChallengePresented(true),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(cmacme.Invalid),
+							gen.SetChallengeType("http-01"),
+							gen.SetChallengePresented(true),
+							gen.SetChallengeReason("Error accepting challenge: acme: fakeerror: this is a very detailed error"),
+						))),
+				},
+				ExpectedEvents: []string{
+					"Warning Failed Accepting challenge authorization failed: acme: fakeerror: this is a very detailed error",
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAcceptChallenge: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					// return something other than invalid here so we can verify that
+					// the challenge.status.state is set to the *authorizations*
+					// status and not the challenges
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return nil, acmeapi.AuthorizationError{
+						Authorization: &acmeapi.Authorization{
+							Status: acmeapi.StatusInvalid,
+							Identifier: acmeapi.AuthzID{
+								Value: "example.com",
+							},
+							Challenges: []*acmeapi.Challenge{
+								{
+									URL: "testurl",
+									Error: &acmeapi.Error{
+										StatusCode: 400,
+										Type:       "fakeerror",
+										Detail:     "this is a very detailed error",
+									},
+								},
+							},
+						},
+					}
+				},
+			},
+		},
 		"mark the challenge as not processing if it is already valid": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
