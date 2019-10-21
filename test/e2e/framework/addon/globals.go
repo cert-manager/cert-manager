@@ -24,6 +24,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/certmanager"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/nginxingress"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -50,6 +51,8 @@ var (
 	NginxIngress = &nginxingress.Nginx{}
 	// Certmanager install cert-manager as a helm chart
 	CertManager = &certmanager.Certmanager{}
+	// Pebble is a global deployment of the Pebble acme server
+	Pebble = &pebble.Pebble{}
 
 	// allAddons is populated by InitGlobals and defines the order in which
 	// addons will be provisioned
@@ -88,11 +91,17 @@ func InitGlobals(cfg *config.Config) {
 		Name:      "cert-manager",
 		Namespace: "cm-e2e-global-cert-manager",
 	}
+	*Pebble = pebble.Pebble{
+		Tiller:    Tiller,
+		Name:      "pebble",
+		Namespace: "cm-e2e-global-pebble",
+	}
 	allAddons = []Addon{
 		Base,
 		Tiller,
 		CertManager,
 		NginxIngress,
+		Pebble,
 	}
 }
 

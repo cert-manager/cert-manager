@@ -31,7 +31,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/samplewebhook"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -49,10 +48,6 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				Name:               "tiller-deploy-sample-webhook",
 				ClusterPermissions: true,
 			}
-			pebble = &pebble.Pebble{
-				Tiller: tiller,
-				Name:   "cm-e2e-acme-dns01-sample-webhook",
-			}
 			webhook = &samplewebhook.CertmanagerWebhook{
 				Name:        "cm-e2e-acme-dns01-sample-webhook",
 				Tiller:      tiller,
@@ -62,13 +57,12 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 		BeforeEach(func() {
 			tiller.Namespace = f.Namespace.Name
-			pebble.Namespace = f.Namespace.Name
 			webhook.Namespace = f.Namespace.Name
 		})
 
 		f.RequireGlobalAddon(addon.CertManager)
+		f.RequireGlobalAddon(addon.Pebble)
 		f.RequireAddon(tiller)
-		f.RequireAddon(pebble)
 		f.RequireAddon(webhook)
 
 		issuerName := "test-acme-issuer"
@@ -83,7 +77,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
-					Server:        pebble.Details().Host,
+					Server:        addon.Pebble.Details().Host,
 					Email:         testingACMEEmail,
 					PrivateKey: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
