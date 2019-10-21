@@ -24,28 +24,29 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
+	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	//// unsupportedFeatures is a list of features that are not supported by the
-	//// Venafi issuer.
-	//var unsupportedFeatures = certificates.NewFeatureSet(
-	//	certificates.DurationFeature,
-	//	// Due to the current configuration of the test environment, it does not
-	//	// support signing certificates that pair with an elliptic curve private
-	//	// key or using the same private key multiple times.
-	//	certificates.ECDSAFeature,
-	//	certificates.ReusePrivateKeyFeature,
-	//)
-	//
-	//provisioner := new(venafiProvisioner)
-	//(&certificates.Suite{
-	//	Name:                "Venafi",
-	//	CreateIssuerFunc:    provisioner.create,
-	//	DeleteIssuerFunc:    provisioner.delete,
-	//	UnsupportedFeatures: unsupportedFeatures,
-	//}).Define()
+	// unsupportedFeatures is a list of features that are not supported by the
+	// Venafi issuer.
+	var unsupportedFeatures = certificates.NewFeatureSet(
+		certificates.DurationFeature,
+		// Due to the current configuration of the test environment, it does not
+		// support signing certificates that pair with an elliptic curve private
+		// key or using the same private key multiple times.
+		certificates.ECDSAFeature,
+		certificates.ReusePrivateKeyFeature,
+	)
+
+	provisioner := new(venafiProvisioner)
+	(&certificates.Suite{
+		Name:                "Venafi",
+		CreateIssuerFunc:    provisioner.create,
+		DeleteIssuerFunc:    provisioner.delete,
+		UnsupportedFeatures: unsupportedFeatures,
+	}).Define()
 })
 
 type venafiProvisioner struct {
