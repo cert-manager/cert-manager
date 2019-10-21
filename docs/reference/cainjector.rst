@@ -12,4 +12,4 @@ APIService resources annotated with:
   Injects the CA from the specified :doc:`certificate </reference/certificates>`.
 * ``cert-manager.io/inject-ca-from-secret: <NAMESPACE>/<SECRET>``  
   Injects the CA from the specified `secret <https://kubernetes.io/docs/concepts/configuration/secret/>`_.  
-  the secret is needed the ``cert-manager.io/allow-direct-injection: "true"`` annotation
+  The secret resource must have the ``cert-manager.io/allow-direct-injection: "true"`` annotation to allow it to be injected into other resources.
