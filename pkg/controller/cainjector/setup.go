@@ -114,19 +114,7 @@ func RegisterCertificateBased(mgr ctrl.Manager) error {
 	sources := []caDataSource{
 		&certificateDataSource{client: mgr.GetClient()},
 	}
-	for _, setup := range injectorSetups {
-		if err := Register(mgr, setup, sources...); err != nil {
-			if meta.IsNoMatchError(err) {
-				ctrl.Log.Error(err, "failed to register certificate based injector."+
-					" this is most probably due to the apiserver not knowing about the specific type",
-					"injector", setup)
-			} else {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return registerGeneric(mgr, sources...)
 }
 
 // RegisterSecretBased registers all known injection controllers that
@@ -139,17 +127,26 @@ func RegisterSecretBased(mgr ctrl.Manager) error {
 		&secretDataSource{client: mgr.GetClient()},
 		&kubeconfigDataSource{},
 	}
+	return registerGeneric(mgr, sources...)
+}
+
+func registerGeneric(mgr ctrl.Manager, sources ...caDataSource) error {
 	for _, setup := range injectorSetups {
 		if err := Register(mgr, setup, sources...); err != nil {
 			if meta.IsNoMatchError(err) {
-				ctrl.Log.Error(err, "failed to register secret based injector."+
-					" this is most probably due to the apiserver not knowing about the specific type",
-					"injector", setup)
+				if setup.injector.IsAlpha() {
+					ctrl.Log.Info("unable to register injector which is still in an alpha phase."+
+						" Enable the feature on the API server in order to use this injector",
+						"injector", setup)
+				} else {
+					ctrl.Log.Error(err,
+						"failed to register certificate based injector.",
+						"injector", setup)
+				}
 			} else {
 				return err
 			}
 		}
 	}
-
 	return nil
 }
