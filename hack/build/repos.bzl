@@ -2213,6 +2213,22 @@ def go_repositories():
         version = "v3.0.0-20190905181640-827449938966",
     )
     go_repository(
+        name = "com_github_dnaeon_go_vcr",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/dnaeon/go-vcr",
+        sum = "h1:r8L/HqC0Hje5AXMu1ooW8oyQyOFv4GxqpL0nRP7SLLY=",
+        version = "v1.0.1",
+    )
+    go_repository(
+        name = "com_github_nesv_go_dynect",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/nesv/go-dynect",
+        sum = "h1:Ow/DiSm4LAISwnFku/FITSQHnU6pBvhQMsUE5Gu6Oq4=",
+        version = "v0.6.0",
+    )
+    go_repository(
         name = "com_github_docopt_docopt_go",
         build_file_generation = "on",
         build_file_proto_mode = "disable",

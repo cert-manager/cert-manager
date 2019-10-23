@@ -43,6 +43,7 @@ require (
 	github.com/cpu/goacmedns v0.0.0-20180701200144-565ecf2a84df
 	github.com/denisenkom/go-mssqldb v0.0.0-20190412130859-3b1d194e553a // indirect
 	github.com/digitalocean/godo v1.6.0
+	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/duosecurity/duo_api_golang v0.0.0-20190308151101-6c680f768e74 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
@@ -78,6 +79,7 @@ require (
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
+	github.com/nesv/go-dynect v0.6.0
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect

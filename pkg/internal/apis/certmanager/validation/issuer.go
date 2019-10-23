@@ -305,6 +305,23 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			}
 		}
 	}
+	if p.DynDNS != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("dyndns"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			if len(p.DynDNS.CustomerName) == 0 {
+				el = append(el, field.Required(fldPath.Child("dyndns", "customerName"), ""))
+			}
+
+			if len(p.DynDNS.Username) == 0 {
+				el = append(el, field.Required(fldPath.Child("dyndns", "username"), ""))
+			}
+
+			el = append(el, ValidateSecretKeySelector(&p.DynDNS.Password, fldPath.Child("dyndns", "passwordSecretRef"))...)
+
+		}
+	}
 	if p.Route53 != nil {
 		if numProviders > 0 {
 			el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))

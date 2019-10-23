@@ -177,6 +177,8 @@ type ACMEChallengeSolverDNS01 struct {
 	// +optional
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 
+	DynDNS *ACMEIssuerDNS01ProviderDynDNS `json:"dyndns,omitempty"`
+
 	// +optional
 	Route53 *ACMEIssuerDNS01ProviderRoute53 `json:"route53,omitempty"`
 
@@ -242,6 +244,15 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
 	Token cmmeta.SecretKeySelector `json:"tokenSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderDynDNS is a structure containing the DNS
+// configuration for DynDNS DNS—Zone Record Management API
+type ACMEIssuerDNS01ProviderDynDNS struct {
+	Username     string                   `json:"username"`
+	Password     cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+	CustomerName string                   `json:"customerName"`
+	ZoneName     string                   `json:"zonename"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53

@@ -39,6 +39,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dyndns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -67,6 +68,7 @@ type dnsProviderConstructors struct {
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	dynDNS       func(dynCustomerName string, dynUsername string, dynPassword string, dynZoneName string) (*dyndns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -278,6 +280,20 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
 		}
+	case providerConfig.DynDNS != nil:
+		dynPassword, err := s.loadSecretData(&providerConfig.DynDNS.Password, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting dyn password")
+		}
+
+		impl, err = dyndns.NewDNSProviderCredentials(
+			providerConfig.DynDNS.CustomerName,
+			providerConfig.DynDNS.Username,
+			string(dynPassword),
+			providerConfig.DynDNS.ZoneName)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error instantiating Dyn challenge solver")
+		}
 	case providerConfig.Route53 != nil:
 		dbg.Info("preparing to create Route53 provider")
 		secretAccessKey := ""
@@ -460,6 +476,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			digitalocean.NewDNSProviderCredentials,
+			dyndns.NewDNSProviderCredentials,
 		},
 		webhookSolvers: initialized,
 	}, nil
