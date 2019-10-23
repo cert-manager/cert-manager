@@ -149,7 +149,7 @@ func (i auditSinkTarget) NewTarget() InjectTarget {
 }
 
 func (i auditSinkTarget) IsAlpha() bool {
-	// TODO remove this when auditregistration goes GA
+	// TODO set this to false when auditregistration goes GA
 	return true
 }
 
