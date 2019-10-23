@@ -186,7 +186,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
 			updateCrt.Spec.IssuerRef.Group = issuerGroup
-			updateCrt.Spec.CommonName = ""
+//			updateCrt.Spec.CommonName = ""
 			updateCrt.Labels = ing.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
 			if err != nil {
