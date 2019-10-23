@@ -31,11 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmvault "github.com/jetstack/cert-manager/pkg/apis/vault/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
@@ -275,6 +277,21 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1b
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
+	}
+
+	// for Vault issuers
+	keySizeVal, _ := ingAnnotations[cmvault.IngressCertificateKeySizeAnnotationKey]
+	logf.Log.Info("setting issuer specific config", "keySizeVal", keySizeVal)
+	keySize, err := strconv.Atoi(keySizeVal)
+	if err != nil {
+		keySize = 2048
+		logf.Log.Info("error while converting value", "keySize", keySize)
+	}
+
+	if keySize != 2048 {
+		logf.Log.Info("keySize is not 2048", "keySize", keySize)
+		crt.Spec.KeySize = keySize
+		logf.Log.Info("set crt.Spec.KeySize", "crt.Spec.KeySize", crt.Spec.KeySize)
 	}
 
 	// for ACME issuers
