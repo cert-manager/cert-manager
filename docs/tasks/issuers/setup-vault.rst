@@ -237,7 +237,7 @@ authentication method.
         caBundle: <base64 encoded caBundle PEM file>
         auth:
           kubernetes:
-            path: /kubernetes/cluster-1
+            mountPath: /kubernetes/cluster-1
             role: my-app-1
             secretRef:
               name: my-service-account-secret
