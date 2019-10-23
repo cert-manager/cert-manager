@@ -144,6 +144,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			},
 			Spec: cmapi.CertificateSpec{
 				DNSNames:   tls.Hosts,
+				CommonName: tls.Hosts[0],
 				SecretName: tls.SecretName,
 				IssuerRef: cmmeta.ObjectReference{
 					Name:  issuerName,
@@ -186,7 +187,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
 			updateCrt.Spec.IssuerRef.Group = issuerGroup
-//			updateCrt.Spec.CommonName = ""
+			updateCrt.Spec.CommonName = tls.Hosts[0]
 			updateCrt.Labels = ing.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
 			if err != nil {
