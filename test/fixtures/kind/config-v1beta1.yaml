@@ -14,5 +14,7 @@ kubeadmConfigPatches:
       name: config
     networking:
       serviceSubnet: 10.0.0.0/16
+    featureGates:
+      PodSecurityPolicy: true
 nodes:
 - role: control-plane

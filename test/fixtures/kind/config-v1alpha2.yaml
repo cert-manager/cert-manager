@@ -18,5 +18,7 @@ kubeadmConfigPatches:
       baseConfig:
         clusterDNS:
         - 10.0.0.10
+    featureGates:
+      PodSecurityPolicy: true
 nodes:
 - role: control-plane
