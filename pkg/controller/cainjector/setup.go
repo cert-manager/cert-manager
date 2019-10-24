@@ -70,8 +70,31 @@ var (
 	ControllerNames []string
 )
 
-// Register registers an injection controller with the given manager, and adds relevant indices.
-func Register(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
+// registerAllInjectors registers all injectors and based on the
+// graduation state of the injector decides how to log no kind/resource match errors
+func registerAllInjectors(mgr ctrl.Manager, sources ...caDataSource) error {
+	for _, setup := range injectorSetups {
+		if err := registerInjector(mgr, setup, sources...); err != nil {
+			if meta.IsNoMatchError(err) {
+				if setup.injector.IsAlpha() {
+					ctrl.Log.Info("unable to register injector which is still in an alpha phase."+
+						" Enable the feature on the API server in order to use this injector",
+						"injector", setup)
+				} else {
+					ctrl.Log.Error(err,
+						"failed to register certificate based injector.",
+						"injector", setup)
+				}
+			} else {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// registerInjector registers an injection controller with the given manager, and adds relevant indicies.
+func registerInjector(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
 	typ := setup.injector.NewTarget().AsObject()
 	builder := ctrl.NewControllerManagedBy(mgr).For(typ)
 	for _, s := range sources {
@@ -114,7 +137,7 @@ func RegisterCertificateBased(mgr ctrl.Manager) error {
 	sources := []caDataSource{
 		&certificateDataSource{client: mgr.GetClient()},
 	}
-	return registerGeneric(mgr, sources...)
+	return registerAllInjectors(mgr, sources...)
 }
 
 // RegisterSecretBased registers all known injection controllers that
@@ -127,26 +150,5 @@ func RegisterSecretBased(mgr ctrl.Manager) error {
 		&secretDataSource{client: mgr.GetClient()},
 		&kubeconfigDataSource{},
 	}
-	return registerGeneric(mgr, sources...)
-}
-
-func registerGeneric(mgr ctrl.Manager, sources ...caDataSource) error {
-	for _, setup := range injectorSetups {
-		if err := Register(mgr, setup, sources...); err != nil {
-			if meta.IsNoMatchError(err) {
-				if setup.injector.IsAlpha() {
-					ctrl.Log.Info("unable to register injector which is still in an alpha phase."+
-						" Enable the feature on the API server in order to use this injector",
-						"injector", setup)
-				} else {
-					ctrl.Log.Error(err,
-						"failed to register certificate based injector.",
-						"injector", setup)
-				}
-			} else {
-				return err
-			}
-		}
-	}
-	return nil
+	return registerAllInjectors(mgr, sources...)
 }
