@@ -38,6 +38,9 @@ import (
 )
 
 var (
+	// defaultScheme is used to encode and decode the AdmissionReview and
+	// ConversionReview resources submitted to the webhook server.
+	// It is not used for performing validation, mutation or conversion.
 	defaultScheme = runtime.NewScheme()
 )
 
@@ -71,7 +74,8 @@ type Server struct {
 
 	// Scheme is used to decode/encode request/response payloads.
 	// If not specified, a default scheme that registers the AdmissionReview
-	// resource type will be used.
+	// and ConversionReview resource types will be used.
+	// It is not used for performing validation, mutation or conversion.
 	Scheme *runtime.Scheme
 
 	// If specified, the server will listen with TLS using certificates
