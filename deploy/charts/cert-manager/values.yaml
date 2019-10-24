@@ -149,6 +149,13 @@ webhook:
   # see https://github.com/kubernetes/kubernetes/pull/62649
   injectAPIServerCA: true
 
+  # The port that the webhook should listen on for requests.
+  # In GKE private clusters, by default kubernetes apiservers are allowed to
+  # talk to the cluster nodes only on 443 and 10250. so configuring
+  # securePort: 10250, will work out of the box without needing to add firewall
+  # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000
+  securePort: 10250
+
 cainjector:
   enabled: true
 
