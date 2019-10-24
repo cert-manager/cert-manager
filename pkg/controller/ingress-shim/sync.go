@@ -31,11 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmvault "github.com/jetstack/cert-manager/pkg/apis/vault/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
@@ -150,6 +152,10 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 				},
 			},
 		}
+			// if a dnsHost has been specified and the commonName is empty add it to the commonName of the cert as well.
+			if len(crt.Spec.CommonName) == 0 && len(tls.Hosts) > 0 {
+				crt.Spec.CommonName = tls.Hosts[0]
+			}
 
 		err = c.setIssuerSpecificConfig(crt, ing, tls)
 		if err != nil {
@@ -184,7 +190,10 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
 			updateCrt.Spec.IssuerRef.Group = issuerGroup
-			updateCrt.Spec.CommonName = ""
+			// if a dnsHost has been specified and the commonName is empty add it to the commonName of the cert as well.
+			if len(updateCrt.Spec.CommonName) == 0 && len(tls.Hosts) > 0 {
+				updateCrt.Spec.CommonName = tls.Hosts[0]
+			}
 			updateCrt.Labels = ing.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
 			if err != nil {
@@ -275,6 +284,24 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1b
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
+	}
+
+	// for Vault issuers
+	keySizeVal, _ := ingAnnotations[cmvault.IngressCertificateKeySizeAnnotationKey]
+	logf.Log.Info("setting issuer specific config", "keySizeVal", keySizeVal)
+
+	// attempt to convert the string value of the annotation to an integer.
+	// if it fails, just set the default to 2048
+	keySize, err := strconv.Atoi(keySizeVal)
+	if err != nil {
+		keySize = 0
+		logf.Log.Info("error while converting value", "keySize", keySize)
+	}
+
+	if keySize != 0 {
+		// if the keySize isn't 0 pass it on to the crt.
+		crt.Spec.KeySize = keySize
+		logf.Log.Info("set crt.Spec.KeySize", "crt.Spec.KeySize", crt.Spec.KeySize)
 	}
 
 	// for ACME issuers
