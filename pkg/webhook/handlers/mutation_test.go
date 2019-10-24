@@ -24,6 +24,7 @@ import (
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/diff"
 
@@ -52,6 +53,7 @@ func TestDefaultCertificate(t *testing.T) {
 	tests := map[string]admissionTestT{
 		"apply defaults to TestType": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
+				UID: types.UID("abc"),
 				Object: runtime.RawExtension{
 					Raw: []byte(`
 {
@@ -67,6 +69,7 @@ func TestDefaultCertificate(t *testing.T) {
 				},
 			},
 			expectedResponse: admissionv1beta1.AdmissionResponse{
+				UID:     types.UID("abc"),
 				Allowed: true,
 				Patch: responseForOperations(
 					jsonpatch.JsonPatchOperation{
