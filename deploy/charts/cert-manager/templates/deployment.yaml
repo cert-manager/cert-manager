@@ -6,7 +6,7 @@ metadata:
   labels:
     app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 spec:
@@ -15,7 +15,7 @@ spec:
     matchLabels:
       app: {{ template "cert-manager.name" . }}
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-      app.kubernetes.io/instance:  {{ .Release.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/managed-by: {{ .Release.Service }}
   {{- with .Values.strategy }}
   strategy:
@@ -26,7 +26,7 @@ spec:
       labels:
         app: {{ template "cert-manager.name" . }}
         app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-        app.kubernetes.io/instance:  {{ .Release.Name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
         helm.sh/chart: {{ template "cert-manager.chart" . }}
 {{- if .Values.podLabels }}
