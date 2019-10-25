@@ -26,17 +26,6 @@ webhooks:
     rules:
       - apiGroups:
           - "cert-manager.io"
-        apiVersions:
-          - v1alpha2
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - certificates
-          - issuers
-          - clusterissuers
-          - certificaterequests
-      - apiGroups:
           - "acme.cert-manager.io"
         apiVersions:
           - v1alpha2
@@ -44,8 +33,7 @@ webhooks:
           - CREATE
           - UPDATE
         resources:
-          - orders
-          - challenges
+          - "*/*"
     failurePolicy: Fail
     sideEffects: None
     clientConfig:
