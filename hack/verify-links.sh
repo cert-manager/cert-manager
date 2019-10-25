@@ -36,7 +36,7 @@ elif ! command -v bazel &> /dev/null; then
 else
   (
     set -o xtrace
-    bazel test --test_output=streamed @com_github_jetstack_cert_manager//hack:verify-links
+    bazel test --test_output=streamed //hack:verify-links
   )
   exit 0
 fi

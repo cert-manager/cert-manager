@@ -26,7 +26,7 @@ elif ! command -v bazel &>/dev/null; then
 else
   (
     set -o xtrace
-    bazel run @com_github_jetstack_cert_manager//hack:update-crds
+    bazel run //hack:update-crds
   )
   exit 0
 fi
