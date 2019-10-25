@@ -1,5 +1,19 @@
 package(default_visibility = ["//visibility:public"])
 
+GAZELLE = "@bazel_gazelle//cmd/gazelle"
+
+KAZEL = "@io_k8s_repo_infra//cmd/kazel"
+
+GO = "@go_sdk//:bin/go"
+
+GOROOT = "@go_sdk//:files"
+
+GOFMT = "@go_sdk//:bin/gofmt"
+
+JQ = "@com_github_jetstack_cert_manager//hack/bin:jq"
+
+CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
+
 # General repo verification targets
 
 py_test(
@@ -28,16 +42,6 @@ sh_test(
     ],
     tags = ["lint"],
 )
-
-GAZELLE = "@bazel_gazelle//cmd/gazelle"
-
-KAZEL = "@io_k8s_repo_infra//cmd/kazel"
-
-GO = "@go_sdk//:bin/go"
-
-GOROOT = "@go_sdk//:files"
-
-JQ = "@com_github_jetstack_cert_manager//hack/bin:jq"
 
 # Bazel file generation rules
 
@@ -240,8 +244,6 @@ sh_test(
 
 # Gofmt rules
 
-GOFMT = "@go_sdk//:bin/gofmt"
-
 sh_binary(
     name = "update-gofmt",
     srcs = ["update-gofmt.sh"],
@@ -269,19 +271,28 @@ sh_binary(
     name = "update-crds",
     srcs = ["update-crds.sh"],
     args = [
-        "$(location @//deploy/manifests:crds.yaml.generated)",
+        "$(location %s)" % GO,
+        "$(location %s)" % CONTROLLER_GEN,
     ],
     data = [
-        "@//deploy/manifests:crds.yaml.generated",
+        GO,
+        CONTROLLER_GEN,
     ],
 )
 
 sh_test(
     name = "verify-crds",
     srcs = ["verify-crds.sh"],
+    args = [
+        "$(location :update-crds)",
+        "$(location %s)" % GO,
+        "$(location %s)" % CONTROLLER_GEN,
+    ],
     data = [
-        "@//deploy/manifests:00-crds.yaml",
-        "@//deploy/manifests:crds.yaml.generated",
+        ":update-crds",
+        GO,
+        CONTROLLER_GEN,
+        "@//:all-srcs",
     ],
 )
 

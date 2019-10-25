@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
 set -o nounset
+set -o errexit
 set -o pipefail
 
 if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
-  echo "Checking modules for changes..." >&2
+  echo "Verifyig generated CRD manifests are up-to-date..." >&2
 elif ! command -v bazel &>/dev/null; then
   echo "Install bazel at https://bazel.build" >&2
   exit 1
@@ -31,14 +30,36 @@ else
   exit 0
 fi
 
-MANIFESTS_DIR="deploy/manifests"
+tmpfiles=$TEST_TMPDIR/files
 
-ret=0
-diff -Naupr "${MANIFESTS_DIR}/00-crds.yaml" "${MANIFESTS_DIR}/crds.yaml.generated" || ret=$?
-if [[ $ret -eq 0 ]]
-then
-  echo "${MANIFESTS_DIR}/00-crds.yaml up to date."
-else
-  echo "${MANIFESTS_DIR}/00-crds.yaml is out of date. Please run 'bazel run //hack:update-crds"
+(
+  mkdir -p "$tmpfiles"
+  rm -f bazel-*
+  cp -aL "." "$tmpfiles"
+  export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
+  export HOME=$(realpath "$TEST_TMPDIR/home")
+  unset GOPATH
+  go=$(realpath "$2")
+  export PATH=$(dirname "$go"):$PATH
+  "$@"
+)
+
+(
+  # Remove the platform/binary for gazelle and kazel
+  controllergen=$(dirname "$3")
+  rm -rf {.,"$tmpfiles"}/{"controllergen"}
+)
+# Avoid diff -N so we handle empty files correctly
+diff=$(diff -upr \
+  -x ".git" \
+  -x "bazel-*" \
+  -x "_output" \
+  "." "$tmpfiles" 2>/dev/null || true)
+
+if [[ -n "${diff}" ]]; then
+  echo "${diff}" >&2
+  echo >&2
+  echo "generated CRDs are out of date. Please run './hack/update-crds.sh'" >&2
   exit 1
 fi
+echo "SUCCESS: generated CRDs up-to-date"
