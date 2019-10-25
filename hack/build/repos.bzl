@@ -1408,8 +1408,9 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/prometheus/client_golang",
-        sum = "h1:vrDKnkGzuGvhNAL56c7DBz29ZL+KxnoR0x7enabFceM=",
-        version = "v1.0.0",
+        replace = "github.com/prometheus/client_golang",
+        sum = "h1:Y8E/JaaPbmFSW2V81Ab/d8yZFYQQGbni1b1jPcG9Y6A=",
+        version = "v0.9.4",
     )
     go_repository(
         name = "com_github_prometheus_client_model",

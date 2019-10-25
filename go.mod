@@ -14,6 +14,12 @@ replace (
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190918161219-8c8f079fddc3
 )
 
+replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
+
+replace github.com/munnerz/goautoneg => github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30
+
+replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.4
+
 require (
 	cloud.google.com/go v0.38.0
 	github.com/Azure/azure-sdk-for-go v32.5.0+incompatible
@@ -112,7 +118,3 @@ require (
 	sigs.k8s.io/controller-tools v0.2.2
 	sigs.k8s.io/testing_frameworks v0.1.1
 )
-
-replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
-
-replace github.com/munnerz/goautoneg => github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30
