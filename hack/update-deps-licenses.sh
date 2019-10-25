@@ -44,7 +44,7 @@ elif ! command -v bazel &>/dev/null; then
 else
   (
     set -o xtrace
-    bazel run @com_github_jetstack_cert_manager//hack:update-deps-licenses -- "$@"
+    bazel run //hack:update-deps-licenses -- "$@"
   )
   exit 0
 fi
