@@ -90,3 +90,33 @@ Create chart name and version as used by the chart label.
 {{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 51 | trimSuffix "-" -}}
 {{ printf "%s-webhook-tls" $trimmedName }}
 {{- end -}}
+
+{{/*
+cainjector templates
+*/}}
+
+{{/*
+Expand the name of the chart.
+Manually fix the 'app' and 'name' labels to 'cainjector' to maintain
+compatibility with the v0.9 deployment selector.
+*/}}
+{{- define "cainjector.name" -}}
+{{- printf "cainjector" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "cainjector.fullname" -}}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 52 | trimSuffix "-" -}}
+{{- printf "%s-cainjector" $trimmedName | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "cainjector.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}

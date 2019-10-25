@@ -6,7 +6,7 @@ metadata:
   labels:
     app: {{ template "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
-    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "cainjector.chart" . }}
 rules:
@@ -36,7 +36,7 @@ metadata:
   labels:
     app: {{ template "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
-    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "cainjector.chart" . }}
 roleRef:
@@ -58,7 +58,7 @@ metadata:
   labels:
     app: {{ template "cainjector.name" . }}
     app.kubernetes.io/name: {{ template "cainjector.name" . }}
-    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cainjector.chart" . }}
 rules:
@@ -80,7 +80,7 @@ metadata:
   labels:
     app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
-    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "cainjector.chart" . }}
 roleRef:
