@@ -6,7 +6,7 @@ A 'CertificateRequest' is a resource in cert-manager that is used to request
 x509 certificates from an issuer. The resource contains a base64 encoded string
 of a PEM encoded certificate request which is sent to the referenced issuer. A
 successful issuance will return a signed certificate, based on the certificate
-signing request. 'CertificateRequets' are typically consumed and managed by
+signing request. 'CertificateRequests' are typically consumed and managed by
 controllers or other systems and should not be used by humans - unless
 specifically needed.
 
