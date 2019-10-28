@@ -20,7 +20,7 @@ To install the chart with the release name `my-release`:
 ```console
 ## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
 ## cert-manager Helm chart
-$ kubectl apply \
+$ kubectl apply --validate=false\
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
 
 ## If you are installing on openshift :
