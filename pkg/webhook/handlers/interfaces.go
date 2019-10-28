@@ -18,6 +18,7 @@ package handlers
 
 import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
 type ValidatingAdmissionHook interface {
@@ -30,4 +31,9 @@ type MutatingAdmissionHook interface {
 	// Admit is called to decide whether to accept the admission request. The returned AdmissionResponse may
 	// use the Patch field to mutate the object from the passed AdmissionRequest.
 	Mutate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
+}
+
+type ConversionHook interface {
+	// Convert is called to convert a resource in one version into a different version.
+	Convert(conversionSpec *apiextensionsv1beta1.ConversionRequest) *apiextensionsv1beta1.ConversionResponse
 }

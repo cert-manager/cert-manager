@@ -27,6 +27,7 @@ import (
 
 	"github.com/go-logr/logr"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,11 +38,15 @@ import (
 )
 
 var (
+	// defaultScheme is used to encode and decode the AdmissionReview and
+	// ConversionReview resources submitted to the webhook server.
+	// It is not used for performing validation, mutation or conversion.
 	defaultScheme = runtime.NewScheme()
 )
 
 func init() {
 	admissionv1beta1.AddToScheme(defaultScheme)
+	apiextensionsv1beta1.AddToScheme(defaultScheme)
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
@@ -69,7 +74,8 @@ type Server struct {
 
 	// Scheme is used to decode/encode request/response payloads.
 	// If not specified, a default scheme that registers the AdmissionReview
-	// resource type will be used.
+	// and ConversionReview resource types will be used.
+	// It is not used for performing validation, mutation or conversion.
 	Scheme *runtime.Scheme
 
 	// If specified, the server will listen with TLS using certificates
@@ -78,6 +84,7 @@ type Server struct {
 
 	ValidationWebhook handlers.ValidatingAdmissionHook
 	MutationWebhook   handlers.MutatingAdmissionHook
+	ConversionWebhook handlers.ConversionHook
 
 	// Log is an optional logger to write informational and error messages to.
 	// If not specified, no messages will be logged.
@@ -137,6 +144,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/validate", s.handle(s.validate))
 	mux.HandleFunc("/mutate", s.handle(s.mutate))
+	mux.HandleFunc("/convert", s.handle(s.convert))
 	listenerChan := s.startServer(l, internalStopCh, mux)
 
 	if certSourceChan == nil {
@@ -241,6 +249,13 @@ func (s *Server) validate(obj runtime.Object) runtime.Object {
 func (s *Server) mutate(obj runtime.Object) runtime.Object {
 	review := obj.(*admissionv1beta1.AdmissionReview)
 	resp := s.MutationWebhook.Mutate(review.Request)
+	review.Response = resp
+	return review
+}
+
+func (s *Server) convert(obj runtime.Object) runtime.Object {
+	review := obj.(*apiextensionsv1beta1.ConversionReview)
+	resp := s.ConversionWebhook.Convert(review.Request)
 	review.Response = resp
 	return review
 }

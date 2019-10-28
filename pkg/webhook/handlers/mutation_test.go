@@ -24,6 +24,7 @@ import (
 	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
 	"k8s.io/utils/diff"
 
@@ -49,9 +50,10 @@ func TestDefaultCertificate(t *testing.T) {
 
 	log := klogr.New()
 	c := NewSchemeBackedDefaulter(log, scheme)
-	tests := map[string]testT{
+	tests := map[string]admissionTestT{
 		"apply defaults to TestType": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
+				UID: types.UID("abc"),
 				Object: runtime.RawExtension{
 					Raw: []byte(`
 {
@@ -67,6 +69,7 @@ func TestDefaultCertificate(t *testing.T) {
 				},
 			},
 			expectedResponse: admissionv1beta1.AdmissionResponse{
+				UID:     types.UID("abc"),
 				Allowed: true,
 				Patch: responseForOperations(
 					jsonpatch.JsonPatchOperation{
@@ -92,19 +95,19 @@ func TestDefaultCertificate(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			runTest(t, c.Mutate, test)
+			runAdmissionTest(t, c.Mutate, test)
 		})
 	}
 }
 
-type testT struct {
+type admissionTestT struct {
 	inputRequest     admissionv1beta1.AdmissionRequest
 	expectedResponse admissionv1beta1.AdmissionResponse
 }
 
-type admitFn func(request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
+type admissionFn func(request *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse
 
-func runTest(t *testing.T, fn admitFn, test testT) {
+func runAdmissionTest(t *testing.T, fn admissionFn, test admissionTestT) {
 	resp := fn(&test.inputRequest)
 	if !reflect.DeepEqual(&test.expectedResponse, resp) {
 		t.Errorf("Response was not as expected: %v", diff.ObjectGoPrintSideBySide(&test.expectedResponse, resp))

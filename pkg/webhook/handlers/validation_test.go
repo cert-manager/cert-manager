@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
 
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
@@ -46,9 +47,10 @@ func TestFuncBackedValidator(t *testing.T) {
 		Version: v1.SchemeGroupVersion.Version,
 		Kind:    "TestType",
 	}
-	tests := map[string]testT{
+	tests := map[string]admissionTestT{
 		"should not allow invalid value for 'testField' field": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
+				UID:  types.UID("abc"),
 				Kind: testTypeGVK,
 				Object: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
@@ -66,6 +68,7 @@ func TestFuncBackedValidator(t *testing.T) {
 				},
 			},
 			expectedResponse: admissionv1beta1.AdmissionResponse{
+				UID:     types.UID("abc"),
 				Allowed: false,
 				Result: &metav1.Status{
 					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
@@ -152,7 +155,7 @@ func TestFuncBackedValidator(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			runTest(t, c.Validate, test)
+			runAdmissionTest(t, c.Validate, test)
 		})
 	}
 }

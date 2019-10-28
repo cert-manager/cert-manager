@@ -94,6 +94,7 @@ type UpdateValidationFunc func(old, new runtime.Object) field.ErrorList
 
 func (c *funcBackedValidator) Validate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	status := &admissionv1beta1.AdmissionResponse{}
+	status.UID = admissionSpec.UID
 
 	gk := schema.GroupKind{Group: admissionSpec.Kind.Group, Kind: admissionSpec.Kind.Kind}
 	validator := c.validators[gk]

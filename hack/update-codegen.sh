@@ -41,6 +41,7 @@ deepcopy_inputs=(
   pkg/internal/apis/acme \
   pkg/apis/meta/v1 \
   pkg/internal/apis/meta \
+  pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup \
   pkg/acme/webhook/apis/acme/v1alpha1 \
@@ -59,6 +60,7 @@ defaulter_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
   pkg/internal/apis/acme/v1alpha2 \
   pkg/internal/apis/meta/v1 \
+  pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
 )
 
@@ -67,6 +69,7 @@ conversion_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
   pkg/internal/apis/acme/v1alpha2 \
   pkg/internal/apis/meta/v1 \
+  pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
 )
 

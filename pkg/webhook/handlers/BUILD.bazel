@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "conversion.go",
         "interfaces.go",
         "mutation.go",
         "validation.go",
@@ -13,11 +14,13 @@ go_library(
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_mattbaird_jsonpatch//:go_default_library",
         "@io_k8s_api//admission/v1beta1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/versioning:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
     ],
 )
@@ -25,6 +28,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "conversion_test.go",
         "mutation_test.go",
         "validation_test.go",
     ],
@@ -36,9 +40,11 @@ go_test(
         "//pkg/webhook/handlers/testdata/apis/testgroup/validation:go_default_library",
         "@com_github_mattbaird_jsonpatch//:go_default_library",
         "@io_k8s_api//admission/v1beta1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_klog//klogr:go_default_library",
         "@io_k8s_utils//diff:go_default_library",
     ],

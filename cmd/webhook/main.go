@@ -48,6 +48,7 @@ func init() {
 
 var validationHook handlers.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, webhook.Scheme, webhook.Validators)
 var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
+var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
 func main() {
 	klog.InitFlags(flag.CommandLine)
@@ -74,6 +75,7 @@ func main() {
 		CertificateSource: source,
 		ValidationWebhook: validationHook,
 		MutationWebhook:   mutationHook,
+		ConversionWebhook: conversionHook,
 		Log:               log,
 	}
 	if err := srv.Run(stopCh); err != nil {

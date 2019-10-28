@@ -52,6 +52,7 @@ func NewSchemeBackedDefaulter(log logr.Logger, scheme *runtime.Scheme) *SchemeBa
 
 func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	status := &admissionv1beta1.AdmissionResponse{}
+	status.UID = admissionSpec.UID
 
 	// decode the raw object data
 	obj, _, err := c.codec.Decode(admissionSpec.Object.Raw, nil, nil)

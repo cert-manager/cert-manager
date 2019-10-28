@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,19 +22,17 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// TestType in v2 is identical to v1, except TestFieldPtr has been renamed to TestFieldPtrAlt
 type TestType struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
 	// TestField is used in tests.
 	// Validation doesn't allow this to be set to the value of TestFieldValueNotAllowed.
-	TestField    string  `json:"testField"`
-	TestFieldPtr *string `json:"testFieldPtr,omitempty"`
+	TestField string `json:"testField"`
+	// +optional
+	TestFieldPtrAlt *string `json:"testFieldPtrAlt,omitempty"`
 
 	// TestFieldImmutable cannot be changed after being set to a non-zero value
 	TestFieldImmutable string `json:"testFieldImmutable"`
 }
-
-const (
-	TestFieldValueNotAllowed = "not-allowed-value"
-)

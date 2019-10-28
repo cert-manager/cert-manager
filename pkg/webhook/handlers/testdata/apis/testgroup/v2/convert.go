@@ -14,22 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package install installs the API group, making it available as an option to
-// all of the API encoding/decoding machinery.
-package install
+package v2
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"unsafe"
+
+	"k8s.io/apimachinery/pkg/conversion"
 
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 )
 
-// Install registers the API group and adds types to a scheme
-func Install(scheme *runtime.Scheme) {
-	utilruntime.Must(testgroup.AddToScheme(scheme))
-	utilruntime.Must(v1.AddToScheme(scheme))
-	utilruntime.Must(v2.AddToScheme(scheme))
+func Convert_v2_TestType_To_testgroup_TestType(in *TestType, out *testgroup.TestType, s conversion.Scope) error {
+	if err := autoConvert_v2_TestType_To_testgroup_TestType(in, out, s); err != nil {
+		return err
+	}
+	out.TestFieldPtr = (*string)(unsafe.Pointer(in.TestFieldPtrAlt))
+	return nil
+}
+
+func Convert_testgroup_TestType_To_v2_TestType(in *testgroup.TestType, out *TestType, s conversion.Scope) error {
+	if err := autoConvert_testgroup_TestType_To_v2_TestType(in, out, s); err != nil {
+		return err
+	}
+	out.TestFieldPtrAlt = (*string)(unsafe.Pointer(in.TestFieldPtr))
+	return nil
 }
