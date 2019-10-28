@@ -125,6 +125,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.image.tag` | Webhook image tag | `v0.11.0` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.injectAPIServerCA` | if true, the apiserver's CABundle will be automatically injected into the ValidatingWebhookConfiguration resource | `true` |
+| `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |

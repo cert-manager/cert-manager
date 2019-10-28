@@ -47,7 +47,7 @@ spec:
           {{- if .Values.global.logLevel }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
-          - --secure-port=6443
+          - --secure-port={{ .Values.webhook.securePort }}
           - --tls-cert-file=/certs/tls.crt
           - --tls-private-key-file=/certs/tls.key
         {{- if .Values.webhook.extraArgs }}
