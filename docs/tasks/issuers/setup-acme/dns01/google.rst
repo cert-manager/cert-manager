@@ -35,10 +35,13 @@ To access this service account cert-manager uses a key stored in a Kubernetes Se
    gcloud iam service-accounts keys create key.json \
     --iam-account dns01-solver@$PROJECT_ID.iam.gserviceaccount.com
    kubectl create secret generic clouddns-dns01-solver-svc-acct \
-    --from-file=key.json --namespace=cert-manager
+    --from-file=key.json
 
 .. note::
    Keep the key file safe and do not share it, as it could be used to gain access to your cloud resources. The key file can be deleted once it has been used to generate the Secret.
+
+.. note::
+   You may need to specify namespace for this secret. If you're going to use then Issuer and Secret should have the same namespace. If you going to create ClusterIssuer - then Secret's namespace should be `cert-manager`.
 
 Create an Issuer That Uses CloudDNS
 ===================================
