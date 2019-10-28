@@ -7,8 +7,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = glob(["**/*"]) + [
+    srcs = [
         ":package-srcs",
+        "//deploy/manifests:all-srcs",
     ],
+    tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

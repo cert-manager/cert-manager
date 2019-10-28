@@ -31,13 +31,27 @@ else
   exit 0
 fi
 
-generated="$(pwd)/$1"
+go=$(realpath "$1")
+controllergen="$(realpath "$2")"
+export PATH=$(dirname "$go"):$PATH
 
 # This script should be run via `bazel run //hack:update-crds`
 REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY}
 cd "${REPO_ROOT}"
 
-cp "${generated}" ./deploy/manifests/00-crds.yaml
-chmod 644 ./deploy/manifests/00-crds.yaml
+"$controllergen" \
+  schemapatch:manifests=./deploy/charts/cert-manager/crds \
+  output:dir=./deploy/charts/cert-manager/crds \
+  paths=./pkg/apis/...
+
+out="./deploy/manifests/00-crds.yaml"
+rm "$out" || true
+touch "$out"
+for file in $(find "./deploy/charts/cert-manager/crds" -type f | sort -V); do
+  # concatenate all files while removing blank (^$) lines
+  < "$file" sed '/^$$/d' >> "$out"
+  printf -- "---\n" >> "$out"
+done
+chmod 644 "$out"
 
 echo "Generated 00-crds.yaml"
