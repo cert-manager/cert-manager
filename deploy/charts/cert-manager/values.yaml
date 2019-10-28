@@ -109,6 +109,33 @@ prometheus:
     scrapeTimeout: 30s
     labels: {}
 
+# Use these variables to configure the HTTP_PROXY environment variables
+# http_proxy: "http://proxy:8080"
+# http_proxy: "http://proxy:8080"
+# no_proxy: 127.0.0.1,localhost
+
+# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#affinity-v1-core
+# for example:
+#   affinity:
+#     nodeAffinity:
+#      requiredDuringSchedulingIgnoredDuringExecution:
+#        nodeSelectorTerms:
+#        - matchExpressions:
+#          - key: foo.bar.com/role
+#            operator: In
+#            values:
+#            - master
+affinity: {}
+
+# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#toleration-v1-core
+# for example:
+#   tolerations:
+#   - key: foo.bar.com/role
+#     operator: Equal
+#     value: master
+#     effect: NoSchedule
+tolerations: []
+
 webhook:
   enabled: true
   replicaCount: 1
@@ -157,31 +184,33 @@ webhook:
   securePort: 10250
 
 cainjector:
-  enabled: true
+  replicaCount: 1
 
-# Use these variables to configure the HTTP_PROXY environment variables
-# http_proxy: "http://proxy:8080"
-# http_proxy: "http://proxy:8080"
-# no_proxy: 127.0.0.1,localhost
+  strategy: {}
+    # type: RollingUpdate
+    # rollingUpdate:
+    #   maxSurge: 0
+    #   maxUnavailable: 1
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#affinity-v1-core
-# for example:
-#   affinity:
-#     nodeAffinity:
-#      requiredDuringSchedulingIgnoredDuringExecution:
-#        nodeSelectorTerms:
-#        - matchExpressions:
-#          - key: foo.bar.com/role
-#            operator: In
-#            values:
-#            - master
-affinity: {}
+  podAnnotations: {}
 
-# expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#toleration-v1-core
-# for example:
-#   tolerations:
-#   - key: foo.bar.com/role
-#     operator: Equal
-#     value: master
-#     effect: NoSchedule
-tolerations: []
+  # Optional additional arguments for cainjector
+  extraArgs: []
+
+  resources: {}
+    # requests:
+    #   cpu: 10m
+    #   memory: 32Mi
+
+  nodeSelector: {}
+
+  affinity: {}
+
+  tolerations: []
+
+  image:
+    repository: quay.io/jetstack/cert-manager-cainjector
+    # Override the image tag to deploy by setting this variable.
+    # If no value is set, the chart's appVersion will be used.
+    # tag: canary
+    pullPolicy: IfNotPresent

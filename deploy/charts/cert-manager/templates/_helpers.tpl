@@ -42,12 +42,16 @@ Create the name of the service account to use
 {{- end -}}
 
 {{/*
+Webhook templates
+*/}}
+
+{{/*
 Expand the name of the chart.
 Manually fix the 'app' and 'name' labels to 'webhook' to maintain
 compatibility with the v0.9 deployment selector.
 */}}
 {{- define "webhook.name" -}}
-{{- printf "webhook" | trunc 63 | trimSuffix "-" -}}
+{{- printf "webhook" -}}
 {{- end -}}
 
 {{/*
@@ -56,16 +60,8 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "webhook.fullname" -}}
-{{- if .Values.fullnameOverride -}}
-{{- printf "%s-webhook" .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- printf "%s-webhook" .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s-webhook" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 55 | trimSuffix "-" -}}
+{{- printf "%s-webhook" $trimmedName | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -76,17 +72,51 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{- define "webhook.selfSignedIssuer" -}}
-{{ printf "%s-selfsign" (include "webhook.fullname" .) }}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 46 | trimSuffix "-" -}}
+{{ printf "%s-webhook-selfsign" $trimmedName }}
 {{- end -}}
 
 {{- define "webhook.rootCAIssuer" -}}
-{{ printf "%s-ca" (include "webhook.fullname" .) }}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 52 | trimSuffix "-" -}}
+{{ printf "%s-webhook-ca" $trimmedName }}
 {{- end -}}
 
 {{- define "webhook.rootCACertificate" -}}
-{{ printf "%s-ca" (include "webhook.fullname" .) }}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 52 | trimSuffix "-" -}}
+{{ printf "%s-webhook-ca" $trimmedName }}
 {{- end -}}
 
 {{- define "webhook.servingCertificate" -}}
-{{ printf "%s-tls" (include "webhook.fullname" .) }}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 51 | trimSuffix "-" -}}
+{{ printf "%s-webhook-tls" $trimmedName }}
+{{- end -}}
+
+{{/*
+cainjector templates
+*/}}
+
+{{/*
+Expand the name of the chart.
+Manually fix the 'app' and 'name' labels to 'cainjector' to maintain
+compatibility with the v0.9 deployment selector.
+*/}}
+{{- define "cainjector.name" -}}
+{{- printf "cainjector" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "cainjector.fullname" -}}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 52 | trimSuffix "-" -}}
+{{- printf "%s-cainjector" $trimmedName | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "cainjector.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

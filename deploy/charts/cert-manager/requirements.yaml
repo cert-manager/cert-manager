@@ -1,6 +1,0 @@
-# requirements.yaml
-dependencies:
-- name: cainjector
-  version: "v0.1.0"
-  repository: "file://cainjector"
-  condition: cainjector.enabled

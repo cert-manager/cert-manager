@@ -11,7 +11,7 @@ metadata:
   labels:
     app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
     prometheus: {{ .Values.prometheus.servicemonitor.prometheusInstance }}
@@ -23,7 +23,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
-      app.kubernetes.io/instance:  {{ .Release.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}
