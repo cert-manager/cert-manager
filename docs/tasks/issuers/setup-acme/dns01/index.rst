@@ -122,6 +122,7 @@ and provider specific notes regarding their usage.
    azuredns
    cloudflare
    google
+   dyndns
    route53
    digitalocean
    rfc2136
