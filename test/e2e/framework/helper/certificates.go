@@ -21,7 +21,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"math/bits"
+	"sort"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -199,11 +199,16 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		usages[v1alpha2.UsageCertSign] = true
 	}
 
-	if len(certificate.Spec.Usages) > 0 {
-		sumFoundUsages := bits.OnesCount(uint(cert.KeyUsage)) + len(cert.ExtKeyUsage)
-		if len(usages) != sumFoundUsages {
-			return nil, fmt.Errorf("Expected secret to have the same sum of KeyUsages and ExtKeyUsages [%d] as the number of Usages [%d] in Certificate", sumFoundUsages, len(usages))
-		}
+	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsages(certificate.Spec.Usages, certificate.Spec.IsCA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
+	}
+
+	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
+		certificateKeyUsages, certificateExtKeyUsages) {
+		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%v got=%v exp=%v got=%v",
+			certificateKeyUsages, cert.KeyUsage,
+			certificateExtKeyUsages, cert.ExtKeyUsage)
 	}
 
 	var dnsName string
@@ -233,6 +238,33 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 
 func (h *Helper) WaitCertificateIssuedValid(ns, name string, timeout time.Duration) error {
 	return h.WaitCertificateIssuedValidTLS(ns, name, timeout, nil)
+}
+
+func (h *Helper) keyUsagesMatch(aKU x509.KeyUsage, aEKU []x509.ExtKeyUsage,
+	bKU x509.KeyUsage, bEKU []x509.ExtKeyUsage) bool {
+	if aKU != bKU {
+		return false
+	}
+
+	if len(aEKU) != len(bEKU) {
+		return false
+	}
+
+	sort.SliceStable(aEKU, func(i, j int) bool {
+		return aEKU[i] < aEKU[j]
+	})
+
+	sort.SliceStable(bEKU, func(i, j int) bool {
+		return bEKU[i] < bEKU[j]
+	})
+
+	for i := range aEKU {
+		if aEKU[i] != bEKU[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Duration, rootCAPEM []byte) error {
