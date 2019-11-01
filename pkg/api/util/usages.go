@@ -18,6 +18,7 @@ package util
 
 import (
 	"crypto/x509"
+	"math/bits"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
@@ -61,4 +62,50 @@ func KeyUsageType(usage cmapi.KeyUsage) (x509.KeyUsage, bool) {
 func ExtKeyUsageType(usage cmapi.KeyUsage) (x509.ExtKeyUsage, bool) {
 	eu, ok := extKeyUsages[usage]
 	return eu, ok
+}
+
+// KeyUsageStrings returns the cmapi.KeyUsage and "unknown" if not found
+func KeyUsageStrings(usage x509.KeyUsage) []cmapi.KeyUsage {
+	var usageStr []cmapi.KeyUsage
+
+	for i := 0; i < bits.UintSize; i++ {
+		if v := usage & (1 << uint(i)); v != 0 {
+			usageStr = append(usageStr, keyUsageString(v))
+		}
+	}
+
+	return usageStr
+}
+
+// ExtKeyUsageStrings returns the cmapi.KeyUsage and "unknown" if not found
+func ExtKeyUsageStrings(usage []x509.ExtKeyUsage) []cmapi.KeyUsage {
+	var usageStr []cmapi.KeyUsage
+
+	for _, u := range usage {
+		usageStr = append(usageStr, extKeyUsageString(u))
+	}
+
+	return usageStr
+}
+
+// keyUsageString returns the cmapi.KeyUsage and "unknown" if not found
+func keyUsageString(usage x509.KeyUsage) cmapi.KeyUsage {
+	for k, v := range keyUsages {
+		if usage == v {
+			return k
+		}
+	}
+
+	return "unknown"
+}
+
+// extKeyUsageString returns the cmapi.ExtKeyUsage and "unknown" if not found
+func extKeyUsageString(usage x509.ExtKeyUsage) cmapi.KeyUsage {
+	for k, v := range extKeyUsages {
+		if usage == v {
+			return k
+		}
+	}
+
+	return "unknown"
 }
