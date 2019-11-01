@@ -185,20 +185,6 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
 	}
 
-	usages := make(map[v1alpha2.KeyUsage]bool)
-	for _, u := range certificate.Spec.Usages {
-		usages[u] = true
-	}
-	if certificate.Spec.IsCA {
-		if !cert.IsCA {
-			return nil, fmt.Errorf("Expected secret to have IsCA set to true, but was false")
-		}
-		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
-			return nil, fmt.Errorf("Expected secret to have x509.KeyUsageCertSign bit set but was not")
-		}
-		usages[v1alpha2.UsageCertSign] = true
-	}
-
 	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsages(certificate.Spec.Usages, certificate.Spec.IsCA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
@@ -206,7 +192,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 
 	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
 		certificateKeyUsages, certificateExtKeyUsages) {
-		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%v got=%v exp=%v got=%v",
+		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
 			certificateKeyUsages, cert.KeyUsage,
 			certificateExtKeyUsages, cert.ExtKeyUsage)
 	}
