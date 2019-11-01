@@ -190,6 +190,36 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
+	// Vault and ACME issuers will add server auth and client auth extended key
+	// usages by default so we need to add them to the list of expected usages
+	var addServerClientAuthUsages bool
+	switch certificate.Spec.IssuerRef.Kind {
+	case "ClusterIssuer":
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(certificate.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to find referenced ClusterIssuer %v: %s",
+				certificate.Spec.IssuerRef, err)
+		}
+
+		if issuerObj.Spec.ACME != nil || issuerObj.Spec.Vault != nil {
+			addServerClientAuthUsages = true
+		}
+	default:
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().Issuers(certificate.Namespace).Get(certificate.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to find referenced Issuer %v: %s",
+				certificate.Spec.IssuerRef, err)
+		}
+
+		if issuerObj.Spec.ACME != nil || issuerObj.Spec.Vault != nil {
+			addServerClientAuthUsages = true
+		}
+	}
+
+	if addServerClientAuthUsages {
+		certificateExtKeyUsages = append(certificateExtKeyUsages, x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
+	}
+
 	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
 		certificateKeyUsages, certificateExtKeyUsages) {
 		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",

@@ -22,7 +22,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"math/bits"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -131,25 +130,46 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateReques
 		expectedDNSName = expectedDNSNames[0]
 	}
 
-	usages := make(map[v1alpha2.KeyUsage]bool)
-	for _, u := range cr.Spec.Usages {
-		usages[u] = true
-	}
-	if cr.Spec.IsCA {
-		if !cert.IsCA {
-			return nil, fmt.Errorf("Expected csr cert to have IsCA set to true, but was false")
-		}
-		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
-			return nil, fmt.Errorf("Expected csr cert to have x509.KeyUsageCertSign bit set but was not")
-		}
-		usages[v1alpha2.UsageCertSign] = true
+	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
-	if len(cr.Spec.Usages) > 0 {
-		sumFoundUsages := bits.OnesCount(uint(cert.KeyUsage)) + len(cert.ExtKeyUsage)
-		if len(usages) != sumFoundUsages {
-			return nil, fmt.Errorf("Expected csr cert to have the same sum of KeyUsages and ExtKeyUsages [%d] as the number of Usages [%d] in Certificate", sumFoundUsages, len(usages))
+	// Vault and ACME issuers will add server auth and client auth extended key
+	// usages by default so we need to add them to the list of expected usages
+	var addServerClientAuthUsages bool
+	switch cr.Spec.IssuerRef.Kind {
+	case "ClusterIssuer":
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(cr.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to find referenced ClusterIssuer %v: %s",
+				cr.Spec.IssuerRef, err)
 		}
+
+		if issuerObj.Spec.ACME != nil || issuerObj.Spec.Vault != nil {
+			addServerClientAuthUsages = true
+		}
+	default:
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().Issuers(cr.Namespace).Get(cr.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to find referenced Issuer %v: %s",
+				cr.Spec.IssuerRef, err)
+		}
+
+		if issuerObj.Spec.ACME != nil || issuerObj.Spec.Vault != nil {
+			addServerClientAuthUsages = true
+		}
+	}
+
+	if addServerClientAuthUsages {
+		certificateExtKeyUsages = append(certificateExtKeyUsages, x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
+	}
+
+	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
+		certificateKeyUsages, certificateExtKeyUsages) {
+		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
+			apiutil.KeyUsageStrings(certificateKeyUsages), apiutil.KeyUsageStrings(cert.KeyUsage),
+			apiutil.ExtKeyUsageStrings(certificateExtKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
 	}
 
 	// TODO: move this verification step out of this function
