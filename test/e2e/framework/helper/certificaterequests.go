@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -37,8 +37,8 @@ import (
 
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
-func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Duration) (*v1alpha2.CertificateRequest, error) {
-	var cr *v1alpha2.CertificateRequest
+func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
+	var cr *cmapi.CertificateRequest
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
@@ -47,8 +47,8 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 			if err != nil {
 				return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 			}
-			isReady := apiutil.CertificateRequestHasCondition(cr, v1alpha2.CertificateRequestCondition{
-				Type:   v1alpha2.CertificateRequestConditionReady,
+			isReady := apiutil.CertificateRequestHasCondition(cr, cmapi.CertificateRequestCondition{
+				Type:   cmapi.CertificateRequestConditionReady,
 				Status: cmmeta.ConditionTrue,
 			})
 			if !isReady {
@@ -70,7 +70,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 // CertificateRequest has a certificate issued for it, and that the details on
 // the x509 certificate are correct as defined by the CertificateRequest's
 // spec.
-func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
+func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.CSRPEM: %s", err)
@@ -135,9 +135,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateReques
 		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
-	// Vault and ACME issuers will add server auth and client auth extended key
-	// usages by default so we need to add them to the list of expected usages
-	var addServerClientAuthUsages bool
+	var issuerSpec *cmapi.IssuerSpec
 	switch cr.Spec.IssuerRef.Kind {
 	case "ClusterIssuer":
 		issuerObj, err := h.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(cr.Spec.IssuerRef.Name, metav1.GetOptions{})
@@ -146,9 +144,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateReques
 				cr.Spec.IssuerRef, err)
 		}
 
-		if issuerObj.Spec.ACME != nil || issuerObj.Spec.Vault != nil {
-			addServerClientAuthUsages = true
-		}
+		issuerSpec = &issuerObj.Spec
 	default:
 		issuerObj, err := h.CMClient.CertmanagerV1alpha2().Issuers(cr.Namespace).Get(cr.Spec.IssuerRef.Name, metav1.GetOptions{})
 		if err != nil {
@@ -156,13 +152,18 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateReques
 				cr.Spec.IssuerRef, err)
 		}
 
-		if issuerObj.Spec.ACME != nil || issuerObj.Spec.Vault != nil {
-			addServerClientAuthUsages = true
-		}
+		issuerSpec = &issuerObj.Spec
 	}
 
-	if addServerClientAuthUsages {
+	// Vault and ACME issuers will add server auth and client auth extended key
+	// usages by default so we need to add them to the list of expected usages
+	if issuerSpec.ACME != nil || issuerSpec.Vault != nil {
 		certificateExtKeyUsages = append(certificateExtKeyUsages, x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
+	}
+
+	// Vault issuers will add key agreement key usage
+	if issuerSpec.Vault != nil {
+		certificateKeyUsages |= x509.KeyUsageKeyAgreement
 	}
 
 	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
