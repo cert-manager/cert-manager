@@ -351,26 +351,42 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthzURL)
 	if err != nil {
 		log.Error(err, "error waiting for authorization")
-
-		authErr, ok := err.(acmeapi.AuthorizationError)
-		if !ok {
-			return handleError(ch, err)
-		}
-
-		ch.Status.State = cmacme.State(authErr.Authorization.Status)
-		ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
-
-		c.recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", authErr)
-
-		// return nil here, as accepting the challenge did not error, the challenge
-		// simply failed
-		return nil
+		return c.handleAuthorizationError(ch, err)
 	}
 
 	ch.Status.State = cmacme.State(authorization.Status)
 	ch.Status.Reason = "Successfully authorized domain"
 	c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
 
+	return nil
+}
+
+func (c *controller) handleAuthorizationError(ch *cmacme.Challenge, err error) error {
+	authErr, ok := err.(acmeapi.AuthorizationError)
+	if !ok {
+		return handleError(ch, err)
+	}
+
+	var acmeCh *acmeapi.Challenge
+	for _, n := range authErr.Authorization.Challenges {
+		if n.URL == ch.Spec.URL {
+			acmeCh = n
+			break
+		}
+	}
+
+	// eventErr is a reference to the error that will be logged as an Event
+	ch.Status.State = cmacme.State(authErr.Authorization.Status)
+	if acmeCh != nil && acmeCh.Error != nil {
+		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", acmeCh.Error.Error())
+		err = acmeCh.Error
+	} else {
+		ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
+	}
+	c.recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", err)
+
+	// return nil here, as accepting the challenge did not error, the challenge
+	// simply failed
 	return nil
 }
 
