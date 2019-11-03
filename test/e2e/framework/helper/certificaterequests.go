@@ -135,7 +135,17 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
-	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(cr.Namespace, &cr.Spec.IssuerRef)
+	var keyAlg cmapi.KeyAlgorithm
+	switch csr.PublicKeyAlgorithm {
+	case x509.RSA:
+		keyAlg = cmapi.RSAKeyAlgorithm
+	case x509.ECDSA:
+		keyAlg = cmapi.ECDSAKeyAlgorithm
+	default:
+		return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
+	}
+
+	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(cr.Namespace, &cr.Spec.IssuerRef, keyAlg)
 	if err != nil {
 		return nil, err
 	}

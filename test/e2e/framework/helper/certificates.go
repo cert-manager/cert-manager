@@ -190,7 +190,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
-	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(certificate.Namespace, &certificate.Spec.IssuerRef)
+	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(certificate.Namespace, &certificate.Spec.IssuerRef, certificate.Spec.KeyAlgorithm)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func (h *Helper) WaitCertificateIssuedValid(ns, name string, timeout time.Durati
 	return h.WaitCertificateIssuedValidTLS(ns, name, timeout, nil)
 }
 
-func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectReference) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
+func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectReference, keyType cmapi.KeyAlgorithm) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 	var issuerSpec *cmapi.IssuerSpec
 	switch issuerRef.Kind {
 	case "ClusterIssuer":
@@ -272,6 +272,13 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 	// Venafi issue adds server auth key usage
 	if issuerSpec.Venafi != nil {
 		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth)
+	}
+
+	// If using DNS01 ACME issuer with ECDSA then remove key encipherment
+	if issuerSpec.ACME != nil &&
+		issuerSpec.ACME.Solvers[0].DNS01 != nil &&
+		(keyType == cmapi.ECDSAKeyAlgorithm || keyType == "") {
+		keyUsages &= (x509.KeyUsageKeyEncipherment ^ 1) // remove key encipherment bit if exists
 	}
 
 	return keyUsages, extKeyUsages, nil
