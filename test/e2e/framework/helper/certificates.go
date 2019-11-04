@@ -274,10 +274,8 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth)
 	}
 
-	// If using DNS01 ACME issuer with ECDSA then remove key encipherment
-	if issuerSpec.ACME != nil &&
-		issuerSpec.ACME.Solvers[0].DNS01 != nil &&
-		(keyType == cmapi.ECDSAKeyAlgorithm || keyType == "") {
+	// If using ECDSA then remove key encipherment
+	if keyType == cmapi.ECDSAKeyAlgorithm {
 		keyUsages &= (x509.KeyUsageKeyEncipherment ^ 1) // remove key encipherment bit if exists
 	}
 
