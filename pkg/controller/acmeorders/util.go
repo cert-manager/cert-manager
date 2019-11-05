@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	orderGvk = cmapi.SchemeGroupVersion.WithKind("Order")
+	orderGvk = cmacme.SchemeGroupVersion.WithKind("Order")
 )
 
 func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order) ([]cmacme.Challenge, error) {
