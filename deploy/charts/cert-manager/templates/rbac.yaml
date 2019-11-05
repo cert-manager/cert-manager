@@ -121,7 +121,7 @@ rules:
   # admission controller enabled:
   # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
   - apiGroups: ["cert-manager.io"]
-    resources: ["certificates/finalizers", "certificaterequests/finalizers"]
+    resources: ["certificates/finalizers"]
     verbs: ["update"]
   - apiGroups: ["acme.cert-manager.io"]
     resources: ["orders"]
