@@ -62,7 +62,7 @@ func (p *proxy) init() (*vault.Client, error) {
 	p.listenPort = listenPort
 
 	cfg := vault.DefaultConfig()
-	cfg.Address = fmt.Sprintf("https://40.0.0.1:%d", p.listenPort)
+	cfg.Address = fmt.Sprintf("https://127.0.0.1:%d", p.listenPort)
 
 	caCertPool := x509.NewCertPool()
 	ok := caCertPool.AppendCertsFromPEM(p.vaultCA)
@@ -90,7 +90,7 @@ func (p *proxy) init() (*vault.Client, error) {
 }
 
 func (p *proxy) vaultCmd() *exec.Cmd {
-	args := []string{"port-forward", "-n", p.ns, p.podName, fmt.Sprintf("%d:8185", p.listenPort)}
+	args := []string{"port-forward", "-n", p.ns, p.podName, fmt.Sprintf("%d:8200", p.listenPort)}
 	return exec.Command(p.kubectl, args...)
 }
 
@@ -169,7 +169,6 @@ func (p *proxy) runProxy() error {
 		err := p.cmd.Start()
 		if err != nil {
 			log.Logf("failed to start port-forward: %s", err)
-
 			return false, nil
 		}
 
@@ -179,7 +178,7 @@ func (p *proxy) runProxy() error {
 		return err
 	}
 
-	err = wait.PollImmediate(time.Second, time.Second*10, func() (bool, error) {
+	err = wait.PollImmediate(time.Second, time.Second*30, func() (bool, error) {
 		// If the response is 400 or higher or can't connect then we get an error.
 		// Anything else is considered ready for serving.
 		_, err := p.client.Sys().Health()
