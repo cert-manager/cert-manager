@@ -145,13 +145,19 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
 	}
 
-	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(cr.Namespace, &cr.Spec.IssuerRef, keyAlg)
+	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(cr.Namespace, &cr.Spec.IssuerRef)
 	if err != nil {
 		return nil, err
 	}
 
 	certificateKeyUsages |= defaultCertKeyUsages
 	certificateExtKeyUsages = append(certificateExtKeyUsages, defaultCertExtKeyUsages...)
+
+	// If using ECDSA then ignore key encipherment
+	if keyAlg == cmapi.ECDSAKeyAlgorithm {
+		certificateKeyUsages &^= x509.KeyUsageKeyEncipherment
+		cert.KeyUsage &^= x509.KeyUsageKeyEncipherment
+	}
 
 	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
 		certificateKeyUsages, certificateExtKeyUsages) {
