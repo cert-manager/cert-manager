@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
+        "proxy.go",
         "setup.go",
         "vault.go",
     ],
@@ -13,10 +14,12 @@ go_library(
         "//test/e2e/framework/addon/chart:go_default_library",
         "//test/e2e/framework/addon/tiller:go_default_library",
         "//test/e2e/framework/config:go_default_library",
+        "//test/e2e/framework/log:go_default_library",
         "@com_github_hashicorp_vault//api:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//rbac/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
     ],
 )

@@ -42,11 +42,13 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 })
 
 type vaultAppRoleProvisioner struct {
-	tiller *tiller.Tiller
-	vault  *vault.Vault
+	tiller    *tiller.Tiller
+	vault     *vault.Vault
+	vaultInit *vault.VaultInitializer
 }
 
 func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
+	Expect(v.vaultInit.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 	Expect(v.vault.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
 	Expect(v.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
 }
@@ -77,17 +79,17 @@ func (v *vaultAppRoleProvisioner) create(f *framework.Framework) cmmeta.ObjectRe
 	authPath := "approle"
 
 	By("Configuring the VaultAppRole server")
-	vaultInit := &vault.VaultInitializer{
+	v.vaultInit = &vault.VaultInitializer{
 		Details:           *v.vault.Details(),
 		RootMount:         "root-ca",
 		IntermediateMount: intermediateMount,
 		Role:              role,
 		AppRoleAuthPath:   authPath,
 	}
-	Expect(vaultInit.Init()).NotTo(HaveOccurred(), "failed to init vault")
-	Expect(vaultInit.Setup()).NotTo(HaveOccurred(), "fauled to setup vault")
+	Expect(v.vaultInit.Init()).NotTo(HaveOccurred(), "failed to init vault")
+	Expect(v.vaultInit.Setup()).NotTo(HaveOccurred(), "fauled to setup vault")
 
-	roleID, secretID, err := vaultInit.CreateAppRole()
+	roleID, secretID, err := v.vaultInit.CreateAppRole()
 	Expect(err).NotTo(HaveOccurred(), "vault to create app role from vault")
 
 	_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretID))

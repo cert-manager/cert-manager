@@ -108,7 +108,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		vaultInit.CleanKubernetesRole(f.KubeClientSet, f.Namespace.Name, vaultKubernetesRoleName, vaultSecretServiceAccount)
 
 		By("Cleaning up Vault")
-		vaultInit.Clean()
+		Expect(vaultInit.Clean()).NotTo(HaveOccurred())
 	})
 
 	const vaultDefaultDuration = time.Hour * 24 * 90
