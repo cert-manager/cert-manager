@@ -95,7 +95,7 @@ var _ = framework.CertManagerDescribe("Vault CertificateRequest (AppRole with a 
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	JustAfterEach(func() {
 		By("Cleaning up")
 		Expect(vaultInit.Clean()).NotTo(HaveOccurred())
 		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
