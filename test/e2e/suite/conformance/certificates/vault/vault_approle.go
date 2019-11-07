@@ -32,12 +32,17 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
+	var unsupportedFeatures = certificates.NewFeatureSet(
+		certificates.KeyUsagesFeature,
+	)
+
 	provisioner := new(vaultAppRoleProvisioner)
 
 	(&certificates.Suite{
-		Name:             "VaultAppRole",
-		CreateIssuerFunc: provisioner.create,
-		DeleteIssuerFunc: provisioner.delete,
+		Name:                "VaultAppRole",
+		CreateIssuerFunc:    provisioner.create,
+		DeleteIssuerFunc:    provisioner.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 

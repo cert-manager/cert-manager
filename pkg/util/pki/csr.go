@@ -136,7 +136,7 @@ func OrganizationForCertificate(crt *v1alpha2.Certificate) []string {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-func buildUsages(usages []v1alpha2.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
+func BuildKeyUsages(usages []v1alpha2.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1alpha2.KeyUsage
 	if isCA {
 		ku |= x509.KeyUsageCertSign
@@ -212,7 +212,7 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 	dnsNames := crt.Spec.DNSNames
 	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
-	keyUsages, extKeyUsages, err := buildUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	keyUsages, extKeyUsages, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 // CertificateRequest resource
 func GenerateTemplateFromCertificateRequest(cr *v1alpha2.CertificateRequest) (*x509.Certificate, error) {
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	keyUsage, extKeyUsage, err := buildUsages(cr.Spec.Usages, cr.Spec.IsCA)
+	keyUsage, extKeyUsage, err := BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
 	if err != nil {
 		return nil, err
 	}

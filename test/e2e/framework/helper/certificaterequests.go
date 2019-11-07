@@ -22,14 +22,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"math/bits"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -38,8 +37,8 @@ import (
 
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
-func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Duration) (*v1alpha2.CertificateRequest, error) {
-	var cr *v1alpha2.CertificateRequest
+func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
+	var cr *cmapi.CertificateRequest
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
@@ -48,8 +47,8 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 			if err != nil {
 				return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 			}
-			isReady := apiutil.CertificateRequestHasCondition(cr, v1alpha2.CertificateRequestCondition{
-				Type:   v1alpha2.CertificateRequestConditionReady,
+			isReady := apiutil.CertificateRequestHasCondition(cr, cmapi.CertificateRequestCondition{
+				Type:   cmapi.CertificateRequestConditionReady,
 				Status: cmmeta.ConditionTrue,
 			})
 			if !isReady {
@@ -71,7 +70,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 // CertificateRequest has a certificate issued for it, and that the details on
 // the x509 certificate are correct as defined by the CertificateRequest's
 // spec.
-func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
+func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.CSRPEM: %s", err)
@@ -131,25 +130,40 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateReques
 		expectedDNSName = expectedDNSNames[0]
 	}
 
-	usages := make(map[v1alpha2.KeyUsage]bool)
-	for _, u := range cr.Spec.Usages {
-		usages[u] = true
-	}
-	if cr.Spec.IsCA {
-		if !cert.IsCA {
-			return nil, fmt.Errorf("Expected csr cert to have IsCA set to true, but was false")
-		}
-		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
-			return nil, fmt.Errorf("Expected csr cert to have x509.KeyUsageCertSign bit set but was not")
-		}
-		usages[v1alpha2.UsageCertSign] = true
+	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
-	if len(cr.Spec.Usages) > 0 {
-		sumFoundUsages := bits.OnesCount(uint(cert.KeyUsage)) + len(cert.ExtKeyUsage)
-		if len(usages) != sumFoundUsages {
-			return nil, fmt.Errorf("Expected csr cert to have the same sum of KeyUsages and ExtKeyUsages [%d] as the number of Usages [%d] in Certificate", sumFoundUsages, len(usages))
-		}
+	var keyAlg cmapi.KeyAlgorithm
+	switch csr.PublicKeyAlgorithm {
+	case x509.RSA:
+		keyAlg = cmapi.RSAKeyAlgorithm
+	case x509.ECDSA:
+		keyAlg = cmapi.ECDSAKeyAlgorithm
+	default:
+		return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
+	}
+
+	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(cr.Namespace, &cr.Spec.IssuerRef)
+	if err != nil {
+		return nil, err
+	}
+
+	certificateKeyUsages |= defaultCertKeyUsages
+	certificateExtKeyUsages = append(certificateExtKeyUsages, defaultCertExtKeyUsages...)
+
+	// If using ECDSA then ignore key encipherment
+	if keyAlg == cmapi.ECDSAKeyAlgorithm {
+		certificateKeyUsages &^= x509.KeyUsageKeyEncipherment
+		cert.KeyUsage &^= x509.KeyUsageKeyEncipherment
+	}
+
+	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
+		certificateKeyUsages, certificateExtKeyUsages) {
+		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
+			apiutil.KeyUsageStrings(certificateKeyUsages), apiutil.KeyUsageStrings(cert.KeyUsage),
+			apiutil.ExtKeyUsageStrings(certificateExtKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
 	}
 
 	// TODO: move this verification step out of this function

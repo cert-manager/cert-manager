@@ -636,6 +636,7 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,
+			Usages:    crt.Spec.Usages,
 		},
 	}
 

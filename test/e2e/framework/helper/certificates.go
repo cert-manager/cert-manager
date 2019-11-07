@@ -21,7 +21,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"math/bits"
+	"sort"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -38,8 +38,8 @@ import (
 
 // WaitForCertificateReady waits for the certificate resource to enter a Ready
 // state.
-func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*v1alpha2.Certificate, error) {
-	var certificate *v1alpha2.Certificate
+func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
+	var certificate *cmapi.Certificate
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
@@ -48,8 +48,8 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := apiutil.CertificateHasCondition(certificate, v1alpha2.CertificateCondition{
-				Type:   v1alpha2.CertificateConditionReady,
+			isReady := apiutil.CertificateHasCondition(certificate, cmapi.CertificateCondition{
+				Type:   cmapi.CertificateConditionReady,
 				Status: cmmeta.ConditionTrue,
 			})
 			if !isReady {
@@ -66,8 +66,8 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 
 // WaitForCertificateNotReady waits for the certificate resource to enter a
 // non-Ready state.
-func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Duration) (*v1alpha2.Certificate, error) {
-	var certificate *v1alpha2.Certificate
+func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
+	var certificate *cmapi.Certificate
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
@@ -76,8 +76,8 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := apiutil.CertificateHasCondition(certificate, v1alpha2.CertificateCondition{
-				Type:   v1alpha2.CertificateConditionReady,
+			isReady := apiutil.CertificateHasCondition(certificate, cmapi.CertificateCondition{
+				Type:   cmapi.CertificateConditionReady,
 				Status: cmmeta.ConditionFalse,
 			})
 			if !isReady {
@@ -95,7 +95,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 // ValidateIssuedCertificate will ensure that the given Certificate has a
 // certificate issued for it, and that the details on the x509 certificate are
 // correct as defined by the Certificate's spec.
-func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, rootCAPEM []byte) (*x509.Certificate, error) {
+func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootCAPEM []byte) (*x509.Certificate, error) {
 	log.Logf("Getting the TLS certificate Secret resource")
 	secret, err := h.KubeClient.CoreV1().Secrets(certificate.Namespace).Get(certificate.Spec.SecretName, metav1.GetOptions{})
 	if err != nil {
@@ -116,13 +116,13 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 
 	// validate private key is of the correct type (rsa or ecdsa)
 	switch certificate.Spec.KeyAlgorithm {
-	case v1alpha2.KeyAlgorithm(""),
-		v1alpha2.RSAKeyAlgorithm:
+	case cmapi.KeyAlgorithm(""),
+		cmapi.RSAKeyAlgorithm:
 		_, ok := key.(*rsa.PrivateKey)
 		if !ok {
 			return nil, fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
 		}
-	case v1alpha2.ECDSAKeyAlgorithm:
+	case cmapi.ECDSAKeyAlgorithm:
 		_, ok := key.(*ecdsa.PrivateKey)
 		if !ok {
 			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
@@ -176,7 +176,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		return nil, fmt.Errorf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 	}
 
-	label, ok := secret.Annotations[v1alpha2.CertificateNameKey]
+	label, ok := secret.Annotations[cmapi.CertificateNameKey]
 	if !ok {
 		return nil, fmt.Errorf("Expected secret to have certificate-name label, but had none")
 	}
@@ -185,25 +185,30 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
 	}
 
-	usages := make(map[v1alpha2.KeyUsage]bool)
-	for _, u := range certificate.Spec.Usages {
-		usages[u] = true
-	}
-	if certificate.Spec.IsCA {
-		if !cert.IsCA {
-			return nil, fmt.Errorf("Expected secret to have IsCA set to true, but was false")
-		}
-		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
-			return nil, fmt.Errorf("Expected secret to have x509.KeyUsageCertSign bit set but was not")
-		}
-		usages[v1alpha2.UsageCertSign] = true
+	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsages(certificate.Spec.Usages, certificate.Spec.IsCA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
-	if len(certificate.Spec.Usages) > 0 {
-		sumFoundUsages := bits.OnesCount(uint(cert.KeyUsage)) + len(cert.ExtKeyUsage)
-		if len(usages) != sumFoundUsages {
-			return nil, fmt.Errorf("Expected secret to have the same sum of KeyUsages and ExtKeyUsages [%d] as the number of Usages [%d] in Certificate", sumFoundUsages, len(usages))
-		}
+	defaultCertKeyUsages, defaultCertExtKeyUsages, err := h.defaultKeyUsagesToAdd(certificate.Namespace, &certificate.Spec.IssuerRef)
+	if err != nil {
+		return nil, err
+	}
+
+	certificateKeyUsages |= defaultCertKeyUsages
+	certificateExtKeyUsages = append(certificateExtKeyUsages, defaultCertExtKeyUsages...)
+
+	// If using ECDSA then ignore key encipherment
+	if certificate.Spec.KeyAlgorithm == cmapi.ECDSAKeyAlgorithm {
+		certificateKeyUsages &^= x509.KeyUsageKeyEncipherment
+		cert.KeyUsage &^= x509.KeyUsageKeyEncipherment
+	}
+
+	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
+		certificateKeyUsages, certificateExtKeyUsages) {
+		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
+			apiutil.KeyUsageStrings(certificateKeyUsages), apiutil.KeyUsageStrings(cert.KeyUsage),
+			apiutil.ExtKeyUsageStrings(certificateExtKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
 	}
 
 	var dnsName string
@@ -235,6 +240,76 @@ func (h *Helper) WaitCertificateIssuedValid(ns, name string, timeout time.Durati
 	return h.WaitCertificateIssuedValidTLS(ns, name, timeout, nil)
 }
 
+func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectReference) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
+	var issuerSpec *cmapi.IssuerSpec
+	switch issuerRef.Kind {
+	case "ClusterIssuer":
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(issuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return 0, nil, fmt.Errorf("failed to find referenced ClusterIssuer %v: %s",
+				issuerRef, err)
+		}
+
+		issuerSpec = &issuerObj.Spec
+	default:
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().Issuers(ns).Get(issuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return 0, nil, fmt.Errorf("failed to find referenced Issuer %v: %s",
+				issuerRef, err)
+		}
+
+		issuerSpec = &issuerObj.Spec
+	}
+
+	var keyUsages x509.KeyUsage
+	var extKeyUsages []x509.ExtKeyUsage
+
+	// Vault and ACME issuers will add server auth and client auth extended key
+	// usages by default so we need to add them to the list of expected usages
+	if issuerSpec.ACME != nil || issuerSpec.Vault != nil {
+		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth)
+	}
+
+	// Vault issuers will add key agreement key usage
+	if issuerSpec.Vault != nil {
+		keyUsages |= x509.KeyUsageKeyAgreement
+	}
+
+	// Venafi issue adds server auth key usage
+	if issuerSpec.Venafi != nil {
+		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth)
+	}
+
+	return keyUsages, extKeyUsages, nil
+}
+
+func (h *Helper) keyUsagesMatch(aKU x509.KeyUsage, aEKU []x509.ExtKeyUsage,
+	bKU x509.KeyUsage, bEKU []x509.ExtKeyUsage) bool {
+	if aKU != bKU {
+		return false
+	}
+
+	if len(aEKU) != len(bEKU) {
+		return false
+	}
+
+	sort.SliceStable(aEKU, func(i, j int) bool {
+		return aEKU[i] < aEKU[j]
+	})
+
+	sort.SliceStable(bEKU, func(i, j int) bool {
+		return bEKU[i] < bEKU[j]
+	})
+
+	for i := range aEKU {
+		if aEKU[i] != bEKU[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Duration, rootCAPEM []byte) error {
 	certificate, err := h.WaitForCertificateReady(ns, name, timeout)
 	if err != nil {
@@ -257,7 +332,7 @@ func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Dur
 	return nil
 }
 
-func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *v1alpha2.Certificate) {
+func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *cmapi.Certificate) {
 	if certificate == nil {
 		return
 	}

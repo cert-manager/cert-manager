@@ -108,4 +108,8 @@ const (
 	// providers that ignore, or otherwise have special requirements for the
 	// CommonName such as needing to be present in the DNS Name list.
 	CommonNameFeature = "CommonName"
+
+	// KeyUsages denotes whether the target issuer is able to sign certificates
+	// with arbitary key usages.
+	KeyUsagesFeature = "KeyUsages"
 )

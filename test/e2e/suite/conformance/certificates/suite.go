@@ -400,6 +400,33 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should issue a certificate that includes arbitrary key usages", func() {
+			s.checkFeatures(KeyUsagesFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					DNSNames:   []string{s.newDomain()},
+					IssuerRef:  issuerRef,
+					Usages: []cmapi.KeyUsage{
+						cmapi.UsageSigning,
+						cmapi.UsageDataEncipherment,
+					},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func() {
 			s.checkFeatures(ReusePrivateKeyFeature)
 

@@ -89,7 +89,7 @@ func TestBuildUsages(t *testing.T) {
 	}
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			ku, eku, err := buildUsages(test.usages, test.isCa)
+			ku, eku, err := BuildKeyUsages(test.usages, test.isCa)
 			if err != nil && !test.expectedError {
 				t.Errorf("got unexpected error generating cert: %q", err)
 				return
