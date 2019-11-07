@@ -94,8 +94,9 @@ var _ = framework.CertManagerDescribe("Vault CertificateRequest (AppRole)", func
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	JustAfterEach(func() {
 		By("Cleaning up")
+		Expect(vaultInit.Clean()).NotTo(HaveOccurred())
 		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(vaultSecretAppRoleName, nil)
 	})

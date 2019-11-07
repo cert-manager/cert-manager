@@ -17,23 +17,32 @@ limitations under the License.
 package vault
 
 import (
-	"crypto/x509"
 	"fmt"
-	"math/rand"
-	"net/http"
-	"os/exec"
 	"path"
-	"time"
-
-	"k8s.io/client-go/kubernetes"
 
 	vault "github.com/hashicorp/vault/api"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const vaultToken = "vault-root-token"
+
+type VaultInitializer struct {
+	client *vault.Client
+	proxy  *proxy
+
+	Details
+
+	RootMount          string
+	IntermediateMount  string
+	Role               string // AppRole auth Role
+	AppRoleAuthPath    string // AppRole auth mount point in Vault
+	KubernetesAuthPath string // Kubernetes auth mount point in Vault
+	APIServerURL       string // Kubernetes API Server URL
+	APIServerCA        string // Kubernetes API Server CA certificate
+}
 
 func NewVaultTokenSecret(name string) *v1.Secret {
 	return &v1.Secret{
@@ -117,35 +126,7 @@ func NewVaultKubernetesSecret(name string, serviceAccountName string) *v1.Secret
 	}
 }
 
-type VaultInitializer struct {
-	proxyCmd *exec.Cmd
-	client   *vault.Client
-
-	Details
-
-	RootMount          string
-	IntermediateMount  string
-	Role               string // AppRole auth Role
-	AppRoleAuthPath    string // AppRole auth mount point in Vault
-	KubernetesAuthPath string // Kubernetes auth mount point in Vault
-	APIServerURL       string // Kubernetes API Server URL
-	APIServerCA        string // Kubernetes API Server CA certificate
-}
-
 func (v *VaultInitializer) Init() error {
-	rand.Seed(time.Now().UnixNano())
-	listenPort := 30000 + rand.Intn(5000)
-
-	// TODO: we need to make this port-forward more robust.
-	// Currently, it's possible that the connection gets dropped causing later
-	// init commands to fail.
-	args := []string{"port-forward", "-n", v.Details.Namespace, v.Details.PodName, fmt.Sprintf("%d:8200", listenPort)}
-	cmd := exec.Command(v.Details.Kubectl, args...)
-	err := cmd.Start()
-	if err != nil {
-		return fmt.Errorf("Error starting port-forward: %s", err.Error())
-	}
-
 	if v.AppRoleAuthPath == "" {
 		v.AppRoleAuthPath = "approle"
 	}
@@ -154,31 +135,13 @@ func (v *VaultInitializer) Init() error {
 		v.KubernetesAuthPath = "kubernetes"
 	}
 
-	// Wait for 7s to allow port-forward to actually start.
-	// We wait longer than expected, as in highly parallel e2e runs this may
-	// take some time to start.
-	time.Sleep(7 * time.Second)
-
-	// Cross our fingers and hope that it's started :this_is_fine:
-
-	cfg := vault.DefaultConfig()
-	cfg.Address = fmt.Sprintf("https://127.0.0.1:%d", listenPort)
-
-	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(v.VaultCA)
-	if ok == false {
-		return fmt.Errorf("error loading Vault CA bundle")
-	}
-
-	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
-
-	client, err := vault.NewClient(cfg)
+	v.proxy = newProxy(v.Namespace, v.PodName, v.Kubectl, v.VaultCA)
+	client, err := v.proxy.init()
 	if err != nil {
-		return fmt.Errorf("Unable to initialize vault client: %s", err.Error())
+		return err
 	}
-
-	client.SetToken(vaultToken)
 	v.client = client
+
 	return nil
 }
 
@@ -238,8 +201,7 @@ func (v *VaultInitializer) Clean() error {
 		return fmt.Errorf("Unable to unmount %v: %v", v.RootMount, err)
 	}
 
-	v.proxyCmd.Process.Kill()
-	v.proxyCmd.Process.Wait()
+	v.proxy.clean()
 
 	return nil
 }
@@ -260,21 +222,21 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 	}
 
 	baseUrl := path.Join("/v1", "auth", v.AppRoleAuthPath, "role", v.Role)
-	_, err = v.callVault("POST", baseUrl, "", params)
+	_, err = v.proxy.callVault("POST", baseUrl, "", params)
 	if err != nil {
 		return "", "", fmt.Errorf("Error creating approle: %s", err.Error())
 	}
 
 	// # read the role-id
 	url := path.Join(baseUrl, "role-id")
-	roleId, err := v.callVault("GET", url, "role_id", map[string]string{})
+	roleId, err := v.proxy.callVault("GET", url, "role_id", map[string]string{})
 	if err != nil {
 		return "", "", fmt.Errorf("Error reading role_id: %s", err.Error())
 	}
 
 	// # read the secret-id
 	url = path.Join(baseUrl, "secret-id")
-	secretId, err := v.callVault("POST", url, "secret_id", map[string]string{})
+	secretId, err := v.proxy.callVault("POST", url, "secret_id", map[string]string{})
 	if err != nil {
 		return "", "", fmt.Errorf("Error reading secret_id: %s", err.Error())
 	}
@@ -284,7 +246,7 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 
 func (v *VaultInitializer) CleanAppRole() error {
 	url := path.Join("/v1", "auth", v.AppRoleAuthPath, "role", v.Role)
-	_, err := v.callVault("DELETE", url, "", map[string]string{})
+	_, err := v.proxy.callVault("DELETE", url, "", map[string]string{})
 	if err != nil {
 		return fmt.Errorf("Error deleting AppRole: %s", err.Error())
 	}
@@ -319,7 +281,7 @@ func (v *VaultInitializer) generateRootCert() (string, error) {
 	}
 	url := path.Join("/v1", v.RootMount, "root", "generate", "internal")
 
-	cert, err := v.callVault("POST", url, "certificate", params)
+	cert, err := v.proxy.callVault("POST", url, "certificate", params)
 	if err != nil {
 		return "", fmt.Errorf("Error generating CA root certificate: %s", err.Error())
 	}
@@ -335,7 +297,7 @@ func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 	}
 	url := path.Join("/v1", v.IntermediateMount, "intermediate", "generate", "internal")
 
-	csr, err := v.callVault("POST", url, "csr", params)
+	csr, err := v.proxy.callVault("POST", url, "csr", params)
 	if err != nil {
 		return "", fmt.Errorf("Error generating CA intermediate certificate: %s", err.Error())
 	}
@@ -352,7 +314,7 @@ func (v *VaultInitializer) signCertificate(csr string) (string, error) {
 	}
 	url := path.Join("/v1", v.RootMount, "root", "sign-intermediate")
 
-	cert, err := v.callVault("POST", url, "certificate", params)
+	cert, err := v.proxy.callVault("POST", url, "certificate", params)
 	if err != nil {
 		return "", fmt.Errorf("Error signing intermediate Vault certificate: %s", err.Error())
 	}
@@ -366,7 +328,7 @@ func (v *VaultInitializer) importSignIntermediate(intermediateCa, rootCa, interm
 	}
 	url := path.Join("/v1", intermediateMount, "intermediate", "set-signed")
 
-	_, err := v.callVault("POST", url, "", params)
+	_, err := v.proxy.callVault("POST", url, "", params)
 	if err != nil {
 		return fmt.Errorf("Error importing intermediate Vault certificate: %s", err.Error())
 	}
@@ -381,7 +343,7 @@ func (v *VaultInitializer) configureCert(mount string) error {
 	}
 	url := path.Join("/v1", mount, "config", "urls")
 
-	_, err := v.callVault("POST", url, "", params)
+	_, err := v.proxy.callVault("POST", url, "", params)
 	if err != nil {
 		return fmt.Errorf("Error configuring Vault certificate: %s", err.Error())
 	}
@@ -412,7 +374,7 @@ func (v *VaultInitializer) setupRole() error {
 	}
 	url := path.Join("/v1", v.IntermediateMount, "roles", v.Role)
 
-	_, err = v.callVault("POST", url, "", params)
+	_, err = v.proxy.callVault("POST", url, "", params)
 	if err != nil {
 		return fmt.Errorf("Error creating role %s: %s", v.Role, err.Error())
 	}
@@ -446,7 +408,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 	}
 
 	url := fmt.Sprintf("/v1/auth/%s/config", v.KubernetesAuthPath)
-	_, err = v.callVault("POST", url, "", params)
+	_, err = v.proxy.callVault("POST", url, "", params)
 
 	if err != nil {
 		return fmt.Errorf("error configuring kubernetes auth backend: %s", err.Error())
@@ -485,7 +447,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 	}
 
 	url := path.Join(fmt.Sprintf("/v1/auth/%s/role", v.KubernetesAuthPath), roleName)
-	_, err = v.callVault("POST", url, "", roleParams)
+	_, err = v.proxy.callVault("POST", url, "", roleParams)
 	if err != nil {
 		return fmt.Errorf("error configuring kubernetes auth role: %s", err.Error())
 	}
@@ -509,39 +471,10 @@ func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, name
 
 	// vault delete auth/kubernetes/role/<roleName>
 	url := path.Join(fmt.Sprintf("/v1/auth/%s/role", v.KubernetesAuthPath), roleName)
-	_, err := v.callVault("DELETE", url, "", nil)
+	_, err := v.proxy.callVault("DELETE", url, "", nil)
 	if err != nil {
 		return fmt.Errorf("error cleaning up kubernetes auth role: %s", err.Error())
 	}
 
 	return nil
-}
-
-func (v *VaultInitializer) callVault(method, url, field string, params map[string]string) (string, error) {
-	req := v.client.NewRequest(method, url)
-
-	err := req.SetJSONBody(params)
-	if err != nil {
-		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
-
-	}
-
-	resp, err := v.client.RawRequest(req)
-	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
-
-	}
-
-	defer resp.Body.Close()
-
-	result := map[string]interface{}{}
-	resp.DecodeJSON(&result)
-
-	fieldData := ""
-	if field != "" {
-		data := result["data"].(map[string]interface{})
-		fieldData = data[field].(string)
-	}
-
-	return fieldData, err
 }

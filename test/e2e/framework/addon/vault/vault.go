@@ -47,10 +47,10 @@ type Vault struct {
 	// Tiller is the tiller instance used to deploy the chart
 	Tiller *tiller.Tiller
 
-	// Name is a unique name for this Pebble deployment
+	// Name is a unique name for this Vault deployment
 	Name string
 
-	// Namespace is the namespace to deploy Pebble into
+	// Namespace is the namespace to deploy Vault into
 	Namespace string
 
 	details Details
@@ -60,7 +60,7 @@ type Details struct {
 	// Kubectl is the path to kubectl
 	Kubectl string
 
-	// Host is the hostname that can be used to connect to Pebble
+	// Host is the hostname that can be used to connect to Vault
 	Host string
 
 	// PodName is the name of the Vault pod
@@ -80,7 +80,7 @@ type Details struct {
 
 func (v *Vault) Setup(cfg *config.Config) error {
 	if v.Name == "" {
-		return fmt.Errorf("Name field must be set on Pebble addon")
+		return fmt.Errorf("Name field must be set on Vault addon")
 	}
 	if v.Namespace == "" {
 		// TODO: in non-global instances, we could generate a new namespace just
@@ -88,7 +88,7 @@ func (v *Vault) Setup(cfg *config.Config) error {
 		return fmt.Errorf("Namespace name must be specified")
 	}
 	if v.Tiller == nil {
-		return fmt.Errorf("Tiller field must be set on Pebble addon")
+		return fmt.Errorf("Tiller field must be set on Vault addon")
 	}
 
 	var err error
@@ -134,7 +134,7 @@ func (v *Vault) Setup(cfg *config.Config) error {
 	return nil
 }
 
-// Provision will actually deploy this instance of Pebble-ingress to the cluster.
+// Provision will actually deploy this instance of Vault to the cluster.
 func (v *Vault) Provision() error {
 	err := v.chart.Provision()
 	if err != nil {
@@ -178,12 +178,12 @@ func (v *Vault) Provision() error {
 	return nil
 }
 
-// Details returns details that can be used to utilise the instance of Pebble.
+// Details returns details that can be used to utilise the instance of Vault.
 func (v *Vault) Details() *Details {
 	return &v.details
 }
 
-// Deprovision will destroy this instance of Pebble
+// Deprovision will destroy this instance of Vault
 func (v *Vault) Deprovision() error {
 	return v.chart.Deprovision()
 }
