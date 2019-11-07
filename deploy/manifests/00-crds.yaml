@@ -636,7 +636,6 @@ spec:
                       type: object
                       required:
                       - project
-                      - serviceAccountSecretRef
                       properties:
                         project:
                           type: string
@@ -1991,7 +1990,6 @@ spec:
                             type: object
                             required:
                             - project
-                            - serviceAccountSecretRef
                             properties:
                               project:
                                 type: string
@@ -3647,7 +3645,6 @@ spec:
                             type: object
                             required:
                             - project
-                            - serviceAccountSecretRef
                             properties:
                               project:
                                 type: string
