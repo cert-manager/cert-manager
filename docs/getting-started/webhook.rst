@@ -50,7 +50,7 @@ secrets with no manual intervention needed.
 If errors occur around the webhook but the webhook is running then the webhook
 is most likely not reachable from the API server. In this case, ensure that the
 API server can communicate with the webhook by following the GKE private cluster
-explanation below.
+or custom network explanations below.
 
 cainjector
 ----------
@@ -103,6 +103,45 @@ Alternatively, you can read how to `disable the webhook component`_ below.
 
 .. todo:: add an example command for how to do this here & explain any security
    implications
+
+
+Running on managed Kubernetes with custom network layer
+-------------------------------------------------------
+
+When running e.g. calico on the kubernetes worker nodes, where the master
+nodes are not inside the calico network, the kube-apiserver will be unable
+to communicate with the webhook by default. This shows up with
+
+.. code-block:: shell
+    $ kubectl describe APIService v1beta1.webhook.cert-manager.io
+    Name:         v1beta1.webhook.cert-manager.io
+    ...snip...
+    Status:
+      Conditions:
+        Last Transition Time:  2019-11-06T03:45:09Z
+        Message:               no response from https://100.84.236.100:6443: Get https://100.84.236.100:6443:
+         Address is not allowed
+
+Running the webhook on the host network will allow the API server
+to communicate with the webhook. This can be done by adding
+`hostNetwork: true` to the `spec.template.spec` section of the cert-manager-webhook
+deployment resource definition, and
+
+.. code-block:: yaml
+    ports:
+      - hostPort: 6443
+        containerPort: 6443
+
+to the container in the same section.
+
+If you're still having problems, check the kube-apiserver logs (EKS makes
+these available in cloudwatch logs, for example). This will help surface
+such issues as misconfigured `--webhook-dns-names` which show up in the
+webhook logs as
+
+.. code-block:: shell
+    I1108 02:01:51.062889       1 log.go:172] http: TLS handshake error from 10.1.2.3:36246: remote error: tls: bad certificate
+
 
 Disable the webhook component
 ==============================
