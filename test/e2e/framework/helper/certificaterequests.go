@@ -153,6 +153,8 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 	certificateKeyUsages |= defaultCertKeyUsages
 	certificateExtKeyUsages = append(certificateExtKeyUsages, defaultCertExtKeyUsages...)
 
+	certificateExtKeyUsages = h.deduplicateExtKeyUsages(certificateExtKeyUsages)
+
 	// If using ECDSA then ignore key encipherment
 	if keyAlg == cmapi.ECDSAKeyAlgorithm {
 		certificateKeyUsages &^= x509.KeyUsageKeyEncipherment

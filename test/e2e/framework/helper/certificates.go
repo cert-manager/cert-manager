@@ -204,6 +204,8 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 		cert.KeyUsage &^= x509.KeyUsageKeyEncipherment
 	}
 
+	certificateExtKeyUsages = h.deduplicateExtKeyUsages(certificateExtKeyUsages)
+
 	if !h.keyUsagesMatch(cert.KeyUsage, cert.ExtKeyUsage,
 		certificateKeyUsages, certificateExtKeyUsages) {
 		return nil, fmt.Errorf("key usages and extended key usages do not match: exp=%s got=%s exp=%s got=%s",
@@ -234,6 +236,22 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	}
 
 	return cert, nil
+}
+
+func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsage {
+	extKeyUsagesMap := make(map[x509.ExtKeyUsage]bool)
+	for _, e := range us {
+		extKeyUsagesMap[e] = true
+	}
+
+	us = make([]x509.ExtKeyUsage, 0)
+	for e, ok := range extKeyUsagesMap {
+		if ok {
+			us = append(us, e)
+		}
+	}
+
+	return us
 }
 
 func (h *Helper) WaitCertificateIssuedValid(ns, name string, timeout time.Duration) error {
@@ -278,19 +296,6 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 	// Venafi issue adds server auth key usage
 	if issuerSpec.Venafi != nil {
 		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth)
-	}
-
-	// De-duplicate list
-	extKeyUsagesMap := make(map[x509.ExtKeyUsage]bool)
-	for _, e := range extKeyUsages {
-		extKeyUsagesMap[e] = true
-	}
-
-	extKeyUsages = make([]x509.ExtKeyUsage, 0)
-	for e, ok := range extKeyUsagesMap {
-		if ok {
-			extKeyUsages = append(extKeyUsages, e)
-		}
 	}
 
 	return keyUsages, extKeyUsages, nil
