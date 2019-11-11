@@ -73,18 +73,18 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 	vaultPath := path.Join(intermediateMount, "sign", role)
 	var roleId string
 	var secretId string
+	var vaultSecretNamespace string
 
 	var vaultInit *vaultaddon.VaultInitializer
 
-	var vaultSecretNamespace string
-	if issuerKind == cmapi.IssuerKind {
-		vaultSecretNamespace = f.Namespace.Name
-	} else {
-		vaultSecretNamespace = "kube-system"
-	}
-
 	BeforeEach(func() {
 		By("Configuring the Vault server")
+		if issuerKind == cmapi.IssuerKind {
+			vaultSecretNamespace = f.Namespace.Name
+		} else {
+			vaultSecretNamespace = "kube-system"
+		}
+
 		vaultInit = &vaultaddon.VaultInitializer{
 			Details:           *vault.Details(),
 			RootMount:         rootMount,
