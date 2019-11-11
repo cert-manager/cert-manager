@@ -56,16 +56,30 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 
 	provisionerHTTP01 := new(acmeIssuerProvisioner)
 	(&certificates.Suite{
-		Name:                "ACME HTTP01",
-		CreateIssuerFunc:    provisionerHTTP01.createHTTP01,
+		Name:                "ACME HTTP01 Issuer",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
 	}).Define()
 
 	provisionerDNS01 := new(acmeIssuerProvisioner)
 	(&certificates.Suite{
-		Name:                "ACME DNS01",
-		CreateIssuerFunc:    provisionerDNS01.createDNS01,
+		Name:                "ACME DNS01 Issuer",
+		CreateIssuerFunc:    provisionerDNS01.createDNS01Issuer,
+		DeleteIssuerFunc:    provisionerDNS01.delete,
+		UnsupportedFeatures: unsupportedDNS01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "ACME HTTP01 ClusterIssuer",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuer,
+		DeleteIssuerFunc:    provisionerHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "ACME DNS01 ClusterIssuer",
+		CreateIssuerFunc:    provisionerDNS01.createDNS01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
 	}).Define()
@@ -93,37 +107,15 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 // - pebble
 // - a properly configured Issuer resource
 
-func (a *acmeIssuerProvisioner) createHTTP01(f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "http01")
 
-	By("Creating an ACME HTTP01 issuer")
+	By("Creating an ACME HTTP01 Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "acme-issuer-http01",
 		},
-		Spec: cmapi.IssuerSpec{
-			IssuerConfig: cmapi.IssuerConfig{
-				ACME: &cmacme.ACMEIssuer{
-					Server:        addon.Pebble.Details().Host,
-					SkipTLSVerify: true,
-					PrivateKey: cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "acme-private-key-http01",
-						},
-					},
-					Solvers: []cmacme.ACMEChallengeSolver{
-						{
-							HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-								// Not setting the Class or Name field will cause cert-manager to create
-								// new ingress resources that do not specify a class to solve challenges,
-								// which means all Ingress controllers should act on the ingresses.
-								Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-							},
-						},
-					},
-				},
-			},
-		},
+		Spec: a.createHTTP01IssuerSpec(),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
@@ -136,7 +128,54 @@ func (a *acmeIssuerProvisioner) createHTTP01(f *framework.Framework) cmmeta.Obje
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01(f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	a.deployTiller(f, "http01")
+
+	By("Creating an ACME HTTP01 ClusterIssuer")
+	issuer := &cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "acme-issuer-http01",
+		},
+		Spec: a.createHTTP01IssuerSpec(),
+	}
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec() cmapi.IssuerSpec {
+	return cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			ACME: &cmacme.ACMEIssuer{
+				Server:        addon.Pebble.Details().Host,
+				SkipTLSVerify: true,
+				PrivateKey: cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "acme-private-key-http01",
+					},
+				},
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							// Not setting the Class or Name field will cause cert-manager to create
+							// new ingress resources that do not specify a class to solve challenges,
+							// which means all Ingress controllers should act on the ingresses.
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "dns01")
 
 	a.cloudflare = &dnsproviders.Cloudflare{
@@ -145,38 +184,68 @@ func (a *acmeIssuerProvisioner) createDNS01(f *framework.Framework) cmmeta.Objec
 	Expect(a.cloudflare.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflare")
 	Expect(a.cloudflare.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflare")
 
-	By("Creating an ACME DNS01 issuer")
+	By("Creating an ACME DNS01 Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "acme-issuer-dns01",
 		},
-		Spec: cmapi.IssuerSpec{
-			IssuerConfig: cmapi.IssuerConfig{
-				ACME: &cmacme.ACMEIssuer{
-					// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
-					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
-					SkipTLSVerify: true,
-					PrivateKey: cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "acme-private-key",
-						},
-					},
-					Solvers: []cmacme.ACMEChallengeSolver{
-						{
-							DNS01: &a.cloudflare.Details().ProviderConfig,
-						},
-					},
-				},
-			},
-		},
+		Spec: a.createDNS01IssuerSpec(),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
-	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	a.deployTiller(f, "dns01")
+
+	a.cloudflare = &dnsproviders.Cloudflare{
+		Namespace: f.Namespace.Name,
+	}
+	Expect(a.cloudflare.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflare")
+	Expect(a.cloudflare.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflare")
+
+	By("Creating an ACME DNS01 ClusterIssuer")
+	issuer := &cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "acme-issuer-dns01",
+		},
+		Spec: a.createDNS01IssuerSpec(),
+	}
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createDNS01IssuerSpec() cmapi.IssuerSpec {
+	return cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			ACME: &cmacme.ACMEIssuer{
+				// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
+				Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+				SkipTLSVerify: true,
+				PrivateKey: cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "acme-private-key",
+					},
+				},
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &a.cloudflare.Details().ProviderConfig,
+					},
+				},
+			},
+		},
 	}
 }
 

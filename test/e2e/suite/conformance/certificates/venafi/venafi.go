@@ -23,6 +23,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
 )
@@ -41,8 +42,15 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	//
 	//provisioner := new(venafiProvisioner)
 	//(&certificates.Suite{
-	//	Name:                "Venafi",
-	//	CreateIssuerFunc:    provisioner.create,
+	//	Name:                "Venafi Issuer",
+	//	CreateIssuerFunc:    provisioner.createIssuer,
+	//	DeleteIssuerFunc:    provisioner.delete,
+	//	UnsupportedFeatures: unsupportedFeatures,
+	//}).Define()
+
+	//(&certificates.Suite{
+	//	Name:                "Venafi ClusterIssuer",
+	//	CreateIssuerFunc:    provisioner.createClusterIssuer,
 	//	DeleteIssuerFunc:    provisioner.delete,
 	//	UnsupportedFeatures: unsupportedFeatures,
 	//}).Define()
@@ -56,8 +64,8 @@ func (v *venafiProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectRefe
 	Expect(v.tpp.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tpp venafi")
 }
 
-func (v *venafiProvisioner) create(f *framework.Framework) cmmeta.ObjectReference {
-	By("Creating a Venafi issuer")
+func (v *venafiProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a Venafi Issuer")
 
 	v.tpp = &vaddon.VenafiTPP{
 		Namespace: f.Namespace.Name,
@@ -78,6 +86,32 @@ func (v *venafiProvisioner) create(f *framework.Framework) cmmeta.ObjectReferenc
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (v *venafiProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a Venafi ClusterIssuer")
+
+	v.tpp = &vaddon.VenafiTPP{
+		Namespace: addon.CertManager.Namespace,
+	}
+
+	err := v.tpp.Setup(f.Config)
+	if errors.IsSkip(err) {
+		framework.Skipf("Skipping test as addon could not be setup: %v", err)
+	}
+	Expect(err).NotTo(HaveOccurred(), "failed to setup tpp venafi")
+
+	Expect(v.tpp.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
+
+	issuer := v.tpp.Details().BuildClusterIssuer()
+	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
 	}
 }
