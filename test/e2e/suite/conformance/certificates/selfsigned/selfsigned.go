@@ -36,6 +36,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	(&certificates.Suite{
 		Name:             "SelfSigned ClusterIssuer",
 		CreateIssuerFunc: createSelfSignedClusterIssuer,
+		DeleteIssuerFunc: deleteSelfSignedClusterIssuer,
 	}).Define()
 })
 
@@ -57,10 +58,15 @@ func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	}
 }
 
+func deleteSelfSignedClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
+	err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuer.Name, nil)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned ClusterIssuer")
 
-	_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
+	_, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "selfsigned",
 		},

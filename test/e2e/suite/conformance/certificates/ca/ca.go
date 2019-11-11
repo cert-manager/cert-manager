@@ -38,13 +38,14 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	(&certificates.Suite{
 		Name:             "CA ClusterIssuer",
 		CreateIssuerFunc: createCAClusterIssuer,
+		DeleteIssuerFunc: deleteCAClusterIssuer,
 	}).Define()
 })
 
 func createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a CA Issuer")
 
-	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret("root-cert"))
+	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret("root-ca-cert"))
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
@@ -66,7 +67,7 @@ func createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 func createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a CA ClusterIssuer")
 
-	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Create(newSigningKeypairSecret("root-cert"))
+	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Create(newSigningKeypairSecret("root-ca-cert"))
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
@@ -83,6 +84,16 @@ func createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
 	}
+}
+
+func deleteCAClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
+	By("Deleting CA ClusterIssuer")
+
+	err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Delete("root-ca-cert", nil)
+	Expect(err).NotTo(HaveOccurred(), "failed to delete root signing keypair secret")
+
+	err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuer.Name, nil)
+	Expect(err).NotTo(HaveOccurred(), "failed to delete ca issuer")
 }
 
 func createCAIssuerSpec(rootCertSecretName string) cmapi.IssuerSpec {

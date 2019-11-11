@@ -76,6 +76,14 @@ func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.Obje
 	Expect(v.vaultInit.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 	Expect(v.vault.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
 	Expect(v.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
+
+	if ref.Kind == "ClusterIssuer" {
+		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(ref.Name, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Delete(vaultSecretAppRoleName, nil)
+		Expect(err).NotTo(HaveOccurred())
+	}
 }
 
 func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectReference {

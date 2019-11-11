@@ -99,6 +99,11 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 		Expect(a.cloudflare.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision cloudflare")
 	}
 	Expect(a.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
+
+	if ref.Kind == "ClusterIssuer" {
+		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(ref.Name, nil)
+		Expect(err).NotTo(HaveOccurred())
+	}
 }
 
 // createXXX will deploy the required components to run an ACME issuer based test.

@@ -62,6 +62,11 @@ type venafiProvisioner struct {
 
 func (v *venafiProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	Expect(v.tpp.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tpp venafi")
+
+	if ref.Kind == "ClusterIssuer" {
+		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(ref.Name, nil)
+		Expect(err).NotTo(HaveOccurred())
+	}
 }
 
 func (v *venafiProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectReference {
