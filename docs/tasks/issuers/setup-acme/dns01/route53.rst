@@ -27,7 +27,7 @@ Cert-manager needs to be able to add records to Route53 in order to solve the DN
                "Action": [
                  "route53:ChangeResourceRecordSets",
                  "route53:ListResourceRecordSets"
-               ]
+               ],
                "Resource": "arn:aws:route53:::hostedzone/*"
            },
            {
