@@ -38,5 +38,5 @@ const (
 
 	// Default mount path location for Kubernetes ServiceAccount authentication
 	// (/v1/auth/kubernetes/login)
-	DefaultVaultKubernetesAuthMountPath = "kubernetes"
+	DefaultVaultKubernetesAuthMountPath = "/v1/auth/kubernetes/login"
 )
