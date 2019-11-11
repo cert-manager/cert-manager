@@ -37,6 +37,7 @@ const (
 )
 
 type Vault struct {
+	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
 	reporter      *crutil.Reporter
 
@@ -54,6 +55,7 @@ func init() {
 
 func NewVault(ctx *controllerpkg.Context) *Vault {
 	return &Vault{
+		issuerOptions:      ctx.IssuerOptions,
 		secretsLister:      ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		reporter:           crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		vaultClientBuilder: vaultinternal.New,
@@ -64,7 +66,9 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
-	client, err := v.vaultClientBuilder(cr.Namespace, v.secretsLister, issuerObj)
+	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
+
+	client, err := v.vaultClientBuilder(resourceNamespace, v.secretsLister, issuerObj)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
