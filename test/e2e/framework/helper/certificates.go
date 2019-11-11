@@ -280,6 +280,19 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageServerAuth)
 	}
 
+	// De-duplicate list
+	extKeyUsagesMap := make(map[x509.ExtKeyUsage]bool)
+	for _, e := range extKeyUsages {
+		extKeyUsagesMap[e] = true
+	}
+
+	extKeyUsages = make([]x509.ExtKeyUsage, 0)
+	for e, ok := range extKeyUsagesMap {
+		if ok {
+			extKeyUsages = append(extKeyUsages, e)
+		}
+	}
+
 	return keyUsages, extKeyUsages, nil
 }
 
