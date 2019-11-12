@@ -43,18 +43,18 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned Issuer")
 
-	_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "selfsigned",
+			GenerateName: "selfsigned-issuer-",
 		},
 		Spec: createSelfSignedIssuerSpec(),
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.IssuerKind,
-		Name:  "selfsigned",
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
+		Name:  issuer.Name,
 	}
 }
 
@@ -66,18 +66,18 @@ func deleteSelfSignedClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectR
 func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned ClusterIssuer")
 
-	_, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "selfsigned",
+			GenerateName: "selfsigned-cluster-issuer-",
 		},
 		Spec: createSelfSignedIssuerSpec(),
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.ClusterIssuerKind,
-		Name:  "selfsigned",
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
+		Name:  issuer.Name,
 	}
 }
 

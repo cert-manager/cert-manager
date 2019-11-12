@@ -29,6 +29,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/e2e/util"
@@ -90,7 +91,7 @@ func runVaultAppRoleTests(issuerKind string) {
 		if issuerKind == cmapi.IssuerKind {
 			vaultSecretNamespace = f.Namespace.Name
 		} else {
-			vaultSecretNamespace = "kube-system"
+			vaultSecretNamespace = addon.CertManager.Namespace
 		}
 
 		vaultInit = &vaultaddon.VaultInitializer{

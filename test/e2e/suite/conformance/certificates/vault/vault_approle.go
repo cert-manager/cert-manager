@@ -96,15 +96,15 @@ func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.Ob
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "vault-issuer",
+			GenerateName: "vault-issuer-",
 		},
 		Spec: v.createIssuerSpec(f, vaultSecrets),
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.IssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }
@@ -119,15 +119,15 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cm
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "vault-issuer",
+			GenerateName: "vault-cluster-issuer-",
 		},
 		Spec: v.createIssuerSpec(f, vaultSecrets),
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.ClusterIssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }

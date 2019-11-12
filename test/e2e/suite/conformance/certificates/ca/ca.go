@@ -50,7 +50,7 @@ func createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "ca",
+			GenerateName: "ca-issuer-",
 		},
 		Spec: createCAIssuerSpec(rootCertSecret.Name),
 	})
@@ -58,8 +58,8 @@ func createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.IssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }
@@ -72,7 +72,7 @@ func createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "ca",
+			GenerateName: "ca-cluster-issuer-",
 		},
 		Spec: createCAIssuerSpec(rootCertSecret.Name),
 	})
@@ -80,8 +80,8 @@ func createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.ClusterIssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }

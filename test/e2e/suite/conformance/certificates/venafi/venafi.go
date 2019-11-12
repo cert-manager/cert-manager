@@ -20,7 +20,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -89,8 +88,8 @@ func (v *venafiProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectRe
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.IssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }
@@ -115,8 +114,8 @@ func (v *venafiProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.O
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.ClusterIssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }

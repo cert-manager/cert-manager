@@ -118,7 +118,7 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	By("Creating an ACME HTTP01 Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "acme-issuer-http01",
+			GenerateName: "acme-issuer-http01-",
 		},
 		Spec: a.createHTTP01IssuerSpec(),
 	}
@@ -127,8 +127,8 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.IssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }
@@ -139,7 +139,7 @@ func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework
 	By("Creating an ACME HTTP01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "acme-issuer-http01",
+			GenerateName: "acme-cluster-issuer-http01-",
 		},
 		Spec: a.createHTTP01IssuerSpec(),
 	}
@@ -148,8 +148,8 @@ func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.ClusterIssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }
@@ -192,7 +192,7 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 	By("Creating an ACME DNS01 Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "acme-issuer-dns01",
+			GenerateName: "acme-issuer-dns01-",
 		},
 		Spec: a.createDNS01IssuerSpec(),
 	}
@@ -200,8 +200,8 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.IssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }
@@ -218,7 +218,7 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 	By("Creating an ACME DNS01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "acme-issuer-dns01",
+			GenerateName: "acme-cluster-issuer-dns01-",
 		},
 		Spec: a.createDNS01IssuerSpec(),
 	}
@@ -226,8 +226,8 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
 
 	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.ClusterIssuerKind,
+		Group: issuer.GroupVersionKind().Group,
+		Kind:  issuer.Kind,
 		Name:  issuer.Name,
 	}
 }
