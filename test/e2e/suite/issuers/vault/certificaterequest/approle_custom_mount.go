@@ -78,10 +78,9 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 	role := "kubernetes-vault"
 	issuerName := "test-vault-issuer"
 	certificateRequestName := "test-vault-certificaterequest"
-	vaultSecretAppRoleName := "vault-role"
+	vaultSecretAppRoleName := "vault-role-"
 	vaultPath := path.Join(intermediateMount, "sign", role)
-	var roleId string
-	var secretId string
+	var roleId, secretId, vaultSecretName string
 
 	var vaultInit *vaultaddon.VaultInitializer
 
@@ -109,8 +108,10 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 		roleId, secretId, err = vaultInit.CreateAppRole()
 		Expect(err).NotTo(HaveOccurred())
-		_, err = f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
+		sec, err := f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
 		Expect(err).NotTo(HaveOccurred())
+
+		vaultSecretName = sec.Name
 	})
 
 	JustAfterEach(func() {
@@ -123,7 +124,7 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 			f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuerName, nil)
 		}
 
-		f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(vaultSecretAppRoleName, nil)
+		f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(vaultSecretName, nil)
 	})
 
 	It("should generate a new valid certificate", func() {

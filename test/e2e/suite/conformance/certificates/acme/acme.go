@@ -127,8 +127,8 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
 	return cmmeta.ObjectReference{
-		Group: issuer.GroupVersionKind().Group,
-		Kind:  issuer.Kind,
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
@@ -148,8 +148,8 @@ func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
 
 	return cmmeta.ObjectReference{
-		Group: issuer.GroupVersionKind().Group,
-		Kind:  issuer.Kind,
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
 	}
 }
@@ -200,8 +200,8 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
 
 	return cmmeta.ObjectReference{
-		Group: issuer.GroupVersionKind().Group,
-		Kind:  issuer.Kind,
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
@@ -226,8 +226,8 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
 
 	return cmmeta.ObjectReference{
-		Group: issuer.GroupVersionKind().Group,
-		Kind:  issuer.Kind,
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
 	}
 }

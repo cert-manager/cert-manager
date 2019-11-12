@@ -52,8 +52,8 @@ func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
 	return cmmeta.ObjectReference{
-		Group: issuer.GroupVersionKind().Group,
-		Kind:  issuer.Kind,
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
 }
@@ -75,8 +75,8 @@ func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReferenc
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
 	return cmmeta.ObjectReference{
-		Group: issuer.GroupVersionKind().Group,
-		Kind:  issuer.Kind,
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
 		Name:  issuer.Name,
 	}
 }

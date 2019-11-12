@@ -57,14 +57,14 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	rootMount := "root-ca"
 	intermediateMount := "intermediate-ca"
 	role := "kubernetes-vault"
-	vaultSecretAppRoleName := "vault-role"
+	vaultSecretAppRoleName := "vault-role-"
 	vaultSecretTokenName := "vault-token"
 	vaultSecretServiceAccount := "vault-serviceaccount"
 	vaultKubernetesRoleName := "kubernetes-role"
 	vaultPath := path.Join(intermediateMount, "sign", role)
 	appRoleAuthPath := "approle"
 	kubernetesAuthPath := "/v1/auth/kubernetes"
-	var roleId, secretId string
+	var roleId, secretId, vaultSecretName string
 	var vaultInit *vaultaddon.VaultInitializer
 
 	BeforeEach(func() {
@@ -101,7 +101,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	JustAfterEach(func() {
 		By("Cleaning up AppRole")
 		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(vaultSecretAppRoleName, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(vaultSecretName, nil)
 		vaultInit.CleanAppRole()
 
 		By("Cleaning up Kubernetes")
@@ -114,10 +114,12 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	const vaultDefaultDuration = time.Hour * 24 * 90
 
 	It("should be ready with a valid AppRole", func() {
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
+		sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, appRoleAuthPath, vault.Details().VaultCA))
+		vaultSecretName = sec.Name
+
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretName, appRoleAuthPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
