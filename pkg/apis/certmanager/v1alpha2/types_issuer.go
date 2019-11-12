@@ -193,9 +193,10 @@ type VaultAppRole struct {
 // Authenticate against Vault using a Kubernetes ServiceAccount token stored in
 // a Secret.
 type VaultKubernetesAuth struct {
-	// The vault here is the path to use when authenticating with vault, for
-	// example setting a value to `/v1/auth/foo/login`. If unspecified, the
-	// default value "/v1/auth/kubernetes/login" will be used.
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/kubernetes" will be used.
 	// +optional
 	Path string `json:"mountPath,omitempty"`
 

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -317,7 +318,8 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		mountPath = v1alpha2.DefaultVaultKubernetesAuthMountPath
 	}
 
-	request := client.NewRequest("POST", mountPath)
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
 	err = request.SetJSONBody(parameters)
 	if err != nil {
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())

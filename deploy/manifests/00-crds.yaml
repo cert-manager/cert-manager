@@ -3257,10 +3257,11 @@ spec:
                       - secretRef
                       properties:
                         mountPath:
-                          description: The vault here is the path to use when authenticating
-                            with vault, for example setting a value to `/v1/auth/foo/login`.
-                            If unspecified, the default value "/v1/auth/kubernetes/login"
-                            will be used.
+                          description: The Vault mountPath here is the mount path
+                            to use when authenticating with Vault. For example, setting
+                            a value to `/v1/auth/foo`, will use the path `/v1/auth/foo/login`
+                            to authenticate with Vault. If unspecified, the default
+                            value "/v1/auth/kubernetes" will be used.
                           type: string
                         role:
                           description: A required field containing the Vault Role
@@ -4911,10 +4912,11 @@ spec:
                       - secretRef
                       properties:
                         mountPath:
-                          description: The vault here is the path to use when authenticating
-                            with vault, for example setting a value to `/v1/auth/foo/login`.
-                            If unspecified, the default value "/v1/auth/kubernetes/login"
-                            will be used.
+                          description: The Vault mountPath here is the mount path
+                            to use when authenticating with Vault. For example, setting
+                            a value to `/v1/auth/foo`, will use the path `/v1/auth/foo/login`
+                            to authenticate with Vault. If unspecified, the default
+                            value "/v1/auth/kubernetes" will be used.
                           type: string
                         role:
                           description: A required field containing the Vault Role
