@@ -90,10 +90,8 @@ those credentials to perform the ACME DNS01 challenge with route53.
        # An empty 'selector' means that this solver matches all domains
        - selector: {}
          dns01:
-           providers:
-           - name: route53
-             route53:
-               region: us-east-1
+           route53:
+             region: us-east-1
 
 It is important to note that the ``route53`` section does not specify any
 ``accessKeyID`` or ``secretAccessKeySecretRef``. If either of these are
