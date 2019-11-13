@@ -29,28 +29,62 @@ import (
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	(&certificates.Suite{
-		Name:             "SelfSigned",
+		Name:             "SelfSigned Issuer",
 		CreateIssuerFunc: createSelfSignedIssuer,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:             "SelfSigned ClusterIssuer",
+		CreateIssuerFunc: createSelfSignedClusterIssuer,
+		DeleteIssuerFunc: deleteSelfSignedClusterIssuer,
 	}).Define()
 })
 
 func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	By("Creating a SelfSigned issuer")
-	_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
+	By("Creating a SelfSigned Issuer")
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "selfsigned",
+			GenerateName: "selfsigned-issuer-",
 		},
-		Spec: cmapi.IssuerSpec{
-			IssuerConfig: cmapi.IssuerConfig{
-				SelfSigned: &cmapi.SelfSignedIssuer{},
-			},
-		},
+		Spec: createSelfSignedIssuerSpec(),
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
-		Name:  "selfsigned",
+		Name:  issuer.Name,
+	}
+}
+
+func deleteSelfSignedClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
+	err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuer.Name, nil)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a SelfSigned ClusterIssuer")
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "selfsigned-cluster-issuer-",
+		},
+		Spec: createSelfSignedIssuerSpec(),
+	})
+	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func createSelfSignedIssuerSpec() cmapi.IssuerSpec {
+	return cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			SelfSigned: &cmapi.SelfSignedIssuer{},
+		},
 	}
 }

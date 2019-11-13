@@ -126,3 +126,16 @@ func (t *TPPDetails) BuildIssuer() *cmapi.Issuer {
 		},
 	}
 }
+
+func (t *TPPDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
+	return &cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "venafi-tpp-",
+		},
+		Spec: cmapi.IssuerSpec{
+			IssuerConfig: cmapi.IssuerConfig{
+				Venafi: &t.issuerTemplate,
+			},
+		},
+	}
+}

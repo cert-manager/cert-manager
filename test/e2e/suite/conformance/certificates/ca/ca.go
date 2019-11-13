@@ -25,39 +25,94 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
+	caIssuer := new(ca)
 	(&certificates.Suite{
-		Name:             "CA",
-		CreateIssuerFunc: createCAIssuer,
+		Name:             "CA Issuer",
+		CreateIssuerFunc: caIssuer.createCAIssuer,
+	}).Define()
+
+	caClusterIssuer := new(ca)
+	(&certificates.Suite{
+		Name:             "CA ClusterIssuer",
+		CreateIssuerFunc: caClusterIssuer.createCAClusterIssuer,
+		DeleteIssuerFunc: caClusterIssuer.deleteCAClusterIssuer,
 	}).Define()
 })
 
-func createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	By("Creating a CA issuer")
-	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret("root-cert"))
+type ca struct {
+	secretName string
+}
+
+func (c *ca) createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a CA Issuer")
+
+	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret("root-ca-cert-"))
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
+
+	c.secretName = rootCertSecret.Name
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "ca",
+			GenerateName: "ca-issuer-",
 		},
-		Spec: cmapi.IssuerSpec{
-			IssuerConfig: cmapi.IssuerConfig{
-				CA: &cmapi.CAIssuer{
-					SecretName: rootCertSecret.Name,
-				},
-			},
-		},
+		Spec: createCAIssuerSpec(rootCertSecret.Name),
 	})
+
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
+	}
+}
+
+func (c *ca) createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a CA ClusterIssuer")
+
+	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Create(newSigningKeypairSecret("root-ca-cert-"))
+	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
+
+	c.secretName = rootCertSecret.Name
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "ca-cluster-issuer-",
+		},
+		Spec: createCAIssuerSpec(rootCertSecret.Name),
+	})
+
+	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (c *ca) deleteCAClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
+	By("Deleting CA ClusterIssuer")
+
+	err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Delete(c.secretName, nil)
+	Expect(err).NotTo(HaveOccurred(), "failed to delete root signing keypair secret")
+
+	err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuer.Name, nil)
+	Expect(err).NotTo(HaveOccurred(), "failed to delete ca issuer")
+}
+
+func createCAIssuerSpec(rootCertSecretName string) cmapi.IssuerSpec {
+	return cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			CA: &cmapi.CAIssuer{
+				SecretName: rootCertSecretName,
+			},
+		},
 	}
 }
 
@@ -116,7 +171,7 @@ tSK2ayFX1wQ3PuEmewAogy/20tWo80cr556AXA62Utl2PzLK30Db8w==
 func newSigningKeypairSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			GenerateName: name,
 		},
 		StringData: map[string]string{
 			corev1.TLSCertKey:       rootCert,

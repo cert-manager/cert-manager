@@ -58,7 +58,7 @@ func NewVaultTokenSecret(name string) *v1.Secret {
 func NewVaultAppRoleSecret(name, secretId string) *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			GenerateName: name,
 		},
 		StringData: map[string]string{
 			"secretkey": secretId,
