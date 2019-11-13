@@ -119,12 +119,12 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 		vaultSecretName = sec.Name
 
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretName, appRoleAuthPath, vault.Details().VaultCA))
+		iss, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretName, appRoleAuthPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+			iss.Name,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
@@ -134,12 +134,12 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 	It("should fail to init with missing Vault AppRole", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, appRoleAuthPath, vault.Details().VaultCA))
+		iss, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, appRoleAuthPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+			iss.Name,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionFalse,

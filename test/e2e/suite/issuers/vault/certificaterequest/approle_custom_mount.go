@@ -76,7 +76,6 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 	intermediateMount := "intermediate-ca"
 	authPath := "custom/path"
 	role := "kubernetes-vault"
-	issuerName := "test-vault-issuer"
 	certificateRequestName := "test-vault-certificaterequest"
 	vaultSecretAppRoleName := "vault-role-"
 	vaultPath := path.Join(intermediateMount, "sign", role)
@@ -84,7 +83,7 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 
 	var vaultInit *vaultaddon.VaultInitializer
 
-	var vaultSecretNamespace string
+	var vaultIssuerName, vaultSecretNamespace string
 
 	BeforeEach(func() {
 		By("Configuring the Vault server")
@@ -119,9 +118,9 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 		Expect(vaultInit.Clean()).NotTo(HaveOccurred())
 
 		if issuerKind == cmapi.IssuerKind {
-			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(vaultIssuerName, nil)
 		} else {
-			f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuerName, nil)
+			f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(vaultIssuerName, nil)
 		}
 
 		f.KubeClientSet.CoreV1().Secrets(vaultSecretNamespace).Delete(vaultSecretName, nil)
@@ -135,24 +134,28 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 
 		var err error
 		if issuerKind == cmapi.IssuerKind {
-			_, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
-		} else {
-			_, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(util.NewCertManagerVaultClusterIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
-		}
+			iss, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole("test-vault-issuer-", vaultURL, vaultPath, roleId, vaultSecretName, authPath, vault.Details().VaultCA))
+			Expect(err).NotTo(HaveOccurred())
 
-		Expect(err).NotTo(HaveOccurred())
+			vaultIssuerName = iss.Name
+		} else {
+			iss, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(util.NewCertManagerVaultClusterIssuerAppRole("test-vault-issuer-", vaultURL, vaultPath, roleId, vaultSecretName, authPath, vault.Details().VaultCA))
+			Expect(err).NotTo(HaveOccurred())
+
+			vaultIssuerName = iss.Name
+		}
 
 		By("Waiting for Issuer to become Ready")
 		if issuerKind == cmapi.IssuerKind {
 			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-				issuerName,
+				vaultIssuerName,
 				cmapi.IssuerCondition{
 					Type:   cmapi.IssuerConditionReady,
 					Status: cmmeta.ConditionTrue,
 				})
 		} else {
 			err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers(),
-				issuerName,
+				vaultIssuerName,
 				cmapi.IssuerCondition{
 					Type:   cmapi.IssuerConditionReady,
 					Status: cmmeta.ConditionTrue,
@@ -162,7 +165,7 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, vaultIssuerName,
 			issuerKind, &metav1.Duration{
 				Duration: time.Hour * 24 * 90,
 			},

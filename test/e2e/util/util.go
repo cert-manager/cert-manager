@@ -488,7 +488,7 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken,
 func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha2.Issuer {
 	return &v1alpha2.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			GenerateName: name,
 		},
 		Spec: newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecretAppRole, authPath, caBundle),
 	}
@@ -497,7 +497,7 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 func NewCertManagerVaultClusterIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha2.ClusterIssuer {
 	return &v1alpha2.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			GenerateName: name,
 		},
 		Spec: newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecretAppRole, authPath, caBundle),
 	}
