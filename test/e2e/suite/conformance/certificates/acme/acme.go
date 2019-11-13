@@ -210,7 +210,7 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 	a.deployTiller(f, "dns01")
 
 	a.cloudflare = &dnsproviders.Cloudflare{
-		Namespace: f.Namespace.Name,
+		Namespace: addon.CertManager.Namespace,
 	}
 	Expect(a.cloudflare.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflare")
 	Expect(a.cloudflare.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflare")
