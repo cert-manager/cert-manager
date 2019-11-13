@@ -318,7 +318,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		mountPath = v1alpha2.DefaultVaultKubernetesAuthMountPath
 	}
 
-	url := filepath.Join("/v1", "auth", mountPath, "login")
+	url := filepath.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err = request.SetJSONBody(parameters)
 	if err != nil {

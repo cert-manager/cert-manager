@@ -37,6 +37,7 @@ const (
 	DefaultVaultTokenAuthSecretKey = "token"
 
 	// Default mount path location for Kubernetes ServiceAccount authentication
-	// (/v1/auth/kubernetes/login)
-	DefaultVaultKubernetesAuthMountPath = "kubernetes"
+	// (/v1/auth/kubernetes). The endpoint will then be called at `/login`, so
+	// left as the default, `/v1/auth/kubernetes/login` will be called.
+	DefaultVaultKubernetesAuthMountPath = "/v1/auth/kubernetes"
 )

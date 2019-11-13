@@ -63,7 +63,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	vaultKubernetesRoleName := "kubernetes-role"
 	vaultPath := path.Join(intermediateMount, "sign", role)
 	appRoleAuthPath := "approle"
-	kubernetesAuthPath := "kubernetes"
+	kubernetesAuthPath := "/v1/auth/kubernetes"
 	var roleId, secretId string
 	var vaultInit *vaultaddon.VaultInitializer
 

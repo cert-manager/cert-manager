@@ -2691,7 +2691,7 @@ Appears In:
 </thead>
 <tbody><tr>
 <td><code>mountPath</code><br /> <em>string</em></td>
-<td>The value here will be used as part of the path used when authenticating with vault, for example if you set a value of &#34;foo&#34;, the path used will be <code>/v1/auth/foo/login</code>. If unspecified, the default value &#34;kubernetes&#34; will be used.</td>
+<td>The Vault mountPath here is the mount path to use when authenticating with Vault. For example, setting a value to <code>/v1/auth/foo</code>, will use the path <code>/v1/auth/foo/login</code> to authenticate with Vault. If unspecified, the default value &#34;/v1/auth/kubernetes&#34; will be used.</td>
 </tr>
 <tr>
 <td><code>role</code><br /> <em>string</em></td>
