@@ -2,22 +2,6 @@ module github.com/jetstack/cert-manager
 
 go 1.12
 
-// Pin k8s.io/* dependencies to kubernetes-1.16.0
-replace (
-	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
-	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
-	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
-	k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190912054826-cd179ad6a269
-	k8s.io/component-base => k8s.io/component-base v0.0.0-20190918160511-547f6c5d7090
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190918161219-8c8f079fddc3
-)
-
-replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
-
-replace github.com/munnerz/goautoneg => github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30
-
 replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.4
 
 require (
@@ -102,15 +86,15 @@ require (
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/ory-am/dockertest.v3 v3.3.4 // indirect
-	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
-	k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604
-	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
-	k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
-	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/code-generator v0.0.0-20190912054826-cd179ad6a269
-	k8s.io/component-base v0.0.0-20190918160511-547f6c5d7090
+	k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
+	k8s.io/apiextensions-apiserver v0.0.0-20191114105449-027877536833
+	k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb
+	k8s.io/apiserver v0.0.0-20191114103151-9ca1dc586682
+	k8s.io/client-go v0.0.0-20191114101535-6c5935290e33
+	k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
+	k8s.io/component-base v0.0.0-20191114102325-35a9586014f7
 	k8s.io/klog v0.4.0
-	k8s.io/kube-aggregator v0.0.0-20190222095010-0b78038fe9e5
+	k8s.io/kube-aggregator v0.0.0-20191114103820-f023614fb9ea
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
