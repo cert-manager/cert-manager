@@ -18,7 +18,8 @@ APP_VERSION := canary
 HACK_DIR ?= hack
 
 SKIP_GLOBALS := false
-GINKGO_SKIP :=
+# Skip Venafi tests whilst there are issues with the TPP server
+GINKGO_SKIP := Venafi
 GINKGO_FOCUS :=
 
 ## e2e test vars
