@@ -10,7 +10,7 @@ GOROOT = "@go_sdk//:files"
 
 GOFMT = "@go_sdk//:bin/gofmt"
 
-JQ = "@com_github_jetstack_cert_manager//hack/bin:jq"
+JQ = "//hack/bin:jq"
 
 CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
 
