@@ -37,7 +37,7 @@ func main() {
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		klog.Fatal(err)
+		klog.Info(err)
 	}
 }
 

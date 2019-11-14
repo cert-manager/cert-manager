@@ -15,6 +15,7 @@
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
 def image(
     name,
@@ -22,12 +23,14 @@ def image(
     binary,
     user = "1000",
     stamp = True,
+    testonly = False,
     **kwargs):
 
     go_image(
         name = "%s.app" % name,
         base = "@static_base//image",
         binary = binary,
+        testonly = testonly,
     )
 
     container_image(
@@ -35,6 +38,7 @@ def image(
         base = "%s.app" % name,
         user = user,
         stamp = stamp,
+        testonly = testonly,
         **kwargs)
 
     container_bundle(
@@ -42,4 +46,47 @@ def image(
         images = {
             component + ":{STABLE_APP_GIT_COMMIT}": ":" + name,
         },
+        testonly = testonly,
     )
+
+def covered_image(name, component, **kwargs):
+    native.genrule(
+        name = "%s.covered-testfile" % name,
+        cmd = """
+name="%s";
+cat <<EOF > "$@"
+package main
+import (
+  "testing"
+  "github.com/jetstack/cert-manager/pkg/util/coverage"
+)
+func TestMain(m *testing.M) {
+  // Get coverage running
+  coverage.InitCoverage("$${name}")
+  // Go!
+  main()
+  // Make sure we actually write the profiling information to disk, if we make it here.
+  // On long-running services, or anything that calls os.Exit(), this is insufficient,
+  // so we also flush periodically with a default period of five seconds (configurable by
+  // the COVERAGE_FLUSH_INTERVAL environment variable).
+  coverage.FlushCoverage()
+}
+EOF
+        """ % component,
+        outs = ["main_test.go"],
+    )
+
+    go_test(
+        name = "%s.covered-app" % name,
+        srcs = ["main_test.go"],
+        embed = [":go_default_library"],
+        deps = ["//pkg/util/coverage:go_default_library"],
+        tags = ["manual"],
+    )
+
+    image(
+        name = name,
+        binary = "%s.covered-app" % name,
+        testonly = True,
+        component = component,
+        **kwargs)
