@@ -216,32 +216,6 @@ sh_test(
     ],
 )
 
-# Reference docs generation rules
-sh_binary(
-    name = "update-reference-docs",
-    srcs = ["update-reference-docs.sh"],
-    args = [
-        "$(location @//docs/generated/reference/generate)",
-    ],
-    data = [
-        "@//docs/generated/reference/generate",
-    ],
-)
-
-sh_test(
-    name = "verify-reference-docs",
-    srcs = ["verify-reference-docs.sh"],
-    args = [
-        "$(location :update-reference-docs)",
-        "$(location @//docs/generated/reference/generate)",
-    ],
-    data = [
-        ":update-reference-docs",
-        "@//docs/generated/reference:output",
-        "@//docs/generated/reference/generate",
-    ],
-)
-
 # Gofmt rules
 
 sh_binary(

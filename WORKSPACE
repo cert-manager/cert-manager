@@ -103,30 +103,6 @@ load(
 
 install_e2e_images()
 
-# Load and define targets used for reference doc generation
-load(
-    "//docs/generated/reference:deps.bzl",
-    install_docs_dependencies = "install",
-)
-
-install_docs_dependencies()
-
-# The npm_install rule runs yarn anytime the package.json or package-lock.json file changes.
-# It also extracts any Bazel rules distributed in an npm package.
-load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
-
-npm_install(
-    # Name this npm so that Bazel Label references look like @brodocs_modules//package
-    name = "brodocs_modules",
-    package_json = "@brodocs//:package.json",
-    package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
-)
-
-# Install any Bazel rules which were extracted earlier by the npm_install rule.
-load("@brodocs_modules//:install_bazel_dependencies.bzl", "install_bazel_dependencies")
-
-install_bazel_dependencies()
-
 load("//hack/build:repos.bzl", "go_repositories")
 
 go_repositories()
