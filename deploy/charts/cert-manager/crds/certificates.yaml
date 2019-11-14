@@ -26,6 +26,7 @@ spec:
     name: Age
     type: date
   group: cert-manager.io
+  preserveUnknownFields: false
   names:
     kind: Certificate
     listKind: CertificateList
