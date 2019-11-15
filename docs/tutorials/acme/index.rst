@@ -1,14 +1,6 @@
-=====================
-ACME Issuer Tutorials
-=====================
+==========
+File moved
+==========
 
-This sections contains tutorials relating to the ACME issuer.
-
-
-.. toctree::
-   :maxdepth: 1
-
-   quick-start/index
-   dns-validation
-   http-validation
-   migrating-from-kube-lego
+This document has moved to https://cert-manager.netlify.com/docs/tutorials/acme/ingress/.
+This placeholder file will be removed in a later release.

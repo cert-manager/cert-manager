@@ -1,5 +1,6 @@
-===========================
-Upgrading from v0.6 to v0.7
-===========================
+==========
+File moved
+==========
 
-There are no special notes or considerations when upgrading from v0.6 to v0.7.
+This document has moved to https://cert-manager.netlify.com/docs/TODO.
+This placeholder file will be removed in a later release.

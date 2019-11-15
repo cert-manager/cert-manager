@@ -1,13 +1,6 @@
-===========
-Get started
-===========
+==========
+File moved
+==========
 
-The guides in this section will explain how to install, set up, and
-uninstall cert-manager.
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   install/index
-   webhook
+This document has moved to https://cert-manager.netlify.com/docs/installation/.
+This placeholder file will be removed in a later release.

@@ -1,7 +1,6 @@
-====================
-Design and Proposals
-====================
+==========
+File moved
+==========
 
-To view design documents please visit the link here_.
-
-.. _here: https://github.com/jetstack/cert-manager/tree/master/design
+This document has moved to https://cert-manager.netlify.com/docs.
+This placeholder file will be removed in a later release.

@@ -1,27 +1,6 @@
-=========================
-Akamai FastDNS
-=========================
+==========
+File moved
+==========
 
-.. code-block:: yaml
-   :emphasize-lines: 10-20
-
-   apiVersion: cert-manager.io/v1alpha2
-   kind: Issuer
-   metadata:
-     name: example-issuer
-   spec:
-     acme:
-       ...
-       solvers:
-       - dns01:
-           akamai:
-             serviceConsumerDomain: akab-tho6xie2aiteip8p-poith5aej0ughaba.luna.akamaiapis.net
-             clientTokenSecretRef:
-               name: akamai-dns
-               key: clientToken
-             clientSecretSecretRef:
-               name: akamai-dns
-               key: clientSecret
-             accessTokenSecretRef:
-               name: akamai-dns
-               key: accessToken
+This document has moved to https://cert-manager.netlify.com/docs/configuration/acme/dns01/akamai/.
+This placeholder file will be removed in a later release.
