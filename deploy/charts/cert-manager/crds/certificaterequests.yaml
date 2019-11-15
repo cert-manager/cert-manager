@@ -56,6 +56,7 @@ spec:
           description: CertificateRequestSpec defines the desired state of CertificateRequest
           type: object
           required:
+          - csr
           - issuerRef
           properties:
             csr:

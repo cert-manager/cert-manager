@@ -73,8 +73,7 @@ type CertificateRequestSpec struct {
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
 	// Byte slice containing the PEM encoded CertificateSigningRequest
-	// +optional
-	CSRPEM []byte `json:"csr,omitempty"`
+	CSRPEM []byte `json:"csr"`
 
 	// IsCA will mark the resulting certificate as valid for signing. This
 	// implies that the 'cert sign' usage is set
