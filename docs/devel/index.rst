@@ -1,12 +1,6 @@
-Development documentation
-=========================
+==========
+File moved
+==========
 
-.. toctree::
-   :maxdepth: 1
-
-   develop-with-minikube
-   end-to-end-tests
-   dns01-providers
-   dco-sign-off
-   release-process
-   generate-docs
+This document has moved to https://cert-manager.netlify.com/docs/contributing/.
+This placeholder file will be removed in a later release.

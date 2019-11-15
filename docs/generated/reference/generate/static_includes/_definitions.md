@@ -1,5 +1,0 @@
-
-# <strong>Field Definitions</strong>
-
-------------
-

@@ -1,5 +1,6 @@
-===========================
-Upgrading from v0.3 to v0.4
-===========================
+==========
+File moved
+==========
 
-There are no special notes or considerations when upgrading from v0.3 to v0.4.
+This document has moved to https://cert-manager.netlify.com/docs/TODO.
+This placeholder file will be removed in a later release.

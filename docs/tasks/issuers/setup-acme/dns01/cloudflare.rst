@@ -1,21 +1,6 @@
-=========================
-Cloudflare
-=========================
+==========
+File moved
+==========
 
-.. code-block:: yaml
-   :emphasize-lines: 10-14
-
-   apiVersion: cert-manager.io/v1alpha2
-   kind: Issuer
-   metadata:
-     name: example-issuer
-   spec:
-     acme:
-       ...
-       solvers:
-       - dns01:
-           cloudflare:
-             email: my-cloudflare-acc@example.com
-             apiKeySecretRef:
-               name: cloudflare-api-key-secret
-               key: api-key
+This document has moved to https://cert-manager.netlify.com/docs/configuration/acme/dns01/cloudflare/.
+This placeholder file will be removed in a later release.

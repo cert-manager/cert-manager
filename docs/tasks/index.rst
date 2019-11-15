@@ -1,16 +1,6 @@
-=====
-Tasks
-=====
+==========
+File moved
+==========
 
-This section contains guides on using specific features of cert-manager, such
-as configuring different Issuer types and any special settings that you may
-want to configure.
-
-.. toctree::
-   :maxdepth: 2
-
-   issuers/index
-   issuing-certificates/index
-   backup-restore-crds
-   uninstall/index
-   upgrading/index
+This document has moved to https://cert-manager.netlify.com/docs/configuration/.
+This placeholder file will be removed in a later release.

@@ -1,16 +1,6 @@
-=======================
-Installing cert-manager
-=======================
+==========
+File moved
+==========
 
-cert-manager supports running on Kubernetes_ and OpenShift_. The installation
-mechanism between the two platforms is similar, although there are a number
-of extra notes to be aware of per-platform.
-
-.. toctree::
-   :maxdepth: 1
-
-   kubernetes
-   openshift
-
-.. _Kubernetes: https://kubernetes.io
-.. _OpenShift: https://www.openshift.com
+This document has moved to https://cert-manager.netlify.com/docs/installation/.
+This placeholder file will be removed in a later release.
