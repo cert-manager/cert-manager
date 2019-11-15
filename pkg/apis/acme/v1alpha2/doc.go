@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package v1alpha2 is the v1alpha2 version of the API.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/jetstack/cert-manager/pkg/apis/acme
 // +k8s:openapi-gen=true
 // +k8s:defaulter-gen=TypeMeta
-
-// Package v1alpha2 is the v1alpha2 version of the API.
 // +groupName=acme.cert-manager.io
 package v1alpha2
