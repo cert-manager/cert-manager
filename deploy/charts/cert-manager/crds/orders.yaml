@@ -23,6 +23,7 @@ spec:
     name: Age
     type: date
   group: acme.cert-manager.io
+  preserveUnknownFields: false
   names:
     kind: Order
     listKind: OrderList

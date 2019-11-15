@@ -17,13 +17,20 @@ limitations under the License.
 package install
 
 import (
+	"fmt"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
+	crdfuzz "github.com/munnerz/crd-schema-fuzz"
 
-	cmfuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/fuzzer"
+	"github.com/jetstack/cert-manager/pkg/api"
+	acmefuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/acme/fuzzer"
 )
 
-func TestRoundTripTypes(t *testing.T) {
-	roundtrip.RoundTripTestForAPIGroup(t, Install, cmfuzzer.Funcs)
+func TestPruneTypes(t *testing.T) {
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("orders"), acmefuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("challenges"), acmefuzzer.Funcs)
+}
+
+func crdPath(s string) string {
+	return fmt.Sprintf("../../../../../deploy/charts/cert-manager/crds/%s.yaml", s)
 }

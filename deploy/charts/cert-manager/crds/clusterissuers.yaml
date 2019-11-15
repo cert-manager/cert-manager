@@ -19,6 +19,7 @@ spec:
     name: Age
     type: date
   group: cert-manager.io
+  preserveUnknownFields: false
   names:
     kind: ClusterIssuer
     listKind: ClusterIssuerList
@@ -456,6 +457,19 @@ spec:
                                       or annotations overlap with in-built values,
                                       the values here will override the in-built values.
                                     type: object
+                                    properties:
+                                      annotations:
+                                        description: Annotations that should be added
+                                          to the create ACME HTTP01 solver pods.
+                                        type: object
+                                        additionalProperties:
+                                          type: string
+                                      labels:
+                                        description: Labels that should be added to
+                                          the created ACME HTTP01 solver pods.
+                                        type: object
+                                        additionalProperties:
+                                          type: string
                                   spec:
                                     description: PodSpec defines overrides for the
                                       HTTP01 challenge solver pod. Only the 'nodeSelector',

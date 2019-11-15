@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
@@ -275,7 +274,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ObjectMeta: metav1.ObjectMeta{
+									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
 										Labels: map[string]string{
 											"this is a":                        "label",
 											"acme.cert-manager.io/http-domain": "44655555555",

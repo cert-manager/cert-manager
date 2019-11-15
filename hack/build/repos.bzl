@@ -2226,3 +2226,11 @@ def go_repositories():
         sum = "h1:MUGmc65QhB3pIlaQ5bB4LwqSj6GIonVJXpZiaKNyaKk=",
         version = "v1.3.3",
     )
+    go_repository(
+        name = "com_github_munnerz_crd_schema_fuzz",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/munnerz/crd-schema-fuzz",
+        sum = "h1:gPv2n6t9+4/hMqRSgTCz1OpM4vx7lLgNxIsrUTtMBaA=",
+        version = "v0.0.0-20191114184610-fbd148d44a0a",
+    )

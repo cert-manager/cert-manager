@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
@@ -184,7 +183,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ObjectMeta: metav1.ObjectMeta{
+									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
 										Labels: map[string]string{
 											"valid_to_contain": "labels",
 										},
@@ -197,34 +196,6 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						},
 					},
 				},
-			},
-		},
-		"acme issue with invalid pod template ObjectMeta attributes": {
-			spec: &cmacme.ACMEIssuer{
-				Email:      "valid-email",
-				Server:     "valid-server",
-				PrivateKey: validSecretKeyRef,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ObjectMeta: metav1.ObjectMeta{
-										Annotations: map[string]string{
-											"valid_to_contain": "annotations",
-										},
-										GenerateName: "unable-to-change-generateName",
-										Name:         "unable-to-change-name",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("solvers").Index(0).Child("http01", "ingress", "podTemplate", "metadata"),
-					"", "only labels and annotations may be set on podTemplate metadata"),
 			},
 		},
 		"acme issue with valid pod template PodSpec attributes": {
@@ -266,7 +237,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									ObjectMeta: metav1.ObjectMeta{
+									ACMEChallengeSolverHTTP01IngressPodObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressPodObjectMeta{
 										Labels: map[string]string{
 											"valid_to_contain": "labels",
 										},

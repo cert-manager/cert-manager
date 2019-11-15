@@ -29,12 +29,18 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = ["roundtrip_test.go"],
+    srcs = [
+        "pruning_test.go",
+        "roundtrip_test.go",
+    ],
+    data = [
+        "//deploy:all-srcs",
+    ],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/internal/apis/acme/fuzzer:go_default_library",
+        "//pkg/api:go_default_library",
         "//pkg/internal/apis/certmanager/fuzzer:go_default_library",
-        "@io_k8s_apimachinery//pkg/api/apitesting/fuzzer:go_default_library",
+        "@com_github_munnerz_crd_schema_fuzz//:go_default_library",
         "@io_k8s_apimachinery//pkg/api/apitesting/roundtrip:go_default_library",
     ],
 )

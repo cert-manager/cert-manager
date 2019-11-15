@@ -19,11 +19,9 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
-	"reflect"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -160,23 +158,6 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
 	default:
 		el = append(el, field.Invalid(fldPath.Child("serviceType"), ingress.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
-	}
-	if ingress.PodTemplate != nil {
-		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(ingress.PodTemplate, fldPath.Child("podTemplate"))...)
-	}
-
-	return el
-}
-
-func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-
-	cpyPodTempl := podTempl.DeepCopy()
-	cpyPodTempl.Labels = nil
-	cpyPodTempl.Annotations = nil
-
-	if !reflect.DeepEqual(cpyPodTempl.ObjectMeta, metav1.ObjectMeta{}) {
-		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate metadata"))
 	}
 
 	return el

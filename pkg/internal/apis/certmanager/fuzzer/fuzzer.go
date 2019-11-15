@@ -22,12 +22,13 @@ import (
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	acmefuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/acme/fuzzer"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
 
 // Funcs returns the fuzzer functions for the apps api group.
 var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
-	return []interface{}{
+	return append(acmefuzzer.Funcs(codecs), []interface{}{
 		func(s *certmanager.Certificate, c fuzz.Continue) {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again
 
@@ -54,5 +55,5 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.Spec.Duration = &metav1.Duration{Duration: v1alpha2.DefaultCertificateDuration}
 			}
 		},
-	}
+	}...)
 }
