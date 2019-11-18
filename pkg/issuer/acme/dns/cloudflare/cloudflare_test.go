@@ -28,9 +28,8 @@ var (
 func init() {
 	cflareEmail = os.Getenv("CLOUDFLARE_EMAIL")
 	cflareAPIKey = os.Getenv("CLOUDFLARE_API_KEY")
-	cflareAPIToken = os.Getenv("CLOUDFLARE_API_TOKEN")
 	cflareDomain = os.Getenv("CLOUDFLARE_DOMAIN")
-	if len(cflareEmail) > 0 && (len(cflareAPIKey) > 0 || len(cflareAPIToken) > 0) && len(cflareDomain) > 0 {
+	if len(cflareEmail) > 0 && len(cflareAPIKey) > 0 && len(cflareDomain) > 0 {
 		cflareLiveTest = true
 	}
 }
@@ -38,13 +37,11 @@ func init() {
 func restoreCloudFlareEnv() {
 	os.Setenv("CLOUDFLARE_EMAIL", cflareEmail)
 	os.Setenv("CLOUDFLARE_API_KEY", cflareAPIKey)
-	os.Setenv("CLOUDFLARE_API_TOKEN", cflareAPIToken)
 }
 
 func TestNewDNSProviderValidAPIKey(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
-	os.Setenv("CLOUDFLARE_API_TOKEN", "")
 	_, err := NewDNSProviderCredentials("123", "123", "", util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreCloudFlareEnv()
@@ -53,7 +50,6 @@ func TestNewDNSProviderValidAPIKey(t *testing.T) {
 func TestNewDNSProviderValidAPIToken(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
-	os.Setenv("CLOUDFLARE_API_TOKEN", "")
 	_, err := NewDNSProviderCredentials("123", "", "123", util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreCloudFlareEnv()
@@ -62,7 +58,6 @@ func TestNewDNSProviderValidAPIToken(t *testing.T) {
 func TestNewDNSProviderKeyAndTokenProvided(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
-	os.Setenv("CLOUDFLARE_API_TOKEN", "")
 	_, err := NewDNSProviderCredentials("123", "123", "123", util.RecursiveNameservers)
 	assert.EqualError(t, err, "CloudFlare key and token are both present")
 	restoreCloudFlareEnv()
@@ -71,16 +66,6 @@ func TestNewDNSProviderKeyAndTokenProvided(t *testing.T) {
 func TestNewDNSProviderValidApiKeyEnv(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "test@example.com")
 	os.Setenv("CLOUDFLARE_API_KEY", "123")
-	os.Setenv("CLOUDFLARE_API_TOKEN", "")
-	_, err := NewDNSProvider(util.RecursiveNameservers)
-	assert.NoError(t, err)
-	restoreCloudFlareEnv()
-}
-
-func TestNewDNSProviderValidApiTokenEnv(t *testing.T) {
-	os.Setenv("CLOUDFLARE_EMAIL", "test@example.com")
-	os.Setenv("CLOUDFLARE_API_KEY", "")
-	os.Setenv("CLOUDFLARE_API_TOKEN", "123")
 	_, err := NewDNSProvider(util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreCloudFlareEnv()
@@ -89,7 +74,6 @@ func TestNewDNSProviderValidApiTokenEnv(t *testing.T) {
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
-	os.Setenv("CLOUDFLARE_API_TOKEN", "")
 	_, err := NewDNSProvider(util.RecursiveNameservers)
 	assert.EqualError(t, err, "CloudFlare credentials missing")
 	restoreCloudFlareEnv()

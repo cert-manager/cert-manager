@@ -38,12 +38,11 @@ type DNSProvider struct {
 
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
 // Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
-// and CLOUDFLARE_API_KEY or CLOUDFLARE_API_TOKEN.
+// and CLOUDFLARE_API_KEY.
 func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	email := os.Getenv("CLOUDFLARE_EMAIL")
 	key := os.Getenv("CLOUDFLARE_API_KEY")
-	token := os.Getenv("CLOUDFLARE_API_TOKEN")
-	return NewDNSProviderCredentials(email, key, token, dns01Nameservers)
+	return NewDNSProviderCredentials(email, key, "", dns01Nameservers)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
