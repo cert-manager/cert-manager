@@ -106,6 +106,10 @@ func TestSign(t *testing.T) {
 
 	baseIssuer := gen.Issuer("test-issuer",
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
+		gen.AddIssuerCondition(cmapi.IssuerCondition{
+			Type:   cmapi.IssuerConditionReady,
+			Status: cmmeta.ConditionTrue,
+		}),
 	)
 
 	tppIssuer := gen.IssuerFrom(baseIssuer,
@@ -305,6 +309,35 @@ func TestSign(t *testing.T) {
 			},
 			fakeSecretLister: failGetSecretLister,
 			expectedErr:      true,
+		},
+		"should exit nil and set status pending if referenced issuer is not ready": {
+			certificateRequest: cloudCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(),
+					gen.Issuer(cloudIssuer.DeepCopy().Name,
+						gen.SetIssuerVenafi(cmapi.VenafiIssuer{}),
+					)},
+				ExpectedEvents: []string{
+					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(cloudCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Referenced issuer does not have a Ready status condition",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
 		},
 		"tpp: if sign returns pending error then set pending and return err": {
 			certificateRequest: tppCR.DeepCopy(),

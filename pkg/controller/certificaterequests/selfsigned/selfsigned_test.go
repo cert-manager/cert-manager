@@ -76,6 +76,10 @@ func TestSign(t *testing.T) {
 
 	baseIssuer := gen.Issuer("test-issuer",
 		gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+		gen.AddIssuerCondition(cmapi.IssuerCondition{
+			Type:   cmapi.IssuerConditionReady,
+			Status: cmmeta.ConditionTrue,
+		}),
 	)
 
 	skRSA, err := pki.GenerateRSAPrivateKey(2048)
@@ -278,6 +282,35 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+		},
+		"should exit nil and set status pending if referenced issuer is not ready": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.Issuer(baseIssuer.DeepCopy().Name,
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+					)},
+				ExpectedEvents: []string{
+					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Referenced issuer does not have a Ready status condition",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),

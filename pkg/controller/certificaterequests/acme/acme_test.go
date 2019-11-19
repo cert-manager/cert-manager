@@ -75,6 +75,10 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, commonName string, dnsNa
 func TestSign(t *testing.T) {
 	baseIssuer := gen.Issuer("test-issuer",
 		gen.SetIssuerACME(cmacme.ACMEIssuer{}),
+		gen.AddIssuerCondition(cmapi.IssuerCondition{
+			Type:   cmapi.IssuerConditionReady,
+			Status: cmmeta.ConditionTrue,
+		}),
 	)
 
 	sk, err := pki.GenerateRSAPrivateKey(2048)
@@ -208,6 +212,35 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Created Order resource default-unit-test-ns/test-cr-3921610499",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+		},
+
+		"should exit nil and set status pending if referenced issuer is not ready": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.Issuer(baseIssuer.DeepCopy().Name,
+						gen.SetIssuerACME(cmacme.ACMEIssuer{}),
+					)},
+				ExpectedEvents: []string{
+					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Referenced issuer does not have a Ready status condition",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
