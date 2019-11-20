@@ -32,11 +32,14 @@ spec:
 {{- if .Values.podLabels }}
 {{ toYaml .Values.podLabels | indent 8 }}
 {{- end }}
-      annotations:
       {{- if .Values.podAnnotations }}
+      annotations:
 {{ toYaml .Values.podAnnotations | indent 8 }}
       {{- end }}
       {{- if and .Values.prometheus.enabled (not .Values.prometheus.servicemonitor.enabled) }}
+      {{- if not .Values.podAnnotations }}
+      annotations:
+      {{- end }}
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
         prometheus.io/port: '9402'

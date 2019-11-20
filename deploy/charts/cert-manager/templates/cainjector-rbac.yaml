@@ -88,8 +88,7 @@ roleRef:
   kind: Role
   name: {{ template "cainjector.fullname" . }}:leaderelection
 subjects:
-  - apiGroup: ""
-    kind: ServiceAccount
+  - kind: ServiceAccount
     name: {{ include "cainjector.fullname" . }}
     namespace: {{ .Release.Namespace }}
 
