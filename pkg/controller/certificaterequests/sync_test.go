@@ -118,6 +118,10 @@ func TestSync(t *testing.T) {
 
 	baseIssuer := gen.Issuer("test-issuer",
 		gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+		gen.AddIssuerCondition(cmapi.IssuerCondition{
+			Type:   cmapi.IssuerConditionReady,
+			Status: cmmeta.ConditionTrue,
+		}),
 	)
 
 	baseCR := gen.CertificateRequest("test-cr",
@@ -223,13 +227,8 @@ func TestSync(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR,
-					gen.Issuer(baseIssuer.Name,
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmmeta.ConditionTrue,
-						}),
-						// no type set
-					),
+					// no type set
+					gen.Issuer(baseIssuer.Name),
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -249,6 +248,35 @@ func TestSync(t *testing.T) {
 				},
 				ExpectedEvents: []string{
 					"Normal IssuerTypeMissing Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/test-issuer'",
+				},
+			},
+		},
+		"should exit nil and set status pending if referenced issuer is not ready": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR,
+					gen.Issuer(baseIssuer.Name,
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+					),
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Referenced issuer does not have a Ready status condition",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
 				},
 			},
 		},

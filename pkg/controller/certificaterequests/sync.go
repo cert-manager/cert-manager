@@ -29,6 +29,7 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -96,6 +97,16 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 		c.log.WithValues(
 			logf.RelatedResourceKindKey, issuerType,
 		).V(5).Info("issuer reference type does not match controller resource kind, ignoring")
+		return nil
+	}
+
+	// check ready condition
+	if !apiutil.IssuerHasCondition(issuerObj, v1alpha2.IssuerCondition{
+		Type:   v1alpha2.IssuerConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}) {
+		c.reporter.Pending(crCopy, nil, "IssuerNotReady",
+			"Referenced issuer does not have a Ready status condition")
 		return nil
 	}
 

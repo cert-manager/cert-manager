@@ -98,6 +98,10 @@ func generateSelfSignedCertFromCR(t *testing.T, cr *cmapi.CertificateRequest, ke
 func TestSign(t *testing.T) {
 	baseIssuer := gen.Issuer("test-issuer",
 		gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "root-ca-secret"}),
+		gen.AddIssuerCondition(cmapi.IssuerCondition{
+			Type:   cmapi.IssuerConditionReady,
+			Status: cmmeta.ConditionTrue,
+		}),
 	)
 
 	// Build root RSA CA
@@ -114,7 +118,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(rsaCSR),
 		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
-			Name:  baseIssuer.Name,
+			Name:  baseIssuer.DeepCopy().Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
 		}),
@@ -154,7 +158,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					`Normal SecretMissing Referenced secret default-unit-test-ns/root-ca-secret not found: secret "root-ca-secret" not found`,
 				},
@@ -176,11 +180,15 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a secret with invlaid datashould set condition to pending and wait for re-sync": {
+		"a secret with invlaid data should set condition to pending and wait for re-sync": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{badDataSecret},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
+				KubeObjects: []runtime.Object{badDataSecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.IssuerFrom(baseIssuer.DeepCopy(),
+						gen.SetIssuerCA(cmapi.CAIssuer{SecretName: badDataSecret.Name}),
+					),
+				},
 				ExpectedEvents: []string{
 					"Normal SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
 				},
@@ -206,7 +214,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rsaCASecret},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					`Normal SecretGetError Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error`,
 				},
@@ -238,6 +246,35 @@ func TestSign(t *testing.T) {
 			},
 			expectedErr: true,
 		},
+		"should exit nil and set status pending if referenced issuer is not ready": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{rsaCASecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.Issuer(baseIssuer.DeepCopy().Name,
+						gen.SetIssuerCA(cmapi.CAIssuer{}),
+					)},
+				ExpectedEvents: []string{
+					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Referenced issuer does not have a Ready status condition",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+		},
 		"a secret that fails to sign should set condition to failed": {
 			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(*cmapi.CertificateRequest) (*x509.Certificate, error) {
@@ -245,7 +282,7 @@ func TestSign(t *testing.T) {
 			},
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rsaCASecret},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					"Warning SigningError Error generating certificate template: this is a sign error",
 				},
@@ -280,7 +317,7 @@ func TestSign(t *testing.T) {
 			},
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rsaCASecret},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},

@@ -99,6 +99,10 @@ func TestSign(t *testing.T) {
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	baseIssuer := gen.Issuer("vault-issuer",
 		gen.SetIssuerVault(cmapi.VaultIssuer{}),
+		gen.AddIssuerCondition(cmapi.IssuerCondition{
+			Type:   cmapi.IssuerConditionReady,
+			Status: cmmeta.ConditionTrue,
+		}),
 	)
 
 	rsaSK, err := pki.GenerateRSAPrivateKey(2048)
@@ -243,6 +247,35 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Required secret resource not found: secret "non-existing-secret" not found`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+		},
+		"should exit nil and set status pending if referenced issuer is not ready": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.Issuer(baseIssuer.DeepCopy().Name,
+						gen.SetIssuerVault(cmapi.VaultIssuer{}),
+					)},
+				ExpectedEvents: []string{
+					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Referenced issuer does not have a Ready status condition",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
