@@ -28,6 +28,12 @@ const (
 	CertificateNameKey       = "cert-manager.io/certificate-name"
 )
 
+// Legacy annotation names for Secrets
+const (
+	LegacyIssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
+	LegacyIssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
+)
+
 const (
 	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource

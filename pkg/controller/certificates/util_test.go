@@ -63,6 +63,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 		"if all match then return matched": {
 			cb:          exampleBundle,
 			certificate: exampleBundle.certificate,
+			secret:      gen.SecretFrom(secret),
 			expMatch:    true,
 			expErrors:   nil,
 		},
@@ -74,6 +75,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 			certificate: gen.CertificateFrom(exampleBundle.certificate,
 				gen.SetCertificateCommonName(""),
 			),
+			secret:    gen.SecretFrom(secret),
 			expMatch:  true,
 			expErrors: nil,
 		},
@@ -84,6 +86,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 				gen.SetCertificateCommonName(""),
 			)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate),
+			secret:      gen.SecretFrom(secret),
 			expMatch:    true,
 			expErrors:   nil,
 		},
@@ -94,6 +97,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 				gen.SetCertificateCommonName("foobar"),
 			)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate),
+			secret:      gen.SecretFrom(secret),
 			expMatch:    true,
 			expErrors:   nil,
 		},
@@ -104,16 +108,33 @@ func TestCertificateMatchesSpec(t *testing.T) {
 				gen.SetCertificateCommonName("foobar"),
 			)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate),
+			secret:      gen.SecretFrom(secret),
 			expMatch:    false,
 			expErrors: []string{
 				`Common Name on TLS certificate not up to date ("common.name.example.com"): [foobar]`,
 				"DNS names on TLS certificate not up to date: []",
 			},
 		},
+
+		"if the issuer name and kind uses the lagacy annotation then it should still match the spec": {
+			cb: mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate,
+				gen.SetCertificateCommonName(""),
+			)),
+			certificate: gen.CertificateFrom(exampleBundle.certificate,
+				gen.SetCertificateCommonName(""),
+			),
+			secret: gen.SecretFrom(secret,
+				gen.SetSecretAnnotations(map[string]string{
+					cmapi.LegacyIssuerNameAnnotationKey: "ca-issuer",
+					cmapi.LegacyIssuerKindAnnotationKey: "Issuer",
+				})),
+			expMatch:  true,
+			expErrors: nil,
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			match, errs := certificateMatchesSpec(
-				test.certificate, test.cb.privateKey, test.cb.cert, secret)
+				test.certificate, test.cb.privateKey, test.cb.cert, test.secret)
 
 			if match != test.expMatch {
 				t.Errorf("got unexpected match bool, exp=%t got=%t",
