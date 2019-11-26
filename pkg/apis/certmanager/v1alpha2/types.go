@@ -28,6 +28,12 @@ const (
 	CertificateNameKey       = "cert-manager.io/certificate-name"
 )
 
+// Legacy annotation names for Secrets
+const (
+	LegacyIssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
+	LegacyIssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
+)
+
 const (
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.

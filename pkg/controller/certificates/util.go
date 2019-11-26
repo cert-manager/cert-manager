@@ -122,12 +122,14 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 	}
 
 	// validate that the issuer is correct
-	if crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha2.IssuerNameAnnotationKey] {
+	if crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha2.IssuerNameAnnotationKey] &&
+		crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha2.LegacyIssuerNameAnnotationKey] {
 		errs = append(errs, fmt.Sprintf("Issuer of the certificate is not up to date: %q", secret.Annotations[v1alpha2.IssuerNameAnnotationKey]))
 	}
 
 	// validate that the issuer kind is correct
-	if apiutil.IssuerKind(crt.Spec.IssuerRef) != secret.Annotations[v1alpha2.IssuerKindAnnotationKey] {
+	if apiutil.IssuerKind(crt.Spec.IssuerRef) != secret.Annotations[v1alpha2.IssuerKindAnnotationKey] &&
+		apiutil.IssuerKind(crt.Spec.IssuerRef) != secret.Annotations[v1alpha2.LegacyIssuerKindAnnotationKey] {
 		errs = append(errs, fmt.Sprintf("Issuer kind of the certificate is not up to date: %q", secret.Annotations[v1alpha2.IssuerKindAnnotationKey]))
 	}
 
