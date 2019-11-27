@@ -28,6 +28,12 @@ const (
 	CertificateNameKey       = "cert-manager.io/certificate-name"
 )
 
+// Deprecated annotation names for Secrets
+const (
+	DeprecatedIssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
+	DeprecatedIssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
+)
+
 const (
 	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
