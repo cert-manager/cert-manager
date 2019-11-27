@@ -487,6 +487,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 // Otherwise, the existing resource will be updated.
 // The first return argument will be true if the resource was updated/created
 // without error.
+// updateSecretData will also update deprecated annotations if they exist.
 func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *cmapi.Certificate, existingSecret *corev1.Secret, data secretData) (bool, error) {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -774,6 +775,7 @@ type secretData struct {
 // setSecretValues will NOT actually update the resource in the apiserver.
 // If updating an existing Secret resource returned by an api client 'lister',
 // make sure to DeepCopy the object first to avoid modifying data in-cache.
+// It will also update depreciated issuer name and kind annotations if they exist.
 func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, data secretData) error {
 	// initialize the `Data` field if it is nil
 	if s.Data == nil {
@@ -791,6 +793,15 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 	s.Annotations[cmapi.CertificateNameKey] = crt.Name
 	s.Annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
 	s.Annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
+
+	// If deprecated annotations exist with any value, then they too shall be
+	// updated
+	if _, ok := s.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey]; ok {
+		s.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+	}
+	if _, ok := s.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey]; ok {
+		s.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
+	}
 
 	// if the certificate data is empty, clear the subject related annotations
 	if len(data.cert) == 0 {

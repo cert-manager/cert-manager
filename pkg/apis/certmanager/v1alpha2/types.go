@@ -28,10 +28,10 @@ const (
 	CertificateNameKey       = "cert-manager.io/certificate-name"
 )
 
-// Legacy annotation names for Secrets
+// Deprecated annotation names for Secrets
 const (
-	LegacyIssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
-	LegacyIssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
+	DeprecatedIssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
+	DeprecatedIssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
 )
 
 const (
