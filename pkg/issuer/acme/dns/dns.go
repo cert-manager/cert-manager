@@ -62,7 +62,7 @@ type solver interface {
 // constructors may be set.
 type dnsProviderConstructors struct {
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
-	cloudFlare   func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
+	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
@@ -252,15 +252,38 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 		}
 	case providerConfig.Cloudflare != nil:
 		dbg.Info("preparing to create Cloudflare provider")
-		apiKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Cloudflare.APIKey.Name)
+		if providerConfig.Cloudflare.APIKey != nil && providerConfig.Cloudflare.APIToken != nil {
+			return nil, nil, fmt.Errorf("API key and API token secret references are both present")
+		}
+
+		var saSecretName, saSecretKey string
+		if providerConfig.Cloudflare.APIKey != nil {
+			saSecretName = providerConfig.Cloudflare.APIKey.Name
+			saSecretKey = providerConfig.Cloudflare.APIKey.Key
+		} else {
+			saSecretName = providerConfig.Cloudflare.APIToken.Name
+			saSecretKey = providerConfig.Cloudflare.APIToken.Key
+		}
+
+		saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(saSecretName)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error getting cloudflare service account: %s", err)
+			return nil, nil, fmt.Errorf("error getting cloudflare secret: %s", err)
+		}
+
+		keyData, ok := saSecret.Data[saSecretKey]
+		if !ok {
+			return nil, nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saSecretKey, saSecret.Namespace, saSecret.Name)
+		}
+
+		var apiKey, apiToken string
+		if providerConfig.Cloudflare.APIKey != nil {
+			apiKey = string(keyData)
+		} else {
+			apiToken = string(keyData)
 		}
 
 		email := providerConfig.Cloudflare.Email
-		apiKey := string(apiKeySecret.Data[providerConfig.Cloudflare.APIKey.Key])
-
-		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey, s.DNS01Nameservers)
+		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey, apiToken, s.DNS01Nameservers)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}

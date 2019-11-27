@@ -139,10 +139,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers, ambient)
 			return nil, nil
 		},
-		cloudFlare: func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error) {
-			f.call("cloudflare", email, apikey, util.RecursiveNameservers)
-			if email == "" || apikey == "" {
-				return nil, errors.New("invalid email or apikey")
+		cloudFlare: func(email, apikey, apiToken string, dns01Nameservers []string) (*cloudflare.DNSProvider, error) {
+			f.call("cloudflare", email, apikey, apiToken, util.RecursiveNameservers)
+			if email == "" || (apikey == "" && apiToken == "") {
+				return nil, errors.New("invalid email or apikey or apitoken")
 			}
 			return nil, nil
 		},

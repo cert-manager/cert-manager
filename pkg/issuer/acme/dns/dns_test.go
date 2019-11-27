@@ -66,7 +66,7 @@ func TestSolverFor(t *testing.T) {
 		expectedSolverType reflect.Type
 	}
 	tests := map[string]testT{
-		"loads secret for cloudflare provider": {
+		"loads api key for cloudflare provider": {
 			solverFixture: &solverFixture{
 				Builder: &test.Builder{
 					KubeObjects: []runtime.Object{
@@ -82,11 +82,42 @@ func TestSolverFor(t *testing.T) {
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
-									APIKey: cmmeta.SecretKeySelector{
+									APIKey: &cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "cloudflare-key",
 										},
 										Key: "api-key",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			domain:             "example.com",
+			expectedSolverType: reflect.TypeOf(&cloudflare.DNSProvider{}),
+		},
+		"loads api token for cloudflare provider": {
+			solverFixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("cloudflare-token", "default", map[string][]byte{
+							"api-token": []byte("a-cloudflare-api-token"),
+						}),
+					},
+				},
+				Issuer: newIssuer("test", "default"),
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+									Email: "test",
+									APIToken: &cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
+											Name: "cloudflare-token",
+										},
+										Key: "api-token",
 									},
 								},
 							},
@@ -107,7 +138,38 @@ func TestSolverFor(t *testing.T) {
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
-									APIKey: cmmeta.SecretKeySelector{
+									APIToken: &cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
+											Name: "cloudflare-token",
+										},
+										Key: "api-token",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			domain:    "example.com",
+			expectErr: true,
+		},
+		"fails to load a cloudflare provider when key and token are provided": {
+			solverFixture: &solverFixture{
+				Issuer: newIssuer("test", "default"),
+				// don't include any secrets in the lister
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+									Email: "test",
+									APIToken: &cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
+											Name: "cloudflare-token",
+										},
+										Key: "api-token",
+									},
+									APIKey: &cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "cloudflare-key",
 										},
@@ -122,7 +184,7 @@ func TestSolverFor(t *testing.T) {
 			domain:    "example.com",
 			expectErr: true,
 		},
-		"fails to load a cloudflare provider with an invalid secret": {
+		"fails to load a cloudflare provider with an invalid key secret": {
 			solverFixture: &solverFixture{
 				Builder: &test.Builder{
 					KubeObjects: []runtime.Object{
@@ -138,11 +200,42 @@ func TestSolverFor(t *testing.T) {
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
-									APIKey: cmmeta.SecretKeySelector{
+									APIKey: &cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "cloudflare-key",
 										},
 										Key: "api-key",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			domain:    "example.com",
+			expectErr: true,
+		},
+		"fails to load a cloudflare provider with an invalid token secret": {
+			solverFixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("cloudflare-token", "default", map[string][]byte{
+							"api-key-oops": []byte("a-cloudflare-api-token"),
+						}),
+					},
+				},
+				Issuer: newIssuer("test", "default"),
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+									Email: "test",
+									APIToken: &cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
+											Name: "cloudflare-token",
+										},
+										Key: "api-token",
 									},
 								},
 							},

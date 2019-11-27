@@ -280,7 +280,18 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			el = append(el, field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
-			el = append(el, ValidateSecretKeySelector(&p.Cloudflare.APIKey, fldPath.Child("cloudflare", "apiKeySecretRef"))...)
+			if p.Cloudflare.APIKey != nil {
+				el = append(el, ValidateSecretKeySelector(p.Cloudflare.APIKey, fldPath.Child("cloudflare", "apiKeySecretRef"))...)
+			}
+			if p.Cloudflare.APIToken != nil {
+				el = append(el, ValidateSecretKeySelector(p.Cloudflare.APIToken, fldPath.Child("cloudflare", "apiTokenSecretRef"))...)
+			}
+			if p.Cloudflare.APIKey != nil && p.Cloudflare.APIToken != nil {
+				el = append(el, field.Forbidden(fldPath.Child("cloudflare"), "apiKeySecretRef and apiTokenSecretRef cannot both be specified"))
+			}
+			if p.Cloudflare.APIKey == nil && p.Cloudflare.APIToken == nil {
+				el = append(el, field.Required(fldPath.Child("cloudflare"), "apiKeySecretRef or apiTokenSecretRef is required"))
+			}
 			if len(p.Cloudflare.Email) == 0 {
 				el = append(el, field.Required(fldPath.Child("cloudflare", "email"), ""))
 			}

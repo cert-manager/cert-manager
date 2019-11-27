@@ -40,7 +40,7 @@ var (
 		Key: "validkey",
 	}
 	validCloudflareProvider = cmacme.ACMEIssuerDNS01ProviderCloudflare{
-		APIKey: validSecretKeyRef,
+		APIKey: &validSecretKeyRef,
 		Email:  "valid",
 	}
 	validACMEIssuer = cmacme.ACMEIssuer{
@@ -494,10 +494,11 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 		},
-		"missing cloudflare token": {
+		"missing cloudflare api key fields": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-					Email: "valid",
+					Email:  "valid",
+					APIKey: &cmmeta.SecretKeySelector{},
 				},
 			},
 			errs: []*field.Error{
@@ -505,10 +506,44 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("cloudflare", "apiKeySecretRef", "key"), "secret key is required"),
 			},
 		},
+		"missing cloudflare api token fields": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+					Email:    "valid",
+					APIToken: &cmmeta.SecretKeySelector{},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("cloudflare", "apiTokenSecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("cloudflare", "apiTokenSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"missing cloudflare api token or key": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+					Email: "valid",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("cloudflare"), "apiKeySecretRef or apiTokenSecretRef is required"),
+			},
+		},
+		"both cloudflare api token and key specified": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+					Email:    "valid",
+					APIToken: &validSecretKeyRef,
+					APIKey:   &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("cloudflare"), "apiKeySecretRef and apiTokenSecretRef cannot both be specified"),
+			},
+		},
 		"missing cloudflare email": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
-					APIKey: validSecretKeyRef,
+					APIKey: &validSecretKeyRef,
 				},
 			},
 			errs: []*field.Error{
