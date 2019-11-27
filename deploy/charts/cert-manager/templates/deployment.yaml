@@ -85,6 +85,7 @@ spec:
           - --webhook-dns-names={{ include "webhook.fullname" . }},{{ include "webhook.fullname" . }}.{{ .Release.Namespace }},{{ include "webhook.fullname" . }}.{{ .Release.Namespace }}.svc
           ports:
           - containerPort: 9402
+            protocol: TCP
           env:
           - name: POD_NAMESPACE
             valueFrom:
