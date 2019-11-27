@@ -528,6 +528,18 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("cloudflare"), "apiKeySecretRef or apiTokenSecretRef is required"),
 			},
 		},
+		"both cloudflare api token and key specified": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
+					Email:    "valid",
+					APIToken: &validSecretKeyRef,
+					APIKey:   &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("cloudflare"), "apiKeySecretRef and apiTokenSecretRef cannot both be specified"),
+			},
+		},
 		"missing cloudflare email": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
