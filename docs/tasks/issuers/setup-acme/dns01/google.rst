@@ -2,5 +2,5 @@
 File moved
 ==========
 
-This document has moved to https://cert-manager.netlify.com/docs/configuration/acme/dns01/google/.
+This document has moved to https://cert-manager.io/docs/configuration/acme/dns01/google/.
 This placeholder file will be removed in a later release.
