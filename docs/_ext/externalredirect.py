@@ -44,10 +44,6 @@ def generate_external_redirects(app, exception):
         logger.info("Detected 'linkcheck' builder in use so skipping generating redirects")
         return
 
-    if not (type(app.builder) == builders.StandaloneHTMLBuilder or type(app.builder) == builders.DirectoryHTMLBuilder):
-        logger.warn("The 'sphinxcontib-redirects' plugin is only supported "
-                 "by the 'html' and 'dirhtml' builder, but you are using '%s'. Skipping..." % type(app.builder))
-
     dirhtml = False
     if type(app.builder) == builders.DirectoryHTMLBuilder:
         dirhtml = True
