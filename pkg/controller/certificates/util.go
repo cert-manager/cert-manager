@@ -38,7 +38,6 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -237,9 +236,7 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []b
 	return b, nil
 }
 
-func updateCertificateStatus(ctx context.Context, m *metrics.Metrics, cmClient cmclient.Interface, old, new *v1alpha2.Certificate) (*v1alpha2.Certificate, error) {
-	defer m.UpdateCertificateStatus(new)
-
+func updateCertificateStatus(ctx context.Context, cmClient cmclient.Interface, old, new *v1alpha2.Certificate) (*v1alpha2.Certificate, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)

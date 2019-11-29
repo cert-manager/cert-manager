@@ -62,9 +62,12 @@ func (c *certificateRequestManager) ProcessItem(ctx context.Context, key string)
 	}
 
 	log = logf.WithResource(log, crt)
-
 	ctx = logf.NewContext(ctx, log)
 	updatedCert := crt.DeepCopy()
+
+	defer metrics.Default.UpdateCertificateExpiry(updatedCert, c.secretLister)
+	defer metrics.Default.UpdateCertificateStatus(updatedCert)
+
 	err = c.processCertificate(ctx, updatedCert)
 	log.V(logf.DebugLevel).Info("check if certificate status update is required")
 	updateStatusErr := c.updateCertificateStatus(ctx, crt, updatedCert)
@@ -167,7 +170,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 	}
 	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionReady, ready, reason, message)
 
-	_, err = updateCertificateStatus(ctx, metrics.Default, c.cmClient, old, crt)
+	_, err = updateCertificateStatus(ctx, c.cmClient, old, crt)
 	if err != nil {
 		return err
 	}
