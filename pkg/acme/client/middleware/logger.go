@@ -19,10 +19,10 @@ package middleware
 import (
 	"context"
 
+	"golang.org/x/crypto/acme"
 	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
-	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 func NewLogger(baseCl client.Interface) client.Interface {
@@ -34,9 +34,11 @@ type Logger struct {
 	baseCl client.Interface
 }
 
-func (l *Logger) CreateOrder(ctx context.Context, order *acme.Order) (*acme.Order, error) {
+var _ client.Interface = &Logger{}
+
+func (l *Logger) AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error) {
 	klog.Infof("Calling CreateOrder")
-	return l.baseCl.CreateOrder(ctx, order)
+	return l.baseCl.AuthorizeOrder(ctx, id, opt...)
 }
 
 func (l *Logger) GetOrder(ctx context.Context, url string) (*acme.Order, error) {
@@ -44,9 +46,9 @@ func (l *Logger) GetOrder(ctx context.Context, url string) (*acme.Order, error) 
 	return l.baseCl.GetOrder(ctx, url)
 }
 
-func (l *Logger) GetCertificate(ctx context.Context, url string) ([][]byte, error) {
+func (l *Logger) FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error) {
 	klog.Infof("Calling GetCertificate")
-	return l.baseCl.GetCertificate(ctx, url)
+	return l.baseCl.FetchCert(ctx, url, bundle)
 }
 
 func (l *Logger) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
@@ -54,14 +56,14 @@ func (l *Logger) WaitOrder(ctx context.Context, url string) (*acme.Order, error)
 	return l.baseCl.WaitOrder(ctx, url)
 }
 
-func (l *Logger) FinalizeOrder(ctx context.Context, finalizeURL string, csr []byte) (der [][]byte, err error) {
+func (l *Logger) CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
 	klog.Infof("Calling FinalizeOrder")
-	return l.baseCl.FinalizeOrder(ctx, finalizeURL, csr)
+	return l.baseCl.CreateOrderCert(ctx, finalizeURL, csr, bundle)
 }
 
-func (l *Logger) AcceptChallenge(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
+func (l *Logger) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
 	klog.Infof("Calling AcceptChallenge")
-	return l.baseCl.AcceptChallenge(ctx, chal)
+	return l.baseCl.Accept(ctx, chal)
 }
 
 func (l *Logger) GetChallenge(ctx context.Context, url string) (*acme.Challenge, error) {
@@ -79,14 +81,14 @@ func (l *Logger) WaitAuthorization(ctx context.Context, url string) (*acme.Autho
 	return l.baseCl.WaitAuthorization(ctx, url)
 }
 
-func (l *Logger) CreateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error) {
+func (l *Logger) Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error) {
 	klog.Infof("Calling CreateAccount")
-	return l.baseCl.CreateAccount(ctx, a)
+	return l.baseCl.Register(ctx, a, prompt)
 }
 
-func (l *Logger) GetAccount(ctx context.Context) (*acme.Account, error) {
+func (l *Logger) GetReg(ctx context.Context, url string) (*acme.Account, error) {
 	klog.Infof("Calling GetAccount")
-	return l.baseCl.GetAccount(ctx)
+	return l.baseCl.GetReg(ctx, url)
 }
 
 func (l *Logger) HTTP01ChallengeResponse(token string) (string, error) {
@@ -104,7 +106,7 @@ func (l *Logger) Discover(ctx context.Context) (acme.Directory, error) {
 	return l.baseCl.Discover(ctx)
 }
 
-func (l *Logger) UpdateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error) {
+func (l *Logger) UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error) {
 	klog.Infof("Calling UpdateAccount")
-	return l.baseCl.UpdateAccount(ctx, a)
+	return l.baseCl.UpdateReg(ctx, a)
 }

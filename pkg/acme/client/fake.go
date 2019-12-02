@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jetstack/cert-manager/third_party/crypto/acme"
+	"golang.org/x/crypto/acme"
 )
 
 // TODO: expand this out one day to be backed by the pebble wfe package
@@ -28,28 +28,30 @@ import (
 
 // FakeACME is a convenience structure to create a stub ACME implementation
 type FakeACME struct {
-	FakeCreateOrder             func(ctx context.Context, order *acme.Order) (*acme.Order, error)
+	FakeAuthorizeOrder          func(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error)
 	FakeGetOrder                func(ctx context.Context, url string) (*acme.Order, error)
-	FakeGetCertificate          func(ctx context.Context, url string) ([][]byte, error)
+	FakeFetchCert               func(ctx context.Context, url string, bundle bool) ([][]byte, error)
 	FakeWaitOrder               func(ctx context.Context, url string) (*acme.Order, error)
-	FakeFinalizeOrder           func(ctx context.Context, finalizeURL string, csr []byte) (der [][]byte, err error)
-	FakeAcceptChallenge         func(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
+	FakeCreateOrderCert         func(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
+	FakeAccept                  func(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
 	FakeGetChallenge            func(ctx context.Context, url string) (*acme.Challenge, error)
 	FakeGetAuthorization        func(ctx context.Context, url string) (*acme.Authorization, error)
 	FakeWaitAuthorization       func(ctx context.Context, url string) (*acme.Authorization, error)
-	FakeCreateAccount           func(ctx context.Context, a *acme.Account) (*acme.Account, error)
-	FakeGetAccount              func(ctx context.Context) (*acme.Account, error)
+	FakeRegister                func(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error)
+	FakeGetReg                  func(ctx context.Context, url string) (*acme.Account, error)
 	FakeHTTP01ChallengeResponse func(token string) (string, error)
 	FakeDNS01ChallengeRecord    func(token string) (string, error)
 	FakeDiscover                func(ctx context.Context) (acme.Directory, error)
-	FakeUpdateAccount           func(ctx context.Context, a *acme.Account) (*acme.Account, error)
+	FakeUpdateReg               func(ctx context.Context, a *acme.Account) (*acme.Account, error)
 }
 
-func (f *FakeACME) CreateOrder(ctx context.Context, order *acme.Order) (*acme.Order, error) {
-	if f.FakeCreateOrder != nil {
-		return f.FakeCreateOrder(ctx, order)
+var _ Interface = &FakeACME{}
+
+func (f *FakeACME) AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error) {
+	if f.FakeAuthorizeOrder != nil {
+		return f.FakeAuthorizeOrder(ctx, id, opt...)
 	}
-	return nil, fmt.Errorf("CreateOrder not implemented")
+	return nil, fmt.Errorf("AuthorizeOrder not implemented")
 }
 
 func (f *FakeACME) GetOrder(ctx context.Context, url string) (*acme.Order, error) {
@@ -59,11 +61,11 @@ func (f *FakeACME) GetOrder(ctx context.Context, url string) (*acme.Order, error
 	return nil, fmt.Errorf("GetOrder not implemented")
 }
 
-func (f *FakeACME) GetCertificate(ctx context.Context, url string) ([][]byte, error) {
-	if f.FakeGetCertificate != nil {
-		return f.FakeGetCertificate(ctx, url)
+func (f *FakeACME) FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error) {
+	if f.FakeFetchCert != nil {
+		return f.FakeFetchCert(ctx, url, bundle)
 	}
-	return nil, fmt.Errorf("GetCertificate not implemented")
+	return nil, fmt.Errorf("FetchCert not implemented")
 }
 
 func (f *FakeACME) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
@@ -73,18 +75,18 @@ func (f *FakeACME) WaitOrder(ctx context.Context, url string) (*acme.Order, erro
 	return nil, fmt.Errorf("WaitOrder not implemented")
 }
 
-func (f *FakeACME) FinalizeOrder(ctx context.Context, finalizeURL string, csr []byte) (der [][]byte, err error) {
-	if f.FakeFinalizeOrder != nil {
-		return f.FakeFinalizeOrder(ctx, finalizeURL, csr)
+func (f *FakeACME) CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
+	if f.FakeCreateOrderCert != nil {
+		return f.FakeCreateOrderCert(ctx, finalizeURL, csr, bundle)
 	}
-	return nil, fmt.Errorf("FinalizeOrder not implemented")
+	return nil, "", fmt.Errorf("CreateOrderCert not implemented")
 }
 
-func (f *FakeACME) AcceptChallenge(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
-	if f.FakeAcceptChallenge != nil {
-		return f.FakeAcceptChallenge(ctx, chal)
+func (f *FakeACME) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
+	if f.FakeAccept != nil {
+		return f.FakeAccept(ctx, chal)
 	}
-	return nil, fmt.Errorf("AcceptChallenge not implemented")
+	return nil, fmt.Errorf("Accept not implemented")
 }
 
 func (f *FakeACME) GetChallenge(ctx context.Context, url string) (*acme.Challenge, error) {
@@ -108,18 +110,18 @@ func (f *FakeACME) WaitAuthorization(ctx context.Context, url string) (*acme.Aut
 	return nil, fmt.Errorf("WaitAuthorization not implemented")
 }
 
-func (f *FakeACME) CreateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error) {
-	if f.FakeCreateAccount != nil {
-		return f.FakeCreateAccount(ctx, a)
+func (f *FakeACME) Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error) {
+	if f.FakeRegister != nil {
+		return f.FakeRegister(ctx, a, prompt)
 	}
-	return nil, fmt.Errorf("CreateAccount not implemented")
+	return nil, fmt.Errorf("Register not implemented")
 }
 
-func (f *FakeACME) GetAccount(ctx context.Context) (*acme.Account, error) {
-	if f.FakeGetAccount != nil {
-		return f.FakeGetAccount(ctx)
+func (f *FakeACME) GetReg(ctx context.Context, url string) (*acme.Account, error) {
+	if f.FakeGetReg != nil {
+		return f.FakeGetReg(ctx, url)
 	}
-	return nil, fmt.Errorf("GetAccount not implemented")
+	return nil, fmt.Errorf("GetReg not implemented")
 }
 
 func (f *FakeACME) HTTP01ChallengeResponse(token string) (string, error) {
@@ -145,9 +147,9 @@ func (f *FakeACME) Discover(ctx context.Context) (acme.Directory, error) {
 	return acme.Directory{}, nil
 }
 
-func (f *FakeACME) UpdateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error) {
-	if f.FakeUpdateAccount != nil {
-		return f.FakeUpdateAccount(ctx, a)
+func (f *FakeACME) UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error) {
+	if f.FakeUpdateReg != nil {
+		return f.FakeUpdateReg(ctx, a)
 	}
-	return nil, fmt.Errorf("UpdateAccount not implemented")
+	return nil, fmt.Errorf("UpdateReg not implemented")
 }

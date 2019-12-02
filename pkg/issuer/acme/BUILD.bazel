@@ -20,12 +20,12 @@ go_library(
         "//pkg/logs:go_default_library",
         "//pkg/util/errors:go_default_library",
         "//pkg/util/pki:go_default_library",
-        "//third_party/crypto/acme:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
         "@io_k8s_utils//clock:go_default_library",
+        "@org_golang_x_crypto//acme:go_default_library",
     ],
 )
 

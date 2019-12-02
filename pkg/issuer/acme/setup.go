@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"strings"
 
+	acmeapi "golang.org/x/crypto/acme"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +36,6 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 const (
@@ -228,7 +228,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	log.Info("verified existing registration with ACME server")
 	apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionTrue, successAccountRegistered, messageAccountRegistered)
-	a.issuer.GetStatus().ACMEStatus().URI = account.URL
+	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 
 	return nil
@@ -253,7 +253,7 @@ func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.
 		acc.Contact = emailurl
 
 		var err error
-		acc, err = cl.UpdateAccount(ctx, acc)
+		acc, err = cl.UpdateReg(ctx, acc)
 		if err != nil {
 			return nil, "", err
 		}
@@ -271,7 +271,7 @@ func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.
 // due to a not found error it will register a new account with the given key.
 func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmeapi.Account, error) {
 	// check if the account already exists
-	acc, err := cl.GetAccount(ctx)
+	acc, err := cl.GetReg(ctx, "")
 	if err == nil {
 		return acc, nil
 	}
@@ -289,11 +289,10 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	}
 
 	acc = &acmeapi.Account{
-		Contact:     emailurl,
-		TermsAgreed: true,
+		Contact: emailurl,
 	}
 
-	acc, err = cl.CreateAccount(ctx, acc)
+	acc, err = cl.Register(ctx, acc, acmeapi.AcceptTOS)
 	if err != nil {
 		return nil, err
 	}

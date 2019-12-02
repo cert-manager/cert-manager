@@ -71,7 +71,6 @@ filegroup(
         "//test/e2e:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",
-        "//third_party:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	acmeapi "golang.org/x/crypto/acme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
@@ -33,7 +34,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 func TestSyncHappyPath(t *testing.T) {
@@ -109,7 +109,7 @@ dGVzdA==
 	testAuthorizationChallengeInvalid.Status.State = cmacme.Invalid
 
 	testACMEAuthorizationPending := &acmeapi.Authorization{
-		URL:    "http://authzurl",
+		URI:    "http://authzurl",
 		Status: acmeapi.StatusPending,
 		Identifier: acmeapi.AuthzID{
 			Value: "test.com",
@@ -123,16 +123,16 @@ dGVzdA==
 	}
 
 	testACMEOrderPending := &acmeapi.Order{
-		URL: testOrderPending.Status.URL,
+		URI: testOrderPending.Status.URL,
 		Identifiers: []acmeapi.AuthzID{
 			{
 				Type:  "dns",
 				Value: "test.com",
 			},
 		},
-		FinalizeURL:    testOrderPending.Status.FinalizeURL,
-		Authorizations: []string{"http://authzurl"},
-		Status:         acmeapi.StatusPending,
+		FinalizeURL: testOrderPending.Status.FinalizeURL,
+		AuthzURLs:   []string{"http://authzurl"},
+		Status:      acmeapi.StatusPending,
 	}
 	// shallow copy
 	testACMEOrderValid := &acmeapi.Order{}
@@ -169,7 +169,7 @@ dGVzdA==
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
-				FakeCreateOrder: func(ctx context.Context, o *acmeapi.Order) (*acmeapi.Order, error) {
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
@@ -250,9 +250,9 @@ dGVzdA==
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
-				FakeFinalizeOrder: func(_ context.Context, url string, csr []byte) ([][]byte, error) {
+				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
 					testData := []byte("test")
-					return [][]byte{testData}, nil
+					return [][]byte{testData}, "http://testurl", nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
