@@ -91,9 +91,9 @@ your cluster for you.
 .. code-block:: shell
 
    # Firstly, download the binary for your given platform
-   $ wget -O api-migration https://github.com/jetstack/cert-manager/releases/download/v0.11.1/api-migration-linux
+   $ wget -O api-migration https://github.com/jetstack/cert-manager/releases/download/v0.11.0/api-migration-linux
    # or for Darwin
-   $ wget -O api-migration https://github.com/jetstack/cert-manager/releases/download/v0.11.1/api-migration-darwin
+   $ wget -O api-migration https://github.com/jetstack/cert-manager/releases/download/v0.11.0/api-migration-darwin
 
    # Mark the binary as executable and run the binary against your cluster
    $ chmod +x api-migration && ./api-migration --kubeconfig /path/to/my/kubeconfig.yaml
