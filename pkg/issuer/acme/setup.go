@@ -19,6 +19,7 @@ package acme
 import (
 	"context"
 	"crypto/rsa"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"strings"
@@ -169,9 +170,39 @@ func (a *Acme) Setup(ctx context.Context) error {
 		a.issuer.GetStatus().ACMEStatus().URI = ""
 	}
 
+	var eabAccount *acmeapi.ExternalAccountBinding
+	if eabObj := a.issuer.GetSpec().ACME.ExternalAccountBinding; eabObj != nil {
+		eabKey, err := a.getEABKey(ns)
+		switch {
+		// Do not re-try if we fail to get the MAC key as it does not exist at the reference.
+		case apierrors.IsNotFound(err), errors.IsInvalidData(err):
+
+			log.Error(err, "failed to verify ACME account")
+			s := messageAccountRegistrationFailed + err.Error()
+
+			a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
+			apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse,
+				errorAccountRegistrationFailed, fmt.Sprintf("External Account Binding MAC key is invalid: %v", err))
+
+			return nil
+
+		case err != nil:
+			s := messageAccountRegistrationFailed + err.Error()
+			apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
+			return fmt.Errorf(s)
+		}
+
+		// set the external account binding
+		eabAccount = &acmeapi.ExternalAccountBinding{
+			KID:          eabObj.KeyID,
+			Key:          eabKey,
+			KeyAlgorithm: eabObj.KeyAlgorithm,
+		}
+	}
+
 	// registerAccount will also verify the account exists if it already
 	// exists.
-	account, err := a.registerAccount(ctx, cl)
+	account, err := a.registerAccount(ctx, cl, eabAccount)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		log.Error(err, "failed to verify ACME account")
@@ -269,7 +300,7 @@ func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.
 // account with the clients private key already exists, it will attempt to look
 // up and verify the corresponding account, and will return that. If this fails
 // due to a not found error it will register a new account with the given key.
-func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmeapi.Account, error) {
+func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAccount *acmeapi.ExternalAccountBinding) (*acmeapi.Account, error) {
 	// check if the account already exists
 	acc, err := cl.GetReg(ctx, "")
 	if err == nil {
@@ -285,7 +316,8 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	}
 
 	acc = &acmeapi.Account{
-		Contact: emailurl,
+		Contact:                emailurl,
+		ExternalAccountBinding: eabAccount,
 	}
 
 	acc, err = cl.Register(ctx, acc, acmeapi.AcceptTOS)
@@ -298,6 +330,35 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	// }
 
 	return acc, nil
+}
+
+func (a *Acme) getEABKey(ns string) ([]byte, error) {
+	eab := a.issuer.GetSpec().ACME.ExternalAccountBinding.Key
+	sec, err := a.Client.CoreV1().Secrets(ns).Get(eab.Name, metav1.GetOptions{})
+	// Surface IsNotFound API error to not cause re-sync
+	if apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get External Account Binding key from secret: %s", err)
+	}
+
+	encodedKeyData, ok := sec.Data[eab.Key]
+	if !ok {
+		return nil, errors.NewInvalidData("failed to find external account binding key data in Secret %q at index %q", eab.Name, eab.Key)
+	}
+
+	// decode the base64 encoded secret key data.
+	// we include this step to make it easier for end-users to encode secret
+	// keys in case the CA provides a key that is not in standard, padded
+	// base64 encoding.
+	keyData := make([]byte, base64.RawURLEncoding.DecodedLen(len(encodedKeyData)))
+	if _, err := base64.RawURLEncoding.Decode(keyData, encodedKeyData); err != nil {
+		return nil, errors.NewInvalidData("failed to decode external account binding key data: %v", err)
+	}
+
+	return keyData, nil
 }
 
 // createAccountPrivateKey will generate a new RSA private key, and create it
