@@ -17,8 +17,12 @@ limitations under the License.
 package acme
 
 import (
+	"encoding/base64"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
@@ -33,6 +37,16 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
+	runACMEIssuerTests(nil)
+})
+var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
+	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
+		KeyID:        "kid-1",
+		KeyAlgorithm: "HS256",
+	})
+})
+
+func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
 	var unsupportedHTTP01Features = certificates.NewFeatureSet(
@@ -54,7 +68,14 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		certificates.KeyUsagesFeature,
 	)
 
-	provisionerHTTP01 := new(acmeIssuerProvisioner)
+	provisionerHTTP01 := &acmeIssuerProvisioner{
+		eab: eab,
+	}
+
+	provisionerDNS01 := &acmeIssuerProvisioner{
+		eab: eab,
+	}
+
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 Issuer",
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
@@ -62,7 +83,6 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		UnsupportedFeatures: unsupportedHTTP01Features,
 	}).Define()
 
-	provisionerDNS01 := new(acmeIssuerProvisioner)
 	(&certificates.Suite{
 		Name:                "ACME DNS01 Issuer",
 		CreateIssuerFunc:    provisionerDNS01.createDNS01Issuer,
@@ -83,15 +103,23 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
 	}).Define()
-})
+}
 
 type acmeIssuerProvisioner struct {
 	tiller     *tiller.Tiller
 	pebble     *pebble.Pebble
 	cloudflare *dnsproviders.Cloudflare
+
+	eab             *cmacme.ACMEExternalAccountBinding
+	secretNamespace string
 }
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
+	if a.eab != nil {
+		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(a.eab.Key.Name, nil)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
 	if a.pebble != nil {
 		Expect(a.pebble.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision pebble")
 	}
@@ -115,6 +143,8 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "http01")
 
+	a.ensureEABSecret(f, f.Namespace.Name)
+
 	By("Creating an ACME HTTP01 Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -135,6 +165,8 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 
 func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "http01")
+
+	a.ensureEABSecret(f, addon.CertManager.Namespace)
 
 	By("Creating an ACME HTTP01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
@@ -165,6 +197,7 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec() cmapi.IssuerSpec {
 						Name: "acme-private-key-http01",
 					},
 				},
+				ExternalAccountBinding: a.eab,
 				Solvers: []cmacme.ACMEChallengeSolver{
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
@@ -182,6 +215,8 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec() cmapi.IssuerSpec {
 
 func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "dns01")
+
+	a.ensureEABSecret(f, f.Namespace.Name)
 
 	a.cloudflare = &dnsproviders.Cloudflare{
 		Namespace: f.Namespace.Name,
@@ -208,6 +243,8 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 
 func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "dns01")
+
+	a.ensureEABSecret(f, addon.CertManager.Namespace)
 
 	a.cloudflare = &dnsproviders.Cloudflare{
 		Namespace: addon.CertManager.Namespace,
@@ -244,6 +281,7 @@ func (a *acmeIssuerProvisioner) createDNS01IssuerSpec() cmapi.IssuerSpec {
 						Name: "acme-private-key",
 					},
 				},
+				ExternalAccountBinding: a.eab,
 				Solvers: []cmacme.ACMEChallengeSolver{
 					{
 						DNS01: &a.cloudflare.Details().ProviderConfig,
@@ -262,4 +300,31 @@ func (a *acmeIssuerProvisioner) deployTiller(f *framework.Framework, solverType 
 	}
 	Expect(a.tiller.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup tiller")
 	Expect(a.tiller.Provision()).NotTo(HaveOccurred(), "failed to provision tiller")
+}
+
+func (a *acmeIssuerProvisioner) ensureEABSecret(f *framework.Framework, ns string) {
+	if a.eab == nil {
+		return
+	}
+
+	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "external-account-binding-",
+			Namespace:    ns,
+		},
+		Data: map[string][]byte{
+			// base64 url encode (without padding) the HMAC key
+			"key": []byte(base64.RawURLEncoding.EncodeToString([]byte("kid-secret-1"))),
+		},
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	a.eab.Key = cmmeta.SecretKeySelector{
+		Key: "key",
+		LocalObjectReference: cmmeta.LocalObjectReference{
+			Name: sec.Name,
+		},
+	}
+
+	a.secretNamespace = sec.Namespace
 }
