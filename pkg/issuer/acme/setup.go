@@ -275,11 +275,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	if err == nil {
 		return acc, nil
 	}
-
-	// return all errors except for 404 errors (which indicate the account
-	// is not yet registered)
-	acmeErr, ok := err.(*acmeapi.Error)
-	if !ok || (acmeErr.StatusCode != 400 && acmeErr.StatusCode != 404) {
+	if err != acmeapi.ErrNoAccount {
 		return nil, err
 	}
 
