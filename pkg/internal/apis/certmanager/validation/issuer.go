@@ -103,6 +103,20 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) field
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
 	}
+
+	if eab := iss.ExternalAccountBinding; eab != nil {
+		eabFldPath := fldPath.Child("externalAccountBinding")
+		if len(eab.KeyID) == 0 {
+			el = append(el, field.Required(eabFldPath.Child("keyID"), "the keyID field is required when using externalAccountBinding"))
+		}
+
+		el = append(el, ValidateSecretKeySelector(&eab.Key, eabFldPath.Child("keySecretRef"))...)
+
+		if len(eab.KeyAlgorithm) == 0 {
+			el = append(el, field.Required(eabFldPath.Child("keyAlgorithm"), "the keyAlgorithm field is required when using externalAccountBinding"))
+		}
+	}
+
 	for i, sol := range iss.Solvers {
 		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
 	}
