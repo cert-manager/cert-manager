@@ -42,10 +42,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.Spec.IssuerRef.Kind = v1alpha2.IssuerKind
 			}
 		},
-		func(s *acme.ACMEIssuerDNS01ProviderWebhook, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
+		func(s *apiext.JSON, c fuzz.Continue) {
 			// ensure the webhook's config is valid JSON
-			s.Config = &apiext.JSON{Raw: []byte("{}")}
+			s.Raw = []byte("{}")
 		},
 	}
 }
