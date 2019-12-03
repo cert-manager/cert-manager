@@ -15,7 +15,12 @@ data:
         "certificate": "/config/cert.pem",
         "privateKey": "/config/key.pem",
         "httpPort": 80,
-        "tlsPort": 443
+        "tlsPort": 443,
+        "externalAccountBindingRequired": false,
+        "externalAccountMACKeys": {
+          "kid-1": "a2lkLXNlY3JldC0x",
+          "kid-2": "a2lkLXNlY3JldC0y"
+        }
       }
     }
   cert.pem: |
