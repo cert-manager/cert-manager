@@ -231,7 +231,12 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 	}
 
 	log.V(logf.DebugLevel).Info("Retrieved ACME order from server", "raw_data", acmeOrder)
-	o.Status.URL = acmeOrder.URI
+	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
+	// order's URI field will be empty when calling GetOrder due to the
+	// 'Location' header not being set on the response from the ACME server.
+	if acmeOrder.URI != "" {
+		o.Status.URL = acmeOrder.URI
+	}
 	o.Status.FinalizeURL = acmeOrder.FinalizeURL
 	c.setOrderState(&o.Status, acmeOrder.Status)
 	// only set the authorizations field if the lengths mismatch.
