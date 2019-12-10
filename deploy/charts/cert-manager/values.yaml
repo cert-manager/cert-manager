@@ -77,6 +77,8 @@ securityContext:
   fsGroup: 1001
   runAsUser: 1001
 
+deploymentAnnotations: {}
+
 podAnnotations: {}
 
 podLabels: {}
@@ -148,6 +150,8 @@ webhook:
 
   securityContext: {}
 
+  deploymentAnnotations: {}
+
   podAnnotations: {}
 
   # Optional additional arguments for webhook
@@ -195,6 +199,8 @@ cainjector:
     #   maxUnavailable: 1
 
   securityContext: {}
+
+  deploymentAnnotations: {}
 
   podAnnotations: {}
 
