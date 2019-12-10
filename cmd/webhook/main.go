@@ -72,6 +72,7 @@ func main() {
 	srv := server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", securePort),
 		HealthzAddr:       fmt.Sprintf(":%d", healthzPort),
+		EnablePprof:       true,
 		CertificateSource: source,
 		ValidationWebhook: validationHook,
 		MutationWebhook:   mutationHook,
