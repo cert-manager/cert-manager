@@ -19,25 +19,25 @@ package client
 import (
 	"context"
 
-	"github.com/jetstack/cert-manager/third_party/crypto/acme"
+	"golang.org/x/crypto/acme"
 )
 
 type Interface interface {
-	CreateOrder(ctx context.Context, order *acme.Order) (*acme.Order, error)
+	AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error)
 	GetOrder(ctx context.Context, url string) (*acme.Order, error)
-	GetCertificate(ctx context.Context, url string) ([][]byte, error)
+	FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error)
 	WaitOrder(ctx context.Context, url string) (*acme.Order, error)
-	FinalizeOrder(ctx context.Context, finalizeURL string, csr []byte) (der [][]byte, err error)
-	AcceptChallenge(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
+	CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
+	Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
 	GetChallenge(ctx context.Context, url string) (*acme.Challenge, error)
 	GetAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
 	WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
-	CreateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error)
-	GetAccount(ctx context.Context) (*acme.Account, error)
+	Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error)
+	GetReg(ctx context.Context, url string) (*acme.Account, error)
 	HTTP01ChallengeResponse(token string) (string, error)
 	DNS01ChallengeRecord(token string) (string, error)
 	Discover(ctx context.Context) (acme.Directory, error)
-	UpdateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error)
+	UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error)
 }
 
 var _ Interface = &acme.Client{}

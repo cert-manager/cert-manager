@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"reflect"
 
+	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +36,6 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
-	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
@@ -183,7 +183,6 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
 	log := logf.FromContext(ctx)
-	dbg := log.V(logf.DebugLevel)
 
 	if o.Status.URL != "" {
 		return fmt.Errorf("refusing to recreate a new order for Order %q. Please create a new Order resource to initiate a new order", o.Name)
@@ -195,11 +194,9 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 		identifierSet.Insert(o.Spec.CommonName)
 	}
 	log.Info("build set of domains for Order", "domains", identifierSet.List())
-
+	authzIDs := acmeapi.DomainIDs(identifierSet.List()...)
 	// create a new order with the acme server
-	orderTemplate := acmeapi.NewOrder(identifierSet.List()...)
-	dbg.Info("constructed order template", "template", orderTemplate)
-	acmeOrder, err := cl.CreateOrder(ctx, orderTemplate)
+	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to create Order resource due to bad request, marking Order as failed")
@@ -213,7 +210,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 	log.Info("submitted Order to ACME server")
 
-	o.Status.URL = acmeOrder.URL
+	o.Status.URL = acmeOrder.URI
 	o.Status.FinalizeURL = acmeOrder.FinalizeURL
 	o.Status.Authorizations = constructAuthorizations(acmeOrder)
 	c.setOrderState(&o.Status, acmeOrder.Status)
@@ -234,12 +231,17 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 	}
 
 	log.V(logf.DebugLevel).Info("Retrieved ACME order from server", "raw_data", acmeOrder)
-	o.Status.URL = acmeOrder.URL
+	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
+	// order's URI field will be empty when calling GetOrder due to the
+	// 'Location' header not being set on the response from the ACME server.
+	if acmeOrder.URI != "" {
+		o.Status.URL = acmeOrder.URI
+	}
 	o.Status.FinalizeURL = acmeOrder.FinalizeURL
 	c.setOrderState(&o.Status, acmeOrder.Status)
 	// only set the authorizations field if the lengths mismatch.
 	// state can be rebuilt in this case on the next call to ProcessItem.
-	if len(o.Status.Authorizations) != len(acmeOrder.Authorizations) {
+	if len(o.Status.Authorizations) != len(acmeOrder.AuthzURLs) {
 		o.Status.Authorizations = constructAuthorizations(acmeOrder)
 	}
 
@@ -264,8 +266,8 @@ func (c *controller) setOrderState(o *cmacme.OrderStatus, s string) {
 // named on the Order to fetch additional metadata, instead, use
 // populateAuthorization on each authorization in turn.
 func constructAuthorizations(o *acmeapi.Order) []cmacme.ACMEAuthorization {
-	authzs := make([]cmacme.ACMEAuthorization, len(o.Authorizations))
-	for i, url := range o.Authorizations {
+	authzs := make([]cmacme.ACMEAuthorization, len(o.AuthzURLs))
+	for i, url := range o.AuthzURLs {
 		authzs[i].URL = url
 	}
 	return authzs
@@ -305,7 +307,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 		authz.Wildcard = &acmeAuthz.Wildcard
 		authz.Challenges = make([]cmacme.ACMEChallenge, len(acmeAuthz.Challenges))
 		for i, acmech := range acmeAuthz.Challenges {
-			authz.Challenges[i].URL = acmech.URL
+			authz.Challenges[i].URL = acmech.URI
 			authz.Challenges[i].Token = acmech.Token
 			authz.Challenges[i].Type = cmacme.ACMEChallengeType(acmech.Type)
 		}
@@ -437,7 +439,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		derBytes = block.Bytes
 	}
 
-	certSlice, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, derBytes)
+	certSlice, _, err := cl.CreateOrderCert(ctx, o.Status.FinalizeURL, derBytes, true)
 	// if an ACME error is returned and it's a 4xx error, mark this Order as
 	// failed and do not retry it until after applying the global backoff.
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
@@ -521,7 +523,7 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 		return nil
 	}
 
-	certs, err := cl.GetCertificate(ctx, acmeOrder.CertificateURL)
+	certs, err := cl.FetchCert(ctx, acmeOrder.CertURL, true)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to retrieve issued certificate from ACME server")

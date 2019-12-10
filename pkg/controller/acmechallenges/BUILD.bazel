@@ -27,7 +27,6 @@ go_library(
         "//pkg/logs:go_default_library",
         "//pkg/metrics:go_default_library",
         "//pkg/util/feature:go_default_library",
-        "//third_party/crypto/acme:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
@@ -36,6 +35,7 @@ go_library(
         "@io_k8s_client_go//tools/cache:go_default_library",
         "@io_k8s_client_go//tools/record:go_default_library",
         "@io_k8s_client_go//util/workqueue:go_default_library",
+        "@org_golang_x_crypto//acme:go_default_library",
     ],
 )
 
@@ -52,9 +52,9 @@ go_test(
         "//pkg/controller/test:go_default_library",
         "//pkg/issuer:go_default_library",
         "//test/unit/gen:go_default_library",
-        "//third_party/crypto/acme:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_client_go//testing:go_default_library",
+        "@org_golang_x_crypto//acme:go_default_library",
     ],
 )
 

@@ -26,12 +26,13 @@ import (
 	"sync"
 	"time"
 
+	acmecl "golang.org/x/crypto/acme"
+
 	acme "github.com/jetstack/cert-manager/pkg/acme/client"
 	acmemw "github.com/jetstack/cert-manager/pkg/acme/client/middleware"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
-	acmecl "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 // This file implements a basic cache for ACME clients that can be used to
@@ -123,7 +124,7 @@ func buildHTTPClient(skipTLSVerify bool) *http.Client {
 	})
 }
 
-var timeout = time.Duration(5 * time.Second)
+var timeout = 5 * time.Second
 
 func dialTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
 	d := net.Dialer{Timeout: timeout}

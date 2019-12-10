@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"time"
 
+	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
@@ -35,7 +36,6 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
-	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 const (
@@ -217,7 +217,7 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	if acmeErr, ok = err.(*acmeapi.Error); !ok {
 		return err
 	}
-	switch acmeErr.Type {
+	switch acmeErr.ProblemType {
 	// This response type is returned when an authorization has expired or the
 	// request is in some way malformed.
 	// In this case, we should mark the challenge as expired so that the order
@@ -315,7 +315,11 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 	// this info
 	ch.Status.Reason = ""
 	if acmeChallenge.Error != nil {
-		ch.Status.Reason = acmeChallenge.Error.Detail
+		if acmeErr, ok := acmeChallenge.Error.(*acmeapi.Error); ok {
+			ch.Status.Reason = acmeErr.Detail
+		} else {
+			ch.Status.Reason = acmeChallenge.Error.Error()
+		}
 	}
 	ch.Status.State = cmState
 
@@ -334,10 +338,10 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	// We manually construct an ACME challenge here from our own internal type
 	// to save additional round trips to the ACME server.
 	acmeChal := &acmeapi.Challenge{
-		URL:   ch.Spec.URL,
+		URI:   ch.Spec.URL,
 		Token: ch.Spec.Token,
 	}
-	acmeChal, err := cl.AcceptChallenge(ctx, acmeChal)
+	acmeChal, err := cl.Accept(ctx, acmeChal)
 	if acmeChal != nil {
 		ch.Status.State = cmacme.State(acmeChal.Status)
 	}
@@ -362,28 +366,20 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 }
 
 func (c *controller) handleAuthorizationError(ch *cmacme.Challenge, err error) error {
-	authErr, ok := err.(acmeapi.AuthorizationError)
+	authErr, ok := err.(*acmeapi.AuthorizationError)
 	if !ok {
 		return handleError(ch, err)
 	}
 
-	var acmeCh *acmeapi.Challenge
-	for _, n := range authErr.Authorization.Challenges {
-		if n.URL == ch.Spec.URL {
-			acmeCh = n
-			break
-		}
-	}
-
-	// eventErr is a reference to the error that will be logged as an Event
-	ch.Status.State = cmacme.State(authErr.Authorization.Status)
-	if acmeCh != nil && acmeCh.Error != nil {
-		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", acmeCh.Error.Error())
-		err = acmeCh.Error
-	} else {
-		ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
-	}
-	c.recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", err)
+	// TODO: the AuthorizationError above could technically contain the final
+	//   state of the authorization in its raw JSON form. This isn't currently
+	//   exposed by the ACME client implementation, so for now we fix this to
+	//   'invalid' if the returned type here is an AuthorizationError, which
+	//   should be safe as the client library only returns an AuthorizationError
+	//   if the returned state is 'invalid'
+	ch.Status.State = cmacme.Invalid
+	ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
+	c.recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", authErr)
 
 	// return nil here, as accepting the challenge did not error, the challenge
 	// simply failed

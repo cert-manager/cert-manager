@@ -1927,8 +1927,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/crypto",
-        sum = "h1:1wopBVtVdWnn03fZelqdXTqk7U7zPQCb+T4rbU9ZEoU=",
-        version = "v0.0.0-20190611184440-5c40567a22f8",
+        sum = "h1:egKlR8l7Nu9vHGWbcUV8lqR4987UfUbBd7GbhqGzNYU=",
+        version = "v0.0.0-20191202143827-86a70503ff7e",
     )
     go_repository(
         name = "org_golang_x_exp",

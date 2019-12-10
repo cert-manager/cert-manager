@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"testing"
 
+	acmeapi "golang.org/x/crypto/acme"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
@@ -32,7 +33,6 @@ import (
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 // Present the challenge value with the given solver.
@@ -199,7 +199,7 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
-				FakeAcceptChallenge: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
 					// return something other than valid here so we can verify that
 					// the challenge.status.state is set to the *authorizations*
 					// status and not the challenges
@@ -244,27 +244,26 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Invalid),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengePresented(true),
-							gen.SetChallengeReason("Error accepting authorization: acme: authorization for identifier example.com is invalid"),
+							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: an error happened"),
 						))),
 				},
 				ExpectedEvents: []string{
-					"Warning Failed Accepting challenge authorization failed: acme: authorization for identifier example.com is invalid",
+					"Warning Failed Accepting challenge authorization failed: acme: authorization error for example.com: an error happened",
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
-				FakeAcceptChallenge: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
 					// return something other than invalid here so we can verify that
 					// the challenge.status.state is set to the *authorizations*
 					// status and not the challenges
 					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return nil, acmeapi.AuthorizationError{
-						Authorization: &acmeapi.Authorization{
-							Status: acmeapi.StatusInvalid,
-							Identifier: acmeapi.AuthzID{
-								Value: "example.com",
-							},
+					return nil, &acmeapi.AuthorizationError{
+						URI:        "http://testerroruri",
+						Identifier: "example.com",
+						Errors: []error{
+							fmt.Errorf("an error happened"),
 						},
 					}
 				},
@@ -304,36 +303,29 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(cmacme.Invalid),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengePresented(true),
-							gen.SetChallengeReason("Error accepting challenge: acme: fakeerror: this is a very detailed error"),
+							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error"),
 						))),
 				},
 				ExpectedEvents: []string{
-					"Warning Failed Accepting challenge authorization failed: acme: fakeerror: this is a very detailed error",
+					"Warning Failed Accepting challenge authorization failed: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error",
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
-				FakeAcceptChallenge: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
 					// return something other than invalid here so we can verify that
 					// the challenge.status.state is set to the *authorizations*
 					// status and not the challenges
 					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return nil, acmeapi.AuthorizationError{
-						Authorization: &acmeapi.Authorization{
-							Status: acmeapi.StatusInvalid,
-							Identifier: acmeapi.AuthzID{
-								Value: "example.com",
-							},
-							Challenges: []*acmeapi.Challenge{
-								{
-									URL: "testurl",
-									Error: &acmeapi.Error{
-										StatusCode: 400,
-										Type:       "fakeerror",
-										Detail:     "this is a very detailed error",
-									},
-								},
+					return nil, &acmeapi.AuthorizationError{
+						URI:        "http://testerroruri",
+						Identifier: "example.com",
+						Errors: []error{
+							&acmeapi.Error{
+								StatusCode:  400,
+								ProblemType: "fakeerror",
+								Detail:      "this is a very detailed error",
 							},
 						},
 					}
