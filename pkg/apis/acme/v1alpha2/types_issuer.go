@@ -68,8 +68,18 @@ type ACMEExternalAccountBinding struct {
 
 	// keyAlgorithm is the MAC key algorithm that the key is used for. Valid
 	// values are "HS256", "HS384" and "HS512".
-	KeyAlgorithm string `json:"keyAlgorithm"`
+	KeyAlgorithm HMACKeyAlgorithm `json:"keyAlgorithm"`
 }
+
+// HMACKeyAlgorithm is the name of a key algorithm used for HMAC encryption
+// +kubebuilder:validation:Enum=HS256;HS384;HS512
+type HMACKeyAlgorithm string
+
+const (
+	HS256 HMACKeyAlgorithm = "HS256"
+	HS384 HMACKeyAlgorithm = "HS384"
+	HS512 HMACKeyAlgorithm = "HS512"
+)
 
 type ACMEChallengeSolver struct {
 	// Selector selects a set of DNSNames on the Certificate resource that

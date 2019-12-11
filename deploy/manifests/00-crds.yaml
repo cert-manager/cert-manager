@@ -1899,6 +1899,10 @@ spec:
                       description: keyAlgorithm is the MAC key algorithm that the
                         key is used for. Valid values are "HS256", "HS384" and "HS512".
                       type: string
+                      enum:
+                      - HS256
+                      - HS384
+                      - HS512
                     keyID:
                       description: keyID is the ID of the CA key that the External
                         Account is bound to.
@@ -3635,6 +3639,10 @@ spec:
                       description: keyAlgorithm is the MAC key algorithm that the
                         key is used for. Valid values are "HS256", "HS384" and "HS512".
                       type: string
+                      enum:
+                      - HS256
+                      - HS384
+                      - HS512
                     keyID:
                       description: keyID is the ID of the CA key that the External
                         Account is bound to.

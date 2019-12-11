@@ -584,7 +584,7 @@ func autoConvert_v1alpha2_ACMEExternalAccountBinding_To_acme_ACMEExternalAccount
 	if err := s.Convert(&in.Key, &out.Key, 0); err != nil {
 		return err
 	}
-	out.KeyAlgorithm = in.KeyAlgorithm
+	out.KeyAlgorithm = acme.HMACKeyAlgorithm(in.KeyAlgorithm)
 	return nil
 }
 
@@ -599,7 +599,7 @@ func autoConvert_acme_ACMEExternalAccountBinding_To_v1alpha2_ACMEExternalAccount
 	if err := s.Convert(&in.Key, &out.Key, 0); err != nil {
 		return err
 	}
-	out.KeyAlgorithm = in.KeyAlgorithm
+	out.KeyAlgorithm = v1alpha2.HMACKeyAlgorithm(in.KeyAlgorithm)
 	return nil
 }
 
