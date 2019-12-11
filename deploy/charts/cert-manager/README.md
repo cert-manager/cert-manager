@@ -107,6 +107,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.servicemonitor.labels` | Add custom labels to ServiceMonitor | |
 | `prometheus.servicemonitor.scrapeTimeout` | Prometheus scrape timeout | `30s` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
+| `deploymentAnnotations` | Annotations to add to the cert-manager deployment | `{}` |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
 | `podDnsConfig` | Optional cert-manager pod [DNS configurations](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-config) |  |
 | `podLabels` | Labels to add to the cert-manager pod | `{}` |
@@ -116,6 +117,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.enabled` | Toggles whether the validating webhook component should be installed | `true` |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
+| `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | `{}` |
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
@@ -130,6 +132,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
+| `cainjector.deploymentAnnotations` | Annotations to add to the cainjector deployment | `{}` |
 | `cainjector.extraArgs` | Optional flags for cert-manager cainjector component | `[]` |
 | `cainjector.resources` | CPU/memory resource requests/limits for the cainjector pods | `{}` |
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
