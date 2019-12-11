@@ -33,16 +33,6 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*TestType)(nil), (*testgroup.TestType)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v2_TestType_To_testgroup_TestType(a.(*TestType), b.(*testgroup.TestType), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*testgroup.TestType)(nil), (*TestType)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_testgroup_TestType_To_v2_TestType(a.(*testgroup.TestType), b.(*TestType), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddConversionFunc((*testgroup.TestType)(nil), (*TestType)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_testgroup_TestType_To_v2_TestType(a.(*testgroup.TestType), b.(*TestType), scope)
 	}); err != nil {
