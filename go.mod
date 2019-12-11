@@ -4,6 +4,8 @@ go 1.12
 
 replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.4
 
+replace golang.org/x/crypto => github.com/munnerz/crypto v0.0.0-20191203200931-e1844778daa5
+
 require (
 	cloud.google.com/go v0.38.0
 	github.com/Azure/azure-sdk-for-go v32.5.0+incompatible

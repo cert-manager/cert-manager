@@ -144,6 +144,27 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 		},
+		"acme solver with empty external account binding fields": {
+			spec: &cmacme.ACMEIssuer{
+				Email:                  "valid-email",
+				Server:                 "valid-server",
+				PrivateKey:             validSecretKeyRef,
+				ExternalAccountBinding: &cmacme.ACMEExternalAccountBinding{},
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("externalAccountBinding.keyID"), "the keyID field is required when using externalAccountBinding"),
+				field.Required(fldPath.Child("externalAccountBinding.keySecretRef.name"), "secret name is required"),
+				field.Required(fldPath.Child("externalAccountBinding.keySecretRef.key"), "secret key is required"),
+				field.Required(fldPath.Child("externalAccountBinding.keyAlgorithm"), "the keyAlgorithm field is required when using externalAccountBinding"),
+			},
+		},
 		"acme solver with missing http01 config type": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
