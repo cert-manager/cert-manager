@@ -37,16 +37,55 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha2.Cluste
 		if secret.Namespace != c.clusterResourceNamespace {
 			continue
 		}
-		if (iss.Spec.ACME != nil && iss.Spec.ACME.PrivateKey.Name == secret.Name) ||
-			(iss.Spec.CA != nil && iss.Spec.CA.SecretName == secret.Name) ||
-			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.TokenSecretRef != nil &&
-				iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name) ||
-			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.Kubernetes != nil &&
-				iss.Spec.Vault.Auth.Kubernetes.SecretRef.Name == secret.Name) ||
-			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.AppRole != nil &&
-				iss.Spec.Vault.Auth.AppRole.SecretRef.Name == secret.Name) {
-			affected = append(affected, iss)
-			continue
+		switch {
+		case iss.Spec.ACME != nil:
+			if iss.Spec.ACME.PrivateKey.Name == secret.Name {
+				affected = append(affected, iss)
+				continue
+			}
+			if iss.Spec.ACME.ExternalAccountBinding != nil {
+				if iss.Spec.ACME.ExternalAccountBinding.Key.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
+		case iss.Spec.CA != nil:
+			if iss.Spec.CA.SecretName == secret.Name {
+				affected = append(affected, iss)
+				continue
+			}
+		case iss.Spec.Venafi != nil:
+			if iss.Spec.Venafi.TPP != nil {
+				if iss.Spec.Venafi.TPP.CredentialsRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
+			if iss.Spec.Venafi.Cloud != nil {
+				if iss.Spec.Venafi.Cloud.APITokenSecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
+		case iss.Spec.Vault != nil:
+			if iss.Spec.Vault.Auth.TokenSecretRef != nil {
+				if iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
+			if iss.Spec.Vault.Auth.AppRole != nil {
+				if iss.Spec.Vault.Auth.AppRole.SecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
+			if iss.Spec.Vault.Auth.Kubernetes != nil {
+				if iss.Spec.Vault.Auth.Kubernetes.SecretRef.Name == secret.Name {
+					affected = append(affected, iss)
+					continue
+				}
+			}
 		}
 	}
 
