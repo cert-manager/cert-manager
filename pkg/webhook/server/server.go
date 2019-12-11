@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 )
 
@@ -71,6 +72,10 @@ type Server struct {
 	// HealthzAddr is the address the healthz HTTP server should listen on
 	// If not specified, the healthz endpoint will not be exposed.
 	HealthzAddr string
+
+	// EnablePprof controls whether net/http/pprof handlers are registered with
+	// the HTTP listener.
+	EnablePprof bool
 
 	// Scheme is used to decode/encode request/response payloads.
 	// If not specified, a default scheme that registers the AdmissionReview
@@ -145,6 +150,10 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	mux.HandleFunc("/validate", s.handle(s.validate))
 	mux.HandleFunc("/mutate", s.handle(s.mutate))
 	mux.HandleFunc("/convert", s.handle(s.convert))
+	if s.EnablePprof {
+		profiling.Install(mux)
+		s.Log.Info("registered pprof handlers")
+	}
 	listenerChan := s.startServer(l, internalStopCh, mux)
 
 	if certSourceChan == nil {
