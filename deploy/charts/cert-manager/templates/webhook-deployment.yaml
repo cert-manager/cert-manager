@@ -39,6 +39,10 @@ spec:
       {{- if .Values.global.priorityClassName }}
       priorityClassName: {{ .Values.global.priorityClassName | quote }}
       {{- end }}
+      {{- if .Values.webhook.securityContext}}
+      securityContext:
+{{ toYaml .Values.webhook.securityContext | indent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.webhook.image.repository }}:{{ default .Chart.AppVersion .Values.webhook.image.tag }}"

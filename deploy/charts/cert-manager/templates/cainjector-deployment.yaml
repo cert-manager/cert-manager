@@ -38,6 +38,10 @@ spec:
       {{- if .Values.global.priorityClassName }}
       priorityClassName: {{ .Values.global.priorityClassName | quote }}
       {{- end }}
+      {{- if .Values.cainjector.securityContext}}
+      securityContext:
+{{ toYaml .Values.cainjector.securityContext | indent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.cainjector.image.repository }}:{{ default .Chart.AppVersion .Values.cainjector.image.tag }}"

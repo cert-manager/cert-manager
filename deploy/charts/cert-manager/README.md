@@ -126,6 +126,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.injectAPIServerCA` | if true, the apiserver's CABundle will be automatically injected into the ValidatingWebhookConfiguration resource | `true` |
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
+| `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
@@ -137,6 +138,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
 | `cainjector.image.tag` | cainjector image tag | `v0.12.0-beta.1` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
+| `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 

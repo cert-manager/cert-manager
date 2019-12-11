@@ -146,6 +146,8 @@ webhook:
     #   maxSurge: 0
     #   maxUnavailable: 1
 
+  securityContext: {}
+
   podAnnotations: {}
 
   # Optional additional arguments for webhook
@@ -191,6 +193,8 @@ cainjector:
     # rollingUpdate:
     #   maxSurge: 0
     #   maxUnavailable: 1
+
+  securityContext: {}
 
   podAnnotations: {}
 
