@@ -261,7 +261,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
 		[]string{}, "A list of comma seperated dns server endpoints used for "+
-			"DNS01 check requests. This should be a list containing IP address and "+
+			"DNS01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
 	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
 		defaultDNS01RecursiveNameserversOnly,
@@ -272,8 +272,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"due to caching performed by the recursive nameservers.")
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-self-check-nameservers",
 		[]string{}, "A list of comma seperated dns server endpoints used for "+
-			"DNS01 check requests. This should be a list containing IP address and "+
-			"port, for example 8.8.8.8:53,8.8.4.4:53")
+			"DNS01 check requests. This should be a list containing host and port, "+
+			"for example 8.8.8.8:53,8.8.4.4:53")
 	fs.MarkDeprecated("dns01-self-check-nameservers", "Deprecated in favour of dns01-recursive-nameservers")
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
@@ -301,13 +301,9 @@ func (o *ControllerOptions) Validate() error {
 
 	for _, server := range o.DNS01RecursiveNameservers {
 		// ensure all servers have a port number
-		host, _, err := net.SplitHostPort(server)
+		_, _, err := net.SplitHostPort(server)
 		if err != nil {
 			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
-		}
-		ip := net.ParseIP(host)
-		if ip == nil {
-			return fmt.Errorf("invalid IP address: %v", host)
 		}
 	}
 	return nil
