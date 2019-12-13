@@ -87,9 +87,17 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 	if err != nil {
 		return nil, err
 	}
-	if len(existingIngresses) == 1 {
+	if len(existingIngresses) == 1 && ingressServiceName(existingIngresses[0]) == svcName {
 		logf.WithRelatedResource(log, existingIngresses[0]).Info("found one existing HTTP01 solver ingress")
 		return existingIngresses[0], nil
+	}
+	if len(existingIngresses) == 1 && ingressServiceName(existingIngresses[0]) != svcName {
+		log.Info("service name changed. cleaning up all existing ingresses.")
+		err := s.cleanupIngresses(ctx, ch)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("service name changed, existing challenge solver ingresses found and cleaned up. retrying challenge sync")
 	}
 	if len(existingIngresses) > 1 {
 		log.Info("multiple challenge solver ingresses found for challenge. cleaning up all existing ingresses.")
@@ -102,6 +110,10 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 
 	log.Info("creating HTTP01 challenge solver ingress")
 	return s.createIngress(ch, svcName)
+}
+
+func ingressServiceName(ing *extv1beta1.Ingress) string {
+	return ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServiceName
 }
 
 // createIngress will create a challenge solving pod for the given certificate,
