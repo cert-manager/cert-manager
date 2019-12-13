@@ -58,6 +58,10 @@ spec:
         fsGroup: {{ .Values.securityContext.fsGroup }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
       {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+{{ toYaml .Values.volumes | indent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
@@ -93,6 +97,10 @@ spec:
           ports:
           - containerPort: 9402
             protocol: TCP
+          {{- if .Values.volumeMounts }}
+          volumeMounts:
+{{ toYaml .Values.volumeMounts | indent 12 }}
+          {{- end }}
           env:
           - name: POD_NAMESPACE
             valueFrom:
