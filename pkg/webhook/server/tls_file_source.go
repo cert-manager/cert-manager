@@ -89,11 +89,13 @@ func (f *FileCertificateSource) Run(stopCh <-chan struct{}) error {
 	}
 
 	failures := 0
+	ticker := time.NewTicker(updateInterval)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-stopCh:
 			return nil
-		case <-time.Tick(updateInterval):
+		case <-ticker.C:
 			if err := f.updateCertificateFromDisk(); err != nil {
 				failures++
 				f.Log.Error(err, "failed to update certificate from disk", "failures", failures)
