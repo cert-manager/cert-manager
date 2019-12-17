@@ -336,15 +336,14 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 			log.Info("no existing certificate data found in secret, issuing temporary certificate")
 			return c.issueTemporaryCertificate(ctx, existingSecret, crt, existingKey)
 		}
-		// We don't issue a temporary certificate if the existing stored
-		// certificate already 'matches', even if it isn't a temporary certificate.
-		matches, _ := certificateMatchesSpec(crt, privateKey, existingX509Cert, existingSecret)
-		if !matches {
-			log.Info("existing certificate fields do not match certificate spec, issuing temporary certificate")
+
+		matches, err := pki.PublicKeyMatchesCertificate(privateKey.Public(), existingX509Cert)
+		if err != nil || !matches {
+			log.Info("private key for certificate does not match, issuing temporary certificate")
 			return c.issueTemporaryCertificate(ctx, existingSecret, crt, existingKey)
 		}
 
-		log.Info("not issuing temporary certificate as existing certificate matches requirements")
+		log.Info("not issuing temporary certificate as existing certificate is sufficient")
 
 		// Ensure the secret metadata is up to date
 		updated, err := c.ensureSecretMetadataUpToDate(ctx, existingSecret, crt)
