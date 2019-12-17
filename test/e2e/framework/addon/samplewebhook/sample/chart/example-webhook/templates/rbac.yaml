@@ -24,12 +24,33 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: extension-apiserver-authentication-reader
+  name: {{ include "example-webhook.fullname" . }}:webhook-authentication-reader
 subjects:
   - apiGroup: ""
     kind: ServiceAccount
     name: {{ include "example-webhook.fullname" . }}
     namespace: {{ .Release.Namespace }}
+---
+# Once we no longer have to support Kubernetes versions lower than 1.17, we
+# can remove this custom defined Role in favour of the system-provisioned
+# extension-apiserver-authentication-reader Role resource in kube-system.
+# See https://github.com/kubernetes/kubernetes/issues/86359 for more details.
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: {{ include "example-webhook.fullname" . }}:webhook-authentication-reader
+  namespace: kube-system
+rules:
+- apiGroups:
+  - ""
+  resourceNames:
+  - extension-apiserver-authentication
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
 ---
 # apiserver gets the auth-delegator role to delegate auth decisions to
 # the core apiserver
