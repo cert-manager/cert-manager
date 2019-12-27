@@ -76,6 +76,7 @@ require (
 	github.com/prometheus/client_golang v1.0.0
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0 // indirect
+	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0

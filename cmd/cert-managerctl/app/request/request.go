@@ -31,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/cert-managerctl/app/util"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 type Request struct {
@@ -68,7 +69,7 @@ func (r *Request) csr(csrPEM []byte, opts *v1alpha1.Request) error {
 			Duration: &metav1.Duration{
 				Duration: durationTime,
 			},
-			IssuerRef: cmapi.ObjectReference{
+			IssuerRef: cmmeta.ObjectReference{
 				Name:  opts.IssuerRef.Name,
 				Kind:  opts.IssuerRef.Kind,
 				Group: opts.IssuerRef.Group,

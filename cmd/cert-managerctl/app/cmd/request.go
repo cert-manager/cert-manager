@@ -24,6 +24,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/cert-managerctl/app/apis/cert-managerctl/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 var requestCmd = &cobra.Command{
@@ -32,7 +33,7 @@ var requestCmd = &cobra.Command{
 	Aliases: []string{"req"},
 }
 
-func requestIssuerFlags(store *cmapi.ObjectReference, fs *pflag.FlagSet) {
+func requestIssuerFlags(store *cmmeta.ObjectReference, fs *pflag.FlagSet) {
 	fs.StringVar(
 		&store.Name,
 		"issuer-name",

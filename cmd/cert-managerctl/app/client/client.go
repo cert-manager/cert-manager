@@ -67,6 +67,10 @@ func (c *Client) CertificateRequest(ns, name string) (*cmapi.CertificateRequest,
 	return c.cmClient.CertmanagerV1alpha2().CertificateRequests(ns).Get(name, metav1.GetOptions{})
 }
 
+func (c *Client) UpdateCertificateRequest(cr *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
+	return c.cmClient.CertmanagerV1alpha2().CertificateRequests(cr.Namespace).Update(cr)
+}
+
 func (c *Client) WaitForCertificateRequestReady(name, ns string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
 	var cr *cmapi.CertificateRequest
 	err := wait.PollImmediate(time.Second, timeout,

@@ -14,6 +14,7 @@ filegroup(
         "//cmd/cert-managerctl/app/cmd:all-srcs",
         "//cmd/cert-managerctl/app/get:all-srcs",
         "//cmd/cert-managerctl/app/request:all-srcs",
+        "//cmd/cert-managerctl/app/update:all-srcs",
         "//cmd/cert-managerctl/app/util:all-srcs",
     ],
     tags = ["automanaged"],
