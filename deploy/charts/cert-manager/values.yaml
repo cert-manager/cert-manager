@@ -16,6 +16,7 @@ global:
 
   podSecurityPolicy:
     enabled: false
+    useAppArmor: true
 
   # Set the verbosity of cert-manager. Range of 0 - 6 with 6 being the most verbose.
   logLevel: 2
