@@ -88,6 +88,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `serviceAccount.create` | If `true`, create a new service account | `true` |
 | `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `serviceAccount.annotations` | Annotations to add to the service account |  |
+| `volumes` | Optional volumes for cert-manager | `[]` |
+| `volumeMounts` | Optional volume mounts for cert-manager | `[]` |
 | `resources` | CPU/memory resource requests/limits | `{}` |
 | `securityContext.enabled` | Enable security context | `false` |
 | `securityContext.fsGroup` | Group ID for the container | `1001` |
