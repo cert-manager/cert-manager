@@ -24,7 +24,6 @@ import (
 	api "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -33,26 +32,17 @@ import (
 // secret with 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
 func SecretTLSKeyRef(ctx context.Context, secretLister corelisters.SecretLister, namespace, name, keyName string) (crypto.Signer, error) {
-	log := logf.FromContext(ctx)
-	log = logf.WithRelatedResourceName(log, name, namespace, "Secret")
-
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
-		log.Error(err, "failed to retrieve secret")
 		return nil, err
 	}
-	log = logf.WithRelatedResource(log, secret)
-	log.V(logf.DebugLevel).Info("got secret resource")
 
-	log = log.WithValues("secret_key", keyName)
 	keyBytes, ok := secret.Data[keyName]
 	if !ok {
-		log.Error(nil, "no data for key in secret")
 		return nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", keyName, namespace, name)
 	}
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
-		log.Error(err, "error decoding private key")
 		return key, errors.NewInvalidData(err.Error())
 	}
 
@@ -67,28 +57,18 @@ func SecretTLSKey(ctx context.Context, secretLister corelisters.SecretLister, na
 }
 
 func SecretTLSCertChain(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, error) {
-	log := logf.FromContext(ctx)
-	log = logf.WithRelatedResourceName(log, name, namespace, "Secret")
-
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
-		log.Error(err, "failed to retrieve secret")
 		return nil, err
 	}
-	log = logf.WithRelatedResource(log, secret)
-	log.V(logf.DebugLevel).Info("got secret resource")
 
-	log = log.WithValues("secret_key", api.TLSCertKey)
 	certBytes, ok := secret.Data[api.TLSCertKey]
 	if !ok {
-		log.Error(nil, "no data for key in secret")
 		return nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
 
-	log.V(logf.DebugLevel).Info("attempting to decode certificate chain")
 	cert, err := pki.DecodeX509CertificateChainBytes(certBytes)
 	if err != nil {
-		log.Error(err, "error decoding x509 certificate")
 		return cert, errors.NewInvalidData(err.Error())
 	}
 
@@ -96,36 +76,26 @@ func SecretTLSCertChain(ctx context.Context, secretLister corelisters.SecretList
 }
 
 func SecretTLSKeyPair(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
-	log := logf.FromContext(ctx)
-	log = logf.WithRelatedResourceName(log, name, namespace, "Secret")
-
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, nil, err
 	}
-	log = logf.WithRelatedResource(log, secret)
 
-	log = log.WithValues("secret_key", api.TLSPrivateKeyKey)
 	keyBytes, ok := secret.Data[api.TLSPrivateKeyKey]
 	if !ok {
-		log.Error(nil, "no data for key in secret")
 		return nil, nil, errors.NewInvalidData("no private key data for %q in secret '%s/%s'", api.TLSPrivateKeyKey, namespace, name)
 	}
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
-		log.Error(err, "error decoding private key")
 		return nil, nil, errors.NewInvalidData(err.Error())
 	}
 
-	log = log.WithValues("secret_key", api.TLSCertKey)
 	certBytes, ok := secret.Data[api.TLSCertKey]
 	if !ok {
-		log.Error(nil, "no data for key in secret")
 		return nil, key, errors.NewInvalidData("no certificate data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
 	cert, err := pki.DecodeX509CertificateChainBytes(certBytes)
 	if err != nil {
-		log.Error(err, "error decoding x509 certificate")
 		return nil, key, errors.NewInvalidData(err.Error())
 	}
 
