@@ -495,6 +495,9 @@ func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *c
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crt.Spec.SecretName,
 			Namespace: crt.Namespace,
+			Annotations: map[string]string{
+				cmapi.AllowsInjectionFromSecretAnnotation: "true",
+			},
 		},
 		Type: corev1.SecretTypeTLS,
 	}
