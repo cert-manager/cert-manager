@@ -176,7 +176,7 @@ spec:
                     - "False"
                     - Unknown
                   type:
-                    description: Type of the condition, currently ('Ready').
+                    description: Type of the condition, currently ('Ready', 'InvalidRequest').
                     type: string
             failureTime:
               description: FailureTime stores the time that this CertificateRequest
