@@ -63,9 +63,10 @@ type cryptoBundle struct {
 
 	// certificateRequest is the request that is expected to be created to
 	// obtain a certificate when using this bundle
-	certificateRequest       *cmapi.CertificateRequest
-	certificateRequestReady  *cmapi.CertificateRequest
-	certificateRequestFailed *cmapi.CertificateRequest
+	certificateRequest                     *cmapi.CertificateRequest
+	certificateRequestReady                *cmapi.CertificateRequest
+	certificateRequestFailed               *cmapi.CertificateRequest
+	certificateRequestFailedInvalidRequest *cmapi.CertificateRequest
 
 	// cert is a signed certificate
 	cert      *x509.Certificate
@@ -156,24 +157,33 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		}),
 	)
 
+	certificateRequestFailedInvalidRequest := gen.CertificateRequestFrom(certificateRequestFailed,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:   cmapi.CertificateRequestConditionInvalidRequest,
+			Status: cmmeta.ConditionTrue,
+			Reason: cmapi.CertificateRequestReasonFailed,
+		}),
+	)
+
 	tempCertBytes, err := generateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
 
 	return &cryptoBundle{
-		certificate:                    crt,
-		expectedRequestName:            reqName,
-		privateKey:                     privateKey,
-		privateKeyBytes:                privateKeyBytes,
-		csr:                            csr,
-		csrBytes:                       csrPEM,
-		certificateRequest:             certificateRequest,
-		certificateRequestReady:        certificateRequestReady,
-		certificateRequestFailed:       certificateRequestFailed,
-		cert:                           cert,
-		certBytes:                      certBytes,
-		localTemporaryCertificateBytes: tempCertBytes,
+		certificate:                            crt,
+		expectedRequestName:                    reqName,
+		privateKey:                             privateKey,
+		privateKeyBytes:                        privateKeyBytes,
+		csr:                                    csr,
+		csrBytes:                               csrPEM,
+		certificateRequest:                     certificateRequest,
+		certificateRequestReady:                certificateRequestReady,
+		certificateRequestFailed:               certificateRequestFailed,
+		certificateRequestFailedInvalidRequest: certificateRequestFailedInvalidRequest,
+		cert:                                   cert,
+		certBytes:                              certBytes,
+		localTemporaryCertificateBytes:         tempCertBytes,
 	}, nil
 }
 
@@ -1082,6 +1092,33 @@ func TestProcessCertificate(t *testing.T) {
 				ExpectedEvents: []string{`Normal CertificateRequestRetry The failed CertificateRequest "test-850937773" will be retried now`},
 			},
 		},
+		"if a temporary certificate exists but the request has failed and contains no FailureTime, but does contain a InvalidRequest condition then don't retry": {
+			certificate: exampleBundle1.certificate,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle1.certificate.Spec.SecretName,
+							Namespace: exampleBundle1.certificate.Namespace,
+							Annotations: map[string]string{
+								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{
+					exampleBundle1.certificate,
+					exampleBundle1.certificateRequestFailedInvalidRequest,
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{`Warning CertificateRequestInvalidRequest The failed CertificateRequest "test-850937773" is an invalid request and will no longer be processed`},
+			},
+		},
 		"if a temporary certificate exists but the request has failed and contains a FailureTime over an hour in the past, delete the request to cause a re-sync and retry": {
 			certificate: exampleBundle1.certificate,
 			builder: &testpkg.Builder{
@@ -1118,6 +1155,36 @@ func TestProcessCertificate(t *testing.T) {
 				ExpectedEvents: []string{`Normal CertificateRequestRetry The failed CertificateRequest "test-850937773" will be retried now`},
 			},
 		},
+		"if a temporary certificate exists but the request has failed and contains a FailureTime over an hour in the past but has an InvalidRequest condition, then don't retry": {
+			certificate: exampleBundle1.certificate,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle1.certificate.Spec.SecretName,
+							Namespace: exampleBundle1.certificate.Namespace,
+							Annotations: map[string]string{
+								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{
+					exampleBundle1.certificate,
+					gen.CertificateRequestFrom(exampleBundle1.certificateRequestFailedInvalidRequest,
+						gen.SetCertificateRequestFailureTime(metav1.Time{
+							Time: fixedClockStart.Add(-time.Minute * 61),
+						})),
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{`Warning CertificateRequestInvalidRequest The failed CertificateRequest "test-850937773" is an invalid request and will no longer be processed`},
+			},
+		},
 		"if a temporary certificate exists but the request has failed and contains a FailureTime less than an hour in the past, reschedule a re-sync in an hour": {
 			certificate: exampleBundle1.certificate,
 			builder: &testpkg.Builder{
@@ -1147,6 +1214,36 @@ func TestProcessCertificate(t *testing.T) {
 				ExpectedActions: []testpkg.Action{},
 				// We don't fire an event here as this could be called multiple times in quick succession
 				ExpectedEvents: []string{},
+			},
+		},
+		"if a temporary certificate exists but the request has failed and contains a FailureTime less than an hour in the past but has an InvalidRequest condition time, don't re-schedule sync": {
+			certificate: exampleBundle1.certificate,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle1.certificate.Spec.SecretName,
+							Namespace: exampleBundle1.certificate.Namespace,
+							Annotations: map[string]string{
+								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{
+					exampleBundle1.certificate,
+					gen.CertificateRequestFrom(exampleBundle1.certificateRequestFailedInvalidRequest,
+						gen.SetCertificateRequestFailureTime(metav1.Time{
+							Time: fixedClockStart.Add(-time.Minute * 59),
+						})),
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{`Warning CertificateRequestInvalidRequest The failed CertificateRequest "test-850937773" is an invalid request and will no longer be processed`},
 			},
 		},
 		"with secret owner references enabled, should set the ownerReference field when generating a new private key Secret": {
