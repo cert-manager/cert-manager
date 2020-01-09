@@ -106,7 +106,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	template, err := c.templateGenerator(cr)
 	if err != nil {
 		message := "Error generating certificate template"
-		c.reporter.Failed(cr, err, "SigningError", message)
+		c.reporter.Failed(cr, true, err, "SigningError", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -114,7 +114,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"
-		c.reporter.Failed(cr, err, "SigningError", message)
+		c.reporter.Failed(cr, true, err, "SigningError", message)
 		log.Error(err, message)
 		return nil, err
 	}

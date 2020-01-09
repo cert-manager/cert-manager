@@ -83,7 +83,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 			cmapi.CRPrivateKeyAnnotationKey)
 		err := errors.New("secret name missing")
 
-		s.reporter.Failed(cr, err, "MissingAnnotation", message)
+		s.reporter.Failed(cr, true, err, "MissingAnnotation", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -120,7 +120,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		message := "Error generating certificate template"
-		s.reporter.Failed(cr, err, "ErrorGenerating", message)
+		s.reporter.Failed(cr, true, err, "ErrorGenerating", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -129,7 +129,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	publickey, err := pki.PublicKeyForPrivateKey(privatekey)
 	if err != nil {
 		message := "Failed to get public key from private key"
-		s.reporter.Failed(cr, err, "ErrorPublicKey", message)
+		s.reporter.Failed(cr, true, err, "ErrorPublicKey", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -142,7 +142,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		}
 
 		message := "Error generating certificate template"
-		s.reporter.Failed(cr, err, "ErrorKeyMatch", message)
+		s.reporter.Failed(cr, true, err, "ErrorKeyMatch", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -152,7 +152,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	certPem, _, err := s.signingFn(template, template, publickey, privatekey)
 	if err != nil {
 		message := "Error signing certificate"
-		s.reporter.Failed(cr, err, "ErrorSigning", message)
+		s.reporter.Failed(cr, false, err, "ErrorSigning", message)
 		log.Error(err, message)
 		return nil, nil
 	}

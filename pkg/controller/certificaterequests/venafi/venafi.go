@@ -31,6 +31,7 @@ import (
 	venafiinternal "github.com/jetstack/cert-manager/pkg/internal/venafi"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmErrors "github.com/jetstack/cert-manager/pkg/util/errors"
 )
 
 const (
@@ -104,14 +105,14 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		case endpoint.ErrRetrieveCertificateTimeout:
 			message := "Timed out waiting for venafi certificate, the request will be retried"
 
-			v.reporter.Failed(cr, err, "Timeout", message)
+			v.reporter.Failed(cr, false, err, "Timeout", message)
 			log.Error(err, message)
 			return nil, nil
 
 		default:
 			message := "Failed to obtain venafi certificate"
 
-			v.reporter.Failed(cr, err, "RetrieveError", message)
+			v.reporter.Failed(cr, cmErrors.IsInvalidData(err), err, "RetrieveError", message)
 			log.Error(err, message)
 
 			return nil, err

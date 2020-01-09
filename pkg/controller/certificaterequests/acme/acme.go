@@ -87,7 +87,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 	if err != nil {
 		message := "Failed to decode CSR in spec"
 
-		a.reporter.Failed(cr, err, "CSRParsingError", message)
+		a.reporter.Failed(cr, true, err, "CSRParsingError", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -98,7 +98,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		err = fmt.Errorf("%q does not exist in %s", csr.Subject.CommonName, csr.DNSNames)
 		message := "The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames"
 
-		a.reporter.Failed(cr, err, "InvalidOrder", message)
+		a.reporter.Failed(cr, true, err, "InvalidOrder", message)
 
 		log.V(4).Info(fmt.Sprintf("%s: %s", message, err))
 
@@ -110,7 +110,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 	if err != nil {
 		message := "Failed to build order"
 
-		a.reporter.Failed(cr, err, "OrderBuildingError", message)
+		a.reporter.Failed(cr, true, err, "OrderBuildingError", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -156,7 +156,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 			expectedOrder.Namespace, expectedOrder.Name)
 		err := fmt.Errorf("order is in %q state", order.Status.State)
 
-		a.reporter.Failed(cr, err, "OrderFailed", message)
+		a.reporter.Failed(cr, false, err, "OrderFailed", message)
 
 		return nil, nil
 	}

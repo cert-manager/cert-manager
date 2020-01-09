@@ -126,7 +126,7 @@ func TestSign(t *testing.T) {
 
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	tests := map[string]testT{
-		"a badly formed CSR should report failure": {
+		"a badly formed CSR should report failure and set InvalidRequest condition to True": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestCSR([]byte("a bad csr")),
 			),
@@ -150,6 +150,13 @@ func TestSign(t *testing.T) {
 								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionInvalidRequest,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             "",
+								Message:            "",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
 						),
 					)),
@@ -157,7 +164,7 @@ func TestSign(t *testing.T) {
 			},
 		},
 
-		"if the common name is not present in the DNS names then should hard fail": {
+		"if the common name is not present in the DNS names then should hard fail and set InvalidRequest condition to True": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestCSR(csrPEMExampleNotPresent),
 			),
@@ -178,6 +185,13 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            `The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames: "example.com" does not exist in [foo.com]`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionInvalidRequest,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             "",
+								Message:            "",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),

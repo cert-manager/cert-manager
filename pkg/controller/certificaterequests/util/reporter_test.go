@@ -68,6 +68,14 @@ func TestReporter(t *testing.T) {
 		LastTransitionTime: &nowMetaTime,
 	}
 
+	invalidRequestCondition := cmapi.CertificateRequestCondition{
+		Type:               cmapi.CertificateRequestConditionInvalidRequest,
+		Status:             "True",
+		Reason:             "",
+		Message:            "",
+		LastTransitionTime: &nowMetaTime,
+	}
+
 	pendingCondition := cmapi.CertificateRequestCondition{
 		Type:               cmapi.CertificateRequestConditionReady,
 		Reason:             "Pending",
@@ -123,6 +131,38 @@ func TestReporter(t *testing.T) {
 			expectedFailureTime: &oldMetaTime,
 
 			call: "failed",
+		},
+
+		"a failed report with invalid request should update the conditions and set FailureTime as it is nil": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR),
+			err:                exampleErr,
+			message:            exampleMessage,
+			reason:             exampleReason,
+
+			expectedEvents: []string{
+				"Warning ThisIsAReason this is a message: this is an error",
+			},
+			expectedConditions:  []cmapi.CertificateRequestCondition{failedCondition, invalidRequestCondition},
+			expectedFailureTime: &nowMetaTime,
+
+			call: "failed-invalid-request",
+		},
+
+		"a failed report with invalid request should update the conditions and not FailureTime as it is not nil": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
+				gen.SetCertificateRequestFailureTime(oldMetaTime),
+			),
+			err:     exampleErr,
+			message: exampleMessage,
+			reason:  exampleReason,
+
+			expectedEvents: []string{
+				"Warning ThisIsAReason this is a message: this is an error",
+			},
+			expectedConditions:  []cmapi.CertificateRequestCondition{failedCondition, invalidRequestCondition},
+			expectedFailureTime: &oldMetaTime,
+
+			call: "failed-invalid-request",
 		},
 
 		"a pending report should update the conditions and send an event as a Pending condition already exists": {
@@ -200,7 +240,10 @@ func (tt *reporterT) runTest(t *testing.T) {
 
 	switch tt.call {
 	case "failed":
-		reporter.Failed(tt.certificateRequest, tt.err,
+		reporter.Failed(tt.certificateRequest, false, tt.err,
+			tt.reason, tt.message)
+	case "failed-invalid-request":
+		reporter.Failed(tt.certificateRequest, true, tt.err,
 			tt.reason, tt.message)
 	case "pending":
 		reporter.Pending(tt.certificateRequest, tt.err,
