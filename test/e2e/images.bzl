@@ -30,8 +30,8 @@ def install():
     ## field in this rule
     go_repository(
         name = "org_letsencrypt_pebble",
-        commit = "930cc9b6f9ecfb81d755a949cc525d515893ee0f",
-        remote = "https://github.com/munnerz/pebble",
+        commit = "295d9c1182f27616cd91770f5e535e85a37e2cb9",
+        remote = "https://github.com/letsencrypt/pebble",
         vcs = "git",
         importpath = "github.com/letsencrypt/pebble",
         build_external = "vendored",
