@@ -40,7 +40,7 @@ roleRef:
 subjects:
   - apiGroup: ""
     kind: ServiceAccount
-    name: {{ include "cert-manager.fullname" . }}
+    name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 
 ---
