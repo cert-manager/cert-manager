@@ -75,16 +75,16 @@ resources: {}
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 securityContext: {}
 # legacy securityContext parameter format: if enabled is set to true, only fsGroup and runAsUser are supported
-#securityContext:
-#  enabled: false
-#  fsGroup: 1001
-#  runAsUser: 1001
+# securityContext:
+#   enabled: false
+#   fsGroup: 1001
+#   runAsUser: 1001
 # to support additional securityContext parameters, omit the `enabled` parameter and simply specify the parameters
 # you want to set, e.g.
-#securityContext:
-#  fsGroup: 1000
-#  runAsUser: 1000
-#  runAsNonRoot: true
+# securityContext:
+#   fsGroup: 1000
+#   runAsUser: 1000
+#   runAsNonRoot: true
 
 deploymentAnnotations: {}
 
