@@ -296,7 +296,7 @@ func TestSync(t *testing.T) {
 				ExpectedEvents:  []string{},
 			},
 		},
-		"report failure if the CertificateRequest fails validation": {
+		"report failure if the CertificateRequest fails validation with InvalidRequest condition True": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestCSR([]byte("bad csr")),
 			),
@@ -317,6 +317,13 @@ func TestSync(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             "Failed",
 								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionInvalidRequest,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             "",
+								Message:            "",
 								LastTransitionTime: &nowMetaTime,
 							}),
 							gen.SetCertificateRequestFailureTime(nowMetaTime),
