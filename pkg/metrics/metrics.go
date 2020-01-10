@@ -23,6 +23,7 @@ package metrics
 import (
 	"context"
 	"crypto/x509"
+	"github.com/jetstack/cert-manager/pkg/api/util"
 	"net/http"
 	"sync"
 	"time"
@@ -219,11 +220,12 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha2.Certificate, secretLister corelisters.SecretLister) {
 	log := logf.FromContext(m.ctx)
 	log = logf.WithResource(log, crt)
-	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, crt.Namespace, "Secret")
+	secretNamespace := util.GetSecretsNamespace(crt)
+	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, secretNamespace, "Secret")
 
 	log.V(logf.DebugLevel).Info("attempting to retrieve secret for certificate")
 	// grab existing certificate
-	cert, err := kube.SecretTLSCert(m.ctx, secretLister, crt.Namespace, crt.Spec.SecretName)
+	cert, err := kube.SecretTLSCert(m.ctx, secretLister, secretNamespace, crt.Spec.SecretName)
 	if err != nil {
 		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
 			log.Error(err, "error reading secret for certificate")

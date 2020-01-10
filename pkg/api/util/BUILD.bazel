@@ -7,6 +7,7 @@ go_library(
         "duration.go",
         "issuers.go",
         "names.go",
+        "secrets.go",
         "usages.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/api/util",
