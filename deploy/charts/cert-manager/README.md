@@ -90,9 +90,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `serviceAccount.annotations` | Annotations to add to the service account |  |
 | `resources` | CPU/memory resource requests/limits | `{}` |
-| `securityContext.enabled` | Enable security context | `false` |
-| `securityContext.fsGroup` | Group ID for the container | `1001` |
-| `securityContext.runAsUser` | User ID for the container | `1001` |
+| `securityContext` | Optional security context. The yaml block should adhere to the [SecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.16/#securitycontext-v1-core) | `{}` |
+| `securityContext.enabled` | Deprecated (use `securityContext`) - Enable security context | `false` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
