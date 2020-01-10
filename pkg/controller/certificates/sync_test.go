@@ -108,15 +108,18 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		return nil, err
 	}
 
+	annotations := make(map[string]string)
+	for k, v := range crt.Annotations {
+		annotations[k] = v
+	}
+	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
+	annotations[cmapi.CertificateNameKey] = crt.Name
 	certificateRequest := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            reqName,
 			Namespace:       crt.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-			Annotations: map[string]string{
-				cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
-				cmapi.CertificateNameKey:        crt.Name,
-			},
+			Annotations:     annotations,
 		},
 		Spec: cmapi.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
@@ -1561,8 +1564,9 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 				ExpectedEvents: []string{`Normal TempCert Issued temporary certificate`},
 			},
 		},
-		"generate a new temporary certificate if existing one is valid for different dnsNames": {
+		"should not generate a new temporary certificate if existing certificate is valid for different dnsNames": {
 			certificate: exampleBundle1.certificate,
+			generateCSR: testGenerateCSRFn(exampleBundle1.csrBytes),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -1575,7 +1579,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
-								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.AltNamesAnnotationKey:   "notexample.com",
 								cmapi.CommonNameAnnotationKey: "",
 								cmapi.URISANAnnotationKey:     "",
 							},
@@ -1596,34 +1600,13 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
+					testpkg.NewAction(coretesting.NewCreateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						&corev1.Secret{
-							ObjectMeta: metav1.ObjectMeta{
-								Namespace: gen.DefaultTestNamespace,
-								Name:      "output",
-								Annotations: map[string]string{
-									"custom-annotation":           "value",
-									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
-									cmapi.IPSANAnnotationKey:      "",
-									cmapi.AltNamesAnnotationKey:   "example.com",
-									cmapi.CommonNameAnnotationKey: "",
-									cmapi.URISANAnnotationKey:     "",
-								},
-							},
-							Data: map[string][]byte{
-								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
-								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
-							},
-							Type: corev1.SecretTypeTLS,
-						},
+						exampleBundle1.certificateRequest,
 					)),
 				},
-				ExpectedEvents: []string{`Normal TempCert Issued temporary certificate`},
+				ExpectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-850937773"`},
 			},
 		},
 		"update the secret metadata if existing temporary certificate does not have annotations": {

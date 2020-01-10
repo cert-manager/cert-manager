@@ -25,6 +25,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -375,6 +376,55 @@ func TestCleanupIngresses(t *testing.T) {
 				t.Errorf("Expected function to get an error, but got: %v", err)
 			}
 			test.Finish(t)
+		})
+	}
+}
+
+func TestEnsureIngress(t *testing.T) {
+	tests := map[string]solverFixture{
+		"should clean up if service name changes": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			Err: true,
+			PreFn: func(t *testing.T, s *solverFixture) {
+				_, err := s.Solver.createIngress(s.Challenge, "anotherfakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				ingresses, err := s.Solver.ingressLister.List(labels.NewSelector())
+				if err != nil {
+					t.Errorf("error listing ingresses: %v", err)
+					t.Fail()
+					return
+				}
+				if len(ingresses) != 0 {
+					t.Errorf("expected ingresses to have been cleaned up, but there were %d ingresses left", len(ingresses))
+				}
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.Setup(t)
+			resp, err := test.Solver.ensureIngress(context.TODO(), test.Challenge, "fakeservice")
+			if err != nil && !test.Err {
+				t.Errorf("Expected function to not error, but got: %v", err)
+			}
+			if err == nil && test.Err {
+				t.Errorf("Expected function to get an error, but got: %v", err)
+			}
+			test.Finish(t, resp, err)
 		})
 	}
 }
