@@ -223,6 +223,10 @@ func TestCleanupIngresses(t *testing.T) {
 				},
 			},
 			Challenge: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testchal",
+					Namespace: defaultTestNamespace,
+				},
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
@@ -306,6 +310,10 @@ func TestCleanupIngresses(t *testing.T) {
 				},
 			},
 			Challenge: &cmacme.Challenge{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testchal",
+					Namespace: defaultTestNamespace,
+				},
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",

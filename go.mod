@@ -36,7 +36,6 @@ require (
 	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/gocql/gocql v0.0.0-20190402132108-0e1d5de854df // indirect
-	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gofuzz v1.0.0
@@ -63,9 +62,8 @@ require (
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
 	github.com/munnerz/crd-schema-fuzz v0.0.0-20191114184610-fbd148d44a0a
-	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
-	github.com/onsi/ginkgo v1.8.0
-	github.com/onsi/gomega v1.5.0
+	github.com/onsi/ginkgo v1.10.1
+	github.com/onsi/gomega v1.7.0
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
@@ -77,28 +75,27 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0 // indirect
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/pflag v1.0.3
-	github.com/stretchr/testify v1.3.0
+	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.4.0
 	github.com/tent/http-link-go v0.0.0-20130702225549-ac974c61c2f9 // indirect
 	golang.org/x/crypto v0.0.0-20191202143827-86a70503ff7e
-	golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
+	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	google.golang.org/api v0.4.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/ory-am/dockertest.v3 v3.3.4 // indirect
-	k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
-	k8s.io/apiextensions-apiserver v0.0.0-20191114105449-027877536833
-	k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb
-	k8s.io/apiserver v0.0.0-20191114103151-9ca1dc586682
-	k8s.io/client-go v0.0.0-20191114101535-6c5935290e33
-	k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
-	k8s.io/component-base v0.0.0-20191114102325-35a9586014f7
-	k8s.io/klog v0.4.0
-	k8s.io/kube-aggregator v0.0.0-20191114103820-f023614fb9ea
-	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
-	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+	k8s.io/api v0.17.0
+	k8s.io/apiextensions-apiserver v0.17.0
+	k8s.io/apimachinery v0.17.0
+	k8s.io/apiserver v0.17.0
+	k8s.io/client-go v0.17.0
+	k8s.io/code-generator v0.17.0
+	k8s.io/component-base v0.17.0
+	k8s.io/klog v1.0.0
+	k8s.io/kube-aggregator v0.17.0
+	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
+	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 	sigs.k8s.io/controller-runtime v0.3.1-0.20191022174215-ad57a976ffa1
 	sigs.k8s.io/controller-tools v0.2.2
