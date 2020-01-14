@@ -6,9 +6,11 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/internal/api/validation:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v2:go_default_library",
+        "//pkg/webhook/handlers/testdata/apis/testgroup/validation:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
     ],

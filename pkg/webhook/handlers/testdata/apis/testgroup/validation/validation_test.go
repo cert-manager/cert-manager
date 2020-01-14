@@ -22,16 +22,17 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
 )
 
 func TestValidateTestType(t *testing.T) {
 	scenarios := map[string]struct {
-		obj  *v1.TestType
+		obj  *testgroup.TestType
 		errs []*field.Error
 	}{
 		"does not allow testField to be TestFieldValueNotAllowed": {
-			obj: &v1.TestType{
+			obj: &testgroup.TestType{
 				TestField: v1.TestFieldValueNotAllowed,
 			},
 			errs: []*field.Error{
@@ -57,16 +58,16 @@ func TestValidateTestType(t *testing.T) {
 }
 
 func TestValidateTestTypeUpdate(t *testing.T) {
-	testImmutableTestTypeField(t, field.NewPath("testFieldImmutable"), func(obj *v1.TestType, s testValue) {
+	testImmutableTestTypeField(t, field.NewPath("testFieldImmutable"), func(obj *testgroup.TestType, s testValue) {
 		obj.TestFieldImmutable = string(s)
 	})
 
 	scenarios := map[string]struct {
-		old, new *v1.TestType
+		old, new *testgroup.TestType
 		errs     []*field.Error
 	}{
 		"allows all updates if old is nil": {
-			new: &v1.TestType{
+			new: &testgroup.TestType{
 				TestFieldImmutable: "abc",
 			},
 		},
@@ -99,13 +100,13 @@ const (
 // testImmutableOrderField will test that the field at path fldPath does
 // not allow changes after being set, but does allow changes if the old field
 // is not set.
-func testImmutableTestTypeField(t *testing.T, fldPath *field.Path, setter func(*v1.TestType, testValue)) {
+func testImmutableTestTypeField(t *testing.T, fldPath *field.Path, setter func(*testgroup.TestType, testValue)) {
 	t.Run("should reject updates to "+fldPath.String(), func(t *testing.T) {
 		expectedErrs := []*field.Error{
 			field.Forbidden(fldPath, "field is immutable once set"),
 		}
-		old := &v1.TestType{}
-		new := &v1.TestType{}
+		old := &testgroup.TestType{}
+		new := &testgroup.TestType{}
 		setter(old, testValueOptionOne)
 		setter(new, testValueOptionTwo)
 		errs := ValidateTestTypeUpdate(old, new)
@@ -122,8 +123,8 @@ func testImmutableTestTypeField(t *testing.T, fldPath *field.Path, setter func(*
 	})
 	t.Run("should allow updates to "+fldPath.String()+" if not already set", func(t *testing.T) {
 		expectedErrs := []*field.Error{}
-		old := &v1.TestType{}
-		new := &v1.TestType{}
+		old := &testgroup.TestType{}
+		new := &testgroup.TestType{}
 		setter(old, testValueNone)
 		setter(new, testValueOptionOne)
 		errs := ValidateTestTypeUpdate(old, new)

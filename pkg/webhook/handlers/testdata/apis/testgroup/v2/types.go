@@ -36,3 +36,7 @@ type TestType struct {
 	// TestFieldImmutable cannot be changed after being set to a non-zero value
 	TestFieldImmutable string `json:"testFieldImmutable"`
 }
+
+const (
+	DisallowedTestFieldValue = "not-allowed-in-v2"
+)
