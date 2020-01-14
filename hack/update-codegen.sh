@@ -121,6 +121,15 @@ clean() {
   find "$path" -name "$name" -delete
 }
 
+mkcp() {
+  src="$1"
+  dst="$2"
+  mkdir -p "$(dirname "$dst")"
+  cp "$src" "$dst"
+}
+# Export mkcp for use in sub-shells
+export -f mkcp
+
 copyfiles() {
   # Don't copy data if the workspace directory is already within the GOPATH
   if [ "${BUILD_WORKSPACE_DIRECTORY:0:${#GOPATH}}" = "$GOPATH" ]; then
@@ -134,7 +143,8 @@ copyfiles() {
   fi
   (
     cd "$GOPATH/src/$module_name/$path"
-    find "." -name "$name" -exec cp {} "$BUILD_WORKSPACE_DIRECTORY/$path/{}" \;
+
+    find "." -name "$name" -exec bash -c "mkcp {} \"$BUILD_WORKSPACE_DIRECTORY/$path/{}\"" \;
   )
 }
 
