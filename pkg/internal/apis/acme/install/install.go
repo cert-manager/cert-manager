@@ -22,9 +22,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha3"
+	acmevalidation "github.com/jetstack/cert-manager/pkg/internal/apis/acme/validation"
 )
 
 // Install registers the API group and adds types to a scheme
@@ -32,4 +34,10 @@ func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(acme.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	utilruntime.Must(v1alpha3.AddToScheme(scheme))
+}
+
+// InstallValidation registers validation functions for the API group with a
+// validation registry
+func InstallValidation(registry *validation.Registry) {
+	utilruntime.Must(acmevalidation.AddToValidationRegistry(registry))
 }

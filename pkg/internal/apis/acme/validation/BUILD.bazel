@@ -5,10 +5,12 @@ go_library(
     srcs = [
         "challenge.go",
         "order.go",
+        "register.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/acme/validation",
     visibility = ["//pkg:__subpackages__"],
     deps = [
+        "//pkg/internal/api/validation:go_default_library",
         "//pkg/internal/apis/acme:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
