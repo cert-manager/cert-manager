@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//pkg/internal/apis/certmanager:go_default_library",
         "//pkg/internal/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/internal/apis/certmanager/v1alpha3:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
     ],
