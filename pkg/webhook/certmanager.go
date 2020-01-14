@@ -19,20 +19,20 @@ package webhook
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	acmeval "github.com/jetstack/cert-manager/pkg/internal/apis/acme/validation"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 )
 
 var Validators = map[schema.GroupKind]handlers.Validator{
-	gk(cmapi.SchemeGroupVersion, cmapi.CertificateKind):        certificateValidator,
-	gk(cmapi.SchemeGroupVersion, cmapi.CertificateRequestKind): certificateRequestValidator,
-	gk(cmapi.SchemeGroupVersion, cmapi.IssuerKind):             issuerValidator,
-	gk(cmapi.SchemeGroupVersion, cmapi.ClusterIssuerKind):      clusterIssuerValidator,
-	gk(cmacme.SchemeGroupVersion, cmacme.OrderKind):            orderValidator,
-	gk(cmacme.SchemeGroupVersion, cmacme.ChallengeKind):        challengeValidator,
+	gk(cmapi.SchemeGroupVersion, "Certificate"):        certificateValidator,
+	gk(cmapi.SchemeGroupVersion, "CertificateRequest"): certificateRequestValidator,
+	gk(cmapi.SchemeGroupVersion, "Issuer"):             issuerValidator,
+	gk(cmapi.SchemeGroupVersion, "ClusterIssuer"):      clusterIssuerValidator,
+	gk(cmacme.SchemeGroupVersion, "Order"):             orderValidator,
+	gk(cmacme.SchemeGroupVersion, "Challenge"):         challengeValidator,
 }
 
 var (

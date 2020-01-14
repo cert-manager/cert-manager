@@ -31,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation"
 )
 
@@ -40,11 +41,16 @@ func TestFuncBackedValidator(t *testing.T) {
 
 	log := klogr.New()
 	c := NewFuncBackedValidator(log, scheme, map[schema.GroupKind]Validator{
-		{Group: testgroup.GroupName, Kind: "TestType"}: ValidatorFunc(&v1.TestType{}, validation.ValidateTestType, validation.ValidateTestTypeUpdate),
+		{Group: testgroup.GroupName, Kind: "TestType"}: ValidatorFunc(&testgroup.TestType{}, validation.ValidateTestType, validation.ValidateTestTypeUpdate),
 	})
 	testTypeGVK := metav1.GroupVersionKind{
 		Group:   v1.SchemeGroupVersion.Group,
 		Version: v1.SchemeGroupVersion.Version,
+		Kind:    "TestType",
+	}
+	testTypeGVKV2 := metav1.GroupVersionKind{
+		Group:   v2.SchemeGroupVersion.Group,
+		Version: v2.SchemeGroupVersion.Version,
 		Kind:    "TestType",
 	}
 	tests := map[string]admissionTestT{
@@ -132,6 +138,46 @@ func TestFuncBackedValidator(t *testing.T) {
 					Raw: []byte(fmt.Sprintf(`
 {
 	"apiVersion": "testgroup.testing.cert-manager.io/v1",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testFieldImmutable": "abc"
+}
+`)),
+				},
+			},
+			expectedResponse: admissionv1beta1.AdmissionResponse{
+				Allowed: false,
+				Result: &metav1.Status{
+					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
+					Message: "testFieldImmutable: Forbidden: field is immutable once set",
+				},
+			},
+		},
+		"should not allow setting immutable field if it is already set (v2)": {
+			inputRequest: admissionv1beta1.AdmissionRequest{
+				Kind: testTypeGVKV2,
+				OldObject: runtime.RawExtension{
+					Raw: []byte(fmt.Sprintf(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v2",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testFieldImmutable": "oldvalue"
+}
+`)),
+				},
+				Object: runtime.RawExtension{
+					Raw: []byte(fmt.Sprintf(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v2",
 	"kind": "TestType",
 	"metadata": {
 		"name": "testing",
