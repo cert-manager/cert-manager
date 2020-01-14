@@ -30,9 +30,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
+	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 var (
@@ -112,7 +113,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 
 	dbg.Info("validating CertificateRequest resource object")
 
-	el := validation.ValidateCertificateRequest(crCopy)
+	el := webhook.ValidationRegistry.Validate(crCopy, internalapi.SchemeGroupVersion.WithKind("CertificateRequest"))
 	if len(el) > 0 {
 		c.reporter.Failed(crCopy, el.ToAggregate(), "BadConfig",
 			"Resource validation failed")
