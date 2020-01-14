@@ -3,21 +3,24 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
+        "defaults.go",
         "doc.go",
         "register.go",
-        "types_challenge.go",
-        "types_issuer.go",
-        "types_order.go",
-        "zz_generated.deepcopy.go",
+        "zz_generated.conversion.go",
+        "zz_generated.defaults.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/acme",
+    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha3",
     visibility = ["//pkg:__subpackages__"],
     deps = [
         "//pkg/apis/acme:go_default_library",
+        "//pkg/apis/acme/v1alpha3:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/internal/apis/acme:go_default_library",
         "//pkg/internal/apis/meta:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/conversion:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
     ],
@@ -32,14 +35,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//pkg/internal/apis/acme/fuzzer:all-srcs",
-        "//pkg/internal/apis/acme/install:all-srcs",
-        "//pkg/internal/apis/acme/v1alpha2:all-srcs",
-        "//pkg/internal/apis/acme/v1alpha3:all-srcs",
-        "//pkg/internal/apis/acme/validation:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
