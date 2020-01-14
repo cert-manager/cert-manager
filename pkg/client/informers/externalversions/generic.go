@@ -22,7 +22,9 @@ import (
 	"fmt"
 
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	v1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -59,6 +61,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case v1alpha2.SchemeGroupVersion.WithResource("orders"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Acme().V1alpha2().Orders().Informer()}, nil
 
+		// Group=acme.cert-manager.io, Version=v1alpha3
+	case v1alpha3.SchemeGroupVersion.WithResource("challenges"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Acme().V1alpha3().Challenges().Informer()}, nil
+	case v1alpha3.SchemeGroupVersion.WithResource("orders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Acme().V1alpha3().Orders().Informer()}, nil
+
 		// Group=cert-manager.io, Version=v1alpha2
 	case certmanagerv1alpha2.SchemeGroupVersion.WithResource("certificates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha2().Certificates().Informer()}, nil
@@ -68,6 +76,16 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha2().ClusterIssuers().Informer()}, nil
 	case certmanagerv1alpha2.SchemeGroupVersion.WithResource("issuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha2().Issuers().Informer()}, nil
+
+		// Group=cert-manager.io, Version=v1alpha3
+	case certmanagerv1alpha3.SchemeGroupVersion.WithResource("certificates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha3().Certificates().Informer()}, nil
+	case certmanagerv1alpha3.SchemeGroupVersion.WithResource("certificaterequests"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha3().CertificateRequests().Informer()}, nil
+	case certmanagerv1alpha3.SchemeGroupVersion.WithResource("clusterissuers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha3().ClusterIssuers().Informer()}, nil
+	case certmanagerv1alpha3.SchemeGroupVersion.WithResource("issuers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha3().Issuers().Informer()}, nil
 
 	}
 

@@ -20,6 +20,7 @@ package certmanager
 
 import (
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha2"
+	v1alpha3 "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha3"
 	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
 )
 
@@ -27,6 +28,8 @@ import (
 type Interface interface {
 	// V1alpha2 provides access to shared informers for resources in V1alpha2.
 	V1alpha2() v1alpha2.Interface
+	// V1alpha3 provides access to shared informers for resources in V1alpha3.
+	V1alpha3() v1alpha3.Interface
 }
 
 type group struct {
@@ -43,4 +46,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // V1alpha2 returns a new v1alpha2.Interface.
 func (g *group) V1alpha2() v1alpha2.Interface {
 	return v1alpha2.New(g.factory, g.namespace, g.tweakListOptions)
+}
+
+// V1alpha3 returns a new v1alpha3.Interface.
+func (g *group) V1alpha3() v1alpha3.Interface {
+	return v1alpha3.New(g.factory, g.namespace, g.tweakListOptions)
 }

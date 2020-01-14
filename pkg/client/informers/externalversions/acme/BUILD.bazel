@@ -7,6 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/client/informers/externalversions/acme/v1alpha2:go_default_library",
+        "//pkg/client/informers/externalversions/acme/v1alpha3:go_default_library",
         "//pkg/client/informers/externalversions/internalinterfaces:go_default_library",
     ],
 )
@@ -23,6 +24,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/client/informers/externalversions/acme/v1alpha2:all-srcs",
+        "//pkg/client/informers/externalversions/acme/v1alpha3:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
