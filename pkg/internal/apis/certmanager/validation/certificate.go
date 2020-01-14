@@ -24,13 +24,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
-// Validation functions for cert-manager v1alpha2 Certificate types
+// Validation functions for cert-manager Certificate types
 
-func ValidateCertificateSpec(crt *v1alpha2.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if crt.SecretName == "" {
 		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
@@ -55,12 +56,12 @@ func ValidateCertificateSpec(crt *v1alpha2.CertificateSpec, fldPath *field.Path)
 		el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "cannot be less than zero"))
 	}
 	switch crt.KeyAlgorithm {
-	case v1alpha2.KeyAlgorithm(""):
-	case v1alpha2.RSAKeyAlgorithm:
+	case cmapi.KeyAlgorithm(""):
+	case cmapi.RSAKeyAlgorithm:
 		if crt.KeySize > 0 && (crt.KeySize < 2048 || crt.KeySize > 8192) {
 			el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "must be between 2048 & 8192 for rsa keyAlgorithm"))
 		}
-	case v1alpha2.ECDSAKeyAlgorithm:
+	case cmapi.ECDSAKeyAlgorithm:
 		if crt.KeySize > 0 && crt.KeySize != 256 && crt.KeySize != 384 && crt.KeySize != 521 {
 			el = append(el, field.NotSupported(fldPath.Child("keySize"), crt.KeySize, []string{"256", "384", "521"}))
 		}
@@ -75,7 +76,7 @@ func ValidateCertificateSpec(crt *v1alpha2.CertificateSpec, fldPath *field.Path)
 		el = append(el, validateUsages(crt, fldPath)...)
 	}
 	switch crt.KeyEncoding {
-	case v1alpha2.KeyEncoding(""), v1alpha2.PKCS1, v1alpha2.PKCS8:
+	case cmapi.KeyEncoding(""), cmapi.PKCS1, cmapi.PKCS8:
 	default:
 		el = append(el, field.Invalid(fldPath.Child("keyEncoding"), crt.KeyEncoding, "must be either empty or one of pkcs1 or pkcs8"))
 	}
@@ -83,7 +84,7 @@ func ValidateCertificateSpec(crt *v1alpha2.CertificateSpec, fldPath *field.Path)
 }
 
 func ValidateCertificate(obj runtime.Object) field.ErrorList {
-	crt := obj.(*v1alpha2.Certificate)
+	crt := obj.(*cmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
 	return allErrs
 }
@@ -95,7 +96,7 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 	if issuerRef.Name == "" {
 		el = append(el, field.Required(issuerRefPath.Child("name"), "must be specified"))
 	}
-	if issuerRef.Group == "" || issuerRef.Group == v1alpha2.SchemeGroupVersion.Group {
+	if issuerRef.Group == "" || issuerRef.Group == cmapi.SchemeGroupVersion.Group {
 		switch issuerRef.Kind {
 		case "":
 		case "Issuer", "ClusterIssuer":
@@ -106,7 +107,7 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 	return el
 }
 
-func validateIPAddresses(a *v1alpha2.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func validateIPAddresses(a *cmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	if len(a.IPAddresses) <= 0 {
 		return nil
 	}
@@ -120,11 +121,11 @@ func validateIPAddresses(a *v1alpha2.CertificateSpec, fldPath *field.Path) field
 	return el
 }
 
-func validateUsages(a *v1alpha2.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func validateUsages(a *cmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	for i, u := range a.Usages {
-		_, kok := util.KeyUsageType(u)
-		_, ekok := util.ExtKeyUsageType(u)
+		_, kok := util.KeyUsageType(cmapiv1alpha2.KeyUsage(u))
+		_, ekok := util.ExtKeyUsageType(cmapiv1alpha2.KeyUsage(u))
 		if !kok && !ekok {
 			el = append(el, field.Invalid(fldPath.Child("usages").Index(i), u, "unknown keyusage"))
 		}
@@ -132,19 +133,19 @@ func validateUsages(a *v1alpha2.CertificateSpec, fldPath *field.Path) field.Erro
 	return el
 }
 
-func ValidateDuration(crt *v1alpha2.CertificateSpec, fldPath *field.Path) field.ErrorList {
+func ValidateDuration(crt *cmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	duration := util.DefaultCertDuration(crt.Duration)
-	renewBefore := v1alpha2.DefaultRenewBefore
+	renewBefore := cmapiv1alpha2.DefaultRenewBefore
 	if crt.RenewBefore != nil {
 		renewBefore = crt.RenewBefore.Duration
 	}
-	if duration < v1alpha2.MinimumCertificateDuration {
-		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", v1alpha2.MinimumCertificateDuration)))
+	if duration < cmapiv1alpha2.MinimumCertificateDuration {
+		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", cmapiv1alpha2.MinimumCertificateDuration)))
 	}
-	if renewBefore < v1alpha2.MinimumRenewBefore {
-		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate renewBefore must be greater than %s", v1alpha2.MinimumRenewBefore)))
+	if renewBefore < cmapiv1alpha2.MinimumRenewBefore {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapiv1alpha2.MinimumRenewBefore)))
 	}
 	if duration <= renewBefore {
 		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, renewBefore)))

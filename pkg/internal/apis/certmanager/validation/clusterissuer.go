@@ -20,13 +20,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
 
 // Validation functions for cert-manager v1alpha2 ClusterIssuer types
 
 func ValidateClusterIssuer(obj runtime.Object) field.ErrorList {
-	iss := obj.(*v1alpha2.ClusterIssuer)
+	iss := obj.(*cmapi.ClusterIssuer)
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs
 }

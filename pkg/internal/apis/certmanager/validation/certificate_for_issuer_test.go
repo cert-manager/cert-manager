@@ -24,8 +24,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -37,94 +37,104 @@ const (
 
 func TestValidateCertificateForIssuer(t *testing.T) {
 	fldPath := field.NewPath("spec")
-
+	acmeIssuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultTestIssuerName,
+			Namespace: defaultTestNamespace,
+		},
+		Spec: cmapi.IssuerSpec{
+			IssuerConfig: cmapi.IssuerConfig{
+				ACME: &cmacme.ACMEIssuer{},
+			},
+		},
+	}
 	scenarios := map[string]struct {
-		crt    *v1alpha2.Certificate
-		issuer *v1alpha2.Issuer
+		crt    *cmapi.Certificate
+		issuer *cmapi.Issuer
 		errs   []*field.Error
 	}{
 		"valid basic certificate": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
 					IssuerRef: validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+			issuer: acmeIssuer,
 		},
 		"certificate with RSA keyAlgorithm for ACME": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
-					KeyAlgorithm: v1alpha2.RSAKeyAlgorithm,
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+			issuer: acmeIssuer,
 		},
 		"certificate with ECDSA keyAlgorithm for ACME": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
-					KeyAlgorithm: v1alpha2.ECDSAKeyAlgorithm,
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+			issuer: acmeIssuer,
 		},
 		"acme certificate with organization set": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
 					Organization: []string{"shouldfailorg"},
 					IssuerRef:    validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+			issuer: acmeIssuer,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("organization"), []string{"shouldfailorg"}, "ACME does not support setting the organization name"),
 			},
 		},
 		"acme certificate with duration set": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
 					Duration:  &metav1.Duration{Duration: time.Minute * 60},
 					IssuerRef: validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+			issuer: acmeIssuer,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("duration"), &metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate durations"),
 			},
 		},
 		"acme certificate with ipAddresses set": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
 					IPAddresses: []string{"127.0.0.1"},
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+			issuer: acmeIssuer,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ipAddresses"), []string{"127.0.0.1"}, "ACME does not support certificate ip addresses"),
 			},
 		},
 		"acme certificate with renewBefore set": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
 					RenewBefore: &metav1.Duration{Duration: time.Minute * 60},
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+			issuer: acmeIssuer,
 			errs:   []*field.Error{},
 		},
 		"certificate with unspecified issuer type": {
-			crt: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
-					KeyAlgorithm: v1alpha2.ECDSAKeyAlgorithm,
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
 				},
 			},
-			issuer: &v1alpha2.Issuer{},
+			issuer: &cmapi.Issuer{},
 			errs: []*field.Error{
-				field.Invalid(fldPath, "no issuer specified for Issuer '/'", "no issuer specified for Issuer '/'"),
+				field.Invalid(fldPath, "", "no issuer specified for Issuer '/'"),
 			},
 		},
 	}

@@ -17,40 +17,34 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
 
-func ValidateCertificateForIssuer(crt *v1alpha2.Certificate, issuerObj v1alpha2.GenericIssuer) field.ErrorList {
+func ValidateCertificateForIssuer(crt *cmapi.Certificate, issuerObj cmapi.GenericIssuer) field.ErrorList {
 	el := field.ErrorList{}
 
 	path := field.NewPath("spec")
 
-	issuerType, err := apiutil.NameForIssuer(issuerObj)
-	if err != nil {
-		el = append(el, field.Invalid(path, err.Error(), err.Error()))
-		return el
-	}
-
-	switch issuerType {
-	case apiutil.IssuerACME:
+	switch {
+	case issuerObj.GetSpec().ACME != nil:
 		el = append(el, ValidateCertificateForACMEIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case apiutil.IssuerCA:
-		el = append(el, ValidateCertificateForCAIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case apiutil.IssuerVault:
+	case issuerObj.GetSpec().CA != nil:
+	case issuerObj.GetSpec().Vault != nil:
 		el = append(el, ValidateCertificateForVaultIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case apiutil.IssuerSelfSigned:
-		el = append(el, ValidateCertificateForSelfSignedIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case apiutil.IssuerVenafi:
-		el = append(el, ValidateCertificateForVenafiIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
+	case issuerObj.GetSpec().SelfSigned != nil:
+	case issuerObj.GetSpec().Venafi != nil:
+	default:
+		el = append(el, field.Invalid(path, "", fmt.Sprintf("no issuer specified for Issuer '%s/%s'", issuerObj.GetObjectMeta().Namespace, issuerObj.GetObjectMeta().Name)))
 	}
 
 	return el
 }
 
-func ValidateCertificateForACMEIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
+func ValidateCertificateForACMEIssuer(crt *cmapi.CertificateSpec, issuer *cmapi.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	if crt.IsCA {
@@ -72,13 +66,7 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha2.CertificateSpec, issuer *v1a
 	return el
 }
 
-func ValidateCertificateForCAIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-
-	return el
-}
-
-func ValidateCertificateForVaultIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
+func ValidateCertificateForVaultIssuer(crt *cmapi.CertificateSpec, issuer *cmapi.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	if crt.IsCA {
@@ -88,18 +76,6 @@ func ValidateCertificateForVaultIssuer(crt *v1alpha2.CertificateSpec, issuer *v1
 	if len(crt.Organization) != 0 {
 		el = append(el, field.Invalid(specPath.Child("organization"), crt.Organization, "Vault issuer does not currently support setting the organization name"))
 	}
-
-	return el
-}
-
-func ValidateCertificateForSelfSignedIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-
-	return el
-}
-
-func ValidateCertificateForVenafiIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
 
 	return el
 }
