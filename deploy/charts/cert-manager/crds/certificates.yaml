@@ -190,6 +190,46 @@ spec:
                 - ocsp signing
                 - microsoft sgc
                 - netscape sgc
+            x509Name:
+              description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+                If specified, overrides any other name elements below.
+              type: object
+              properties:
+                commonName:
+                  type: string
+                country:
+                  description: Country/Region
+                  type: array
+                  items:
+                    type: string
+                locality:
+                  description: City
+                  type: array
+                  items:
+                    type: string
+                organization:
+                  type: array
+                  items:
+                    type: string
+                organizationalUnit:
+                  type: array
+                  items:
+                    type: string
+                postalCode:
+                  type: array
+                  items:
+                    type: string
+                province:
+                  description: State/Province
+                  type: array
+                  items:
+                    type: string
+                serialNumber:
+                  type: string
+                streetAddress:
+                  type: array
+                  items:
+                    type: string
         status:
           description: CertificateStatus defines the observed state of Certificate
           type: object

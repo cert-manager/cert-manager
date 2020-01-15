@@ -59,6 +59,11 @@ const (
 
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
+	// Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+	// If specified, overrides any other name elements below.
+	// +optional
+	X509Name *X509DistinguishedName `json:"x509Name,omitempty"`
+
 	// A valid Certificate requires at least one of a CommonName, DNSName, or
 	// URISAN to be valid.
 
@@ -133,6 +138,21 @@ type CertificateSpec struct {
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
 	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
+}
+
+type X509DistinguishedName struct {
+	// Country/Region
+	Country            []string `json:"country,omitempty"`
+	Organization       []string `json:"organization,omitempty"`
+	OrganizationalUnit []string `json:"organizationalUnit,omitempty"`
+	// City
+	Locality []string `json:"locality,omitempty"`
+	// State/Province
+	Province      []string `json:"province,omitempty"`
+	StreetAddress []string `json:"streetAddress,omitempty"`
+	PostalCode    []string `json:"postalCode,omitempty"`
+	SerialNumber  string   `json:"serialNumber,omitempty"`
+	CommonName    string   `json:"commonName,omitempty"`
 }
 
 // CertificateStatus defines the observed state of Certificate
