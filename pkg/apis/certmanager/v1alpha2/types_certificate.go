@@ -73,9 +73,8 @@ const (
 // URISAN to be valid.
 type CertificateSpec struct {
 	// Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
-	// If specified, overrides any other name elements below.
 	// +optional
-	X509Name *X509DistinguishedName `json:"x509Name,omitempty"`
+	Subject *X509Subject `json:"subject,omitempty"`
 
 	// CommonName is a common name to be used on the Certificate.
 	// The CommonName should have a length of 64 characters or fewer to avoid
@@ -150,19 +149,29 @@ type CertificateSpec struct {
 	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
 }
 
-type X509DistinguishedName struct {
-	// Country/Region
-	Country            []string `json:"country,omitempty"`
-	Organization       []string `json:"organization,omitempty"`
-	OrganizationalUnit []string `json:"organizationalUnit,omitempty"`
-	// City
-	Locality []string `json:"locality,omitempty"`
-	// State/Province
-	Province      []string `json:"province,omitempty"`
-	StreetAddress []string `json:"streetAddress,omitempty"`
-	PostalCode    []string `json:"postalCode,omitempty"`
-	SerialNumber  string   `json:"serialNumber,omitempty"`
-	CommonName    string   `json:"commonName,omitempty"`
+// X509Subject Full X509 name specification
+type X509Subject struct {
+	// Countries to be used on the Certificate.
+	// +optional
+	Countries []string `json:"country,omitempty"`
+	// Organizational Units to be used on the Certificate.
+	// +optional
+	OrganizationalUnits []string `json:"organizationalUnit,omitempty"`
+	// Cities to be used on the Certificate.
+	// +optional
+	Localities []string `json:"locality,omitempty"`
+	// State/Provinces to be used on the Certificate.
+	// +optional
+	Provinces []string `json:"province,omitempty"`
+	// Street addresses to be used on the Certificate.
+	// +optional
+	StreetAddresses []string `json:"streetAddress,omitempty"`
+	// Postal codes to be used on the Certificate.
+	// +optional
+	PostalCodes []string `json:"postalCode,omitempty"`
+	// Serial number to be used on the Certificate.
+	// +optional
+	SerialNumber string `json:"serialNumber,omitempty"`
 }
 
 // CertificateStatus defines the observed state of Certificate
