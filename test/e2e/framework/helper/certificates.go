@@ -176,13 +176,22 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 		return nil, fmt.Errorf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 	}
 
-	label, ok := secret.Annotations[cmapi.CertificateNameKey]
+	nameLabel, ok := secret.Annotations[cmapi.CertificateNameKey]
 	if !ok {
 		return nil, fmt.Errorf("Expected secret to have certificate-name label, but had none")
 	}
 
-	if label != certificate.Name {
-		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
+	if nameLabel != certificate.Name {
+		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, nameLabel)
+	}
+
+	namespaceLabel, ok := secret.Annotations[cmapi.CertificateNamespaceKey]
+	if !ok {
+		return nil, fmt.Errorf("Expected secret to have certificate-namespace label, but had none")
+	}
+
+	if namespaceLabel != certificate.Namespace {
+		return nil, fmt.Errorf("Expected secret to have certificate-namespace label with a value of %q, but got %q", certificate.Namespace, namespaceLabel)
 	}
 
 	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsages(certificate.Spec.Usages, certificate.Spec.IsCA)

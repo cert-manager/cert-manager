@@ -26,6 +26,7 @@ const (
 	IssuerKindAnnotationKey  = "cert-manager.io/issuer-kind"
 	IssuerGroupAnnotationKey = "cert-manager.io/issuer-group"
 	CertificateNameKey       = "cert-manager.io/certificate-name"
+	CertificateNamespaceKey  = "cert-manager.io/certificate-namespace"
 )
 
 // Deprecated annotation names for Secrets
