@@ -21,11 +21,12 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"regexp"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 func ComputeCertificateRequestName(crt *cmapi.Certificate) (string, error) {
-	crt = crt.DeepCopy()
 	specBytes, err := json.Marshal(crt.Spec)
 	if err != nil {
 		return "", err
@@ -37,7 +38,14 @@ func ComputeCertificateRequestName(crt *cmapi.Certificate) (string, error) {
 		return "", err
 	}
 
-	// shorten the cert name to 52 chars to ensure the total length of the name
-	// is less than or equal to 64 characters
-	return fmt.Sprintf("%.52s-%d", crt.Name, hashF.Sum32()), nil
+	crtName := crt.Name
+	if len(crtName) >= 52 {
+		// shorten the cert name to 52 chars to ensure the total length of the name
+		// also shorten the 52 char string to the last non-symbol character
+		// is less than or equal to 64 characters
+		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", crtName), -1)
+		crtName = crtName[:validCharIndexes[len(validCharIndexes)-1][1]]
+	}
+
+	return fmt.Sprintf("%s-%d", crtName, hashF.Sum32()), nil
 }
