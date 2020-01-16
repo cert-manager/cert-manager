@@ -148,27 +148,27 @@ spec:
               description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
               type: object
               properties:
-                country:
+                countries:
                   description: Countries to be used on the Certificate.
                   type: array
                   items:
                     type: string
-                locality:
+                localities:
                   description: Cities to be used on the Certificate.
                   type: array
                   items:
                     type: string
-                organizationalUnit:
+                organizationalUnits:
                   description: Organizational Units to be used on the Certificate.
                   type: array
                   items:
                     type: string
-                postalCode:
+                postalCodes:
                   description: Postal codes to be used on the Certificate.
                   type: array
                   items:
                     type: string
-                province:
+                provinces:
                   description: State/Provinces to be used on the Certificate.
                   type: array
                   items:
@@ -176,7 +176,7 @@ spec:
                 serialNumber:
                   description: Serial number to be used on the Certificate.
                   type: string
-                streetAddress:
+                streetAddresses:
                   description: Street addresses to be used on the Certificate.
                   type: array
                   items:
