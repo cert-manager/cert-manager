@@ -60,9 +60,8 @@ const (
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	// Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
-	// If specified, overrides any other name elements below.
 	// +optional
-	X509Name *X509DistinguishedName `json:"x509Name,omitempty"`
+	X509Name *X509Subject `json:"x509Name,omitempty"`
 
 	// A valid Certificate requires at least one of a CommonName, DNSName, or
 	// URISAN to be valid.
