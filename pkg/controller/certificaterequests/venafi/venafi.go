@@ -66,12 +66,8 @@ func NewVenafi(ctx *controllerpkg.Context) *Venafi {
 func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
-	ns := issuerObj.GetObjectMeta().Namespace
-	if ns == "" {
-		ns = v.issuerOptions.ClusterResourceNamespace
-	}
 
-	client, err := v.clientBuilder(ns, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
