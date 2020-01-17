@@ -134,6 +134,15 @@ func OrganizationForCertificate(crt *v1alpha2.Certificate) []string {
 	return crt.Spec.Organization
 }
 
+// SubjectForCertificate will return the Subject from the Certificate resource or an empty one if it is not set
+func SubjectForCertificate(crt *v1alpha2.Certificate) v1alpha2.X509Subject {
+	if crt.Spec.Subject == nil {
+		return v1alpha2.X509Subject{}
+	}
+
+	return *crt.Spec.Subject
+}
+
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 func BuildKeyUsages(usages []v1alpha2.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
@@ -167,6 +176,7 @@ func GenerateCSR(crt *v1alpha2.Certificate) (*x509.CertificateRequest, error) {
 	commonName := crt.Spec.CommonName
 	iPAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
+	subject := SubjectForCertificate(crt)
 
 	dnsNames, err := DNSNamesForCertificate(crt)
 	if err != nil {
@@ -192,8 +202,15 @@ func GenerateCSR(crt *v1alpha2.Certificate) (*x509.CertificateRequest, error) {
 		SignatureAlgorithm: sigAlgo,
 		PublicKeyAlgorithm: pubKeyAlgo,
 		Subject: pkix.Name{
-			Organization: organization,
-			CommonName:   commonName,
+			Country:            subject.Countries,
+			Organization:       organization,
+			OrganizationalUnit: subject.OrganizationalUnits,
+			Locality:           subject.Localities,
+			Province:           subject.Provinces,
+			StreetAddress:      subject.StreetAddresses,
+			PostalCode:         subject.PostalCodes,
+			SerialNumber:       subject.SerialNumber,
+			CommonName:         commonName,
 		},
 		DNSNames:    dnsNames,
 		IPAddresses: iPAddresses,
@@ -212,6 +229,7 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 	dnsNames := crt.Spec.DNSNames
 	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
+	subject := SubjectForCertificate(crt)
 	keyUsages, extKeyUsages, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, err
@@ -240,8 +258,15 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 		PublicKeyAlgorithm:    pubKeyAlgo,
 		IsCA:                  crt.Spec.IsCA,
 		Subject: pkix.Name{
-			Organization: organization,
-			CommonName:   commonName,
+			Country:            subject.Countries,
+			Organization:       organization,
+			OrganizationalUnit: subject.OrganizationalUnits,
+			Locality:           subject.Localities,
+			Province:           subject.Provinces,
+			StreetAddress:      subject.StreetAddresses,
+			PostalCode:         subject.PostalCodes,
+			SerialNumber:       subject.SerialNumber,
+			CommonName:         commonName,
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certDuration),

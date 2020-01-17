@@ -335,6 +335,43 @@ spec:
               description: SecretName is the name of the secret resource to store
                 this secret in
               type: string
+            subject:
+              description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+              type: object
+              properties:
+                countries:
+                  description: Countries to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                localities:
+                  description: Cities to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                organizationalUnits:
+                  description: Organizational Units to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                postalCodes:
+                  description: Postal codes to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                provinces:
+                  description: State/Provinces to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
+                serialNumber:
+                  description: Serial number to be used on the Certificate.
+                  type: string
+                streetAddresses:
+                  description: Street addresses to be used on the Certificate.
+                  type: array
+                  items:
+                    type: string
             uriSANs:
               description: URISANs is a list of URI Subject Alternative Names to be
                 set on this Certificate.

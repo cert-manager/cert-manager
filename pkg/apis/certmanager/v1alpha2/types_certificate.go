@@ -72,6 +72,10 @@ const (
 // A valid Certificate requires at least one of a CommonName, DNSName, or
 // URISAN to be valid.
 type CertificateSpec struct {
+	// Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+	// +optional
+	Subject *X509Subject `json:"subject,omitempty"`
+
 	// CommonName is a common name to be used on the Certificate.
 	// The CommonName should have a length of 64 characters or fewer to avoid
 	// generating invalid CSRs.
@@ -143,6 +147,31 @@ type CertificateSpec struct {
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
 	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
+}
+
+// X509Subject Full X509 name specification
+type X509Subject struct {
+	// Countries to be used on the Certificate.
+	// +optional
+	Countries []string `json:"countries,omitempty"`
+	// Organizational Units to be used on the Certificate.
+	// +optional
+	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
+	// Cities to be used on the Certificate.
+	// +optional
+	Localities []string `json:"localities,omitempty"`
+	// State/Provinces to be used on the Certificate.
+	// +optional
+	Provinces []string `json:"provinces,omitempty"`
+	// Street addresses to be used on the Certificate.
+	// +optional
+	StreetAddresses []string `json:"streetAddresses,omitempty"`
+	// Postal codes to be used on the Certificate.
+	// +optional
+	PostalCodes []string `json:"postalCodes,omitempty"`
+	// Serial number to be used on the Certificate.
+	// +optional
+	SerialNumber string `json:"serialNumber,omitempty"`
 }
 
 // CertificateStatus defines the observed state of Certificate
