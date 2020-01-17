@@ -67,7 +67,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
-	client, err := v.clientBuilder(cr.Namespace, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
