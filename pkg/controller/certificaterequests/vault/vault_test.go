@@ -45,7 +45,6 @@ import (
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
 	fakevault "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
-	cmErrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -323,45 +322,6 @@ func TestSign(t *testing.T) {
 			},
 			fakeVault: fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
 		},
-		"a client with a token secret referenced with token but failed to sign with invalid data should report fail": {
-			certificateRequest: baseCR.DeepCopy(),
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{tokenSecret},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
-					gen.SetIssuerVault(cmapi.VaultIssuer{
-						Auth: cmapi.VaultAuth{
-							TokenSecretRef: &cmmeta.SecretKeySelector{
-								Key: "my-token-key",
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: "token-secret",
-								},
-							},
-						},
-					}),
-				)},
-				ExpectedEvents: []string{
-					"Warning SigningError Vault failed to sign certificate: failed to sign",
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Vault failed to sign certificate: failed to sign",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
-						),
-					)),
-				},
-			},
-			fakeVault: fakevault.New().WithSign(nil, nil, cmErrors.NewInvalidData("failed to sign")),
-		},
 		"a client with a app role secret referenced with role but failed to sign should report fail": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
@@ -403,48 +363,6 @@ func TestSign(t *testing.T) {
 				},
 			},
 			fakeVault: fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
-		},
-		"a client with a app role secret referenced with role but failed to sign with InvalidData should report fail": {
-			certificateRequest: baseCR.DeepCopy(),
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{roleSecret},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
-					gen.SetIssuerVault(cmapi.VaultIssuer{
-						Auth: cmapi.VaultAuth{
-							AppRole: &cmapi.VaultAppRole{
-								RoleId: "my-role-id",
-								SecretRef: cmmeta.SecretKeySelector{
-									LocalObjectReference: cmmeta.LocalObjectReference{
-										Name: "role-secret",
-									},
-									Key: "my-role-key",
-								},
-							},
-						},
-					}),
-				)},
-				ExpectedEvents: []string{
-					`Warning SigningError Vault failed to sign certificate: failed to sign`,
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Vault failed to sign certificate: failed to sign",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
-						),
-					)),
-				},
-			},
-			fakeVault: fakevault.New().WithSign(nil, nil, cmErrors.NewInvalidData("failed to sign")),
 		},
 		"a client with a token secret referenced with token and signs should return certificate": {
 			certificateRequest: baseCR,

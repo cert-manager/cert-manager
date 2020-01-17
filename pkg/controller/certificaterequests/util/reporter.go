@@ -59,9 +59,9 @@ func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, messa
 
 }
 
-func (r *Reporter) InvalidRequest(cr *cmapi.CertificateRequest) {
+func (r *Reporter) InvalidRequest(cr *cmapi.CertificateRequest, reason, message string) {
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionInvalidRequest,
-		cmmeta.ConditionTrue, "", "")
+		cmmeta.ConditionTrue, reason, message)
 }
 
 func (r *Reporter) Pending(cr *cmapi.CertificateRequest, err error, reason, message string) {

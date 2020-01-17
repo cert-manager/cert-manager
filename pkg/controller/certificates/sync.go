@@ -137,7 +137,8 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 		message = "Certificate is up to date and has not expired"
 	case apiutil.CertificateRequestHasInvalidRequest(req):
 		reason = "InvalidRequest"
-		message = fmt.Sprintf("The CertificateRequest %q is an invalid request", req.Name)
+		message = fmt.Sprintf("The certificate request could not be completed due to invalid request options: %s",
+			apiutil.CertificateRequestInvalidRequestMessage(req))
 	case req != nil:
 		reason = "InProgress"
 		message = fmt.Sprintf("Waiting for CertificateRequest %q to complete", req.Name)
@@ -410,25 +411,26 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	}
 
 	reason := apiutil.CertificateRequestReadyReason(existingReq)
+
+	// If the CertificateRequest condition is present and has the status of
+	// "True" then do not attempt to retry the CertificateRequest. Else we can
+	// retry.
+	if apiutil.CertificateRequestHasInvalidRequest(existingReq) {
+		log.Info("CertificateRequest is in an InvalidRequest state and will no longer be processed", "state", reason)
+
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, "CertificateRequestInvalidRequest", "The failed CertificateRequest %q is an invalid request and will no longer be processed", existingReq.Name)
+		return nil
+	}
+
 	// Determine the status reason of the CertificateRequest and process accordingly
 	switch reason {
-	// If the CertificateRequest exists but has failed then we check the
-	// InvalidRequest condition as well as failure time.
-	// - If the CertificateRequest condition is present and has the status of
-	//   "True" then do not attempt to retry the CertificateRequest. Else we can
-	//   retry.
-	// - If the failure time doesn't exist or is over an hour in the past then
-	//   delete the request so it can be re-created on the next sync. If the
-	//   failure time is less than an hour in the past then schedule this owning
-	//   Certificate for a re-sync in an hour.
+
+	// If the CertificateRequest exists but has failed then we check the if the
+	// failure time doesn't exist or is over an hour in the past then delete the
+	// request so it can be re-created on the next sync. If the failure time is
+	// less than an hour in the past then schedule this owning Certificate for a
+	// re-sync in an hour.
 	case cmapi.CertificateRequestReasonFailed:
-		if apiutil.CertificateRequestHasInvalidRequest(existingReq) {
-			log.Info("CertificateRequest is in an InvalidRequest state and will no longer be processed", "state", reason)
-
-			c.recorder.Eventf(crt, corev1.EventTypeWarning, "CertificateRequestInvalidRequest", "The failed CertificateRequest %q is an invalid request and will no longer be processed", existingReq.Name)
-			return nil
-		}
-
 		if existingReq.Status.FailureTime == nil || c.clock.Since(existingReq.Status.FailureTime.Time) > time.Hour {
 			log.Info("deleting failed certificate request")
 			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)

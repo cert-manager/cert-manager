@@ -240,8 +240,25 @@ func CertificateRequestReadyReason(cr *cmapi.CertificateRequest) string {
 	return ""
 }
 
-// This returns true if the CertificateRequest contains an InvalidRequest
-// condition which also has its status set to "True", else returns false.
+// This returns with the message if the CertificateRequest contains an
+// InvalidRequest condition, and returns "" otherwise.
+func CertificateRequestInvalidRequestMessage(cr *cmapi.CertificateRequest) string {
+	if cr == nil {
+		return ""
+	}
+
+	for _, con := range cr.Status.Conditions {
+		if con.Type == cmapi.CertificateRequestConditionInvalidRequest &&
+			con.Status == cmmeta.ConditionTrue {
+			return con.Message
+		}
+	}
+
+	return ""
+}
+
+// This returns with true if the CertificateRequest contains an InvalidRequest
+// condition, and returns false otherwise.
 func CertificateRequestHasInvalidRequest(cr *cmapi.CertificateRequest) bool {
 	if cr == nil {
 		return false

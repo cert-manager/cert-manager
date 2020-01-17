@@ -141,9 +141,9 @@ const (
 	// - The target certificate exists in CertificateRequest.Status
 	CertificateRequestConditionReady CertificateRequestConditionType = "Ready"
 
-	// CertificateRequestConditionInvalidRequest indicates that a
-	// certificaterequest has invalid input parameters.
-	// This is defined as:
-	// - TODO (@joshvanl): formalise this meaning
+	// CertificateRequestConditionInvalidRequest indicates that a certificate
+	// signer has refused to sign the request due to at least one of the input
+	// parameters being invalid. Additional information about why the request
+	// was rejected can be found in the `reason` and `message` fields.
 	CertificateRequestConditionInvalidRequest CertificateRequestConditionType = "InvalidRequest"
 )

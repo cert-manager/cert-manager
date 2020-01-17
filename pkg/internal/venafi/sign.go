@@ -18,12 +18,12 @@ package venafi
 
 import (
 	"crypto/x509"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/Venafi/vcert/pkg/certificate"
 
-	cmErrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -41,7 +41,7 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 
 	tmpl, err := pki.GenerateTemplateFromCSRPEM(csrPEM, duration, false)
 	if err != nil {
-		return nil, cmErrors.NewInvalidData(err.Error())
+		return nil, err
 	}
 
 	// Create a vcert Request structure
@@ -55,8 +55,6 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 	// however, as this will be done again server side.
 	err = zoneCfg.ValidateCertificateRequest(vreq)
 	if err != nil {
-		// We don't return an invalid data error here since the policy may be
-		// changed server side making this request pass validation in future.
 		return nil, err
 	}
 
@@ -79,7 +77,7 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 		vreq.FriendlyName = tmpl.URIs[0].String()
 		break
 	default:
-		return nil, cmErrors.NewInvalidData(
+		return nil, errors.New(
 			"certificate request contains no Common Name, DNS Name, nor URI SAN, at least one must be supplied to be used as the Venafi certificate objects name")
 	}
 

@@ -31,7 +31,6 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmErrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -91,7 +90,7 @@ func New(namespace string, secretsLister corelisters.SecretLister,
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(csrPEM)
 	if err != nil {
-		return nil, nil, cmErrors.NewInvalidData("failed to decode CSR for signing: %s", err)
+		return nil, nil, fmt.Errorf("failed to decode CSR for signing: %s", err)
 	}
 
 	parameters := map[string]string{
@@ -110,7 +109,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 	request := v.client.NewRequest("POST", url)
 
 	if err := request.SetJSONBody(parameters); err != nil {
-		return nil, nil, cmErrors.NewInvalidData("failed to build vault request: %s", err)
+		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
 	}
 
 	resp, err := v.client.RawRequest(request)
