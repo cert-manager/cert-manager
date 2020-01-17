@@ -114,6 +114,8 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 	}
 	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
+	annotations[cmapi.CertificateNamespaceKey] = crt.Namespace
+
 	certificateRequest := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            reqName,
@@ -341,6 +343,7 @@ func TestBuildCertificateRequest(t *testing.T) {
 
 			expectedCertificateRequestAnnotations: map[string]string{
 				cmapi.CRPrivateKeyAnnotationKey: baseCert.Spec.SecretName,
+				cmapi.CertificateNamespaceKey:   baseCert.Namespace,
 				cmapi.CertificateNameKey:        baseCert.Name,
 			},
 		},
@@ -404,6 +407,7 @@ func TestProcessCertificate(t *testing.T) {
 								Name:      "output",
 								Annotations: map[string]string{
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								},
@@ -450,6 +454,7 @@ func TestProcessCertificate(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								},
@@ -499,6 +504,7 @@ func TestProcessCertificate(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								},
@@ -548,6 +554,7 @@ func TestProcessCertificate(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								},
@@ -576,6 +583,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 							},
@@ -613,6 +621,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 							},
@@ -662,6 +671,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: "Issuer",
 								cmapi.IssuerNameAnnotationKey: "test",
 							},
@@ -692,6 +702,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -732,6 +743,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -789,6 +801,7 @@ func TestProcessCertificate(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -820,6 +833,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 							},
@@ -847,6 +861,7 @@ func TestProcessCertificate(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -878,6 +893,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      exampleBundle1.certificate.Name,
+								cmapi.CertificateNamespaceKey: exampleBundle1.certificate.Name,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -911,6 +927,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -942,6 +959,7 @@ func TestProcessCertificate(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -973,6 +991,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -1017,6 +1036,7 @@ func TestProcessCertificate(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -1171,6 +1191,7 @@ func TestProcessCertificate(t *testing.T) {
 								Name:      "output",
 								Annotations: map[string]string{
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								},
@@ -1221,6 +1242,7 @@ func TestProcessCertificate(t *testing.T) {
 								Name:      "output",
 								Annotations: map[string]string{
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								},
@@ -1278,6 +1300,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 							},
@@ -1304,6 +1327,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -1335,6 +1359,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 							},
@@ -1362,6 +1387,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -1393,6 +1419,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 							},
@@ -1420,6 +1447,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -1451,6 +1479,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -1482,6 +1511,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -1513,6 +1543,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -1544,6 +1575,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
@@ -1576,6 +1608,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Annotations: map[string]string{
 								"custom-annotation":           "value",
 								cmapi.CertificateNameKey:      "test",
+								cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
@@ -1645,6 +1678,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								Annotations: map[string]string{
 									"custom-annotation":           "value",
 									cmapi.CertificateNameKey:      "test",
+									cmapi.CertificateNamespaceKey: gen.DefaultTestNamespace,
 									cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",

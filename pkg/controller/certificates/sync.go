@@ -77,7 +77,9 @@ func (c *certificateRequestManager) ProcessItem(ctx context.Context, key string)
 func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context, old, crt *cmapi.Certificate) error {
 	log := logf.FromContext(ctx)
 	secretExists := true
-	certs, key, err := kube.SecretTLSKeyPair(ctx, c.secretLister, crt.Namespace, crt.Spec.SecretName)
+	secretNamespace := apiutil.GetSecretsNamespace(crt)
+
+	certs, key, err := kube.SecretTLSKeyPair(ctx, c.secretLister, secretNamespace, crt.Spec.SecretName)
 	if err != nil {
 		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
 			return err
@@ -105,7 +107,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 	var matches bool
 	var matchErrs []string
 	if key != nil && cert != nil {
-		secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+		secret, err := c.secretLister.Secrets(secretNamespace).Get(crt.Spec.SecretName)
 		if err != nil {
 			return err
 		}
@@ -201,7 +203,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	}
 
 	// Fetch a copy of the existing Secret resource
-	existingSecret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+	existingSecret, err := c.secretLister.Secrets(apiutil.GetSecretsNamespace(crt)).Get(crt.Spec.SecretName)
 	if apierrors.IsNotFound(err) {
 		// If the secret does not exist, generate a new private key and store it.
 		dbg.Info("existing secret not found, generating and storing private key")
@@ -494,7 +496,7 @@ func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *c
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crt.Spec.SecretName,
-			Namespace: crt.Namespace,
+			Namespace: apiutil.GetSecretsNamespace(crt),
 		},
 		Type: corev1.SecretTypeTLS,
 	}
@@ -625,6 +627,7 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 	}
 	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
+	annotations[cmapi.CertificateNamespaceKey] = crt.Namespace
 
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
@@ -794,6 +797,7 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 	}
 
 	s.Annotations[cmapi.CertificateNameKey] = crt.Name
+	s.Annotations[cmapi.CertificateNamespaceKey] = crt.Namespace
 	s.Annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
 	s.Annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 

@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"fmt"
+	"github.com/jetstack/cert-manager/pkg/api/util"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -66,7 +67,7 @@ func certificatesForSecret(certificateLister cmlisters.CertificateLister, secret
 
 	var affected []*cmapi.Certificate
 	for _, crt := range crts {
-		if crt.Namespace != secret.Namespace {
+		if util.GetSecretsNamespace(crt) != secret.Namespace {
 			continue
 		}
 		if crt.Spec.SecretName == secret.Name {

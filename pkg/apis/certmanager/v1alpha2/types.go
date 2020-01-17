@@ -26,6 +26,7 @@ const (
 	IssuerKindAnnotationKey  = "cert-manager.io/issuer-kind"
 	IssuerGroupAnnotationKey = "cert-manager.io/issuer-group"
 	CertificateNameKey       = "cert-manager.io/certificate-name"
+	CertificateNamespaceKey  = "cert-manager.io/certificate-namespace"
 )
 
 // Deprecated annotation names for Secrets
@@ -64,6 +65,10 @@ const (
 	// stored in the target Secret resource whilst the real Issuer is processing
 	// the certificate request.
 	IssueTemporaryCertificateAnnotation = "cert-manager.io/issue-temporary-certificate"
+
+	// SecretsNamespaceAnnotation can be used to override base secrets namespace location
+	// default location - together with certificate resource
+	SecretsNamespaceAnnotationKey = "cert-manager.io/secret-namespace"
 )
 
 const (

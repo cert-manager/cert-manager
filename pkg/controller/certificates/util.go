@@ -151,9 +151,11 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 
 func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc calculateDurationUntilRenewFn, queueFn func(interface{}, time.Duration), crt *v1alpha2.Certificate) {
 	log := logf.FromContext(ctx)
+	secretNamespace := apiutil.GetSecretsNamespace(crt)
+
 	log = log.WithValues(
 		logf.RelatedResourceNameKey, crt.Spec.SecretName,
-		logf.RelatedResourceNamespaceKey, crt.Namespace,
+		logf.RelatedResourceNamespaceKey, secretNamespace,
 		logf.RelatedResourceKindKey, "Secret",
 	)
 
@@ -163,7 +165,7 @@ func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc 
 		return
 	}
 
-	cert, err := kube.SecretTLSCert(ctx, lister, crt.Namespace, crt.Spec.SecretName)
+	cert, err := kube.SecretTLSCert(ctx, lister, secretNamespace, crt.Spec.SecretName)
 	if err != nil {
 		if !errors.IsInvalidData(err) {
 			log.Error(err, "error getting secret for certificate resource")
