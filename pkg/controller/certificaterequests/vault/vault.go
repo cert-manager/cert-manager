@@ -30,7 +30,6 @@ import (
 	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	cmErrors "github.com/jetstack/cert-manager/pkg/util/errors"
 )
 
 const (
@@ -91,7 +90,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 	if err != nil {
 		message := "Vault failed to sign certificate"
 
-		v.reporter.Failed(cr, cmErrors.IsInvalidData(err), err, "SigningError", message)
+		v.reporter.Failed(cr, err, "SigningError", message)
 		log.Error(err, message)
 
 		return nil, nil

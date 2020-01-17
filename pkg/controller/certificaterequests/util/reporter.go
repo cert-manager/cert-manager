@@ -45,7 +45,7 @@ func NewReporter(clock clock.Clock, recorder record.EventRecorder) *Reporter {
 	}
 }
 
-func (r *Reporter) Failed(cr *cmapi.CertificateRequest, invalidRequest bool, err error, reason, message string) {
+func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, message string) {
 	// Set the FailureTime to c.clock.Now(), only if it has not been already set.
 	if cr.Status.FailureTime == nil {
 		nowTime := metav1.NewTime(r.clock.Now())
@@ -57,10 +57,11 @@ func (r *Reporter) Failed(cr *cmapi.CertificateRequest, invalidRequest bool, err
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
 		cmmeta.ConditionFalse, cmapi.CertificateRequestReasonFailed, message)
 
-	if invalidRequest {
-		apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionInvalidRequest,
-			cmmeta.ConditionTrue, "", "")
-	}
+}
+
+func (r *Reporter) InvalidRequest(cr *cmapi.CertificateRequest) {
+	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionInvalidRequest,
+		cmmeta.ConditionTrue, "", "")
 }
 
 func (r *Reporter) Pending(cr *cmapi.CertificateRequest, err error, reason, message string) {

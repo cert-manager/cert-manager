@@ -114,7 +114,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
-		c.reporter.Failed(crCopy, true, el.ToAggregate(), "BadConfig",
+		c.reporter.Failed(crCopy, el.ToAggregate(), "BadConfig",
 			"Resource validation failed")
 		return nil
 	}
@@ -149,7 +149,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 	// invalid cert
 	_, err = pki.DecodeX509CertificateBytes(crCopy.Status.Certificate)
 	if err != nil {
-		c.reporter.Failed(crCopy, false, err, "DecodeError", "Failed to decode returned certificate")
+		c.reporter.Failed(crCopy, err, "DecodeError", "Failed to decode returned certificate")
 		return nil
 	}
 

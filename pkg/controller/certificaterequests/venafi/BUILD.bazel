@@ -14,7 +14,6 @@ go_library(
         "//pkg/internal/venafi:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
-        "//pkg/util/errors:go_default_library",
         "@com_github_venafi_vcert//pkg/endpoint:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",

@@ -169,7 +169,7 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]testT{
-		"a CertificateRequest with no cert-manager.io/selfsigned-private-key annotation should fail and set InvalidRequest condition to True": {
+		"a CertificateRequest with no cert-manager.io/selfsigned-private-key annotation should fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				// no annotation
 				gen.SetCertificateRequestAnnotations(map[string]string{}),
@@ -197,20 +197,13 @@ func TestSign(t *testing.T) {
 								Message:            `Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionInvalidRequest,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "",
-								Message:            "",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
 						),
 					)),
 				},
 			},
 		},
-		"a CertificateRequest with a cert-manager.io/private-key-secret-name annotation but empty string should fail and set InvalidRequest condition to True": {
+		"a CertificateRequest with a cert-manager.io/private-key-secret-name annotation but empty string should fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				// no data in annotation
 				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CRPrivateKeyAnnotationKey: ""}),
@@ -236,13 +229,6 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            `Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionInvalidRequest,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "",
-								Message:            "",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -368,7 +354,7 @@ func TestSign(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-		"a CertificateRequest with a bad CSR should fail and set InvalidRequest condition to True": {
+		"a CertificateRequest with a bad CSR should fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestCSR([]byte("this is a bad CSR")),
 			),
@@ -394,20 +380,13 @@ func TestSign(t *testing.T) {
 								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x43, 0x53, 0x52}: failed to decode csr: error decoding certificate request PEM block",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionInvalidRequest,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "",
-								Message:            "",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
 						),
 					)),
 				},
 			},
 		},
-		"a CSR that has not been signed with the same public key as the referenced private key should fail and set InvalidRequest condition to True": {
+		"a CSR that has not been signed with the same public key as the referenced private key should fail": {
 			certificateRequest: ecCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rsaKeySecret},
@@ -426,13 +405,6 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Error generating certificate template: CSR not signed by referenced private key",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionInvalidRequest,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "",
-								Message:            "",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),

@@ -275,7 +275,7 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a secret that fails to sign due to failing to generate the certificate template should set condition to failed and set InvalidRequest": {
+		"a secret that fails to sign due to failing to generate the certificate template should set condition to failed": {
 			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(*cmapi.CertificateRequest) (*x509.Certificate, error) {
 				return nil, errors.New("this is a template generate error")
@@ -297,13 +297,6 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Error generating certificate template: this is a template generate error",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionInvalidRequest,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "",
-								Message:            "",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),

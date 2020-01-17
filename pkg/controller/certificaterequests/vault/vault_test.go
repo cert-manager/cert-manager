@@ -323,7 +323,7 @@ func TestSign(t *testing.T) {
 			},
 			fakeVault: fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
 		},
-		"a client with a token secret referenced with token but failed to sign with invalid data should report fail and set InvalidRequest condition True": {
+		"a client with a token secret referenced with token but failed to sign with invalid data should report fail": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{tokenSecret},
@@ -353,13 +353,6 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Vault failed to sign certificate: failed to sign",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionInvalidRequest,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "",
-								Message:            "",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -411,7 +404,7 @@ func TestSign(t *testing.T) {
 			},
 			fakeVault: fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
 		},
-		"a client with a app role secret referenced with role but failed to sign with InvalidData should report fail and set InvalidRequest condition to True": {
+		"a client with a app role secret referenced with role but failed to sign with InvalidData should report fail": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{roleSecret},
@@ -444,13 +437,6 @@ func TestSign(t *testing.T) {
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Vault failed to sign certificate: failed to sign",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionInvalidRequest,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "",
-								Message:            "",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
