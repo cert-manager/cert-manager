@@ -86,6 +86,10 @@ securityContext: {}
 #   runAsUser: 1000
 #   runAsNonRoot: true
 
+volumes: []
+
+volumeMounts: []
+
 deploymentAnnotations: {}
 
 podAnnotations: {}

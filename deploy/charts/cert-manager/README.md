@@ -89,6 +89,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `serviceAccount.create` | If `true`, create a new service account | `true` |
 | `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `serviceAccount.annotations` | Annotations to add to the service account |  |
+| `volumes` | Optional volumes for cert-manager | `[]` |
+| `volumeMounts` | Optional volume mounts for cert-manager | `[]` |
 | `resources` | CPU/memory resource requests/limits | `{}` |
 | `securityContext` | Optional security context. The yaml block should adhere to the [SecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.16/#securitycontext-v1-core) | `{}` |
 | `securityContext.enabled` | Deprecated (use `securityContext`) - Enable security context | `false` |
