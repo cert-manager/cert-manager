@@ -51,8 +51,8 @@ func ValidateCertificateForACMEIssuer(crt *cmapi.CertificateSpec, issuer *cmapi.
 		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "ACME does not support CA certificates"))
 	}
 
-	if len(crt.Organization) != 0 {
-		el = append(el, field.Invalid(specPath.Child("organization"), crt.Organization, "ACME does not support setting the organization name"))
+	if crt.Subject != nil && len(crt.Subject.Organizations) != 0 {
+		el = append(el, field.Invalid(specPath.Child("subject", "organizations"), crt.Subject.Organizations, "ACME does not support setting the organization name"))
 	}
 
 	if crt.Duration != nil {
@@ -73,8 +73,8 @@ func ValidateCertificateForVaultIssuer(crt *cmapi.CertificateSpec, issuer *cmapi
 		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "Vault issuer does not currently support CA certificates"))
 	}
 
-	if len(crt.Organization) != 0 {
-		el = append(el, field.Invalid(specPath.Child("organization"), crt.Organization, "Vault issuer does not currently support setting the organization name"))
+	if crt.Subject != nil && len(crt.Subject.Organizations) != 0 {
+		el = append(el, field.Invalid(specPath.Child("subject", "organizations"), crt.Subject.Organizations, "Vault issuer does not currently support setting the organization name"))
 	}
 
 	return el

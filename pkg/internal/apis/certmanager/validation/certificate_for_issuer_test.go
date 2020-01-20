@@ -82,13 +82,15 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 		"acme certificate with organization set": {
 			crt: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					Organization: []string{"shouldfailorg"},
-					IssuerRef:    validIssuerRef,
+					Subject: &cmapi.X509Subject{
+						Organizations: []string{"shouldfailorg"},
+					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			issuer: acmeIssuer,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("organization"), []string{"shouldfailorg"}, "ACME does not support setting the organization name"),
+				field.Invalid(fldPath.Child("subject", "organizations"), []string{"shouldfailorg"}, "ACME does not support setting the organization name"),
 			},
 		},
 		"acme certificate with duration set": {

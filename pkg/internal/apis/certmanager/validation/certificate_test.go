@@ -82,10 +82,12 @@ func TestValidateCertificate(t *testing.T) {
 		"valid with org set": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					Organization: []string{"testorg"},
-					IssuerRef:    validIssuerRef,
+					CommonName: "testcn",
+					SecretName: "abc",
+					Subject: &cmapi.X509Subject{
+						Organizations: []string{"testorg"},
+					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 		},
