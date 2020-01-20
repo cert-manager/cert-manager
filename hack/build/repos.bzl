@@ -342,8 +342,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/digitalocean/godo",
-        sum = "h1:BjFbURUz1LDimGfApIWqzZiSrJFbtyGYOHfSRq/Voi8=",
-        version = "v1.6.0",
+        sum = "h1:KgNNU0k9SZqVgn7m8NN9iDsq0+nluHBe8HR9QE0QVmA=",
+        version = "v1.29.0",
     )
     go_repository(
         name = "com_github_docker_docker",
