@@ -90,7 +90,7 @@ func New(namespace string, secretsLister corelisters.SecretLister,
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(csrPEM)
 	if err != nil {
-		return nil, nil, fmt.Errorf("faild to decode CSR for signing: %s", err)
+		return nil, nil, fmt.Errorf("failed to decode CSR for signing: %s", err)
 	}
 
 	parameters := map[string]string{

@@ -68,6 +68,14 @@ func TestReporter(t *testing.T) {
 		LastTransitionTime: &nowMetaTime,
 	}
 
+	invalidRequestCondition := cmapi.CertificateRequestCondition{
+		Type:               cmapi.CertificateRequestConditionInvalidRequest,
+		Status:             "True",
+		Reason:             "InvalidRequest Reason",
+		Message:            "InvalidRequest Message",
+		LastTransitionTime: &nowMetaTime,
+	}
+
 	pendingCondition := cmapi.CertificateRequestCondition{
 		Type:               cmapi.CertificateRequestConditionReady,
 		Reason:             "Pending",
@@ -123,6 +131,19 @@ func TestReporter(t *testing.T) {
 			expectedFailureTime: &oldMetaTime,
 
 			call: "failed",
+		},
+
+		"a report with invalid request should update the conditions and set FailureTime as it is nil": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR),
+			err:                nil,
+			message:            "InvalidRequest Message",
+			reason:             "InvalidRequest Reason",
+
+			expectedEvents:      []string{},
+			expectedConditions:  []cmapi.CertificateRequestCondition{invalidRequestCondition},
+			expectedFailureTime: nil,
+
+			call: "invalid-request",
 		},
 
 		"a pending report should update the conditions and send an event as a Pending condition already exists": {
@@ -202,6 +223,8 @@ func (tt *reporterT) runTest(t *testing.T) {
 	case "failed":
 		reporter.Failed(tt.certificateRequest, tt.err,
 			tt.reason, tt.message)
+	case "invalid-request":
+		reporter.InvalidRequest(tt.certificateRequest, tt.reason, tt.message)
 	case "pending":
 		reporter.Pending(tt.certificateRequest, tt.err,
 			tt.reason, tt.message)

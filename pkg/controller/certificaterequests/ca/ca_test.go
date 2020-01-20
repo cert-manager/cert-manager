@@ -275,16 +275,16 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a secret that fails to sign should set condition to failed": {
+		"a secret that fails to sign due to failing to generate the certificate template should set condition to failed": {
 			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(*cmapi.CertificateRequest) (*x509.Certificate, error) {
-				return nil, errors.New("this is a sign error")
+				return nil, errors.New("this is a template generate error")
 			},
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rsaCASecret},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning SigningError Error generating certificate template: this is a sign error",
+					"Warning SigningError Error generating certificate template: this is a template generate error",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -296,7 +296,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Error generating certificate template: this is a sign error",
+								Message:            "Error generating certificate template: this is a template generate error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
