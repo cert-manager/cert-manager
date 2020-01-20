@@ -24,34 +24,38 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/klogr"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 )
 
-func TestFuncBackedValidator(t *testing.T) {
+func TestRegistryBackedValidator(t *testing.T) {
 	scheme := runtime.NewScheme()
+	registry := validation.NewRegistry(scheme)
 	install.Install(scheme)
+	install.InstallValidations(registry)
 
 	log := klogr.New()
-	c := NewFuncBackedValidator(log, scheme, map[schema.GroupKind]Validator{
-		{Group: testgroup.GroupName, Kind: "TestType"}: ValidatorFunc(&v1.TestType{}, validation.ValidateTestType, validation.ValidateTestTypeUpdate),
-	})
-	testTypeGVK := metav1.GroupVersionKind{
+	c := NewRegistryBackedValidator(log, scheme, registry)
+	testTypeGVK := &metav1.GroupVersionKind{
 		Group:   v1.SchemeGroupVersion.Group,
 		Version: v1.SchemeGroupVersion.Version,
+		Kind:    "TestType",
+	}
+	testTypeGVKV2 := &metav1.GroupVersionKind{
+		Group:   v2.SchemeGroupVersion.Group,
+		Version: v2.SchemeGroupVersion.Version,
 		Kind:    "TestType",
 	}
 	tests := map[string]admissionTestT{
 		"should not allow invalid value for 'testField' field": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
-				UID:  types.UID("abc"),
-				Kind: testTypeGVK,
+				UID:         types.UID("abc"),
+				RequestKind: testTypeGVK,
 				Object: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -78,7 +82,7 @@ func TestFuncBackedValidator(t *testing.T) {
 		},
 		"should allow setting immutable field if it is not already set": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
-				Kind: testTypeGVK,
+				RequestKind: testTypeGVK,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -113,7 +117,7 @@ func TestFuncBackedValidator(t *testing.T) {
 		},
 		"should not allow setting immutable field if it is already set": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
-				Kind: testTypeGVK,
+				RequestKind: testTypeGVK,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -149,6 +153,98 @@ func TestFuncBackedValidator(t *testing.T) {
 					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
 					Message: "testFieldImmutable: Forbidden: field is immutable once set",
 				},
+			},
+		},
+		"should not allow setting immutable field if it is already set (v2)": {
+			inputRequest: admissionv1beta1.AdmissionRequest{
+				RequestKind: testTypeGVKV2,
+				OldObject: runtime.RawExtension{
+					Raw: []byte(fmt.Sprintf(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v2",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testFieldImmutable": "oldvalue"
+}
+`)),
+				},
+				Object: runtime.RawExtension{
+					Raw: []byte(fmt.Sprintf(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v2",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testFieldImmutable": "abc"
+}
+`)),
+				},
+			},
+			expectedResponse: admissionv1beta1.AdmissionResponse{
+				Allowed: false,
+				Result: &metav1.Status{
+					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
+					Message: "testFieldImmutable: Forbidden: field is immutable once set",
+				},
+			},
+		},
+		"should not allow invalid value for 'testField' field in v2": {
+			inputRequest: admissionv1beta1.AdmissionRequest{
+				UID:         types.UID("abc"),
+				RequestKind: testTypeGVKV2,
+				Object: runtime.RawExtension{
+					Raw: []byte(fmt.Sprintf(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v2",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testField": "%s"
+}
+`, v2.DisallowedTestFieldValue)),
+				},
+			},
+			expectedResponse: admissionv1beta1.AdmissionResponse{
+				UID:     types.UID("abc"),
+				Allowed: false,
+				Result: &metav1.Status{
+					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
+					Message: "testField: Invalid value: \"not-allowed-in-v2\": value not allowed",
+				},
+			},
+		},
+		"should allow value for 'testField' field in v2 if requestKind is v1": {
+			inputRequest: admissionv1beta1.AdmissionRequest{
+				UID:         types.UID("abc"),
+				RequestKind: testTypeGVK,
+				Object: runtime.RawExtension{
+					Raw: []byte(fmt.Sprintf(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v2",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testField": "%s"
+}
+`, v2.DisallowedTestFieldValue)),
+				},
+			},
+			expectedResponse: admissionv1beta1.AdmissionResponse{
+				UID:     types.UID("abc"),
+				Allowed: true,
 			},
 		},
 	}

@@ -20,11 +20,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
 )
 
 func ValidateTestType(obj runtime.Object) field.ErrorList {
-	testType := obj.(*v1.TestType)
+	testType := obj.(*testgroup.TestType)
 	el := field.ErrorList{}
 	if testType.TestField == v1.TestFieldValueNotAllowed {
 		el = append(el, field.Invalid(field.NewPath("testField"), testType.TestField, "invalid value"))
@@ -33,8 +34,8 @@ func ValidateTestType(obj runtime.Object) field.ErrorList {
 }
 
 func ValidateTestTypeUpdate(oldObj, newObj runtime.Object) field.ErrorList {
-	old, ok := oldObj.(*v1.TestType)
-	new := newObj.(*v1.TestType)
+	old, ok := oldObj.(*testgroup.TestType)
+	new := newObj.(*testgroup.TestType)
 	// if oldObj is not set, the Update operation is always valid.
 	if !ok || old == nil {
 		return nil

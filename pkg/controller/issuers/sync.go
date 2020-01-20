@@ -27,9 +27,10 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
+	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
+	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 const (
@@ -51,7 +52,7 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha2.Issuer) (err error)
 		}
 	}()
 
-	el := validation.ValidateIssuer(issuerCopy)
+	el := webhook.ValidationRegistry.Validate(issuerCopy, internalapi.SchemeGroupVersion.WithKind("Issuer"))
 	if len(el) > 0 {
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
 		apiutil.SetIssuerCondition(issuerCopy, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorConfig, msg)

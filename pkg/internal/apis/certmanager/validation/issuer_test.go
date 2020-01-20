@@ -23,9 +23,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
 var (
@@ -48,8 +48,8 @@ var (
 		Server:     "valid-server",
 		PrivateKey: validSecretKeyRef,
 	}
-	validVaultIssuer = v1alpha2.VaultIssuer{
-		Auth: v1alpha2.VaultAuth{
+	validVaultIssuer = cmapi.VaultIssuer{
+		Auth: cmapi.VaultAuth{
 			TokenSecretRef: &validSecretKeyRef,
 		},
 		Server: "something",
@@ -60,21 +60,21 @@ var (
 func TestValidateVaultIssuerConfig(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
-		spec *v1alpha2.VaultIssuer
+		spec *cmapi.VaultIssuer
 		errs []*field.Error
 	}{
 		"valid vault issuer": {
 			spec: &validVaultIssuer,
 		},
 		"vault issuer with missing fields": {
-			spec: &v1alpha2.VaultIssuer{},
+			spec: &cmapi.VaultIssuer{},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("server"), ""),
 				field.Required(fldPath.Child("path"), ""),
 			},
 		},
 		"vault issuer with invalid fields": {
-			spec: &v1alpha2.VaultIssuer{
+			spec: &cmapi.VaultIssuer{
 				Server:   "something",
 				Path:     "a/b/c",
 				CABundle: []byte("invalid"),
@@ -296,60 +296,60 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 func TestValidateIssuerSpec(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
-		spec *v1alpha2.IssuerSpec
+		spec *cmapi.IssuerSpec
 		errs []*field.Error
 	}{
 		"valid ca issuer": {
-			spec: &v1alpha2.IssuerSpec{
-				IssuerConfig: v1alpha2.IssuerConfig{
-					CA: &v1alpha2.CAIssuer{
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{
 						SecretName: "valid",
 					},
 				},
 			},
 		},
 		"ca issuer without secret name specified": {
-			spec: &v1alpha2.IssuerSpec{
-				IssuerConfig: v1alpha2.IssuerConfig{
-					CA: &v1alpha2.CAIssuer{},
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{},
 				},
 			},
 			errs: []*field.Error{field.Required(fldPath.Child("ca", "secretName"), "")},
 		},
 		"valid self signed issuer": {
-			spec: &v1alpha2.IssuerSpec{
-				IssuerConfig: v1alpha2.IssuerConfig{
-					SelfSigned: &v1alpha2.SelfSignedIssuer{},
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					SelfSigned: &cmapi.SelfSignedIssuer{},
 				},
 			},
 		},
 		"valid acme issuer": {
-			spec: &v1alpha2.IssuerSpec{
-				IssuerConfig: v1alpha2.IssuerConfig{
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
 					ACME: &validACMEIssuer,
 				},
 			},
 		},
 		"valid vault issuer": {
-			spec: &v1alpha2.IssuerSpec{
-				IssuerConfig: v1alpha2.IssuerConfig{
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
 					Vault: &validVaultIssuer,
 				},
 			},
 		},
 		"missing issuer config": {
-			spec: &v1alpha2.IssuerSpec{
-				IssuerConfig: v1alpha2.IssuerConfig{},
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{},
 			},
 			errs: []*field.Error{
 				field.Required(fldPath, "at least one issuer must be configured"),
 			},
 		},
 		"multiple issuers configured": {
-			spec: &v1alpha2.IssuerSpec{
-				IssuerConfig: v1alpha2.IssuerConfig{
-					SelfSigned: &v1alpha2.SelfSignedIssuer{},
-					CA: &v1alpha2.CAIssuer{
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					SelfSigned: &cmapi.SelfSignedIssuer{},
+					CA: &cmapi.CAIssuer{
 						SecretName: "valid",
 					},
 				},

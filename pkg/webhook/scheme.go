@@ -19,6 +19,7 @@ package webhook
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	acmeinstall "github.com/jetstack/cert-manager/pkg/internal/apis/acme/install"
 	cminstall "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/install"
 	metainstall "github.com/jetstack/cert-manager/pkg/internal/apis/meta/install"
@@ -32,11 +33,20 @@ import (
 // cert-manager APIs should have a consistent view of all API kinds.
 
 var (
+	// Scheme is a Kubernetes runtime.Scheme with all internal and external API
+	// versions for cert-manager types registered.
 	Scheme = runtime.NewScheme()
+
+	// ValidationRegistry is a validation registry with all required
+	// validations that should be enforced by the webhook component.
+	ValidationRegistry = validation.NewRegistry(Scheme)
 )
 
 func init() {
 	cminstall.Install(Scheme)
 	acmeinstall.Install(Scheme)
 	metainstall.Install(Scheme)
+
+	cminstall.InstallValidation(ValidationRegistry)
+	acmeinstall.InstallValidation(ValidationRegistry)
 }

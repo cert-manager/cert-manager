@@ -36,8 +36,10 @@ module_name="github.com/jetstack/cert-manager"
 # Generate deepcopy functions for all internal and external APIs
 deepcopy_inputs=(
   pkg/apis/certmanager/v1alpha2 \
+  pkg/apis/certmanager/v1alpha3 \
   pkg/internal/apis/certmanager \
   pkg/apis/acme/v1alpha2 \
+  pkg/apis/acme/v1alpha3 \
   pkg/internal/apis/acme \
   pkg/apis/meta/v1 \
   pkg/internal/apis/meta \
@@ -52,13 +54,17 @@ client_package="${module_name}/${client_subpackage}"
 # Generate clientsets, listers and informers for user-facing API types
 client_inputs=(
   pkg/apis/certmanager/v1alpha2 \
+  pkg/apis/certmanager/v1alpha3 \
   pkg/apis/acme/v1alpha2 \
+  pkg/apis/acme/v1alpha3 \
 )
 
 # Generate defaulting functions to be used by the mutating webhook
 defaulter_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
+  pkg/internal/apis/certmanager/v1alpha3 \
   pkg/internal/apis/acme/v1alpha2 \
+  pkg/internal/apis/acme/v1alpha3 \
   pkg/internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
@@ -67,7 +73,9 @@ defaulter_inputs=(
 # Generate conversion functions to be used by the conversion webhook
 conversion_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
+  pkg/internal/apis/certmanager/v1alpha3 \
   pkg/internal/apis/acme/v1alpha2 \
+  pkg/internal/apis/acme/v1alpha3 \
   pkg/internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
@@ -121,6 +129,15 @@ clean() {
   find "$path" -name "$name" -delete
 }
 
+mkcp() {
+  src="$1"
+  dst="$2"
+  mkdir -p "$(dirname "$dst")"
+  cp "$src" "$dst"
+}
+# Export mkcp for use in sub-shells
+export -f mkcp
+
 copyfiles() {
   # Don't copy data if the workspace directory is already within the GOPATH
   if [ "${BUILD_WORKSPACE_DIRECTORY:0:${#GOPATH}}" = "$GOPATH" ]; then
@@ -134,7 +151,8 @@ copyfiles() {
   fi
   (
     cd "$GOPATH/src/$module_name/$path"
-    find "." -name "$name" -exec cp {} "$BUILD_WORKSPACE_DIRECTORY/$path/{}" \;
+
+    find "." -name "$name" -exec bash -c "mkcp {} \"$BUILD_WORKSPACE_DIRECTORY/$path/{}\"" \;
   )
 }
 

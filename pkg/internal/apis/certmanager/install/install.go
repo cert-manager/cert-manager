@@ -22,12 +22,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha3"
+	cmvalidation "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
 )
 
 // Install registers the API group and adds types to a scheme
 func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(certmanager.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
+	utilruntime.Must(v1alpha3.AddToScheme(scheme))
+}
+
+// InstallValidation registers validation functions for the API group with a
+// validation registry
+func InstallValidation(registry *validation.Registry) {
+	utilruntime.Must(cmvalidation.AddToValidationRegistry(registry))
 }

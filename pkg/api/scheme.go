@@ -28,7 +28,9 @@ import (
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
@@ -46,7 +48,9 @@ var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	cmapi.AddToScheme,
+	cmapiv1alpha3.AddToScheme,
 	cmacme.AddToScheme,
+	cmacmev1alpha3.AddToScheme,
 	cmmeta.AddToScheme,
 	whapi.AddToScheme,
 	kscheme.AddToScheme,
