@@ -8,9 +8,9 @@ devel/develop-with-minikube.rst https://cert-manager.io/docs/contributing/kind/
 index.rst https://cert-manager.io/docs/
 design/index.rst https://cert-manager.io/docs
 tasks/index.rst https://cert-manager.io/docs/configuration/
-tasks/uninstall/kubernetes.rst https://cert-manager.io/docs/tutorials/uninstall/kubernetes/
-tasks/uninstall/index.rst https://cert-manager.io/docs/tutorials/uninstall/
-tasks/uninstall/openshift.rst https://cert-manager.io/docs/tutorials/uninstall/openshift/
+tasks/uninstall/kubernetes.rst https://cert-manager.io/docs/installation/uninstall/kubernetes/
+tasks/uninstall/index.rst https://cert-manager.io/docs/installation/uninstall/
+tasks/uninstall/openshift.rst https://cert-manager.io/docs/installation/uninstall/openshift/
 tasks/issuers/index.rst https://cert-manager.io/docs/configuration/
 tasks/issuers/setup-ca.rst https://cert-manager.io/docs/configuration/ca/
 tasks/issuers/setup-selfsigned.rst https://cert-manager.io/docs/configuration/selfsigned/
