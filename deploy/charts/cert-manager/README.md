@@ -8,7 +8,7 @@ to renew certificates at an appropriate time before expiry.
 
 ## Prerequisites
 
-- Kubernetes 1.7+
+- Kubernetes 1.12+
 
 ## Installing the Chart
 
@@ -20,12 +20,12 @@ To install the chart with the release name `my-release`:
 ```console
 ## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
 ## cert-manager Helm chart
-$ kubectl apply --validate=false\
-    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml
+$ kubectl apply --validate=false \
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml
 
 ## If you are installing on openshift :
 $ oc create \
-    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml
 
 ## Add the Jetstack Helm repository
 $ helm repo add jetstack https://charts.jetstack.io
