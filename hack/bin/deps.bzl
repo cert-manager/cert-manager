@@ -109,8 +109,8 @@ def install_helm():
     ## the version numbers in these rules.
     http_archive(
         name = "helm_darwin",
-        sha256 = "f51830036f746b7f758a40bf49e02527cc5a9f1b78c5809023e570d318eaff5c",
-        urls = ["https://get.helm.sh/helm-v2.15.1-darwin-amd64.tar.gz"],
+        sha256 = "05c7748da0ea8d5f85576491cd3c615f94063f20986fd82a0f5658ddc286cdb1",
+        urls = ["https://get.helm.sh/helm-v3.0.2-darwin-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -125,8 +125,8 @@ filegroup(
 
     http_archive(
         name = "helm_linux",
-        sha256 = "b4d366bd6625477b2954941aeb7b601946aa4226af6728e3a84eac4e62a84042",
-        urls = ["https://get.helm.sh/helm-v2.15.1-linux-amd64.tar.gz"],
+        sha256 = "c6b7aa7e4ffc66e8abb4be328f71d48c643cb8f398d95c74d075cfb348710e1d",
+        urls = ["https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -141,20 +141,6 @@ filegroup(
 
 # Define rules for different kubectl versions
 def install_kubectl():
-    http_file(
-        name = "kubectl_1_11_darwin",
-        executable = 1,
-        sha256 = "cf1feeac2fdedfb069131e7d62735b99b49ec43bf0d7565a30379c35056906c4",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.11.3/bin/darwin/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_11_linux",
-        executable = 1,
-        sha256 = "0d4c70484e90d4310f03f997b4432e0a97a7f5b5be5c31d281f3d05919f8b46c",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.11.3/bin/linux/amd64/kubectl"],
-    )
-
     http_file(
         name = "kubectl_1_12_darwin",
         executable = 1,
@@ -231,61 +217,13 @@ def install_kind():
     http_file(
         name = "kind_darwin",
         executable = 1,
-        sha256 = "023f1886207132dcfc62139a86f09488a79210732b00c9ec6431d6f6b7e9d2d3",
-        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-darwin-amd64"],
+        sha256 = "11b8a7fda7c9d6230f0f28ffe57831a7227c0655dfb8d38e838e8f03db6612de",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-darwin-amd64"],
     )
 
     http_file(
         name = "kind_linux",
         executable = 1,
-        sha256 = "a97f7d6d97bc0e261ea85433ca564269f117baf0fae051f16b296d2d7541f8dd",
-        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64"],
-    )
-
-    container_pull(
-        name = "kind-1.11",
-        registry = "index.docker.io",
-        repository = "kindest/node",
-        tag = "v1.11.10",
-        digest = "sha256:176845d919899daef63d0dbd1cf62f79902c38b8d2a86e5fa041e491ab795d33",
-    )
-
-    container_pull(
-        name = "kind-1.12",
-        registry = "index.docker.io",
-        repository = "kindest/node",
-        tag = "v1.12.9",
-        digest = "sha256:bcb79eb3cd6550c1ba9584ce57c832dcd6e442913678d2785307a7ad9addc029",
-    )
-
-    container_pull(
-        name = "kind-1.13",
-        registry = "index.docker.io",
-        repository = "kindest/node",
-        tag = "v1.13.7",
-        digest = "sha256:f3f1cfc2318d1eb88d91253a9c5fa45f6e9121b6b1e65aea6c7ef59f1549aaaf",
-    )    
-
-    container_pull(
-        name = "kind-1.14",
-        registry = "index.docker.io",
-        repository = "kindest/node",
-        tag = "v1.14.3",
-        digest = "sha256:583166c121482848cd6509fbac525dd62d503c52a84ff45c338ee7e8b5cfe114",
-    )
-
-    container_pull(
-        name = "kind-1.15",
-        registry = "index.docker.io",
-        repository = "kindest/node",
-        tag = "v1.15.0",
-        digest = "sha256:b4d092fd2b507843dd096fe6c85d06a27a0cbd740a0b32a880fe61aba24bb478",
-    )
-
-    container_pull(
-        name = "kind-1.16",
-        registry = "eu.gcr.io",
-        repository = "jetstack-build-infra-images/kind-node",
-        tag = "1.16.0-alpha.1",
-        digest = "sha256:b9775b688fda2e6434cda1b9016baf876f381a8325961f59b9ae238166259885",
+        sha256 = "0e07d5a9d5b8bf410a1ad8a7c8c9c2ea2a4b19eda50f1c629f1afadb7c80fae7",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-linux-amd64"],
     )

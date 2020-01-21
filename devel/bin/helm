@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Copyright 2019 The Jetstack cert-manager contributors.
+# Copyright 2020 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
 set -o nounset
+set -o errexit
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-source "${SCRIPT_ROOT}/lib.sh"
+if ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+fi
 
-"${KIND}" delete cluster --name="${KIND_CLUSTER_NAME}"
+bazel run //hack/bin:helm -- "$@"

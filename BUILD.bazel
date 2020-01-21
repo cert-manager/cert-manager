@@ -50,6 +50,7 @@ filegroup(
         "//cmd/controller:all-srcs",
         "//cmd/webhook:all-srcs",
         "//deploy:all-srcs",
+        "//devel:all-srcs",
         "//hack:all-srcs",
         "//pkg/acme:all-srcs",
         "//pkg/api:all-srcs",
