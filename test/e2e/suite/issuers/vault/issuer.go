@@ -26,7 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
@@ -35,22 +35,16 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	f := framework.NewDefaultFramework("create-vault-issuer")
 
 	var (
-		tiller = &tiller.Tiller{
-			Name:               "tiller-deploy",
-			ClusterPermissions: false,
-		}
 		vault = &vaultaddon.Vault{
-			Tiller: tiller,
-			Name:   "cm-e2e-create-vault-issuer",
+			Base: addon.Base,
+			Name: "cm-e2e-create-vault-issuer",
 		}
 	)
 
 	BeforeEach(func() {
-		tiller.Namespace = f.Namespace.Name
 		vault.Namespace = f.Namespace.Name
 	})
 
-	f.RequireAddon(tiller)
 	f.RequireAddon(vault)
 
 	issuerName := "test-vault-issuer"

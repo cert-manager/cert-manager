@@ -23,14 +23,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/e2e/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole)", func() {
@@ -46,22 +46,16 @@ func runVaultAppRoleTests(issuerKind string) {
 	h := f.Helper()
 
 	var (
-		tiller = &tiller.Tiller{
-			Name:               "tiller-deploy",
-			ClusterPermissions: false,
-		}
 		vault = &vaultaddon.Vault{
-			Tiller: tiller,
-			Name:   "cm-e2e-create-vault-certificate",
+			Base: addon.Base,
+			Name: "cm-e2e-create-vault-certificate",
 		}
 	)
 
 	BeforeEach(func() {
-		tiller.Namespace = f.Namespace.Name
 		vault.Namespace = f.Namespace.Name
 	})
 
-	f.RequireAddon(tiller)
 	f.RequireAddon(vault)
 
 	rootMount := "root-ca"
@@ -82,7 +76,7 @@ func runVaultAppRoleTests(issuerKind string) {
 		if issuerKind == cmapi.IssuerKind {
 			vaultSecretNamespace = f.Namespace.Name
 		} else {
-			vaultSecretNamespace = addon.CertManager.Namespace
+			vaultSecretNamespace = f.Config.Addons.CertManager.ClusterResourceNamespace
 		}
 
 		vaultInit = &vaultaddon.VaultInitializer{

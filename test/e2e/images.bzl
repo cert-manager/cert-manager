@@ -17,14 +17,6 @@ load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 # Defines Bazel WORKSPACE targets that are used during e2e tests
 def install():
-    container_pull(
-        name = "io_gcr_helm_tiller",
-        registry = "gcr.io",
-        repository = "kubernetes-helm/tiller",
-        tag = "v2.15.1",
-        digest = "sha256:39bb81aa9299390ef1d9e472531da24e98234db46664e431001a5fd6d0611114",
-    )
-
     ## Fetch pebble for use during e2e tests
     ## You can change the version of Pebble used for tests by changing the 'commit'
     ## field in this rule

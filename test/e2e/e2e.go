@@ -33,9 +33,7 @@ var (
 )
 
 var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
-	if !cfg.Addons.SkipGlobals {
-		addon.InitGlobals(cfg)
-	}
+	addon.InitGlobals(cfg)
 
 	ginkgo.By("Provisioning shared cluster addons")
 
@@ -83,11 +81,9 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 			}
 		}
 
-		if !cfg.Addons.SkipGlobals {
-			ginkgo.By("Cleaning up the provisioned globals")
-			err = addon.DeprovisionGlobals(cfg)
-			if err != nil {
-				framework.Failf("Error deprovisioning global addons: %v", err)
-			}
+		ginkgo.By("Cleaning up the provisioned globals")
+		err = addon.DeprovisionGlobals(cfg)
+		if err != nil {
+			framework.Failf("Error deprovisioning global addons: %v", err)
 		}
 	})

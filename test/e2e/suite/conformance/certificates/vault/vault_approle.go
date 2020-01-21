@@ -27,8 +27,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
-	vault "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
@@ -62,7 +61,6 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 })
 
 type vaultAppRoleProvisioner struct {
-	tiller    *tiller.Tiller
 	vault     *vault.Vault
 	vaultInit *vault.VaultInitializer
 
@@ -80,7 +78,6 @@ type vaultSecrets struct {
 func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	Expect(v.vaultInit.Clean()).NotTo(HaveOccurred(), "failed to deprovision vault initializer")
 	Expect(v.vault.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
-	Expect(v.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
 
 	err := f.KubeClientSet.CoreV1().Secrets(v.secretNamespace).Delete(v.secretName, nil)
 	Expect(err).NotTo(HaveOccurred())
@@ -122,7 +119,7 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cm
 
 	v.vaultSecrets = v.initVault(f)
 
-	sec, err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Create(vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, v.secretID))
+	sec, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, v.secretID))
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	v.secretName = sec.Name
@@ -144,16 +141,8 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cm
 }
 
 func (v *vaultAppRoleProvisioner) initVault(f *framework.Framework) *vaultSecrets {
-	v.tiller = &tiller.Tiller{
-		Name:               "tiller-deploy",
-		Namespace:          f.Namespace.Name,
-		ClusterPermissions: false,
-	}
-	Expect(v.tiller.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup tiller")
-	Expect(v.tiller.Provision()).NotTo(HaveOccurred(), "failed to provision tiller")
-
 	v.vault = &vault.Vault{
-		Tiller:    v.tiller,
+		Base:      addon.Base,
 		Namespace: f.Namespace.Name,
 		Name:      "cm-e2e-create-vault-issuer",
 	}

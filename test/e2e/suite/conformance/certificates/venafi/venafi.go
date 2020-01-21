@@ -23,7 +23,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
 )
@@ -99,7 +98,7 @@ func (v *venafiProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.O
 	By("Creating a Venafi ClusterIssuer")
 
 	v.tpp = &vaddon.VenafiTPP{
-		Namespace: addon.CertManager.Namespace,
+		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
 	}
 
 	err := v.tpp.Setup(f.Config)

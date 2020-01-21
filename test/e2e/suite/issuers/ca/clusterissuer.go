@@ -24,7 +24,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
@@ -33,23 +32,16 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	issuerName := "test-ca-clusterissuer" + cmutil.RandStringRunes(5)
 	secretName := "ca-clusterissuer-signing-keypair-" + cmutil.RandStringRunes(5)
-	clusterResourceNamespace := ""
-
-	f.RequireGlobalAddon(addon.CertManager)
-
-	BeforeEach(func() {
-		clusterResourceNamespace = addon.CertManager.Details().ClusterResourceNamespace
-	})
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Create(newSigningKeypairSecret(secretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(newSigningKeypairSecret(secretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Delete(secretName, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(secretName, nil)
 		f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuerName, nil)
 	})
 
