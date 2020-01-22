@@ -384,7 +384,10 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// Validate the CertificateRequest's CSR is valid
 	log.Info("validating existing CSR data")
 	x509CSR, err := pki.DecodeX509CertificateRequestBytes(existingReq.Spec.CSRPEM)
-	// TODO: handle InvalidData
+	if errors.IsInvalidData(err) {
+		log.Info("failed to decode existing CSR on CertificateRequest, deleting resource...")
+		return c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+	}
 	if err != nil {
 		return err
 	}
@@ -464,6 +467,16 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		x509Cert, err := pki.DecodeX509CertificateBytes(existingReq.Status.Certificate)
 		if err != nil {
 			return err
+		}
+
+		log.Info("checking stored private key is valid for stored x509 certificate on CertificateRequest")
+		publicKeyMatches, err := pki.PublicKeyMatchesCertificate(privateKey.Public(), x509Cert)
+		if err != nil {
+			return err
+		}
+		if !publicKeyMatches {
+			log.Info("private key stored in Secret does not match public key of issued certificate, deleting the old CertificateRequest resource")
+			return c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
 		}
 
 		// Check if the Certificate requires renewal according to the renewBefore
