@@ -39,6 +39,7 @@ import (
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -137,7 +138,6 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 
 		return nil, nil
 	}
-
 	if err != nil {
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
@@ -146,6 +146,15 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		log.Error(err, message)
 
 		return nil, err
+	}
+	if !metav1.IsControlledBy(order, cr) {
+		// TODO: improve this behaviour - this issue occurs because someone
+		//  else may create a CertificateRequest with a name that is equal to
+		//  the name of the request we are creating, due to our hash function
+		//  not account for parameters stored on the CSR (i.e. the public key).
+		//  We should improve the way we hash input data or somehow avoid
+		//  relying on deterministic names for Order resources.
+		return nil, fmt.Errorf("found Order resource not owned by this CertificateRequest, retrying")
 	}
 
 	log = logf.WithRelatedResource(log, order)
@@ -163,6 +172,20 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 
 	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
 	if order.Status.State == cmacme.Valid {
+		x509Cert, err := pki.DecodeX509CertificateBytes(order.Status.Certificate)
+		if errors.IsInvalidData(err) {
+			log.Error(err, "failed to decode x509 certificate data on Order resource")
+			return nil, a.acmeClientV.Orders(order.Namespace).Delete(order.Name, nil)
+		}
+		ok, err := pki.PublicKeyMatchesCertificate(csr.PublicKey, x509Cert)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			log.Error(err, "failed to decode x509 certificate data on Order resource, recreating...")
+			return nil, a.acmeClientV.Orders(order.Namespace).Delete(order.Name, nil)
+		}
+
 		log.Info("certificate issued")
 
 		return &issuerpkg.IssueResponse{
