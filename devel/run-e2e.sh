@@ -22,19 +22,24 @@ set -o pipefail
 # kind cluster.
 # If a cluster does not already exist, create one with 'cluster/create.sh'.
 
-export SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
+export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
+# Configure PATH to use bazel provided e2e tools
+setup_tools
+
+# Ensure bazel is installed
 check_bazel
 
+# Create output directory for JUnit output
 mkdir -p "${REPO_ROOT}/_artifacts"
-bazel build //hack/bin:helm //test/e2e:e2e.test
-# Set KUBECONFIG environment variable if not already set
-export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
+
+# Build the e2e test binary
+bazel build //test/e2e:e2e.test
+
 # Run e2e tests
-bazel run @com_github_onsi_ginkgo//ginkgo -- \
-	-nodes 10 \
-	-flakeAttempts ${FLAKE_ATTEMPTS:-1} \
+ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 	-- \
 	--repo-root="${REPO_ROOT}" \

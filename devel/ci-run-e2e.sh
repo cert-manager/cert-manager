@@ -24,8 +24,10 @@ set -o pipefail
 
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
+source "${SCRIPT_ROOT}/lib/lib.sh"
+
 # Configure PATH to use bazel provided e2e tools
-export PATH="${SCRIPT_ROOT}/bin:$PATH"
+setup_tools
 
 echo "Ensuring a kind cluster exists..."
 "${SCRIPT_ROOT}/cluster/create.sh"

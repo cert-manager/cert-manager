@@ -24,8 +24,12 @@ set -o pipefail
 # If you are running the *full* test suite, you should be sure to run this
 # script beforehand.
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")
-export REPO_ROOT="${REPO_ROOT:-$SCRIPT_ROOT/..}"
+SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
+export REPO_ROOT="${SCRIPT_ROOT}/.."
+source "${SCRIPT_ROOT}/lib/lib.sh"
+
+# Configure PATH to use bazel provided e2e tools
+setup_tools
 
 echo "Installing cert-manager into the kind cluster..."
 "${SCRIPT_ROOT}/addon/certmanager/install.sh"

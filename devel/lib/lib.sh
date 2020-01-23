@@ -18,11 +18,25 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-export REPO_ROOT="$SCRIPT_ROOT/../.."
+LIB_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
+export REPO_ROOT="$LIB_ROOT/../.."
 
 export SKIP_BUILD_ADDON_IMAGES="${SKIP_BUILD_ADDON_IMAGES:-}"
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
+
+# setup_tools will build and set up the environment to use bazel-provided
+# versions of the tools required for development
+setup_tools() {
+  check_bazel
+  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //devel/bin:ginkgo
+  local bindir="$(bazel info bazel-genfiles)"
+  export HELM="${bindir}/hack/bin/helm"
+  export KIND="${bindir}/hack/bin/kind"
+  export KUBECTL="${bindir}/hack/bin/kubectl"
+  export GINKGO="${bindir}/devel/bin/ginkgo"
+  # Configure PATH to use bazel provided e2e tools
+  export PATH="${SCRIPT_ROOT}/bin:$PATH"
+}
 
 # check_tool ensures that the tool with the given name is available, or advises
 # users to setup their PATH for the test/e3e/bin directory if not.

@@ -23,4 +23,9 @@ if ! command -v bazel &>/dev/null; then
   exit 1
 fi
 
-bazel run //hack/bin:helm -- "$@"
+if [ -z "${HELM:-}" ]; then
+    bazel build //hack/bin:helm
+    export HELM="$(bazel info bazel-genfiles)/hack/bin/helm"
+fi
+
+"${HELM}" "$@"
