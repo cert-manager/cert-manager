@@ -1,3 +1,4 @@
+{{- if .Values.cainjector.enabled -}}
 {{- if .Values.global.podSecurityPolicy.enabled }}
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -14,4 +15,5 @@ rules:
   verbs:     ['use']
   resourceNames:
   - {{ template "cainjector.fullname" . }}
+{{- end }}
 {{- end }}
