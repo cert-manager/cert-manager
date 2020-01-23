@@ -24,6 +24,17 @@ def install():
     install_kubectl()
     install_kind()
 
+    # Install golang.org/x/build as kubernetes/repo-infra requires it for the
+    # build-tar bazel target.
+    go_repository(
+        name = "org_golang_x_build",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "golang.org/x/build",
+        sum = "h1:hXVePvSFG7tPGX4Pwk1d10ePFfoTCc0QmISfpKOHsS8=",
+        version = "v0.0.0-20190927031335-2835ba2e683f",
+    )
+
 def install_misc():
     http_file(
         name = "jq_linux",

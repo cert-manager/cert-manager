@@ -15,17 +15,17 @@ automatically generated and published as an asset **attached to the GitHub relea
 ## How can I generate my own manifests?
 
 If you want to build a copy of your own manifests for testing purposes, you
-can do so using the 'release' tool in this repository.
+can do so using Bazel.
 
 To build the manifests, run:
 
 ```bash
-$ bazel run //hack/release -- \
-    --manifests \
-    --app-version={image tag} \
-    --docker-repo=quay.io/myuser
+$ bazel build //deploy/manifests:cert-manager
+# Alternatively, build the openshift variant with:
+$ bazel build //deploy/manifests:cert-manager-openshift
+# Or the no-webhook variant with:
+$ bazel build //deploy/manifests:cert-manager-no-webhook
 ```
 
-This will generate static deployment manifests that are configured to use the
-specified image repository and tag, making it easy for you to test and
-distribute sample manifests.
+This will generate the static deployment manifests at
+`bazel-bin/deploy/manifests/cert-manager.yaml`.

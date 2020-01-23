@@ -14,13 +14,21 @@ exports_files([
     "go.sum",
 ])
 
+genrule(
+    name = "save_docker_version",
+    outs = ["version"],
+    cmd = "grep ^STABLE_DOCKER_TAG bazel-out/stable-status.txt | awk '{print $$2}' >$@",
+    stamp = 1,
+    visibility = ["//visibility:public"],
+)
+
 container_bundle(
     name = "images",
     images = {
-        "{STABLE_DOCKER_REPO}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
-        "{STABLE_DOCKER_REPO}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
-        "{STABLE_DOCKER_REPO}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
-        "{STABLE_DOCKER_REPO}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
     },
 )
 
@@ -45,6 +53,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//build:all-srcs",
         "//cmd/acmesolver:all-srcs",
         "//cmd/cainjector:all-srcs",
         "//cmd/controller:all-srcs",
