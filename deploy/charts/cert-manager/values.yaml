@@ -203,6 +203,7 @@ webhook:
   securePort: 10250
 
 cainjector:
+  enabled: true
   replicaCount: 1
 
   strategy: {}
