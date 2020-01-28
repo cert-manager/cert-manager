@@ -86,24 +86,6 @@ $(CMDS):
 	bazel build \
 		//cmd/$@
 
-e2e_test:
-	mkdir -p "$$(pwd)/_artifacts"
-	bazel build //hack/bin:helm //test/e2e:e2e.test
-	# Run e2e tests
-	KUBECONFIG=$(KUBECONFIG) \
-		bazel run @com_github_onsi_ginkgo//ginkgo -- \
-			-nodes 10 \
-			-flakeAttempts $(FLAKE_ATTEMPTS) \
-			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
-			-- \
-			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
-			--repo-root="$$(pwd)" \
-			--report-dir="$${ARTIFACTS:-./_artifacts}" \
-			--ginkgo.skip="$(GINKGO_SKIP)" \
-			--ginkgo.focus="$(GINKGO_FOCUS)" \
-			--skip-globals=$(SKIP_GLOBALS) \
-			--kubectl-path="$(KUBECTL)"
-
 # Generate targets
 ##################
 generate:

@@ -1,0 +1,20 @@
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//devel/addon/certmanager:all-srcs",
+        "//devel/addon/ingressnginx:all-srcs",
+        "//devel/addon/pebble:all-srcs",
+        "//devel/addon/samplewebhook:all-srcs",
+        "//devel/addon/vault:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

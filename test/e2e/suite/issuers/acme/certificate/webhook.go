@@ -30,9 +30,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/samplewebhook"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -43,28 +40,6 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 	//h := f.Helper()
 
 	Context("with the sample webhook solver deployed", func() {
-		var (
-			tiller = &tiller.Tiller{
-				Name:               "tiller-deploy-sample-webhook",
-				ClusterPermissions: true,
-			}
-			webhook = &samplewebhook.CertmanagerWebhook{
-				Name:        "cm-e2e-acme-dns01-sample-webhook",
-				Tiller:      tiller,
-				Certmanager: addon.CertManager,
-			}
-		)
-
-		BeforeEach(func() {
-			tiller.Namespace = f.Namespace.Name
-			webhook.Namespace = f.Namespace.Name
-		})
-
-		f.RequireGlobalAddon(addon.CertManager)
-		f.RequireGlobalAddon(addon.Pebble)
-		f.RequireAddon(tiller)
-		f.RequireAddon(webhook)
-
 		issuerName := "test-acme-issuer"
 		certificateName := "test-acme-certificate"
 		certificateSecretName := "test-acme-certificate"
@@ -77,7 +52,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
-					Server:        addon.Pebble.Details().Host,
+					Server:        f.Config.Addons.ACMEServer.URL,
 					Email:         testingACMEEmail,
 					PrivateKey: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
@@ -88,8 +63,8 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 						{
 							DNS01: &cmacme.ACMEChallengeSolverDNS01{
 								Webhook: &cmacme.ACMEIssuerDNS01ProviderWebhook{
-									GroupName:  webhook.Details().GroupName,
-									SolverName: webhook.Details().SolverName,
+									GroupName:  f.Config.Addons.DNS01Webhook.GroupName,
+									SolverName: f.Config.Addons.DNS01Webhook.SolverName,
 									Config: &v1beta1.JSON{
 										Raw: []byte(`{}`),
 									},

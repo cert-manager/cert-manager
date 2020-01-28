@@ -22,10 +22,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/certmanager"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/nginxingress"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
@@ -45,14 +41,6 @@ type Addon interface {
 var (
 	// Base is a base addon containing Kubernetes clients
 	Base = &base.Base{}
-	// Tiller is a shared tiller addon
-	Tiller = &tiller.Tiller{}
-	// NginxIngress installs nginx-ingress as a helm chart
-	NginxIngress = &nginxingress.Nginx{}
-	// Certmanager install cert-manager as a helm chart
-	CertManager = &certmanager.Certmanager{}
-	// Pebble is a global deployment of the Pebble acme server
-	Pebble = &pebble.Pebble{}
 
 	// allAddons is populated by InitGlobals and defines the order in which
 	// addons will be provisioned
@@ -73,35 +61,8 @@ func InitGlobals(cfg *config.Config) {
 	}
 	globalsInited = true
 	*Base = base.Base{}
-	*Tiller = tiller.Tiller{
-		Base:               Base,
-		Name:               "tiller-deploy",
-		Namespace:          "cm-e2e-global-tiller-deploy",
-		ClusterPermissions: true,
-	}
-	*NginxIngress = nginxingress.Nginx{
-		Tiller:    Tiller,
-		Name:      "nginx-ingress",
-		Namespace: "cm-e2e-global-nginx-ingress",
-		IPAddress: cfg.Addons.Nginx.Global.IPAddress,
-		Domain:    cfg.Addons.Nginx.Global.Domain,
-	}
-	*CertManager = certmanager.Certmanager{
-		Tiller:    Tiller,
-		Name:      "cert-manager",
-		Namespace: "cm-e2e-global-cert-manager",
-	}
-	*Pebble = pebble.Pebble{
-		Tiller:    Tiller,
-		Name:      "pebble",
-		Namespace: "cm-e2e-global-pebble",
-	}
 	allAddons = []Addon{
 		Base,
-		Tiller,
-		CertManager,
-		NginxIngress,
-		Pebble,
 	}
 }
 

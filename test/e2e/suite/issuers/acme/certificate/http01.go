@@ -34,9 +34,9 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
+	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -49,9 +49,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01")
 	h := f.Helper()
 
-	f.RequireGlobalAddon(addon.NginxIngress)
-	f.RequireGlobalAddon(addon.Pebble)
-
 	var acmeIngressDomain string
 	issuerName := "test-acme-issuer"
 	certificateName := "test-acme-certificate"
@@ -62,13 +59,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	fixedIngressName := "testingress"
 
 	BeforeEach(func() {
-		acmeURL := addon.Pebble.Details().Host
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-						Class: &addon.NginxIngress.Details().IngressClass,
+						Class: &f.Config.Addons.IngressController.IngressClass,
 					},
 				},
 			},
@@ -115,7 +111,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	JustBeforeEach(func() {
-		acmeIngressDomain = addon.NginxIngress.Details().NewTestDomain()
+		acmeIngressDomain = frameworkutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
 	})
 
 	AfterEach(func() {

@@ -25,25 +25,6 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-source "${SCRIPT_ROOT}/lib/lib.sh"
 
-cleanup() {
-    # Ignore errors here
-    "${SCRIPT_ROOT}/lib/cluster_destroy.sh" || true
-}
-trap cleanup EXIT
-
-"${SCRIPT_ROOT}/lib/cluster_create.sh"
-
-export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
-
-echo "Testing kind apiserver connectivity"
-# Ensure the apiserver is responding
-"${KUBECTL}" get nodes
-
-"${SCRIPT_ROOT}/lib/build_images.sh"
-
-make e2e_test \
-    KUBECONFIG="${KUBECONFIG}" \
-    KUBECTL="${KUBECTL}" \
-    FLAKE_ATTEMPTS="${FLAKE_ATTEMPTS:-1}"
+echo "DEPRECATED: This script will be removed. Invoke './devel/ci-run-e2e.sh' directly instead."
+"${SCRIPT_ROOT}/../../devel/ci-run-e2e.sh"

@@ -26,20 +26,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
-	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 // Chart is a generic Helm chart addon for the test environment
 type Chart struct {
-	config        *config.Config
-	tillerDetails *tiller.Details
+	Base *base.Base
+
+	config *config.Config
+
 	// temporary directory used as the --home flag to Helm
 	home string
-
-	// Tiller is the tiller instance to submit the release to
-	Tiller *tiller.Tiller
 
 	// ReleaseName for this Helm release
 	// `helm install --name {{ReleaseName}}`
@@ -93,13 +91,6 @@ func (c *Chart) Setup(cfg *config.Config) error {
 	if c.config.Addons.Helm.Path == "" {
 		return fmt.Errorf("--helm-binary-path must be set")
 	}
-	if c.Tiller == nil {
-		return fmt.Errorf("tiller base addon must be provided")
-	}
-	c.tillerDetails, err = c.Tiller.Details()
-	if err != nil {
-		return err
-	}
 
 	c.home, err = ioutil.TempDir("", "helm-chart-install")
 	if err != nil {
@@ -111,11 +102,6 @@ func (c *Chart) Setup(cfg *config.Config) error {
 
 // Provision an instance of tiller-deploy
 func (c *Chart) Provision() error {
-	err := c.runHelmClientInit()
-	if err != nil {
-		return fmt.Errorf("error running 'helm init': %v", err)
-	}
-
 	if c.UpdateDeps {
 		err := c.runDepUpdate()
 		if err != nil {
@@ -123,24 +109,16 @@ func (c *Chart) Provision() error {
 		}
 	}
 
-	err = c.runInstall()
+	err := c.runInstall()
 	if err != nil {
 		return fmt.Errorf("error install helm chart: %v", err)
 	}
 
-	err = c.Tiller.Base.Details().Helper().WaitForAllPodsRunningInNamespace(c.Namespace)
+	err = c.Base.Details().Helper().WaitForAllPodsRunningInNamespace(c.Namespace)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (c *Chart) runHelmClientInit() error {
-	err := c.buildHelmCmd("init", "--client-only").Run()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -153,10 +131,9 @@ func (c *Chart) runDepUpdate() error {
 }
 
 func (c *Chart) runInstall() error {
-	args := []string{"install", c.ChartName,
+	args := []string{"install", c.ReleaseName, c.ChartName,
 		"--wait",
 		"--namespace", c.Namespace,
-		"--name", c.ReleaseName,
 		"--version", c.ChartVersion}
 
 	for _, v := range c.Values {
@@ -178,14 +155,12 @@ func (c *Chart) runInstall() error {
 
 func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
 	args = append([]string{
-		"--home", c.home,
-		"--kubeconfig", c.tillerDetails.KubeConfig,
-		"--kube-context", c.tillerDetails.KubeContext,
-		"--tiller-namespace", c.tillerDetails.Namespace,
+		"--kubeconfig", c.config.KubeConfig,
+		"--kube-context", c.config.KubeContext,
 	}, args...)
 	cmd := exec.Command(c.config.Addons.Helm.Path, args...)
-	cmd.Stdout = log.Writer
-	cmd.Stderr = log.Writer
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	return cmd
 }
 
@@ -213,7 +188,7 @@ func (c *Chart) getHelmVersion() (string, error) {
 
 // Deprovision the deployed instance of tiller-deploy
 func (c *Chart) Deprovision() error {
-	err := c.buildHelmCmd("delete", "--purge", c.ReleaseName).Run()
+	err := c.buildHelmCmd("delete", "--namespace", c.Namespace, c.ReleaseName).Run()
 	if err != nil {
 		// Ignore deprovisioning errors
 		// TODO: only ignore failed to delete because it doesn't exist errors
@@ -250,7 +225,7 @@ func (c *Chart) SupportsGlobal() bool {
 }
 
 func (c *Chart) Logs() (map[string]string, error) {
-	kc := c.Tiller.Base.Details().KubeClient
+	kc := c.Base.Details().KubeClient
 	oldLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
 	if err != nil {
 		return nil, err

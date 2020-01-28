@@ -28,41 +28,43 @@ type Addons struct {
 	// Helm describes the global configuration values for helm
 	Helm Helm
 
-	// Pebble describes the global configuration values for the pebble addon
-	Pebble Pebble
+	// Connection details for the ACME server used during ACME end-to-end
+	// tests.
+	ACMEServer ACMEServer
 
-	// Nginx describes global configuration variables for the nginx addon.
-	// Because we currently can only run one instance of nginx per cluster due
-	// to the way we provision DNS, this structure currently also describes
-	// the runtime configuration for a global shared Nginx instance as well.
-	Nginx Nginx
+	// IngressController contains configuration for the ingress controller
+	// being used during ACME HTTP01 tests.
+	IngressController IngressController
 
 	// Venafi describes global configuration variables for the Venafi tests.
 	// This includes credentials for the Venafi TPP server to use during runs.
 	Venafi Venafi
 
-	// If true, global addons will not be provisioned before running tests.
-	// This is useful when developing locally.
-	SkipGlobals bool
+	// CertManager contains configuration options for the cert-manager
+	// deployment under test.
+	CertManager CertManager
+
+	DNS01Webhook DNS01Webhook
 }
 
 func (a *Addons) AddFlags(fs *flag.FlagSet) {
 	a.Tiller.AddFlags(fs)
 	a.Helm.AddFlags(fs)
-	a.Pebble.AddFlags(fs)
-	a.Nginx.AddFlags(fs)
+	a.ACMEServer.AddFlags(fs)
+	a.IngressController.AddFlags(fs)
 	a.Venafi.AddFlags(fs)
-
-	fs.BoolVar(&a.SkipGlobals, "skip-globals", false, "If true, global addons will not be "+
-		"provisioned before running tests")
+	a.CertManager.AddFlags(fs)
+	a.DNS01Webhook.AddFlags(fs)
 }
 
 func (c *Addons) Validate() []error {
 	var errs []error
 	errs = append(errs, c.Tiller.Validate()...)
 	errs = append(errs, c.Helm.Validate()...)
-	errs = append(errs, c.Pebble.Validate()...)
-	errs = append(errs, c.Nginx.Validate()...)
+	errs = append(errs, c.ACMEServer.Validate()...)
+	errs = append(errs, c.IngressController.Validate()...)
 	errs = append(errs, c.Venafi.Validate()...)
+	errs = append(errs, c.CertManager.Validate()...)
+	errs = append(errs, c.DNS01Webhook.Validate()...)
 	return errs
 }

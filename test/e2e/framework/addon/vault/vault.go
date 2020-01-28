@@ -32,20 +32,18 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/chart"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 )
 
 // Vault describes the configuration details for an instance of Vault
 // deployed to the test cluster
 type Vault struct {
-	config        *config.Config
-	chart         *chart.Chart
-	tillerDetails *tiller.Details
+	config *config.Config
+	chart  *chart.Chart
 
-	// Tiller is the tiller instance used to deploy the chart
-	Tiller *tiller.Tiller
+	Base *base.Base
 
 	// Name is a unique name for this Vault deployment
 	Name string
@@ -87,8 +85,8 @@ func (v *Vault) Setup(cfg *config.Config) error {
 		// for this addon to be used from.
 		return fmt.Errorf("Namespace name must be specified")
 	}
-	if v.Tiller == nil {
-		return fmt.Errorf("Tiller field must be set on Vault addon")
+	if v.Base == nil {
+		return fmt.Errorf("Base field must be set on Vault addon")
 	}
 
 	var err error
@@ -105,12 +103,8 @@ func (v *Vault) Setup(cfg *config.Config) error {
 		return fmt.Errorf("path to kubectl must be set")
 	}
 	v.details.Kubectl = cfg.Kubectl
-	v.tillerDetails, err = v.Tiller.Details()
-	if err != nil {
-		return err
-	}
 	v.chart = &chart.Chart{
-		Tiller:      v.Tiller,
+		Base:        v.Base,
 		ReleaseName: "chart-vault-" + v.Name,
 		Namespace:   v.Namespace,
 		ChartName:   cfg.RepoRoot + "/test/e2e/charts/vault",
@@ -142,7 +136,7 @@ func (v *Vault) Provision() error {
 	}
 
 	// otherwise lookup the newly created pods name
-	kubeClient := v.Tiller.Base.Details().KubeClient
+	kubeClient := v.Base.Details().KubeClient
 
 	retries := 5
 	for {

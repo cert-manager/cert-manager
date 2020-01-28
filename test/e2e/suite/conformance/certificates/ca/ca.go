@@ -25,7 +25,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
@@ -75,7 +74,7 @@ func (c *ca) createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 func (c *ca) createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a CA ClusterIssuer")
 
-	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Create(newSigningKeypairSecret("root-ca-cert-"))
+	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Create(newSigningKeypairSecret("root-ca-cert-"))
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
 
 	c.secretName = rootCertSecret.Name
@@ -99,7 +98,7 @@ func (c *ca) createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReferenc
 func (c *ca) deleteCAClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
 	By("Deleting CA ClusterIssuer")
 
-	err := f.KubeClientSet.CoreV1().Secrets(addon.CertManager.Namespace).Delete(c.secretName, nil)
+	err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(c.secretName, nil)
 	Expect(err).NotTo(HaveOccurred(), "failed to delete root signing keypair secret")
 
 	err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuer.Name, nil)

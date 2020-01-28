@@ -3,13 +3,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
+        "acme.go",
         "addons.go",
+        "certmanager.go",
         "config.go",
         "framework.go",
         "ginkgo.go",
         "helm.go",
-        "nginx.go",
-        "pebble.go",
+        "ingress_controller.go",
+        "samplewebhook.go",
         "suite.go",
         "tiller.go",
         "venafi.go",

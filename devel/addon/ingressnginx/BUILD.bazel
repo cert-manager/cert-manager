@@ -1,0 +1,24 @@
+load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
+
+container_bundle(
+    name = "bundle",
+    images = {
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.26.1": "@io_kubernetes_ingress-nginx//image",
+        "k8s.gcr.io/defaultbackend-amd64:bazel": "@io_gcr_k8s_defaultbackend//image",
+    },
+    tags = ["manual"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

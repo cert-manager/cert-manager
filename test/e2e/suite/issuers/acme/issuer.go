@@ -26,9 +26,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
@@ -40,26 +37,6 @@ const testingACMEPrivateKey = "test-acme-private-key"
 var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	f := framework.NewDefaultFramework("create-acme-issuer")
 
-	var (
-		tiller = &tiller.Tiller{
-			Name:               "tiller-deploy",
-			ClusterPermissions: false,
-		}
-		pebble = &pebble.Pebble{
-			Tiller: tiller,
-			Name:   "cm-e2e-create-acme-issuer",
-		}
-	)
-
-	BeforeEach(func() {
-		tiller.Namespace = f.Namespace.Name
-		pebble.Namespace = f.Namespace.Name
-	})
-
-	f.RequireGlobalAddon(addon.NginxIngress)
-	f.RequireAddon(tiller)
-	f.RequireAddon(pebble)
-
 	issuerName := "test-acme-issuer"
 
 	AfterEach(func() {
@@ -69,8 +46,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	It("should register ACME account", func() {
-		acmeURL := pebble.Details().Host
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
@@ -105,8 +81,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	It("should recover a lost ACME account URI", func() {
-		acmeURL := pebble.Details().Host
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
@@ -147,7 +122,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Recreating the Issuer")
-		acmeIssuer = util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer = util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 		_, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -194,8 +169,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	It("should handle updates to the email field", func() {
-		acmeURL := pebble.Details().Host
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 
 		By("Creating an Issuer")
 		acmeIssuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)

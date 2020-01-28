@@ -57,6 +57,7 @@ func TestE2E(t *testing.T) {
 		t.Fail()
 	}
 
+	gomega.NewWithT(t)
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
 	// TODO: properly make use of default SkipString
