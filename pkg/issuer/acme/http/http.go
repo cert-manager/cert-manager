@@ -49,7 +49,7 @@ const (
 )
 
 var (
-	challengeGvk = v1alpha2.SchemeGroupVersion.WithKind("Challenge")
+	challengeGvk = cmacme.SchemeGroupVersion.WithKind("Challenge")
 )
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
