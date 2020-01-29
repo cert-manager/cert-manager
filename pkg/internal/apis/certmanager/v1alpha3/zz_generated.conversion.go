@@ -571,7 +571,6 @@ func Convert_certmanager_CertificateRequestStatus_To_v1alpha3_CertificateRequest
 func autoConvert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *v1alpha3.CertificateSpec, out *certmanager.CertificateSpec, s conversion.Scope) error {
 	out.Subject = (*certmanager.X509Subject)(unsafe.Pointer(in.Subject))
 	out.CommonName = in.CommonName
-	out.Organization = *(*[]string)(unsafe.Pointer(&in.Organization))
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
@@ -598,7 +597,6 @@ func Convert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *v1alpha
 func autoConvert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *certmanager.CertificateSpec, out *v1alpha3.CertificateSpec, s conversion.Scope) error {
 	out.Subject = (*v1alpha3.X509Subject)(unsafe.Pointer(in.Subject))
 	out.CommonName = in.CommonName
-	out.Organization = *(*[]string)(unsafe.Pointer(&in.Organization))
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
@@ -1071,6 +1069,7 @@ func Convert_certmanager_VenafiTPP_To_v1alpha3_VenafiTPP(in *certmanager.VenafiT
 }
 
 func autoConvert_v1alpha3_X509Subject_To_certmanager_X509Subject(in *v1alpha3.X509Subject, out *certmanager.X509Subject, s conversion.Scope) error {
+	out.Organizations = *(*[]string)(unsafe.Pointer(&in.Organizations))
 	out.Countries = *(*[]string)(unsafe.Pointer(&in.Countries))
 	out.OrganizationalUnits = *(*[]string)(unsafe.Pointer(&in.OrganizationalUnits))
 	out.Localities = *(*[]string)(unsafe.Pointer(&in.Localities))
@@ -1087,6 +1086,7 @@ func Convert_v1alpha3_X509Subject_To_certmanager_X509Subject(in *v1alpha3.X509Su
 }
 
 func autoConvert_certmanager_X509Subject_To_v1alpha3_X509Subject(in *certmanager.X509Subject, out *v1alpha3.X509Subject, s conversion.Scope) error {
+	out.Organizations = *(*[]string)(unsafe.Pointer(&in.Organizations))
 	out.Countries = *(*[]string)(unsafe.Pointer(&in.Countries))
 	out.OrganizationalUnits = *(*[]string)(unsafe.Pointer(&in.OrganizationalUnits))
 	out.Localities = *(*[]string)(unsafe.Pointer(&in.Localities))

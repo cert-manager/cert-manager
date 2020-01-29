@@ -82,10 +82,6 @@ type CertificateSpec struct {
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
-	// Organization is the organization to be used on the Certificate
-	// +optional
-	Organization []string `json:"organization,omitempty"`
-
 	// Certificate default Duration
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
@@ -151,6 +147,9 @@ type CertificateSpec struct {
 
 // X509Subject Full X509 name specification
 type X509Subject struct {
+	// Organizations to be used on the Certificate.
+	// +optional
+	Organizations []string `json:"organizations,omitempty"`
 	// Countries to be used on the Certificate.
 	// +optional
 	Countries []string `json:"countries,omitempty"`
