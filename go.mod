@@ -7,7 +7,6 @@ replace github.com/prometheus/client_golang => github.com/prometheus/client_gola
 replace golang.org/x/crypto => github.com/munnerz/crypto v0.0.0-20191203200931-e1844778daa5
 
 require (
-	cloud.google.com/go v0.38.0
 	github.com/Azure/azure-sdk-for-go v32.5.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.0
 	github.com/Azure/go-autorest/autorest/adal v0.5.0
@@ -20,7 +19,6 @@ require (
 	github.com/digitalocean/godo v1.29.0
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1 // indirect
-	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/gofuzz v1.0.0
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
