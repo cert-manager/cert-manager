@@ -51,244 +51,482 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
-  validation:
-    openAPIV3Schema:
-      description: Certificate is a type to represent a Certificate from ACME
-      type: object
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: CertificateSpec defines the desired state of Certificate. A
-            valid Certificate requires at least one of a CommonName, DNSName, or URISAN
-            to be valid.
-          type: object
-          required:
-          - issuerRef
-          - secretName
-          properties:
-            commonName:
-              description: 'CommonName is a common name to be used on the Certificate.
-                The CommonName should have a length of 64 characters or fewer to avoid
-                generating invalid CSRs. This value is ignored by TLS clients when
-                any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
-              type: string
-            dnsNames:
-              description: DNSNames is a list of subject alt names to be used on the
-                Certificate.
-              type: array
-              items:
-                type: string
-            duration:
-              description: Certificate default Duration
-              type: string
-            ipAddresses:
-              description: IPAddresses is a list of IP addresses to be used on the
-                Certificate
-              type: array
-              items:
-                type: string
-            isCA:
-              description: IsCA will mark this Certificate as valid for signing. This
-                implies that the 'cert sign' usage is set
-              type: boolean
-            issuerRef:
-              description: IssuerRef is a reference to the issuer for this certificate.
-                If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
-                with the given name in the same namespace as the Certificate will
-                be used. If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer
-                with the provided name will be used. The 'name' field in this stanza
-                is required at all times.
-              type: object
-              required:
-              - name
-              properties:
-                group:
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-            keyAlgorithm:
-              description: KeyAlgorithm is the private key algorithm of the corresponding
-                private key for this certificate. If provided, allowed values are
-                either "rsa" or "ecdsa" If KeyAlgorithm is specified and KeySize is
-                not provided, key size of 256 will be used for "ecdsa" key algorithm
-                and key size of 2048 will be used for "rsa" key algorithm.
-              type: string
-              enum:
-              - rsa
-              - ecdsa
-            keyEncoding:
-              description: KeyEncoding is the private key cryptography standards (PKCS)
-                for this certificate's private key to be encoded in. If provided,
-                allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8,
-                respectively. If KeyEncoding is not specified, then PKCS#1 will be
-                used by default.
-              type: string
-              enum:
-              - pkcs1
-              - pkcs8
-            keySize:
-              description: KeySize is the key bit size of the corresponding private
-                key for this certificate. If provided, value must be between 2048
-                and 8192 inclusive when KeyAlgorithm is empty or is set to "rsa",
-                and value must be one of (256, 384, 521) when KeyAlgorithm is set
-                to "ecdsa".
-              type: integer
-            organization:
-              description: Organization is the organization to be used on the Certificate
-              type: array
-              items:
-                type: string
-            renewBefore:
-              description: Certificate renew before expiration duration
-              type: string
-            secretName:
-              description: SecretName is the name of the secret resource to store
-                this secret in
-              type: string
-            subject:
-              description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
-              type: object
-              properties:
-                countries:
-                  description: Countries to be used on the Certificate.
-                  type: array
-                  items:
-                    type: string
-                localities:
-                  description: Cities to be used on the Certificate.
-                  type: array
-                  items:
-                    type: string
-                organizationalUnits:
-                  description: Organizational Units to be used on the Certificate.
-                  type: array
-                  items:
-                    type: string
-                postalCodes:
-                  description: Postal codes to be used on the Certificate.
-                  type: array
-                  items:
-                    type: string
-                provinces:
-                  description: State/Provinces to be used on the Certificate.
-                  type: array
-                  items:
-                    type: string
-                serialNumber:
-                  description: Serial number to be used on the Certificate.
-                  type: string
-                streetAddresses:
-                  description: Street addresses to be used on the Certificate.
-                  type: array
-                  items:
-                    type: string
-            uriSANs:
-              description: URISANs is a list of URI Subject Alternative Names to be
-                set on this Certificate.
-              type: array
-              items:
-                type: string
-            usages:
-              description: Usages is the set of x509 actions that are enabled for
-                a given key. Defaults are ('digital signature', 'key encipherment')
-                if empty
-              type: array
-              items:
-                description: 'KeyUsage specifies valid usage contexts for keys. See:
-                  https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
-                  Valid KeyUsage values are as follows: "signing", "digital signature",
-                  "content commitment", "key encipherment", "key agreement", "data
-                  encipherment", "cert sign", "crl sign", "encipher only", "decipher
-                  only", "any", "server auth", "client auth", "code signing", "email
-                  protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec
-                  user", "timestamping", "ocsp signing", "microsoft sgc", "netscape
-                  sgc"'
-                type: string
-                enum:
-                - signing
-                - digital signature
-                - content commitment
-                - key encipherment
-                - key agreement
-                - data encipherment
-                - cert sign
-                - crl sign
-                - encipher only
-                - decipher only
-                - any
-                - server auth
-                - client auth
-                - code signing
-                - email protection
-                - s/mime
-                - ipsec end system
-                - ipsec tunnel
-                - ipsec user
-                - timestamping
-                - ocsp signing
-                - microsoft sgc
-                - netscape sgc
-        status:
-          description: CertificateStatus defines the observed state of Certificate
-          type: object
-          properties:
-            conditions:
-              type: array
-              items:
-                description: CertificateCondition contains condition information for
-                  an Certificate.
-                type: object
-                required:
-                - status
-                - type
-                properties:
-                  lastTransitionTime:
-                    description: LastTransitionTime is the timestamp corresponding
-                      to the last status change of this condition.
-                    type: string
-                    format: date-time
-                  message:
-                    description: Message is a human readable description of the details
-                      of the last transition, complementing reason.
-                    type: string
-                  reason:
-                    description: Reason is a brief machine readable explanation for
-                      the condition's last transition.
-                    type: string
-                  status:
-                    description: Status of the condition, one of ('True', 'False',
-                      'Unknown').
-                    type: string
-                    enum:
-                    - "True"
-                    - "False"
-                    - Unknown
-                  type:
-                    description: Type of the condition, currently ('Ready').
-                    type: string
-            lastFailureTime:
-              type: string
-              format: date-time
-            notAfter:
-              description: The expiration time of the certificate stored in the secret
-                named by this resource in spec.secretName.
-              type: string
-              format: date-time
-  version: v1alpha2
   versions:
   - name: v1alpha2
     served: true
     storage: true
+    "schema":
+      "openAPIV3Schema":
+        description: Certificate is a type to represent a Certificate from ACME
+        type: object
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CertificateSpec defines the desired state of Certificate.
+              A valid Certificate requires at least one of a CommonName, DNSName,
+              or URISAN to be valid.
+            type: object
+            required:
+            - issuerRef
+            - secretName
+            properties:
+              commonName:
+                description: 'CommonName is a common name to be used on the Certificate.
+                  The CommonName should have a length of 64 characters or fewer to
+                  avoid generating invalid CSRs. This value is ignored by TLS clients
+                  when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
+                type: string
+              dnsNames:
+                description: DNSNames is a list of subject alt names to be used on
+                  the Certificate.
+                type: array
+                items:
+                  type: string
+              duration:
+                description: Certificate default Duration
+                type: string
+              ipAddresses:
+                description: IPAddresses is a list of IP addresses to be used on the
+                  Certificate
+                type: array
+                items:
+                  type: string
+              isCA:
+                description: IsCA will mark this Certificate as valid for signing.
+                  This implies that the 'cert sign' usage is set
+                type: boolean
+              issuerRef:
+                description: IssuerRef is a reference to the issuer for this certificate.
+                  If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
+                  with the given name in the same namespace as the Certificate will
+                  be used. If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer
+                  with the provided name will be used. The 'name' field in this stanza
+                  is required at all times.
+                type: object
+                required:
+                - name
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+              keyAlgorithm:
+                description: KeyAlgorithm is the private key algorithm of the corresponding
+                  private key for this certificate. If provided, allowed values are
+                  either "rsa" or "ecdsa" If KeyAlgorithm is specified and KeySize
+                  is not provided, key size of 256 will be used for "ecdsa" key algorithm
+                  and key size of 2048 will be used for "rsa" key algorithm.
+                type: string
+                enum:
+                - rsa
+                - ecdsa
+              keyEncoding:
+                description: KeyEncoding is the private key cryptography standards
+                  (PKCS) for this certificate's private key to be encoded in. If provided,
+                  allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8,
+                  respectively. If KeyEncoding is not specified, then PKCS#1 will
+                  be used by default.
+                type: string
+                enum:
+                - pkcs1
+                - pkcs8
+              keySize:
+                description: KeySize is the key bit size of the corresponding private
+                  key for this certificate. If provided, value must be between 2048
+                  and 8192 inclusive when KeyAlgorithm is empty or is set to "rsa",
+                  and value must be one of (256, 384, 521) when KeyAlgorithm is set
+                  to "ecdsa".
+                type: integer
+              organization:
+                description: Organization is the organization to be used on the Certificate
+                type: array
+                items:
+                  type: string
+              renewBefore:
+                description: Certificate renew before expiration duration
+                type: string
+              secretName:
+                description: SecretName is the name of the secret resource to store
+                  this secret in
+                type: string
+              subject:
+                description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+                type: object
+                properties:
+                  countries:
+                    description: Countries to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  localities:
+                    description: Cities to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  organizationalUnits:
+                    description: Organizational Units to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  postalCodes:
+                    description: Postal codes to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  provinces:
+                    description: State/Provinces to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  serialNumber:
+                    description: Serial number to be used on the Certificate.
+                    type: string
+                  streetAddresses:
+                    description: Street addresses to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+              uriSANs:
+                description: URISANs is a list of URI Subject Alternative Names to
+                  be set on this Certificate.
+                type: array
+                items:
+                  type: string
+              usages:
+                description: Usages is the set of x509 actions that are enabled for
+                  a given key. Defaults are ('digital signature', 'key encipherment')
+                  if empty
+                type: array
+                items:
+                  description: 'KeyUsage specifies valid usage contexts for keys.
+                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+                    Valid KeyUsage values are as follows: "signing", "digital signature",
+                    "content commitment", "key encipherment", "key agreement", "data
+                    encipherment", "cert sign", "crl sign", "encipher only", "decipher
+                    only", "any", "server auth", "client auth", "code signing", "email
+                    protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec
+                    user", "timestamping", "ocsp signing", "microsoft sgc", "netscape
+                    sgc"'
+                  type: string
+                  enum:
+                  - signing
+                  - digital signature
+                  - content commitment
+                  - key encipherment
+                  - key agreement
+                  - data encipherment
+                  - cert sign
+                  - crl sign
+                  - encipher only
+                  - decipher only
+                  - any
+                  - server auth
+                  - client auth
+                  - code signing
+                  - email protection
+                  - s/mime
+                  - ipsec end system
+                  - ipsec tunnel
+                  - ipsec user
+                  - timestamping
+                  - ocsp signing
+                  - microsoft sgc
+                  - netscape sgc
+          status:
+            description: CertificateStatus defines the observed state of Certificate
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  description: CertificateCondition contains condition information
+                    for an Certificate.
+                  type: object
+                  required:
+                  - status
+                  - type
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the timestamp corresponding
+                        to the last status change of this condition.
+                      type: string
+                      format: date-time
+                    message:
+                      description: Message is a human readable description of the
+                        details of the last transition, complementing reason.
+                      type: string
+                    reason:
+                      description: Reason is a brief machine readable explanation
+                        for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of ('True', 'False',
+                        'Unknown').
+                      type: string
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                    type:
+                      description: Type of the condition, currently ('Ready').
+                      type: string
+              lastFailureTime:
+                type: string
+                format: date-time
+              notAfter:
+                description: The expiration time of the certificate stored in the
+                  secret named by this resource in spec.secretName.
+                type: string
+                format: date-time
+  - name: v1alpha3
+    served: true
+    storage: false
+    "schema":
+      "openAPIV3Schema":
+        description: Certificate is a type to represent a Certificate from ACME
+        type: object
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CertificateSpec defines the desired state of Certificate.
+              A valid Certificate requires at least one of a CommonName, DNSName,
+              or URISAN to be valid.
+            type: object
+            required:
+            - issuerRef
+            - secretName
+            properties:
+              commonName:
+                description: 'CommonName is a common name to be used on the Certificate.
+                  The CommonName should have a length of 64 characters or fewer to
+                  avoid generating invalid CSRs. This value is ignored by TLS clients
+                  when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
+                type: string
+              dnsNames:
+                description: DNSNames is a list of subject alt names to be used on
+                  the Certificate.
+                type: array
+                items:
+                  type: string
+              duration:
+                description: Certificate default Duration
+                type: string
+              ipAddresses:
+                description: IPAddresses is a list of IP addresses to be used on the
+                  Certificate
+                type: array
+                items:
+                  type: string
+              isCA:
+                description: IsCA will mark this Certificate as valid for signing.
+                  This implies that the 'cert sign' usage is set
+                type: boolean
+              issuerRef:
+                description: IssuerRef is a reference to the issuer for this certificate.
+                  If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
+                  with the given name in the same namespace as the Certificate will
+                  be used. If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer
+                  with the provided name will be used. The 'name' field in this stanza
+                  is required at all times.
+                type: object
+                required:
+                - name
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+              keyAlgorithm:
+                description: KeyAlgorithm is the private key algorithm of the corresponding
+                  private key for this certificate. If provided, allowed values are
+                  either "rsa" or "ecdsa" If KeyAlgorithm is specified and KeySize
+                  is not provided, key size of 256 will be used for "ecdsa" key algorithm
+                  and key size of 2048 will be used for "rsa" key algorithm.
+                type: string
+                enum:
+                - rsa
+                - ecdsa
+              keyEncoding:
+                description: KeyEncoding is the private key cryptography standards
+                  (PKCS) for this certificate's private key to be encoded in. If provided,
+                  allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8,
+                  respectively. If KeyEncoding is not specified, then PKCS#1 will
+                  be used by default.
+                type: string
+                enum:
+                - pkcs1
+                - pkcs8
+              keySize:
+                description: KeySize is the key bit size of the corresponding private
+                  key for this certificate. If provided, value must be between 2048
+                  and 8192 inclusive when KeyAlgorithm is empty or is set to "rsa",
+                  and value must be one of (256, 384, 521) when KeyAlgorithm is set
+                  to "ecdsa".
+                type: integer
+              renewBefore:
+                description: Certificate renew before expiration duration
+                type: string
+              secretName:
+                description: SecretName is the name of the secret resource to store
+                  this secret in
+                type: string
+              subject:
+                description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
+                type: object
+                properties:
+                  countries:
+                    description: Countries to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  localities:
+                    description: Cities to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  organizationalUnits:
+                    description: Organizational Units to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  organizations:
+                    description: Organizations to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  postalCodes:
+                    description: Postal codes to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  provinces:
+                    description: State/Provinces to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+                  serialNumber:
+                    description: Serial number to be used on the Certificate.
+                    type: string
+                  streetAddresses:
+                    description: Street addresses to be used on the Certificate.
+                    type: array
+                    items:
+                      type: string
+              uriSANs:
+                description: URISANs is a list of URI Subject Alternative Names to
+                  be set on this Certificate.
+                type: array
+                items:
+                  type: string
+              usages:
+                description: Usages is the set of x509 actions that are enabled for
+                  a given key. Defaults are ('digital signature', 'key encipherment')
+                  if empty
+                type: array
+                items:
+                  description: 'KeyUsage specifies valid usage contexts for keys.
+                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+                    Valid KeyUsage values are as follows: "signing", "digital signature",
+                    "content commitment", "key encipherment", "key agreement", "data
+                    encipherment", "cert sign", "crl sign", "encipher only", "decipher
+                    only", "any", "server auth", "client auth", "code signing", "email
+                    protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec
+                    user", "timestamping", "ocsp signing", "microsoft sgc", "netscape
+                    sgc"'
+                  type: string
+                  enum:
+                  - signing
+                  - digital signature
+                  - content commitment
+                  - key encipherment
+                  - key agreement
+                  - data encipherment
+                  - cert sign
+                  - crl sign
+                  - encipher only
+                  - decipher only
+                  - any
+                  - server auth
+                  - client auth
+                  - code signing
+                  - email protection
+                  - s/mime
+                  - ipsec end system
+                  - ipsec tunnel
+                  - ipsec user
+                  - timestamping
+                  - ocsp signing
+                  - microsoft sgc
+                  - netscape sgc
+          status:
+            description: CertificateStatus defines the observed state of Certificate
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  description: CertificateCondition contains condition information
+                    for an Certificate.
+                  type: object
+                  required:
+                  - status
+                  - type
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the timestamp corresponding
+                        to the last status change of this condition.
+                      type: string
+                      format: date-time
+                    message:
+                      description: Message is a human readable description of the
+                        details of the last transition, complementing reason.
+                      type: string
+                    reason:
+                      description: Reason is a brief machine readable explanation
+                        for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of ('True', 'False',
+                        'Unknown').
+                      type: string
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                    type:
+                      description: Type of the condition, currently ('Ready').
+                      type: string
+              lastFailureTime:
+                type: string
+                format: date-time
+              notAfter:
+                description: The expiration time of the certificate stored in the
+                  secret named by this resource in spec.secretName.
+                type: string
+                format: date-time
