@@ -28,7 +28,7 @@ webhooks:
     sideEffects: None
     clientConfig:
       service:
-        name: {{ include "webhook.fullname" . }}
+        name: {{ .Values.webhook.serviceName }}
         namespace: {{ .Release.Namespace | quote }}
         path: /mutate
 {{- end -}}

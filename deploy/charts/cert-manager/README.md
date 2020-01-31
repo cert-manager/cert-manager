@@ -19,7 +19,7 @@ To install the chart with the release name `my-release`:
 
 ```console
 ## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
-## cert-manager Helm chart
+## cert-manager Helm chart.
 $ kubectl apply --validate=false \
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml
 
@@ -27,9 +27,19 @@ $ kubectl apply --validate=false \
 $ oc create \
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml
 
+## NOTE: if you are installing the Helm chart into a namespace other than
+## 'cert-manager', you **must** replace all occurrances of 'namespace: cert-manager'
+## with 'namespace: custom-namespace-name' in the CRDs manifest.
+## The below snippet can be used to automate this, replacing
+## CUSTOM-NAMESPACE-NAME with the deployment namespace's name:
+##
+##   kubectl apply --dry-run -o yaml --validate=false \
+##      -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml \
+##      | sed 's/namespace\: cert-manager/namespace\: CUSTOM-NAMESPACE-NAME/g' \
+##      | kubectl apply -f -
+
 ## Add the Jetstack Helm repository
 $ helm repo add jetstack https://charts.jetstack.io
-
 
 ## Install the cert-manager helm chart
 $ helm install --name my-release --namespace cert-manager jetstack/cert-manager
@@ -118,6 +128,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `no_proxy` | Value of the `NO_PROXY` environment variable in the cert-manager pod | |
 | `webhook.enabled` | Toggles whether the validating webhook component should be installed | `true` |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
+| `webhook.serviceName` | The name of the Service resource deployed for the webhook pod | `cert-manager-webhook` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
