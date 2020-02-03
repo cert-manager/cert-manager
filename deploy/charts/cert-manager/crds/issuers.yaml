@@ -1625,7 +1625,6 @@ spec:
                   type: object
                   required:
                   - apiTokenSecretRef
-                  - url
                   properties:
                     apiTokenSecretRef:
                       description: APITokenSecretRef is a secret key selector for
