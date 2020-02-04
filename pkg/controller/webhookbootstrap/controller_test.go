@@ -139,9 +139,10 @@ func TestProcessItem(t *testing.T) {
 				ExpectedEvents:  []string{},
 			},
 		},
-		"generate a new private key for the CA secret if none exists": {
+		"generate a new private key and certificate for the CA secret if no private key exists": {
 			key:                     caSecretKey,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle.privateKeyBytes),
+			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundleCA.privateKeyBytes),
+			signCertificate:         testSignCertificateFn(exampleBundleCA.certBytes),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					caSecret,
@@ -159,9 +160,9 @@ func TestProcessItem(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
-								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
+								corev1.TLSCertKey:       exampleBundleCA.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -170,9 +171,10 @@ func TestProcessItem(t *testing.T) {
 				ExpectedEvents: []string{},
 			},
 		},
-		"generate a new private key for the CA secret if existing private key is garbage": {
+		"generate a new private key for the CA secret and sign a certificate if existing private key is garbage": {
 			key:                     caSecretKey,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle.privateKeyBytes),
+			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundleCA.privateKeyBytes),
+			signCertificate:         testSignCertificateFn(exampleBundleCA.certBytes),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -199,9 +201,9 @@ func TestProcessItem(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
-								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
+								corev1.TLSCertKey:       exampleBundleCA.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -245,9 +247,10 @@ func TestProcessItem(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-		"generate a new private key for the serving secret if none exists": {
+		"generate a new private key for the serving secret if none exists and sign certificate": {
 			key:                     servingSecretKey,
 			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle.privateKeyBytes),
+			signCertificate:         testSignCertificateFn(exampleBundle.certBytes),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -276,9 +279,9 @@ func TestProcessItem(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
+								corev1.TLSCertKey:       exampleBundle.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -287,9 +290,10 @@ func TestProcessItem(t *testing.T) {
 				ExpectedEvents: []string{},
 			},
 		},
-		"generate a new private key for the serving secret if existing private key is garbage": {
+		"generate a new private key for the serving secret if existing private key is garbage and sign certificate": {
 			key:                     servingSecretKey,
 			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle.privateKeyBytes),
+			signCertificate:         testSignCertificateFn(exampleBundle.certBytes),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -327,9 +331,9 @@ func TestProcessItem(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
+								corev1.TLSCertKey:       exampleBundle.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
