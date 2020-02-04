@@ -32,17 +32,17 @@ These will always be clearly documented in the [upgrade section of the documenta
 
 ## Documentation
 
-Documentation for cert-manager can be found at [docs.cert-manager.io](https://docs.cert-manager.io/en/latest/).
+Documentation for cert-manager can be found at [cert-manager.io](https://cert-manager.io/docs/).
 Please make sure to select the correct version of the documentation to view on
-the bottom left of the page.
+the top right of the page.
 
 For the common use-case of automatically issuing TLS certificates to
 Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
 replacement, see the [cert-manager nginx ingress quick start
-guide](docs/tutorials/acme/quick-start/index.rst).
+guide](https://cert-manager.io/docs/tutorials/acme/ingress/).
 
-See [Getting started](https://docs.cert-manager.io/en/latest/getting-started/)
-within the [documentation](https://docs.cert-manager.io/en/latest/)
+See [Installation](https://cert-manager.io/docs/installation/)
+within the [documentation](https://cert-manager.io/docs)
 for installation instructions.
 
 ## Troubleshooting
@@ -59,7 +59,7 @@ You can also try [searching for an existing issue](https://github.com/jetstack/c
 Properly searching for an existing issue will help reduce the number of duplicates,
 and help you find the answer you are looking for quicker.
 
-Please also make sure to read through the relevant pages in the [documentation](https://docs.cert-manager.io/en/latest/)
+Please also make sure to read through the relevant pages in the [documentation](https://cert-manager.io/docs/)
 before opening an issue. You can also search the documentation using the search box on the
 top left of the page.
 
@@ -92,7 +92,7 @@ if you are unsure where to start with getting involved!
 We also use the #cert-manager channel on kubernetes.slack.com for chat relating to
 the project.
 
-Developer documentation is available in the [official documentation](https://docs.cert-manager.io/en/latest/devel/index.html).
+Developer documentation is available in the [official documentation](https://cert-manager.io/docs/contributing/).
 
 ## Changelog
 
