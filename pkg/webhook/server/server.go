@@ -25,6 +25,8 @@ import (
 	"net/http"
 	"time"
 
+	ciphers "k8s.io/component-base/cli/flag"
+
 	"github.com/go-logr/logr"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -94,6 +96,9 @@ type Server struct {
 	// Log is an optional logger to write informational and error messages to.
 	// If not specified, no messages will be logged.
 	Log logr.Logger
+
+	// CipherSuites is a slice of TLS Cipher Suite names
+	CipherSuites []string
 }
 
 func (s *Server) Run(stopCh <-chan struct{}) error {
@@ -137,10 +142,15 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	if s.CertificateSource != nil {
 		s.Log.Info("listening for secure connections", "address", s.ListenAddr)
 		certSourceChan = s.startCertificateSource(internalStopCh)
+		cipherSuites, err := ciphers.TLSCipherSuites(s.CipherSuites)
+		if err != nil {
+			return err
+		}
 		l = tls.NewListener(l, &tls.Config{
 			GetCertificate:           s.CertificateSource.GetCertificate,
 			MinVersion:               tls.VersionTLS12,
 			PreferServerCipherSuites: true,
+			CipherSuites:             cipherSuites,
 		})
 	} else {
 		s.Log.Info("listening for insecure connections", "address", s.ListenAddr)
