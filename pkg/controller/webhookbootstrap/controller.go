@@ -157,10 +157,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	secret, err := c.secretLister.Secrets(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
-		log.Info("secret resource no longer exists", "key", key)
-		return nil
-	}
-	if err != nil {
+		secret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+	} else if err != nil {
 		return err
 	}
 
@@ -180,15 +183,9 @@ func (c *controller) syncCASecret(ctx context.Context, secret *corev1.Secret) er
 	crt := buildCACertificate(secret)
 
 	// read the existing private key
-	pkData := readSecretDataKey(secret, corev1.TLSPrivateKeyKey)
-	if pkData == nil {
-		log.Info("generating new private key")
-		return c.generatePrivateKey(crt, secret)
-	}
-	pk, err := pki.DecodePrivateKeyBytes(pkData)
+	pk, pkData, err := c.readSecretPrivateKey(log, secret, crt)
 	if err != nil {
-		log.Info("regenerating new private key")
-		return c.generatePrivateKey(crt, secret)
+		return err
 	}
 
 	// read the existing certificate
@@ -239,17 +236,11 @@ func (c *controller) syncServingSecret(ctx context.Context, secret *corev1.Secre
 	}
 
 	// read the existing private key
-	pkData := readSecretDataKey(secret, corev1.TLSPrivateKeyKey)
-	if pkData == nil {
-		log.Info("generating new private key")
-		return c.generatePrivateKey(crt, secret)
-	}
-	pk, err := pki.DecodePrivateKeyBytes(pkData)
+	pk, pkData, err := c.readSecretPrivateKey(log, secret, crt)
 	if err != nil {
-		log.Info("regenerating new private key")
-		return c.generatePrivateKey(crt, secret)
+		return err
 	}
-	// read the existing certificate
+
 	if !c.certificateRequiresIssuance(ctx, log, secret, pk, crt) {
 		c.scheduleRenewal(log, secret)
 		log.Info("serving certificate already up to date")
@@ -361,13 +352,31 @@ func readSecretDataKey(secret *corev1.Secret, key string) []byte {
 	return d
 }
 
-func (c *controller) generatePrivateKey(crt *cmapi.Certificate, secret *corev1.Secret) error {
-	pk, err := c.generatePrivateKeyBytes(crt)
-	if err != nil {
-		return err
+// readSecretPrivateKey will attempt to read the private key bytes from a
+// secret and decode it into a Signer interface. If either fail then the key
+// will be [re-]generated. We do not actually commit the key to the API server
+// within the secret to prevent early mount attempts onto the webhook pod.
+func (c *controller) readSecretPrivateKey(log logr.Logger, secret *corev1.Secret, crt *cmapi.Certificate) (crypto.Signer, []byte, error) {
+	var err error
+
+	pkData := readSecretDataKey(secret, corev1.TLSPrivateKeyKey)
+	if pkData == nil {
+		log.Info("generating new private key")
+
+		pkData, err = c.generatePrivateKeyBytes(crt)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
-	return c.updateSecret(secret, pk, nil, nil)
+	pk, err := pki.DecodePrivateKeyBytes(pkData)
+	if err != nil {
+		log.Info("regenerating new private key due to failed decoding")
+		delete(secret.Data, corev1.TLSPrivateKeyKey)
+		return c.readSecretPrivateKey(log, secret, crt)
+	}
+
+	return pk, pkData, nil
 }
 
 func (c *controller) selfSignCertificate(crt *cmapi.Certificate, signeeKey crypto.Signer) ([]byte, error) {
@@ -386,58 +395,60 @@ func (c *controller) updateSecret(secret *corev1.Secret, pk, ca, crt []byte) err
 	secret.Data[corev1.TLSPrivateKeyKey] = pk
 	secret.Data[corev1.TLSCertKey] = crt
 	secret.Data[cmmeta.TLSCAKey] = ca
-	_, err := c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(secret)
+	secret.Type = corev1.SecretTypeTLS
+
+	// If the secret does not yet exist then we should create it
+	_, err := c.secretLister.Secrets(secret.Namespace).Get(secret.Name)
+	if apierrors.IsNotFound(err) {
+		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret)
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(secret)
 	return err
 }
 
-// ensureSecretsExist ensures that the webhook secrets actually exist.
-// This is to ensure that the ProcessItem function is actually called with the
-// webhook's Secret resource, so that it can be provisioned.
-func (c *controller) ensureSecretsExist(ctx context.Context) {
+// bootstrapSecrets will manually add the Webhook's CA and Serving Secrets onto
+// the process queue. This is done since the Secrets have not been created yet.
+// We could create empty Secrets here instead to trigger reconciles however,
+// this causes issues whereby empty Secrets can delays in the webhook pod's
+// start. See #2537
+func (c *controller) bootstrapSecrets(ctx context.Context) {
 	// TODO: we should be able to just not run the controller at all if these
 	//       are not set, but for now we add this hacky check.
 	if c.webhookNamespace == "" || c.webhookCASecret == "" || c.webhookServingSecret == "" {
 		return
 	}
-	c.ensureSecretExists(ctx, c.webhookCASecret)
-	c.ensureSecretExists(ctx, c.webhookServingSecret)
+
+	c.processMissingSecret(ctx, c.webhookCASecret)
+	c.processMissingSecret(ctx, c.webhookServingSecret)
 }
 
-func (c *controller) ensureSecretExists(ctx context.Context, name string) {
+// processMissingSecret will push a secret onto the queue to be processed in 1
+// second. This secret does not have to exist yet, since ProcessItem will
+// create the Secret, should it not exist.
+func (c *controller) processMissingSecret(ctx context.Context, name string) {
+	ctx = logf.NewContext(ctx, nil, ControllerName)
 	log := logf.FromContext(ctx)
-	log = log.WithValues(logf.ResourceNameKey, name, logf.ResourceNamespaceKey, c.webhookNamespace, logf.ResourceKindKey, "Secret")
-	_, err := c.secretLister.Secrets(c.webhookNamespace).Get(name)
-	if apierrors.IsNotFound(err) {
-		log.Info("existing Secret does not exist, creating new empty secret")
-		c.createEmptySecret(ctx, log, name)
-		return
-	}
-	if err != nil {
-		log.Error(err, "failed to GET existing Secret resource")
-		return
-	}
-}
 
-func (c *controller) createEmptySecret(ctx context.Context, log logr.Logger, name string) {
-	s := &corev1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: c.webhookNamespace,
-			Annotations: map[string]string{
-				cmapi.AllowsInjectionFromSecretAnnotation: "true",
-			},
 		},
-		Data: map[string][]byte{
-			corev1.TLSCertKey:       nil,
-			corev1.TLSPrivateKeyKey: nil,
-			cmmeta.TLSCAKey:         nil,
-		},
-		Type: corev1.SecretTypeTLS,
 	}
-	if _, err := c.kubeClient.CoreV1().Secrets(c.webhookNamespace).Create(s); err != nil {
-		log.Error(err, "failed to create new empty Secret")
+
+	key, err := controllerpkg.KeyFunc(secret)
+	if err != nil {
+		log.Error(err, "internal error determining string key for secret")
+		return
 	}
-	return
+
+	c.scheduledWorkQueue.Add(key, time.Second)
 }
 
 const (
@@ -525,7 +536,7 @@ func init() {
 		ctrl := &controller{}
 		return controllerpkg.NewBuilder(ctx, ControllerName).
 			For(ctrl).
-			With(ctrl.ensureSecretsExist, time.Second*10).
+			With(ctrl.bootstrapSecrets, time.Second*10).
 			Complete()
 	})
 }
