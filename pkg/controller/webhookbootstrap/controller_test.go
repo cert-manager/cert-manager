@@ -148,6 +148,25 @@ func TestProcessItem(t *testing.T) {
 					caSecret,
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						caSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: caSecret.Namespace,
+								Name:      caSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundleCA.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						caSecret.Namespace,
@@ -189,6 +208,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						caSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: caSecret.Namespace,
+								Name:      caSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundleCA.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						caSecret.Namespace,
@@ -267,6 +305,25 @@ func TestProcessItem(t *testing.T) {
 					servingSecret,
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						servingSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: servingSecret.Namespace,
+								Name:      servingSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						servingSecret.Namespace,
@@ -319,6 +376,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						servingSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: servingSecret.Namespace,
+								Name:      servingSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						servingSecret.Namespace,
@@ -359,6 +435,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						caSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: caSecret.Namespace,
+								Name:      caSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundleCA.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						caSecret.Namespace,
@@ -400,6 +495,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						caSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: caSecret.Namespace,
+								Name:      caSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundleCA.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						caSecret.Namespace,
@@ -455,6 +569,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						servingSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: servingSecret.Namespace,
+								Name:      servingSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						servingSecret.Namespace,
@@ -510,6 +643,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						servingSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: servingSecret.Namespace,
+								Name:      servingSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						servingSecret.Namespace,
@@ -567,6 +719,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						servingSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: servingSecret.Namespace,
+								Name:      servingSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						servingSecret.Namespace,
@@ -621,6 +792,25 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						servingSecret.Namespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: servingSecret.Namespace,
+								Name:      servingSecret.Name,
+								Annotations: map[string]string{
+									cmapi.AllowsInjectionFromSecretAnnotation: "true",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSPrivateKeyKey: exampleBadDNSNameBundle.privateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						servingSecret.Namespace,
