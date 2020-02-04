@@ -372,6 +372,11 @@ func (c *controller) readSecretPrivateKey(log logr.Logger, secret *corev1.Secret
 	pk, err := pki.DecodePrivateKeyBytes(pkData)
 	if err != nil {
 		log.Info("regenerating new private key due to failed decoding")
+
+		// Here we are deleting the badly coded private key bytes from the Secret
+		// and recursively calling this function again. This is a safe recursion
+		// since in the next call, this index is always empty, and will be picked
+		// up by the case above.
 		delete(secret.Data, corev1.TLSPrivateKeyKey)
 		return c.readSecretPrivateKey(log, secret, crt)
 	}
@@ -397,10 +402,10 @@ func (c *controller) updateSecret(secret *corev1.Secret, pk, ca, crt []byte) err
 	secret.Data[cmmeta.TLSCAKey] = ca
 	secret.Type = corev1.SecretTypeTLS
 
-	// If the secret does not yet exist then we should create it
-	_, err := c.secretLister.Secrets(secret.Namespace).Get(secret.Name)
-	if apierrors.IsNotFound(err) {
-		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret)
+	_, err := c.kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret)
+	if apierrors.IsAlreadyExists(err) {
+		// If the secret already exists then we should update it
+		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(secret)
 		return err
 	}
 
@@ -408,8 +413,7 @@ func (c *controller) updateSecret(secret *corev1.Secret, pk, ca, crt []byte) err
 		return err
 	}
 
-	_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(secret)
-	return err
+	return nil
 }
 
 // bootstrapSecrets will manually add the Webhook's CA and Serving Secrets onto
