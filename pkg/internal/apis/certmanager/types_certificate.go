@@ -26,21 +26,21 @@ import (
 
 // Certificate is a type to represent a Certificate from ACME
 type Certificate struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta
+	metav1.ObjectMeta
 
-	Spec   CertificateSpec   `json:"spec,omitempty"`
-	Status CertificateStatus `json:"status,omitempty"`
+	Spec   CertificateSpec
+	Status CertificateStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CertificateList is a list of Certificates
 type CertificateList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
+	metav1.TypeMeta
+	metav1.ListMeta
 
-	Items []Certificate `json:"items"`
+	Items []Certificate
 }
 
 type KeyAlgorithm string
@@ -60,8 +60,7 @@ const (
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	// Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
-	// +optional
-	Subject *X509Subject `json:"subject,omitempty"`
+	Subject *X509Subject
 
 	// A valid Certificate requires at least one of a CommonName, DNSName, or
 	// URISAN to be valid.
@@ -69,32 +68,26 @@ type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate.
 	// The CommonName should have a length of 64 characters or fewer to avoid
 	// generating invalid CSRs.
-	// +optional
-	CommonName string `json:"commonName,omitempty"`
+	CommonName string
 
 	// Certificate default Duration
-	// +optional
-	Duration *metav1.Duration `json:"duration,omitempty"`
+	Duration *metav1.Duration
 
 	// Certificate renew before expiration duration
-	// +optional
-	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
+	RenewBefore *metav1.Duration
 
 	// DNSNames is a list of subject alt names to be used on the Certificate.
-	// +optional
-	DNSNames []string `json:"dnsNames,omitempty"`
+	DNSNames []string
 
 	// IPAddresses is a list of IP addresses to be used on the Certificate
-	// +optional
-	IPAddresses []string `json:"ipAddresses,omitempty"`
+	IPAddresses []string
 
 	// URISANs is a list of URI Subject Alternative Names to be set on this
 	// Certificate.
-	// +optional
-	URISANs []string `json:"uriSANs,omitempty"`
+	URISANs []string
 
 	// SecretName is the name of the secret resource to store this secret in
-	SecretName string `json:"secretName"`
+	SecretName string
 
 	// IssuerRef is a reference to the issuer for this certificate.
 	// If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
@@ -102,103 +95,85 @@ type CertificateSpec struct {
 	// If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the
 	// provided name will be used.
 	// The 'name' field in this stanza is required at all times.
-	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.ObjectReference
 
 	// IsCA will mark this Certificate as valid for signing.
 	// This implies that the 'cert sign' usage is set
-	// +optional
-	IsCA bool `json:"isCA,omitempty"`
+	IsCA bool
 
 	// Usages is the set of x509 actions that are enabled for a given key. Defaults are ('digital signature', 'key encipherment') if empty
-	// +optional
-	Usages []KeyUsage `json:"usages,omitempty"`
+	Usages []KeyUsage
 
 	// KeySize is the key bit size of the corresponding private key for this certificate.
 	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
 	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
 	// KeyAlgorithm is set to "ecdsa".
-	// +optional
-	KeySize int `json:"keySize,omitempty"`
+	KeySize int
 
 	// KeyAlgorithm is the private key algorithm of the corresponding private key
 	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
 	// If KeyAlgorithm is specified and KeySize is not provided,
 	// key size of 256 will be used for "ecdsa" key algorithm and
 	// key size of 2048 will be used for "rsa" key algorithm.
-	// +optional
-	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
+	KeyAlgorithm KeyAlgorithm
 
 	// KeyEncoding is the private key cryptography standards (PKCS)
 	// for this certificate's private key to be encoded in. If provided, allowed
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
-	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
+	KeyEncoding KeyEncoding
 }
 
 // X509Subject Full X509 name specification
 type X509Subject struct {
 	// Organizations to be used on the Certificate.
-	// +optional
-	Organizations []string `json:"organizations,omitempty"`
+	Organizations []string
 	// Countries to be used on the Certificate.
-	// +optional
-	Countries []string `json:"countries,omitempty"`
+	Countries []string
 	// Organizational Units to be used on the Certificate.
-	// +optional
-	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
+	OrganizationalUnits []string
 	// Cities to be used on the Certificate.
-	// +optional
-	Localities []string `json:"localities,omitempty"`
+	Localities []string
 	// State/Provinces to be used on the Certificate.
-	// +optional
-	Provinces []string `json:"provinces,omitempty"`
+	Provinces []string
 	// Street addresses to be used on the Certificate.
-	// +optional
-	StreetAddresses []string `json:"streetAddresses,omitempty"`
+	StreetAddresses []string
 	// Postal codes to be used on the Certificate.
-	// +optional
-	PostalCodes []string `json:"postalCodes,omitempty"`
+	PostalCodes []string
 	// Serial number to be used on the Certificate.
-	// +optional
-	SerialNumber string `json:"serialNumber,omitempty"`
+	SerialNumber string
 }
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
-	// +optional
-	Conditions []CertificateCondition `json:"conditions,omitempty"`
+	Conditions []CertificateCondition
 
-	// +optional
-	LastFailureTime *metav1.Time `json:"lastFailureTime,omitempty"`
+	LastFailureTime *metav1.Time
 
 	// The expiration time of the certificate stored in the secret named
 	// by this resource in spec.secretName.
-	// +optional
-	NotAfter *metav1.Time `json:"notAfter,omitempty"`
+	NotAfter *metav1.Time
 }
 
 // CertificateCondition contains condition information for an Certificate.
 type CertificateCondition struct {
 	// Type of the condition, currently ('Ready').
-	Type CertificateConditionType `json:"type"`
+	Type CertificateConditionType
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	Status cmmeta.ConditionStatus `json:"status"`
+	Status cmmeta.ConditionStatus
 
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
-	// +optional
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime *metav1.Time
 
 	// Reason is a brief machine readable explanation for the condition's last
 	// transition.
-	// +optional
-	Reason string `json:"reason,omitempty"`
+	Reason string
 
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
-	// +optional
-	Message string `json:"message,omitempty"`
+	Message string
 }
 
 // CertificateConditionType represents an Certificate condition value.

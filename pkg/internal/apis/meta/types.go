@@ -39,24 +39,21 @@ type LocalObjectReference struct {
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 	// TODO: Add other useful fields. apiVersion, kind, uid?
-	Name string `json:"name"`
+	Name string
 }
 
 // ObjectReference is a reference to an object with a given name, kind and group.
 type ObjectReference struct {
-	Name string `json:"name"`
-	// +optional
-	Kind string `json:"kind,omitempty"`
-	// +optional
-	Group string `json:"group,omitempty"`
+	Name  string
+	Kind  string
+	Group string
 }
 
 type SecretKeySelector struct {
 	// The name of the secret in the pod's namespace to select from.
-	LocalObjectReference `json:",inline"`
+	LocalObjectReference
 	// The key of the secret to select from. Must be a valid secret key.
-	// +optional
-	Key string `json:"key,omitempty"`
+	Key string
 }
 
 const (

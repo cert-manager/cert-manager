@@ -26,60 +26,59 @@ import (
 
 // Challenge is a type to represent a Challenge request with an ACME server
 type Challenge struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta
+	metav1.ObjectMeta
 
-	Spec   ChallengeSpec   `json:"spec,omitempty"`
-	Status ChallengeStatus `json:"status,omitempty"`
+	Spec   ChallengeSpec
+	Status ChallengeStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ChallengeList is a list of Challenges
 type ChallengeList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
+	metav1.TypeMeta
+	metav1.ListMeta
 
-	Items []Challenge `json:"items"`
+	Items []Challenge
 }
 
 type ChallengeSpec struct {
 	// AuthzURL is the URL to the ACME Authorization resource that this
 	// challenge is a part of.
-	AuthzURL string `json:"authzURL"`
+	AuthzURL string
 
 	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
 	// or "http01"
-	Type string `json:"type"`
+	Type string
 
 	// URL is the URL of the ACME Challenge resource for this challenge.
 	// This can be used to lookup details about the status of this challenge.
-	URL string `json:"url"`
+	URL string
 
 	// DNSName is the identifier that this challenge is for, e.g. example.com.
-	DNSName string `json:"dnsName"`
+	DNSName string
 
 	// Token is the ACME challenge token for this challenge.
-	Token string `json:"token"`
+	Token string
 
 	// Key is the ACME challenge key for this challenge
-	Key string `json:"key"`
+	Key string
 
 	// Wildcard will be true if this challenge is for a wildcard identifier,
 	// for example '*.example.com'
-	// +optional
-	Wildcard bool `json:"wildcard"`
+	Wildcard bool
 
 	// Solver contains the domain solving configuration that should be used to
 	// solve this challenge resource.
-	Solver *ACMEChallengeSolver `json:"solver,omitempty"`
+	Solver *ACMEChallengeSolver
 
 	// IssuerRef references a properly configured ACME-type Issuer which should
 	// be used to create this Challenge.
 	// If the Issuer does not exist, processing will be retried.
 	// If the Issuer is not an 'ACME' Issuer, an error will be returned and the
 	// Challenge will be marked as failed.
-	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.ObjectReference
 }
 
 type ChallengeStatus struct {
@@ -90,8 +89,7 @@ type ChallengeStatus struct {
 	// challenge has reached a final state or timed out.
 	// If this field is set to false, the challenge controller will not take
 	// any more action.
-	// +optional
-	Processing bool `json:"processing"`
+	Processing bool
 
 	// Presented will be set to true if the challenge values for this challenge
 	// are currently 'presented'.
@@ -99,16 +97,13 @@ type ChallengeStatus struct {
 	// have been 'submitted' for the appropriate challenge mechanism (i.e. the
 	// DNS01 TXT record has been presented, or the HTTP01 configuration has been
 	// configured).
-	// +optional
-	Presented bool `json:"presented"`
+	Presented bool
 
 	// Reason contains human readable information on why the Challenge is in the
 	// current state.
-	// +optional
-	Reason string `json:"reason"`
+	Reason string
 
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.
-	// +optional
-	State State `json:"state,omitempty"`
+	State State
 }
