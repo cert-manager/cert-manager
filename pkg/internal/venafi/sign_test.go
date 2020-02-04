@@ -201,7 +201,7 @@ func (s *testSignT) runTest(t *testing.T) {
 		client: client,
 	}
 
-	resp, err := v.Sign(s.csrPEM, time.Minute)
+	resp, err := v.Sign(s.csrPEM, time.Minute, []certificate.CustomField{})
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

@@ -19,12 +19,13 @@ package fake
 import (
 	"time"
 
+	"github.com/Venafi/vcert/pkg/certificate"
 	"github.com/Venafi/vcert/pkg/endpoint"
 )
 
 type Venafi struct {
 	PingFn                  func() error
-	SignFn                  func([]byte, time.Duration) ([]byte, error)
+	SignFn                  func([]byte, time.Duration, []certificate.CustomField) ([]byte, error)
 	ReadZoneConfigurationFn func() (*endpoint.ZoneConfiguration, error)
 }
 
@@ -32,8 +33,8 @@ func (v *Venafi) Ping() error {
 	return v.PingFn()
 }
 
-func (v *Venafi) Sign(b []byte, t time.Duration) ([]byte, error) {
-	return v.SignFn(b, t)
+func (v *Venafi) Sign(b []byte, t time.Duration, f []certificate.CustomField) ([]byte, error) {
+	return v.SignFn(b, t, f)
 }
 
 func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {

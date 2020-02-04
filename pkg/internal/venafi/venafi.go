@@ -39,7 +39,7 @@ type VenafiClientBuilder func(namespace string, secretsLister corelisters.Secret
 	issuer cmapi.GenericIssuer) (Interface, error)
 
 type Interface interface {
-	Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error)
+	Sign(csrPEM []byte, duration time.Duration, customFields []certificate.CustomField) (cert []byte, err error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
