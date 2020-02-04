@@ -45,7 +45,6 @@ echo "Ensuring all e2e test dependencies are installed..."
 echo "Running e2e test suite..."
 # Skip Venafi end-to-end tests in CI
 FLAKE_ATTEMPTS=2 "${SCRIPT_ROOT}/run-e2e.sh" \
-  --ginkgo.skip=Venafi \
   "$@"
 
 export_logs
