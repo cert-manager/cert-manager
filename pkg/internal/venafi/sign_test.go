@@ -173,6 +173,23 @@ func TestSign(t *testing.T) {
 			checkFn:     checkCertificateIssued,
 			expectedErr: false,
 		},
+		"obtain a certificate with custom fields specified": {
+			csrPEM:       csrPEM,
+			customFields: []CustomField{{Name: "test", Value: "ok"}},
+			client: internalfake.Connector{
+				RetrieveCertificateFunc: func(r *certificate.Request) (*certificate.PEMCollection, error) {
+					if len(r.CustomFields) == 0 {
+						return nil, errors.New("custom fields not set")
+					}
+					if r.CustomFields[0].Name != "test" || r.CustomFields[0].Value != "ok" {
+						return nil, errors.New("custom fields content not correct")
+					}
+					return internalfake.Connector{}.Default().RetrieveCertificate(r) // hack to return to normal
+				},
+			}.Default(),
+			checkFn:     checkCertificateIssued,
+			expectedErr: false,
+		},
 	}
 
 	for name, test := range tests {
@@ -188,6 +205,8 @@ type testSignT struct {
 
 	expectedErr bool
 
+	customFields []CustomField
+
 	checkFn func(*testing.T, []byte, []byte)
 }
 
@@ -201,7 +220,7 @@ func (s *testSignT) runTest(t *testing.T) {
 		client: client,
 	}
 
-	resp, err := v.Sign(s.csrPEM, time.Minute, []certificate.CustomField{})
+	resp, err := v.Sign(s.csrPEM, time.Minute, s.customFields)
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
