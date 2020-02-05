@@ -38,6 +38,11 @@ type Builder struct {
 	// the actual controller implementation
 	impl queueingController
 
+	// runFirstFuncs are a list of functions that will be called immediately
+	// after the controller has been initialised, once. They are run in queue, sequentially,
+	// and block runDurationFuncs until complete.
+	runFirstFuncs []runFunc
+
 	// runDurationFuncs are a list of functions that will be called every
 	// 'duration'
 	runDurationFuncs []runDurationFunc
@@ -65,6 +70,14 @@ func (b *Builder) With(function func(context.Context), duration time.Duration) *
 		fn:       function,
 		duration: duration,
 	})
+	return b
+}
+
+// First will register a function that will be called once, after the
+// controller has been initialised. They are queued, run sequentially, and
+// block "With" runDurationFuncs from running until all are complete.
+func (b *Builder) First(function func(context.Context)) *Builder {
+	b.runFirstFuncs = append(b.runFirstFuncs, function)
 	return b
 }
 

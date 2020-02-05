@@ -29,8 +29,10 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
+type runFunc func(context.Context)
+
 type runDurationFunc struct {
-	fn       func(context.Context)
+	fn       runFunc
 	duration time.Duration
 }
 
@@ -54,6 +56,9 @@ type controller struct {
 	// additionalInformers is a list of informer 'Run' functions that must be
 	// called before starting this controller
 	additionalInformers []RunFunc
+
+	// a set of functions that will be called just after controller initialisation, once.
+	runFirstFuncs []runFunc
 
 	// a set of functions that should be called every duration.
 	runDurationFuncs []runDurationFunc
@@ -85,6 +90,10 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 			defer wg.Done()
 			c.worker(ctx)
 		}, time.Second, stopCh)
+	}
+
+	for _, f := range c.runFirstFuncs {
+		f(ctx)
 	}
 
 	for _, f := range c.runDurationFuncs {
