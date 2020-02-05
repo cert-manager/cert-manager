@@ -89,7 +89,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 
-	customFields := []venafiinternal.CustomField{}
+	var customFields []venafiinternal.CustomField
 	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFields]; exists && annotation != "" {
 		err := json.Unmarshal([]byte(annotation), &customFields)
 		if err != nil {

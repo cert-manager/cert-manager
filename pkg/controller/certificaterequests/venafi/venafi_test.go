@@ -146,6 +146,10 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
+	tppCRWithCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": "cert-manager-test", "value": "test ok"}]`}))
+
+	tppCRWithInvalidCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": cert-manager-test}]`}))
+
 	cloudCR := gen.CertificateRequestFrom(baseCR,
 		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Group: certmanager.GroupName,
@@ -199,6 +203,15 @@ func TestSign(t *testing.T) {
 	clientReturnsCert := &internalvenafifake.Venafi{
 		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
 			return certPEM, nil
+		},
+	}
+
+	clientReturnsCertIfCustomField := &internalvenafifake.Venafi{
+		SignFn: func(csr []byte, t time.Duration, fields []internalvenafi.CustomField) ([]byte, error) {
+			if len(fields) > 0 && fields[0].Name == "cert-manager-test" && fields[0].Value == "test ok" {
+				return certPEM, nil
+			}
+			return nil, errors.New("Custom field not set")
 		},
 	}
 
@@ -572,6 +585,66 @@ func TestSign(t *testing.T) {
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsCert,
+		},
+		"annotations: Custom Fields": {
+			certificateRequest: tppCRWithCustomFields.DeepCopy(),
+			issuer:             tppIssuer,
+			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCRWithCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					`Normal CertificateIssued Certificate fetched from issuer successfully`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCRWithCustomFields,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(certPEM),
+						),
+					)),
+				},
+			},
+			fakeSecretLister: failGetSecretLister,
+			fakeClient:       clientReturnsCertIfCustomField,
+			expectedErr:      false,
+		},
+		"annotations: Error on invalid JSON in custom fields": {
+			certificateRequest: tppCRWithInvalidCustomFields.DeepCopy(),
+			issuer:             tppIssuer,
+			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					`Warning CustomFieldsError Failed to parse venafi.cert-manager.io/custom-fields annotation: invalid character 'c' looking for beginning of value`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCRWithInvalidCustomFields,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Failed to parse venafi.cert-manager.io/custom-fields annotation: invalid character 'c' looking for beginning of value",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
+			},
+			fakeSecretLister: failGetSecretLister,
+			fakeClient:       clientReturnsPending,
+			expectedErr:      true,
 		},
 	}
 
