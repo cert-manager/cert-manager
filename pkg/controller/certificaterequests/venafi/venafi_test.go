@@ -177,7 +177,7 @@ func TestSign(t *testing.T) {
 	}
 
 	clientReturnsPending := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrCertificatePending{
 				CertificateID: "test-cert-id",
 				Status:        "test-status-pending",
@@ -185,19 +185,19 @@ func TestSign(t *testing.T) {
 		},
 	}
 	clientReturnsTimeout := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrRetrieveCertificateTimeout{
 				CertificateID: "test-cert-id",
 			}
 		},
 	}
 	clientReturnsGenericError := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
 			return nil, errors.New("this is an error")
 		},
 	}
 	clientReturnsCert := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
 			return certPEM, nil
 		},
 	}

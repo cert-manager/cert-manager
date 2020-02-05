@@ -39,7 +39,7 @@ type VenafiClientBuilder func(namespace string, secretsLister corelisters.Secret
 	issuer cmapi.GenericIssuer) (Interface, error)
 
 type Interface interface {
-	Sign(csrPEM []byte, duration time.Duration, customFields []certificate.CustomField) (cert []byte, err error)
+	Sign(csrPEM []byte, duration time.Duration, customFields []CustomField) (cert []byte, err error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
@@ -66,6 +66,13 @@ type connector interface {
 	RequestCertificate(req *certificate.Request) (requestID string, err error)
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
+}
+
+// CustomField defines a custom field to be passed to Venafi
+type CustomField struct {
+	Type  certificate.CustomFieldType `json:"type,omitempty"`
+	Name  string                      `json:"name"`
+	Value string                      `json:"value"`
 }
 
 func New(namespace string, secretsLister corelisters.SecretLister,

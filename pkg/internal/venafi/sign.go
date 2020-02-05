@@ -30,7 +30,7 @@ import (
 // This function sends a request to Venafi to for a signed certificate.
 // The CSR will be decoded to be validated against the zone configuration policy.
 // Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
-func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []certificate.CustomField) (cert []byte, err error) {
+func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []CustomField) (cert []byte, err error) {
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
@@ -46,7 +46,14 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []cert
 
 	// Create a vcert Request structure
 	vreq := newVRequest(tmpl)
-	vreq.CustomFields = customFields
+
+	// Convert over custom fields from our struct type to venafi's
+	if len(customFields) > 0 {
+		vreq.CustomFields = []certificate.CustomField{}
+		for _, field := range customFields {
+			vreq.CustomFields = append(vreq.CustomFields, certificate.CustomField(field))
+		}
+	}
 
 	// Apply default values from the Venafi zone
 	zoneCfg.UpdateCertificateRequest(vreq)
