@@ -17,12 +17,14 @@ limitations under the License.
 package webhookbootstrap
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/x509"
+	"testing"
+
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +34,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
@@ -955,5 +958,70 @@ func testGeneratePrivateKeyBytesFn(b []byte) generatePrivateKeyBytesFn {
 func testSignCertificateFn(b []byte) signCertificateFunc {
 	return func(_ *cmapi.Certificate, _, _ crypto.Signer, _ *x509.Certificate) ([]byte, error) {
 		return b, nil
+	}
+}
+
+func TestReadSecretPrivateKey(t *testing.T) {
+	exampleBundle := mustCreateCryptoBundle(t, gen.Certificate(defaultWebhookCAName,
+		gen.SetCertificateDNSNames(defaultWebhookDNSNames...),
+		gen.SetCertificateOrganization("cert-manager.system"),
+	))
+
+	exampleBundle2 := mustCreateCryptoBundle(t, gen.Certificate(defaultWebhookCAName,
+		gen.SetCertificateDNSNames(defaultWebhookDNSNames...),
+		gen.SetCertificateOrganization("cert-manager.system"),
+	))
+
+	tests := map[string]struct {
+		secret    *corev1.Secret
+		crt       *cmapi.Certificate
+		expPKData []byte
+	}{
+		"if the secret contains no private key data then should be generated": {
+			secret: &corev1.Secret{
+				Data: map[string][]byte{},
+			},
+			expPKData: exampleBundle.privateKeyBytes,
+			crt:       exampleBundle.certificate,
+		},
+		"if the secret contains bad private key bytes then generate new": {
+			secret: &corev1.Secret{
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: []byte("bad key"),
+				},
+			},
+			expPKData: exampleBundle.privateKeyBytes,
+			crt:       exampleBundle.certificate,
+		},
+		"if the secret contains a well formed private key data then should not be generated": {
+			secret: &corev1.Secret{
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: exampleBundle2.privateKeyBytes,
+				},
+			},
+			expPKData: exampleBundle2.privateKeyBytes,
+			crt:       exampleBundle2.certificate,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			log := logf.FromContext(context.Background())
+
+			c := &controller{
+				generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle.privateKeyBytes),
+			}
+
+			_, pkData, err := c.readSecretPrivateKey(log, test.secret, test.crt)
+			if err != nil {
+				t.Errorf("unexpected error: %s", err)
+				t.FailNow()
+			}
+
+			if !bytes.Equal(test.expPKData, pkData) {
+				t.Errorf("got unexpected private key data returned, exp=%s got=%s",
+					pkData, exampleBundle.privateKeyBytes)
+			}
+		})
 	}
 }

@@ -540,7 +540,8 @@ func init() {
 		ctrl := &controller{}
 		return controllerpkg.NewBuilder(ctx, ControllerName).
 			For(ctrl).
-			With(ctrl.bootstrapSecrets, time.Second*10).
+			First(ctrl.bootstrapSecrets).
+			With(ctrl.bootstrapSecrets, time.Second*30).
 			Complete()
 	})
 }

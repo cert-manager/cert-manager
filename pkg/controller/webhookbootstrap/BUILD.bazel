@@ -48,6 +48,7 @@ go_test(
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/test:go_default_library",
+        "//pkg/logs:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
