@@ -111,6 +111,21 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 		}
 
 		matches, matchErrs = certificateMatchesSpec(crt, key, cert, secret)
+
+		// If the spec does not match, then check the hash of the request if the
+		// request is existing
+		if !matches && req != nil {
+			specMatches, err := certificateSpecMatchesCertificateRequest(crt, req)
+			if err != nil {
+				return err
+			}
+
+			if specMatches {
+				matches = true
+				log = logf.WithRelatedResource(log, req)
+				log.Info("although the issued certificate does not match the requested specifications, cert-manager will not attempt a re-issue")
+			}
+		}
 	}
 
 	isTempCert := isTemporaryCertificate(cert)
@@ -267,7 +282,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// a valid partner to the stored certificate.
 		var matchErrs []string
 		dbg.Info("checking if existing certificate stored in Secret resource is not expiring soon and matches certificate spec")
-		needsIssue, matchErrs, err = c.certificateRequiresIssuance(ctx, crt, existingKey, existingCert, existingSecret)
+		needsIssue, matchErrs, err = c.certificateRequiresIssuance(ctx, crt, existingKey, existingCert, existingSecret, existingReq)
 		if err != nil && !errors.IsInvalidData(err) {
 			return err
 		}
@@ -597,7 +612,8 @@ func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Contex
 	return nil
 }
 
-func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Context, crt *cmapi.Certificate, keyBytes, certBytes []byte, secret *corev1.Secret) (bool, []string, error) {
+func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Context, crt *cmapi.Certificate, keyBytes, certBytes []byte,
+	secret *corev1.Secret, cr *cmapi.CertificateRequest) (bool, []string, error) {
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
 		return false, nil, err
@@ -609,12 +625,25 @@ func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Cont
 	if isTemporaryCertificate(cert) {
 		return true, nil, nil
 	}
+
 	matches, matchErrs := certificateMatchesSpec(crt, key, cert, secret)
-	if !matches {
+
+	if matches {
+		needsRenew := c.certificateNeedsRenew(ctx, cert, crt)
+		return needsRenew, []string{"Certificate is expiring soon"}, nil
+	}
+
+	// If we have no existing CertificateRequest so exit early
+	if cr == nil {
 		return true, matchErrs, nil
 	}
-	needsRenew := c.certificateNeedsRenew(ctx, cert, crt)
-	return needsRenew, []string{"Certificate is expiring soon"}, nil
+
+	specMatches, err := certificateSpecMatchesCertificateRequest(crt, cr)
+	if err != nil {
+		return false, matchErrs, err
+	}
+
+	return specMatches, matchErrs, nil
 }
 
 type generateCSRFn func(*cmapi.Certificate, []byte) ([]byte, error)

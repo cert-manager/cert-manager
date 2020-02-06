@@ -22,8 +22,10 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"math/big"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/kr/pretty"
@@ -33,7 +35,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -45,12 +47,12 @@ import (
 )
 
 var (
-	certificateGvk = v1alpha2.SchemeGroupVersion.WithKind("Certificate")
+	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
-type calculateDurationUntilRenewFn func(context.Context, *x509.Certificate, *v1alpha2.Certificate) time.Duration
+type calculateDurationUntilRenewFn func(context.Context, *x509.Certificate, *cmapi.Certificate) time.Duration
 
-func getCertificateForKey(ctx context.Context, key string, lister cmlisters.CertificateLister) (*v1alpha2.Certificate, error) {
+func getCertificateForKey(ctx context.Context, key string, lister cmlisters.CertificateLister) (*cmapi.Certificate, error) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return nil, nil
@@ -75,12 +77,8 @@ func certificateGetter(lister cmlisters.CertificateLister) func(namespace, name 
 
 var keyFunc = controllerpkg.KeyFunc
 
-func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secret *corev1.Secret) (bool, []string) {
+func certificateMatchesSpec(crt *cmapi.Certificate, key crypto.Signer, cert *x509.Certificate, secret *corev1.Secret) (bool, []string) {
 	var errs []string
-
-	// TODO: add checks for KeySize, KeyAlgorithm fields
-	// TODO: add checks for Organization field
-	// TODO: add checks for IsCA field
 
 	// check if the private key is the corresponding pair to the certificate
 
@@ -128,28 +126,176 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 		errs = append(errs, fmt.Sprintf("Issuer %q of the certificate is not up to date: %q", k, v))
 	}
 
-	name, ok := secret.Annotations[v1alpha2.IssuerNameAnnotationKey]
+	name, ok := secret.Annotations[cmapi.IssuerNameAnnotationKey]
 	if !ok {
-		if secret.Annotations[v1alpha2.DeprecatedIssuerNameAnnotationKey] != crt.Spec.IssuerRef.Name {
-			annotationError(v1alpha2.DeprecatedIssuerNameAnnotationKey, secret.Annotations[v1alpha2.DeprecatedIssuerNameAnnotationKey])
+		if secret.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey] != crt.Spec.IssuerRef.Name {
+			annotationError(cmapi.DeprecatedIssuerNameAnnotationKey, secret.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey])
 		}
 	} else if name != crt.Spec.IssuerRef.Name {
-		annotationError(v1alpha2.IssuerNameAnnotationKey, secret.Annotations[v1alpha2.IssuerNameAnnotationKey])
+		annotationError(cmapi.IssuerNameAnnotationKey, secret.Annotations[cmapi.IssuerNameAnnotationKey])
 	}
 
-	kind, ok := secret.Annotations[v1alpha2.IssuerKindAnnotationKey]
+	kind, ok := secret.Annotations[cmapi.IssuerKindAnnotationKey]
 	if !ok {
-		if secret.Annotations[v1alpha2.DeprecatedIssuerKindAnnotationKey] != apiutil.IssuerKind(crt.Spec.IssuerRef) {
-			annotationError(v1alpha2.DeprecatedIssuerKindAnnotationKey, secret.Annotations[v1alpha2.DeprecatedIssuerKindAnnotationKey])
+		if secret.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey] != apiutil.IssuerKind(crt.Spec.IssuerRef) {
+			annotationError(cmapi.DeprecatedIssuerKindAnnotationKey, secret.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey])
 		}
 	} else if kind != apiutil.IssuerKind(crt.Spec.IssuerRef) {
-		annotationError(v1alpha2.IssuerKindAnnotationKey, secret.Annotations[v1alpha2.IssuerKindAnnotationKey])
+		annotationError(cmapi.IssuerKindAnnotationKey, secret.Annotations[cmapi.IssuerKindAnnotationKey])
 	}
 
 	return len(errs) == 0, errs
 }
 
-func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc calculateDurationUntilRenewFn, queueFn func(interface{}, time.Duration), crt *v1alpha2.Certificate) {
+func certificateSpecMatchesCertificateRequest(crt *cmapi.Certificate, cr *cmapi.CertificateRequest, secret *corev1.Secret) (bool, error) {
+	crtCopy := crt.DeepCopy()
+	crCopy := cr.DeepCopy()
+
+	csr, err := pki.DecodeX509CertificateRequestBytes(crCopy.Spec.CSRPEM)
+	if err != nil {
+		return false, err
+	}
+
+	trimmedSpecFromCRHash, err := hashCertificateSpec(trimmedCertificateSpecFromCSR(csr))
+	if err != nil {
+		return false, err
+	}
+
+	trimmedSpecFromCertificate, err := hashCertificateSpec(trimmedCertificateSpecFromCertificate(crtCopy))
+	if err != nil {
+		return false, err
+	}
+
+	if trimmedSpecFromCRHash != trimmedSpecFromCertificate {
+		return false, nil
+	}
+
+	if len(crCopy.Spec.Usages) != len(crtCopy.Spec.Usages) {
+		return false, nil
+	}
+
+	sort.SliceStable(crCopy.Spec.Usages, func(i, j int) bool { return crCopy.Spec.Usages[i] < crCopy.Spec.Usages[j] })
+	sort.SliceStable(crtCopy.Spec.Usages, func(i, j int) bool { return crtCopy.Spec.Usages[i] < crtCopy.Spec.Usages[j] })
+
+	for i, s := range crCopy.Spec.Usages {
+		if s != crtCopy.Spec.Usages[i] {
+			return false, nil
+		}
+	}
+
+	if crCopy.Spec.IsCA != crt.Spec.IsCA {
+		return false, nil
+	}
+
+	if crCopy.Spec.Duration.String() != crt.Spec.Duration.String() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func trimmedCertificateSpecFromCSR(csr *x509.CertificateRequest) *cmapi.CertificateSpec {
+	var ips []string
+	for _, ip := range csr.IPAddresses {
+		ips = append(ips, ip.String())
+	}
+
+	var uris []string
+	for _, uri := range csr.URIs {
+		uris = append(uris, uri.String())
+	}
+
+	for _, s := range [][]string{
+		csr.DNSNames,
+		csr.Subject.Organization,
+		ips,
+		uris,
+		csr.Subject.Country,
+		csr.Subject.OrganizationalUnit,
+		csr.Subject.Locality,
+		csr.Subject.Province,
+		csr.Subject.StreetAddress,
+		csr.Subject.PostalCode,
+	} {
+		sort.Strings(s)
+	}
+
+	return &cmapi.CertificateSpec{
+		CommonName:   csr.Subject.CommonName,
+		DNSNames:     csr.DNSNames,
+		IPAddresses:  ips,
+		Organization: csr.Subject.Organization,
+		Subject: &cmapi.X509Subject{
+			Countries:           csr.Subject.Country,
+			OrganizationalUnits: csr.Subject.OrganizationalUnit,
+			Localities:          csr.Subject.Locality,
+			Provinces:           csr.Subject.Province,
+			StreetAddresses:     csr.Subject.StreetAddress,
+			PostalCodes:         csr.Subject.PostalCode,
+			SerialNumber:        csr.Subject.SerialNumber,
+		},
+		URISANs: uris,
+	}
+}
+
+func trimmedCertificateSpecFromCertificate(crt *cmapi.Certificate) *cmapi.CertificateSpec {
+	spec := crt.DeepCopy().Spec
+
+	if spec.Subject == nil {
+		spec.Subject = new(cmapi.X509Subject)
+	}
+
+	spec.Organization = pki.OrganizationForCertificate(crt)
+
+	for _, s := range [][]string{
+		spec.DNSNames,
+		spec.Organization,
+		spec.IPAddresses,
+		spec.Subject.Countries,
+		spec.Subject.OrganizationalUnits,
+		spec.Subject.Localities,
+		spec.Subject.Provinces,
+		spec.Subject.StreetAddresses,
+		spec.Subject.PostalCodes,
+		spec.URISANs,
+	} {
+		sort.Strings(s)
+	}
+
+	return &cmapi.CertificateSpec{
+		CommonName:   spec.CommonName,
+		DNSNames:     spec.DNSNames,
+		IPAddresses:  spec.IPAddresses,
+		Organization: spec.Organization,
+		Subject: &cmapi.X509Subject{
+			Countries:           spec.Subject.Countries,
+			OrganizationalUnits: spec.Subject.OrganizationalUnits,
+			Localities:          spec.Subject.Localities,
+			Provinces:           spec.Subject.Provinces,
+			StreetAddresses:     spec.Subject.StreetAddresses,
+			PostalCodes:         spec.Subject.PostalCodes,
+			SerialNumber:        spec.Subject.SerialNumber,
+		},
+		URISANs: spec.URISANs,
+	}
+}
+
+func hashCertificateSpec(spec *cmapi.CertificateSpec) (uint32, error) {
+	specBytes, err := json.Marshal(spec)
+	if err != nil {
+		return 0, err
+	}
+
+	hashF := fnv.New32()
+	_, err = hashF.Write(specBytes)
+	if err != nil {
+		return 0, err
+	}
+
+	return hashF.Sum32(), nil
+}
+
+func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc calculateDurationUntilRenewFn, queueFn func(interface{}, time.Duration), crt *cmapi.Certificate) {
 	log := logf.FromContext(ctx)
 	log = log.WithValues(
 		logf.RelatedResourceNameKey, crt.Spec.SecretName,
@@ -196,14 +342,14 @@ func isTemporaryCertificate(cert *x509.Certificate) bool {
 // This is to mitigate a potential attack against x509 certificates that use a
 // predictable serial number and weak MD5 hashing algorithms.
 // In practice, this shouldn't really be a concern anyway.
-func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []byte) ([]byte, error) {
+func generateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	// generate a throwaway self-signed root CA
 	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
 	if err != nil {
 		return nil, err
 	}
-	caCertTemplate, err := pki.GenerateTemplate(&v1alpha2.Certificate{
-		Spec: v1alpha2.CertificateSpec{
+	caCertTemplate, err := pki.GenerateTemplate(&cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{
 			CommonName: "cert-manager.local",
 			IsCA:       true,
 		},
@@ -236,7 +382,7 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []b
 	return b, nil
 }
 
-func updateCertificateStatus(ctx context.Context, cmClient cmclient.Interface, old, new *v1alpha2.Certificate) (*v1alpha2.Certificate, error) {
+func updateCertificateStatus(ctx context.Context, cmClient cmclient.Interface, old, new *cmapi.Certificate) (*cmapi.Certificate, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)
@@ -247,12 +393,12 @@ func updateCertificateStatus(ctx context.Context, cmClient cmclient.Interface, o
 	return cmClient.CertmanagerV1alpha2().Certificates(new.Namespace).UpdateStatus(new)
 }
 
-func certificateHasTemporaryCertificateAnnotation(crt *v1alpha2.Certificate) bool {
+func certificateHasTemporaryCertificateAnnotation(crt *cmapi.Certificate) bool {
 	if crt.Annotations == nil {
 		return false
 	}
 
-	if val, ok := crt.Annotations[v1alpha2.IssueTemporaryCertificateAnnotation]; ok && val == "true" {
+	if val, ok := crt.Annotations[cmapi.IssueTemporaryCertificateAnnotation]; ok && val == "true" {
 		return true
 	}
 
