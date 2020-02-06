@@ -120,7 +120,8 @@ type VenafiTPP struct {
 // VenafiCloud defines connection configuration details for Venafi Cloud
 type VenafiCloud struct {
 	// URL is the base URL for Venafi Cloud
-	URL string
+	// +optional
+	URL string `json:"url,omitempty"`
 
 	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
 	APITokenSecretRef cmmeta.SecretKeySelector
