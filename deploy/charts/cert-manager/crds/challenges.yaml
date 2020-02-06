@@ -437,6 +437,13 @@ spec:
                             which maintains a 1:1 mapping between external IPs and
                             ingress resources.
                           type: string
+                        namespace:
+                          description: The namespace of the ingress resource that
+                            should have ACME challenge solving routes inserted into
+                            it in order to solve HTTP01 challenges. This field requires
+                            that the issuer is of type `ClusterIssuer` as well as
+                            the `name` field also being present.
+                          type: string
                         podTemplate:
                           description: Optional pod template used to configure the
                             ACME challenge solver pods used for HTTP01 challenges
