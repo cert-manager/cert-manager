@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	extentionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
@@ -43,6 +44,10 @@ var _ = framework.ConformanceDescribe("Certificates with External Account Bindin
 		KeyAlgorithm: "HS256",
 	})
 })
+
+const (
+	http01IngressInOtherNamespaceName = "e2e-acme-http01-testing-resource"
+)
 
 func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
@@ -90,7 +95,14 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 ClusterIssuer",
-		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuer,
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuerSameNamespace,
+		DeleteIssuerFunc:    provisionerHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "ACME HTTP01 ClusterIssuer With Different Name and Namespace",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuerDifferentNamespace,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
 	}).Define()
@@ -108,9 +120,19 @@ type acmeIssuerProvisioner struct {
 
 	eab             *cmacme.ACMEExternalAccountBinding
 	secretNamespace string
+
+	otherNamespace *string
 }
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
+	if a.otherNamespace != nil {
+		err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(*a.otherNamespace).Delete(http01IngressInOtherNamespaceName, nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = f.KubeClientSet.CoreV1().Namespaces().Delete(*a.otherNamespace, nil)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
 	if a.eab != nil {
 		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(a.eab.Key.Name, nil)
 		Expect(err).NotTo(HaveOccurred())
@@ -153,7 +175,7 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuerSameNamespace(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
 	By("Creating an ACME HTTP01 ClusterIssuer")
@@ -165,6 +187,49 @@ func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuerDifferentNamespace(f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
+
+	ns, err := f.KubeClientSet.CoreV1().Namespaces().Create(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "e2e-tests-create-acme-certificate-http01-",
+		},
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	a.otherNamespace = &ns.Name
+
+	ing, err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(ns.Name).Create(&extentionsv1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      http01IngressInOtherNamespaceName,
+			Namespace: ns.Name,
+		},
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Creating an ACME HTTP01 ClusterIssuer with ingress name + namespace set")
+	issuer := &cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "acme-cluster-issuer-http01-with-name-and-namespace",
+		},
+		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
+	}
+
+	issuer.Spec.ACME.Solvers[0].HTTP01.Ingress = &cmacme.ACMEChallengeSolverHTTP01Ingress{
+		Name:      ing.Name,
+		Namespace: ing.Namespace,
+	}
+
+	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
 
 	return cmmeta.ObjectReference{
