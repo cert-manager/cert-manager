@@ -52,8 +52,13 @@ func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (*core
 		return nil, fmt.Errorf("multiple existing challenge solver services found and cleaned up. retrying challenge sync")
 	}
 
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Info("creating HTTP01 challenge solver service")
-	return s.createService(ch)
+	return s.createService(ch, httpDomainCfg.Namespace)
 }
 
 // getServicesForChallenge returns a list of services that were created to solve
@@ -71,7 +76,7 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challen
 		selector = selector.Add(*req)
 	}
 
-	serviceList, err := s.serviceLister.Services(ch.Namespace).List(selector)
+	serviceList, err := s.serviceLister.List(selector)
 	if err != nil {
 		return nil, err
 	}
@@ -91,20 +96,20 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challen
 
 // createService will create the service required to solve this challenge
 // in the target API server.
-func (s *Solver) createService(ch *cmacme.Challenge) (*corev1.Service, error) {
-	svc, err := buildService(ch)
+func (s *Solver) createService(ch *cmacme.Challenge, namespace string) (*corev1.Service, error) {
+	svc, err := buildService(ch, namespace)
 	if err != nil {
 		return nil, err
 	}
-	return s.Client.CoreV1().Services(ch.Namespace).Create(svc)
+	return s.Client.CoreV1().Services(namespace).Create(svc)
 }
 
-func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
+func buildService(ch *cmacme.Challenge, namespace string) (*corev1.Service, error) {
 	podLabels := podLabels(ch)
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
-			Namespace:    ch.Namespace,
+			Namespace:    namespace,
 			Labels:       podLabels,
 			Annotations: map[string]string{
 				"auth.istio.io/8089": "NONE",

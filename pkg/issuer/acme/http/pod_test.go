@@ -46,7 +46,7 @@ func TestEnsurePod(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Challenge)
+				ing, err := s.Solver.createPod(s.Challenge, s.Challenge.Namespace)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -89,7 +89,7 @@ func TestEnsurePod(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedPod := s.Solver.buildPod(s.Challenge)
+				expectedPod := s.Solver.buildPod(s.Challenge, s.Challenge.Namespace)
 				// create a reactor that fails the test if a pod is created
 				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					pod := action.(coretesting.CreateAction).GetObject().(*v1.Pod)
@@ -142,11 +142,11 @@ func TestEnsurePod(t *testing.T) {
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createPod(s.Challenge)
+				_, err := s.Solver.createPod(s.Challenge, s.Challenge.Namespace)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createPod(s.Challenge)
+				_, err = s.Solver.createPod(s.Challenge, s.Challenge.Namespace)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -169,7 +169,7 @@ func TestEnsurePod(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensurePod(context.TODO(), test.Challenge)
+			resp, err := test.Solver.ensurePod(context.TODO(), test.Challenge, test.Challenge.Namespace)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -196,7 +196,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Challenge)
+				ing, err := s.Solver.createPod(s.Challenge, s.Challenge.Namespace)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -231,7 +231,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				_, err := s.Solver.createPod(differentChallenge)
+				_, err := s.Solver.createPod(differentChallenge, differentChallenge.Namespace)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -303,7 +303,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge, s.Challenge.Namespace)
 				resultingPod.Labels = map[string]string{
 					"this is a":                          "label",
 					"acme.cert-manager.io/http-domain":   "44655555555",
@@ -360,7 +360,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge, s.Challenge.Namespace)
 				s.testResources[createdPodKey] = resultingPod
 
 				s.Builder.Sync()
@@ -403,7 +403,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp := test.Solver.buildPod(test.Challenge)
+			resp := test.Solver.buildPod(test.Challenge, test.Challenge.Namespace)
 			test.Finish(t, resp, nil)
 		})
 	}

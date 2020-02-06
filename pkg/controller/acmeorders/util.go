@@ -20,8 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/acme"
 	"hash/fnv"
+
+	"github.com/jetstack/cert-manager/pkg/acme"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

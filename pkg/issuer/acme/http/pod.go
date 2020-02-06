@@ -46,7 +46,7 @@ func podLabels(ch *cmacme.Challenge) map[string]string {
 	}
 }
 
-func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) (*corev1.Pod, error) {
+func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge, namespace string) (*corev1.Pod, error) {
 	log := logf.FromContext(ctx).WithName("ensurePod")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver pods")
@@ -69,7 +69,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) (*corev1.P
 
 	log.Info("creating HTTP01 challenge solver pod")
 
-	return s.createPod(ch)
+	return s.createPod(ch, namespace)
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
@@ -87,7 +87,7 @@ func (s *Solver) getPodsForChallenge(ctx context.Context, ch *cmacme.Challenge) 
 		orderSelector = orderSelector.Add(*req)
 	}
 
-	podList, err := s.podLister.Pods(ch.Namespace).List(orderSelector)
+	podList, err := s.podLister.List(orderSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -131,15 +131,15 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(ch *cmacme.Challenge) (*corev1.Pod, error) {
-	return s.Client.CoreV1().Pods(ch.Namespace).Create(
-		s.buildPod(ch))
+func (s *Solver) createPod(ch *cmacme.Challenge, namespace string) (*corev1.Pod, error) {
+	return s.Client.CoreV1().Pods(namespace).Create(
+		s.buildPod(ch, namespace))
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
-func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
-	pod := s.buildDefaultPod(ch)
+func (s *Solver) buildPod(ch *cmacme.Challenge, namespace string) *corev1.Pod {
+	pod := s.buildDefaultPod(ch, namespace)
 
 	// Override defaults if they have changed in the pod template.
 	if ch.Spec.Solver != nil &&
@@ -152,13 +152,13 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 	return pod
 }
 
-func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
+func (s *Solver) buildDefaultPod(ch *cmacme.Challenge, namespace string) *corev1.Pod {
 	podLabels := podLabels(ch)
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
-			Namespace:    ch.Namespace,
+			Namespace:    namespace,
 			Labels:       podLabels,
 			Annotations: map[string]string{
 				"sidecar.istio.io/inject": "false",

@@ -89,7 +89,15 @@ func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolve
 			return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
 				"Ensure solvers[].http01.ingress is specified on your issuer resource")
 		}
-		return ch.Spec.Solver.HTTP01.Ingress, nil
+
+		// If the namespace has not been specified then set the ingress namespace
+		// to that of the challenge resource
+		ing := ch.Spec.Solver.HTTP01.Ingress
+		if len(ing.Namespace) == 0 {
+			ing.Namespace = ch.Namespace
+		}
+
+		return ing, nil
 	}
 	return nil, fmt.Errorf("no HTTP01 ingress configuration found on challenge")
 }
@@ -100,7 +108,12 @@ func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolve
 func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
 	ctx = http01LogCtx(ctx)
 
-	_, podErr := s.ensurePod(ctx, ch)
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
+	if err != nil {
+		return err
+	}
+
+	_, podErr := s.ensurePod(ctx, ch, httpDomainCfg.Namespace)
 	svc, svcErr := s.ensureService(ctx, ch)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
