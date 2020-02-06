@@ -17,15 +17,15 @@ limitations under the License.
 package fake
 
 import (
-	"github.com/Venafi/vcert/pkg/certificate"
 	"time"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 )
 
 type Venafi struct {
 	PingFn                  func() error
-	SignFn                  func([]byte, time.Duration, []certificate.CustomField) ([]byte, error)
+	SignFn                  func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error)
 	ReadZoneConfigurationFn func() (*endpoint.ZoneConfiguration, error)
 }
 
@@ -33,7 +33,7 @@ func (v *Venafi) Ping() error {
 	return v.PingFn()
 }
 
-func (v *Venafi) Sign(b []byte, t time.Duration, f []certificate.CustomField) ([]byte, error) {
+func (v *Venafi) Sign(b []byte, t time.Duration, f []internalvanafiapi.CustomField) ([]byte, error) {
 	return v.SignFn(b, t, f)
 }
 

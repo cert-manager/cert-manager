@@ -24,6 +24,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	"testing"
 	"time"
 
@@ -181,7 +182,7 @@ func TestSign(t *testing.T) {
 	}
 
 	clientReturnsPending := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrCertificatePending{
 				CertificateID: "test-cert-id",
 				Status:        "test-status-pending",
@@ -189,25 +190,25 @@ func TestSign(t *testing.T) {
 		},
 	}
 	clientReturnsTimeout := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrRetrieveCertificateTimeout{
 				CertificateID: "test-cert-id",
 			}
 		},
 	}
 	clientReturnsGenericError := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return nil, errors.New("this is an error")
 		},
 	}
 	clientReturnsCert := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvenafi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return certPEM, nil
 		},
 	}
 
 	clientReturnsCertIfCustomField := &internalvenafifake.Venafi{
-		SignFn: func(csr []byte, t time.Duration, fields []internalvenafi.CustomField) ([]byte, error) {
+		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
 			if len(fields) > 0 && fields[0].Name == "cert-manager-test" && fields[0].Value == "test ok" {
 				return certPEM, nil
 			}
@@ -622,7 +623,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Warning CustomFieldsError Failed to parse venafi.cert-manager.io/custom-fields annotation: invalid character 'c' looking for beginning of value`,
+					`Warning CustomFieldsError Failed to parse "venafi.cert-manager.io/custom-fields" annotation: invalid character 'c' looking for beginning of value`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -634,7 +635,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Failed to parse venafi.cert-manager.io/custom-fields annotation: invalid character 'c' looking for beginning of value",
+								Message:            "Failed to parse \"venafi.cert-manager.io/custom-fields\" annotation: invalid character 'c' looking for beginning of value",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -644,7 +645,7 @@ func TestSign(t *testing.T) {
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsPending,
-			expectedErr:      true,
+			expectedErr:      false,
 		},
 	}
 

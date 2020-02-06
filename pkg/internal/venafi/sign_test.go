@@ -23,6 +23,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	"testing"
 	"time"
 
@@ -175,7 +176,7 @@ func TestSign(t *testing.T) {
 		},
 		"obtain a certificate with custom fields specified": {
 			csrPEM:       csrPEM,
-			customFields: []CustomField{{Name: "test", Value: "ok"}},
+			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok"}},
 			client: internalfake.Connector{
 				RetrieveCertificateFunc: func(r *certificate.Request) (*certificate.PEMCollection, error) {
 					if len(r.CustomFields) == 0 {
@@ -205,7 +206,7 @@ type testSignT struct {
 
 	expectedErr bool
 
-	customFields []CustomField
+	customFields []internalvanafiapi.CustomField
 
 	checkFn func(*testing.T, []byte, []byte)
 }
