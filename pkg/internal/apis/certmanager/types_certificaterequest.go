@@ -32,28 +32,27 @@ const (
 
 // CertificateRequest is a type to represent a Certificate Signing Request
 type CertificateRequest struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta
+	metav1.ObjectMeta
 
-	Spec   CertificateRequestSpec   `json:"spec,omitempty"`
-	Status CertificateRequestStatus `json:"status,omitempty"`
+	Spec   CertificateRequestSpec
+	Status CertificateRequestStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CertificateRequestList is a list of Certificates
 type CertificateRequestList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
+	metav1.TypeMeta
+	metav1.ListMeta
 
-	Items []CertificateRequest `json:"items"`
+	Items []CertificateRequest
 }
 
 // CertificateRequestSpec defines the desired state of CertificateRequest
 type CertificateRequestSpec struct {
 	// Requested certificate default Duration
-	// +optional
-	Duration *metav1.Duration `json:"duration,omitempty"`
+	Duration *metav1.Duration
 
 	// IssuerRef is a reference to the issuer for this CertificateRequest.  If
 	// the 'kind' field is not set, or set to 'Issuer', an Issuer resource with
@@ -62,66 +61,57 @@ type CertificateRequestSpec struct {
 	// the provided name will be used. The 'name' field in this stanza is
 	// required at all times. The group field refers to the API group of the
 	// issuer which defaults to 'cert-manager.io' if empty.
-	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.ObjectReference
 
 	// Byte slice containing the PEM encoded CertificateSigningRequest
-	CSRPEM []byte `json:"csr"`
+	CSRPEM []byte
 
 	// IsCA will mark the resulting certificate as valid for signing. This
 	// implies that the 'signing' usage is set
-	// +optional
-	IsCA bool `json:"isCA,omitempty"`
+	IsCA bool
 
 	// Usages is the set of x509 actions that are enabled for a given key.
 	// Defaults are ('digital signature', 'key encipherment') if empty
-	// +optional
-	Usages []KeyUsage `json:"usages,omitempty"`
+	Usages []KeyUsage
 }
 
 // CertificateStatus defines the observed state of CertificateRequest and
 // resulting signed certificate.
 type CertificateRequestStatus struct {
-	// +optional
-	Conditions []CertificateRequestCondition `json:"conditions,omitempty"`
+	Conditions []CertificateRequestCondition
 
 	// Byte slice containing a PEM encoded signed certificate resulting from the
 	// given certificate signing request.
-	// +optional
-	Certificate []byte `json:"certificate,omitempty"`
+	Certificate []byte
 
 	// Byte slice containing the PEM encoded certificate authority of the signed
 	// certificate.
-	// +optional
-	CA []byte `json:"ca,omitempty"`
+	CA []byte
 
 	// FailureTime stores the time that this CertificateRequest failed. This is
 	// used to influence garbage collection and back-off.
-	// +optional
-	FailureTime *metav1.Time `json:"failureTime,omitempty"`
+	FailureTime *metav1.Time
 }
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.
 type CertificateRequestCondition struct {
 	// Type of the condition, currently ('Ready', 'InvalidRequest').
-	Type CertificateRequestConditionType `json:"type"`
+	Type CertificateRequestConditionType
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	Status cmmeta.ConditionStatus `json:"status"`
+	Status cmmeta.ConditionStatus
 
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
-	// +optional
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime *metav1.Time
 
 	// Reason is a brief machine readable explanation for the condition's last
 	// transition.
-	// +optional
-	Reason string `json:"reason,omitempty"`
+	Reason string
 
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
-	// +optional
-	Message string `json:"message,omitempty"`
+	Message string
 }
 
 // CertificateRequestConditionType represents an Certificate condition value.

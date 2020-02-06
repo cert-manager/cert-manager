@@ -26,51 +26,46 @@ import (
 // ACMEIssuer contains the specification for an ACME issuer
 type ACMEIssuer struct {
 	// Email is the email for this account
-	// +optional
-	Email string `json:"email,omitempty"`
+	Email string
 
 	// Server is the ACME server URL
-	Server string `json:"server"`
+	Server string
 
 	// If true, skip verifying the ACME server TLS certificate
-	// +optional
-	SkipTLSVerify bool `json:"skipTLSVerify,omitempty"`
+	SkipTLSVerify bool
 
 	// ExternalAcccountBinding is a reference to a CA external account of the ACME
 	// server.
-	// +optional
-	ExternalAccountBinding *ACMEExternalAccountBinding `json:"externalAccountBinding,omitempty"`
+	ExternalAccountBinding *ACMEExternalAccountBinding
 
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
-	PrivateKey cmmeta.SecretKeySelector `json:"privateKeySecretRef"`
+	PrivateKey cmmeta.SecretKeySelector
 
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
-	// +optional
-	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
+	Solvers []ACMEChallengeSolver
 }
 
 // ACMEExternalAcccountBinding is a reference to a CA external account of the ACME
 // server.
 type ACMEExternalAccountBinding struct {
 	// keyID is the ID of the CA key that the External Account is bound to.
-	KeyID string `json:"keyID"`
+	KeyID string
 
 	// keySecretRef is a Secret Key Selector referencing a data item in a Kubernetes
 	// Secret which holds the symmetric MAC key of the External Account Binding.
 	// The `key` is the index string that is paired with the key data in the
 	// Secret and should not be confused with the key data itself, or indeed with
 	// the External Account Binding keyID above.
-	Key cmmeta.SecretKeySelector `json:"keySecretRef"`
+	Key cmmeta.SecretKeySelector
 
 	// keyAlgorithm is the MAC key algorithm that the key is used for. Valid
 	// values are "HS256", "HS384" and "HS512".
-	KeyAlgorithm HMACKeyAlgorithm `json:"keyAlgorithm"`
+	KeyAlgorithm HMACKeyAlgorithm
 }
 
 // HMACKeyAlgorithm is the name of a key algorithm used for HMAC encryption
-// +kubebuilder:validation:Enum=HS256;HS384;HS512
 type HMACKeyAlgorithm string
 
 const (
@@ -82,13 +77,11 @@ const (
 type ACMEChallengeSolver struct {
 	// Selector selects a set of DNSNames on the Certificate resource that
 	// should be solved using this challenge solver.
-	Selector *CertificateDNSNameSelector `json:"selector,omitempty"`
+	Selector *CertificateDNSNameSelector
 
-	// +optional
-	HTTP01 *ACMEChallengeSolverHTTP01 `json:"http01,omitempty"`
+	HTTP01 *ACMEChallengeSolverHTTP01
 
-	// +optional
-	DNS01 *ACMEChallengeSolverDNS01 `json:"dns01,omitempty"`
+	DNS01 *ACMEChallengeSolverDNS01
 }
 
 // CertificateDomainSelector selects certificates using a label selector, and
@@ -98,8 +91,7 @@ type ACMEChallengeSolver struct {
 type CertificateDNSNameSelector struct {
 	// A label selector that is used to refine the set of certificate's that
 	// this challenge solver will apply to.
-	// +optional
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
+	MatchLabels map[string]string
 
 	// List of DNSNames that this solver will be used to solve.
 	// If specified and a match is found, a dnsNames selector will take
@@ -108,8 +100,7 @@ type CertificateDNSNameSelector struct {
 	// with the most matching labels in matchLabels will be selected.
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
-	// +optional
-	DNSNames []string `json:"dnsNames,omitempty"`
+	DNSNames []string
 
 	// List of DNSZones that this solver will be used to solve.
 	// The most specific DNS zone match specified here will take precedence
@@ -120,8 +111,7 @@ type CertificateDNSNameSelector struct {
 	// with the most matching labels in matchLabels will be selected.
 	// If neither has more matches, the solver defined earlier in the list
 	// will be selected.
-	// +optional
-	DNSZones []string `json:"dnsZones,omitempty"`
+	DNSZones []string
 }
 
 // ACMEChallengeSolverHTTP01 contains configuration detailing how to solve
@@ -134,33 +124,28 @@ type ACMEChallengeSolverHTTP01 struct {
 	// creating or modifying Ingress resources in order to route requests for
 	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
 	// provisioned by cert-manager for each Challenge to be completed.
-	// +optional
-	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
+	Ingress *ACMEChallengeSolverHTTP01Ingress
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
 	// Optional service type for Kubernetes solver service
-	// +optional
-	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
+	ServiceType corev1.ServiceType
 
 	// The ingress class to use when creating Ingress resources to solve ACME
 	// challenges that use this challenge solver.
 	// Only one of 'class' or 'name' may be specified.
-	// +optional
-	Class *string `json:"class,omitempty"`
+	Class *string
 
 	// The name of the ingress resource that should have ACME challenge solving
 	// routes inserted into it in order to solve HTTP01 challenges.
 	// This is typically used in conjunction with ingress controllers like
 	// ingress-gce, which maintains a 1:1 mapping between external IPs and
 	// ingress resources.
-	// +optional
-	Name string `json:"name,omitempty"`
+	Name string
 
 	// Optional pod template used to configure the ACME challenge solver pods
 	// used for HTTP01 challenges
-	// +optional
-	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
+	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
@@ -168,78 +153,62 @@ type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	// Only the 'labels' and 'annotations' fields may be set.
 	// If labels or annotations overlap with in-built values, the values here
 	// will override the in-built values.
-	// +optional
-	ACMEChallengeSolverHTTP01IngressPodObjectMeta `json:"metadata,omitempty"`
+	ACMEChallengeSolverHTTP01IngressPodObjectMeta
 
 	// PodSpec defines overrides for the HTTP01 challenge solver pod.
 	// Only the 'nodeSelector', 'affinity' and 'tolerations' fields are
 	// supported currently. All other fields will be ignored.
-	// +optional
-	Spec ACMEChallengeSolverHTTP01IngressPodSpec `json:"spec,omitempty"`
+	Spec ACMEChallengeSolverHTTP01IngressPodSpec
 }
 
 type ACMEChallengeSolverHTTP01IngressPodObjectMeta struct {
 	// Annotations that should be added to the create ACME HTTP01 solver pods.
-	Annotations map[string]string `json:"annotations,omitempty"`
+	Annotations map[string]string
 
 	// Labels that should be added to the created ACME HTTP01 solver pods.
-	Labels map[string]string `json:"labels,omitempty"`
+	Labels map[string]string
 }
 
 type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
 	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-	// +optional
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	NodeSelector map[string]string
 
 	// If specified, the pod's scheduling constraints
-	// +optional
-	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+	Affinity *corev1.Affinity
 
 	// If specified, the pod's tolerations.
-	// +optional
-	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+	Tolerations []corev1.Toleration
 }
 
 type ACMEChallengeSolverDNS01 struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
-	// +optional
-	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
+	CNAMEStrategy CNAMEStrategy
 
-	// +optional
-	Akamai *ACMEIssuerDNS01ProviderAkamai `json:"akamai,omitempty"`
+	Akamai *ACMEIssuerDNS01ProviderAkamai
 
-	// +optional
-	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS
 
-	// +optional
-	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
+	Cloudflare *ACMEIssuerDNS01ProviderCloudflare
 
-	// +optional
-	Route53 *ACMEIssuerDNS01ProviderRoute53 `json:"route53,omitempty"`
+	Route53 *ACMEIssuerDNS01ProviderRoute53
 
-	// +optional
-	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azuredns,omitempty"`
+	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS
 
-	// +optional
-	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
+	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean
 
-	// +optional
-	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmedns,omitempty"`
+	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS
 
-	// +optional
-	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+	RFC2136 *ACMEIssuerDNS01ProviderRFC2136
 
-	// +optional
-	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
+	Webhook *ACMEIssuerDNS01ProviderWebhook
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
 // when found in DNS zones.
 // By default, the None strategy will be applied (i.e. do not follow CNAMEs).
-// +kubebuilder:validation:Enum=None;Follow
 type CNAMEStrategy string
 
 const (
@@ -258,32 +227,31 @@ const (
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API
 type ACMEIssuerDNS01ProviderAkamai struct {
-	ServiceConsumerDomain string                   `json:"serviceConsumerDomain"`
-	ClientToken           cmmeta.SecretKeySelector `json:"clientTokenSecretRef"`
-	ClientSecret          cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
-	AccessToken           cmmeta.SecretKeySelector `json:"accessTokenSecretRef"`
+	ServiceConsumerDomain string
+	ClientToken           cmmeta.SecretKeySelector
+	ClientSecret          cmmeta.SecretKeySelector
+	AccessToken           cmmeta.SecretKeySelector
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
 // configuration for Google Cloud DNS
 type ACMEIssuerDNS01ProviderCloudDNS struct {
-	// +optional
-	ServiceAccount *cmmeta.SecretKeySelector `json:"serviceAccountSecretRef,omitempty"`
-	Project        string                    `json:"project"`
+	ServiceAccount *cmmeta.SecretKeySelector
+	Project        string
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
 // configuration for Cloudflare
 type ACMEIssuerDNS01ProviderCloudflare struct {
-	Email    string                    `json:"email"`
-	APIKey   *cmmeta.SecretKeySelector `json:"apiKeySecretRef,omitempty"`
-	APIToken *cmmeta.SecretKeySelector `json:"apiTokenSecretRef,omitempty"`
+	Email    string
+	APIKey   *cmmeta.SecretKeySelector
+	APIToken *cmmeta.SecretKeySelector
 }
 
 // ACMEIssuerDNS01ProviderDigitalOcean is a structure containing the DNS
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
-	Token cmmeta.SecretKeySelector `json:"tokenSecretRef"`
+	Token cmmeta.SecretKeySelector
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
@@ -291,48 +259,41 @@ type ACMEIssuerDNS01ProviderDigitalOcean struct {
 type ACMEIssuerDNS01ProviderRoute53 struct {
 	// The AccessKeyID is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	// +optional
-	AccessKeyID string `json:"accessKeyID"`
+	AccessKeyID string
 
 	// The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	// +optional
-	SecretAccessKey cmmeta.SecretKeySelector `json:"secretAccessKeySecretRef"`
+	SecretAccessKey cmmeta.SecretKeySelector
 
 	// Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey
 	// or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata
-	// +optional
-	Role string `json:"role"`
+	Role string
 
 	// If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.
-	// +optional
-	HostedZoneID string `json:"hostedZoneID,omitempty"`
+	HostedZoneID string
 
 	// Always set the region when using AccessKeyID and SecretAccessKey
-	Region string `json:"region"`
+	Region string
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
-	ClientID string `json:"clientID"`
+	ClientID string
 
-	ClientSecret cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
+	ClientSecret cmmeta.SecretKeySelector
 
-	SubscriptionID string `json:"subscriptionID"`
+	SubscriptionID string
 
-	TenantID string `json:"tenantID"`
+	TenantID string
 
-	ResourceGroupName string `json:"resourceGroupName"`
+	ResourceGroupName string
 
-	// +optional
-	HostedZoneName string `json:"hostedZoneName,omitempty"`
+	HostedZoneName string
 
-	// +optional
-	Environment AzureDNSEnvironment `json:"environment,omitempty"`
+	Environment AzureDNSEnvironment
 }
 
-// +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud
 type AzureDNSEnvironment string
 
 const (
@@ -345,9 +306,9 @@ const (
 // ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
 // configuration for ACME-DNS servers
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
-	Host string `json:"host"`
+	Host string
 
-	AccountSecret cmmeta.SecretKeySelector `json:"accountSecretRef"`
+	AccountSecret cmmeta.SecretKeySelector
 }
 
 // ACMEIssuerDNS01ProviderRFC2136 is a structure containing the
@@ -355,24 +316,21 @@ type ACMEIssuerDNS01ProviderAcmeDNS struct {
 type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// The IP address of the DNS supporting RFC2136. Required.
 	// Note: FQDN is not a valid value, only IP.
-	Nameserver string `json:"nameserver"`
+	Nameserver string
 
 	// The name of the secret containing the TSIG value.
 	// If ``tsigKeyName`` is defined, this field is required.
-	// +optional
-	TSIGSecret cmmeta.SecretKeySelector `json:"tsigSecretSecretRef,omitempty"`
+	TSIGSecret cmmeta.SecretKeySelector
 
 	// The TSIG Key name configured in the DNS.
 	// If ``tsigSecretSecretRef`` is defined, this field is required.
-	// +optional
-	TSIGKeyName string `json:"tsigKeyName,omitempty"`
+	TSIGKeyName string
 
 	// The TSIG Algorithm configured in the DNS supporting RFC2136. Used only
 	// when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
 	// Supported values are (case-insensitive): ``HMACMD5`` (default),
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
-	// +optional
-	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+	TSIGAlgorithm string
 }
 
 // ACMEIssuerDNS01ProviderWebhook specifies configuration for a webhook DNS01
@@ -382,12 +340,12 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// resources to the webhook apiserver.
 	// This should be the same as the GroupName specified in the webhook
 	// provider implementation.
-	GroupName string `json:"groupName"`
+	GroupName string
 
 	// The name of the solver to use, as defined in the webhook provider
 	// implementation.
 	// This will typically be the name of the provider, e.g. 'cloudflare'.
-	SolverName string `json:"solverName"`
+	SolverName string
 
 	// Additional configuration that should be passed to the webhook apiserver
 	// when challenges are processed.
@@ -397,19 +355,16 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// should use a cmmeta.SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.
-	// +optional
-	Config *apiext.JSON `json:"config,omitempty"`
+	Config *apiext.JSON
 }
 
 type ACMEIssuerStatus struct {
 	// URI is the unique account identifier, which can also be used to retrieve
 	// account details from the CA
-	// +optional
-	URI string `json:"uri,omitempty"`
+	URI string
 
 	// LastRegisteredEmail is the email associated with the latest registered
 	// ACME account, in order to track changes made to registered account
 	// associated with the  Issuer
-	// +optional
-	LastRegisteredEmail string `json:"lastRegisteredEmail,omitempty"`
+	LastRegisteredEmail string
 }
