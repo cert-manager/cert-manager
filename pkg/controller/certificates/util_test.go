@@ -29,6 +29,116 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
+func TestCertificateSpecMatchesCertificateRequest(t *testing.T) {
+	baseCert := gen.Certificate("test",
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),
+		gen.SetCertificateSecretName("output"),
+		gen.SetCertificateDNSNames("a.example.com"),
+		gen.SetCertificateCommonName("common.name.example.com"),
+		gen.SetCertificateURIs("spiffe://cluster.local/ns/sandbox/sa/foo"),
+		gen.SetCertificateIPs("8.8.8.8", "127.0.0.1"),
+		gen.SetCertificateRenewBefore(time.Hour*36),
+	)
+
+	exampleBundle := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert))
+
+	type testT struct {
+		cb          cryptoBundle
+		certificate *cmapi.Certificate
+		csr         *cmapi.CertificateRequest
+
+		expMatch, expError bool
+	}
+
+	for name, test := range map[string]testT{
+		"if all match then return matched": {
+			certificate: exampleBundle.certificate,
+			csr:         exampleBundle.certificateRequest,
+			expMatch:    true,
+			expError:    false,
+		},
+		"if badly coded CSR PEM then error": {
+			certificate: exampleBundle.certificate,
+			csr: gen.CertificateRequestFrom(exampleBundle.certificateRequest,
+				gen.SetCertificateRequestCSR([]byte("garbage")),
+			),
+			expMatch: false,
+			expError: true,
+		},
+		"if common name is different then not match": {
+			certificate: exampleBundle.certificate,
+			csr: mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+				gen.SetCertificateCommonName("different common name"),
+			)).certificateRequest,
+			expMatch: false,
+			expError: false,
+		},
+		"if IPs do not match then don't match": {
+			certificate: exampleBundle.certificate,
+			csr: mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+				gen.SetCertificateIPs("127.0.0.1"),
+			)).certificateRequest,
+			expMatch: false,
+			expError: false,
+		},
+		"if URIs do not match then don't match": {
+			certificate: exampleBundle.certificate,
+			csr: mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+				gen.SetCertificateURIs("spiffe://cluster.local/ns/sandbox/sa/foo", "spiffe://cluster.local/ns/sandbox/sa/bar"),
+			)).certificateRequest,
+			expMatch: false,
+			expError: false,
+		},
+		"if Countries do not match then don't match": {
+			certificate: exampleBundle.certificate,
+			csr: mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+				gen.SetCertificateCountries("hello friends"),
+			)).certificateRequest,
+			expMatch: false,
+			expError: false,
+		},
+		"if Usages do not match then don't match": {
+			certificate: exampleBundle.certificate,
+			csr: mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+				gen.SetCertificateKeyUsages(cmapi.UsageCertSign),
+			)).certificateRequest,
+			expMatch: false,
+			expError: false,
+		},
+		"if isCA request does not match then don't match": {
+			certificate: exampleBundle.certificate,
+			csr: mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+				gen.SetCertificateIsCA(true),
+			)).certificateRequest,
+			expMatch: false,
+			expError: false,
+		},
+		"if Duration does not match then don't match": {
+			certificate: exampleBundle.certificate,
+			csr: mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+				gen.SetCertificateDuration(time.Second),
+			)).certificateRequest,
+			expMatch: false,
+			expError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			match, err := certificateSpecMatchesCertificateRequest(
+				test.certificate, test.csr)
+
+			if match != test.expMatch {
+				t.Errorf("got unexpected match bool, exp=%t got=%t",
+					test.expMatch, match)
+			}
+
+			if test.expError != (err != nil) {
+				t.Errorf("got unexpected error, exp=%t got=%t (%s)",
+					test.expError, err != nil, err)
+			}
+		})
+	}
+}
+
 func TestCertificateMatchesSpec(t *testing.T) {
 	baseCert := gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),

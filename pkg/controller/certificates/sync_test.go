@@ -127,6 +127,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,
+			Usages:    crt.Spec.Usages,
 		},
 	}
 
@@ -2192,7 +2193,9 @@ func TestUpdateStatus(t *testing.T) {
 				},
 				CertManagerObjects: []runtime.Object{
 					exampleBundle1.certificate,
-					exampleBundle1.certificateRequest,
+					gen.CertificateRequestFrom(exampleBundle1.certificateRequest,
+						gen.SetCertificateRequestKeyUsages(cmapi.UsageCertSign),
+					),
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(

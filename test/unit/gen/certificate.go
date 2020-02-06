@@ -163,3 +163,13 @@ func SetCertificateKeyUsages(usages ...v1alpha2.KeyUsage) CertificateModifier {
 		cr.Spec.Usages = usages
 	}
 }
+
+func SetCertificateCountries(countries ...string) CertificateModifier {
+	return func(cr *v1alpha2.Certificate) {
+		if cr.Spec.Subject == nil {
+			cr.Spec.Subject = new(v1alpha2.X509Subject)
+		}
+
+		cr.Spec.Subject.Countries = countries
+	}
+}

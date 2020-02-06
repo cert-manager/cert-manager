@@ -147,7 +147,7 @@ func certificateMatchesSpec(crt *cmapi.Certificate, key crypto.Signer, cert *x50
 	return len(errs) == 0, errs
 }
 
-func certificateSpecMatchesCertificateRequest(crt *cmapi.Certificate, cr *cmapi.CertificateRequest, secret *corev1.Secret) (bool, error) {
+func certificateSpecMatchesCertificateRequest(crt *cmapi.Certificate, cr *cmapi.CertificateRequest) (bool, error) {
 	crtCopy := crt.DeepCopy()
 	crCopy := cr.DeepCopy()
 

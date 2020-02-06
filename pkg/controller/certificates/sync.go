@@ -633,7 +633,7 @@ func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Cont
 		return needsRenew, []string{"Certificate is expiring soon"}, nil
 	}
 
-	// If we have no existing CertificateRequest so exit early
+	// If we have no existing CertificateRequest, exit early
 	if cr == nil {
 		return true, matchErrs, nil
 	}

@@ -480,17 +480,3 @@ func SignatureAlgorithm(crt *v1alpha2.Certificate) (x509.PublicKeyAlgorithm, x50
 	}
 	return pubKeyAlgo, sigAlgo, nil
 }
-
-func KeyAlgorithmFromCertificateRequest(csr *x509.CertificateRequest) (v1alpha2.KeyAlgorithm, error) {
-	var pubKeyAlgo v1alpha2.KeyAlgorithm
-	switch csr.PublicKeyAlgorithm {
-	case x509.RSA:
-		pubKeyAlgo = v1alpha2.RSAKeyAlgorithm
-	case x509.ECDSA:
-		pubKeyAlgo = v1alpha2.ECDSAKeyAlgorithm
-	default:
-		return "", fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa' or 'rsa", csr.PublicKeyAlgorithm)
-	}
-
-	return pubKeyAlgo, nil
-}
