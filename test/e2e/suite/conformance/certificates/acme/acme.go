@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	extentionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -120,18 +121,9 @@ type acmeIssuerProvisioner struct {
 
 	eab             *cmacme.ACMEExternalAccountBinding
 	secretNamespace string
-
-	otherNamespace *string
 }
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
-	if a.otherNamespace != nil {
-		err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(*a.otherNamespace).Delete(http01IngressInOtherNamespaceName, nil)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = f.KubeClientSet.CoreV1().Namespaces().Delete(*a.otherNamespace, nil)
-		Expect(err).NotTo(HaveOccurred())
-	}
 
 	if a.eab != nil {
 		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(a.eab.Key.Name, nil)
@@ -143,7 +135,21 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 	}
 
 	if ref.Kind == "ClusterIssuer" {
-		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(ref.Name, nil)
+		issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Get(ref.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// If we are using the HTTP01 challenge with a solver ingress in another namespace, then we should clean up that namespace
+		if issuer.Spec.ACME.Solvers[0].HTTP01 != nil {
+			if ns := issuer.Spec.ACME.Solvers[0].HTTP01.Ingress.Namespace; len(ns) > 0 {
+				err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(ns).Delete(http01IngressInOtherNamespaceName, nil)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = f.KubeClientSet.CoreV1().Namespaces().Delete(ns, nil)
+				Expect(err).NotTo(HaveOccurred())
+			}
+		}
+
+		err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(ref.Name, nil)
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
@@ -206,12 +212,29 @@ func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuerDifferentNamespace(f *f
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	a.otherNamespace = &ns.Name
-
 	ing, err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(ns.Name).Create(&extentionsv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      http01IngressInOtherNamespaceName,
 			Namespace: ns.Name,
+		},
+		Spec: extentionsv1beta1.IngressSpec{
+			Rules: []extentionsv1beta1.IngressRule{
+				{
+					IngressRuleValue: extentionsv1beta1.IngressRuleValue{
+						HTTP: &extentionsv1beta1.HTTPIngressRuleValue{
+							Paths: []extentionsv1beta1.HTTPIngressPath{
+								{
+									Path: "/testpath",
+									Backend: extentionsv1beta1.IngressBackend{
+										ServiceName: "test",
+										ServicePort: intstr.FromInt(8080),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	})
 	Expect(err).NotTo(HaveOccurred())
