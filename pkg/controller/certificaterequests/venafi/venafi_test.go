@@ -146,9 +146,9 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	tppCRWithCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": "cert-manager-test", "value": "test ok"}]`}))
+	tppCRWithCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": "cert-manager-test", "value": "test ok"}]`}))
 
-	tppCRWithInvalidCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": cert-manager-test}]`}))
+	tppCRWithInvalidCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": cert-manager-test}]`}))
 
 	cloudCR := gen.CertificateRequestFrom(baseCR,
 		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{

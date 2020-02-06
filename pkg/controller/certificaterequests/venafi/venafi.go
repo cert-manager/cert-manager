@@ -19,6 +19,7 @@ package venafi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -90,15 +91,15 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 
 	var customFields []venafiinternal.CustomField
-	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFields]; exists && annotation != "" {
+	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFieldsAnnotationKey]; exists && annotation != "" {
 		err := json.Unmarshal([]byte(annotation), &customFields)
 		if err != nil {
-			message := "Failed to parse venafi.cert-manager.io/custom-fields annotation"
+			message := fmt.Sprintf("Failed to parse %q annotation", cmapi.VenafiCustomFieldsAnnotationKey)
 
 			v.reporter.Failed(cr, err, "CustomFieldsError", message)
 			log.Error(err, message)
 
-			return nil, err
+			return nil, nil
 		}
 	}
 

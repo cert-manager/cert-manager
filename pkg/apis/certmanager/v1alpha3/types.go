@@ -101,7 +101,9 @@ const (
 // Issuer specific Annotations
 const (
 	// VenafiCustomFields is the annotation that passes on JSON encoded custom fields to the Venafi issuer
-	VenafiCustomFields = "venafi.cert-manager.io/custom-fields"
+	// The value is an array with objetcs containing the name and value keys
+	// for example: `[{"name": "custom-field", "value": "custom-value"}]`
+	VenafiCustomFieldsAnnotationKey = "venafi.cert-manager.io/custom-fields"
 )
 
 // KeyUsage specifies valid usage contexts for keys.
