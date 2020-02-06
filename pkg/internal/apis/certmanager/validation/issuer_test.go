@@ -376,6 +376,55 @@ func TestValidateIssuerSpec(t *testing.T) {
 	}
 }
 
+func TestValidateIssuer(t *testing.T) {
+	scenarios := map[string]struct {
+		issuer *cmapi.Issuer
+		errs   []*field.Error
+	}{
+		"issuer configured using acme.solvers.http01.ingress.namespace": {
+			issuer: &cmapi.Issuer{
+				Spec: cmapi.IssuerSpec{
+					IssuerConfig: cmapi.IssuerConfig{
+						ACME: &cmacme.ACMEIssuer{
+							Email:      "valid-email",
+							Server:     "valid-server",
+							PrivateKey: validSecretKeyRef,
+							Solvers: []cmacme.ACMEChallengeSolver{
+								{
+									HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+										Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+											Name:      "ingress-name",
+											Namespace: "ingress-namespace",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(field.NewPath("spec", "acme", "http01", "ingress"), "may only specify 'namespace' on ClusterIssuer resources"),
+			},
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateIssuer(s.issuer)
+			if len(errs) != len(s.errs) {
+				t.Errorf("Expected %v but got %v", s.errs, errs)
+				return
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
@@ -444,6 +493,24 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ingress", "serviceType"), corev1.ServiceType("InvalidServiceType"), `must be empty, "ClusterIP" or "NodePort"`),
+			},
+		},
+		"acme issuer with invalid http01 config namespace, no name": {
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					Namespace: "my-namespace",
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("ingress"), "may only specify 'namespace' if 'name' is also defined"),
+			},
+		},
+		"acme issuer with valid http01 config name and namespade": {
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+					Name:      "my-ingress",
+					Namespace: "my-namespace",
+				},
 			},
 		},
 	}

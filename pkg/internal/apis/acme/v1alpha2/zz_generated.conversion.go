@@ -480,6 +480,7 @@ func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallenge
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Class = (*string)(unsafe.Pointer(in.Class))
 	out.Name = in.Name
+	out.Namespace = in.Namespace
 	out.PodTemplate = (*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
 	return nil
 }
@@ -493,6 +494,7 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1alpha2_ACMEChallenge
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Class = (*string)(unsafe.Pointer(in.Class))
 	out.Name = in.Name
+	out.Namespace = in.Namespace
 	out.PodTemplate = (*v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
 	return nil
 }

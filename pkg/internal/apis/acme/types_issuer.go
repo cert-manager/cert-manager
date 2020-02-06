@@ -143,6 +143,12 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// ingress resources.
 	Name string
 
+	// The namespace of the ingress resource that should have ACME challenge
+	// solving routes inserted into it in order to solve HTTP01 challenges. This
+	// field requires that the issuer is of type `ClusterIssuer` as well as the
+	// `name` field also being present.
+	Namespace string `json:"namespace,omitempty"`
+
 	// Optional pod template used to configure the ACME challenge solver pods
 	// used for HTTP01 challenges
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate

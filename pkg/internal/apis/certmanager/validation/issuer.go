@@ -35,7 +35,19 @@ import (
 
 func ValidateIssuer(obj runtime.Object) field.ErrorList {
 	iss := obj.(*certmanager.Issuer)
-	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	fldPath := field.NewPath("spec")
+	allErrs := ValidateIssuerSpec(&iss.Spec, fldPath)
+
+	if iss.Spec.ACME != nil {
+		for _, s := range iss.Spec.ACME.Solvers {
+			if s.HTTP01 != nil && s.HTTP01.Ingress != nil &&
+				len(s.HTTP01.Ingress.Namespace) > 0 {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("acme", "http01", "ingress"),
+					"may only specify 'namespace' on ClusterIssuer resources"))
+			}
+		}
+	}
+
 	return allErrs
 }
 
@@ -172,6 +184,10 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
 	default:
 		el = append(el, field.Invalid(fldPath.Child("serviceType"), ingress.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
+	}
+
+	if len(ingress.Name) == 0 && len(ingress.Namespace) > 0 {
+		el = append(el, field.Forbidden(fldPath, "may only specify 'namespace' if 'name' is also defined"))
 	}
 
 	return el
