@@ -1,3 +1,5 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -10,4 +12,12 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["api.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/internal/venafi/api",
+    visibility = ["//pkg:__subpackages__"],
+    deps = ["@com_github_venafi_vcert//pkg/certificate:go_default_library"],
 )
