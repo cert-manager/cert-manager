@@ -123,7 +123,8 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 			if specMatches {
 				matches = true
 				log = logf.WithRelatedResource(log, req)
-				log.Info("although the issued certificate does not match the requested specifications, cert-manager will not attempt a re-issue")
+				log.Info(
+					"although the issued certificate does not match the requested specifications, the request did, so cert-manager will not attempt a re-issue")
 			}
 		}
 	}
