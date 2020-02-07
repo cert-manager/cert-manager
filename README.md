@@ -73,12 +73,16 @@ There is a Google Group used for project wide announcements and development coor
 Anybody can join the group by visiting [here](https://groups.google.com/forum/#!forum/cert-manager-dev)
 and clicking "Join Group". A Google account is required to join the group.
 
-Once you have become a member, you should receive an invite to the weekly development
+### Bi-weekly development meeting
+Once you have become a member, you should receive an invite to the bi-weekly development
 meeting, hosted on **Wednesdays at 4pm UTC** on Zoom.us.
 
-Anyone is welcome to join these calls, even if just to ask questions.
-
+Anyone is welcome to join these calls, even if just to ask questions.  
 Meeting notes are recorded in [Google docs](https://docs.google.com/document/d/1Tc5t6ylY9dhXAan1OjOoldeaoys1Yh4Ir710ATfBa5U).
+
+### Daily standups
+You are also welcome to join our daily standup every day at **11am UTC** on Google Meet.
+Invites are sent via the [Google Group](https://groups.google.com/forum/#!forum/cert-manager-dev)
 
 ## Contributing
 
