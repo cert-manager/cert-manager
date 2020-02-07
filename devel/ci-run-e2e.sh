@@ -22,6 +22,11 @@ set -o pipefail
 # This is inteded to be run in a CI environment and *not* for development.
 # It is not optimised for quick, iterative development.
 
+export_logs() {
+  echo "Exporting cluster logs to artifacts..."
+  "${SCRIPT_ROOT}/cluster/export-logs.sh"
+}
+
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
@@ -31,6 +36,8 @@ setup_tools
 
 echo "Ensuring a kind cluster exists..."
 "${SCRIPT_ROOT}/cluster/create.sh"
+
+trap "export_logs" ERR
 
 echo "Ensuring all e2e test dependencies are installed..."
 "${SCRIPT_ROOT}/setup-e2e-deps.sh"
