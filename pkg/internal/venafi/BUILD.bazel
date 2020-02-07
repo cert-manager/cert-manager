@@ -29,6 +29,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/internal/venafi/api:all-srcs",
         "//pkg/internal/venafi/fake:all-srcs",
     ],
     tags = ["automanaged"],

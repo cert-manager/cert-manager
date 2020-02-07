@@ -80,6 +80,7 @@ type CertificateSpec struct {
 	// The CommonName should have a length of 64 characters or fewer to avoid
 	// generating invalid CSRs.
 	// This value is ignored by TLS clients when any subject alt name is set.
+	// This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
