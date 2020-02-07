@@ -13,7 +13,7 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.5.0
 	github.com/Azure/go-autorest/autorest/to v0.3.0
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
-	github.com/Venafi/vcert v0.0.0-20200120162047-d4d4df569eec
+	github.com/Venafi/vcert v0.0.0-20200207035730-5a915d73be5d
 	github.com/aws/aws-sdk-go v1.24.1
 	github.com/cloudflare/cloudflare-go v0.8.5
 	github.com/cpu/goacmedns v0.0.0-20180701200144-565ecf2a84df
