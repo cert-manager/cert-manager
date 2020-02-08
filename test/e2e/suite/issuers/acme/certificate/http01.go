@@ -17,6 +17,7 @@ limitations under the License.
 package certificate
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -219,6 +220,15 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err = certClient.Get(certificateName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
+		By("Getting the signed certificate data")
+		sec, err := f.KubeClientSet.CoreV1().Secrets(cert.Namespace).Get(cert.Spec.SecretName, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		certData, ok := sec.Data[corev1.TLSCertKey]
+		if !ok {
+			Expect(fmt.Errorf("expected to find certificate data at %s.%s", cert.Spec.SecretName, corev1.TLSCertKey)).NotTo(HaveOccurred())
+		}
+
 		By("Adding an additional dnsName to the Certificate")
 		newDNSName := fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)
 		cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
@@ -227,11 +237,30 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err = certClient.Update(cert)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be not ready")
-		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
-		Expect(err).NotTo(HaveOccurred())
+		// Here we are relying on the signed certificate in the Secret resource
+		// being updated to prevent us having a race condition on testing the
+		// Certificate Ready status becoming false, then true
+		i := 0
+		for {
+			By("Waiting for the Certificate to re-issue a new certificate")
+			if i > 60 {
+				Expect(fmt.Errorf("failed to wait for Certificate %s/%s to issue new certificate", cert.Namespace, cert.Name)).NotTo(HaveOccurred())
+			}
 
-		By("Waiting for the Certificate to become ready & valid")
+			sec, err := f.KubeClientSet.CoreV1().Secrets(cert.Namespace).Get(cert.Spec.SecretName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			newCertData := sec.Data[corev1.TLSCertKey]
+
+			if !bytes.Equal(certData, newCertData) {
+				break
+			}
+
+			i++
+			time.Sleep(time.Second * 5)
+		}
+
+		By("Validating the certificate re-issued is valid")
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})

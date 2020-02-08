@@ -17,7 +17,9 @@ limitations under the License.
 package certificates
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -511,6 +513,77 @@ func (s *Suite) Define() {
 
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, certName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should re-issue a new certificate if the DNS Names are updated on the Certifcate Spec", func() {
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{s.newDomain()},
+				},
+			}
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, testCertificate.Name, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Getting the latest version of the Certificate")
+			cert, err := certClient.Get(testCertificate.Name, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Getting the signed certificate data")
+			sec, err := f.KubeClientSet.CoreV1().Secrets(cert.Namespace).Get(cert.Spec.SecretName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			certData, ok := sec.Data[corev1.TLSCertKey]
+			if !ok {
+				Expect(fmt.Errorf("expected to find certificate data at %s.%s", cert.Spec.SecretName, corev1.TLSCertKey)).NotTo(HaveOccurred())
+			}
+
+			By("Adding an additional dnsName to the Certificate")
+			cert.Spec.DNSNames = append(cert.Spec.DNSNames, s.newDomain())
+
+			By("Updating the Certificate in the apiserver")
+			cert, err = certClient.Update(cert)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Here we are relying on the signed certificate in the Secret resource
+			// being updated to prevent us having a race condition on testing the
+			// Certificate Ready status becoming false, then true
+			i := 0
+			for {
+				By("Waiting for the Certificate to re-issue a new certificate")
+				if i > 60 {
+					Expect(fmt.Errorf("failed to wait for Certificate %s/%s to issue new certificate", cert.Namespace, cert.Name)).NotTo(HaveOccurred())
+				}
+
+				sec, err := f.KubeClientSet.CoreV1().Secrets(cert.Namespace).Get(cert.Spec.SecretName, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				newCertData := sec.Data[corev1.TLSCertKey]
+
+				if !bytes.Equal(certData, newCertData) {
+					break
+				}
+
+				i++
+				time.Sleep(time.Second * 5)
+			}
+
+			By("Validating the certificate re-issued is valid")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, cert.Name, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
