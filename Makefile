@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Set DOCKER_REPO to customise the image docker repo, e.g. "quay.io/jetstack"
-DOCKER_REPO :=
-APP_VERSION := canary
+# Set DOCKER_REGISTRY to customise the image docker repo, e.g. "quay.io/jetstack"
+DOCKER_REGISTRY :=
+APP_VERSION :=
 HACK_DIR ?= hack
 
 SKIP_GLOBALS := false
@@ -57,9 +57,9 @@ help:
 	# images             - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push        - pushes docker images to the target registry
 	#
-	# Image targets can be run with optional args DOCKER_REPO and DOCKER_TAG:
+	# Image targets can be run with optional args DOCKER_REGISTRY and APP_VERSION:
 	#
-	#     make images DOCKER_REPO=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature
+	#     make images DOCKER_REGISTRY=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature
 	#
 
 # Alias targets
@@ -94,18 +94,8 @@ generate:
 # Docker targets
 ################
 images:
-	bazel run //hack/release -- \
-		--repo-root "$$(pwd)" \
-		--images \
-		--images.export=true \
-		--images.goarch="amd64" \
-		--app-version="$(APP_VERSION)" \
-		--docker-repo="$(DOCKER_REPO)"
-
-images_push: images
-	bazel run //hack/release -- \
-		--repo-root "$$(pwd)" \
-		--images \
-		--publish \
-		--app-version="$(APP_VERSION)" \
-		--docker-repo="$(DOCKER_REPO)"
+	APP_VERSION=$(APP_VERSION) \
+	DOCKER_REGISTRY=$(DOCKER_REPO) \
+	bazel run \
+		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
+		//build:server-images

@@ -1,0 +1,122 @@
+package(default_visibility = ["//visibility:public"])
+
+load(
+    "//build:platforms.bzl",
+    "SERVER_PLATFORMS",
+    "TEST_PLATFORMS",
+    "for_platforms",
+    "go_platform_constraint",
+)
+load("@io_k8s_repo_infra//defs:build.bzl", "release_filegroup")
+load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
+
+# Bazel doesn't make the output filename
+# (such as kubernetes-server-{OS}-{ARCH}.tar.gz) configurable, so we instead
+# create rules for all platforms and tag them manual.
+# We then select the correct set of platform-specific tarballs in this filegroup
+# using a select() statement.
+# Thus the release-tars target always selects the correct set of tarballs
+# for the configured platform being built.
+release_filegroup(
+    name = "release-tars",
+    conditioned_srcs = for_platforms(
+        for_all = [
+            ":cert-manager-manifests.tar.gz",
+        ],
+        for_server = [
+            ":cert-manager-server-{OS}-{ARCH}.tar.gz",
+        ],
+        for_test = [
+            ":cert-manager-test-{OS}-{ARCH}.tar.gz",
+        ],
+    ),
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+)
+
+# Included in node and server tarballs.
+filegroup(
+    name = "license-targets",
+    srcs = [
+        "//:LICENSES",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+pkg_tar(
+    name = "_server-images",
+    srcs = [
+        "//build:docker-artifacts",
+    ],
+    mode = "0755",
+    package_dir = "server/images",
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+[[pkg_tar(
+    name = "cert-manager-server-%s-%s" % (os, arch),
+    srcs = [
+        ":license-targets",
+        "//:version",
+    ],
+    extension = "tar.gz",
+    mode = "0644",
+    package_dir = "cert-manager-server-%s-%s" % (os, arch),
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    deps = select({
+        go_platform_constraint(os, arch): [
+            ":_server-images",
+        ],
+    }),
+) for arch in archs] for os, archs in SERVER_PLATFORMS.items()]
+
+pkg_tar(
+    name = "_test-bin",
+    srcs = ["//build:test-targets"],
+    mode = "0755",
+    package_dir = "test/bin",
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+[[pkg_tar(
+    name = "cert-manager-test-%s-%s" % (os, arch),
+    extension = "tar.gz",
+    package_dir = "cert-manager-test-%s-%s" % (os, arch),
+    strip_prefix = "//",
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    deps = select({go_platform_constraint(os, arch): [":_test-bin"]}),
+) for arch in archs] for os, archs in TEST_PLATFORMS.items()]
+
+pkg_tar(
+    name = "cert-manager-manifests",
+    extension = "tar.gz",
+    tags = ["no-cache"],
+    deps = [
+        "//deploy:manifests",
+    ],
+)

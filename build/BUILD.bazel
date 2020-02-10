@@ -1,0 +1,113 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_k8s_repo_infra//defs:build.bzl", "release_filegroup")
+load(":container.bzl", "multi_arch_container", "multi_arch_container_push")
+load(":platforms.bzl", "SERVER_PLATFORMS", "for_platforms")
+
+# This list defines the docker images that consist a release
+DOCKERIZED_BINARIES = {
+    "acmesolver": {
+        "base": "@static_base//image",
+        "target": "//cmd/acmesolver:acmesolver",
+    },
+    "cainjector": {
+        "base": "@static_base//image",
+        "target": "//cmd/cainjector:cainjector",
+    },
+    "controller": {
+        "base": "@static_base//image",
+        "target": "//cmd/controller:controller",
+    },
+    "webhook": {
+        "base": "@static_base//image",
+        "target": "//cmd/webhook:webhook",
+    },
+}
+
+# When pushing to gcr.io, we want to use an arch, since the archless name is now used for a
+# manifest list. Bazel doesn't support manifest lists (yet), so we can't do that either.
+[multi_arch_container(
+    name = binary,
+    architectures = SERVER_PLATFORMS["linux"],
+    base = meta["base"],
+    binary = select(for_platforms(
+        for_server = meta["target"],
+        only_os = "linux",
+    )),
+    # Since the multi_arch_container macro replaces the {ARCH} format string,
+    # we need to escape the stamping vars.
+    docker_tags = ["{{STABLE_DOCKER_REGISTRY}}/cert-manager-%s-{ARCH}:{{STABLE_DOCKER_TAG}}" % binary],
+    stamp = True,
+    symlinks = {
+        # Some cluster startup scripts expect to find the binaries in /usr/local/bin,
+        # but the debs install the binaries into /usr/bin.
+        "/usr/local/bin/" + binary: "/usr/bin/" + binary,
+    },
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+) for binary, meta in DOCKERIZED_BINARIES.items()]
+
+# Also roll up all images into a single bundle to push with one target.
+multi_arch_container_push(
+    name = "server-images",
+    architectures = SERVER_PLATFORMS["linux"],
+    docker_tags_images = {
+        "{{STABLE_DOCKER_REGISTRY}}/cert-manager-%s-{ARCH}:{{STABLE_DOCKER_TAG}}" % binary: "%s-internal" % binary
+        for binary in DOCKERIZED_BINARIES.keys()
+    },
+    tags = ["manual"],
+)
+
+[genrule(
+    name = binary + "_docker_tag",
+    srcs = [meta["target"]],
+    outs = [binary + ".docker_tag"],
+    cmd = "grep ^STABLE_DOCKER_TAG bazel-out/stable-status.txt | awk '{print $$2}' >$@",
+    stamp = 1,
+) for binary, meta in DOCKERIZED_BINARIES.items()]
+
+genrule(
+    name = "os_package_version",
+    outs = ["version"],
+    cmd = """
+grep ^STABLE_BUILD_SCM_REVISION bazel-out/stable-status.txt \
+    | awk '{print $$2}' \
+    | sed -e 's/^v//' -Ee 's/-([a-z]+)/~\\1/' -e 's/-/+/g' \
+    >$@
+""",
+    stamp = 1,
+)
+
+release_filegroup(
+    name = "docker-artifacts",
+    srcs = [":%s.tar" % binary for binary in DOCKERIZED_BINARIES.keys()] +
+           [":%s.docker_tag" % binary for binary in DOCKERIZED_BINARIES.keys()],
+)
+
+filegroup(
+    name = "test-targets",
+    srcs = select(for_platforms(
+        for_test = [
+            "//test/e2e:e2e.test",
+            "@com_github_onsi_ginkgo//ginkgo:ginkgo",
+            # TODO: include e2e test dependencies like Helm charts, config files etc
+        ],
+    )),
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//build/release-tars:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

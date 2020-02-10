@@ -1,3 +1,17 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
+
+pkg_tar(
+    name = "manifests",
+    mode = "0644",
+    package_dir = "deploy",
+    deps = [
+        "//deploy/charts/cert-manager",
+        "//deploy/manifests",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -9,6 +23,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//deploy/charts/cert-manager:all-srcs",
         "//deploy/manifests:all-srcs",
     ],
     tags = ["automanaged"],

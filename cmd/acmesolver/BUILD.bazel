@@ -1,5 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//hack/build:docker.bzl", "covered_image", "image")
+load("//build:version.bzl", "version_x_defs")
 
 image(
     name = "image",
@@ -30,6 +31,7 @@ go_binary(
     embed = [":go_default_library"],
     pure = "on",
     visibility = ["//visibility:public"],
+    x_defs = version_x_defs(),
 )
 
 filegroup(
