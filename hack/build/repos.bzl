@@ -590,8 +590,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/gobuffalo/flect",
-        sum = "h1:xpKq9ap8MbYfhuPCF0dBH854Gp9CxZjr/IocxELFflo=",
-        version = "v0.1.5",
+        sum = "h1:EWCvMGGxOjsgwlWaP+f4+Hh6yrrte7JeFL2S6b+0hdM=",
+        version = "v0.2.0",
     )
     go_repository(
         name = "com_github_gocql_gocql",
@@ -1695,8 +1695,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "gopkg.in/check.v1",
-        sum = "h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=",
-        version = "v1.0.0-20180628173108-788fd7840127",
+        sum = "h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=",
+        version = "v1.0.0-20190902080502-41f04d3bba15",
     )
     go_repository(
         name = "in_gopkg_fsnotify_v1",
@@ -1863,16 +1863,16 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "sigs.k8s.io/controller-runtime",
-        sum = "h1:HyikWxy7OuAOOZnwG6vq5AIFZYyebZKX/XIgwnjXfEw=",
-        version = "v0.3.1-0.20191022174215-ad57a976ffa1",
+        sum = "h1:wATM6/m+3w8lj8FXNaO6Fs/rq/vqoOjO1Q116Z9NPsg=",
+        version = "v0.4.0",
     )
     go_repository(
         name = "io_k8s_sigs_controller_tools",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "sigs.k8s.io/controller-tools",
-        sum = "h1:tOXKme2gR7KoM6+7Y+nzjwjbXDgqLfTuX5r7+4dvlig=",
-        version = "v0.2.2",
+        sum = "h1:kH7HKWed9XO42OTxyhUtqyImiefdZV2Q9Jbrytvhf18=",
+        version = "v0.2.5",
     )
     go_repository(
         name = "io_k8s_sigs_structured_merge_diff",
@@ -1887,8 +1887,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "sigs.k8s.io/testing_frameworks",
-        sum = "h1:cP2l8fkA3O9vekpy5Ks8mmA0NW/F7yBdXf8brkWhVrs=",
-        version = "v0.1.1",
+        sum = "h1:vK0+tvjF0BZ/RYFeZ1E6BYBwHJJXhjuZ3TdsEKH+UQM=",
+        version = "v0.1.2",
     )
     go_repository(
         name = "io_k8s_sigs_yaml",
@@ -2008,8 +2008,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/sync",
-        sum = "h1:8gQV6CLnAEikrhgkHFbMAEhagSSnXWGV915qUMm9mrU=",
-        version = "v0.0.0-20190423024810-112230192c58",
+        sum = "h1:vcxGaoTs7kV8m5Np9uUNQin4BrLOthgV7252N8V+FwY=",
+        version = "v0.0.0-20190911185100-cd5d95a43a6e",
     )
     go_repository(
         name = "org_golang_x_sys",

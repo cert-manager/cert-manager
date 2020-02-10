@@ -110,7 +110,7 @@ type CertificateRequestStatus struct {
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.
 type CertificateRequestCondition struct {
-	// Type of the condition, currently ('Ready').
+	// Type of the condition, currently ('Ready', 'InvalidRequest').
 	Type CertificateRequestConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').

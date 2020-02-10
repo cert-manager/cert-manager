@@ -153,7 +153,17 @@ tolerations: []
 
 webhook:
   enabled: true
+
   replicaCount: 1
+
+  # The name of the webhook service is fixed in the values.yaml and not based
+  # on the name of the Helm release because the CRD manifests, which are not
+  # managed by Helm, need to hardcode the name of the service for their
+  # conversion webhook configuration.
+  # If you change this value, you must also manually update the
+  # `spec.conversion.webhookClientConfig.service.name` field on all
+  # cert-manager CRD resources as well.
+  serviceName: cert-manager-webhook
 
   strategy: {}
     # type: RollingUpdate
