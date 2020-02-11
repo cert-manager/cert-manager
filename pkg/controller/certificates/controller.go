@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"context"
+	"crypto"
 	"crypto/x509"
 	"time"
 
@@ -32,8 +33,10 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/store"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 // certificateRequestManager manages CertificateRequest resources for a
@@ -58,7 +61,7 @@ type certificateRequestManager struct {
 	clock clock.Clock
 
 	// defined as a field to make it easy to stub out for testing purposes
-	generatePrivateKeyBytes generatePrivateKeyBytesFn
+	generatePrivateKeyBytes generatePrivateKeyFn
 	generateCSR             generateCSRFn
 
 	// certificateNeedsRenew is a function that can be used to determine whether
@@ -82,9 +85,11 @@ type certificateRequestManager struct {
 	// Secret resource will be automatically deleted.
 	// This option is disabled by default.
 	enableSecretOwnerReferences bool
+
+	secretStore *store.SecretStore
 }
 
-type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
+type localTemporarySignerFn func(crt *cmapi.Certificate, key crypto.Signer) (*x509.Certificate, error)
 
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
@@ -132,7 +137,7 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 
 	c.certificateNeedsRenew = ctx.IssuerOptions.CertificateNeedsRenew
 	c.calculateDurationUntilRenew = ctx.IssuerOptions.CalculateDurationUntilRenew
-	c.generatePrivateKeyBytes = generatePrivateKeyBytesImpl
+	c.generatePrivateKeyBytes = pki.GeneratePrivateKeyForCertificate
 	c.generateCSR = generateCSRImpl
 	// the localTemporarySigner is used to sign 'temporary certificates' during
 	// asynchronous certificate issuance flows
@@ -142,7 +147,14 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	c.cmClient = ctx.CMClient
 	c.kubeClient = ctx.Client
 
-	return c.queue, mustSync, nil, nil
+	var err error
+	c.secretStore = &store.SecretStore{
+		Lister:             c.secretLister,
+		NamespacedClient:   c.kubeClient.CoreV1().Secrets,
+		SetOwnerReferences: ctx.CertificateOptions.EnableOwnerRef,
+	}
+
+	return c.queue, mustSync, nil, err
 }
 
 const (

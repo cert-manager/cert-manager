@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/kr/pretty"
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -75,7 +74,7 @@ func certificateGetter(lister cmlisters.CertificateLister) func(namespace, name 
 
 var keyFunc = controllerpkg.KeyFunc
 
-func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secret *corev1.Secret) (bool, []string) {
+func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, meta map[string]string) (bool, []string) {
 	var errs []string
 
 	// TODO: add checks for KeySize, KeyAlgorithm fields
@@ -116,34 +115,29 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
 	}
 
-	if secret.Annotations == nil {
-		secret.Annotations = make(map[string]string)
-	}
-
 	// Validate that the issuer name and kind is correct
 	// If the new annotation exists and doesn't match then error
 	// If the new annotation doesn't exist and the old annotation doesn't match then error
-
 	annotationError := func(k, v string) {
 		errs = append(errs, fmt.Sprintf("Issuer %q of the certificate is not up to date: %q", k, v))
 	}
 
-	name, ok := secret.Annotations[v1alpha2.IssuerNameAnnotationKey]
+	name, ok := meta[v1alpha2.IssuerNameAnnotationKey]
 	if !ok {
-		if secret.Annotations[v1alpha2.DeprecatedIssuerNameAnnotationKey] != crt.Spec.IssuerRef.Name {
-			annotationError(v1alpha2.DeprecatedIssuerNameAnnotationKey, secret.Annotations[v1alpha2.DeprecatedIssuerNameAnnotationKey])
+		if meta[v1alpha2.DeprecatedIssuerNameAnnotationKey] != crt.Spec.IssuerRef.Name {
+			annotationError(v1alpha2.DeprecatedIssuerNameAnnotationKey, meta[v1alpha2.DeprecatedIssuerNameAnnotationKey])
 		}
 	} else if name != crt.Spec.IssuerRef.Name {
-		annotationError(v1alpha2.IssuerNameAnnotationKey, secret.Annotations[v1alpha2.IssuerNameAnnotationKey])
+		annotationError(v1alpha2.IssuerNameAnnotationKey, meta[v1alpha2.IssuerNameAnnotationKey])
 	}
 
-	kind, ok := secret.Annotations[v1alpha2.IssuerKindAnnotationKey]
+	kind, ok := meta[v1alpha2.IssuerKindAnnotationKey]
 	if !ok {
-		if secret.Annotations[v1alpha2.DeprecatedIssuerKindAnnotationKey] != apiutil.IssuerKind(crt.Spec.IssuerRef) {
-			annotationError(v1alpha2.DeprecatedIssuerKindAnnotationKey, secret.Annotations[v1alpha2.DeprecatedIssuerKindAnnotationKey])
+		if meta[v1alpha2.DeprecatedIssuerKindAnnotationKey] != apiutil.IssuerKind(crt.Spec.IssuerRef) {
+			annotationError(v1alpha2.DeprecatedIssuerKindAnnotationKey, meta[v1alpha2.DeprecatedIssuerKindAnnotationKey])
 		}
 	} else if kind != apiutil.IssuerKind(crt.Spec.IssuerRef) {
-		annotationError(v1alpha2.IssuerKindAnnotationKey, secret.Annotations[v1alpha2.IssuerKindAnnotationKey])
+		annotationError(v1alpha2.IssuerKindAnnotationKey, meta[v1alpha2.IssuerKindAnnotationKey])
 	}
 
 	return len(errs) == 0, errs
@@ -196,7 +190,7 @@ func isTemporaryCertificate(cert *x509.Certificate) bool {
 // This is to mitigate a potential attack against x509 certificates that use a
 // predictable serial number and weak MD5 hashing algorithms.
 // In practice, this shouldn't really be a concern anyway.
-func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []byte) ([]byte, error) {
+func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, signeeKey crypto.Signer) (*x509.Certificate, error) {
 	// generate a throwaway self-signed root CA
 	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
 	if err != nil {
@@ -223,17 +217,12 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []b
 	}
 	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
 
-	signeeKey, err := pki.DecodePrivateKeyBytes(pk)
+	_, cert, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
 	if err != nil {
 		return nil, err
 	}
 
-	b, _, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return cert, nil
 }
 
 func updateCertificateStatus(ctx context.Context, cmClient cmclient.Interface, old, new *v1alpha2.Certificate) (*v1alpha2.Certificate, error) {

@@ -35,6 +35,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/codec"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -72,6 +73,7 @@ type cryptoBundle struct {
 	cert      *x509.Certificate
 	certBytes []byte
 
+	localTemporaryCertificate      *x509.Certificate
 	localTemporaryCertificateBytes []byte
 }
 
@@ -99,7 +101,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		return nil, err
 	}
 
-	csrPEM, err := generateCSRImpl(crt, privateKeyBytes)
+	csrPEM, err := generateCSRImpl(crt, privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +167,11 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		}),
 	)
 
-	tempCertBytes, err := generateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
+	tempCert, err := generateLocallySignedTemporaryCertificate(crt, privateKey)
+	if err != nil {
+		panic("failed to generate test fixture: " + err.Error())
+	}
+	tempCertBytes, err := pki.EncodeX509(tempCert)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
@@ -183,12 +189,13 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		certificateRequestFailedInvalidRequest: certificateRequestFailedInvalidRequest,
 		cert:                                   cert,
 		certBytes:                              certBytes,
+		localTemporaryCertificate:              tempCert,
 		localTemporaryCertificateBytes:         tempCertBytes,
 	}, nil
 }
 
 func (c *cryptoBundle) generateTestCSR(crt *cmapi.Certificate) []byte {
-	csrPEM, err := generateCSRImpl(crt, c.privateKeyBytes)
+	csrPEM, err := generateCSRImpl(crt, c.privateKey)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
@@ -283,11 +290,15 @@ func (c *cryptoBundle) generateCertificateExpired(crt *cmapi.Certificate) []byte
 }
 
 func (c *cryptoBundle) generateCertificateTemporary(crt *cmapi.Certificate) []byte {
-	d, err := generateLocallySignedTemporaryCertificate(crt, c.privateKeyBytes)
+	cert, err := generateLocallySignedTemporaryCertificate(crt, c.privateKey)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
-	return d
+	b, err := pki.EncodeX509(cert)
+	if err != nil {
+		panic("failed to generate test fixture: " + err.Error())
+	}
+	return b
 }
 
 func certificateNotAfter(b []byte) time.Time {
@@ -298,23 +309,38 @@ func certificateNotAfter(b []byte) time.Time {
 	return cert.NotAfter
 }
 
-func testGeneratePrivateKeyBytesFn(b []byte) generatePrivateKeyBytesFn {
-	return func(context.Context, *cmapi.Certificate) ([]byte, error) {
+func testGeneratePrivateKeyFn(b crypto.Signer) generatePrivateKeyFn {
+	return func(*cmapi.Certificate) (crypto.Signer, error) {
 		return b, nil
 	}
 }
 
 func testGenerateCSRFn(b []byte) generateCSRFn {
-	return func(_ *cmapi.Certificate, _ []byte) ([]byte, error) {
+	return func(_ *cmapi.Certificate, _ crypto.Signer) ([]byte, error) {
 		return b, nil
 	}
 }
 
-func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
-	return func(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
-		return b, nil
+func testLocalTemporarySignerFn(crt *x509.Certificate) localTemporarySignerFn {
+	return func(_ *cmapi.Certificate, _ crypto.Signer) (*x509.Certificate, error) {
+		return crt, nil
 	}
 }
+
+type fakeCodec struct {
+	encodeFn func(codec.Bundle) (*codec.RawData, error)
+	decodeFn func(codec.RawData) (*codec.Bundle, error)
+}
+
+func (f fakeCodec) Encode(b codec.Bundle) (*codec.RawData, error) {
+	return f.encodeFn(b)
+}
+
+func (f fakeCodec) Decode(r codec.RawData) (*codec.Bundle, error) {
+	return f.decodeFn(r)
+}
+
+var _ codec.Codec = &fakeCodec{}
 
 func TestBuildCertificateRequest(t *testing.T) {
 	baseCert := gen.Certificate("test",
@@ -330,22 +356,14 @@ func TestBuildCertificateRequest(t *testing.T) {
 	tests := map[string]struct {
 		crt         *cmapi.Certificate
 		name        string
-		pk          []byte
+		pk          crypto.Signer
 		expectedErr bool
 
 		expectedCertificateRequestAnnotations map[string]string
 	}{
-		"a bad private key should error": {
-			crt:         baseCert,
-			pk:          []byte("bad key"),
-			name:        "test",
-			expectedErr: true,
-
-			expectedCertificateRequestAnnotations: nil,
-		},
 		"a good certificate should always have annotations set": {
 			crt:         baseCert,
-			pk:          exampleBundle.privateKeyBytes,
+			pk:          exampleBundle.privateKey,
 			name:        "test",
 			expectedErr: false,
 
@@ -361,7 +379,7 @@ func TestBuildCertificateRequest(t *testing.T) {
 			generateCSR: generateCSRImpl,
 		}
 
-		cr, err := c.buildCertificateRequest(nil, test.crt, test.name, test.pk)
+		cr, err := c.buildCertificateRequest(test.crt, test.name, test.pk)
 		if err != nil && !test.expectedErr {
 			t.Errorf("expected no error but got: %s", err)
 		}
@@ -398,8 +416,15 @@ func TestProcessCertificate(t *testing.T) {
 
 	tests := map[string]testT{
 		"generate a private key and create a new secret if one does not exist": {
-			certificate:             exampleBundle1.certificate,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			certificate:        exampleBundle1.certificate,
+			generatePrivateKey: testGeneratePrivateKeyFn(exampleBundle1.privateKey),
+			encoder: fakeCodec{
+				encodeFn: func(bundle codec.Bundle) (data *codec.RawData, err error) {
+					return &codec.RawData{Data: map[string][]byte{
+						"tls.key": exampleBundle1.privateKeyBytes,
+					}}, nil
+				},
+			},
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					exampleBundle1.certificate,
@@ -419,9 +444,7 @@ func TestProcessCertificate(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -431,8 +454,15 @@ func TestProcessCertificate(t *testing.T) {
 			},
 		},
 		"generate a private key and update an existing secret if one already exists": {
-			certificate:             exampleBundle1.certificate,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			certificate:        exampleBundle1.certificate,
+			generatePrivateKey: testGeneratePrivateKeyFn(exampleBundle1.privateKey),
+			encoder: fakeCodec{
+				encodeFn: func(bundle codec.Bundle) (data *codec.RawData, err error) {
+					return &codec.RawData{Data: map[string][]byte{
+						"tls.key": exampleBundle1.privateKeyBytes,
+					}}, nil
+				},
+			},
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -465,9 +495,7 @@ func TestProcessCertificate(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -477,8 +505,15 @@ func TestProcessCertificate(t *testing.T) {
 			},
 		},
 		"generate a new private key and update the Secret if the existing private key data is garbage": {
-			certificate:             exampleBundle1.certificate,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			certificate:        exampleBundle1.certificate,
+			generatePrivateKey: testGeneratePrivateKeyFn(exampleBundle1.privateKey),
+			encoder: fakeCodec{
+				encodeFn: func(bundle codec.Bundle) (data *codec.RawData, err error) {
+					return &codec.RawData{Data: map[string][]byte{
+						"tls.key": exampleBundle1.privateKeyBytes,
+					}}, nil
+				},
+			},
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -514,9 +549,7 @@ func TestProcessCertificate(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -526,8 +559,15 @@ func TestProcessCertificate(t *testing.T) {
 			},
 		},
 		"generate a new private key and update the Secret if the existing private key data has a differing keyAlgorithm": {
-			certificate:             exampleBundle1.certificate,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			certificate:        exampleBundle1.certificate,
+			generatePrivateKey: testGeneratePrivateKeyFn(exampleBundle1.privateKey),
+			encoder: fakeCodec{
+				encodeFn: func(bundle codec.Bundle) (data *codec.RawData, err error) {
+					return &codec.RawData{Data: map[string][]byte{
+						"tls.key": exampleBundle1.privateKeyBytes,
+					}}, nil
+				},
+			},
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -563,9 +603,7 @@ func TestProcessCertificate(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -591,9 +629,7 @@ func TestProcessCertificate(t *testing.T) {
 							},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -628,9 +664,7 @@ func TestProcessCertificate(t *testing.T) {
 							},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -677,9 +711,7 @@ func TestProcessCertificate(t *testing.T) {
 							},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -713,7 +745,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateCertificateExpiring1H(exampleBundle1.certificate),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -753,7 +784,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -780,7 +810,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -810,7 +839,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -835,9 +863,7 @@ func TestProcessCertificate(t *testing.T) {
 							},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -868,7 +894,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -899,7 +924,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateTestCertificate(exampleBundle1.certificate, nil),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -932,7 +956,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       []byte("invalid"),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -963,7 +986,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -994,7 +1016,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateCertificateExpiring1H(exampleBundle1.certificate),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1038,7 +1059,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateCertificateExpiring1H(exampleBundle1.certificate),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1247,8 +1267,15 @@ func TestProcessCertificate(t *testing.T) {
 			},
 		},
 		"with secret owner references enabled, should set the ownerReference field when generating a new private key Secret": {
-			certificate:             exampleBundle1.certificate,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			certificate:        exampleBundle1.certificate,
+			generatePrivateKey: testGeneratePrivateKeyFn(exampleBundle1.privateKey),
+			encoder: fakeCodec{
+				encodeFn: func(bundle codec.Bundle) (data *codec.RawData, err error) {
+					return &codec.RawData{Data: map[string][]byte{
+						"tls.key": exampleBundle1.privateKeyBytes,
+					}}, nil
+				},
+			},
 			builder: &testpkg.Builder{
 				Context: &controller.Context{
 					RootContext: context.Background(),
@@ -1274,9 +1301,7 @@ func TestProcessCertificate(t *testing.T) {
 								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle1.certificate, certificateGvk)},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1289,8 +1314,15 @@ func TestProcessCertificate(t *testing.T) {
 			},
 		},
 		"with secret owner references enabled, should NOT set the ownerReference field when generating a new private key Secret if one already exists": {
-			certificate:             exampleBundle1.certificate,
-			generatePrivateKeyBytes: testGeneratePrivateKeyBytesFn(exampleBundle1.privateKeyBytes),
+			certificate:        exampleBundle1.certificate,
+			generatePrivateKey: testGeneratePrivateKeyFn(exampleBundle1.privateKey),
+			encoder: fakeCodec{
+				encodeFn: func(bundle codec.Bundle) (data *codec.RawData, err error) {
+					return &codec.RawData{Data: map[string][]byte{
+						"tls.key": exampleBundle1.privateKeyBytes,
+					}}, nil
+				},
+			},
 			builder: &testpkg.Builder{
 				Context: &controller.Context{
 					RootContext: context.Background(),
@@ -1323,9 +1355,7 @@ func TestProcessCertificate(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1380,9 +1410,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1412,7 +1440,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1437,9 +1464,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1470,7 +1495,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1495,9 +1519,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1528,7 +1550,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1559,7 +1580,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1590,7 +1610,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1621,7 +1640,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       []byte("invalid"),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1652,7 +1670,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1688,7 +1705,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								),
 							),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1723,7 +1739,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1753,7 +1768,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1769,7 +1783,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 			fixedClock.SetTime(fixedClockStart)
 			test.builder.Clock = fixedClock
 
-			test.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle1.localTemporaryCertificateBytes)
+			test.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle1.localTemporaryCertificate)
 			runTest(t, test)
 		})
 	}
@@ -2320,12 +2334,13 @@ func TestUpdateStatus(t *testing.T) {
 }
 
 type testT struct {
-	builder                 *testpkg.Builder
-	generatePrivateKeyBytes generatePrivateKeyBytesFn
-	generateCSR             generateCSRFn
-	localTemporarySigner    localTemporarySignerFn
-	certificate             *cmapi.Certificate
-	expectedErr             bool
+	builder              *testpkg.Builder
+	encoder              codec.Encoder
+	generatePrivateKey   generatePrivateKeyFn
+	generateCSR          generateCSRFn
+	localTemporarySigner localTemporarySignerFn
+	certificate          *cmapi.Certificate
+	expectedErr          bool
 }
 
 func runTest(t *testing.T, test testT) {
@@ -2335,9 +2350,10 @@ func runTest(t *testing.T, test testT) {
 
 	testManager := &certificateRequestManager{}
 	testManager.Register(test.builder.Context)
-	testManager.generatePrivateKeyBytes = test.generatePrivateKeyBytes
+	testManager.generatePrivateKeyBytes = test.generatePrivateKey
 	testManager.generateCSR = test.generateCSR
 	testManager.localTemporarySigner = test.localTemporarySigner
+	testManager.secretStore.Encoder = test.encoder
 	test.builder.Start()
 
 	err := testManager.processCertificate(context.Background(), test.certificate)

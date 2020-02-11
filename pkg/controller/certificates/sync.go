@@ -18,12 +18,12 @@ package certificates
 
 import (
 	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -38,10 +38,10 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/codec"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -77,7 +77,8 @@ func (c *certificateRequestManager) ProcessItem(ctx context.Context, key string)
 func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context, old, crt *cmapi.Certificate) error {
 	log := logf.FromContext(ctx)
 	secretExists := true
-	certs, key, err := kube.SecretTLSKeyPair(ctx, c.secretLister, crt.Namespace, crt.Spec.SecretName)
+
+	meta, bundle, err := c.secretStore.Fetch(crt.Spec.SecretName, crt.Namespace)
 	if err != nil {
 		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
 			return err
@@ -86,6 +87,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 		if apierrors.IsNotFound(err) {
 			secretExists = false
 		}
+		bundle = &codec.Bundle{}
 	}
 	reqs, err := findCertificateRequestsForCertificate(log, crt, c.certificateRequestLister)
 	if err != nil {
@@ -97,20 +99,15 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 	}
 	var cert *x509.Certificate
 	var certExpired bool
-	if len(certs) > 0 {
-		cert = certs[0]
+	if len(bundle.Certificates) > 0 {
+		cert = bundle.Certificates[0]
 		certExpired = cert.NotAfter.Before(c.clock.Now())
 	}
 
 	var matches bool
 	var matchErrs []string
-	if key != nil && cert != nil {
-		secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
-		if err != nil {
-			return err
-		}
-
-		matches, matchErrs = certificateMatchesSpec(crt, key, cert, secret)
+	if bundle.PrivateKey != nil && cert != nil {
+		matches, matchErrs = certificateMatchesSpec(crt, bundle.PrivateKey, cert, meta)
 	}
 
 	isTempCert := isTemporaryCertificate(cert)
@@ -128,7 +125,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 	reason := ""
 	message := ""
 	switch {
-	case !secretExists || key == nil:
+	case !secretExists || bundle.PrivateKey == nil:
 		reason = "NotFound"
 		message = "Certificate does not exist"
 	case matches && !isTempCert && !certExpired:
@@ -164,7 +161,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 			"matches", matches,
 			"is_temp_cert", isTempCert,
 			"cert_expired", certExpired,
-			"key_is_nil", key == nil,
+			"key_is_nil", bundle.PrivateKey == nil,
 			"req_is_nil", req == nil,
 			"cert_is_nil", cert == nil,
 		)
@@ -205,42 +202,31 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	}
 
 	// Fetch a copy of the existing Secret resource
-	existingSecret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
-	if apierrors.IsNotFound(err) {
+	secretMeta, bundle, err := c.secretStore.Fetch(crt.Spec.SecretName, crt.Namespace)
+	if apierrors.IsNotFound(err) || bundle == nil {
 		// If the secret does not exist, generate a new private key and store it.
 		dbg.Info("existing secret not found, generating and storing private key")
-		return c.generateAndStorePrivateKey(ctx, crt, nil)
+		return c.generateAndStorePrivateKey(crt)
 	}
-	if err != nil {
+	if errors.IsInvalidData(err) {
+		dbg.Info("failed to decode part of existing secret object: " + err.Error())
+	} else if err != nil {
 		return err
 	}
 
-	log = logf.WithRelatedResource(log, existingSecret)
-	ctx = logf.NewContext(ctx, log)
-
 	// If the Secret does not contain a private key, generate one and update
 	// the Secret resource
-	existingKey := existingSecret.Data[corev1.TLSPrivateKeyKey]
-	if len(existingKey) == 0 {
+	if bundle.PrivateKey == nil {
 		log.Info("existing private key not found in Secret, generate a new private key")
-		return c.generateAndStorePrivateKey(ctx, crt, existingSecret)
+		return c.generateAndStorePrivateKey(crt)
 	}
 
 	// Ensure the the private key has the correct key algorithm and key size.
 	dbg.Info("validating private key has correct keyAlgorithm/keySize")
-	validKey, err := validatePrivateKeyUpToDate(log, existingKey, crt)
-	// If tls.key contains invalid data, we regenerate a new private key
-	if errors.IsInvalidData(err) {
-		log.Info("existing private key data is invalid, generating a new private key")
-		return c.generateAndStorePrivateKey(ctx, crt, existingSecret)
-	}
-	if err != nil {
-		return err
-	}
 	// If the private key is not 'up to date', we generate a new private key
-	if !validKey {
+	if !privateKeyUpToDate(log, bundle.PrivateKey, crt) {
 		log.Info("existing private key does not match requirements specified on Certificate resource, generating new private key")
-		return c.generateAndStorePrivateKey(ctx, crt, existingSecret)
+		return c.generateAndStorePrivateKey(crt)
 	}
 
 	// Attempt to fetch the CertificateRequest with the expected name computed above.
@@ -257,9 +243,11 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	}
 
 	needsIssue := true
-	// Parse the existing certificate
-	existingCert := existingSecret.Data[corev1.TLSCertKey]
-	if len(existingCert) > 0 {
+	var existingX509Cert *x509.Certificate
+	if len(bundle.Certificates) > 0 {
+		existingX509Cert = bundle.Certificates[0]
+	}
+	if existingX509Cert != nil {
 		// Here we check to see if the existing certificate 'matches' the spec
 		// of the Certificate resource.
 		// This includes checking if dnsNames, commonName, organization etc.
@@ -267,39 +255,28 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// a valid partner to the stored certificate.
 		var matchErrs []string
 		dbg.Info("checking if existing certificate stored in Secret resource is not expiring soon and matches certificate spec")
-		needsIssue, matchErrs, err = c.certificateRequiresIssuance(ctx, crt, existingKey, existingCert, existingSecret)
-		if err != nil && !errors.IsInvalidData(err) {
-			return err
-		}
-		// If the certificate data is invalid, we require a re-issuance.
-		// The private key should never be invalid at this point as we already
-		// check it above.
-		if errors.IsInvalidData(err) {
-			dbg.Info("existing secret contains invalid certificate data")
-			needsIssue = true
-		}
-
-		if !needsIssue {
-			dbg.Info("existing certificate does not need re-issuance")
-		} else {
+		needsIssue, matchErrs = c.certificateRequiresIssuance(ctx, crt, bundle.PrivateKey, existingX509Cert, secretMeta)
+		if needsIssue {
 			dbg.Info("will attempt to issue certificate", "reason", matchErrs)
 		}
 	}
 
 	// Exit early if the certificate doesn't need issuing to save extra work
 	if !needsIssue {
+		dbg.Info("existing certificate does not need re-issuance")
 		if existingReq != nil {
 			dbg.Info("skipping issuing certificate data into Secret resource as existing issued certificate is still valid")
 		}
 
 		// Before exiting, ensure that the Secret resource's metadata is up to
 		// date. If it isn't, it will be updated.
-		updated, err := c.ensureSecretMetadataUpToDate(ctx, existingSecret, crt)
+		updated, err := c.secretStore.EnsureMetadata(crt, *bundle)
 		if err != nil {
 			return err
 		}
 
 		if updated {
+			c.recorder.Event(crt, corev1.EventTypeNormal, "UpdateMeta", "Updated metadata on Secret resource")
 			log.Info("updated Secret resource metadata as it was out of date")
 		}
 
@@ -312,45 +289,25 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		return nil
 	}
 
-	// Attempt to decode the private key.
-	// This shouldn't fail as we already validate the private key is valid above.
-	dbg.Info("decoding existing private key")
-	privateKey, err := pki.DecodePrivateKeyBytes(existingKey)
-	if err != nil {
-		return err
-	}
-
-	// Attempt to decode the existing certificate.
-	// We tolerate invalid data errors as we will issue a certificate if the
-	// data is invalid.
-	dbg.Info("attempting to decode existing certificate")
-	existingX509Cert, err := pki.DecodeX509CertificateBytes(existingCert)
-	if err != nil && !errors.IsInvalidData(err) {
-		return err
-	}
-	if errors.IsInvalidData(err) {
-		dbg.Info("existing certificate data is invalid, continuing...")
-	}
-
 	// Handling for 'temporary certificates'
 	if certificateHasTemporaryCertificateAnnotation(crt) {
 		// Issue a temporary certificate if the current certificate is empty or the
 		// private key is not valid for the current certificate.
 		if existingX509Cert == nil {
 			log.Info("no existing certificate data found in secret, issuing temporary certificate")
-			return c.issueTemporaryCertificate(ctx, existingSecret, crt, existingKey)
+			return c.issueTemporaryCertificate(crt, bundle.PrivateKey)
 		}
 
-		matches, err := pki.PublicKeyMatchesCertificate(privateKey.Public(), existingX509Cert)
+		matches, err := pki.PublicKeyMatchesCertificate(bundle.PrivateKey.Public(), existingX509Cert)
 		if err != nil || !matches {
 			log.Info("private key for certificate does not match, issuing temporary certificate")
-			return c.issueTemporaryCertificate(ctx, existingSecret, crt, existingKey)
+			return c.issueTemporaryCertificate(crt, bundle.PrivateKey)
 		}
 
 		log.Info("not issuing temporary certificate as existing certificate is sufficient")
 
 		// Ensure the secret metadata is up to date
-		updated, err := c.ensureSecretMetadataUpToDate(ctx, existingSecret, crt)
+		updated, err := c.secretStore.EnsureMetadata(crt, *bundle)
 		if err != nil {
 			return err
 		}
@@ -358,6 +315,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// Only return early if an update actually occurred, otherwise continue.
 		if updated {
 			log.Info("updated Secret resource metadata as it was out of date")
+			c.recorder.Event(crt, corev1.EventTypeNormal, "UpdateMeta", "Updated metadata on Secret resource")
 			return nil
 		}
 	}
@@ -365,7 +323,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	if existingReq == nil {
 		// If no existing CertificateRequest resource exists, we must create one
 		log.Info("no existing CertificateRequest resource exists, creating new request...")
-		req, err := c.buildCertificateRequest(log, crt, expectedReqName, existingKey)
+		req, err := c.buildCertificateRequest(crt, expectedReqName, bundle.PrivateKey)
 		if err != nil {
 			return err
 		}
@@ -393,7 +351,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	}
 
 	// Ensure the stored private key is a 'pair' to the CSR
-	publicKeyMatches, err := pki.PublicKeyMatchesCSR(privateKey.Public(), x509CSR)
+	publicKeyMatches, err := pki.PublicKeyMatchesCSR(bundle.PrivateKey.Public(), x509CSR)
 	if err != nil {
 		return err
 	}
@@ -462,15 +420,23 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	case cmapi.CertificateRequestReasonIssued:
 		log.Info("CertificateRequest is in a Ready state, issuing certificate...")
 
+		var caCerts []*x509.Certificate
+		if len(existingReq.Status.CA) > 0 {
+			log.Info("decoding certificate data")
+			caCerts, err = pki.DecodeX509CertificateChainBytes(existingReq.Status.CA)
+			if err != nil {
+				return err
+			}
+		}
 		// Decode the certificate bytes so we can ensure the certificate is valid
 		log.Info("decoding certificate data")
-		x509Cert, err := pki.DecodeX509CertificateBytes(existingReq.Status.Certificate)
+		x509Certs, err := pki.DecodeX509CertificateChainBytes(existingReq.Status.Certificate)
 		if err != nil {
 			return err
 		}
 
 		log.Info("checking stored private key is valid for stored x509 certificate on CertificateRequest")
-		publicKeyMatches, err := pki.PublicKeyMatchesCertificate(privateKey.Public(), x509Cert)
+		publicKeyMatches, err := pki.PublicKeyMatchesCertificate(bundle.PrivateKey.Public(), x509Certs[0])
 		if err != nil {
 			return err
 		}
@@ -482,7 +448,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// Check if the Certificate requires renewal according to the renewBefore
 		// specified on the Certificate resource.
 		log.Info("checking if certificate stored on CertificateRequest is up to date")
-		if c.certificateNeedsRenew(ctx, x509Cert, crt) {
+		if c.certificateNeedsRenew(ctx, x509Certs[0], crt) {
 			log.Info("certificate stored on CertificateRequest needs renewal, so deleting the old CertificateRequest resource")
 			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
 			if err != nil {
@@ -496,8 +462,11 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// across the status.certificate field into the Secret resource.
 		log.Info("CertificateRequest contains a valid certificate for issuance. Issuing certificate...")
 
-		_, err = c.updateSecretData(ctx, crt, existingSecret, secretData{pk: existingKey, cert: existingReq.Status.Certificate, ca: existingReq.Status.CA})
-		if err != nil {
+		if err := c.secretStore.Store(crt.Spec.SecretName, codec.Bundle{
+			PrivateKey:   bundle.PrivateKey,
+			Certificates: x509Certs,
+			CA:           caCerts,
+		}, crt, nil); err != nil {
 			return err
 		}
 
@@ -512,83 +481,16 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	}
 }
 
-// updateSecretData will ensure the Secret resource contains the given secret
-// data as well as appropriate metadata.
-// If the given 'existingSecret' is nil, a new Secret resource will be created.
-// Otherwise, the existing resource will be updated.
-// The first return argument will be true if the resource was updated/created
-// without error.
-// updateSecretData will also update deprecated annotations if they exist.
-func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *cmapi.Certificate, existingSecret *corev1.Secret, data secretData) (bool, error) {
-	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      crt.Spec.SecretName,
-			Namespace: crt.Namespace,
-		},
-		Type: corev1.SecretTypeTLS,
-	}
-	// s will be overwritten by 'existingSecret' if existingSecret is non-nil
-	if c.enableSecretOwnerReferences {
-		s.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}
-	}
-	if existingSecret != nil {
-		s = existingSecret
-	}
-
-	newSecret := s.DeepCopy()
-	err := setSecretValues(ctx, crt, newSecret, secretData{pk: data.pk, cert: data.cert, ca: data.ca})
-	if err != nil {
-		return false, err
-	}
-	if reflect.DeepEqual(s, newSecret) {
-		return false, nil
-	}
-
-	if existingSecret == nil {
-		_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Create(newSecret)
-		if err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-
-	_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(newSecret)
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func (c *certificateRequestManager) ensureSecretMetadataUpToDate(ctx context.Context, s *corev1.Secret, crt *cmapi.Certificate) (bool, error) {
-	pk := s.Data[corev1.TLSPrivateKeyKey]
-	cert := s.Data[corev1.TLSCertKey]
-	ca := s.Data[cmmeta.TLSCAKey]
-
-	updated, err := c.updateSecretData(ctx, crt, s, secretData{pk: pk, cert: cert, ca: ca})
-	if err != nil || !updated {
-		return updated, err
-	}
-
-	c.recorder.Eventf(crt, corev1.EventTypeNormal, "UpdateMeta", "Updated metadata on Secret resource")
-
-	return true, nil
-}
-
-func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Context, secret *corev1.Secret, crt *cmapi.Certificate, key []byte) error {
-	tempCertData, err := c.localTemporarySigner(crt, key)
+func (c *certificateRequestManager) issueTemporaryCertificate(crt *cmapi.Certificate, key crypto.Signer) error {
+	tempCert, err := c.localTemporarySigner(crt, key)
 	if err != nil {
 		return err
 	}
 
-	newSecret := secret.DeepCopy()
-	err = setSecretValues(ctx, crt, newSecret, secretData{pk: key, cert: tempCertData})
-	if err != nil {
-		return err
-	}
-
-	newSecret, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(newSecret)
-	if err != nil {
+	if err := c.secretStore.Store(crt.Spec.SecretName, codec.Bundle{
+		PrivateKey:   key,
+		Certificates: []*x509.Certificate{tempCert},
+	}, crt, nil); err != nil {
 		return err
 	}
 
@@ -597,35 +499,22 @@ func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Contex
 	return nil
 }
 
-func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Context, crt *cmapi.Certificate, keyBytes, certBytes []byte, secret *corev1.Secret) (bool, []string, error) {
-	key, err := pki.DecodePrivateKeyBytes(keyBytes)
-	if err != nil {
-		return false, nil, err
-	}
-	cert, err := pki.DecodeX509CertificateBytes(certBytes)
-	if err != nil {
-		return false, nil, err
-	}
+func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Context, crt *cmapi.Certificate, key crypto.Signer, cert *x509.Certificate, meta map[string]string) (bool, []string) {
 	if isTemporaryCertificate(cert) {
-		return true, nil, nil
+		return true, nil
 	}
-	matches, matchErrs := certificateMatchesSpec(crt, key, cert, secret)
+	matches, matchErrs := certificateMatchesSpec(crt, key, cert, meta)
 	if !matches {
-		return true, matchErrs, nil
+		return true, matchErrs
 	}
 	needsRenew := c.certificateNeedsRenew(ctx, cert, crt)
-	return needsRenew, []string{"Certificate is expiring soon"}, nil
+	return needsRenew, []string{"Certificate is expiring soon"}
 }
 
-type generateCSRFn func(*cmapi.Certificate, []byte) ([]byte, error)
+type generateCSRFn func(*cmapi.Certificate, crypto.Signer) ([]byte, error)
 
-func generateCSRImpl(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
+func generateCSRImpl(crt *cmapi.Certificate, signer crypto.Signer) ([]byte, error) {
 	csr, err := pki.GenerateCSR(crt)
-	if err != nil {
-		return nil, err
-	}
-
-	signer, err := pki.DecodePrivateKeyBytes(pk)
 	if err != nil {
 		return nil, err
 	}
@@ -642,7 +531,7 @@ func generateCSRImpl(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	return csrPEM, nil
 }
 
-func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt *cmapi.Certificate, name string, pk []byte) (*cmapi.CertificateRequest, error) {
+func (c *certificateRequestManager) buildCertificateRequest(crt *cmapi.Certificate, name string, pk crypto.Signer) (*cmapi.CertificateRequest, error) {
 	csrPEM, err := c.generateCSR(crt, pk)
 	if err != nil {
 		return nil, err
@@ -718,17 +607,12 @@ func findCertificateRequestsForCertificate(log logr.Logger, crt *cmapi.Certifica
 	return candidates, nil
 }
 
-// validatePrivateKeyUpToDate will evaluate the private key data in pk and
+// privateKeyUpToDate will evaluate the private key data in pk and
 // ensure it is 'up to date' and matches the specification of the key as
 // required by the given Certificate resource.
 // It returns false if the private key isn't up to date, e.g. the Certificate
 // resource specifies a different keyEncoding, keyAlgorithm or keySize.
-func validatePrivateKeyUpToDate(log logr.Logger, pk []byte, crt *cmapi.Certificate) (bool, error) {
-	signer, err := pki.DecodePrivateKeyBytes(pk)
-	if err != nil {
-		return false, err
-	}
-
+func privateKeyUpToDate(log logr.Logger, signer crypto.Signer, crt *cmapi.Certificate) bool {
 	// TODO: check keyEncoding
 
 	wantedAlgorithm := crt.Spec.KeyAlgorithm
@@ -743,34 +627,31 @@ func validatePrivateKeyUpToDate(log logr.Logger, pk []byte, crt *cmapi.Certifica
 		_, ok := signer.(*rsa.PrivateKey)
 		if !ok {
 			log.Info("expected private key's algorithm to be RSA but it is not")
-			return false, nil
+			return false
 		}
 	// TODO: check keySize
 	case cmapi.ECDSAKeyAlgorithm:
 		_, ok := signer.(*ecdsa.PrivateKey)
 		if !ok {
 			log.Info("expected private key's algorithm to be ECDSA but it is not")
-			return false, nil
+			return false
 		}
 		// TODO: check keySize
 	}
 
-	return true, nil
+	return true
 }
 
-func (c *certificateRequestManager) generateAndStorePrivateKey(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret) error {
-	keyData, err := c.generatePrivateKeyBytes(ctx, crt)
+func (c *certificateRequestManager) generateAndStorePrivateKey(crt *cmapi.Certificate) error {
+	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
-		// TODO: handle permanent failures caused by invalid spec
 		return err
 	}
 
-	updated, err := c.updateSecretData(ctx, crt, s, secretData{pk: keyData})
-	if err != nil {
+	if err := c.secretStore.Store(crt.Spec.SecretName, codec.Bundle{
+		PrivateKey: signer,
+	}, crt, nil); err != nil {
 		return err
-	}
-	if !updated {
-		return nil
 	}
 
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, "GeneratedKey", "Generated a new private key")
@@ -778,81 +659,4 @@ func (c *certificateRequestManager) generateAndStorePrivateKey(ctx context.Conte
 	return nil
 }
 
-type generatePrivateKeyBytesFn func(context.Context, *cmapi.Certificate) ([]byte, error)
-
-func generatePrivateKeyBytesImpl(ctx context.Context, crt *cmapi.Certificate) ([]byte, error) {
-	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
-	if err != nil {
-		return nil, err
-	}
-
-	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
-	if err != nil {
-		return nil, err
-	}
-
-	return keyData, nil
-}
-
-// secretData is a structure wrapping private key, certificate and CA data
-type secretData struct {
-	pk, cert, ca []byte
-}
-
-// setSecretValues will update the Secret resource 's' with the data contained
-// in the given secretData.
-// It will update labels and annotations on the Secret resource appropriately.
-// The Secret resource 's' must be non-nil, although may be a resource that does
-// not exist in the Kubernetes apiserver yet.
-// setSecretValues will NOT actually update the resource in the apiserver.
-// If updating an existing Secret resource returned by an api client 'lister',
-// make sure to DeepCopy the object first to avoid modifying data in-cache.
-// It will also update depreciated issuer name and kind annotations if they exist.
-func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, data secretData) error {
-	// initialize the `Data` field if it is nil
-	if s.Data == nil {
-		s.Data = make(map[string][]byte)
-	}
-
-	s.Data[corev1.TLSPrivateKeyKey] = data.pk
-	s.Data[corev1.TLSCertKey] = data.cert
-	s.Data[cmmeta.TLSCAKey] = data.ca
-
-	if s.Annotations == nil {
-		s.Annotations = make(map[string]string)
-	}
-
-	s.Annotations[cmapi.CertificateNameKey] = crt.Name
-	s.Annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	s.Annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
-
-	// If deprecated annotations exist with any value, then they too shall be
-	// updated
-	if _, ok := s.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey]; ok {
-		s.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	}
-	if _, ok := s.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey]; ok {
-		s.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
-	}
-
-	// if the certificate data is empty, clear the subject related annotations
-	if len(data.cert) == 0 {
-		delete(s.Annotations, cmapi.CommonNameAnnotationKey)
-		delete(s.Annotations, cmapi.AltNamesAnnotationKey)
-		delete(s.Annotations, cmapi.IPSANAnnotationKey)
-		delete(s.Annotations, cmapi.URISANAnnotationKey)
-	} else {
-		x509Cert, err := pki.DecodeX509CertificateBytes(data.cert)
-		// TODO: handle InvalidData here?
-		if err != nil {
-			return err
-		}
-
-		s.Annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
-		s.Annotations[cmapi.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
-		s.Annotations[cmapi.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
-		s.Annotations[cmapi.URISANAnnotationKey] = strings.Join(pki.URLsToString(x509Cert.URIs), ",")
-	}
-
-	return nil
-}
+type generatePrivateKeyFn func(*cmapi.Certificate) (crypto.Signer, error)

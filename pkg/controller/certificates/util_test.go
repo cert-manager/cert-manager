@@ -268,7 +268,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			match, errs := certificateMatchesSpec(
-				test.certificate, test.cb.privateKey, test.cb.cert, test.secret)
+				test.certificate, test.cb.privateKey, test.cb.cert, test.secret.Annotations)
 
 			if match != test.expMatch {
 				t.Errorf("got unexpected match bool, exp=%t got=%t",
