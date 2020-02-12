@@ -191,6 +191,12 @@ func TestSign(t *testing.T) {
 			checkFn:     checkCertificateIssued,
 			expectedErr: false,
 		},
+		"If invalid custom field type found the error": {
+			csrPEM:       csrPEM,
+			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
+			checkFn:      checkNoCetificateIssued,
+			expectedErr:  true,
+		},
 	}
 
 	for name, test := range tests {

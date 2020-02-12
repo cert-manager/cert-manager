@@ -19,6 +19,7 @@ package venafi
 import (
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -27,6 +28,15 @@ import (
 	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
+
+// ErrCustomFieldsType provides a common error structure for a fivalid custom field types
+type ErrCustomFieldsType struct {
+	Type internalvanafiapi.CustomFieldType
+}
+
+func (err ErrCustomFieldsType) Error() string {
+	return fmt.Sprintf("certificate request contains an invalid Venafi custom fields type: %q", err.Type)
+}
 
 // This function sends a request to Venafi to for a signed certificate.
 // The CSR will be decoded to be validated against the zone configuration policy.
@@ -61,7 +71,7 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 				fieldType = certificate.CustomFieldPlain
 				break
 			default:
-				return nil, errors.New("certificate request contains an invalid Venafi custom fields type")
+				return nil, ErrCustomFieldsType{Type: field.Type}
 			}
 
 			vreq.CustomFields = append(vreq.CustomFields, certificate.CustomField{

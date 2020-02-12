@@ -110,6 +110,12 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	if err != nil {
 		switch err.(type) {
 
+		case venafiinternal.ErrCustomFieldsType:
+			v.reporter.Failed(cr, err, "CustomFieldsError", err.Error())
+			log.Error(err, err.Error())
+
+			return nil, nil
+
 		case endpoint.ErrCertificatePending:
 			message := "Venafi certificate still in a pending state, the request will be retried"
 

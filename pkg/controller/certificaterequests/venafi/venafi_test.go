@@ -151,6 +151,8 @@ func TestSign(t *testing.T) {
 
 	tppCRWithInvalidCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": cert-manager-test}]`}))
 
+	tppCRWithInvalidCustomFieldType := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": "cert-manager-test", "value": "test ok", "type": "Bool"}]`}))
+
 	cloudCR := gen.CertificateRequestFrom(baseCR,
 		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Group: certmanager.GroupName,
@@ -213,6 +215,12 @@ func TestSign(t *testing.T) {
 				return certPEM, nil
 			}
 			return nil, errors.New("Custom field not set")
+		},
+	}
+
+	clientReturnsInvalidCustomFieldType := &internalvenafifake.Venafi{
+		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
+			return nil, internalvenafi.ErrCustomFieldsType{Type: fields[0].Type}
 		},
 	}
 
@@ -645,6 +653,36 @@ func TestSign(t *testing.T) {
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsPending,
+			expectedErr:      false,
+		},
+		"annotations: Error on invalid type in custom fields": {
+			certificateRequest: tppCRWithInvalidCustomFieldType.DeepCopy(),
+			issuer:             tppIssuer,
+			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFieldType.DeepCopy(), tppIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					`Warning CustomFieldsError certificate request contains an invalid Venafi custom fields type: "Bool": certificate request contains an invalid Venafi custom fields type: "Bool"`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCRWithInvalidCustomFieldType,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "certificate request contains an invalid Venafi custom fields type: \"Bool\": certificate request contains an invalid Venafi custom fields type: \"Bool\"",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
+			},
+			fakeSecretLister: failGetSecretLister,
+			fakeClient:       clientReturnsInvalidCustomFieldType,
 			expectedErr:      false,
 		},
 	}
