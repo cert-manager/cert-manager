@@ -19,5 +19,4 @@ go_library(
     srcs = ["api.go"],
     importpath = "github.com/jetstack/cert-manager/pkg/internal/venafi/api",
     visibility = ["//pkg:__subpackages__"],
-    deps = ["@com_github_venafi_vcert//pkg/certificate:go_default_library"],
 )
