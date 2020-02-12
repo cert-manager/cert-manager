@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	venafiinternal "github.com/jetstack/cert-manager/pkg/internal/venafi"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )

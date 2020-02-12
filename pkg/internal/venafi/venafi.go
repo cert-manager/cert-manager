@@ -18,7 +18,6 @@ package venafi
 
 import (
 	"fmt"
-	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	"time"
 
 	"github.com/Venafi/vcert"
@@ -27,6 +26,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 )
 
 const (

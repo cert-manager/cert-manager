@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
+
 	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 )
 

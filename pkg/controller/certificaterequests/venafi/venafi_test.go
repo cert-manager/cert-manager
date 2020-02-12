@@ -24,7 +24,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	"testing"
 	"time"
 
@@ -44,6 +43,7 @@ import (
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvenafi "github.com/jetstack/cert-manager/pkg/internal/venafi"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	internalvenafifake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
