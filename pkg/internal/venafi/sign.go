@@ -52,7 +52,20 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 	if len(customFields) > 0 {
 		vreq.CustomFields = []certificate.CustomField{}
 		for _, field := range customFields {
-			vreq.CustomFields = append(vreq.CustomFields, certificate.CustomField(field))
+			var fieldType certificate.CustomFieldType
+			switch field.Type {
+			case internalvanafiapi.CustomFieldTypePlain:
+				fieldType = certificate.CustomFieldPlain
+				break
+			default:
+				fieldType = certificate.CustomFieldPlain
+			}
+
+			vreq.CustomFields = append(vreq.CustomFields, certificate.CustomField{
+				Type:  fieldType,
+				Name:  field.Name,
+				Value: field.Value,
+			})
 		}
 	}
 

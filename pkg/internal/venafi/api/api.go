@@ -16,13 +16,15 @@ limitations under the License.
 
 package api
 
-import (
-	"github.com/Venafi/vcert/pkg/certificate"
+type CustomFieldType string
+
+const (
+	CustomFieldTypePlain CustomFieldType = "Plain"
 )
 
 // CustomField defines a custom field to be passed to Venafi
 type CustomField struct {
-	Type  certificate.CustomFieldType `json:"type,omitempty"`
-	Name  string                      `json:"name"`
-	Value string                      `json:"value"`
+	Type  CustomFieldType `json:"type,omitempty"`
+	Name  string          `json:"name"`
+	Value string          `json:"value"`
 }
