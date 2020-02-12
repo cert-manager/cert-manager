@@ -57,8 +57,11 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 			case internalvanafiapi.CustomFieldTypePlain:
 				fieldType = certificate.CustomFieldPlain
 				break
-			default:
+			case "":
 				fieldType = certificate.CustomFieldPlain
+				break
+			default:
+				return nil, errors.New("certificate request contains an invalid Venafi custom fields type")
 			}
 
 			vreq.CustomFields = append(vreq.CustomFields, certificate.CustomField{
