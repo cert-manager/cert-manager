@@ -49,7 +49,7 @@ wait
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 # Install a copy of the CRDs
-kubectl apply -f "${REPO_ROOT}/deploy/manifests/00-crds.yaml"
+kubectl apply --validate=false -f "${REPO_ROOT}/deploy/manifests/00-crds.yaml"
 
 # Upgrade or install Pebble
 helm upgrade \
