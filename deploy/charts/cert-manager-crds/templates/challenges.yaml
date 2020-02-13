@@ -59,12 +59,12 @@ spec:
         server
       {{- if not .Values.global.isOpenshift }}
       type: object
-      metadata:
-        type: object
       {{- end }}
       required:
       - metadata
       properties:
+        metadata:
+          type: object
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest

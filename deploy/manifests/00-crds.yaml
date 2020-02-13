@@ -62,9 +62,9 @@ spec:
       description: CertificateRequest is a type to represent a Certificate Signing
         Request
       type: object
-      metadata:
-        type: object
       properties:
+        metadata:
+          type: object
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
@@ -268,9 +268,9 @@ spec:
       "openAPIV3Schema":
         description: Certificate is a type to represent a Certificate from ACME
         type: object
-        metadata:
-          type: object
         properties:
+          metadata:
+            type: object
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
               of an object. Servers should convert recognized schemas to the latest
@@ -799,11 +799,11 @@ spec:
       description: Challenge is a type to represent a Challenge request with an ACME
         server
       type: object
-      metadata:
-        type: object
       required:
       - metadata
       properties:
+        metadata:
+          type: object
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
@@ -2202,9 +2202,9 @@ spec:
   "validation":
     "openAPIV3Schema":
       type: object
-      metadata:
-        type: object
       properties:
+        metadata:
+          type: object
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
@@ -3957,9 +3957,9 @@ spec:
   "validation":
     "openAPIV3Schema":
       type: object
-      metadata:
-        type: object
       properties:
+        metadata:
+          type: object
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
@@ -5717,11 +5717,11 @@ spec:
     "openAPIV3Schema":
       description: Order is a type to represent an Order with an ACME server
       type: object
-      metadata:
-        type: object
       required:
       - metadata
       properties:
+        metadata:
+          type: object
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
