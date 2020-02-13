@@ -20,11 +20,21 @@ VARIANTS = {
 }
 
 [helm_tmpl(
-    name = name,
+    name = "%s.manifests" % name,
     helm_pkg = "//deploy/charts/cert-manager:package",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
     values = values,
+) for (name, values) in VARIANTS.items()]
+
+[genrule(
+    name = name,
+    srcs = [
+        "00-crds.yaml",
+        "%s.manifests" % name,
+    ],
+    outs = ["%s.yaml" % name],
+    cmd = "cat $(location 00-crds.yaml) $(location %s.manifests) > $@" % name,
 ) for (name, values) in VARIANTS.items()]
 
 pkg_tar(
