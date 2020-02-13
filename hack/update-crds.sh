@@ -48,8 +48,9 @@ out="./deploy/manifests/00-crds.yaml"
 rm "$out" || true
 touch "$out"
 # template all files while removing blank (^$) lines
-helm template ./deploy/charts/cert-manager-crds/ | sed '/^$$/d' >> "$out"
+bazel run //hack/bin:helm template ./deploy/charts/cert-manager-crds/ | sed '/^$$/d' >> "$out"
 printf -- "---\n" >> "$out"
 chmod 644 "$out"
+
 
 echo "Generated 00-crds.yaml"
