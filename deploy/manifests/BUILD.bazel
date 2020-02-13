@@ -14,7 +14,7 @@ VARIANTS = {
     "cert-manager-no-webhook": {
         "webhook.enabled": "false",
     },
-    "cert-manager-openshift.yaml": {
+    "cert-manager-openshift": {
         "global.isOpenshift": "true",
     },
 }
@@ -27,14 +27,22 @@ VARIANTS = {
     values = values,
 ) for (name, values) in VARIANTS.items()]
 
+[helm_tmpl(
+    name = "%s.crds" % name,
+    helm_pkg = "//deploy/charts/cert-manager-crds:package",
+    release_name = RELEASE_NAME,
+    release_namespace = RELEASE_NAMESPACE,
+    values = values,
+) for (name, values) in VARIANTS.items()]
+
 [genrule(
     name = name,
     srcs = [
-        "00-crds.yaml",
+        "%s.crds" % name,
         "%s.manifests" % name,
     ],
     outs = ["%s.yaml" % name],
-    cmd = "cat $(location 00-crds.yaml) $(location %s.manifests) > $@" % name,
+    cmd = "cat $(location %s.crds) $(location %s.manifests) > $@" % (name,name),
 ) for (name, values) in VARIANTS.items()]
 
 pkg_tar(

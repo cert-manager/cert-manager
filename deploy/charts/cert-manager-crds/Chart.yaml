@@ -1,0 +1,18 @@
+apiVersion: v1
+name: cert-manager-crds
+# The version and appVersion fields are set automatically by the release tool
+version: v0.1.0
+appVersion: v0.1.0
+description: A Helm chart for cert-manager's CRDs
+home: https://github.com/jetstack/cert-manager
+icon: https://raw.githubusercontent.com/jetstack/cert-manager/master/logo/logo.png
+keywords:
+  - cert-manager
+  - kube-lego
+  - letsencrypt
+  - tls
+sources:
+  - https://github.com/jetstack/cert-manager
+maintainers:
+  - name: munnerz
+    email: james@jetstack.io

@@ -40,18 +40,16 @@ REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY}
 cd "${REPO_ROOT}"
 
 "$controllergen" \
-  schemapatch:manifests=./deploy/charts/cert-manager/crds \
-  output:dir=./deploy/charts/cert-manager/crds \
+  schemapatch:manifests=./deploy/charts/cert-manager-crds/templates \
+  output:dir=./deploy/charts/cert-manager-crds/templates \
   paths=./pkg/apis/...
 
 out="./deploy/manifests/00-crds.yaml"
 rm "$out" || true
 touch "$out"
-for file in $(find "./deploy/charts/cert-manager/crds" -type f | sort -V); do
-  # concatenate all files while removing blank (^$) lines
-  < "$file" sed '/^$$/d' >> "$out"
-  printf -- "---\n" >> "$out"
-done
+# template all files while removing blank (^$) lines
+helm template ./deploy/charts/cert-manager-crds/ | sed '/^$$/d' >> "$out"
+printf -- "---\n" >> "$out"
 chmod 644 "$out"
 
 echo "Generated 00-crds.yaml"

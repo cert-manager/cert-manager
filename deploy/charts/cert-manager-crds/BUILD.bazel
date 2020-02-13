@@ -4,7 +4,7 @@ load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 load("//build:helm.bzl", "helm_pkg")
 
 pkg_tar(
-    name = "cert-manager",
+    name = "cert-manager-crds",
     srcs = [
         ":package",
     ],
@@ -17,7 +17,7 @@ pkg_tar(
 helm_pkg(
     name = "package",
     srcs = [":chart-srcs"],
-    path = "deploy/charts/cert-manager",
+    path = "deploy/charts/cert-manager-crds",
 )
 
 filegroup(
@@ -26,7 +26,6 @@ filegroup(
         [
             ".helmignore",
             "Chart.yaml",
-            "README.md",
             "values.yaml",
             "templates/*.tpl",
             "templates/*.yaml",

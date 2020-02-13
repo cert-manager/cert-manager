@@ -22,7 +22,7 @@ To build the manifests, run:
 ```bash
 $ bazel build //deploy/manifests:cert-manager
 # Alternatively, build the openshift variant with:
-$ bazel build //deploy/manifests:cert-manager-openshift
+$ bazel build //deploy/manifests:cert-manager-openshift.yaml
 # Or the no-webhook variant with:
 $ bazel build //deploy/manifests:cert-manager-no-webhook
 ```
