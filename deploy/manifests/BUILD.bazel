@@ -39,10 +39,11 @@ VARIANTS = {
     name = name,
     srcs = [
         "%s.crds" % name,
+        "01-namespace.yaml",
         "%s.manifests" % name,
     ],
     outs = ["%s.yaml" % name],
-    cmd = "cat $(location %s.crds) $(location %s.manifests) > $@" % (name,name),
+    cmd = "cat $(location %s.crds) $(location 01-namespace.yaml) $(location %s.manifests) > $@" % (name,name),
 ) for (name, values) in VARIANTS.items()]
 
 pkg_tar(

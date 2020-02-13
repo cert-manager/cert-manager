@@ -25,7 +25,9 @@ spec:
     name: Age
     type: date
   group: cert-manager.io
+  {{- if not .Values.global.isOpenshift }}
   preserveUnknownFields: false
+  {{- end }}
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
     strategy: Webhook
@@ -59,7 +61,11 @@ spec:
     "openAPIV3Schema":
       description: CertificateRequest is a type to represent a Certificate Signing
         Request
+      {{- if not .Values.global.isOpenshift }}
       type: object
+      metadata:
+        type: object
+      {{- end }}
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -71,8 +77,6 @@ spec:
             object represents. Servers may infer this from the endpoint the client
             submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
           type: string
-        metadata:
-          type: object
         spec:
           description: CertificateRequestSpec defines the desired state of CertificateRequest
           type: object
