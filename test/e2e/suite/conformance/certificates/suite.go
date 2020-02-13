@@ -507,9 +507,7 @@ func (s *Suite) Define() {
 			certName := ingress.Spec.TLS[0].SecretName
 
 			By("Waiting for the Certificate to exist...")
-			Expect(e2eutil.WaitForCertificateToExist(
-				f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name), certName, time.Minute,
-			)).NotTo(HaveOccurred())
+			Expect(f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, certName, time.Minute*5)

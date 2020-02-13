@@ -86,16 +86,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+		err = h.WaitForIssuerCondition(f.Namespace.Name, issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+		err = h.WaitForIssuerStatusFunc(f.Namespace.Name, issuerName,
 			func(i *v1alpha2.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
 					return false, nil
@@ -288,7 +286,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
 		ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		By("Creating an Ingress with the issuer name annotation set")
 		_, err := ingClient.Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
@@ -297,7 +294,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Certificate to exist")
-		err = util.WaitForCertificateToExist(certClient, certificateSecretName, foreverTestTimeout)
+		err = h.WaitForCertificateToExist(f.Namespace.Name, certificateSecretName, foreverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")
@@ -316,8 +313,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer("selfsign"))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for (self-sign) Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+		err = h.WaitForIssuerCondition(f.Namespace.Name, issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,

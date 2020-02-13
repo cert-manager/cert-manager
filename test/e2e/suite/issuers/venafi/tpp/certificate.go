@@ -57,8 +57,7 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuer.Name,
+		err = h.WaitForIssuerCondition(f.Namespace.Name, issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,

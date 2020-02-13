@@ -78,16 +78,14 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+		err = f.Helper().WaitForIssuerCondition(f.Namespace.Name, issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+		err = f.Helper().WaitForIssuerStatusFunc(f.Namespace.Name, issuerName,
 			func(i *v1alpha2.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
 					return false, nil

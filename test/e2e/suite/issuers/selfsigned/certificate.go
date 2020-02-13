@@ -46,8 +46,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+		err = h.WaitForIssuerCondition(f.Namespace.Name, issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
@@ -89,8 +88,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerDurationName))
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-				issuerDurationName,
+			err = h.WaitForIssuerCondition(f.Namespace.Name, issuerDurationName,
 				v1alpha2.IssuerCondition{
 					Type:   v1alpha2.IssuerConditionReady,
 					Status: cmmeta.ConditionTrue,

@@ -25,12 +25,14 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -361,4 +363,84 @@ func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificat
 		return
 	}
 	h.Kubectl(ns).DescribeResource("certificaterequest", crName)
+}
+
+// WaitForCertificateCondition waits for the status of the named Certificate to contain
+// a condition whose type and status matches the supplied one.
+func (h *Helper) WaitForCertificateCondition(ns, name string, condition cmapi.CertificateCondition, timeout time.Duration) error {
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
+		func() (bool, error) {
+			log.Logf("Waiting for Certificate %v condition %#v", name, condition)
+			certificate, err := h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(name, metav1.GetOptions{})
+			if nil != err {
+				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+			}
+
+			return apiutil.CertificateHasCondition(certificate, condition), nil
+		},
+	)
+	return h.wrapErrorWithCertificateStatusCondition(pollErr, ns, name, condition.Type)
+}
+
+// WaitForCertificateEvent waits for an event on the named Certificate to contain
+// an event reason matches the supplied one.
+func (h *Helper) WaitForCertificateEvent(cert *cmapi.Certificate, reason string, timeout time.Duration) error {
+	return wait.PollImmediate(500*time.Millisecond, timeout,
+		func() (bool, error) {
+			log.Logf("Waiting for Certificate event %v reason %#v", cert.Name, reason)
+			evts, err := h.KubeClient.CoreV1().Events(cert.Namespace).Search(intscheme.Scheme, cert)
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", cert.Name, err)
+			}
+
+			return hasEvent(evts, reason), nil
+		},
+	)
+}
+
+func hasEvent(events *corev1.EventList, reason string) bool {
+	for _, evt := range events.Items {
+		if evt.Reason == reason {
+			return true
+		}
+	}
+	return false
+}
+
+// try to retrieve last condition to help diagnose tests.
+func (h *Helper) wrapErrorWithCertificateStatusCondition(pollErr error, ns, name string, conditionType cmapi.CertificateConditionType) error {
+	if pollErr == nil {
+		return nil
+	}
+
+	certificate, err := h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return pollErr
+	}
+
+	for _, cond := range certificate.Status.Conditions {
+		if cond.Type == conditionType {
+			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
+		}
+	}
+
+	return pollErr
+}
+
+// WaitForCertificateToExist waits for the named certificate to exist
+func (h *Helper) WaitForCertificateToExist(ns, name string, timeout time.Duration) error {
+	return wait.PollImmediate(500*time.Millisecond, timeout,
+		func() (bool, error) {
+			log.Logf("Waiting for Certificate %v to exist", name)
+			_, err := h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(name, metav1.GetOptions{})
+			if k8sErrors.IsNotFound(err) {
+				return false, nil
+			}
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+			}
+
+			return true, nil
+		},
+	)
 }

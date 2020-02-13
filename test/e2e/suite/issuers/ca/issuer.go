@@ -28,6 +28,7 @@ import (
 
 var _ = framework.CertManagerDescribe("CA Issuer", func() {
 	f := framework.NewDefaultFramework("create-ca-issuer")
+	h := f.Helper()
 
 	issuerName := "test-ca-issuer"
 	secretName := "ca-issuer-signing-keypair"
@@ -48,8 +49,7 @@ var _ = framework.CertManagerDescribe("CA Issuer", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-			issuerName,
+		err = h.WaitForIssuerCondition(f.Namespace.Name, issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,

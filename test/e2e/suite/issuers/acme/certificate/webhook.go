@@ -31,13 +31,12 @@ import (
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
-	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 	f := framework.NewDefaultFramework("acme-dns01-sample-webhook")
-	//h := f.Helper()
+	h := f.Helper()
 
 	Context("with the sample webhook solver deployed", func() {
 		issuerName := "test-acme-issuer"
@@ -77,16 +76,14 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-				issuerName,
+			err = h.WaitForIssuerCondition(f.Namespace.Name, issuerName,
 				v1alpha2.IssuerCondition{
 					Type:   v1alpha2.IssuerConditionReady,
 					Status: cmmeta.ConditionTrue,
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the ACME account URI is set")
-			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
-				issuerName,
+			err = h.WaitForIssuerStatusFunc(f.Namespace.Name, issuerName,
 				func(i *v1alpha2.Issuer) (bool, error) {
 					if i.GetStatus().ACMEStatus().URI == "" {
 						return false, nil

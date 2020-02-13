@@ -29,6 +29,7 @@ import (
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
+	h := f.Helper()
 
 	issuerName := "test-ca-clusterissuer" + cmutil.RandStringRunes(5)
 	secretName := "ca-clusterissuer-signing-keypair-" + cmutil.RandStringRunes(5)
@@ -51,8 +52,7 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(clusterIssuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers(),
-			issuerName,
+		err = h.WaitForClusterIssuerCondition(issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
