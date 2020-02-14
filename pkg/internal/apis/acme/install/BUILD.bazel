@@ -44,6 +44,13 @@ go_test(
         "//pkg/api:go_default_library",
         "//pkg/internal/apis/acme/fuzzer:go_default_library",
         "@com_github_munnerz_crd_schema_fuzz//:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/install:go_default_library",
         "@io_k8s_apimachinery//pkg/api/apitesting/roundtrip:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/versioning:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
     ],
 )
