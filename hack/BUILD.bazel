@@ -265,11 +265,13 @@ sh_test(
         "$(location :update-crds)",
         "$(location %s)" % GO,
         "$(location %s)" % CONTROLLER_GEN,
+        "$(location %s)" % HELM,
     ],
     data = [
         ":update-crds",
         GO,
         CONTROLLER_GEN,
+        HELM,
         "@//:all-srcs",
     ],
 )
