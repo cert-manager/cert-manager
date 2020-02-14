@@ -25,7 +25,7 @@ spec:
     name: Age
     type: date
   group: acme.cert-manager.io
-  {{- if not .Values.global.isOpenshift }}
+  {{- if not .Values.isOpenshift }}
   preserveUnknownFields: false
   {{- end }}
   conversion:
@@ -57,7 +57,7 @@ spec:
   "validation":
     "openAPIV3Schema":
       description: Order is a type to represent an Order with an ACME server
-      {{- if not .Values.global.isOpenshift }}
+      {{- if not .Values.isOpenshift }}
       type: object
       {{- end }}
       required:

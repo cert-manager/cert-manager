@@ -21,7 +21,7 @@ spec:
     name: Age
     type: date
   group: cert-manager.io
-  {{- if not .Values.global.isOpenshift }}
+  {{- if not .Values.isOpenshift }}
   preserveUnknownFields: false
   {{- end }}
   conversion:
@@ -52,7 +52,7 @@ spec:
     storage: false
   "validation":
     "openAPIV3Schema":
-      {{- if not .Values.global.isOpenshift }}
+      {{- if not .Values.isOpenshift }}
       type: object
       {{- end }}
       properties:
