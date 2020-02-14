@@ -33,6 +33,7 @@ fi
 
 go=$(realpath "$1")
 controllergen="$(realpath "$2")"
+helm="$(realpath "$3")"
 export PATH=$(dirname "$go"):$PATH
 
 # This script should be run via `bazel run //hack:update-crds`
@@ -48,7 +49,7 @@ out="./deploy/manifests/00-crds.yaml"
 rm "$out" || true
 touch "$out"
 # template all files while removing blank (^$) lines
-bazel run //hack/bin:helm template ./deploy/charts/cert-manager-crds/ | sed '/^$$/d' >> "$out"
+"$helm" template ./deploy/charts/cert-manager-crds/ | sed '/^$$/d' >> "$out"
 printf -- "---\n" >> "$out"
 chmod 644 "$out"
 

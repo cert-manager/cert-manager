@@ -14,6 +14,8 @@ JQ = "//hack/bin:jq"
 
 CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
 
+HELM = "//hack/bin:helm"
+
 # General repo verification targets
 
 py_test(
@@ -247,10 +249,12 @@ sh_binary(
     args = [
         "$(location %s)" % GO,
         "$(location %s)" % CONTROLLER_GEN,
+        "$(location %s)" % HELM,
     ],
     data = [
         GO,
         CONTROLLER_GEN,
+        HELM,
     ],
 )
 
