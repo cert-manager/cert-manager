@@ -17,8 +17,18 @@ limitations under the License.
 package install
 
 import (
-	"fmt"
+	"bytes"
+	"io/ioutil"
 	"testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
+	"k8s.io/apimachinery/pkg/runtime"
+	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/apimachinery/pkg/runtime/serializer/versioning"
 
 	crdfuzz "github.com/munnerz/crd-schema-fuzz"
 
@@ -27,12 +37,42 @@ import (
 )
 
 func TestPruneTypes(t *testing.T) {
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("certificates"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("certificaterequests"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("issuers"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("clusterissuers"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForInternalCRD(t, api.Scheme, getCRD(t, "certificates.cert-manager.io"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForInternalCRD(t, api.Scheme, getCRD(t, "certificaterequests.cert-manager.io"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForInternalCRD(t, api.Scheme, getCRD(t, "issuers.cert-manager.io"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForInternalCRD(t, api.Scheme, getCRD(t, "clusterissuers.cert-manager.io"), cmfuzzer.Funcs)
 }
 
-func crdPath(s string) string {
-	return fmt.Sprintf("../../../../../deploy/manifests/crds/%s.yaml", s)
+func getCRD(t *testing.T, resourceName string) *apiextensions.CustomResourceDefinition {
+	internalScheme := runtime.NewScheme()
+	utilruntime.Must(metav1.AddMetaToScheme(internalScheme))
+	apiextensionsinstall.Install(internalScheme)
+	serializer := jsonserializer.NewSerializerWithOptions(jsonserializer.DefaultMetaFactory, internalScheme, internalScheme, jsonserializer.SerializerOptions{
+		Yaml: true,
+	})
+	convertor := runtime.UnsafeObjectConvertor(internalScheme)
+	codec := versioning.NewCodec(serializer, serializer, convertor, internalScheme, internalScheme, internalScheme, runtime.InternalGroupVersioner, runtime.InternalGroupVersioner, internalScheme.Name())
+
+	data, err := ioutil.ReadFile("../../../../../deploy/manifests/00-crds.yaml")
+	if err != nil {
+		t.Fatalf("Failed to read CRD input file: %v", err)
+		return nil
+	}
+
+	individualCRDs := bytes.Split(data, []byte("---"))
+	for _, crdData := range individualCRDs {
+		crd := &apiextensions.CustomResourceDefinition{}
+		_, _, err := codec.Decode(crdData, nil, crd)
+		if err != nil {
+			t.Fatalf("Failed to decode CRD data: %v", err)
+			return nil
+		}
+
+		if crd.ObjectMeta.Name == resourceName {
+			return crd
+		}
+	}
+
+	t.Fatalf("Failed to find CRD: %v", resourceName)
+	return nil
 }
