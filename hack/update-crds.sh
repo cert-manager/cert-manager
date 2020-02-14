@@ -54,3 +54,14 @@ chmod 644 "$out"
 
 
 echo "Generated 00-crds.yaml"
+
+path="./deploy/manifests/crds/"
+mkdir "$path" || true
+for file in $(find "./deploy/charts/cert-manager-crds/templates/" -type f -name "*.yaml" | sort -V); do
+  # template file while removing blank (^$) lines
+  out="$path/$(basename $file)"
+  rm "$out" || true
+  touch "$out"
+  bazel run //hack/bin:helm template -s "templates/$(basename $file)"  ./deploy/charts/cert-manager-crds/ | sed '/^$$/d' >> "$out"
+
+done

@@ -34,5 +34,5 @@ func TestPruneTypes(t *testing.T) {
 }
 
 func crdPath(s string) string {
-	return fmt.Sprintf("../../../../../deploy/charts/cert-manager-crds/templates/%s.yaml", s)
+	return fmt.Sprintf("../../../../../deploy/manifests/crds/%s.yaml", s)
 }
