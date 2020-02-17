@@ -244,19 +244,6 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
-		"certificate with keysize less than zero": {
-			cfg: &cmapi.Certificate{
-				Spec: cmapi.CertificateSpec{
-					CommonName: "testcn",
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-					KeySize:    -99,
-				},
-			},
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keySize"), -99, "cannot be less than zero"),
-			},
-		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 1024": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{

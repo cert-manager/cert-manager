@@ -356,6 +356,8 @@ spec:
                   and value must be one of (256, 384, 521) when KeyAlgorithm is set
                   to "ecdsa".
                 type: integer
+                maximum: 8192
+                minimum: 0
               organization:
                 description: Organization is the organization to be used on the Certificate
                 type: array
@@ -595,6 +597,8 @@ spec:
                   and value must be one of (256, 384, 521) when KeyAlgorithm is set
                   to "ecdsa".
                 type: integer
+                maximum: 8192
+                minimum: 0
               renewBefore:
                 description: Certificate renew before expiration duration
                 type: string

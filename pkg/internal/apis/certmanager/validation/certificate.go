@@ -52,9 +52,6 @@ func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) fi
 	if len(crt.IPAddresses) > 0 {
 		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
-	if crt.KeySize < 0 {
-		el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "cannot be less than zero"))
-	}
 	switch crt.KeyAlgorithm {
 	case cmapi.KeyAlgorithm(""):
 	case cmapi.RSAKeyAlgorithm:
@@ -74,11 +71,6 @@ func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) fi
 	}
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
-	}
-	switch crt.KeyEncoding {
-	case cmapi.KeyEncoding(""), cmapi.PKCS1, cmapi.PKCS8:
-	default:
-		el = append(el, field.Invalid(fldPath.Child("keyEncoding"), crt.KeyEncoding, "must be either empty or one of pkcs1 or pkcs8"))
 	}
 	return el
 }

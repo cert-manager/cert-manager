@@ -129,6 +129,10 @@ type CertificateSpec struct {
 	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
 	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
 	// KeyAlgorithm is set to "ecdsa".
+	// +kubebuilder:validation:ExclusiveMaximum=false
+	// +kubebuilder:validation:Maximum=8192
+	// +kubebuilder:validation:ExclusiveMinimum=false
+	// +kubebuilder:validation:Minimum=0
 	// +optional
 	KeySize int `json:"keySize,omitempty"`
 
