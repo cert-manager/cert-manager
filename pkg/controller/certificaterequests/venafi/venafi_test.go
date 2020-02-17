@@ -43,6 +43,7 @@ import (
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvenafi "github.com/jetstack/cert-manager/pkg/internal/venafi"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	internalvenafifake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -146,6 +147,12 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
+	tppCRWithCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": "cert-manager-test", "value": "test ok"}]`}))
+
+	tppCRWithInvalidCustomFields := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": cert-manager-test}]`}))
+
+	tppCRWithInvalidCustomFieldType := gen.CertificateRequestFrom(tppCR, gen.SetCertificateRequestAnnotations(map[string]string{"venafi.cert-manager.io/custom-fields": `[{"name": "cert-manager-test", "value": "test ok", "type": "Bool"}]`}))
+
 	cloudCR := gen.CertificateRequestFrom(baseCR,
 		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Group: certmanager.GroupName,
@@ -177,7 +184,7 @@ func TestSign(t *testing.T) {
 	}
 
 	clientReturnsPending := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrCertificatePending{
 				CertificateID: "test-cert-id",
 				Status:        "test-status-pending",
@@ -185,20 +192,35 @@ func TestSign(t *testing.T) {
 		},
 	}
 	clientReturnsTimeout := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrRetrieveCertificateTimeout{
 				CertificateID: "test-cert-id",
 			}
 		},
 	}
 	clientReturnsGenericError := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return nil, errors.New("this is an error")
 		},
 	}
 	clientReturnsCert := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
 			return certPEM, nil
+		},
+	}
+
+	clientReturnsCertIfCustomField := &internalvenafifake.Venafi{
+		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
+			if len(fields) > 0 && fields[0].Name == "cert-manager-test" && fields[0].Value == "test ok" {
+				return certPEM, nil
+			}
+			return nil, errors.New("Custom field not set")
+		},
+	}
+
+	clientReturnsInvalidCustomFieldType := &internalvenafifake.Venafi{
+		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
+			return nil, internalvenafi.ErrCustomFieldsType{Type: fields[0].Type}
 		},
 	}
 
@@ -572,6 +594,96 @@ func TestSign(t *testing.T) {
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsCert,
+		},
+		"annotations: Custom Fields": {
+			certificateRequest: tppCRWithCustomFields.DeepCopy(),
+			issuer:             tppIssuer,
+			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCRWithCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					`Normal CertificateIssued Certificate fetched from issuer successfully`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCRWithCustomFields,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(certPEM),
+						),
+					)),
+				},
+			},
+			fakeSecretLister: failGetSecretLister,
+			fakeClient:       clientReturnsCertIfCustomField,
+			expectedErr:      false,
+		},
+		"annotations: Error on invalid JSON in custom fields": {
+			certificateRequest: tppCRWithInvalidCustomFields.DeepCopy(),
+			issuer:             tppIssuer,
+			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					`Warning CustomFieldsError Failed to parse "venafi.cert-manager.io/custom-fields" annotation: invalid character 'c' looking for beginning of value`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCRWithInvalidCustomFields,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Failed to parse \"venafi.cert-manager.io/custom-fields\" annotation: invalid character 'c' looking for beginning of value",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
+			},
+			fakeSecretLister: failGetSecretLister,
+			fakeClient:       clientReturnsPending,
+			expectedErr:      false,
+		},
+		"annotations: Error on invalid type in custom fields": {
+			certificateRequest: tppCRWithInvalidCustomFieldType.DeepCopy(),
+			issuer:             tppIssuer,
+			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFieldType.DeepCopy(), tppIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					`Warning CustomFieldsError certificate request contains an invalid Venafi custom fields type: "Bool": certificate request contains an invalid Venafi custom fields type: "Bool"`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCRWithInvalidCustomFieldType,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "certificate request contains an invalid Venafi custom fields type: \"Bool\": certificate request contains an invalid Venafi custom fields type: \"Bool\"",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
+			},
+			fakeSecretLister: failGetSecretLister,
+			fakeClient:       clientReturnsInvalidCustomFieldType,
+			expectedErr:      false,
 		},
 	}
 

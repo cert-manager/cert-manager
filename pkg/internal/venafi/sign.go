@@ -19,18 +19,29 @@ package venafi
 import (
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Venafi/vcert/pkg/certificate"
 
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
+
+// ErrCustomFieldsType provides a common error structure for a fivalid custom field types
+type ErrCustomFieldsType struct {
+	Type internalvanafiapi.CustomFieldType
+}
+
+func (err ErrCustomFieldsType) Error() string {
+	return fmt.Sprintf("certificate request contains an invalid Venafi custom fields type: %q", err.Type)
+}
 
 // This function sends a request to Venafi to for a signed certificate.
 // The CSR will be decoded to be validated against the zone configuration policy.
 // Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
-func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error) {
+func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []internalvanafiapi.CustomField) (cert []byte, err error) {
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
@@ -46,6 +57,30 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 
 	// Create a vcert Request structure
 	vreq := newVRequest(tmpl)
+
+	// Convert over custom fields from our struct type to venafi's
+	if len(customFields) > 0 {
+		vreq.CustomFields = []certificate.CustomField{}
+		for _, field := range customFields {
+			var fieldType certificate.CustomFieldType
+			switch field.Type {
+			case internalvanafiapi.CustomFieldTypePlain:
+				fieldType = certificate.CustomFieldPlain
+				break
+			case "":
+				fieldType = certificate.CustomFieldPlain
+				break
+			default:
+				return nil, ErrCustomFieldsType{Type: field.Type}
+			}
+
+			vreq.CustomFields = append(vreq.CustomFields, certificate.CustomField{
+				Type:  fieldType,
+				Name:  field.Name,
+				Value: field.Value,
+			})
+		}
+	}
 
 	// Apply default values from the Venafi zone
 	zoneCfg.UpdateCertificateRequest(vreq)

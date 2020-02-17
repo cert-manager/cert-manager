@@ -26,6 +26,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 )
 
 const (
@@ -39,7 +40,7 @@ type VenafiClientBuilder func(namespace string, secretsLister corelisters.Secret
 	issuer cmapi.GenericIssuer) (Interface, error)
 
 type Interface interface {
-	Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error)
+	Sign(csrPEM []byte, duration time.Duration, customFields []internalvanafiapi.CustomField) (cert []byte, err error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)

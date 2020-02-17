@@ -18,6 +18,8 @@ package venafi
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	venafiinternal "github.com/jetstack/cert-manager/pkg/internal/venafi"
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
@@ -88,11 +91,30 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 
-	certPem, err := client.Sign(cr.Spec.CSRPEM, duration)
+	var customFields []internalvanafiapi.CustomField
+	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFieldsAnnotationKey]; exists && annotation != "" {
+		err := json.Unmarshal([]byte(annotation), &customFields)
+		if err != nil {
+			message := fmt.Sprintf("Failed to parse %q annotation", cmapi.VenafiCustomFieldsAnnotationKey)
+
+			v.reporter.Failed(cr, err, "CustomFieldsError", message)
+			log.Error(err, message)
+
+			return nil, nil
+		}
+	}
+
+	certPem, err := client.Sign(cr.Spec.CSRPEM, duration, customFields)
 
 	// Check some known error types
 	if err != nil {
 		switch err.(type) {
+
+		case venafiinternal.ErrCustomFieldsType:
+			v.reporter.Failed(cr, err, "CustomFieldsError", err.Error())
+			log.Error(err, err.Error())
+
+			return nil, nil
 
 		case endpoint.ErrCertificatePending:
 			message := "Venafi certificate still in a pending state, the request will be retried"

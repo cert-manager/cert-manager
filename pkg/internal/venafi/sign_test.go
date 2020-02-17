@@ -30,6 +30,7 @@ import (
 	"github.com/Venafi/vcert/pkg/endpoint"
 	"github.com/Venafi/vcert/pkg/venafi/fake"
 
+	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	internalfake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -173,6 +174,29 @@ func TestSign(t *testing.T) {
 			checkFn:     checkCertificateIssued,
 			expectedErr: false,
 		},
+		"obtain a certificate with custom fields specified": {
+			csrPEM:       csrPEM,
+			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok"}},
+			client: internalfake.Connector{
+				RetrieveCertificateFunc: func(r *certificate.Request) (*certificate.PEMCollection, error) {
+					if len(r.CustomFields) == 0 {
+						return nil, errors.New("custom fields not set")
+					}
+					if r.CustomFields[0].Name != "test" || r.CustomFields[0].Value != "ok" {
+						return nil, errors.New("custom fields content not correct")
+					}
+					return internalfake.Connector{}.Default().RetrieveCertificate(r) // hack to return to normal
+				},
+			}.Default(),
+			checkFn:     checkCertificateIssued,
+			expectedErr: false,
+		},
+		"If invalid custom field type found the error": {
+			csrPEM:       csrPEM,
+			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
+			checkFn:      checkNoCetificateIssued,
+			expectedErr:  true,
+		},
 	}
 
 	for name, test := range tests {
@@ -188,6 +212,8 @@ type testSignT struct {
 
 	expectedErr bool
 
+	customFields []internalvanafiapi.CustomField
+
 	checkFn func(*testing.T, []byte, []byte)
 }
 
@@ -201,7 +227,7 @@ func (s *testSignT) runTest(t *testing.T) {
 		client: client,
 	}
 
-	resp, err := v.Sign(s.csrPEM, time.Minute)
+	resp, err := v.Sign(s.csrPEM, time.Minute, s.customFields)
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
