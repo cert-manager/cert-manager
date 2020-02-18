@@ -16,13 +16,12 @@ func main() {
 	loadVariant()
 
 	if len(flag.Args()) < 1 {
-		fmt.Println("Usage: filter-crd <CRD YAML file>")
-		return
+		log.Fatal("Usage: filter-crd <CRD YAML file>")
 	}
 
 	f, err := os.Open(flag.Args()[0])
 	if err != nil {
-		log.Fatal("Error opening file", err)
+		log.Fatal("Error opening file: ", err)
 	}
 
 	decoder := yaml.NewDecoder(f)
@@ -39,7 +38,7 @@ func main() {
 
 		fileOut, err := yaml.Marshal(d)
 		if err != nil {
-			log.Fatal("Error marshaling output", err)
+			log.Fatal("Error marshaling output: ", err)
 		}
 
 		output = append(output, string(fileOut))
