@@ -97,6 +97,7 @@ func TestSync(t *testing.T) {
 		ExpectedCreate      []*cmapi.Certificate
 		ExpectedUpdate      []*cmapi.Certificate
 		ExpectedDelete      []*cmapi.Certificate
+		ExpectedEvents      []string
 	}
 	tests := []testT{
 		{
@@ -125,6 +126,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -176,6 +178,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -223,6 +226,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -264,6 +268,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -306,6 +311,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -351,6 +357,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -392,6 +399,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -435,6 +443,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
+			ExpectedEvents: []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -455,10 +464,11 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:         "should return an error when no TLS hosts are specified",
-			Issuer:       acmeIssuer,
-			IssuerLister: []runtime.Object{acmeIssuer},
-			Err:          true,
+			Name:           "should return an error when no TLS hosts are specified",
+			Issuer:         acmeIssuer,
+			IssuerLister:   []runtime.Object{acmeIssuer},
+			Err:            true,
+			ExpectedEvents: []string{`Warning BadConfig Secret "example-com-tls" for ingress TLS has no hosts specified`},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -478,9 +488,10 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "should return an error when no TLS secret name is specified",
-			Issuer: acmeIssuer,
-			Err:    true,
+			Name:           "should return an error when no TLS secret name is specified",
+			Issuer:         acmeIssuer,
+			Err:            true,
+			ExpectedEvents: []string{`Warning BadConfig TLS entry 0 for hosts [example.com] must specify a secretName`},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -586,6 +597,7 @@ func TestSync(t *testing.T) {
 				),
 			},
 			DefaultIssuerKind: "Issuer",
+			ExpectedEvents:    []string{`Normal UpdateCertificate Successfully updated Certificate "existing-crt"`},
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -650,6 +662,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "cert-secret-name"`},
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -784,6 +797,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
+			ExpectedEvents: []string{`Normal DeleteCertificate Successfully deleted unrequired Certificate "existing-crt"`},
 			ExpectedDelete: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -845,6 +859,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
+			ExpectedEvents: []string{`Normal UpdateCertificate Successfully updated Certificate "example-com-tls"`},
 			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -902,6 +917,7 @@ func TestSync(t *testing.T) {
 				T:                  t,
 				CertManagerObjects: allCMObjects,
 				ExpectedActions:    expectedActions,
+				ExpectedEvents:     test.ExpectedEvents,
 			}
 			b.Init()
 			defer b.Stop()
@@ -927,6 +943,9 @@ func TestSync(t *testing.T) {
 				t.Errorf("Expected no error, but got: %s", err)
 			}
 
+			if err := b.AllEventsCalled(); err != nil {
+				t.Error(err)
+			}
 			if err := b.AllReactorsCalled(); err != nil {
 				t.Errorf("Not all expected reactors were called: %v", err)
 			}
