@@ -879,6 +879,38 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:         "if an ingress contains multiple tls entires that specify the same secretName, an error should be logged and no action taken",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			ExpectedEvents: []string{
+				`Warning BadConfig Duplicate TLS entry for secretName "example-com-tls"`,
+			},
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IssuerKindAnnotationKey:        "Issuer",
+						cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+						{
+							Hosts:      []string{"notexample.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+		},
 	}
 	testFn := func(test testT) func(t *testing.T) {
 		return func(t *testing.T) {
