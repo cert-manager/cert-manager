@@ -285,6 +285,7 @@ filegroup(
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
         "//hack/build:all-srcs",
+        "//hack/filter-crd:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

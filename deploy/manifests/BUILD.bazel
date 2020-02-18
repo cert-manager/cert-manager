@@ -14,7 +14,7 @@ VARIANTS = {
     "cert-manager-no-webhook": {
         "webhook.enabled": "false",
     },
-    "cert-manager-openshift.yaml": {
+    "cert-manager-openshift": {
         "global.isOpenshift": "true",
     },
 }
@@ -28,13 +28,35 @@ VARIANTS = {
 ) for (name, values) in VARIANTS.items()]
 
 [genrule(
-    name = name,
+    name = "%s.crds" % name,
     srcs = [
         "00-crds.yaml",
+        "//hack/filter-crd",
+    ],
+    outs = ["%s.crds.yaml" % name],
+    cmd = " ".join([
+        "$(location //hack/filter-crd)",
+        "-variant=%s" % name,
+        "$(location 00-crds.yaml)",
+        "> $@",
+    ]),
+) for (name, values) in VARIANTS.items()]
+
+[genrule(
+    name = name,
+    srcs = [
+        "%s.crds" % name,
+        "01-namespace.yaml",
         "%s.manifests" % name,
     ],
     outs = ["%s.yaml" % name],
-    cmd = "cat $(location 00-crds.yaml) $(location %s.manifests) > $@" % name,
+    cmd = " ".join([
+        "cat",
+        "$(location %s.crds)" % name,
+        "$(location 01-namespace.yaml)",
+        "$(location %s.manifests)" % name,
+        "> $@",
+    ]),
 ) for (name, values) in VARIANTS.items()]
 
 pkg_tar(
