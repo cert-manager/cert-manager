@@ -242,6 +242,32 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should issue a certificate that defines a Common Name and Email Address", func() {
+			s.checkFeatures(CommonNameFeature)
+			s.checkFeatures(EmailSANsFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					CommonName: "test-common-name",
+					EmailSANs:  []string{"alice@example.com"},
+					IssuerRef:  issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+		})
+
 		It("should issue a certificate that defines a CommonName and URI SAN", func() {
 			s.checkFeatures(URISANsFeature)
 			s.checkFeatures(CommonNameFeature)

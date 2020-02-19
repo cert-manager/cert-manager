@@ -86,6 +86,10 @@ type CertificateSpec struct {
 	// Certificate.
 	URISANs []string
 
+	// EmailSANs is a list of Email Subject Alternative Names to be set on this
+	// Certificate.
+	EmailSANs []string
+
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string
 

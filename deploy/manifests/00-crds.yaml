@@ -302,6 +302,12 @@ spec:
               duration:
                 description: Certificate default Duration
                 type: string
+              emailSANs:
+                description: EmailSANs is a list of Email Subject Alternative Names
+                  to be set on this Certificate.
+                type: array
+                items:
+                  type: string
               ipAddresses:
                 description: IPAddresses is a list of IP addresses to be used on the
                   Certificate
@@ -543,6 +549,12 @@ spec:
               duration:
                 description: Certificate default Duration
                 type: string
+              emailSANs:
+                description: EmailSANs is a list of Email Subject Alternative Names
+                  to be set on this Certificate.
+                type: array
+                items:
+                  type: string
               ipAddresses:
                 description: IPAddresses is a list of IP addresses to be used on the
                   Certificate

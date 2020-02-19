@@ -605,6 +605,7 @@ func autoConvert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
+	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
 	out.SecretName = in.SecretName
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
@@ -634,6 +635,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in *cer
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
+	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
 	out.SecretName = in.SecretName
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {

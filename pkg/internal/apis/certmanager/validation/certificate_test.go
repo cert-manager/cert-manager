@@ -125,7 +125,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("commonName", "dnsNames", "uriSANs"), "at least one of commonName, dnsNames, or uriSANs must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs or emailSANs must be set"),
 			},
 		},
 		"certificate with no issuerRef": {
@@ -411,6 +411,51 @@ func TestValidateCertificate(t *testing.T) {
 						"foo.bar",
 					},
 				},
+			},
+		},
+		"valid certificate with only email SAN": {
+			cfg: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					EmailSANs:  []string{"alice@example.com"},
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+		},
+		"invalid certificate with incorrect email": {
+			cfg: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					EmailSANs:  []string{"aliceexample.com"},
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("emailSANs").Index(0), "aliceexample.com", "invalid email address"),
+			},
+		},
+		"invalid certificate with email formatted with name": {
+			cfg: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					EmailSANs:  []string{"Alice <alice@example.com>"},
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("emailSANs").Index(0), "Alice <alice@example.com>", "invalid email address"),
+			},
+		},
+		"invalid certificate with email formatted with mailto": {
+			cfg: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					EmailSANs:  []string{"mailto:alice@example.com"},
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("emailSANs").Index(0), "mailto:alice@example.com", "invalid email address"),
 			},
 		},
 	}

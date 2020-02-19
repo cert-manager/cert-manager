@@ -213,6 +213,10 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 			apiutil.ExtKeyUsageStrings(certificateExtKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
 	}
 
+	if !util.EqualUnsorted(cert.EmailAddresses, certificate.Spec.EmailSANs) {
+		return nil, fmt.Errorf("certificate doesn't contain Email SANs: exp=%v got=%v", certificate.Spec.EmailSANs, cert.EmailAddresses)
+	}
+
 	var dnsName string
 	if len(expectedDNSNames) > 0 {
 		dnsName = expectedDNSNames[0]

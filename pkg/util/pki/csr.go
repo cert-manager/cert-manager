@@ -212,9 +212,10 @@ func GenerateCSR(crt *v1alpha2.Certificate) (*x509.CertificateRequest, error) {
 			SerialNumber:       subject.SerialNumber,
 			CommonName:         commonName,
 		},
-		DNSNames:    dnsNames,
-		IPAddresses: iPAddresses,
-		URIs:        uriNames,
+		DNSNames:       dnsNames,
+		IPAddresses:    iPAddresses,
+		URIs:           uriNames,
+		EmailAddresses: crt.Spec.EmailSANs,
 		// TODO: work out how best to handle extensions/key usages here
 		ExtraExtensions: []pkix.Extension{},
 	}, nil
@@ -271,10 +272,11 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:    keyUsages,
-		ExtKeyUsage: extKeyUsages,
-		DNSNames:    dnsNames,
-		IPAddresses: ipAddresses,
+		KeyUsage:       keyUsages,
+		ExtKeyUsage:    extKeyUsages,
+		DNSNames:       dnsNames,
+		IPAddresses:    ipAddresses,
+		EmailAddresses: crt.Spec.EmailSANs,
 	}, nil
 }
 
@@ -328,11 +330,12 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(duration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:    keyUsage,
-		ExtKeyUsage: extKeyUsage,
-		DNSNames:    csr.DNSNames,
-		IPAddresses: csr.IPAddresses,
-		URIs:        csr.URIs,
+		KeyUsage:       keyUsage,
+		ExtKeyUsage:    extKeyUsage,
+		DNSNames:       csr.DNSNames,
+		IPAddresses:    csr.IPAddresses,
+		EmailAddresses: csr.EmailAddresses,
+		URIs:           csr.URIs,
 	}, nil
 }
 
