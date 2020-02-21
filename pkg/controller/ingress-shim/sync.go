@@ -109,13 +109,20 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 
 func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	var errs []error
+	namedSecrets := make(map[string]int)
 	for i, tls := range ing.Spec.TLS {
+		namedSecrets[tls.SecretName] += 1
 		// validate the ingress TLS block
 		if len(tls.Hosts) == 0 {
 			errs = append(errs, fmt.Errorf("Secret %q for ingress TLS has no hosts specified", tls.SecretName))
 		}
 		if tls.SecretName == "" {
 			errs = append(errs, fmt.Errorf("TLS entry %d for hosts %v must specify a secretName", i, tls.Hosts))
+		}
+	}
+	for name, n := range namedSecrets {
+		if n > 1 {
+			errs = append(errs, fmt.Errorf("Duplicate TLS entry for secretName %q", name))
 		}
 	}
 	return errs
