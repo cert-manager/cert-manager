@@ -154,7 +154,7 @@ func TestSign(t *testing.T) {
 			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 		},
-		"if retrive certificate fails, sign should error": {
+		"if retrieve certificate fails, sign should error": {
 			csrPEM: csrPEM,
 			client: internalfake.Connector{
 				RetrieveCertificateFunc: func(*certificate.Request) (*certificate.PEMCollection, error) {
