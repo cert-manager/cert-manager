@@ -467,6 +467,6 @@ in-progress orders that have been cancelled properly.
 
 This becomes difficult to manage effectively, and especially test.
 
-It is also very difficult to handle effective rate limitting when using this
+It is also very difficult to handle effective rate limiting when using this
 strategy, as it will mean even more code going into the `Prepare` function of
 the ACME issuer.
