@@ -29,7 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-// ErrCustomFieldsType provides a common error structure for a fivalid custom field types
+// ErrCustomFieldsType provides a common error structure for an invalid Venafi custom field type
 type ErrCustomFieldsType struct {
 	Type internalvanafiapi.CustomFieldType
 }
