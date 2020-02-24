@@ -305,7 +305,7 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a successful signinig should set condition to Ready": {
+		"a successful signing should set condition to Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
 				_, err := pki.GenerateTemplateFromCertificateRequest(cr)
