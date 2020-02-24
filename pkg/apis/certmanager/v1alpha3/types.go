@@ -102,7 +102,7 @@ const (
 const (
 	// VenafiCustomFieldsAnnotationKey is the annotation that passes on JSON encoded custom fields to the Venafi issuer
 	// This will only work with Venafi TPP v19.3 and higher
-	// The value is an array with objetcs containing the name and value keys
+	// The value is an array with objects containing the name and value keys
 	// for example: `[{"name": "custom-field", "value": "custom-value"}]`
 	VenafiCustomFieldsAnnotationKey = "venafi.cert-manager.io/custom-fields"
 )
