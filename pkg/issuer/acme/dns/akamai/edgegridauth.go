@@ -144,7 +144,7 @@ func (e *EdgeGridAuth) signingKey(timestamp string) string {
 	return computeSignature(timestamp, e.ClientSecret)
 }
 
-// realtiveURL is the part of the URL that starts from the root path and includes the query string, with the handling of following special cases:
+// relativeURL is the part of the URL that starts from the root path and includes the query string, with the handling of following special cases:
 // If the path is null or empty, set it to / (forward-slash).
 // If the path does not start with /, add / to the beginning.
 func relativeURL(url *url.URL) string {
