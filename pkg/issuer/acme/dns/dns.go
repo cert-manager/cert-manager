@@ -241,7 +241,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 			saKey := providerConfig.CloudDNS.ServiceAccount.Key
 			keyData = saSecret.Data[saKey]
 			if len(keyData) == 0 {
-				return nil, nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
+				return nil, nil, fmt.Errorf("specified key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
 			}
 		}
 
@@ -272,7 +272,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 
 		keyData, ok := saSecret.Data[saSecretKey]
 		if !ok {
-			return nil, nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saSecretKey, saSecret.Namespace, saSecret.Name)
+			return nil, nil, fmt.Errorf("specified key %q not found in secret %s/%s", saSecretKey, saSecret.Namespace, saSecret.Name)
 		}
 
 		var apiKey, apiToken string
