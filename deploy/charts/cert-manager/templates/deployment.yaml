@@ -54,8 +54,8 @@ spec:
       priorityClassName: {{ .Values.global.priorityClassName | quote }}
       {{- end }}
       {{- $enabledDefined := gt (len (keys (pick .Values.securityContext "enabled"))) 0 }}
-      {{- $legacyEnabledExplicitlydOff := and $enabledDefined (not .Values.securityContext.enabled) }}
-      {{- if and .Values.securityContext (not $legacyEnabledExplicitlydOff) }}
+      {{- $legacyEnabledExplicitlyOff := and $enabledDefined (not .Values.securityContext.enabled) }}
+      {{- if and .Values.securityContext (not $legacyEnabledExplicitlyOff) }}
       securityContext:
         {{- if .Values.securityContext.enabled -}}
         {{/* support legacy securityContext.enabled and its two parameters */}}
