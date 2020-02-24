@@ -319,7 +319,7 @@ The ACME issuer is modified to manage Order resources instead of actually
 performing the ACME validation flow.
 
 Each time the Issue function is called, the controller will check the state
-of the Order resource that it has created on a previous invocaction of the
+of the Order resource that it has created on a previous invocation of the
 Issue function, and if it is valid then return the Certificate as stored on
 `order.status.certificate'. It will also verify that the Certificate stored on
 that Order resource is 'up to date' (taking into account the Certificate's
