@@ -32,7 +32,7 @@ func ValidNameserver(nameserver string) (string, error) {
 	}
 
 	// SplitHostPort Behavior
-	// namserver           host                port    err
+	// nameserver          host                port    err
 	// 8.8.8.8             ""                  ""      missing port in address
 	// 8.8.8.8:            "8.8.8.8"           ""      <nil>
 	// 8.8.8.8.8:53        "8.8.8.8"           53      <nil>
