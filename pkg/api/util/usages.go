@@ -49,7 +49,7 @@ var extKeyUsages = map[cmapi.KeyUsage]x509.ExtKeyUsage{
 	cmapi.UsageTimestamping:    x509.ExtKeyUsageTimeStamping,
 	cmapi.UsageOCSPSigning:     x509.ExtKeyUsageOCSPSigning,
 	cmapi.UsageMicrosoftSGC:    x509.ExtKeyUsageMicrosoftServerGatedCrypto,
-	cmapi.UsageNetscapSGC:      x509.ExtKeyUsageNetscapeServerGatedCrypto,
+	cmapi.UsageNetscapeSGC:     x509.ExtKeyUsageNetscapeServerGatedCrypto,
 }
 
 // KeyUsageType returns the relevant x509.KeyUsage or false if not found

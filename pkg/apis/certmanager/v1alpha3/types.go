@@ -160,7 +160,7 @@ const (
 	UsageTimestamping       KeyUsage = "timestamping"
 	UsageOCSPSigning        KeyUsage = "ocsp signing"
 	UsageMicrosoftSGC       KeyUsage = "microsoft sgc"
-	UsageNetscapSGC         KeyUsage = "netscape sgc"
+	UsageNetscapeSGC        KeyUsage = "netscape sgc"
 )
 
 // DefaultKeyUsages contains the default list of key usages
