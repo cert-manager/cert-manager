@@ -87,7 +87,7 @@ func TestReporter(t *testing.T) {
 	existingPendingCondition := cmapi.CertificateRequestCondition{
 		Type:               cmapi.CertificateRequestConditionReady,
 		Reason:             "Pending",
-		Message:            "Exisitng Pending Message",
+		Message:            "Existing Pending Message",
 		Status:             "False",
 		LastTransitionTime: &nowMetaTime,
 	}
