@@ -180,7 +180,7 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a secret with invlaid data should set condition to pending and wait for re-sync": {
+		"a secret with invalid data should set condition to pending and wait for re-sync": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{badDataSecret},
