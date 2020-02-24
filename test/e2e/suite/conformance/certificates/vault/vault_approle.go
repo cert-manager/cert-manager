@@ -158,7 +158,7 @@ func (v *vaultAppRoleProvisioner) initVault(f *framework.Framework) *vaultSecret
 		AppRoleAuthPath:   authPath,
 	}
 	Expect(v.vaultInit.Init()).NotTo(HaveOccurred(), "failed to init vault")
-	Expect(v.vaultInit.Setup()).NotTo(HaveOccurred(), "fauled to setup vault")
+	Expect(v.vaultInit.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
 
 	roleID, secretID, err := v.vaultInit.CreateAppRole()
 	Expect(err).NotTo(HaveOccurred(), "vault to create app role from vault")
