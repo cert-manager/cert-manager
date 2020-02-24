@@ -260,7 +260,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.DefaultIssuerGroup, "default-issuer-group", defaultTLSACMEIssuerGroup, ""+
 		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
-		[]string{}, "A list of comma seperated dns server endpoints used for "+
+		[]string{}, "A list of comma separated dns server endpoints used for "+
 			"DNS01 check requests. This should be a list containing host and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
 	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
@@ -271,7 +271,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"Enabling this option could cause the DNS01 self check to take longer "+
 			"due to caching performed by the recursive nameservers.")
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-self-check-nameservers",
-		[]string{}, "A list of comma seperated dns server endpoints used for "+
+		[]string{}, "A list of comma separated dns server endpoints used for "+
 			"DNS01 check requests. This should be a list containing host and port, "+
 			"for example 8.8.8.8:53,8.8.4.4:53")
 	fs.MarkDeprecated("dns01-self-check-nameservers", "Deprecated in favour of dns01-recursive-nameservers")
