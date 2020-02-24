@@ -402,7 +402,7 @@ The challenge controller is responsible for:
 * presenting challenges using a configured solver (i.e. a dns01 provider, or by
 creating resources in order to solve http01 challenges).
 
-* performing the 'self-check' to ensure the challenge record has propegated
+* performing the 'self-check' to ensure the challenge record has propagated
 
 * 'accepting' the authorization once the self check is passing.
 
