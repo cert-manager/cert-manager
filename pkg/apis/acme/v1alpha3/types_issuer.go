@@ -36,7 +36,7 @@ type ACMEIssuer struct {
 	// +optional
 	SkipTLSVerify bool `json:"skipTLSVerify,omitempty"`
 
-	// ExternalAcccountBinding is a reference to a CA external account of the ACME
+	// ExternalAccountBinding is a reference to a CA external account of the ACME
 	// server.
 	// +optional
 	ExternalAccountBinding *ACMEExternalAccountBinding `json:"externalAccountBinding,omitempty"`
@@ -51,7 +51,7 @@ type ACMEIssuer struct {
 	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
 }
 
-// ACMEExternalAcccountBinding is a reference to a CA external account of the ACME
+// ACMEExternalAccountBinding is a reference to a CA external account of the ACME
 // server.
 type ACMEExternalAccountBinding struct {
 	// keyID is the ID of the CA key that the External Account is bound to.

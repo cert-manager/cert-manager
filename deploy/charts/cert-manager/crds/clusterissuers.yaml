@@ -80,7 +80,7 @@ spec:
                   description: Email is the email for this account
                   type: string
                 externalAccountBinding:
-                  description: ExternalAcccountBinding is a reference to a CA external
+                  description: ExternalAccountBinding is a reference to a CA external
                     account of the ACME server.
                   type: object
                   required:
