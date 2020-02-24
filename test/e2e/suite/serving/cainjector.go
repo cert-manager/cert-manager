@@ -422,7 +422,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 	// TODO: re-enable this test.
 	// This test has been disabled in order to reduce flakes on e2e tests
-	// (hitting around 70% failure rate). This is becasue when running this test
+	// (hitting around 70% failure rate). This is because when running this test
 	// will cause tiller install to fail, therefore making other tests to fail
 	// when running bother at the same time. We should find a way to make this test run in serial.
 	// https://github.com/jetstack/cert-manager/issues/2353

@@ -22,7 +22,7 @@ import (
 )
 
 // For mocking purposes.
-// This little bit of wrapping needs to be done becuase go doesn't do
+// This little bit of wrapping needs to be done because go doesn't do
 // covariance, but it does coerse *time.Timer into stoppable implicitly if we
 // write it out like so.
 var afterFunc = func(d time.Duration, f func()) stoppable {
