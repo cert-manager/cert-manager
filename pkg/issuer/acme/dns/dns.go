@@ -466,7 +466,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		for _, s := range webhookSolvers {
 			err := s.Initialize(ctx.RESTConfig, ctx.StopCh)
 			if err != nil {
-				return nil, fmt.Errorf("error intializing DNS provider %q: %v", s.Name(), err)
+				return nil, fmt.Errorf("error initializing DNS provider %q: %v", s.Name(), err)
 			}
 			initialized[s.Name()] = s
 		}
