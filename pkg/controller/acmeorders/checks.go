@@ -51,7 +51,7 @@ func (c *controller) ordersForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmacme.
 	orders, err := c.orderLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
 	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)

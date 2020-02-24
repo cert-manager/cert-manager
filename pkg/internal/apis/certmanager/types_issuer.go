@@ -108,7 +108,7 @@ type VenafiTPP struct {
 	// The secret must contain two keys, 'username' and 'password'.
 	CredentialsRef cmmeta.LocalObjectReference
 
-	// CABundle is a PEM encoded TLS certifiate to use to verify connections to
+	// CABundle is a PEM encoded TLS certificate to use to verify connections to
 	// the TPP instance.
 	// If specified, system roots will not be used and the issuing CA for the
 	// TPP instance must be verifiable using the provided root.
