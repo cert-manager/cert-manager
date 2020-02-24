@@ -28,7 +28,7 @@ $ oc create \
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml
 
 ## NOTE: if you are installing the Helm chart into a namespace other than
-## 'cert-manager', you **must** replace all occurrances of 'namespace: cert-manager'
+## 'cert-manager', you **must** replace all occurrences of 'namespace: cert-manager'
 ## with 'namespace: custom-namespace-name' in the CRDs manifest.
 ## The below snippet can be used to automate this, replacing
 ## CUSTOM-NAMESPACE-NAME with the deployment namespace's name:
