@@ -120,8 +120,8 @@ spec:
           properties:
             authorizations:
               description: Authorizations contains data returned from the ACME server
-                on what authoriations must be completed in order to validate the DNS
-                names specified on the Order.
+                on what authorizations must be completed in order to validate the
+                DNS names specified on the Order.
               type: array
               items:
                 description: ACMEAuthorization contains data returned from the ACME

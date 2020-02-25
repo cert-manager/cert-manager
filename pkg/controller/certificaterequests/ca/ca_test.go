@@ -180,7 +180,7 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a secret with invlaid data should set condition to pending and wait for re-sync": {
+		"a secret with invalid data should set condition to pending and wait for re-sync": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{badDataSecret},
@@ -305,7 +305,7 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a successful signinig should set condition to Ready": {
+		"a successful signing should set condition to Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
 				_, err := pki.GenerateTemplateFromCertificateRequest(cr)

@@ -18,7 +18,7 @@ set -o errexit
 set -o pipefail
 
 if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
-  echo "Verifyig generated CRD manifests are up-to-date..." >&2
+  echo "Verifying generated CRD manifests are up-to-date..." >&2
 elif ! command -v bazel &>/dev/null; then
   echo "Install bazel at https://bazel.build" >&2
   exit 1

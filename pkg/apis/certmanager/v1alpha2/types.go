@@ -46,7 +46,7 @@ const (
 	// if the challenge type is set to http01
 	IngressACMEIssuerHTTP01IngressClassAnnotationKey = "acme.cert-manager.io/http01-ingress-class"
 
-	// IngessClassAnnotationKey picks a specific "class" for the Ingress. The
+	// IngressClassAnnotationKey picks a specific "class" for the Ingress. The
 	// controller only processes Ingresses with this annotation either unset, or
 	// set to either the configured value or the empty string.
 	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
@@ -102,7 +102,7 @@ const (
 const (
 	// VenafiCustomFieldsAnnotationKey is the annotation that passes on JSON encoded custom fields to the Venafi issuer
 	// This will only work with Venafi TPP v19.3 and higher
-	// The value is an array with objetcs containing the name and value keys
+	// The value is an array with objects containing the name and value keys
 	// for example: `[{"name": "custom-field", "value": "custom-value"}]`
 	VenafiCustomFieldsAnnotationKey = "venafi.cert-manager.io/custom-fields"
 )
@@ -160,7 +160,7 @@ const (
 	UsageTimestamping       KeyUsage = "timestamping"
 	UsageOCSPSigning        KeyUsage = "ocsp signing"
 	UsageMicrosoftSGC       KeyUsage = "microsoft sgc"
-	UsageNetscapSGC         KeyUsage = "netscape sgc"
+	UsageNetscapeSGC        KeyUsage = "netscape sgc"
 )
 
 // DefaultKeyUsages contains the default list of key usages

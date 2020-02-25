@@ -52,7 +52,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 				Status: cmmeta.ConditionTrue,
 			})
 			if !isReady {
-				log.Logf("Expected CertificateReques to have Ready condition 'true' but it has: %v", cr.Status.Conditions)
+				log.Logf("Expected CertificateRequest to have Ready condition 'true' but it has: %v", cr.Status.Conditions)
 				return false, nil
 			}
 			return true, nil
@@ -195,7 +195,7 @@ func (h *Helper) WaitCertificateRequestIssuedValid(ns, name string, timeout time
 func (h *Helper) WaitCertificateRequestIssuedValidTLS(ns, name string, timeout time.Duration, key crypto.Signer, rootCAPEM []byte) error {
 	cr, err := h.WaitForCertificateRequestReady(ns, name, timeout)
 	if err != nil {
-		log.Logf("Error waiting for CertificateReques to become Ready: %v", err)
+		log.Logf("Error waiting for CertificateRequest to become Ready: %v", err)
 		h.Kubectl(ns).DescribeResource("certificaterequest", name)
 		h.Kubectl(ns).Describe("order", "challenge")
 		return err

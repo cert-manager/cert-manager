@@ -80,7 +80,7 @@ spec:
                   description: Email is the email for this account
                   type: string
                 externalAccountBinding:
-                  description: ExternalAcccountBinding is a reference to a CA external
+                  description: ExternalAccountBinding is a reference to a CA external
                     account of the ACME server.
                   type: object
                   required:
@@ -1673,7 +1673,7 @@ spec:
                   - url
                   properties:
                     caBundle:
-                      description: CABundle is a PEM encoded TLS certifiate to use
+                      description: CABundle is a PEM encoded TLS certificate to use
                         to verify connections to the TPP instance. If specified, system
                         roots will not be used and the issuing CA for the TPP instance
                         must be verifiable using the provided root. If not specified,

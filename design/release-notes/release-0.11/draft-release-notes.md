@@ -199,7 +199,7 @@ the temporary.
 
 In this release, no temporary certificates will be created unless explicitly
 requested. This can be done using the annotation
-`"cert-manager.io/issue-temporary-certificate": "true` on `Certifcate`
+`"cert-manager.io/issue-temporary-certificate": "true` on `Certificate`
 resources.
 
 We've additionally changed the behaviour of ingress-shim to now add this new

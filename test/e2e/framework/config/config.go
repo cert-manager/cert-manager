@@ -73,7 +73,7 @@ func (c *Config) AddFlags(fs *flag.FlagSet) {
 	}
 	// Kubernetes API server config
 	fs.StringVar(&c.KubeConfig, "kubernetes-config", kubeConfigFile, "Path to config containing embedded authinfo for kubernetes. Default value is from environment variable "+clientcmd.RecommendedConfigPathEnvVar)
-	fs.StringVar(&c.KubeContext, "kubernetes-context", "", "config context to use for kuberentes. If unset, will use value from 'current-context'")
+	fs.StringVar(&c.KubeContext, "kubernetes-context", "", "config context to use for kubernetes. If unset, will use value from 'current-context'")
 	fs.StringVar(&c.Kubectl, "kubectl-path", "kubectl", "path to the kubectl binary to use during e2e tests.")
 	fs.BoolVar(&c.Cleanup, "cleanup", true, "If true, addons will be cleaned up both before and after provisioning")
 

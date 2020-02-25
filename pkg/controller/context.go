@@ -112,7 +112,7 @@ type ACMEOptions struct {
 	HTTP01SolverResourceLimitsMemory resource.Quantity
 
 	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
-	// for checking propogation of an RR. This is the ideal scenario
+	// for checking propagation of an RR. This is the ideal scenario
 	DNS01CheckAuthoritative bool
 
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks

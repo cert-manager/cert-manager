@@ -99,7 +99,7 @@ type OrderStatus struct {
 	FinalizeURL string `json:"finalizeURL,omitempty"`
 
 	// Authorizations contains data returned from the ACME server on what
-	// authoriations must be completed in order to validate the DNS names
+	// authorizations must be completed in order to validate the DNS names
 	// specified on the Order.
 	// +optional
 	Authorizations []ACMEAuthorization `json:"authorizations,omitempty"`

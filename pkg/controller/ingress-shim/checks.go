@@ -30,7 +30,7 @@ func (c *controller) ingressesForCertificate(crt *v1alpha2.Certificate) ([]*extv
 	ings, err := c.ingressLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
 	var affected []*extv1beta1.Ingress

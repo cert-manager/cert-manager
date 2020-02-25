@@ -53,7 +53,7 @@ http_archive(
     urls = ["https://github.com/kubernetes/repo-infra/archive/v0.0.1.tar.gz"],
 )
 
-## Load rules_docker and depdencies, for working with docker images
+## Load rules_docker and dependencies, for working with docker images
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",

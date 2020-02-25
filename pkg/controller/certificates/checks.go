@@ -61,7 +61,7 @@ func certificatesForSecret(certificateLister cmlisters.CertificateLister, secret
 	crts, err := certificateLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
 	var affected []*cmapi.Certificate

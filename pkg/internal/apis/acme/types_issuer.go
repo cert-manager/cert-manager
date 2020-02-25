@@ -34,7 +34,7 @@ type ACMEIssuer struct {
 	// If true, skip verifying the ACME server TLS certificate
 	SkipTLSVerify bool
 
-	// ExternalAcccountBinding is a reference to a CA external account of the ACME
+	// ExternalAccountBinding is a reference to a CA external account of the ACME
 	// server.
 	ExternalAccountBinding *ACMEExternalAccountBinding
 
@@ -47,7 +47,7 @@ type ACMEIssuer struct {
 	Solvers []ACMEChallengeSolver
 }
 
-// ACMEExternalAcccountBinding is a reference to a CA external account of the ACME
+// ACMEExternalAccountBinding is a reference to a CA external account of the ACME
 // server.
 type ACMEExternalAccountBinding struct {
 	// keyID is the ID of the CA key that the External Account is bound to.

@@ -39,7 +39,7 @@ const (
 	messageVaultStatusVerificationFailed = "Vault is not initialized or is sealed"
 	messageVaultConfigRequired           = "Vault config cannot be empty"
 	messageServerAndPathRequired         = "Vault server and path are required fields"
-	messsageAuthFieldsRequired           = "Vault tokenSecretRef, appRole, or kubernetes is required"
+	messageAuthFieldsRequired            = "Vault tokenSecretRef, appRole, or kubernetes is required"
 	messageAuthFieldRequired             = "Multiple auth methods cannot be set on the same Vault issuer"
 )
 
@@ -64,8 +64,8 @@ func (v *Vault) Setup(ctx context.Context) error {
 
 	// check if at least one auth method is specified.
 	if tokenAuth == nil && appRoleAuth == nil && kubeAuth == nil {
-		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messsageAuthFieldsRequired)
-		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messsageAuthFieldsRequired)
+		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldsRequired)
+		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldsRequired)
 		return nil
 	}
 

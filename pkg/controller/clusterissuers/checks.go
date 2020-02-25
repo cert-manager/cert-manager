@@ -29,7 +29,7 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha2.Cluste
 	issuers, err := c.clusterIssuerLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
 	var affected []*v1alpha2.ClusterIssuer

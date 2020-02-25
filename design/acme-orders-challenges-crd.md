@@ -319,7 +319,7 @@ The ACME issuer is modified to manage Order resources instead of actually
 performing the ACME validation flow.
 
 Each time the Issue function is called, the controller will check the state
-of the Order resource that it has created on a previous invocaction of the
+of the Order resource that it has created on a previous invocation of the
 Issue function, and if it is valid then return the Certificate as stored on
 `order.status.certificate'. It will also verify that the Certificate stored on
 that Order resource is 'up to date' (taking into account the Certificate's
@@ -402,7 +402,7 @@ The challenge controller is responsible for:
 * presenting challenges using a configured solver (i.e. a dns01 provider, or by
 creating resources in order to solve http01 challenges).
 
-* performing the 'self-check' to ensure the challenge record has propegated
+* performing the 'self-check' to ensure the challenge record has propagated
 
 * 'accepting' the authorization once the self check is passing.
 
@@ -467,6 +467,6 @@ in-progress orders that have been cancelled properly.
 
 This becomes difficult to manage effectively, and especially test.
 
-It is also very difficult to handle effective rate limitting when using this
+It is also very difficult to handle effective rate limiting when using this
 strategy, as it will mean even more code going into the `Prepare` function of
 the ACME issuer.

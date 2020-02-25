@@ -67,7 +67,7 @@ kubectl describe.
 - Bump Kubernetes apimachinery dependencies to v1.10.12 (#1344, @munnerz)
 - Increase acmesolver default cpu resource limit to 100m (#1335, @munnerz)
 - Fix potential race when updating secret resource (#1318, @munnerz)
-- Fix bug causing certficates to be re-issued endlessly in certain edge cases (#1280, @munnerz)
+- Fix bug causing certificates to be re-issued endlessly in certain edge cases (#1280, @munnerz)
 - Fix bug when specify certificate keyAlgorithm without an explicit keySize (#1309, @munnerz)
 - Bump Go version to 1.11.5 (#1304, @munnerz)
 - Fix typo in SelfSigned Issuer in webhook deployment manifests (#1294, @munnerz)

@@ -62,7 +62,7 @@ var (
 	ControllerNames []string
 )
 
-// Register registers an injection controller with the given manager, and adds relevant indicies.
+// Register registers an injection controller with the given manager, and adds relevant indices.
 func Register(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
 	typ := setup.injector.NewTarget().AsObject()
 	builder := ctrl.NewControllerManagedBy(mgr).For(typ)

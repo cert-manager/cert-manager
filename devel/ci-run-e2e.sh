@@ -19,7 +19,7 @@ set -o errexit
 set -o pipefail
 
 # This script will build an entirely new testing environment using kind.
-# This is inteded to be run in a CI environment and *not* for development.
+# This is intended to be run in a CI environment and *not* for development.
 # It is not optimised for quick, iterative development.
 
 export_logs() {

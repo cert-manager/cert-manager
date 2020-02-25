@@ -77,7 +77,7 @@ func checkCertificateIssued(t *testing.T, csrPEM []byte, resp []byte) {
 	}
 }
 
-func checkNoCetificateIssued(t *testing.T, csrPEM []byte, resp []byte) {
+func checkNoCertificateIssued(t *testing.T, csrPEM []byte, resp []byte) {
 	if len(resp) > 0 {
 		t.Errorf("expected no response with error but got=%s", resp)
 	}
@@ -117,7 +117,7 @@ func TestSign(t *testing.T) {
 	tests := map[string]testSignT{
 		"if reading the zone configuration fails then error": {
 			csrPEM:      csrPEM,
-			checkFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 			client: internalfake.Connector{
 				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
@@ -127,7 +127,7 @@ func TestSign(t *testing.T) {
 		},
 		"if validating the certificate fails then error": {
 			csrPEM:      csrPEM,
-			checkFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 			client: internalfake.Connector{
 				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
@@ -141,7 +141,7 @@ func TestSign(t *testing.T) {
 		},
 		"a badly formed CSR should error": {
 			csrPEM:      []byte("a badly formed CSR"),
-			checkFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 		},
 		"if requesting the certificate fails, sign should error": {
@@ -151,22 +151,22 @@ func TestSign(t *testing.T) {
 					return "", errors.New("request error")
 				},
 			}.Default(),
-			checkFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 		},
-		"if retrive certificate fails, sign should error": {
+		"if retrieve certificate fails, sign should error": {
 			csrPEM: csrPEM,
 			client: internalfake.Connector{
 				RetrieveCertificateFunc: func(*certificate.Request) (*certificate.PEMCollection, error) {
 					return nil, errors.New("request error")
 				},
 			}.Default(),
-			checkFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 		},
 		"if no Common Name, DNS Name, or URI SANs in CSR then error": {
 			csrPEM:      csrNonePEM,
-			checkFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 		},
 		"obtain a certificate with DNS names specified": {
@@ -194,7 +194,7 @@ func TestSign(t *testing.T) {
 		"If invalid custom field type found the error": {
 			csrPEM:       csrPEM,
 			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
-			checkFn:      checkNoCetificateIssued,
+			checkFn:      checkNoCertificateIssued,
 			expectedErr:  true,
 		},
 	}

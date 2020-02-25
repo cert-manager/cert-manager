@@ -55,7 +55,7 @@ func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssue
 	crts, err := c.certificateRequestLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
 	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)

@@ -2230,7 +2230,7 @@ spec:
                   description: Email is the email for this account
                   type: string
                 externalAccountBinding:
-                  description: ExternalAcccountBinding is a reference to a CA external
+                  description: ExternalAccountBinding is a reference to a CA external
                     account of the ACME server.
                   type: object
                   required:
@@ -3823,7 +3823,7 @@ spec:
                   - url
                   properties:
                     caBundle:
-                      description: CABundle is a PEM encoded TLS certifiate to use
+                      description: CABundle is a PEM encoded TLS certificate to use
                         to verify connections to the TPP instance. If specified, system
                         roots will not be used and the issuing CA for the TPP instance
                         must be verifiable using the provided root. If not specified,
@@ -3984,7 +3984,7 @@ spec:
                   description: Email is the email for this account
                   type: string
                 externalAccountBinding:
-                  description: ExternalAcccountBinding is a reference to a CA external
+                  description: ExternalAccountBinding is a reference to a CA external
                     account of the ACME server.
                   type: object
                   required:
@@ -5577,7 +5577,7 @@ spec:
                   - url
                   properties:
                     caBundle:
-                      description: CABundle is a PEM encoded TLS certifiate to use
+                      description: CABundle is a PEM encoded TLS certificate to use
                         to verify connections to the TPP instance. If specified, system
                         roots will not be used and the issuing CA for the TPP instance
                         must be verifiable using the provided root. If not specified,
@@ -5778,8 +5778,8 @@ spec:
           properties:
             authorizations:
               description: Authorizations contains data returned from the ACME server
-                on what authoriations must be completed in order to validate the DNS
-                names specified on the Order.
+                on what authorizations must be completed in order to validate the
+                DNS names specified on the Order.
               type: array
               items:
                 description: ACMEAuthorization contains data returned from the ACME

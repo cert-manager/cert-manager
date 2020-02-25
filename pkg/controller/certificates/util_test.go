@@ -128,7 +128,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 			expErrors: nil,
 		},
 
-		"if the issuer name uses v1alpha2 annotation but kind uses depreicated then it should still match the spec": {
+		"if the issuer name uses v1alpha2 annotation but kind uses deprecated then it should still match the spec": {
 			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate),
 			secret: gen.SecretFrom(secret,

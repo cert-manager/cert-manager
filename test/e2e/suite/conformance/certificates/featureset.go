@@ -110,6 +110,6 @@ const (
 	CommonNameFeature = "CommonName"
 
 	// KeyUsages denotes whether the target issuer is able to sign certificates
-	// with arbitary key usages.
+	// with arbitrary key usages.
 	KeyUsagesFeature = "KeyUsages"
 )
