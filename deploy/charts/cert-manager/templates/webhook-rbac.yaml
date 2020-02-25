@@ -33,7 +33,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
   name: {{ include "webhook.fullname" . }}:webhook-authentication-reader
-  namespace: kube-system
+  namespace: {{ .Values.global.leaderElection.namespace }}
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
