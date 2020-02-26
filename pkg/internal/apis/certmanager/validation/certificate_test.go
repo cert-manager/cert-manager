@@ -106,17 +106,6 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("issuerRef", "kind"), "invalid", "must be one of Issuer or ClusterIssuer"),
 			},
 		},
-		"certificate missing secretName": {
-			cfg: &cmapi.Certificate{
-				Spec: cmapi.CertificateSpec{
-					CommonName: "testcn",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("secretName"), "must be specified"),
-			},
-		},
 		"certificate with no domains, URIs or common name": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
@@ -126,17 +115,6 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs or emailSANs must be set"),
-			},
-		},
-		"certificate with no issuerRef": {
-			cfg: &cmapi.Certificate{
-				Spec: cmapi.CertificateSpec{
-					CommonName: "testcn",
-					SecretName: "abc",
-				},
-			},
-			errs: []*field.Error{
-				field.Required(fldPath.Child("issuerRef", "name"), "must be specified"),
 			},
 		},
 		"valid certificate with only dnsNames": {
@@ -320,28 +298,6 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
-			},
-		},
-		"valid certificate with commonName exactly 64 bytes": {
-			cfg: &cmapi.Certificate{
-				Spec: cmapi.CertificateSpec{
-					CommonName: "this-is-a-big-long-string-which-is-exactly-sixty-four-characters",
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			errs: []*field.Error{},
-		},
-		"invalid certificate with commonName longer than 64 bytes": {
-			cfg: &cmapi.Certificate{
-				Spec: cmapi.CertificateSpec{
-					CommonName: "this-is-a-big-long-string-which-has-exactly-sixty-five-characters",
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			errs: []*field.Error{
-				field.TooLong(fldPath.Child("commonName"), "this-is-a-big-long-string-which-has-exactly-sixty-five-characters", 64),
 			},
 		},
 		"valid certificate with no commonName and second dnsName longer than 64 bytes": {

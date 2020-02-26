@@ -18,17 +18,20 @@ package framework
 
 import (
 	"testing"
+	"time"
 
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"k8s.io/kubectl/pkg/util/openapi"
 )
 
 func NewEventRecorder(t *testing.T) record.EventRecorder {
@@ -62,5 +65,26 @@ func StartInformersAndController(t *testing.T, factory informers.SharedInformerF
 	}()
 	return func() {
 		close(stopCh)
+	}
+}
+
+func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, config *rest.Config, gvk schema.GroupVersionKind) {
+	dc, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for {
+		og := openapi.NewOpenAPIGetter(dc)
+		oapiResource, err := og.Get()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if oapiResource.LookupResource(gvk) != nil {
+			return
+		}
+		t.Log("Our GVK isn't yet loaded into the OpenAPI resouces API")
+		time.Sleep(time.Second)
 	}
 }

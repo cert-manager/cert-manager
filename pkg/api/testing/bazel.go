@@ -42,10 +42,16 @@ func PathForCRD(t *testing.T, name string) string {
 
 func CRDDirectory(t *testing.T) string {
 	runfiles := os.Getenv("RUNFILES_DIR")
-	if runfiles == "" {
-		t.Fatalf("integration tests can only run within 'bazel test' environment")
+	bazelDir := os.Getenv("BAZEL_BIN_DIR")
+	if runfiles == "" && bazelDir == "" {
+		t.Fatalf("integration tests can only run within 'bazel test' environment or have BAZEL_BIN_DIR set")
 	}
-	path := filepath.Join(runfiles, "com_github_jetstack_cert_manager", "deploy", "crds")
+	var path string
+	if bazelDir != "" {
+		path = filepath.Join(bazelDir, "deploy", "crds")
+	} else {
+		path = filepath.Join(runfiles, "com_github_jetstack_cert_manager", "deploy", "crds")
+	}
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)

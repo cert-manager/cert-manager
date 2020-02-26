@@ -73,6 +73,8 @@ type CertificateRequestSpec struct {
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
 	// Byte slice containing the PEM encoded CertificateSigningRequest
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	CSRPEM []byte `json:"csr"`
 
 	// IsCA will mark the resulting certificate as valid for signing. This

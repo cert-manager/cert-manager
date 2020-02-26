@@ -56,154 +56,307 @@ spec:
   - name: v1alpha2
     served: true
     storage: true
+    "schema":
+      "openAPIV3Schema":
+        description: CertificateRequest is a type to represent a Certificate Signing
+          Request
+        type: object
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CertificateRequestSpec defines the desired state of CertificateRequest
+            type: object
+            required:
+            - csr
+            - issuerRef
+            properties:
+              csr:
+                description: Byte slice containing the PEM encoded CertificateSigningRequest
+                type: string
+                format: byte
+              duration:
+                description: Requested certificate default Duration
+                type: string
+              isCA:
+                description: IsCA will mark the resulting certificate as valid for
+                  signing. This implies that the 'cert sign' usage is set
+                type: boolean
+              issuerRef:
+                description: IssuerRef is a reference to the issuer for this CertificateRequest.  If
+                  the 'kind' field is not set, or set to 'Issuer', an Issuer resource
+                  with the given name in the same namespace as the CertificateRequest
+                  will be used.  If the 'kind' field is set to 'ClusterIssuer', a
+                  ClusterIssuer with the provided name will be used. The 'name' field
+                  in this stanza is required at all times. The group field refers
+                  to the API group of the issuer which defaults to 'cert-manager.io'
+                  if empty.
+                type: object
+                required:
+                - name
+                properties:
+                  group:
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                    minLength: 1
+              usages:
+                description: Usages is the set of x509 actions that are enabled for
+                  a given key. Defaults are ('digital signature', 'key encipherment')
+                  if empty
+                type: array
+                items:
+                  description: 'KeyUsage specifies valid usage contexts for keys.
+                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+                    Valid KeyUsage values are as follows: "signing", "digital signature",
+                    "content commitment", "key encipherment", "key agreement", "data
+                    encipherment", "cert sign", "crl sign", "encipher only", "decipher
+                    only", "any", "server auth", "client auth", "code signing", "email
+                    protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec
+                    user", "timestamping", "ocsp signing", "microsoft sgc", "netscape
+                    sgc"'
+                  type: string
+                  enum:
+                  - signing
+                  - digital signature
+                  - content commitment
+                  - key encipherment
+                  - key agreement
+                  - data encipherment
+                  - cert sign
+                  - crl sign
+                  - encipher only
+                  - decipher only
+                  - any
+                  - server auth
+                  - client auth
+                  - code signing
+                  - email protection
+                  - s/mime
+                  - ipsec end system
+                  - ipsec tunnel
+                  - ipsec user
+                  - timestamping
+                  - ocsp signing
+                  - microsoft sgc
+                  - netscape sgc
+          status:
+            description: CertificateStatus defines the observed state of CertificateRequest
+              and resulting signed certificate.
+            type: object
+            properties:
+              ca:
+                description: Byte slice containing the PEM encoded certificate authority
+                  of the signed certificate.
+                type: string
+                format: byte
+              certificate:
+                description: Byte slice containing a PEM encoded signed certificate
+                  resulting from the given certificate signing request.
+                type: string
+                format: byte
+              conditions:
+                type: array
+                items:
+                  description: CertificateRequestCondition contains condition information
+                    for a CertificateRequest.
+                  type: object
+                  required:
+                  - status
+                  - type
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the timestamp corresponding
+                        to the last status change of this condition.
+                      type: string
+                      format: date-time
+                    message:
+                      description: Message is a human readable description of the
+                        details of the last transition, complementing reason.
+                      type: string
+                    reason:
+                      description: Reason is a brief machine readable explanation
+                        for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of ('True', 'False',
+                        'Unknown').
+                      type: string
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                    type:
+                      description: Type of the condition, currently ('Ready', 'InvalidRequest').
+                      type: string
+              failureTime:
+                description: FailureTime stores the time that this CertificateRequest
+                  failed. This is used to influence garbage collection and back-off.
+                type: string
+                format: date-time
   - name: v1alpha3
     served: true
     storage: false
-  "validation":
-    "openAPIV3Schema":
-      description: CertificateRequest is a type to represent a Certificate Signing
-        Request
-      type: object
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: CertificateRequestSpec defines the desired state of CertificateRequest
-          type: object
-          required:
-          - csr
-          - issuerRef
-          properties:
-            csr:
-              description: Byte slice containing the PEM encoded CertificateSigningRequest
-              type: string
-              format: byte
-            duration:
-              description: Requested certificate default Duration
-              type: string
-            isCA:
-              description: IsCA will mark the resulting certificate as valid for signing.
-                This implies that the 'cert sign' usage is set
-              type: boolean
-            issuerRef:
-              description: IssuerRef is a reference to the issuer for this CertificateRequest.  If
-                the 'kind' field is not set, or set to 'Issuer', an Issuer resource
-                with the given name in the same namespace as the CertificateRequest
-                will be used.  If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer
-                with the provided name will be used. The 'name' field in this stanza
-                is required at all times. The group field refers to the API group
-                of the issuer which defaults to 'cert-manager.io' if empty.
-              type: object
-              required:
-              - name
-              properties:
-                group:
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-            usages:
-              description: Usages is the set of x509 actions that are enabled for
-                a given key. Defaults are ('digital signature', 'key encipherment')
-                if empty
-              type: array
-              items:
-                description: 'KeyUsage specifies valid usage contexts for keys. See:
-                  https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
-                  Valid KeyUsage values are as follows: "signing", "digital signature",
-                  "content commitment", "key encipherment", "key agreement", "data
-                  encipherment", "cert sign", "crl sign", "encipher only", "decipher
-                  only", "any", "server auth", "client auth", "code signing", "email
-                  protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec
-                  user", "timestamping", "ocsp signing", "microsoft sgc", "netscape
-                  sgc"'
+    "schema":
+      "openAPIV3Schema":
+        description: CertificateRequest is a type to represent a Certificate Signing
+          Request
+        type: object
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CertificateRequestSpec defines the desired state of CertificateRequest
+            type: object
+            required:
+            - csr
+            - issuerRef
+            properties:
+              csr:
+                description: Byte slice containing the PEM encoded CertificateSigningRequest
                 type: string
-                enum:
-                - signing
-                - digital signature
-                - content commitment
-                - key encipherment
-                - key agreement
-                - data encipherment
-                - cert sign
-                - crl sign
-                - encipher only
-                - decipher only
-                - any
-                - server auth
-                - client auth
-                - code signing
-                - email protection
-                - s/mime
-                - ipsec end system
-                - ipsec tunnel
-                - ipsec user
-                - timestamping
-                - ocsp signing
-                - microsoft sgc
-                - netscape sgc
-        status:
-          description: CertificateStatus defines the observed state of CertificateRequest
-            and resulting signed certificate.
-          type: object
-          properties:
-            ca:
-              description: Byte slice containing the PEM encoded certificate authority
-                of the signed certificate.
-              type: string
-              format: byte
-            certificate:
-              description: Byte slice containing a PEM encoded signed certificate
-                resulting from the given certificate signing request.
-              type: string
-              format: byte
-            conditions:
-              type: array
-              items:
-                description: CertificateRequestCondition contains condition information
-                  for a CertificateRequest.
+                format: byte
+                minLength: 1
+              duration:
+                description: Requested certificate default Duration
+                type: string
+              isCA:
+                description: IsCA will mark the resulting certificate as valid for
+                  signing. This implies that the 'cert sign' usage is set
+                type: boolean
+              issuerRef:
+                description: IssuerRef is a reference to the issuer for this CertificateRequest.  If
+                  the 'kind' field is not set, or set to 'Issuer', an Issuer resource
+                  with the given name in the same namespace as the CertificateRequest
+                  will be used.  If the 'kind' field is set to 'ClusterIssuer', a
+                  ClusterIssuer with the provided name will be used. The 'name' field
+                  in this stanza is required at all times. The group field refers
+                  to the API group of the issuer which defaults to 'cert-manager.io'
+                  if empty.
                 type: object
                 required:
-                - status
-                - type
+                - name
                 properties:
-                  lastTransitionTime:
-                    description: LastTransitionTime is the timestamp corresponding
-                      to the last status change of this condition.
+                  group:
                     type: string
-                    format: date-time
-                  message:
-                    description: Message is a human readable description of the details
-                      of the last transition, complementing reason.
+                  kind:
                     type: string
-                  reason:
-                    description: Reason is a brief machine readable explanation for
-                      the condition's last transition.
+                  name:
                     type: string
-                  status:
-                    description: Status of the condition, one of ('True', 'False',
-                      'Unknown').
-                    type: string
-                    enum:
-                    - "True"
-                    - "False"
-                    - Unknown
-                  type:
-                    description: Type of the condition, currently ('Ready', 'InvalidRequest').
-                    type: string
-            failureTime:
-              description: FailureTime stores the time that this CertificateRequest
-                failed. This is used to influence garbage collection and back-off.
-              type: string
-              format: date-time
+                    minLength: 1
+              usages:
+                description: Usages is the set of x509 actions that are enabled for
+                  a given key. Defaults are ('digital signature', 'key encipherment')
+                  if empty
+                type: array
+                items:
+                  description: 'KeyUsage specifies valid usage contexts for keys.
+                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+                    Valid KeyUsage values are as follows: "signing", "digital signature",
+                    "content commitment", "key encipherment", "key agreement", "data
+                    encipherment", "cert sign", "crl sign", "encipher only", "decipher
+                    only", "any", "server auth", "client auth", "code signing", "email
+                    protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec
+                    user", "timestamping", "ocsp signing", "microsoft sgc", "netscape
+                    sgc"'
+                  type: string
+                  enum:
+                  - signing
+                  - digital signature
+                  - content commitment
+                  - key encipherment
+                  - key agreement
+                  - data encipherment
+                  - cert sign
+                  - crl sign
+                  - encipher only
+                  - decipher only
+                  - any
+                  - server auth
+                  - client auth
+                  - code signing
+                  - email protection
+                  - s/mime
+                  - ipsec end system
+                  - ipsec tunnel
+                  - ipsec user
+                  - timestamping
+                  - ocsp signing
+                  - microsoft sgc
+                  - netscape sgc
+          status:
+            description: CertificateStatus defines the observed state of CertificateRequest
+              and resulting signed certificate.
+            type: object
+            properties:
+              ca:
+                description: Byte slice containing the PEM encoded certificate authority
+                  of the signed certificate.
+                type: string
+                format: byte
+              certificate:
+                description: Byte slice containing a PEM encoded signed certificate
+                  resulting from the given certificate signing request.
+                type: string
+                format: byte
+              conditions:
+                type: array
+                items:
+                  description: CertificateRequestCondition contains condition information
+                    for a CertificateRequest.
+                  type: object
+                  required:
+                  - status
+                  - type
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the timestamp corresponding
+                        to the last status change of this condition.
+                      type: string
+                      format: date-time
+                    message:
+                      description: Message is a human readable description of the
+                        details of the last transition, complementing reason.
+                      type: string
+                    reason:
+                      description: Reason is a brief machine readable explanation
+                        for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of ('True', 'False',
+                        'Unknown').
+                      type: string
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                    type:
+                      description: Type of the condition, currently ('Ready', 'InvalidRequest').
+                      type: string
+              failureTime:
+                description: FailureTime stores the time that this CertificateRequest
+                  failed. This is used to influence garbage collection and back-off.
+                type: string
+                format: date-time

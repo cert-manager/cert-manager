@@ -104,6 +104,7 @@ type VenafiIssuer struct {
 	// All requests made to the Venafi platform will be restricted by the named
 	// zone policy.
 	// This field is required.
+	// +kubebuilder:validation:MinLength=1
 	Zone string `json:"zone"`
 
 	// TPP specifies Trust Protection Platform configuration settings.
@@ -120,6 +121,7 @@ type VenafiIssuer struct {
 // VenafiTPP defines connection configuration details for a Venafi TPP instance
 type VenafiTPP struct {
 	// URL is the base URL for the Venafi TPP instance
+	// +kubebuilder:validation:MinLength=1
 	URL string `json:"url"`
 
 	// CredentialsRef is a reference to a Secret containing the username and
@@ -160,9 +162,11 @@ type VaultIssuer struct {
 	Auth VaultAuth `json:"auth"`
 
 	// Server is the vault connection address
+	// +kubebuilder:validation:MinLength=1
 	Server string `json:"server"`
 
 	// Vault URL path to the certificate role
+	// +kubebuilder:validation:MinLength=1
 	Path string `json:"path"`
 
 	// Base64 encoded CA bundle to validate Vault server certificate. Only used
@@ -194,6 +198,7 @@ type VaultAuth struct {
 
 type VaultAppRole struct {
 	// Where the authentication path is mounted in Vault.
+	// +kubebuilder:validation:MinLength=1
 	Path string `json:"path"`
 
 	RoleId    string                   `json:"roleId"`
@@ -217,12 +222,14 @@ type VaultKubernetesAuth struct {
 
 	// A required field containing the Vault Role to assume. A Role binds a
 	// Kubernetes ServiceAccount with a set of Vault policies.
+	// +kubebuilder:validation:MinLength=1
 	Role string `json:"role"`
 }
 
 type CAIssuer struct {
 	// SecretName is the name of the secret used to sign Certificates issued
 	// by this Issuer.
+	// +kubebuilder:validation:MinLength=1
 	SecretName string `json:"secretName"`
 
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies

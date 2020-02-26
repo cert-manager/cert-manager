@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -24,6 +25,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jetstack/cert-manager/pkg/api"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -56,16 +61,28 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Logf("Found CRD with name %q", crd.Name)
 	}
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
-	// environment variables
+
 	env := &envtest.Environment{
 		AttachControlPlaneOutput: true,
 		CRDs:                     crdsToRuntimeObjects(crds),
 	}
+
 	config, err := env.Start()
 	if err != nil {
 		t.Fatalf("failed to start control plane: %v", err)
 	}
-	// TODO: configure Validating and Mutating webhook
+
+	cl, err := client.New(config, client.Options{Scheme: api.Scheme})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// installing the validating webhooks, not using WebhookInstallOptions as it patches the CA to be it's own
+	err = cl.Create(context.Background(), getValidatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	return config, func() {
 		defer stopWebhook()
 		if err := env.Stop(); err != nil {
@@ -171,4 +188,46 @@ func crdsToRuntimeObjects(in []*v1beta1.CustomResourceDefinition) []runtime.Obje
 	}
 
 	return out
+}
+
+func getValidatingWebhookConfig(url string, caPEM []byte) runtime.Object {
+	failurePolicy := admissionregistrationv1beta1.Fail
+	sideEffects := admissionregistrationv1beta1.SideEffectClassNone
+	validateURL := fmt.Sprintf("%s/validate", url)
+	webhook := admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ValidatingWebhookConfiguration",
+			APIVersion: "admissionregistration.k8s.io/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cert-manager-webhook",
+			Namespace: "cert-manager-webhook",
+		},
+		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{
+			{
+				Name: "webhook.cert-manager.io",
+				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+					URL:      &validateURL,
+					CABundle: caPEM,
+				},
+				Rules: []admissionregistrationv1beta1.RuleWithOperations{
+					{
+						Operations: []admissionregistrationv1beta1.OperationType{
+							admissionregistrationv1beta1.Create,
+							admissionregistrationv1beta1.Update,
+						},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
+							APIVersions: []string{"v1alpha2", "v1alpha3"},
+							Resources:   []string{"*/*"},
+						},
+					},
+				},
+				FailurePolicy: &failurePolicy,
+				SideEffects:   &sideEffects,
+			},
+		},
+	}
+
+	return webhook.DeepCopyObject()
 }

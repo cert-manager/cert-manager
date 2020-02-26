@@ -94,6 +94,7 @@ spec:
                 the order.
               type: string
               format: byte
+              minLength: 1
             dnsNames:
               description: DNSNames is a list of DNS names that should be included
                 as part of the Order validation process. If CommonName is not specified,
@@ -119,6 +120,7 @@ spec:
                   type: string
                 name:
                   type: string
+                  minLength: 1
         status:
           type: object
           properties:
@@ -156,15 +158,21 @@ spec:
                             this challenge. This is used to compute the 'key' that
                             must also be presented.
                           type: string
+                          minLength: 1
                         type:
                           description: Type is the type of challenge being offered,
                             e.g. http-01, dns-01
                           type: string
+                          minLength: 1
+                          enum:
+                          - dns-01
+                          - http-01
                         url:
                           description: URL is the URL of this challenge. It can be
                             used to retrieve additional metadata about the Challenge
                             from the ACME server.
                           type: string
+                          minLength: 1
                   identifier:
                     description: Identifier is the DNS name to be validated as part
                       of this authorization
@@ -191,6 +199,7 @@ spec:
                     description: URL is the URL of the Authorization that must be
                       completed
                     type: string
+                    minLength: 1
                   wildcard:
                     description: Wildcard will be true if this authorization is for
                       a wildcard DNS name. If this is true, the identifier will be

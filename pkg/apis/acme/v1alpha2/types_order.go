@@ -55,6 +55,8 @@ type OrderSpec struct {
 	// Certificate signing request bytes in DER encoding.
 	// This will be used when finalizing the order.
 	// This field must be set on the order.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	CSR []byte `json:"csr"`
 
 	// IssuerRef references a properly configured ACME-type Issuer which should
@@ -129,6 +131,8 @@ type OrderStatus struct {
 // Order resource.
 type ACMEAuthorization struct {
 	// URL is the URL of the Authorization that must be completed
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	URL string `json:"url"`
 
 	// Identifier is the DNS name to be validated as part of this authorization
@@ -168,10 +172,14 @@ type ACMEAuthorization struct {
 type ACMEChallenge struct {
 	// URL is the URL of this challenge. It can be used to retrieve additional
 	// metadata about the Challenge from the ACME server.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	URL string `json:"url"`
 
 	// Token is the token that must be presented for this challenge.
 	// This is used to compute the 'key' that must also be presented.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Token string `json:"token"`
 
 	// Type is the type of challenge being offered, e.g. http-01, dns-01
@@ -179,6 +187,8 @@ type ACMEChallenge struct {
 }
 
 // ACMEChallengeType denotes a type of ACME challenge
+// +kubebuilder:validation:Enum=dns-01;http-01
+// +kubebuilder:validation:MinLength=1
 type ACMEChallengeType string
 
 const (

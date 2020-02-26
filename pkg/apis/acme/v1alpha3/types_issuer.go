@@ -30,6 +30,8 @@ type ACMEIssuer struct {
 	Email string `json:"email,omitempty"`
 
 	// Server is the ACME server URL
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	Server string `json:"server"`
 
 	// If true, skip verifying the ACME server TLS certificate
@@ -47,7 +49,6 @@ type ACMEIssuer struct {
 
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
-	// +optional
 	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
 }
 
@@ -55,6 +56,8 @@ type ACMEIssuer struct {
 // server.
 type ACMEExternalAccountBinding struct {
 	// keyID is the ID of the CA key that the External Account is bound to.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	KeyID string `json:"keyID"`
 
 	// keySecretRef is a Secret Key Selector referencing a data item in a Kubernetes
@@ -64,10 +67,12 @@ type ACMEExternalAccountBinding struct {
 	// the External Account Binding keyID above.
 	// The secret key stored in the Secret **must** be un-padded, base64 URL
 	// encoded data.
+	// +kubebuilder:validation:Required
 	Key cmmeta.SecretKeySelector `json:"keySecretRef"`
 
 	// keyAlgorithm is the MAC key algorithm that the key is used for. Valid
 	// values are "HS256", "HS384" and "HS512".
+	// +kubebuilder:validation:Required
 	KeyAlgorithm HMACKeyAlgorithm `json:"keyAlgorithm"`
 }
 
@@ -297,14 +302,20 @@ type ACMEIssuerDNS01ProviderAkamai struct {
 type ACMEIssuerDNS01ProviderCloudDNS struct {
 	// +optional
 	ServiceAccount *cmmeta.SecretKeySelector `json:"serviceAccountSecretRef,omitempty"`
-	Project        string                    `json:"project"`
+
+	// +kubebuilder:validation:MinLength=1
+	Project string `json:"project"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
 // configuration for Cloudflare
 type ACMEIssuerDNS01ProviderCloudflare struct {
-	Email    string                    `json:"email"`
-	APIKey   *cmmeta.SecretKeySelector `json:"apiKeySecretRef,omitempty"`
+	Email string `json:"email"`
+
+	// +optional
+	APIKey *cmmeta.SecretKeySelector `json:"apiKeySecretRef,omitempty"`
+
+	// + optional
 	APIToken *cmmeta.SecretKeySelector `json:"apiTokenSecretRef,omitempty"`
 }
 
@@ -337,13 +348,13 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	HostedZoneID string `json:"hostedZoneID,omitempty"`
 
 	// Always set the region when using AccessKeyID and SecretAccessKey
+	// +kubebuilder:validation:MinLength=1
 	Region string `json:"region"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
-
 	// if both this and ClientSecret are left unset MSI will be used
 	// +optional
 	ClientID string `json:"clientID,omitempty"`
@@ -380,8 +391,10 @@ const (
 // ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
 // configuration for ACME-DNS servers
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
+	// +kubebuilder:validation:Required
 	Host string `json:"host"`
 
+	// +kubebuilder:validation:Required
 	AccountSecret cmmeta.SecretKeySelector `json:"accountSecretRef"`
 }
 
@@ -392,6 +405,7 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// RFC2136 in the form host:port. If the host is an IPv6 address it must be
 	// enclosed in square brackets (e.g [2001:db8::1]) ; port is optional.
 	// This field is required.
+	// +kubebuilder:validation:Required
 	Nameserver string `json:"nameserver"`
 
 	// The name of the secret containing the TSIG value.
@@ -409,6 +423,7 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// Supported values are (case-insensitive): ``HMACMD5`` (default),
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
+	// +kubebuilder:validation:Enum=HMACMD5;HMACSHA1;HMACSHA256;HMACSHA512
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
 }
 
@@ -419,6 +434,8 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// resources to the webhook apiserver.
 	// This should be the same as the GroupName specified in the webhook
 	// provider implementation.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	GroupName string `json:"groupName"`
 
 	// The name of the solver to use, as defined in the webhook provider

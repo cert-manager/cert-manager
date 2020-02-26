@@ -82,6 +82,7 @@ type CertificateSpec struct {
 	// This value is ignored by TLS clients when any subject alt name is set.
 	// This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4
 	// +optional
+	// +kubebuilder:validation:MaxLength=64
 	CommonName string `json:"commonName,omitempty"`
 
 	// Organization is the organization to be used on the Certificate
@@ -115,6 +116,8 @@ type CertificateSpec struct {
 	EmailSANs []string `json:"emailSANs,omitempty"`
 
 	// SecretName is the name of the secret resource to store this secret in
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	SecretName string `json:"secretName"`
 
 	// Keystores configures additional keystore output formats stored in the
@@ -188,6 +191,7 @@ type CertificatePrivateKey struct {
 
 // Denotes how private keys should be generated or sourced when a Certificate
 // is being issued.
+// +kubebuilder:validation:Enum=Never;Always
 type PrivateKeyRotationPolicy string
 
 var (

@@ -91,6 +91,7 @@ spec:
                   avoid generating invalid CSRs. This value is ignored by TLS clients
                   when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
                 type: string
+                maxLength: 64
               dnsNames:
                 description: DNSNames is a list of subject alt names to be used on
                   the Certificate.
@@ -133,6 +134,7 @@ spec:
                     type: string
                   name:
                     type: string
+                    minLength: 1
               keyAlgorithm:
                 description: KeyAlgorithm is the private key algorithm of the corresponding
                   private key for this certificate. If provided, allowed values are
@@ -249,6 +251,9 @@ spec:
                       whenever a re-issuance occurs. Default is 'Never' for backward
                       compatibility.
                     type: string
+                    enum:
+                    - Never
+                    - Always
               renewBefore:
                 description: Certificate renew before expiration duration
                 type: string
@@ -256,6 +261,7 @@ spec:
                 description: SecretName is the name of the secret resource to store
                   this secret in
                 type: string
+                minLength: 1
               subject:
                 description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
                 type: object
@@ -439,6 +445,7 @@ spec:
                   avoid generating invalid CSRs. This value is ignored by TLS clients
                   when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
                 type: string
+                maxLength: 64
               dnsNames:
                 description: DNSNames is a list of subject alt names to be used on
                   the Certificate.
@@ -481,6 +488,7 @@ spec:
                     type: string
                   name:
                     type: string
+                    minLength: 1
               keyAlgorithm:
                 description: KeyAlgorithm is the private key algorithm of the corresponding
                   private key for this certificate. If provided, allowed values are
@@ -592,6 +600,9 @@ spec:
                       whenever a re-issuance occurs. Default is 'Never' for backward
                       compatibility.
                     type: string
+                    enum:
+                    - Never
+                    - Always
               renewBefore:
                 description: Certificate renew before expiration duration
                 type: string
@@ -599,6 +610,7 @@ spec:
                 description: SecretName is the name of the secret resource to store
                   this secret in
                 type: string
+                minLength: 1
               subject:
                 description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
                 type: object

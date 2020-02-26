@@ -34,19 +34,11 @@ import (
 
 func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
-	if crt.SecretName == "" {
-		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
-	}
 
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
 	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 && len(crt.EmailSANs) == 0 {
 		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs or emailSANs must be set"))
-	}
-
-	// if a common name has been specified, ensure it is no longer than 64 chars
-	if len(crt.CommonName) > 64 {
-		el = append(el, field.TooLong(fldPath.Child("commonName"), crt.CommonName, 64))
 	}
 
 	if len(crt.IPAddresses) > 0 {
@@ -89,9 +81,7 @@ func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) fi
 	el := field.ErrorList{}
 
 	issuerRefPath := fldPath.Child("issuerRef")
-	if issuerRef.Name == "" {
-		el = append(el, field.Required(issuerRefPath.Child("name"), "must be specified"))
-	}
+
 	if issuerRef.Group == "" || issuerRef.Group == cmapi.SchemeGroupVersion.Group {
 		switch issuerRef.Kind {
 		case "":
