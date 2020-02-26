@@ -40,11 +40,13 @@ type LocalObjectReference struct {
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 	// TODO: Add other useful fields. apiVersion, kind, uid?
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 }
 
 // ObjectReference is a reference to an object with a given name, kind and group.
 type ObjectReference struct {
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// +optional
 	Kind string `json:"kind,omitempty"`
@@ -54,9 +56,10 @@ type ObjectReference struct {
 
 type SecretKeySelector struct {
 	// The name of the secret in the pod's namespace to select from.
+	// +kubebuilder:validation:Required
 	LocalObjectReference `json:",inline"`
 	// The key of the secret to select from. Must be a valid secret key.
-	// +optional
+	// +kubebuilder:validation:Required
 	Key string `json:"key,omitempty"`
 }
 

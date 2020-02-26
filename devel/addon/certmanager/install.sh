@@ -45,7 +45,8 @@ kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manage
 
 wait
 
-# Ensure the pebble namespace exists
+controller
+#      Ensure the pebble namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 crdsmanifest="cert-manager.crds.yaml"

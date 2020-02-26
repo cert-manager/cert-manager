@@ -82,6 +82,7 @@ type CertificateSpec struct {
 	// This value is ignored by TLS clients when any subject alt name is set.
 	// This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4
 	// +optional
+	// +kubebuilder:validation:MaxLength=64
 	CommonName string `json:"commonName,omitempty"`
 
 	// Organization is the organization to be used on the Certificate
@@ -115,6 +116,7 @@ type CertificateSpec struct {
 	EmailSANs []string `json:"emailSANs,omitempty"`
 
 	// SecretName is the name of the secret resource to store this secret in
+	// +kubebuilder:validation:Required
 	SecretName string `json:"secretName"`
 
 	// IssuerRef is a reference to the issuer for this certificate.

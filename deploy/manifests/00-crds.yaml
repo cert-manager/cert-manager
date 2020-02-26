@@ -293,6 +293,7 @@ spec:
                   avoid generating invalid CSRs. This value is ignored by TLS clients
                   when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
                 type: string
+                maxLength: 64
               dnsNames:
                 description: DNSNames is a list of subject alt names to be used on
                   the Certificate.
@@ -540,6 +541,7 @@ spec:
                   avoid generating invalid CSRs. This value is ignored by TLS clients
                   when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
                 type: string
+                maxLength: 64
               dnsNames:
                 description: DNSNames is a list of subject alt names to be used on
                   the Certificate.
@@ -947,6 +949,7 @@ spec:
                               type: string
                         serviceConsumerDomain:
                           type: string
+                          minLength: 1
                     azuredns:
                       description: ACMEIssuerDNS01ProviderAzureDNS is a structure
                         containing the configuration for Azure DNS
@@ -975,11 +978,17 @@ spec:
                               type: string
                         environment:
                           type: string
-                          enum:
-                          - AzurePublicCloud
-                          - AzureChinaCloud
-                          - AzureGermanCloud
-                          - AzureUSGovernmentCloud
+                          allOf:
+                          - enum:
+                            - AzurePublicCloud
+                            - AzureChinaCloud
+                            - AzureGermanCloud
+                            - AzureUSGovernmentCloud
+                          - enum:
+                            - AzurePublicCloud
+                            - AzureChinaCloud
+                            - AzureGermanCloud
+                            - AzureUSGovernmentCloud
                         hostedZoneName:
                           type: string
                         resourceGroupName:
@@ -2308,6 +2317,7 @@ spec:
                   description: Solvers is a list of challenge solvers that will be
                     used to solve ACME challenges for the matching domains.
                   type: array
+                  minItems: 1
                   items:
                     type: object
                     properties:
@@ -2397,6 +2407,7 @@ spec:
                                     type: string
                               serviceConsumerDomain:
                                 type: string
+                                minLength: 1
                           azuredns:
                             description: ACMEIssuerDNS01ProviderAzureDNS is a structure
                               containing the configuration for Azure DNS
@@ -2427,11 +2438,17 @@ spec:
                                     type: string
                               environment:
                                 type: string
-                                enum:
-                                - AzurePublicCloud
-                                - AzureChinaCloud
-                                - AzureGermanCloud
-                                - AzureUSGovernmentCloud
+                                allOf:
+                                - enum:
+                                  - AzurePublicCloud
+                                  - AzureChinaCloud
+                                  - AzureGermanCloud
+                                  - AzureUSGovernmentCloud
+                                - enum:
+                                  - AzurePublicCloud
+                                  - AzureChinaCloud
+                                  - AzureGermanCloud
+                                  - AzureUSGovernmentCloud
                               hostedZoneName:
                                 type: string
                               resourceGroupName:
@@ -4062,6 +4079,7 @@ spec:
                   description: Solvers is a list of challenge solvers that will be
                     used to solve ACME challenges for the matching domains.
                   type: array
+                  minItems: 1
                   items:
                     type: object
                     properties:
@@ -4151,6 +4169,7 @@ spec:
                                     type: string
                               serviceConsumerDomain:
                                 type: string
+                                minLength: 1
                           azuredns:
                             description: ACMEIssuerDNS01ProviderAzureDNS is a structure
                               containing the configuration for Azure DNS
@@ -4181,11 +4200,17 @@ spec:
                                     type: string
                               environment:
                                 type: string
-                                enum:
-                                - AzurePublicCloud
-                                - AzureChinaCloud
-                                - AzureGermanCloud
-                                - AzureUSGovernmentCloud
+                                allOf:
+                                - enum:
+                                  - AzurePublicCloud
+                                  - AzureChinaCloud
+                                  - AzureGermanCloud
+                                  - AzureUSGovernmentCloud
+                                - enum:
+                                  - AzurePublicCloud
+                                  - AzureChinaCloud
+                                  - AzureGermanCloud
+                                  - AzureUSGovernmentCloud
                               hostedZoneName:
                                 type: string
                               resourceGroupName:

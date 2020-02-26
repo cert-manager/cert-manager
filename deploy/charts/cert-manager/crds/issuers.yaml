@@ -146,6 +146,7 @@ spec:
                   description: Solvers is a list of challenge solvers that will be
                     used to solve ACME challenges for the matching domains.
                   type: array
+                  minItems: 1
                   items:
                     type: object
                     properties:
@@ -235,6 +236,7 @@ spec:
                                     type: string
                               serviceConsumerDomain:
                                 type: string
+                                minLength: 1
                           azuredns:
                             description: ACMEIssuerDNS01ProviderAzureDNS is a structure
                               containing the configuration for Azure DNS
@@ -265,11 +267,17 @@ spec:
                                     type: string
                               environment:
                                 type: string
-                                enum:
-                                - AzurePublicCloud
-                                - AzureChinaCloud
-                                - AzureGermanCloud
-                                - AzureUSGovernmentCloud
+                                allOf:
+                                - enum:
+                                  - AzurePublicCloud
+                                  - AzureChinaCloud
+                                  - AzureGermanCloud
+                                  - AzureUSGovernmentCloud
+                                - enum:
+                                  - AzurePublicCloud
+                                  - AzureChinaCloud
+                                  - AzureGermanCloud
+                                  - AzureUSGovernmentCloud
                               hostedZoneName:
                                 type: string
                               resourceGroupName:
