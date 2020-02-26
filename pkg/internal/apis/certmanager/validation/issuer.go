@@ -261,7 +261,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		}
 
 		if len(p.RFC2136.TSIGSecret.Name) != 0 {
-			if len(p.RFC2136.TSIGKeyName) <= 0 {
+			if len(p.RFC2136.TSIGKeyName) == 0 {
 				el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
 			}
 		}
@@ -274,7 +274,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 	}
 
 	if numProviders > 1 {
-		el = append(el, field.Required(fldPath, "may not specify more than one provider type"))
+		el = append(el, field.Forbidden(fldPath, "may not specify more than one provider type"))
 	}
 
 	return el
