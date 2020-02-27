@@ -21,10 +21,9 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/cmd/webhook",
     visibility = ["//visibility:private"],
     deps = [
-        "//pkg/logs:go_default_library",
-        "//pkg/webhook:go_default_library",
-        "//pkg/webhook/handlers:go_default_library",
-        "//pkg/webhook/server:go_default_library",
+        "//cmd/webhook/app:go_default_library",
+        "//cmd/webhook/app/options:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
         "@io_k8s_klog//:go_default_library",
         "@io_k8s_klog//klogr:go_default_library",
     ],
@@ -47,7 +46,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//cmd/webhook/app:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

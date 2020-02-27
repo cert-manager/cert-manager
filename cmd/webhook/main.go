@@ -17,89 +17,31 @@ limitations under the License.
 package main
 
 import (
-	"flag"
-	"fmt"
+	goflag "flag"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
+	"github.com/spf13/pflag"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
 
-	"github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/webhook"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
-	"github.com/jetstack/cert-manager/pkg/webhook/server"
+	"github.com/jetstack/cert-manager/cmd/webhook/app"
+	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
 )
-
-const (
-	defaultCipherSuites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
-		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384," +
-		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305," +
-		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA," +
-		"TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA," +
-		"TLS_RSA_WITH_AES_128_GCM_SHA256," +
-		"TLS_RSA_WITH_AES_256_GCM_SHA384," +
-		"TLS_RSA_WITH_AES_128_CBC_SHA," +
-		"TLS_RSA_WITH_AES_256_CBC_SHA"
-)
-
-var (
-	securePort      int
-	healthzPort     int
-	tlsCertFile     string
-	tlsKeyFile      string
-	tlsCipherSuites string
-)
-
-func init() {
-	flag.IntVar(&healthzPort, "healthz-port", 6080, "port number to listen on for insecure healthz connections")
-	flag.IntVar(&securePort, "secure-port", 6443, "port number to listen on for secure TLS connections")
-	flag.StringVar(&tlsCertFile, "tls-cert-file", "", "path to the file containing the TLS certificate to serve with")
-	flag.StringVar(&tlsKeyFile, "tls-private-key-file", "", "path to the file containing the TLS private key to serve with")
-	flag.StringVar(&tlsCipherSuites, "tls-cipher-suites", defaultCipherSuites, "comma separated list of TLS 1.2 cipher suites to use (TLS 1.3 cipher suites are not configurable)")
-}
-
-var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logs.Log, webhook.Scheme, webhook.ValidationRegistry)
-var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
-var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
 func main() {
-	klog.InitFlags(flag.CommandLine)
-	flag.Parse()
+	gofs := &goflag.FlagSet{}
+	klog.InitFlags(gofs)
+	pflag.CommandLine.AddGoFlagSet(gofs)
+	opts := &options.WebhookOptions{}
+	opts.AddFlags(pflag.CommandLine)
+	pflag.Parse()
 
 	log := klogr.New()
 	stopCh := setupSignalHandler()
 
-	var source server.CertificateSource
-	if tlsCertFile == "" || tlsKeyFile == "" {
-		log.Info("warning: serving insecurely as tls certificate data not provided")
-	} else {
-		log.Info("enabling TLS as certificate file flags specified")
-		source = &server.FileCertificateSource{
-			CertPath: tlsCertFile,
-			KeyPath:  tlsKeyFile,
-			Log:      log,
-		}
-	}
-	var cipherSuites []string
-	if len(tlsCipherSuites) > 0 {
-		cipherSuites = strings.Split(tlsCipherSuites, ",")
-	}
-
-	srv := server.Server{
-		ListenAddr:        fmt.Sprintf(":%d", securePort),
-		HealthzAddr:       fmt.Sprintf(":%d", healthzPort),
-		EnablePprof:       true,
-		CertificateSource: source,
-		CipherSuites:      cipherSuites,
-		ValidationWebhook: validationHook,
-		MutationWebhook:   mutationHook,
-		ConversionWebhook: conversionHook,
-		Log:               log,
-	}
-	if err := srv.Run(stopCh); err != nil {
+	if err := app.RunServer(log, *opts, stopCh); err != nil {
 		log.Error(err, "error running server")
 		os.Exit(1)
 	}
