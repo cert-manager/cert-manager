@@ -53,21 +53,21 @@ def install_misc():
 # Install dependencies used by the controller-runtime integration test framework
 def install_integration_test_dependencies():
     http_file(
-        name = "kube-apiserver_1_14_darwin",
+        name = "kube-apiserver_darwin_amd64",
         executable = 1,
-        sha256 = "8a7a21a5683386998ebd3a4fe9af346626ebdaf84a59094a2b2188e59e13b6d6",
-        urls = ["https://storage.googleapis.com/cert-manager-testing-assets/kube-apiserver-1.14.1_darwin_amd64"],
+        sha256 = "a874d479f183f9e4c19a5c69b44955fabd2e250b467d2d9f0641ae91a82ddbea",
+        urls = ["https://storage.googleapis.com/cert-manager-testing-assets/kube-apiserver-1.17.3_darwin_amd64"],
     )
 
     http_file(
-        name = "kube-apiserver_1_14_linux",
+        name = "kube-apiserver_linux_amd64",
         executable = 1,
-        sha256 = "1ce67dda7b125dc1adadc10ab93fe339f6ce40211ae4f1552d6de177e36a430d",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.14.1/bin/linux/amd64/kube-apiserver"],
+        sha256 = "b4505b838b27b170531afbdef5e7bfaacf83da665f21b0e3269d1775b0defb7a",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.17.3/bin/linux/amd64/kube-apiserver"],
     )
 
     http_archive(
-        name = "etcd_v3_3_darwin",
+        name = "com_coreos_etcd_darwin_amd64",
         sha256 = "c8f36adf4f8fb7e974f9bafe6e390a03bc33e6e465719db71d7ed3c6447ce85a",
         urls = ["https://github.com/etcd-io/etcd/releases/download/v3.3.12/etcd-v3.3.12-darwin-amd64.zip"],
         build_file_content = """
@@ -82,7 +82,7 @@ filegroup(
     )
 
     http_archive(
-        name = "etcd_v3_3_linux",
+        name = "com_coreos_etcd_linux_amd64",
         sha256 = "dc5d82df095dae0a2970e4d870b6929590689dd707ae3d33e7b86da0f7f211b6",
         urls = ["https://github.com/etcd-io/etcd/releases/download/v3.3.12/etcd-v3.3.12-linux-amd64.tar.gz"],
         build_file_content = """
