@@ -44,12 +44,10 @@ type ACMEIssuer struct {
 
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
-	// +kubebuilder:validation:Required
 	PrivateKey cmmeta.SecretKeySelector `json:"privateKeySecretRef"`
 
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
-	// +kubebuilder:validation:MinItems=1
 	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
 }
 
@@ -265,8 +263,6 @@ const (
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API
 type ACMEIssuerDNS01ProviderAkamai struct {
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
 	ServiceConsumerDomain string                   `json:"serviceConsumerDomain"`
 	ClientToken           cmmeta.SecretKeySelector `json:"clientTokenSecretRef"`
 	ClientSecret          cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
@@ -279,14 +275,12 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 	// +optional
 	ServiceAccount *cmmeta.SecretKeySelector `json:"serviceAccountSecretRef,omitempty"`
 
-	// +kubebuilder:validation:Required
 	Project string `json:"project"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
 // configuration for Cloudflare
 type ACMEIssuerDNS01ProviderCloudflare struct {
-	// +kubebuilder:validation:Required
 	Email string `json:"email"`
 
 	// +optional
@@ -299,7 +293,6 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // ACMEIssuerDNS01ProviderDigitalOcean is a structure containing the DNS
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
-	// +kubebuilder:validation:Required
 	Token cmmeta.SecretKeySelector `json:"tokenSecretRef"`
 }
 
@@ -332,26 +325,20 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
-	// +kubebuilder:validation:Required
 	ClientID string `json:"clientID"`
 
-	// +kubebuilder:validation:Required
 	ClientSecret cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
 
-	// +kubebuilder:validation:Required
 	SubscriptionID string `json:"subscriptionID"`
 
-	// +kubebuilder:validation:Required
 	TenantID string `json:"tenantID"`
 
-	// +kubebuilder:validation:Required
 	ResourceGroupName string `json:"resourceGroupName"`
 
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
 
 	// +optional
-	// +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud
 	Environment AzureDNSEnvironment `json:"environment,omitempty"`
 }
 
@@ -413,7 +400,6 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// The name of the solver to use, as defined in the webhook provider
 	// implementation.
 	// This will typically be the name of the provider, e.g. 'cloudflare'.
-	// +kubebuilder:validation:Required
 	SolverName string `json:"solverName"`
 
 	// Additional configuration that should be passed to the webhook apiserver
