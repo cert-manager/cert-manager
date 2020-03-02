@@ -126,7 +126,9 @@ type VenafiCloud struct {
 	APITokenSecretRef cmmeta.SecretKeySelector
 }
 
-type SelfSignedIssuer struct{}
+type SelfSignedIssuer struct {
+	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
+}
 
 type VaultIssuer struct {
 	// Vault authentication

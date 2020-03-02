@@ -855,6 +855,7 @@ func Convert_certmanager_IssuerStatus_To_v1alpha3_IssuerStatus(in *certmanager.I
 }
 
 func autoConvert_v1alpha3_SelfSignedIssuer_To_certmanager_SelfSignedIssuer(in *v1alpha3.SelfSignedIssuer, out *certmanager.SelfSignedIssuer, s conversion.Scope) error {
+	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	return nil
 }
 
@@ -864,6 +865,7 @@ func Convert_v1alpha3_SelfSignedIssuer_To_certmanager_SelfSignedIssuer(in *v1alp
 }
 
 func autoConvert_certmanager_SelfSignedIssuer_To_v1alpha3_SelfSignedIssuer(in *certmanager.SelfSignedIssuer, out *v1alpha3.SelfSignedIssuer, s conversion.Scope) error {
+	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
 	return nil
 }
 

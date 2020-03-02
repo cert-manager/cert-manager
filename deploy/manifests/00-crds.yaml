@@ -3681,6 +3681,11 @@ spec:
                   type: string
             selfSigned:
               type: object
+              properties:
+                crlDistributionPoints:
+                  type: array
+                  items:
+                    type: string
             vault:
               type: object
               required:
@@ -5435,6 +5440,11 @@ spec:
                   type: string
             selfSigned:
               type: object
+              properties:
+                crlDistributionPoints:
+                  type: array
+                  items:
+                    type: string
             vault:
               type: object
               required:
