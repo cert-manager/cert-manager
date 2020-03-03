@@ -14,9 +14,7 @@ VARIANTS = {
     "cert-manager-no-webhook": {
         "webhook.enabled": "false",
     },
-    "cert-manager-openshift": {
-        "global.isOpenshift": "true",
-    },
+    "cert-manager-openshift": {},
 }
 
 [helm_tmpl(
