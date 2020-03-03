@@ -431,7 +431,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailSANs").Index(0), "aliceexample.com", "invalid email address"),
+				field.Invalid(fldPath.Child("emailSANs").Index(0), "aliceexample.com", "invalid email address: mail: missing '@' or angle-addr"),
 			},
 		},
 		"invalid certificate with email formatted with name": {
@@ -443,7 +443,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailSANs").Index(0), "Alice <alice@example.com>", "invalid email address"),
+				field.Invalid(fldPath.Child("emailSANs").Index(0), "Alice <alice@example.com>", "invalid email address: make sure the supplied value only contains the email address itself"),
 			},
 		},
 		"invalid certificate with email formatted with mailto": {
@@ -455,7 +455,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailSANs").Index(0), "mailto:alice@example.com", "invalid email address"),
+				field.Invalid(fldPath.Child("emailSANs").Index(0), "mailto:alice@example.com", "invalid email address: mail: expected comma"),
 			},
 		},
 	}
