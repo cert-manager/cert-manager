@@ -105,6 +105,11 @@ type CertificateSpec struct {
 	// +optional
 	URISANs []string `json:"uriSANs,omitempty"`
 
+	// EmailSANs is a list of Email Subject Alternative Names to be set on this
+	// Certificate.
+	// +optional
+	EmailSANs []string `json:"emailSANs,omitempty"`
+
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
 

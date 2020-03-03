@@ -19,6 +19,7 @@ package validation
 import (
 	"fmt"
 	"net"
+	"net/mail"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -39,9 +40,8 @@ func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) fi
 
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
-	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 {
-		el = append(el, field.Required(fldPath.Child("commonName", "dnsNames", "uriSANs"),
-			"at least one of commonName, dnsNames, or uriSANs must be set"))
+	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 && len(crt.EmailSANs) == 0 {
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs or emailSANs must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
@@ -52,6 +52,11 @@ func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) fi
 	if len(crt.IPAddresses) > 0 {
 		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
+
+	if len(crt.EmailSANs) > 0 {
+		el = append(el, validateEmailAddresses(crt, fldPath)...)
+	}
+
 	switch crt.KeyAlgorithm {
 	case cmapi.KeyAlgorithm(""):
 	case cmapi.RSAKeyAlgorithm:
@@ -108,6 +113,24 @@ func validateIPAddresses(a *cmapi.CertificateSpec, fldPath *field.Path) field.Er
 		ip := net.ParseIP(d)
 		if ip == nil {
 			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, "invalid IP address"))
+		}
+	}
+	return el
+}
+
+func validateEmailAddresses(a *cmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	if len(a.EmailSANs) <= 0 {
+		return nil
+	}
+	el := field.ErrorList{}
+	for i, d := range a.EmailSANs {
+		e, err := mail.ParseAddress(d)
+		if err != nil {
+			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, fmt.Sprintf("invalid email address: %s", err)))
+		} else if e.Address != d {
+			// Go accepts email names as per RFC 5322 (name <email>)
+			// This checks if the supplied value only contains the email address and nothing else
+			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, "invalid email address: make sure the supplied value only contains the email address itself"))
 		}
 	}
 	return el

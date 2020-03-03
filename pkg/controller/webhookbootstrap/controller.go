@@ -333,6 +333,12 @@ func (c *controller) certificateRequiresIssuance(ctx context.Context, log logr.L
 		return true
 	}
 
+	// validate the email addressed are correct
+	if !util.EqualUnsorted(cert.EmailAddresses, crt.Spec.EmailSANs) {
+		log.Info("certificate email addresses are not as expected, re-issuing")
+		return true
+	}
+
 	if c.certificateNeedsRenew(ctx, cert, crt) {
 		log.Info("certificate requires renewal, re-issuing")
 		return true
