@@ -212,6 +212,11 @@ webhook:
   # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000
   securePort: 10250
 
+crds:
+  enabled: true
+  create: true
+  keep: true
+
 cainjector:
   enabled: true
   replicaCount: 1

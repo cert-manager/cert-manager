@@ -45,12 +45,6 @@ kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manage
 
 wait
 
-# Ensure the pebble namespace exists
-kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
-
-# Install a copy of the CRDs
-kubectl apply -f "${REPO_ROOT}/deploy/charts/cert-manager/crds/"
-
 # Upgrade or install Pebble
 helm upgrade \
     --install \
