@@ -132,6 +132,18 @@ type CertificateOptions struct {
 	// EnableOwnerRef controls whether the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
 	EnableOwnerRef bool
+
+	// ExperimentalIssuePKCS12, if true, will make the certificates controller
+	// create a `keystore.p12` in the Secret resource for each Certificate.
+	// This can only be toggled globally, and the keystore will be encrypted
+	// with the supplied ExperimentalPKCS12KeystorePassword.
+	// This flag is likely to be removed in future in favour of native PKCS12
+	// keystore bundle support.
+	ExperimentalIssuePKCS12 bool
+	// ExperimentalPKCS12KeystorePassword is the password used to encrypt and
+	// decrypt PKCS#12 bundles stored in Secret resources.
+	// This option only has any affect is ExperimentalIssuePKCS12 is true.
+	ExperimentalPKCS12KeystorePassword string
 }
 
 type SchedulerOptions struct {
