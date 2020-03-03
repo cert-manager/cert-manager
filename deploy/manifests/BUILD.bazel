@@ -31,7 +31,6 @@ VARIANTS = {
     name = "%s.crds" % name,
     srcs = [
         "00-crds.yaml",
-        "//hack/filter-crd",
     ],
     outs = ["%s.crds.yaml" % name],
     cmd = " ".join([
@@ -40,6 +39,9 @@ VARIANTS = {
         "$(location 00-crds.yaml)",
         "> $@",
     ]),
+    tools = [
+        "//hack/filter-crd",
+    ],
 ) for (name, values) in VARIANTS.items()]
 
 [genrule(
