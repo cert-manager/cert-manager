@@ -242,8 +242,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should issue a certificate that defines a Common Name and Email Address", func() {
-			s.checkFeatures(CommonNameFeature)
+		It("should issue a certificate that defines an Email Address", func() {
 			s.checkFeatures(EmailSANsFeature)
 
 			testCertificate := &cmapi.Certificate{
@@ -253,7 +252,6 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					CommonName: "test-common-name",
 					EmailSANs:  []string{"alice@example.com"},
 					IssuerRef:  issuerRef,
 				},

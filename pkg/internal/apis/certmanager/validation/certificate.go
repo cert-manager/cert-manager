@@ -57,10 +57,6 @@ func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) fi
 		el = append(el, validateEmailAddresses(crt, fldPath)...)
 	}
 
-	if crt.KeySize < 0 {
-		el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "cannot be less than zero"))
-	}
-
 	switch crt.KeyAlgorithm {
 	case cmapi.KeyAlgorithm(""):
 	case cmapi.RSAKeyAlgorithm:
@@ -130,11 +126,11 @@ func validateEmailAddresses(a *cmapi.CertificateSpec, fldPath *field.Path) field
 	for i, d := range a.EmailSANs {
 		e, err := mail.ParseAddress(d)
 		if err != nil {
-			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, "invalid email address"))
+			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, fmt.Sprintf("invalid email address: %s", err)))
 		} else if e.Address != d {
 			// Go accepts email names as per RFC 5322 (name <email>)
 			// This checks if the supplied value only contains the email address and nothing else
-			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, "invalid email address"))
+			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, "invalid email address: make sure the supplied value only contains the email address itself"))
 		}
 	}
 	return el
