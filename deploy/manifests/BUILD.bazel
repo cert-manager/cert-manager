@@ -11,10 +11,7 @@ RELEASE_NAMESPACE = "cert-manager"
 
 VARIANTS = {
     "cert-manager": {},
-    "cert-manager-no-webhook": {
-        "webhook.enabled": "false",
-    },
-    "cert-manager-openshift": {},
+    "cert-manager-legacy": {},
 }
 
 [helm_tmpl(
