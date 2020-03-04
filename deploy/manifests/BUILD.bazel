@@ -12,7 +12,6 @@ RELEASE_NAMESPACE = "cert-manager"
 VARIANTS = {
     "cert-manager": {},
     "cert-manager-legacy": {},
-
 }
 
 [helm_tmpl(
