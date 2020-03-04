@@ -28,7 +28,7 @@ import (
 )
 
 var removeKeys = []string{}
-var removeSliceElemForValue = map[string]string{}
+var removeElementForValue = map[string]string{}
 var checkValidationLocation = false
 
 func main() {
@@ -103,11 +103,6 @@ func checkChain(d map[interface{}]interface{}, chain []string) {
 				}
 			}
 
-			// checks if keys need to be removed when a value is set
-			if value, ok := removeSliceElemForValue[strings.Join(chain, "/")]; ok && value == v.(string) {
-				// TODO
-			}
-
 			if value, ok := v.(map[interface{}]interface{}); ok {
 				checkChain(value, chain)
 			}
@@ -133,7 +128,7 @@ func checkSliceChain(s []interface{}, chain []string) []interface{} {
 						}
 					}
 
-					if value, ok := removeSliceElemForValue[strings.Join(chain, "/")]; ok && value == v.(string) {
+					if value, ok := removeElementForValue[strings.Join(chain, "/")]; ok && value == v.(string) {
 						s = removeFromSlice(s, d)
 					}
 
@@ -172,7 +167,7 @@ func loadVariant() {
 	flag.Parse()
 
 	if variant == "cert-manager-legacy" {
-		// These are the keys that the script will remove for OpenShift compatibility
+		// These are the keys that the script will remove for OpenShift 3 and older Kubernetes compatibility
 		removeKeys = []string{
 			"spec/preserveUnknownFields",
 			"spec/validation/openAPIV3Schema/type",
@@ -180,7 +175,8 @@ func loadVariant() {
 			"spec/conversion",
 		}
 
-		removeSliceElemForValue = map[string]string{
+		// this removed the whole version slice element if version name is `v1alpha3`
+		removeElementForValue = map[string]string{
 			"spec/versions/[]/name": "v1alpha3",
 		}
 
