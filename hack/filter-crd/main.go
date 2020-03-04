@@ -134,15 +134,7 @@ func checkSliceChain(s []interface{}, chain []string) []interface{} {
 					}
 
 					if value, ok := removeSliceElemForValue[strings.Join(chain, "/")]; ok && value == v.(string) {
-						newSlice := []interface{}{}
-
-						for _, sliceVal := range s {
-							if !reflect.DeepEqual(sliceVal, d) {
-								newSlice = append(newSlice, sliceVal)
-							}
-						}
-
-						s = newSlice
+						s = removeFromSlice(s, d)
 					}
 
 					if value, ok := v.(map[interface{}]interface{}); ok {
@@ -158,6 +150,19 @@ func checkSliceChain(s []interface{}, chain []string) []interface{} {
 		}
 	}
 
+	return s
+}
+
+func removeFromSlice(s []interface{}, d map[interface{}]interface{}) []interface{} {
+	newSlice := []interface{}{}
+
+	for _, sliceVal := range s {
+		if !reflect.DeepEqual(sliceVal, d) {
+			newSlice = append(newSlice, sliceVal)
+		}
+	}
+
+	s = newSlice
 	return s
 }
 
