@@ -2451,3 +2451,11 @@ def go_repositories():
         sum = "h1:TxyelI5cVkbREznMhfzycHdkp5cLA7DpE+GKjSslYhM=",
         version = "v1.0.0-20181015200546-f715ec2f112d",
     )
+    go_repository(
+        name = "com_github_pavel_v_chernykh_keystore_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/pavel-v-chernykh/keystore-go",
+        sum = "h1:Jd6xfriVlJ6hWPvYOE0Ni0QWcNTLRehfGPFxr3eSL80=",
+        version = "v2.1.0+incompatible",
+    )

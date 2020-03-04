@@ -831,6 +831,23 @@ func (c *certificateRequestManager) setSecretValues(ctx context.Context, crt *cm
 			s.Data[pkcs12SecretKey] = keystoreData
 		}
 	}
+	// Handle the experimental JKS support
+	if c.experimentalIssueJKS {
+		// Only write a new JKS file if any of the private key/certificate/CA data has
+		// actually changed.
+		if data.pk != nil && data.cert != nil &&
+			(!bytes.Equal(s.Data[corev1.TLSPrivateKeyKey], data.pk) ||
+				!bytes.Equal(s.Data[corev1.TLSCertKey], data.cert) ||
+				!bytes.Equal(s.Data[cmmeta.TLSCAKey], data.ca)) {
+			keystoreData, err := encodeJKSKeystore(c.experimentalJKSPassword, data.pk, data.cert, data.ca)
+			if err != nil {
+				return fmt.Errorf("error encoding JKS bundle: %w", err)
+			}
+			// always overwrite the keystore entry for now
+			s.Data[jksSecretKey] = keystoreData
+		}
+	}
+
 	s.Data[corev1.TLSPrivateKeyKey] = data.pk
 	s.Data[corev1.TLSCertKey] = data.cert
 	s.Data[cmmeta.TLSCAKey] = data.ca

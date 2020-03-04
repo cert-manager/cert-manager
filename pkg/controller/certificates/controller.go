@@ -95,6 +95,17 @@ type certificateRequestManager struct {
 	// decrypt PKCS#12 bundles stored in Secret resources.
 	// This option only has any affect is ExperimentalIssuePKCS12 is true.
 	experimentalPKCS12KeystorePassword string
+	// experimentalIssueJKS, if true, will make the certificates controller
+	// create a `keystore.jks` in the Secret resource for each Certificate.
+	// This can only be toggled globally, and the keystore will be encrypted
+	// with the supplied ExperimentalJKSPassword.
+	// This flag is likely to be removed in future in favour of native JKS
+	// keystore bundle support.
+	experimentalIssueJKS bool
+	// experimentalJKSPassword is the password used to encrypt and
+	// decrypt JKS files stored in Secret resources.
+	// This option only has any affect is experimentalIssueJKS is true.
+	experimentalJKSPassword string
 }
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
@@ -156,6 +167,12 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	c.experimentalIssuePKCS12 = ctx.CertificateOptions.ExperimentalIssuePKCS12
 	c.experimentalPKCS12KeystorePassword = ctx.CertificateOptions.ExperimentalPKCS12KeystorePassword
 	if c.experimentalIssuePKCS12 && len(c.experimentalPKCS12KeystorePassword) == 0 {
+		return nil, nil, nil, fmt.Errorf("if experimental pkcs12 issuance is enabled, a keystore password must be provided")
+	}
+	// Experimental JKS handling options
+	c.experimentalIssueJKS = ctx.CertificateOptions.ExperimentalIssueJKS
+	c.experimentalJKSPassword = ctx.CertificateOptions.ExperimentalJKSPassword
+	if c.experimentalIssueJKS && len(c.experimentalJKSPassword) == 0 {
 		return nil, nil, nil, fmt.Errorf("if experimental pkcs12 issuance is enabled, a keystore password must be provided")
 	}
 
