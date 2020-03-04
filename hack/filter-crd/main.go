@@ -29,7 +29,7 @@ import (
 
 var removeKeys = []string{}
 var removeElementForValue = map[string]string{}
-var checkValidationLocation = false
+var singleCRDVersion = false
 
 func main() {
 	loadVariant()
@@ -55,7 +55,7 @@ func main() {
 
 		checkChain(d, []string{})
 
-		if checkValidationLocation {
+		if singleCRDVersion {
 			spec, ok := d["spec"].(map[interface{}]interface{})
 			if !ok {
 				log.Fatal("Cannot read spec of CRD")
@@ -66,6 +66,9 @@ func main() {
 			}
 			if len(versions) == 0 {
 				log.Fatal("CRD versions length is 0")
+			}
+			if len(versions) > 1 {
+				log.Fatal("Multiple CRD versions found while 1 is expected")
 			}
 			versionInfo, ok := versions[0].(map[interface{}]interface{})
 			if !ok {
@@ -180,6 +183,6 @@ func loadVariant() {
 			"spec/versions/[]/name": "v1alpha3",
 		}
 
-		checkValidationLocation = true
+		singleCRDVersion = true
 	}
 }
