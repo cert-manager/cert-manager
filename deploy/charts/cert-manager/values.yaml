@@ -151,8 +151,6 @@ affinity: {}
 tolerations: []
 
 webhook:
-  enabled: true
-
   replicaCount: 1
 
   # The name of the webhook service is fixed in the values.yaml and not based
