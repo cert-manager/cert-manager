@@ -144,6 +144,18 @@ type CertificateOptions struct {
 	// decrypt PKCS#12 bundles stored in Secret resources.
 	// This option only has any affect is ExperimentalIssuePKCS12 is true.
 	ExperimentalPKCS12KeystorePassword string
+
+	// ExperimentalIssueJKS, if true, will make the certificates controller
+	// create a `keystore.jks` in the Secret resource for each Certificate.
+	// This can only be toggled globally, and the keystore will be encrypted
+	// with the supplied ExperimentalJKSPassword.
+	// This flag is likely to be removed in future in favour of native JKS
+	// bundle support.
+	ExperimentalIssueJKS bool
+	// ExperimentalJKSPassword is the password used to encrypt and
+	// decrypt JKS bundles stored in Secret resources.
+	// This option only has any affect is ExperimentalIssueJKS is true.
+	ExperimentalJKSPassword string
 }
 
 type SchedulerOptions struct {

@@ -23,9 +23,12 @@ limitations under the License.
 package certificates
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/x509"
+	"time"
 
+	jks "github.com/pavel-v-chernykh/keystore-go"
 	"software.sslmate.com/src/go-pkcs12"
 
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -35,6 +38,10 @@ const (
 	// pkcs12SecretKey is the name of the data entry in the Secret resource
 	// used to store the p12 file.
 	pkcs12SecretKey = "keystore.p12"
+
+	// jksSecretKey is the name of the data entry in the Secret resource
+	// used to store the jks file.
+	jksSecretKey = "keystore.jks"
 )
 
 // encodePKCS12Keystore will encode a PKCS12 keystore using the password provided.
@@ -68,4 +75,62 @@ func encodePKCS12Keystore(password string, rawKey []byte, certPem []byte, caPem 
 		return nil, err
 	}
 	return keystoreData, nil
+}
+
+func encodeJKSKeystore(password string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
+	// encode the private key to PKCS8
+	key, err := pki.DecodePrivateKeyBytes(rawKey)
+	if err != nil {
+		return nil, err
+	}
+	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	// encode the certificate chain
+	chain, err := pki.DecodeX509CertificateChainBytes(certPem)
+	if err != nil {
+		return nil, err
+	}
+	certs := make([]jks.Certificate, len(chain))
+	for i, cert := range chain {
+		certs[i] = jks.Certificate{
+			Type:    "X509",
+			Content: cert.Raw,
+		}
+	}
+
+	ks := jks.KeyStore{
+		"certificate": jks.PrivateKeyEntry{
+			Entry: jks.Entry{
+				CreationDate: time.Now(),
+			},
+			PrivKey:   keyDER,
+			CertChain: certs,
+		},
+	}
+	// add the CA certificate, if set
+	if len(caPem) > 0 {
+		ca, err := pki.DecodeX509CertificateBytes(caPem)
+		if err != nil {
+			return nil, err
+		}
+
+		ks["ca"] = jks.TrustedCertificateEntry{
+			Entry: jks.Entry{
+				CreationDate: time.Now(),
+			},
+			Certificate: jks.Certificate{
+				Type:    "X509",
+				Content: ca.Raw,
+			},
+		}
+	}
+
+	buf := &bytes.Buffer{}
+	if err := jks.Encode(buf, ks, []byte(password)); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
