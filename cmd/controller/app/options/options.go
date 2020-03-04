@@ -94,6 +94,18 @@ type ControllerOptions struct {
 
 	// DNSNames are the dns names that should be set on the serving certificate
 	WebhookDNSNames []string
+
+	// ExperimentalIssuePKCS12, if true, will make the certificates controller
+	// create a `keystore.p12` in the Secret resource for each Certificate.
+	// This can only be toggled globally, and the keystore will be encrypted
+	// with the supplied ExperimentalPKCS12KeystorePassword.
+	// This flag is likely to be removed in future in favour of native PKCS12
+	// keystore bundle support.
+	ExperimentalIssuePKCS12 bool
+	// ExperimentalPKCS12KeystorePassword is the password used to encrypt and
+	// decrypt PKCS#12 bundles stored in Secret resources.
+	// This option only has any affect is ExperimentalIssuePKCS12 is true.
+	ExperimentalPKCS12KeystorePassword string
 }
 
 const (
@@ -289,6 +301,12 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"serving certificate.")
 	fs.StringSliceVar(&s.WebhookDNSNames, "webhook-dns-names", defaultWebhookDNSNames, "Comma-separated list of DNS names that should be present on "+
 		"the webhook's serving certificate.")
+
+	fs.BoolVar(&s.ExperimentalIssuePKCS12, "experimental-issue-pkcs12", false, "If true, the certificate controller will create 'keystore.p12' files in Secret resources it "+
+		"manages, containing a copy of the certificate data encrypted using the provided --experimental-pkcs12-keystore-password. "+
+		"If true, --experimental-pkcs12-keystore-password must be provided.")
+	fs.StringVar(&s.ExperimentalPKCS12KeystorePassword, "experimental-pkcs12-keystore-password", "", "The password used to encrypt and decrypt PKCS#12 "+
+		"bundles stored in Secret resources. This field is required if --experimental-issue-pkcs12 is enabled.")
 }
 
 func (o *ControllerOptions) Validate() error {
@@ -306,5 +324,10 @@ func (o *ControllerOptions) Validate() error {
 			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
 		}
 	}
+
+	if o.ExperimentalIssuePKCS12 && len(o.ExperimentalPKCS12KeystorePassword) == 0 {
+		return fmt.Errorf("--experimental-pkcs12-keystore-password must be specified if --experimental-issue-pkcs12 is enabled")
+	}
+
 	return nil
 }

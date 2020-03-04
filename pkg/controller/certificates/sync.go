@@ -17,6 +17,7 @@ limitations under the License.
 package certificates
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/rsa"
@@ -536,7 +537,7 @@ func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *c
 	}
 
 	newSecret := s.DeepCopy()
-	err := setSecretValues(ctx, crt, newSecret, secretData{pk: data.pk, cert: data.cert, ca: data.ca})
+	err := c.setSecretValues(ctx, crt, newSecret, secretData{pk: data.pk, cert: data.cert, ca: data.ca})
 	if err != nil {
 		return false, err
 	}
@@ -582,7 +583,7 @@ func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Contex
 	}
 
 	newSecret := secret.DeepCopy()
-	err = setSecretValues(ctx, crt, newSecret, secretData{pk: key, cert: tempCertData})
+	err = c.setSecretValues(ctx, crt, newSecret, secretData{pk: key, cert: tempCertData})
 	if err != nil {
 		return err
 	}
@@ -808,12 +809,28 @@ type secretData struct {
 // If updating an existing Secret resource returned by an api client 'lister',
 // make sure to DeepCopy the object first to avoid modifying data in-cache.
 // It will also update depreciated issuer name and kind annotations if they exist.
-func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, data secretData) error {
+func (c *certificateRequestManager) setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, data secretData) error {
 	// initialize the `Data` field if it is nil
 	if s.Data == nil {
 		s.Data = make(map[string][]byte)
 	}
 
+	// Handle the experimental PKCS12 support
+	if c.experimentalIssuePKCS12 {
+		// Only write a new PKCS12 file if any of the private key/certificate/CA data has
+		// actually changed.
+		if data.pk != nil && data.cert != nil &&
+			(!bytes.Equal(s.Data[corev1.TLSPrivateKeyKey], data.pk) ||
+				!bytes.Equal(s.Data[corev1.TLSCertKey], data.cert) ||
+				!bytes.Equal(s.Data[cmmeta.TLSCAKey], data.ca)) {
+			keystoreData, err := encodePKCS12Keystore(c.experimentalPKCS12KeystorePassword, data.pk, data.cert, data.ca)
+			if err != nil {
+				return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
+			}
+			// always overwrite the keystore entry for now
+			s.Data[pkcs12SecretKey] = keystoreData
+		}
+	}
 	s.Data[corev1.TLSPrivateKeyKey] = data.pk
 	s.Data[corev1.TLSCertKey] = data.cert
 	s.Data[cmmeta.TLSCAKey] = data.ca
