@@ -16,7 +16,23 @@
 
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
+# Manually defined repositories are kept separate to keep things easy to
+# maintain.
+def manual_repositories():
+    # This is needed to avoid errors when building @io_k8s_code_generator cmd/
+    # targets that look like:
+    # ERROR: /private/var/tmp/_bazel_james/7efc976e92b56f94fd5066e3c9f5d356/external/org_golang_x_tools/internal/imports/BUILD.bazel:3:1: no such package '@org_golang_x_mod//semver': The repository '@org_golang_x_mod' could not be resolved and referenced by '@org_golang_x_tools//internal/imports:go_default_library'
+    go_repository(
+        name = "org_golang_x_mod",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "golang.org/x/mod",
+        sum = "h1:KU7oHjnv3XNWfa5COkzUifxZmxp1TyI7ImMXqFxLwvQ=",
+        version = "v0.2.0",
+    )
+
 def go_repositories():
+    manual_repositories()
     go_repository(
         name = "co_honnef_go_tools",
         build_file_generation = "on",
@@ -1775,56 +1791,56 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/api",
-        sum = "h1:H9d/lw+VkZKEVIUc8F3wgiQ+FUXTTr21M87jXLU7yqM=",
-        version = "v0.17.0",
+        sum = "h1:XAm3PZp3wnEdzekNkcmj/9Y1zdmQYJ1I4GKSBBZ8aG0=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_apiextensions_apiserver",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/apiextensions-apiserver",
-        sum = "h1:+XgcGxqaMztkbbvsORgCmHIb4uImHKvTjNyu7b8gRnA=",
-        version = "v0.17.0",
+        sum = "h1:WDZWkPcbgvchEdDd7ysL21GGPx3UKZQLDZXEkevT6n4=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_apimachinery",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/apimachinery",
-        sum = "h1:xRBnuie9rXcPxUkDizUsGvPf1cnlZCFu210op7J7LJo=",
-        version = "v0.17.0",
+        sum = "h1:f+uZV6rm4/tHE7xXgLyToprg6xWairaClGVkm2t8omg=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_apiserver",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/apiserver",
-        sum = "h1:XhUix+FKFDcBygWkQNp7wKKvZL030QUlH1o8vFeSgZA=",
-        version = "v0.17.0",
+        sum = "h1:faZbSuFtJ4dx09vctKZGHms/7bp3qFtbqb10Swswqfs=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_client_go",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/client-go",
-        sum = "h1:8QOGvUGdqDMFrm9sD6IUFl256BcffynGoe80sxgTEDg=",
-        version = "v0.17.0",
+        sum = "h1:deUna1Ksx05XeESH6XGCyONNFfiQmDdqeqUvicvP6nU=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_code_generator",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/code-generator",
-        sum = "h1:y+KWtDWNqlJzJu/kUy8goJZO0X71PGIpAHLX8a0JYk0=",
-        version = "v0.17.0",
+        sum = "h1:q/hDMk2cvFzSxol7k/VA1qCssR7VSMXHQHhzuX29VJ8=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_component_base",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/component-base",
-        sum = "h1:BnDFcmBDq+RPpxXjmuYnZXb59XNN9CaFrX8ba9+3xrA=",
-        version = "v0.17.0",
+        sum = "h1:hQzTSshY14aLSR6WGIYvmw+w+u6V4d+iDR2iDGMrlUg=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_gengo",
@@ -1847,8 +1863,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/kube-aggregator",
-        sum = "h1:2/15hPpXp11GvQmtLeTlNP6WeZnmebs/uxckzZS3P9c=",
-        version = "v0.17.0",
+        sum = "h1:U7U/XHnKwQlvFmsEE6ubpjF0Y4AVhKtXo+9I3d0L6rY=",
+        version = "v0.17.3",
     )
     go_repository(
         name = "io_k8s_kube_openapi",

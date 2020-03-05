@@ -19,10 +19,10 @@ protobuf_deps()
 http_archive(
     name = "io_bazel_rules_go",
     urls = [
-        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/v0.20.2/rules_go-v0.20.2.tar.gz",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.20.2/rules_go-v0.20.2.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.22.1/rules_go-v0.22.1.tar.gz",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.22.1/rules_go-v0.22.1.tar.gz",
     ],
-    sha256 = "b9aa86ec08a292b97ec4591cf578e020b35f98e12173bbd4a921f84f583aebd9",
+    sha256 = "e6a6c016b0663e06fa5fccf1cd8152eab8aa8180c583ec20c872f4f9953a7ac5",
 )
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
@@ -30,7 +30,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_to
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.13.4",
+    go_version = "1.14",
     nogo = "@//hack/build:nogo_vet",
 )
 
@@ -48,9 +48,11 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 http_archive(
     name = "io_k8s_repo_infra",
-    sha256 = "56917f066cf18d6ca0c6ca5dcbca492766e0b9a424756c35ed26ff28ed6c9f88",
-    strip_prefix = "repo-infra-0.0.1",
-    urls = ["https://github.com/kubernetes/repo-infra/archive/v0.0.1.tar.gz"],
+    strip_prefix = "repo-infra-0.0.2",
+    sha256 = "774e160ba1a2a66a736fdc39636dca799a09df015ac5e770a46ec43487ec5708",
+    urls = [
+        "https://github.com/kubernetes/repo-infra/archive/v0.0.2.tar.gz",
+    ],
 )
 
 ## Load rules_docker and dependencies, for working with docker images
