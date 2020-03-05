@@ -30,6 +30,10 @@ release_filegroup(
             ":cert-manager-test-{OS}-{ARCH}.tar.gz",
         ],
     ),
+    tags = [
+        "manual",
+        "no-cache",
+    ],
 )
 
 filegroup(
@@ -115,7 +119,10 @@ pkg_tar(
 pkg_tar(
     name = "cert-manager-manifests",
     extension = "tar.gz",
-    tags = ["no-cache"],
+    tags = [
+        "manual",
+        "no-cache",
+    ],
     deps = [
         "//deploy:manifests",
     ],

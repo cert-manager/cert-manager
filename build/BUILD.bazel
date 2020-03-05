@@ -82,6 +82,7 @@ release_filegroup(
     name = "docker-artifacts",
     srcs = [":%s.tar" % binary for binary in DOCKERIZED_BINARIES.keys()] +
            [":%s.docker_tag" % binary for binary in DOCKERIZED_BINARIES.keys()],
+    tags = ["manual"],
 )
 
 filegroup(
