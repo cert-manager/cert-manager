@@ -5,9 +5,11 @@ metadata:
   name: {{ template "webhook.fullname" . }}-psp
   labels:
     app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "webhook"
+    helm.sh/chart: {{ include "webhook.chart" . }}
 rules:
 - apiGroups: ['policy']
   resources: ['podsecuritypolicies']

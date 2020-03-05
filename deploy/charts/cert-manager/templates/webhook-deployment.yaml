@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "webhook"
     helm.sh/chart: {{ include "webhook.chart" . }}
   {{- if .Values.webhook.deploymentAnnotations }}
   annotations:
@@ -17,10 +18,9 @@ spec:
   replicas: {{ .Values.webhook.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "webhook.name" . }}
       app.kubernetes.io/name: {{ include "webhook.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/managed-by: {{ .Release.Service }}
+      app.kubernetes.io/component: "webhook"
   {{- with .Values.webhook.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}
@@ -32,6 +32,7 @@ spec:
         app.kubernetes.io/name: {{ include "webhook.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/component: "webhook"
         helm.sh/chart: {{ include "webhook.chart" . }}
       annotations:
       {{- if .Values.webhook.podAnnotations }}
