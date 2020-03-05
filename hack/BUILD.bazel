@@ -34,15 +34,6 @@ sh_test(
     tags = ["lint"],
 )
 
-sh_test(
-    name = "verify-links",
-    srcs = ["verify-links.sh"],
-    data = [
-        "@//:all-srcs",
-    ],
-    tags = ["lint"],
-)
-
 # Bazel file generation rules
 
 sh_binary(
