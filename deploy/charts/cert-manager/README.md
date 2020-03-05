@@ -21,11 +21,11 @@ To install the chart with the release name `my-release`:
 ## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
 ## cert-manager Helm chart.
 $ kubectl apply --validate=false \
-    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.14/deploy/manifests/00-crds.yaml
 
 ## If you are installing on openshift :
 $ oc create \
-    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.14/deploy/manifests/00-crds.yaml
 
 ## NOTE: if you are installing the Helm chart into a namespace other than
 ## 'cert-manager', you **must** replace all occurrences of 'namespace: cert-manager'
@@ -34,7 +34,7 @@ $ oc create \
 ## CUSTOM-NAMESPACE-NAME with the deployment namespace's name:
 ##
 ##   kubectl apply --dry-run -o yaml --validate=false \
-##      -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.13/deploy/manifests/00-crds.yaml \
+##      -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.14/deploy/manifests/00-crds.yaml \
 ##      | sed 's/namespace\: cert-manager/namespace\: CUSTOM-NAMESPACE-NAME/g' \
 ##      | kubectl apply -f -
 
@@ -90,7 +90,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.podSecurityPolicy.useAppArmor` | If `true`, use Apparmor seccomp profile in PSP | `true` |
 | `global.leaderElection.namespace` | Override the namespace used to store the ConfigMap for leader election | `kube-system` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
-| `image.tag` | Image tag | `v0.13.0` |
+| `image.tag` | Image tag | `v0.14.0-alpha.0` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod |
@@ -136,7 +136,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.affinity` | Node affinity for webhook pod assignment | `{}` |
 | `webhook.tolerations` | Node tolerations for webhook pod assignment | `[]` |
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
-| `webhook.image.tag` | Webhook image tag | `v0.13.0` |
+| `webhook.image.tag` | Webhook image tag | `v0.14.0-alpha.0` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.injectAPIServerCA` | if true, the apiserver's CABundle will be automatically injected into the ValidatingWebhookConfiguration resource | `true` |
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
@@ -151,7 +151,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.affinity` | Node affinity for cainjector pod assignment | `{}` |
 | `cainjector.tolerations` | Node tolerations for cainjector pod assignment | `[]` |
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
-| `cainjector.image.tag` | cainjector image tag | `v0.13.0` |
+| `cainjector.image.tag` | cainjector image tag | `v0.14.0-alpha.0` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
 
