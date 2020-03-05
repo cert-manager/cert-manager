@@ -1,4 +1,3 @@
-{{- if .Values.webhook.enabled -}}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -41,4 +40,3 @@ webhooks:
         name: {{ .Values.webhook.serviceName }}
         namespace: {{ .Release.Namespace | quote }}
         path: /mutate
-{{- end -}}

@@ -1,4 +1,3 @@
-{{- if .Values.webhook.enabled -}}
 {{- if .Values.global.rbac.create -}}
 ### Webhook ###
 ---
@@ -72,5 +71,4 @@ rules:
   - clusterissuers
   verbs:
   - create
-{{- end -}}
 {{- end -}}

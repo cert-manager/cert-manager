@@ -126,7 +126,6 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `http_proxy` | Value of the `HTTP_PROXY` environment variable in the cert-manager pod | |
 | `https_proxy` | Value of the `HTTPS_PROXY` environment variable in the cert-manager pod | |
 | `no_proxy` | Value of the `NO_PROXY` environment variable in the cert-manager pod | |
-| `webhook.enabled` | Toggles whether the validating webhook component should be installed | `true` |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
 | `webhook.serviceName` | The name of the Service resource deployed for the webhook pod | `cert-manager-webhook` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
