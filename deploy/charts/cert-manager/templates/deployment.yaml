@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "controller"
     helm.sh/chart: {{ template "cert-manager.chart" . }}
   {{- if .Values.deploymentAnnotations }}
   annotations:
@@ -17,10 +18,9 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ template "cert-manager.name" . }}
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/managed-by: {{ .Release.Service }}
+      app.kubernetes.io/component: "controller"
   {{- with .Values.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}
@@ -31,6 +31,7 @@ spec:
         app: {{ template "cert-manager.name" . }}
         app.kubernetes.io/name: {{ template "cert-manager.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: "controller"
         app.kubernetes.io/managed-by: {{ .Release.Service }}
         helm.sh/chart: {{ template "cert-manager.chart" . }}
 {{- if .Values.podLabels }}

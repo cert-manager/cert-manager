@@ -9,11 +9,12 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
 {{- end }}
   labels:
-    app: {{ template "cert-manager.name" . }}
-    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-    helm.sh/chart: {{ template "cert-manager.chart" . }}
+    app.kubernetes.io/component: "controller"
+    helm.sh/chart: {{ include "cert-manager.chart" . }}
     prometheus: {{ .Values.prometheus.servicemonitor.prometheusInstance }}
 {{- if .Values.prometheus.servicemonitor.labels }}
 {{ toYaml .Values.prometheus.servicemonitor.labels | indent 4}}
@@ -24,6 +25,7 @@ spec:
     matchLabels:
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "controller"
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}

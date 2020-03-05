@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "cainjector"
     helm.sh/chart: {{ include "cainjector.chart" . }}
   {{- if .Values.cainjector.deploymentAnnotations }}
   annotations:
@@ -18,10 +19,9 @@ spec:
   replicas: {{ .Values.cainjector.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "cainjector.name" . }}
       app.kubernetes.io/name: {{ include "cainjector.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/managed-by: {{ .Release.Service }}
+      app.kubernetes.io/component: "cainjector"
   {{- with .Values.cainjector.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}
@@ -33,6 +33,7 @@ spec:
         app.kubernetes.io/name: {{ include "cainjector.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/component: "cainjector"
         helm.sh/chart: {{ include "cainjector.chart" . }}
       annotations:
       {{- if .Values.cainjector.podAnnotations }}
