@@ -85,6 +85,7 @@ def multi_arch_container(
         )
     native.alias(
         name = name,
+        tags = tags,
         actual = select({
             go_platform_constraint(os = "linux", arch = arch): "%s-%s" % (name, arch)
             for arch in architectures
@@ -93,6 +94,7 @@ def multi_arch_container(
     native.genrule(
         name = "gen_%s.tar" % name,
         outs = ["%s.tar" % name],
+        tags = tags,
         srcs = select({
             go_platform_constraint(os = "linux", arch = arch): ["%s-%s.tar" % (name, arch)]
             for arch in architectures
@@ -138,6 +140,7 @@ def multi_arch_container_push(
 
     native.alias(
         name = name,
+        tags = tags,
         actual = select({
             go_platform_constraint(os = "linux", arch = arch): "push-%s-%s" % (name, arch)
             for arch in architectures
@@ -146,6 +149,7 @@ def multi_arch_container_push(
 
     docker_push(
         name = "push-%s" % name,
+        tags = tags,
         bundle = select({
             go_platform_constraint(os = "linux", arch = arch): "push-%s-%s" % (name, arch)
             for arch in architectures
