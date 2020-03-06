@@ -29,7 +29,7 @@ def helm_pkg(
         "$(location %s)" % helm_cmd,
         "package",
         "--app-version=$$version",
-        "--version=$$version",
+        "--version=$$version > /dev/null 2>&1",
         path,
     ])]
     cmds = cmds + ["mv \"%s-$$version.tgz\" $@" % chart_name]
