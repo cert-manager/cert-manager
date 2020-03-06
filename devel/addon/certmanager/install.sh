@@ -57,6 +57,9 @@ bazel build "//deploy/manifests:$crdsmanifest"
 # Install a copy of the CRDs
 kubectl apply -f "${REPO_ROOT}/bazel-bin/deploy/manifests/$crdsmanifest"
 
+# Build the Helm chart package .tgz
+bazel build //deploy/charts/cert-manager:package
+
 # Upgrade or install Pebble
 helm upgrade \
     --install \
@@ -66,4 +69,4 @@ helm upgrade \
     --set cainjector.image.tag="${APP_VERSION}" \
     --set webhook.image.tag="${APP_VERSION}" \
     "$RELEASE_NAME" \
-    "$REPO_ROOT/deploy/charts/cert-manager"
+    "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
