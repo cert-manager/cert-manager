@@ -27,6 +27,11 @@ webhooks:
     failurePolicy: Fail
     sideEffects: None
     clientConfig:
+{{- if (semverCompare "<=1.12-0" .Capabilities.KubeVersion.GitVersion) }}
+      # Set caBundle to empty to avoid https://github.com/kubernetes/kubernetes/pull/70138
+      # in Kubernetes 1.12 and below.
+      caBundle: ""
+{{- end }}
       service:
         name: {{ .Values.webhook.serviceName }}
         namespace: {{ .Release.Namespace | quote }}
