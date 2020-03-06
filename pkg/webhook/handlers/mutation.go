@@ -30,6 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
+
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type SchemeBackedDefaulter struct {
@@ -104,7 +106,7 @@ func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1beta1.Admission
 	status.PatchType = &jsonPatchType
 	status.Allowed = true
 
-	c.log.Info("generated patch", "patch", string(patch))
+	c.log.V(logf.DebugLevel).Info("generated patch", "patch", string(patch))
 
 	return status
 }

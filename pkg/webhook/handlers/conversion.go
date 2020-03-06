@@ -28,6 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/runtime/serializer/versioning"
+
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type SchemeBackedConverter struct {
@@ -62,7 +64,7 @@ func (c *SchemeBackedConverter) Convert(conversionSpec *apiextensionsv1beta1.Con
 	groupVersioner := schema.GroupVersions([]schema.GroupVersion{desiredGV})
 	codec := versioning.NewCodec(c.serializer, c.serializer, runtime.UnsafeObjectConvertor(c.scheme), c.scheme, c.scheme, nil, groupVersioner, runtime.InternalGroupVersioner, c.scheme.Name())
 
-	c.log.Info("Parsed desired groupVersion", "desired_group_version", desiredGV)
+	c.log.V(logf.DebugLevel).Info("Parsed desired groupVersion", "desired_group_version", desiredGV)
 	for _, raw := range conversionSpec.Objects {
 		decodedObject, currentGVK, err := codec.Decode(raw.Raw, nil, nil)
 		if err != nil {
@@ -72,7 +74,7 @@ func (c *SchemeBackedConverter) Convert(conversionSpec *apiextensionsv1beta1.Con
 			}
 			return status
 		}
-		c.log.Info("Decoded resource", "decoded_group_version_kind", currentGVK)
+		c.log.V(logf.DebugLevel).Info("Decoded resource", "decoded_group_version_kind", currentGVK)
 
 		buf := bytes.Buffer{}
 		if err := codec.Encode(decodedObject, &buf); err != nil {
