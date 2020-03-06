@@ -22,8 +22,9 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
-# Require helm available on PATH
+# Require kind & kubectl available on PATH
 check_tool kind
+check_tool kubectl
 
 # Compute the details of the kind image to use
 export KIND_IMAGE_SHA=""
@@ -77,3 +78,6 @@ kind create cluster \
   --config "${SCRIPT_ROOT}/config/${KIND_IMAGE_CONFIG}.yaml" \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
+
+kubectl replace -f "${SCRIPT_ROOT}/configmap-coredns.yaml"
+kubectl delete pods -n kube-system -l k8s-app=kube-dns

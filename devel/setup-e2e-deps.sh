@@ -37,6 +37,9 @@ echo "Installing cert-manager into the kind cluster..."
 echo "Installing sample-webhook into the kind cluster..."
 "${SCRIPT_ROOT}/addon/samplewebhook/install.sh"
 
+echo "Installing bind into the kind cluster..."
+"${SCRIPT_ROOT}/addon/bind/install.sh"
+
 echo "Installing pebble into the kind cluster..."
 "${SCRIPT_ROOT}/addon/pebble/install.sh"
 

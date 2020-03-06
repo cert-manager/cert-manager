@@ -32,7 +32,7 @@ type IngressController struct {
 }
 
 func (n *IngressController) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&n.Domain, "ingress-controller-domain", "certmanager.kubernetes.network", "The domain name used during ACME DNS01 validation tests. "+
+	fs.StringVar(&n.Domain, "ingress-controller-domain", "ingress-nginx.http01.example.com", "The domain name used during ACME DNS01 validation tests. "+
 		"All subdomains of this domain must also resolve to the IP of the ingress controller's Service.")
 	fs.StringVar(&n.IngressClass, "ingress-controller-class", "nginx", "Ingress class of the ingress controller under test, used for the HTTP01 ACME validation tests.")
 }

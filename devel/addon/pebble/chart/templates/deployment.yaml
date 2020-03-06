@@ -26,10 +26,7 @@ spec:
           args:
           - -config=/config/config.json
           - -strict={{ .Values.strict }}
-          # Use a public DNS server as certmanager.kubernetes.network
-          # resides in the public zone, and the local CoreDNS instance
-          # can take a little while to clear its cache
-          - -dnsserver=8.8.8.8:53
+          - -dnsserver=10.0.0.16:53
           volumeMounts:
           - name: config
             mountPath: /config
@@ -51,3 +48,7 @@ spec:
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
     {{- end }}
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"

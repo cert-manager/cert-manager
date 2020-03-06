@@ -35,26 +35,19 @@ import (
 
 type dns01Provider interface {
 	Details() *dnsproviders.Details
-	SetNamespace(string)
-
 	addon.Addon
 }
 
 var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
-	// TODO: add additional DNS provider configs here
-	cf := &dnsproviders.Cloudflare{}
+	rfc := &dnsproviders.RFC2136{}
 
-	testDNSProvider("cloudflare", cf)
+	testDNSProvider("rfc2136", rfc)
 })
 
 func testDNSProvider(name string, p dns01Provider) bool {
 	return Context("With "+name+" credentials configured", func() {
 		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
 		h := f.Helper()
-
-		BeforeEach(func() {
-			p.SetNamespace(f.Namespace.Name)
-		})
 
 		f.RequireAddon(p)
 
