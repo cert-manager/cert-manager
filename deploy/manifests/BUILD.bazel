@@ -58,7 +58,8 @@ VARIANTS = {
 
 pkg_tar(
     name = "manifests",
-    srcs = [":%s.yaml" % name for name in VARIANTS.keys()],
+    srcs = [":%s.yaml" % name for name in VARIANTS.keys()] +
+           [":%s.crds.yaml" % name for name in VARIANTS.keys()],
     extension = "tar.gz",
     mode = "0644",
     package_dir = "manifests",
