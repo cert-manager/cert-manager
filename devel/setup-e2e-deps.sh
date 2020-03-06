@@ -34,17 +34,22 @@ setup_tools
 echo "Installing cert-manager into the kind cluster..."
 "${SCRIPT_ROOT}/addon/certmanager/install.sh"
 
+check_bazel
+bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //devel/addon/...
+
 echo "Installing sample-webhook into the kind cluster..."
-"${SCRIPT_ROOT}/addon/samplewebhook/install.sh"
+"${SCRIPT_ROOT}/addon/samplewebhook/install.sh" &
 
 echo "Installing bind into the kind cluster..."
-"${SCRIPT_ROOT}/addon/bind/install.sh"
+"${SCRIPT_ROOT}/addon/bind/install.sh" &
 
 echo "Installing pebble into the kind cluster..."
-"${SCRIPT_ROOT}/addon/pebble/install.sh"
+"${SCRIPT_ROOT}/addon/pebble/install.sh" &
 
 echo "Installing ingress-nginx into the kind cluster..."
-"${SCRIPT_ROOT}/addon/ingressnginx/install.sh"
+"${SCRIPT_ROOT}/addon/ingressnginx/install.sh" &
 
 echo "Loading vault into the kind cluster..."
-"${SCRIPT_ROOT}/addon/vault/install.sh"
+"${SCRIPT_ROOT}/addon/vault/install.sh" &
+
+wait
