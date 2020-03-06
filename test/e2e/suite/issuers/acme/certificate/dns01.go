@@ -70,7 +70,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
-					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+					Server:        f.Config.Addons.ACMEServer.URL,
 					Email:         testingACMEEmail,
 					PrivateKey: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{

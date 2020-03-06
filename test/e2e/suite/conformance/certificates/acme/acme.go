@@ -223,7 +223,7 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-issuer-dns01-",
 		},
-		Spec: a.createDNS01IssuerSpec(),
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
@@ -255,7 +255,7 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-cluster-issuer-dns01-",
 		},
-		Spec: a.createDNS01IssuerSpec(),
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
@@ -267,12 +267,11 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01IssuerSpec() cmapi.IssuerSpec {
+func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
 			ACME: &cmacme.ACMEIssuer{
-				// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
-				Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+				Server:        serverURL,
 				SkipTLSVerify: true,
 				PrivateKey: cmmeta.SecretKeySelector{
 					LocalObjectReference: cmmeta.LocalObjectReference{
