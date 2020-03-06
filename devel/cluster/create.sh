@@ -25,10 +25,6 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 # Require helm available on PATH
 check_tool kind
 
-export KIND_IMAGE_REPO="kindest/node"
-# Default Kubernetes version to use to 1.17
-export K8S_VERSION=${K8S_VERSION:-1.17}
-
 # Compute the details of the kind image to use
 export KIND_IMAGE_SHA=""
 export KIND_IMAGE_CONFIG=""

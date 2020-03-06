@@ -48,8 +48,14 @@ wait
 # Ensure the pebble namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
+crdsmanifest="cert-manager.crds.yaml"
+if [[ "$K8S_VERSION" =~ 1\.1[1-4] ]]; then
+  crdsmanifest="cert-manager-legacy.crds.yaml"
+fi
+bazel build "//deploy/manifests:$crdsmanifest"
+
 # Install a copy of the CRDs
-kubectl apply -f "${REPO_ROOT}/deploy/charts/cert-manager/crds/"
+kubectl apply -f "${REPO_ROOT}/bazel-bin/deploy/manifests/$crdsmanifest"
 
 # Upgrade or install Pebble
 helm upgrade \
