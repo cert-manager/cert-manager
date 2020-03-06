@@ -176,6 +176,8 @@ func loadVariant() {
 			"spec/validation/openAPIV3Schema/type",
 			"spec/versions/[]/schema/openAPIV3Schema/type",
 			"spec/conversion",
+			// This field exists on the Issuer and ClusterIssuer CRD
+			"spec/validation/openAPIV3Schema/properties/spec/properties/solver/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields",
 		}
 
 		// this removed the whole version slice element if version name is `v1alpha3`

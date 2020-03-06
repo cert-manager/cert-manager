@@ -28,7 +28,6 @@ filegroup(
             "Chart.yaml",
             "README.md",
             "values.yaml",
-            "crds/*.yaml",
             "templates/*.tpl",
             "templates/*.yaml",
             "templates/*.txt",
