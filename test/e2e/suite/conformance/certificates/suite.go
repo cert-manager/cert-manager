@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -105,26 +106,28 @@ func (s *Suite) Define() {
 			}
 		})
 
-		By("Running test suite with the following unsupported features: " + s.UnsupportedFeatures.String())
-		ctx := context.Background()
-		var issuerRef cmmeta.ObjectReference
-
-		JustBeforeEach(func() {
-			By("Creating an issuer resource")
-			issuerRef = s.CreateIssuerFunc(f)
-		})
-
-		JustAfterEach(func() {
-			if s.DeleteIssuerFunc == nil {
-				By("Skipping cleanup as no DeleteIssuerFunc provided")
+		it := func(name string, fn func(cmmeta.ObjectReference), requiredFeatures ...Feature) {
+			if !s.checkFeatures(requiredFeatures...) {
+				fmt.Fprintln(GinkgoWriter, "skipping case due to unsupported features")
 				return
 			}
+			It(name, func() {
+				By("Creating an issuer resource")
+				issuerRef := s.CreateIssuerFunc(f)
+				defer func() {
+					if s.DeleteIssuerFunc != nil {
+						By("Cleaning up the issuer resource")
+						s.DeleteIssuerFunc(f, issuerRef)
+					}
+				}()
+				fn(issuerRef)
+			})
+		}
 
-			By("Cleaning up the issuer resource")
-			s.DeleteIssuerFunc(f, issuerRef)
-		})
+		By("Running test suite with the following unsupported features: " + s.UnsupportedFeatures.String())
+		ctx := context.Background()
 
-		It("should issue a basic, defaulted certificate for a single distinct DNS Name", func() {
+		it("should issue a basic, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -145,9 +148,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should issue an ECDSA, defaulted certificate for a single distinct dnsName", func() {
-			s.checkFeatures(ECDSAFeature)
-
+		it("should issue an ECDSA, defaulted certificate for a single distinct dnsName", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -167,11 +168,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, ECDSAFeature)
 
-		It("should issue a basic, defaulted certificate for a single Common Name", func() {
-			s.checkFeatures(CommonNameFeature)
-
+		it("should issue a basic, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -190,12 +189,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, CommonNameFeature)
 
-		It("should issue an ECDSA, defaulted certificate for a single Common Name", func() {
-			s.checkFeatures(ECDSAFeature)
-			s.checkFeatures(CommonNameFeature)
-
+		it("should issue an ECDSA, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -215,12 +211,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, ECDSAFeature, CommonNameFeature)
 
-		It("should issue a certificate that defines a Common Name and IP Address", func() {
-			s.checkFeatures(CommonNameFeature)
-			s.checkFeatures(IPAddressFeature)
-
+		it("should issue a certificate that defines a Common Name and IP Address", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -240,11 +233,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, CommonNameFeature, IPAddressFeature)
 
-		It("should issue a certificate that defines an Email Address", func() {
-			s.checkFeatures(EmailSANsFeature)
-
+		it("should issue a certificate that defines an Email Address", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -263,13 +254,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
+		}, EmailSANsFeature)
 
-		})
-
-		It("should issue a certificate that defines a CommonName and URI SAN", func() {
-			s.checkFeatures(URISANsFeature)
-			s.checkFeatures(CommonNameFeature)
-
+		it("should issue a certificate that defines a CommonName and URI SAN", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -289,11 +276,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, URISANsFeature, CommonNameFeature)
 
-		It("should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name", func() {
-			s.checkFeatures(CommonNameFeature)
-
+		it("should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -316,11 +301,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, CommonNameFeature)
 
-		It("should issue a certificate that defines a distinct DNS Name and another distinct Common Name", func() {
-			s.checkFeatures(CommonNameFeature)
-
+		it("should issue a certificate that defines a distinct DNS Name and another distinct Common Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -341,11 +324,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, CommonNameFeature)
 
-		It("should issue a certificate that defines a DNS Name and sets a duration", func() {
-			s.checkFeatures(DurationFeature)
-
+		it("should issue a certificate that defines a DNS Name and sets a duration", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -374,11 +355,9 @@ func (s *Suite) Define() {
 			// We set a 30 second buffer time here since Vault issues certificates
 			// with an extra 30 seconds on its duration.
 			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
-		})
+		}, DurationFeature)
 
-		It("should issue a certificate which has a wildcard DNS name defined", func() {
-			s.checkFeatures(WildcardsFeature)
-
+		it("should issue a certificate which has a wildcard DNS name defined", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -397,11 +376,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, WildcardsFeature)
 
-		It("should issue a certificate that includes only a URISANs name", func() {
-			s.checkFeatures(URISANsFeature)
-
+		it("should issue a certificate that includes only a URISANs name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -422,11 +399,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, URISANsFeature)
 
-		It("should issue a certificate that includes arbitrary key usages", func() {
-			s.checkFeatures(KeyUsagesFeature)
-
+		it("should issue a certificate that includes arbitrary key usages", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -449,11 +424,9 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, KeyUsagesFeature)
 
-		It("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func() {
-			s.checkFeatures(ReusePrivateKeyFeature)
-
+		it("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -510,9 +483,9 @@ func (s *Suite) Define() {
 			if !match {
 				Fail("Both signed certificates not signed by same private key")
 			}
-		})
+		}, ReusePrivateKeyFeature)
 
-		It("should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func() {
+		it("should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
 			ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
 
 			name := "testcert-ingress"
@@ -542,7 +515,9 @@ func (s *Suite) Define() {
 
 // checkFeatures is a helper function that is used to ensure that the features
 // required for a given test case are supported by the suite.
-func (s *Suite) checkFeatures(fs ...Feature) {
+// It will return 'true' if all features are supported and the test should run,
+// or return 'false' if any required feature is not supported.
+func (s *Suite) checkFeatures(fs ...Feature) bool {
 	unsupported := make(FeatureSet)
 	for _, f := range fs {
 		if s.UnsupportedFeatures.Contains(f) {
@@ -551,9 +526,9 @@ func (s *Suite) checkFeatures(fs ...Feature) {
 	}
 	// all features supported, return early!
 	if len(unsupported) == 0 {
-		return
+		return true
 	}
-	Skip("skipping due to the following unsupported features: " + unsupported.String())
+	return false
 }
 
 // newDomain will generate a new random subdomain of the DomainSuffix
