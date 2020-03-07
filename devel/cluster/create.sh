@@ -79,5 +79,15 @@ kind create cluster \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
 
-kubectl replace -f "${SCRIPT_ROOT}/configmap-coredns.yaml"
-kubectl delete pods -n kube-system -l k8s-app=kube-dns
+# Get the current config
+original_coredns_config=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
+additional_coredns_config="$(printf 'example.com:53 {\n    forward . 10.0.0.16\n}\n')"
+echo "Original CoreDNS config:"
+echo "${original_coredns_config}"
+# Patch it
+fixed_coredns_config=$(
+  printf '%s\n%s' "${original_coredns_config}" "${additional_coredns_config}"
+)
+echo "Patched CoreDNS config:"
+echo "${fixed_coredns_config}"
+kubectl create configmap -oyaml coredns --dry-run --from-literal=Corefile="${fixed_coredns_config}" | kubectl apply --namespace kube-system -f -
