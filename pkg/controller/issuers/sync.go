@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
@@ -75,6 +76,9 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha2.Issuer) (err error)
 		return err
 	}
 
+	// allow a maximum of 10s
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()

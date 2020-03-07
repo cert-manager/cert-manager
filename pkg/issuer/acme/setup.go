@@ -301,26 +301,21 @@ func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.
 // up and verify the corresponding account, and will return that. If this fails
 // due to a not found error it will register a new account with the given key.
 func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAccount *acmeapi.ExternalAccountBinding) (*acmeapi.Account, error) {
-	// check if the account already exists
-	acc, err := cl.GetReg(ctx, "")
-	if err == nil {
-		return acc, nil
-	}
-	if err != acmeapi.ErrNoAccount {
-		return nil, err
-	}
-
 	emailurl := []string(nil)
 	if a.issuer.GetSpec().ACME.Email != "" {
 		emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))}
 	}
 
-	acc = &acmeapi.Account{
+	acc := &acmeapi.Account{
 		Contact:                emailurl,
 		ExternalAccountBinding: eabAccount,
 	}
 
-	acc, err = cl.Register(ctx, acc, acmeapi.AcceptTOS)
+	acc, err := cl.Register(ctx, acc, acmeapi.AcceptTOS)
+	// If the account already exists, fetch the Account object and return.
+	if err == acmeapi.ErrAccountAlreadyExists {
+		return cl.GetReg(ctx, "")
+	}
 	if err != nil {
 		return nil, err
 	}

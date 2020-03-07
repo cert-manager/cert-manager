@@ -169,10 +169,6 @@ func (f *Framework) AfterEach() {
 	By("Deleting test namespace")
 	err := f.DeleteKubeNamespace(f.Namespace.Name)
 	Expect(err).NotTo(HaveOccurred())
-
-	By("Waiting for test namespace to no longer exist")
-	err = f.WaitForKubeNamespaceNotExist(f.Namespace.Name)
-	Expect(err).NotTo(HaveOccurred())
 }
 
 func (f *Framework) printAddonLogs() {

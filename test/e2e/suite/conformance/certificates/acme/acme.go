@@ -29,9 +29,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
-	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
@@ -85,6 +83,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME DNS01 Issuer",
+		DomainSuffix:        "dns01.example.com",
 		CreateIssuerFunc:    provisionerDNS01.createDNS01Issuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
@@ -99,6 +98,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME DNS01 ClusterIssuer",
+		DomainSuffix:        "dns01.example.com",
 		CreateIssuerFunc:    provisionerDNS01.createDNS01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
@@ -106,8 +106,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 }
 
 type acmeIssuerProvisioner struct {
-	cloudflare *dnsproviders.Cloudflare
-
 	eab             *cmacme.ACMEExternalAccountBinding
 	secretNamespace string
 }
@@ -116,10 +114,6 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 	if a.eab != nil {
 		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(a.eab.Key.Name, nil)
 		Expect(err).NotTo(HaveOccurred())
-	}
-
-	if a.cloudflare != nil {
-		Expect(a.cloudflare.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision cloudflare")
 	}
 
 	if ref.Kind == "ClusterIssuer" {
@@ -206,26 +200,14 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec(serverURL string) cmapi.I
 func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Namespace.Name)
 
-	a.cloudflare = &dnsproviders.Cloudflare{
-		Namespace: f.Namespace.Name,
-	}
-	err := a.cloudflare.Setup(f.Config)
-	if errors.IsSkip(err) {
-		framework.Skipf("Cannot setup DNS01 provider addon, skipping: %v", err)
-		return cmmeta.ObjectReference{}
-	} else {
-		Expect(a.cloudflare.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflare")
-	}
-	Expect(a.cloudflare.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflare")
-
 	By("Creating an ACME DNS01 Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-issuer-dns01-",
 		},
-		Spec: a.createDNS01IssuerSpec(),
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
-	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
 
 	return cmmeta.ObjectReference{
@@ -238,26 +220,14 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
-	a.cloudflare = &dnsproviders.Cloudflare{
-		Namespace: f.Config.Addons.CertManager.ClusterResourceNamespace,
-	}
-	err := a.cloudflare.Setup(f.Config)
-	if errors.IsSkip(err) {
-		framework.Skipf("Cannot setup DNS01 provider addon, skipping: %v", err)
-		return cmmeta.ObjectReference{}
-	} else {
-		Expect(a.cloudflare.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflare")
-	}
-	Expect(a.cloudflare.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflare")
-
 	By("Creating an ACME DNS01 ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-cluster-issuer-dns01-",
 		},
-		Spec: a.createDNS01IssuerSpec(),
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
-	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
 
 	return cmmeta.ObjectReference{
@@ -267,12 +237,11 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01IssuerSpec() cmapi.IssuerSpec {
+func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
 			ACME: &cmacme.ACMEIssuer{
-				// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
-				Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+				Server:        serverURL,
 				SkipTLSVerify: true,
 				PrivateKey: cmmeta.SecretKeySelector{
 					LocalObjectReference: cmmeta.LocalObjectReference{
@@ -282,7 +251,11 @@ func (a *acmeIssuerProvisioner) createDNS01IssuerSpec() cmapi.IssuerSpec {
 				ExternalAccountBinding: a.eab,
 				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						DNS01: &a.cloudflare.Details().ProviderConfig,
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+								Nameserver: "10.0.0.16",
+							},
+						},
 					},
 				},
 			},

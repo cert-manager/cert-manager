@@ -47,3 +47,7 @@ spec:
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
     {{- end }}
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"

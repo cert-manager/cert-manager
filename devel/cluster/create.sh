@@ -22,8 +22,9 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
-# Require helm available on PATH
+# Require kind & kubectl available on PATH
 check_tool kind
+check_tool kubectl
 
 # Compute the details of the kind image to use
 export KIND_IMAGE_SHA=""
@@ -77,3 +78,16 @@ kind create cluster \
   --config "${SCRIPT_ROOT}/config/${KIND_IMAGE_CONFIG}.yaml" \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
+
+# Get the current config
+original_coredns_config=$(kubectl get -ogo-template='{{.data.Corefile}}' -n=kube-system configmap/coredns)
+additional_coredns_config="$(printf 'example.com:53 {\n    forward . 10.0.0.16\n}\n')"
+echo "Original CoreDNS config:"
+echo "${original_coredns_config}"
+# Patch it
+fixed_coredns_config=$(
+  printf '%s\n%s' "${original_coredns_config}" "${additional_coredns_config}"
+)
+echo "Patched CoreDNS config:"
+echo "${fixed_coredns_config}"
+kubectl create configmap -oyaml coredns --dry-run --from-literal=Corefile="${fixed_coredns_config}" | kubectl apply --namespace kube-system -f -

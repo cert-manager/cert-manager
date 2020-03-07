@@ -63,3 +63,12 @@ def install():
         tag = "1.2.3",
         digest = "sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01"
     )
+
+    ## Fetch bind for use during e2e tests
+    container_pull(
+        name = "io_docker_index_sameersbn_bind",
+        registry = "index.docker.io",
+        repository = "sameersbn/bind",
+        tag = "9.11.3-20190706",
+        digest = "sha256:b8e84f9a9fe0c05c3a963606c3d0170622be9c5e8800431ffcaadb0c79a3ff75"
+    )

@@ -44,8 +44,8 @@ func (h *Helper) WaitForSecretCertificateData(ns, name string, timeout time.Dura
 				return true, nil
 			}
 
-			log.Logf("Secret still does not contain certificate data %s/%s: %v",
-				secret.Namespace, secret.Name, secret.Data)
+			log.Logf("Secret still does not contain certificate data %s/%s",
+				secret.Namespace, secret.Name)
 			return false, nil
 		},
 	)

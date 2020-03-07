@@ -9,6 +9,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//devel/addon/bind:all-srcs",
         "//devel/addon/certmanager:all-srcs",
         "//devel/addon/ingressnginx:all-srcs",
         "//devel/addon/pebble:all-srcs",

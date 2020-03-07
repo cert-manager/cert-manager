@@ -36,8 +36,6 @@ import (
 
 type dns01Provider interface {
 	Details() *dnsproviders.Details
-	SetNamespace(string)
-
 	addon.Addon
 }
 
@@ -46,19 +44,15 @@ const testingACMEPrivateKey = "test-acme-private-key"
 
 var _ = framework.CertManagerDescribe("ACME CertificateRequest (DNS01)", func() {
 	// TODO: add additional DNS provider configs here
-	cf := &dnsproviders.Cloudflare{}
+	rfc := &dnsproviders.RFC2136{}
 
-	testDNSProvider("cloudflare", cf)
+	testDNSProvider("rfc2136", rfc)
 })
 
 func testDNSProvider(name string, p dns01Provider) bool {
 	return Context("With "+name+" credentials configured", func() {
 		f := framework.NewDefaultFramework("create-acme-certificate-request-dns01-" + name)
 		h := f.Helper()
-
-		BeforeEach(func() {
-			p.SetNamespace(f.Namespace.Name)
-		})
 
 		f.RequireAddon(p)
 
@@ -73,7 +67,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
-					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+					Server:        f.Config.Addons.ACMEServer.URL,
 					Email:         testingACMEEmail,
 					PrivateKey: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
