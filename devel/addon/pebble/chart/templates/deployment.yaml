@@ -26,7 +26,6 @@ spec:
           args:
           - -config=/config/config.json
           - -strict={{ .Values.strict }}
-          - -dnsserver=10.0.0.16:53
           volumeMounts:
           - name: config
             mountPath: /config
