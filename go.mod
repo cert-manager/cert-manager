@@ -28,8 +28,8 @@ require (
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 	github.com/miekg/dns v0.0.0-20170721150254-0f3adef2e220
 	github.com/munnerz/crd-schema-fuzz v0.0.0-20191114184610-fbd148d44a0a
-	github.com/onsi/ginkgo v1.10.1
-	github.com/onsi/gomega v1.7.0
+	github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/gomega v1.8.1
 	github.com/pavel-v-chernykh/keystore-go v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
@@ -53,7 +53,7 @@ require (
 	k8s.io/kube-aggregator v0.17.3
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
-	sigs.k8s.io/controller-runtime v0.4.0
+	sigs.k8s.io/controller-runtime v0.5.1-0.20200307095134-d0de78d9f1c1
 	sigs.k8s.io/controller-tools v0.2.5
 	sigs.k8s.io/testing_frameworks v0.1.2
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20180114231543-2291e8f0f237
