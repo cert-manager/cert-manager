@@ -125,7 +125,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var order *cmacme.Order
-			pollErr := wait.PollImmediate(500*time.Millisecond, time.Second*30,
+			pollErr := wait.PollImmediate(2*time.Second, time.Second*30,
 				func() (bool, error) {
 					orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
 					Expect(err).NotTo(HaveOccurred())
@@ -143,7 +143,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			)
 			Expect(pollErr).NotTo(HaveOccurred())
 
-			pollErr = wait.PollImmediate(500*time.Millisecond, time.Second*30,
+			pollErr = wait.PollImmediate(2*time.Second, time.Second*90,
 				func() (bool, error) {
 					l, err := listOwnedChallenges(f.CertManagerClientSet, order)
 					Expect(err).NotTo(HaveOccurred())
