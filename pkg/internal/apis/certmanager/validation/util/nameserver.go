@@ -37,6 +37,9 @@ func ValidNameserver(nameserver string) (string, error) {
 	// 8.8.8.8             ""                  ""      missing port in address
 	// 8.8.8.8:            "8.8.8.8"           ""      <nil>
 	// 8.8.8.8.8:53        "8.8.8.8"           53      <nil>
+	// [2001:db8::1]       ""                  ""      missing port in address
+	// [2001:db8::1]:      "2001:db8::1"       ""      <nil>
+	// [2001:db8::1]:53    "2001:db8::1"       53      <nil>
 	// nameserver.com      ""                  ""      missing port in address
 	// nameserver.com:     "nameserver.com"    ""      <nil>
 	// nameserver.com:53   "nameserver.com"    53      <nil>
@@ -44,19 +47,20 @@ func ValidNameserver(nameserver string) (string, error) {
 	host, port, err := net.SplitHostPort(nameserver)
 	if err != nil {
 		if strings.Contains(err.Error(), "missing port") {
-			host = nameserver
+			// net.JoinHostPort expect IPv6 address to be unenclosed
+			host = strings.Trim(nameserver, "[]")
+		} else {
+			return "", fmt.Errorf("RFC2136 nameserver is invalid: %s", err.Error())
 		}
-	}
-
-	if port == "" {
-		port = defaultRFC2136Port
 	}
 
 	if host == "" {
 		return "", fmt.Errorf("RFC2136 nameserver has no host defined, %v", nameserver)
 	}
 
-	nameserver = host + ":" + port
+	if port == "" {
+		port = defaultRFC2136Port
+	}
 
-	return nameserver, nil
+	return net.JoinHostPort(host, port), nil
 }

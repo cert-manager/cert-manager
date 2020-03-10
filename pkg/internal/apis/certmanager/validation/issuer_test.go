@@ -656,6 +656,34 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
+		"rfc2136 provider with unenclosed IPv6 nameserver": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "2001:db8::1",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("rfc2136", "nameserver"), "2001:db8::1", "nameserver must be set in the form host:port where host is an IPv4 address, an enclosed IPv6 address or a hostname and port is an optional port number."),
+			},
+		},
+		"rfc2136 provider with empty IPv6 nameserver": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "[]:53",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("rfc2136", "nameserver"), "[]:53", "nameserver must be set in the form host:port where host is an IPv4 address, an enclosed IPv6 address or a hostname and port is an optional port number."),
+			},
+		},
+		"rfc2136 provider with IPv6 nameserver": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "[2001:db8::1]",
+				},
+			},
+			errs: []*field.Error{},
+		},
 		"rfc2136 provider with FQDN nameserver": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
@@ -679,7 +707,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("rfc2136", "nameserver"), ":53", "nameserver must be an hostname or IP address in the form host[:port]."),
+				field.Invalid(fldPath.Child("rfc2136", "nameserver"), ":53", "nameserver must be set in the form host:port where host is an IPv4 address, an enclosed IPv6 address or a hostname and port is an optional port number."),
 			},
 		},
 		"rfc2136 provider using case-camel in algorithm": {

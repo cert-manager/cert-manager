@@ -1081,7 +1081,10 @@ spec:
                       properties:
                         nameserver:
                           description: The IP address or hostname of an authoritative
-                            DNS server supporting RFC2136. Required.
+                            DNS server supporting RFC2136 in the form host:port. If
+                            the host is an IPv6 address it must be enclosed in square
+                            brackets (e.g [2001:db8::1]) ; port is optional. This
+                            field is required.
                           type: string
                         tsigAlgorithm:
                           description: 'The TSIG Algorithm configured in the DNS supporting
@@ -2542,7 +2545,10 @@ spec:
                             properties:
                               nameserver:
                                 description: The IP address or hostname of an authoritative
-                                  DNS server supporting RFC2136. Required.
+                                  DNS server supporting RFC2136 in the form host:port.
+                                  If the host is an IPv6 address it must be enclosed
+                                  in square brackets (e.g [2001:db8::1]) ; port is
+                                  optional. This field is required.
                                 type: string
                               tsigAlgorithm:
                                 description: 'The TSIG Algorithm configured in the
@@ -4295,7 +4301,10 @@ spec:
                             properties:
                               nameserver:
                                 description: The IP address or hostname of an authoritative
-                                  DNS server supporting RFC2136. Required.
+                                  DNS server supporting RFC2136 in the form host:port.
+                                  If the host is an IPv6 address it must be enclosed
+                                  in square brackets (e.g [2001:db8::1]) ; port is
+                                  optional. This field is required.
                                 type: string
                               tsigAlgorithm:
                                 description: 'The TSIG Algorithm configured in the
