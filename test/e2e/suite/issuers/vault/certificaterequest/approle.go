@@ -248,7 +248,8 @@ func runVaultAppRoleTests(issuerKind string) {
 			By("Verifying the Certificate is valid")
 			cr, err = crClient.Get(cr.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			f.CertificateRequestDurationValid(cr, v.expectedDuration+(30*time.Second))
+			// Vault can issue certificates with slightly skewed duration.
+			f.CertificateRequestDurationValid(cr, v.expectedDuration, 30*time.Second)
 		})
 	}
 }

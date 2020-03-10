@@ -149,7 +149,7 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 				Expect(err).NotTo(HaveOccurred())
 				cr, err = crClient.Get(cr.Name, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				f.CertificateRequestDurationValid(cr, v.expectedDuration)
+				f.CertificateRequestDurationValid(cr, v.expectedDuration, 0)
 			})
 		}
 	})
