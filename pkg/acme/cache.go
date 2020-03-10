@@ -17,7 +17,6 @@ limitations under the License.
 package acme
 
 import (
-	"context"
 	"crypto/rsa"
 	"crypto/tls"
 	"fmt"
@@ -112,8 +111,11 @@ func ClearClientCache() {
 func buildHTTPClient(skipTLSVerify bool) *http.Client {
 	return acme.NewInstrumentedClient(&http.Client{
 		Transport: &http.Transport{
-			Proxy:                 http.ProxyFromEnvironment,
-			DialContext:           dialTimeout,
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: skipTLSVerify},
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,
@@ -122,11 +124,4 @@ func buildHTTPClient(skipTLSVerify bool) *http.Client {
 		},
 		Timeout: time.Second * 30,
 	})
-}
-
-var timeout = 5 * time.Second
-
-func dialTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
-	d := net.Dialer{Timeout: timeout}
-	return d.DialContext(ctx, network, addr)
 }
