@@ -24,8 +24,9 @@ import (
 
 var defaultRFC2136Port = "53"
 
-// This function make a valid nameserver as per RFC2136
+// This function returns a valid nameserver (in the form <host>:<port>) for the RFC2136 provider
 func ValidNameserver(nameserver string) (string, error) {
+	nameserver = strings.TrimSpace(nameserver)
 
 	if nameserver == "" {
 		return "", fmt.Errorf("RFC2136 nameserver missing")
@@ -40,8 +41,7 @@ func ValidNameserver(nameserver string) (string, error) {
 	// nameserver.com:     "nameserver.com"    ""      <nil>
 	// nameserver.com:53   "nameserver.com"    53      <nil>
 	// :53                 ""                  53      <nil>
-	host, port, err := net.SplitHostPort(strings.TrimSpace(nameserver))
-
+	host, port, err := net.SplitHostPort(nameserver)
 	if err != nil {
 		if strings.Contains(err.Error(), "missing port") {
 			host = nameserver
@@ -52,12 +52,8 @@ func ValidNameserver(nameserver string) (string, error) {
 		port = defaultRFC2136Port
 	}
 
-	if host != "" {
-		if ipaddr := net.ParseIP(host); ipaddr == nil {
-			return "", fmt.Errorf("RFC2136 nameserver must be a valid IP Address, not %v", host)
-		}
-	} else {
-		return "", fmt.Errorf("RFC2136 nameserver has no IP Address defined, %v", nameserver)
+	if host == "" {
+		return "", fmt.Errorf("RFC2136 nameserver has no host defined, %v", nameserver)
 	}
 
 	nameserver = host + ":" + port

@@ -348,7 +348,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				el = append(el, field.Required(fldPath.Child("rfc2136", "nameserver"), ""))
 			} else {
 				if _, err := util.ValidNameserver(p.RFC2136.Nameserver); err != nil {
-					el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."))
+					el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), p.RFC2136.Nameserver, "nameserver must be an hostname or IP address in the form host[:port]."))
 				}
 			}
 			if len(p.RFC2136.TSIGAlgorithm) > 0 {

@@ -640,15 +640,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
-		"valid rfc2136 config": {
-			cfg: &cmacme.ACMEChallengeSolverDNS01{
-				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
-					Nameserver: "127.0.0.1",
-				},
-			},
-			errs: []*field.Error{},
-		},
-		"missing rfc2136 required field": {
+		"rfc2136 provider with missing nameserver": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{},
 			},
@@ -656,14 +648,38 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("rfc2136", "nameserver"), ""),
 			},
 		},
-		"rfc2136 provider invalid nameserver": {
+		"rfc2136 provider with IPv4 nameserver": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "127.0.0.1",
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"rfc2136 provider with FQDN nameserver": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 					Nameserver: "dns.example.com",
 				},
 			},
+			errs: []*field.Error{},
+		},
+		"rfc2136 provider with hostname nameserver": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "dns",
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"rfc2136 provider with nameserver without host": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: ":53",
+				},
+			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."),
+				field.Invalid(fldPath.Child("rfc2136", "nameserver"), ":53", "nameserver must be an hostname or IP address in the form host[:port]."),
 			},
 		},
 		"rfc2136 provider using case-camel in algorithm": {

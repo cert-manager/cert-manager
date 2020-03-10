@@ -379,9 +379,8 @@ spec:
                             - nameserver
                             properties:
                               nameserver:
-                                description: 'The IP address of the DNS supporting
-                                  RFC2136. Required. Note: FQDN is not a valid value,
-                                  only IP.'
+                                description: The IP address or hostname of an authoritative
+                                  DNS server supporting RFC2136. Required.
                                 type: string
                               tsigAlgorithm:
                                 description: 'The TSIG Algorithm configured in the
