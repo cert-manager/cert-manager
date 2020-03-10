@@ -244,11 +244,8 @@ spec:
                               containing the configuration for Azure DNS
                             type: object
                             required:
-                            - clientID
-                            - clientSecretSecretRef
                             - resourceGroupName
                             - subscriptionID
-                            - tenantID
                             properties:
                               clientID:
                                 type: string

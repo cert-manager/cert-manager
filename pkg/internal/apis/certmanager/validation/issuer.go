@@ -253,16 +253,27 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			el = append(el, field.Forbidden(fldPath.Child("azuredns"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
-			el = append(el, ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
-			if len(p.AzureDNS.ClientID) == 0 {
-				el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
+			// if ClientID is defined then clientSecret and tenantID must be defined
+			if len(p.AzureDNS.ClientID) > 0 {
+				el = append(el, ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
+				if len(p.AzureDNS.TenantID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
+				}
 			}
+			// if ClientSecret is defined then both ClientID and TenantID must be defined
+			if &p.AzureDNS.ClientSecret != nil {
+				if len(p.AzureDNS.ClientID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
+				}
+				if len(p.AzureDNS.TenantID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
+				}
+			}
+			// SubscriptionID must always be defined
 			if len(p.AzureDNS.SubscriptionID) == 0 {
 				el = append(el, field.Required(fldPath.Child("azuredns", "subscriptionID"), ""))
 			}
-			if len(p.AzureDNS.TenantID) == 0 {
-				el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
-			}
+			// ResourceGroupName must always be defined
 			if len(p.AzureDNS.ResourceGroupName) == 0 {
 				el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
 			}
