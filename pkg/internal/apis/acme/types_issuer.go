@@ -301,7 +301,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 type ACMEIssuerDNS01ProviderAzureDNS struct {
 	ClientID string
 
-	ClientSecret cmmeta.SecretKeySelector
+	ClientSecret *cmmeta.SecretKeySelector
 
 	SubscriptionID string
 

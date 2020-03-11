@@ -590,11 +590,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
-				field.Required(fldPath.Child("azuredns", "clientID"), ""),
 				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
 				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
 			},
 		},
@@ -605,11 +601,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
-				field.Required(fldPath.Child("azuredns", "clientID"), ""),
 				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
 				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
 				field.Invalid(fldPath.Child("azuredns", "environment"), cmacme.AzureDNSEnvironment("an env"),
 					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),

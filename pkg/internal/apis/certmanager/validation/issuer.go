@@ -255,13 +255,13 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			numProviders++
 			// if ClientID is defined then clientSecret and tenantID must be defined
 			if len(p.AzureDNS.ClientID) > 0 {
-				el = append(el, ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
+				el = append(el, ValidateSecretKeySelector(p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
 				if len(p.AzureDNS.TenantID) == 0 {
 					el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
 				}
 			}
 			// if ClientSecret is defined then both ClientID and TenantID must be defined
-			if len(ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))) > 0 {
+			if p.AzureDNS.ClientSecret != nil {
 				if len(p.AzureDNS.ClientID) == 0 {
 					el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
 				}
