@@ -1663,8 +1663,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/Venafi/vcert",
-        sum = "h1:oFQa1HzZX7Kcnjnosx9wEdVi8ADTDvs+2Tz96HIXrEU=",
-        version = "v0.0.0-20200207035730-5a915d73be5d",
+        sum = "h1:+J3fdxS1dgOJwGFM9LuQUr8F4YklF8hrq9BrNzLwPFE=",
+        version = "v0.0.0-20200310111556-eba67a23943f",
     )
     go_repository(
         name = "com_github_xiang90_probing",
@@ -2474,4 +2474,36 @@ def go_repositories():
         importpath = "github.com/pavel-v-chernykh/keystore-go",
         sum = "h1:Jd6xfriVlJ6hWPvYOE0Ni0QWcNTLRehfGPFxr3eSL80=",
         version = "v2.1.0+incompatible",
+    )
+    go_repository(
+        name = "com_github_cpuguy83_go_md2man_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/cpuguy83/go-md2man/v2",
+        sum = "h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=",
+        version = "v2.0.0-20190314233015-f79a8a8ca69d",
+    )
+    go_repository(
+        name = "com_github_russross_blackfriday_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/russross/blackfriday/v2",
+        sum = "h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0RK8m9o+Q=",
+        version = "v2.0.1",
+    )
+    go_repository(
+        name = "com_github_shurcool_sanitized_anchor_name",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/shurcooL/sanitized_anchor_name",
+        sum = "h1:PdmoCO6wvbs+7yrJyMORt4/BmY5IYyJwS/kOiWx8mHo=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_urfave_cli_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/urfave/cli/v2",
+        sum = "h1:Qt8FeAtxE/vfdrLmR3rxR6JRE0RoVmbXu8+6kZtYU4k=",
+        version = "v2.1.1",
     )
