@@ -155,7 +155,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				Expect(err).NotTo(HaveOccurred())
 				cr, err := crClient.Get(certificateRequestName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				f.CertificateRequestDurationValid(cr, v.expectedDuration)
+				f.CertificateRequestDurationValid(cr, v.expectedDuration, 0)
 			})
 		}
 	})
