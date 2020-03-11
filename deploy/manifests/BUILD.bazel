@@ -4,6 +4,7 @@ exports_files(["00-crds.yaml"])
 
 load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 load("//build:helm.bzl", "helm_tmpl")
+load("//build:licensing.bzl", "licensed_file")
 
 RELEASE_NAME = "cert-manager"
 
@@ -23,11 +24,11 @@ VARIANTS = {
 ) for (name, values) in VARIANTS.items()]
 
 [genrule(
-    name = "%s.crds" % name,
+    name = "%s.crds.unlicensed" % name,
     srcs = [
         "00-crds.yaml",
     ],
-    outs = ["%s.crds.yaml" % name],
+    outs = ["%s.crds.unlicensed.yaml" % name],
     cmd = " ".join([
         "$(location //hack/filter-crd)",
         "-variant=%s" % name,
@@ -39,21 +40,31 @@ VARIANTS = {
     ],
 ) for (name, values) in VARIANTS.items()]
 
+[licensed_file(
+    name = "%s.crds.yaml" % name,
+    src = "%s.crds.unlicensed" % name,
+) for (name, values) in VARIANTS.items()]
+
 [genrule(
-    name = name,
+    name = "%s.unlicensed" % name,
     srcs = [
-        "%s.crds" % name,
+        "%s.crds.unlicensed" % name,
         "01-namespace.yaml",
         "%s.manifests" % name,
     ],
-    outs = ["%s.yaml" % name],
+    outs = ["%s.unlicensed.yaml" % name],
     cmd = " ".join([
         "cat",
-        "$(location %s.crds)" % name,
+        "$(location %s.crds.unlicensed)" % name,
         "$(location 01-namespace.yaml)",
         "$(location %s.manifests)" % name,
         "> $@",
     ]),
+) for (name, values) in VARIANTS.items()]
+
+[licensed_file(
+    name = "%s.yaml" % name,
+    src = "%s.unlicensed" % name,
 ) for (name, values) in VARIANTS.items()]
 
 pkg_tar(
