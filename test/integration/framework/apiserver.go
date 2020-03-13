@@ -60,7 +60,7 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	// environment variables
 	env := &envtest.Environment{
 		AttachControlPlaneOutput: true,
-		CRDs:                     crds,
+		CRDs:                     crdsToRuntimeObjects(crds),
 	}
 	config, err := env.Start()
 	if err != nil {
@@ -146,4 +146,14 @@ func readCRDAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path 
 
 	output := &v1beta1.CustomResourceDefinition{}
 	return output, converter.Convert(internalCRD, output, nil)
+}
+
+func crdsToRuntimeObjects(in []*v1beta1.CustomResourceDefinition) []runtime.Object {
+	out := make([]runtime.Object, len(in))
+
+	for i, crd := range in {
+		out[i] = runtime.Object(crd)
+	}
+
+	return out
 }
