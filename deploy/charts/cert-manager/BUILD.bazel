@@ -44,6 +44,9 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//deploy/charts/cert-manager/crds:all-srcs",
+    ],
     tags = ["automanaged"],
 )

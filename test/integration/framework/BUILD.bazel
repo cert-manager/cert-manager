@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "apiserver.go",
+        "paths.go",
+    ],
+    data = [
+        "//deploy/charts/cert-manager/crds:all-srcs",
+        "//hack/bin:com_coreos_etcd",
+        "//hack/bin:io_kubernetes_kube-apiserver",
+        "//hack/bin:kubectl",
+    ],
+    importpath = "github.com/jetstack/cert-manager/test/integration/framework",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cmd/webhook/app/testing:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/install:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/versioning:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/envtest:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

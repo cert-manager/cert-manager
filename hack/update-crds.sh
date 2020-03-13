@@ -47,7 +47,7 @@ cd "${REPO_ROOT}"
 out="./deploy/manifests/00-crds.yaml"
 rm "$out" || true
 touch "$out"
-for file in $(find "./deploy/charts/cert-manager/crds" -type f | sort -V); do
+for file in $(find "./deploy/charts/cert-manager/crds" -name '*.yaml' -type f | sort -V); do
   # concatenate all files while removing blank (^$) lines
   < "$file" sed '/^$$/d' >> "$out"
   printf -- "---\n" >> "$out"
