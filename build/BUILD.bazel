@@ -44,6 +44,7 @@ DOCKERIZED_BINARIES = {
         "/usr/local/bin/" + binary: "/usr/bin/" + binary,
     },
     tags = ["manual"],
+    user = "1000",
     visibility = ["//visibility:private"],
 ) for binary, meta in DOCKERIZED_BINARIES.items()]
 
