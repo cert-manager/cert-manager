@@ -5,6 +5,7 @@ go_image(
     name = "image",
     base = "@static_base//image",
     binary = ":sample",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

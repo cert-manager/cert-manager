@@ -11,10 +11,10 @@ container_bundle(
         "vault:bazel": "@com_hashicorp_vault//image",
         "sample-webhook:bazel": "//test/e2e/framework/addon/samplewebhook/sample:image",
         "gcr.io/kubernetes-helm/tiller:bazel": "@io_gcr_helm_tiller//image",
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//build:controller",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//build:acmesolver",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//build:webhook",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//build:cainjector",
     },
     tags = ["manual"],
 )
@@ -73,7 +73,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/e2e/bin/cloudflare-clean:all-srcs",
-        "//test/e2e/charts:all-srcs",
         "//test/e2e/framework:all-srcs",
         "//test/e2e/suite:all-srcs",
         "//test/e2e/util:all-srcs",
