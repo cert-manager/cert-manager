@@ -3,10 +3,10 @@ load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 container_bundle(
     name = "bundle",
     images = {
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
-        "{STABLE_DOCKER_REGISTRY}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//build:controller",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//build:acmesolver",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//build:webhook",
+        "{STABLE_DOCKER_REGISTRY}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//build:cainjector",
     },
     tags = ["manual"],
 )
