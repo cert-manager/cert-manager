@@ -17,38 +17,6 @@ load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
-def image(
-    name,
-    component,
-    binary,
-    user = "1000",
-    stamp = True,
-    testonly = False,
-    **kwargs):
-
-    go_image(
-        name = "%s.app" % name,
-        base = "@static_base//image",
-        binary = binary,
-        testonly = testonly,
-    )
-
-    container_image(
-        name = name,
-        base = "%s.app" % name,
-        user = user,
-        stamp = stamp,
-        testonly = testonly,
-        **kwargs)
-
-    container_bundle(
-        name = name + ".export",
-        images = {
-            component + ":{STABLE_APP_GIT_COMMIT}": ":" + name,
-        },
-        testonly = testonly,
-    )
-
 def covered_image(name, component, **kwargs):
     native.genrule(
         name = "%s.covered-testfile" % name,
@@ -84,9 +52,23 @@ EOF
         tags = ["manual"],
     )
 
-    image(
-        name = name,
+    go_image(
+        name = "%s.covered-image" % name,
+        base = "@static_base//image",
         binary = "%s.covered-app" % name,
         testonly = True,
-        component = component,
+    )
+
+    container_image(
+        name = name,
+        base = "%s.covered-image" % name,
+        testonly = True,
         **kwargs)
+
+    container_bundle(
+        name = name + ".export",
+        images = {
+            component + ":{STABLE_APP_GIT_COMMIT}": ":" + name,
+        },
+        testonly = True,
+    )
