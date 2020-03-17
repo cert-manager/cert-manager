@@ -16,6 +16,7 @@ go_image(
     name = "image",
     base = "@static_base//image",
     binary = ":app",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
