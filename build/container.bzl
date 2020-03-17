@@ -66,18 +66,18 @@ def multi_arch_container(
     )
 
     container_image(
-        name = "%s-internal" % name,
+        name = "%s.image" % name,
         base = ":%s-internal-notimestamp" % name,
         stamp = stamp,
         tags = tags,
-        visibility = ["//visibility:private"],
+        visibility = ["//visibility:public"],
     )
 
     for arch in architectures:
         container_bundle(
             name = "%s-%s" % (name, arch),
             images = {
-                docker_tag.format(ARCH = arch): ":%s-internal" % name
+                docker_tag.format(ARCH = arch): ":%s.image" % name
                 for docker_tag in docker_tags
             },
             tags = tags,
@@ -107,7 +107,7 @@ def multi_arch_container(
         multi_arch_container_push(
             name = name,
             architectures = architectures,
-            docker_tags_images = {docker_push_tag: ":%s-internal" % name for docker_push_tag in docker_push_tags},
+            docker_tags_images = {docker_push_tag: ":%s.image" % name for docker_push_tag in docker_push_tags},
             tags = tags,
         )
 
