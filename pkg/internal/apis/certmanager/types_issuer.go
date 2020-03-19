@@ -127,7 +127,11 @@ type VenafiCloud struct {
 }
 
 type SelfSignedIssuer struct {
-	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
+	// The CRL distribution points is an X.509 v3 certificate extension which identifies
+	// the location of the CRL from which the revocation of this certificate can be checked.
+	// If not set certificate will be issued without CDP. Values are strings.
+	// +optional
+	CRLDistributionPoints []string
 }
 
 type VaultIssuer struct {
@@ -197,6 +201,12 @@ type CAIssuer struct {
 	// SecretName is the name of the secret used to sign Certificates issued
 	// by this Issuer.
 	SecretName string
+
+	// The CRL distribution points is an X.509 v3 certificate extension which identifies
+	// the location of the CRL from which the revocation of this certificate can be checked.
+	// If not set certificate will be issued without CDP. Values are strings.
+	// +optional
+	CRLDistributionPoints []string
 }
 
 // IssuerStatus contains status information about an Issuer

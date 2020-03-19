@@ -111,6 +111,8 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		return nil, nil
 	}
 
+	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
+
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"
