@@ -24,8 +24,9 @@ import (
 
 var defaultRFC2136Port = "53"
 
-// This function make a valid nameserver as per RFC2136
+// This function returns a valid nameserver (in the form <host>:<port>) for the RFC2136 provider
 func ValidNameserver(nameserver string) (string, error) {
+	nameserver = strings.TrimSpace(nameserver)
 
 	if nameserver == "" {
 		return "", fmt.Errorf("RFC2136 nameserver missing")
@@ -36,31 +37,30 @@ func ValidNameserver(nameserver string) (string, error) {
 	// 8.8.8.8             ""                  ""      missing port in address
 	// 8.8.8.8:            "8.8.8.8"           ""      <nil>
 	// 8.8.8.8.8:53        "8.8.8.8"           53      <nil>
+	// [2001:db8::1]       ""                  ""      missing port in address
+	// [2001:db8::1]:      "2001:db8::1"       ""      <nil>
+	// [2001:db8::1]:53    "2001:db8::1"       53      <nil>
 	// nameserver.com      ""                  ""      missing port in address
 	// nameserver.com:     "nameserver.com"    ""      <nil>
 	// nameserver.com:53   "nameserver.com"    53      <nil>
 	// :53                 ""                  53      <nil>
-	host, port, err := net.SplitHostPort(strings.TrimSpace(nameserver))
-
+	host, port, err := net.SplitHostPort(nameserver)
 	if err != nil {
 		if strings.Contains(err.Error(), "missing port") {
-			host = nameserver
+			// net.JoinHostPort expect IPv6 address to be unenclosed
+			host = strings.Trim(nameserver, "[]")
+		} else {
+			return "", fmt.Errorf("RFC2136 nameserver is invalid: %s", err.Error())
 		}
+	}
+
+	if host == "" {
+		return "", fmt.Errorf("RFC2136 nameserver has no host defined, %v", nameserver)
 	}
 
 	if port == "" {
 		port = defaultRFC2136Port
 	}
 
-	if host != "" {
-		if ipaddr := net.ParseIP(host); ipaddr == nil {
-			return "", fmt.Errorf("RFC2136 nameserver must be a valid IP Address, not %v", host)
-		}
-	} else {
-		return "", fmt.Errorf("RFC2136 nameserver has no IP Address defined, %v", nameserver)
-	}
-
-	nameserver = host + ":" + port
-
-	return nameserver, nil
+	return net.JoinHostPort(host, port), nil
 }
