@@ -102,7 +102,7 @@ func encodeJKSKeystore(password string, rawKey []byte, certPem []byte, caPem []b
 	}
 
 	ks := jks.KeyStore{
-		"certificate": jks.PrivateKeyEntry{
+		"certificate": &jks.PrivateKeyEntry{
 			Entry: jks.Entry{
 				CreationDate: time.Now(),
 			},
@@ -117,7 +117,7 @@ func encodeJKSKeystore(password string, rawKey []byte, certPem []byte, caPem []b
 			return nil, err
 		}
 
-		ks["ca"] = jks.TrustedCertificateEntry{
+		ks["ca"] = &jks.TrustedCertificateEntry{
 			Entry: jks.Entry{
 				CreationDate: time.Now(),
 			},
