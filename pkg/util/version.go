@@ -16,7 +16,19 @@ limitations under the License.
 
 package util
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
+
+type Version struct {
+	GitVersion   string `json:"gitVersion"`
+	GitCommit    string `json:"gitCommit"`
+	GitTreeState string `json:"gitTreeState"`
+	GoVersion    string `json:"goVersion"`
+	Compiler     string `json:"compiler"`
+	Platform     string `json:"platform"`
+}
 
 // This variable block holds information used to build up the version string
 var (
@@ -24,6 +36,17 @@ var (
 	AppGitCommit = ""
 	AppVersion   = "canary"
 )
+
+func VersionInfo() Version {
+	return Version{
+		GitVersion:   AppVersion,
+		GitCommit:    AppGitCommit,
+		GitTreeState: AppGitState,
+		GoVersion:    runtime.Version(),
+		Compiler:     runtime.Compiler,
+		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+	}
+}
 
 func version() string {
 	v := AppVersion

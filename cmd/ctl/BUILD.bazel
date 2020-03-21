@@ -1,0 +1,40 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "cmd.go",
+        "main.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/cmd/ctl",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cmd/ctl/pkg/version:go_default_library",
+        "@com_github_spf13_cobra//:go_default_library",
+        "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "ctl",
+    out = "cert-manager-ctl",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//cmd/ctl/pkg/version:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
