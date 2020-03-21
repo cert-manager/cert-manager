@@ -59,6 +59,7 @@ filegroup(
         "//cmd/acmesolver:all-srcs",
         "//cmd/cainjector:all-srcs",
         "//cmd/controller:all-srcs",
+        "//cmd/ctl:all-srcs",
         "//cmd/webhook:all-srcs",
         "//deploy:all-srcs",
         "//devel:all-srcs",
