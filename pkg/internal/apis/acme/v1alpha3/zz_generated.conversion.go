@@ -1079,14 +1079,16 @@ func Convert_acme_ChallengeList_To_v1alpha3_ChallengeList(in *acme.ChallengeList
 }
 
 func autoConvert_v1alpha3_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha3.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
-	out.AuthzURL = in.AuthzURL
-	out.Type = string(in.Type)
 	out.URL = in.URL
+	out.AuthzURL = in.AuthzURL
 	out.DNSName = in.DNSName
+	out.Wildcard = in.Wildcard
+	out.Type = acme.ACMEChallengeType(in.Type)
 	out.Token = in.Token
 	out.Key = in.Key
-	out.Wildcard = in.Wildcard
-	out.Solver = (*acme.ACMEChallengeSolver)(unsafe.Pointer(in.Solver))
+	if err := Convert_v1alpha3_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(&in.Solver, &out.Solver, s); err != nil {
+		return err
+	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
@@ -1100,14 +1102,16 @@ func Convert_v1alpha3_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha3.Challenge
 }
 
 func autoConvert_acme_ChallengeSpec_To_v1alpha3_ChallengeSpec(in *acme.ChallengeSpec, out *v1alpha3.ChallengeSpec, s conversion.Scope) error {
-	out.AuthzURL = in.AuthzURL
-	out.Type = v1alpha3.ACMEChallengeType(in.Type)
 	out.URL = in.URL
+	out.AuthzURL = in.AuthzURL
 	out.DNSName = in.DNSName
+	out.Wildcard = in.Wildcard
+	out.Type = v1alpha3.ACMEChallengeType(in.Type)
 	out.Token = in.Token
 	out.Key = in.Key
-	out.Wildcard = in.Wildcard
-	out.Solver = (*v1alpha3.ACMEChallengeSolver)(unsafe.Pointer(in.Solver))
+	if err := Convert_acme_ACMEChallengeSolver_To_v1alpha3_ACMEChallengeSolver(&in.Solver, &out.Solver, s); err != nil {
+		return err
+	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
