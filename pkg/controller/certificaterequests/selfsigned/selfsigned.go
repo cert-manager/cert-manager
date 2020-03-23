@@ -125,6 +125,8 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		return nil, nil
 	}
 
+	template.CRLDistributionPoints = issuerObj.GetSpec().SelfSigned.CRLDistributionPoints
+
 	// extract the public component of the key
 	publickey, err := pki.PublicKeyForPrivateKey(privatekey)
 	if err != nil {
