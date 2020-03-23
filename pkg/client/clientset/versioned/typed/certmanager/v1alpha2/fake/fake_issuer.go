@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var issuersResource = schema.GroupVersionResource{Group: "cert-manager.io", Vers
 var issuersKind = schema.GroupVersionKind{Group: "cert-manager.io", Version: "v1alpha2", Kind: "Issuer"}
 
 // Get takes name of the issuer, and returns the corresponding issuer object, and an error if there is any.
-func (c *FakeIssuers) Get(name string, options v1.GetOptions) (result *v1alpha2.Issuer, err error) {
+func (c *FakeIssuers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.Issuer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(issuersResource, c.ns, name), &v1alpha2.Issuer{})
 
@@ -50,7 +52,7 @@ func (c *FakeIssuers) Get(name string, options v1.GetOptions) (result *v1alpha2.
 }
 
 // List takes label and field selectors, and returns the list of Issuers that match those selectors.
-func (c *FakeIssuers) List(opts v1.ListOptions) (result *v1alpha2.IssuerList, err error) {
+func (c *FakeIssuers) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.IssuerList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(issuersResource, issuersKind, c.ns, opts), &v1alpha2.IssuerList{})
 
@@ -72,14 +74,14 @@ func (c *FakeIssuers) List(opts v1.ListOptions) (result *v1alpha2.IssuerList, er
 }
 
 // Watch returns a watch.Interface that watches the requested issuers.
-func (c *FakeIssuers) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeIssuers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(issuersResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a issuer and creates it.  Returns the server's representation of the issuer, and an error, if there is any.
-func (c *FakeIssuers) Create(issuer *v1alpha2.Issuer) (result *v1alpha2.Issuer, err error) {
+func (c *FakeIssuers) Create(ctx context.Context, issuer *v1alpha2.Issuer, opts v1.CreateOptions) (result *v1alpha2.Issuer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(issuersResource, c.ns, issuer), &v1alpha2.Issuer{})
 
@@ -90,7 +92,7 @@ func (c *FakeIssuers) Create(issuer *v1alpha2.Issuer) (result *v1alpha2.Issuer, 
 }
 
 // Update takes the representation of a issuer and updates it. Returns the server's representation of the issuer, and an error, if there is any.
-func (c *FakeIssuers) Update(issuer *v1alpha2.Issuer) (result *v1alpha2.Issuer, err error) {
+func (c *FakeIssuers) Update(ctx context.Context, issuer *v1alpha2.Issuer, opts v1.UpdateOptions) (result *v1alpha2.Issuer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(issuersResource, c.ns, issuer), &v1alpha2.Issuer{})
 
@@ -102,7 +104,7 @@ func (c *FakeIssuers) Update(issuer *v1alpha2.Issuer) (result *v1alpha2.Issuer, 
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeIssuers) UpdateStatus(issuer *v1alpha2.Issuer) (*v1alpha2.Issuer, error) {
+func (c *FakeIssuers) UpdateStatus(ctx context.Context, issuer *v1alpha2.Issuer, opts v1.UpdateOptions) (*v1alpha2.Issuer, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(issuersResource, "status", c.ns, issuer), &v1alpha2.Issuer{})
 
@@ -113,7 +115,7 @@ func (c *FakeIssuers) UpdateStatus(issuer *v1alpha2.Issuer) (*v1alpha2.Issuer, e
 }
 
 // Delete takes name of the issuer and deletes it. Returns an error if one occurs.
-func (c *FakeIssuers) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeIssuers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(issuersResource, c.ns, name), &v1alpha2.Issuer{})
 
@@ -121,15 +123,15 @@ func (c *FakeIssuers) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeIssuers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(issuersResource, c.ns, listOptions)
+func (c *FakeIssuers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(issuersResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha2.IssuerList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched issuer.
-func (c *FakeIssuers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha2.Issuer, err error) {
+func (c *FakeIssuers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.Issuer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(issuersResource, c.ns, name, pt, data, subresources...), &v1alpha2.Issuer{})
 

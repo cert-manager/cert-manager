@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"context"
 	time "time"
 
 	acmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
@@ -61,13 +62,13 @@ func NewFilteredChallengeInformer(client versioned.Interface, namespace string, 
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.AcmeV1alpha2().Challenges(namespace).List(options)
+				return client.AcmeV1alpha2().Challenges(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.AcmeV1alpha2().Challenges(namespace).Watch(options)
+				return client.AcmeV1alpha2().Challenges(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&acmev1alpha2.Challenge{},

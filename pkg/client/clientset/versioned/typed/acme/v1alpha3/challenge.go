@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"context"
 	"time"
 
 	v1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
@@ -37,15 +38,15 @@ type ChallengesGetter interface {
 
 // ChallengeInterface has methods to work with Challenge resources.
 type ChallengeInterface interface {
-	Create(*v1alpha3.Challenge) (*v1alpha3.Challenge, error)
-	Update(*v1alpha3.Challenge) (*v1alpha3.Challenge, error)
-	UpdateStatus(*v1alpha3.Challenge) (*v1alpha3.Challenge, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha3.Challenge, error)
-	List(opts v1.ListOptions) (*v1alpha3.ChallengeList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha3.Challenge, err error)
+	Create(ctx context.Context, challenge *v1alpha3.Challenge, opts v1.CreateOptions) (*v1alpha3.Challenge, error)
+	Update(ctx context.Context, challenge *v1alpha3.Challenge, opts v1.UpdateOptions) (*v1alpha3.Challenge, error)
+	UpdateStatus(ctx context.Context, challenge *v1alpha3.Challenge, opts v1.UpdateOptions) (*v1alpha3.Challenge, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha3.Challenge, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha3.ChallengeList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.Challenge, err error)
 	ChallengeExpansion
 }
 
@@ -64,20 +65,20 @@ func newChallenges(c *AcmeV1alpha3Client, namespace string) *challenges {
 }
 
 // Get takes name of the challenge, and returns the corresponding challenge object, and an error if there is any.
-func (c *challenges) Get(name string, options v1.GetOptions) (result *v1alpha3.Challenge, err error) {
+func (c *challenges) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha3.Challenge, err error) {
 	result = &v1alpha3.Challenge{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Challenges that match those selectors.
-func (c *challenges) List(opts v1.ListOptions) (result *v1alpha3.ChallengeList, err error) {
+func (c *challenges) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha3.ChallengeList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *challenges) List(opts v1.ListOptions) (result *v1alpha3.ChallengeList, 
 		Resource("challenges").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested challenges.
-func (c *challenges) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *challenges) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *challenges) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("challenges").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a challenge and creates it.  Returns the server's representation of the challenge, and an error, if there is any.
-func (c *challenges) Create(challenge *v1alpha3.Challenge) (result *v1alpha3.Challenge, err error) {
+func (c *challenges) Create(ctx context.Context, challenge *v1alpha3.Challenge, opts v1.CreateOptions) (result *v1alpha3.Challenge, err error) {
 	result = &v1alpha3.Challenge{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("challenges").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(challenge).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a challenge and updates it. Returns the server's representation of the challenge, and an error, if there is any.
-func (c *challenges) Update(challenge *v1alpha3.Challenge) (result *v1alpha3.Challenge, err error) {
+func (c *challenges) Update(ctx context.Context, challenge *v1alpha3.Challenge, opts v1.UpdateOptions) (result *v1alpha3.Challenge, err error) {
 	result = &v1alpha3.Challenge{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(challenge.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(challenge).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *challenges) UpdateStatus(challenge *v1alpha3.Challenge) (result *v1alpha3.Challenge, err error) {
+func (c *challenges) UpdateStatus(ctx context.Context, challenge *v1alpha3.Challenge, opts v1.UpdateOptions) (result *v1alpha3.Challenge, err error) {
 	result = &v1alpha3.Challenge{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(challenge.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(challenge).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the challenge and deletes it. Returns an error if one occurs.
-func (c *challenges) Delete(name string, options *v1.DeleteOptions) error {
+func (c *challenges) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("challenges").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *challenges) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *challenges) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("challenges").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched challenge.
-func (c *challenges) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha3.Challenge, err error) {
+func (c *challenges) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.Challenge, err error) {
 	result = &v1alpha3.Challenge{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("challenges").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
