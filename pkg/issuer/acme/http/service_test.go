@@ -36,7 +36,7 @@ func TestEnsureService(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -77,7 +77,7 @@ func TestEnsureService(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -130,7 +130,7 @@ func TestEnsureService(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -185,7 +185,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -218,7 +218,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},

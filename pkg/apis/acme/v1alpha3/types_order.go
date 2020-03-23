@@ -22,9 +22,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
-// TODO: these types should be moved into their own API group once we have a loose
-// coupling between ACME Issuers and their solver configurations (see: Solver proposal)
-
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

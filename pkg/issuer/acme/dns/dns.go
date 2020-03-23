@@ -173,12 +173,11 @@ func followCNAME(strategy cmacme.CNAMEStrategy) bool {
 }
 
 func extractChallengeSolverConfig(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverDNS01, error) {
-	switch {
-	case ch.Spec.Solver != nil:
-		return ch.Spec.Solver.DNS01, nil
-	default:
+	if ch.Spec.Solver.DNS01 == nil {
 		return nil, fmt.Errorf("no dns01 challenge solver configuration found")
 	}
+
+	return ch.Spec.Solver.DNS01, nil
 }
 
 // solverForChallenge returns a Solver for the given providerName.
