@@ -116,13 +116,21 @@ func ingressServiceName(ing *extv1beta1.Ingress) string {
 	return ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServiceName
 }
 
-// createIngress will create a challenge solving pod for the given certificate,
+// createIngress will create a challenge solving ingress for the given certificate,
 // domain, token and key.
 func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
 	ing, err := buildIngressResource(ch, svcName)
 	if err != nil {
 		return nil, err
 	}
+
+	// Override the defaults if they have changed in the ingress template.
+	if ch.Spec.Solver != nil &&
+		ch.Spec.Solver.HTTP01 != nil &&
+		ch.Spec.Solver.HTTP01.Ingress != nil {
+		ing = s.mergeIngressObjectMetaWithIngressResourceTemplate(ing, ch.Spec.Solver.HTTP01.Ingress.IngressTemplate)
+	}
+
 	return s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Create(ing)
 }
 
@@ -137,8 +145,10 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 	}
 
 	podLabels := podLabels(ch)
-	// TODO: add additional annotations to help workaround problematic ingress controller behaviours
+
 	ingAnnotations := make(map[string]string)
+
+	// TODO: Figure out how to remove this without breaking users who depend on it.
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
 
 	if ingClass != nil {
@@ -168,6 +178,31 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 			},
 		},
 	}, nil
+}
+
+// Merge object meta from the ingress template. Fall back to default values.
+func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *extv1beta1.Ingress, ingressTempl *cmacme.ACMEChallengeSolverHTTP01IngressTemplate) *extv1beta1.Ingress {
+	if ingressTempl == nil {
+		return ingress
+	}
+
+	if ingress.Labels == nil {
+		ingress.Labels = make(map[string]string)
+	}
+
+	for k, v := range ingressTempl.Labels {
+		ingress.Labels[k] = v
+	}
+
+	if ingress.Annotations == nil {
+		ingress.Annotations = make(map[string]string)
+	}
+
+	for k, v := range ingressTempl.Annotations {
+		ingress.Annotations[k] = v
+	}
+
+	return ingress
 }
 
 func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
