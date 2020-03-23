@@ -173,7 +173,7 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	c.experimentalIssueJKS = ctx.CertificateOptions.ExperimentalIssueJKS
 	c.experimentalJKSPassword = ctx.CertificateOptions.ExperimentalJKSPassword
 	if c.experimentalIssueJKS && len(c.experimentalJKSPassword) == 0 {
-		return nil, nil, nil, fmt.Errorf("if experimental pkcs12 issuance is enabled, a keystore password must be provided")
+		return nil, nil, nil, fmt.Errorf("if experimental jks issuance is enabled, a keystore password must be provided")
 	}
 
 	c.cmClient = ctx.CMClient
