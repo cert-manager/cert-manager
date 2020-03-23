@@ -329,7 +329,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAcco
 
 func (a *Acme) getEABKey(ns string) ([]byte, error) {
 	eab := a.issuer.GetSpec().ACME.ExternalAccountBinding.Key
-	sec, err := a.Client.CoreV1().Secrets(ns).Get(eab.Name, metav1.GetOptions{})
+	sec, err := a.Client.CoreV1().Secrets(ns).Get(context.TODO(), eab.Name, metav1.GetOptions{})
 	// Surface IsNotFound API error to not cause re-sync
 	if apierrors.IsNotFound(err) {
 		return nil, err
@@ -365,7 +365,7 @@ func (a *Acme) createAccountPrivateKey(sel cmmeta.SecretKeySelector, ns string) 
 		return nil, err
 	}
 
-	_, err = a.Client.CoreV1().Secrets(ns).Create(&v1.Secret{
+	_, err = a.Client.CoreV1().Secrets(ns).Create(context.TODO(), &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,
@@ -373,7 +373,7 @@ func (a *Acme) createAccountPrivateKey(sel cmmeta.SecretKeySelector, ns string) 
 		Data: map[string][]byte{
 			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
 		},
-	})
+	}, metav1.CreateOptions{})
 
 	if err != nil {
 		return nil, err

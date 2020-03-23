@@ -17,6 +17,7 @@ limitations under the License.
 package certificate
 
 import (
+	"context"
 	"crypto/x509"
 	"time"
 
@@ -81,7 +82,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
 			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
@@ -102,7 +103,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying ACME account private key exists")
-			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), testingACMEPrivateKey, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			if len(secret.Data) != 1 {
 				Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
@@ -111,8 +112,8 @@ func testDNSProvider(name string, p dns01Provider) bool {
 
 		AfterEach(func() {
 			By("Cleaning up")
-			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
+			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
+			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), testingACMEPrivateKey, metav1.DeleteOptions{})
 		})
 
 		It("should obtain a signed certificate for a regular domain", func() {
@@ -124,7 +125,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				[]string{dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = crClient.Create(cr)
+			cr, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
@@ -137,7 +138,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				[]string{"*." + dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name).Create(cr)
+			cr, err = f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
@@ -150,7 +151,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				[]string{"*." + dnsDomain, dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name).Create(cr)
+			cr, err = f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*10, key)

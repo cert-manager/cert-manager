@@ -17,6 +17,7 @@ limitations under the License.
 package helper
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -35,7 +36,7 @@ func (h *Helper) WaitForSecretCertificateData(ns, name string, timeout time.Dura
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for Secret %s:%s to contain a certificate", ns, name)
-			secret, err = h.KubeClient.CoreV1().Secrets(ns).Get(name, metav1.GetOptions{})
+			secret, err = h.KubeClient.CoreV1().Secrets(ns).Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting secret %s: %s", name, err)
 			}

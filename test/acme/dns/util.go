@@ -17,6 +17,7 @@ limitations under the License.
 package dns
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,11 +39,11 @@ var (
 )
 
 func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
-	if _, err := f.clientset.CoreV1().Namespaces().Create(&corev1.Namespace{
+	if _, err := f.clientset.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-	}); err != nil {
+	}, metav1.CreateOptions{}); err != nil {
 		t.Fatalf("error creating test namespace %q: %v", name, err)
 	}
 
@@ -78,7 +79,7 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 	}
 
 	return name, func() {
-		f.clientset.CoreV1().Namespaces().Delete(name, nil)
+		f.clientset.CoreV1().Namespaces().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	}
 }
 

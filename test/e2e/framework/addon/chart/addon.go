@@ -17,6 +17,7 @@ limitations under the License.
 package chart
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -226,13 +227,13 @@ func (c *Chart) SupportsGlobal() bool {
 
 func (c *Chart) Logs() (map[string]string, error) {
 	kc := c.Base.Details().KubeClient
-	oldLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
+	oldLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
 	if err != nil {
 		return nil, err
 	}
 
 	// also check pods with the new style labels used in the cert-manager chart
-	newLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + c.ReleaseName})
+	newLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + c.ReleaseName})
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +246,7 @@ func (c *Chart) Logs() (map[string]string, error) {
 				resp := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
 					Container: con.Name,
 					Previous:  b,
-				}).Do()
+				}).Do(context.TODO())
 
 				err := resp.Error()
 				if err != nil {

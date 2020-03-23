@@ -121,7 +121,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 	if k8sErrors.IsNotFound(err) {
 		// Failing to create the order here is most likely network related.
 		// We should backoff and keep trying.
-		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(expectedOrder)
+		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(context.TODO(), expectedOrder, metav1.CreateOptions{})
 		if err != nil {
 			message := fmt.Sprintf("Failed create new order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
 
@@ -175,7 +175,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		x509Cert, err := pki.DecodeX509CertificateBytes(order.Status.Certificate)
 		if errors.IsInvalidData(err) {
 			log.Error(err, "failed to decode x509 certificate data on Order resource")
-			return nil, a.acmeClientV.Orders(order.Namespace).Delete(order.Name, nil)
+			return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
 		}
 		ok, err := pki.PublicKeyMatchesCertificate(csr.PublicKey, x509Cert)
 		if err != nil {
@@ -183,7 +183,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		}
 		if !ok {
 			log.Error(err, "failed to decode x509 certificate data on Order resource, recreating...")
-			return nil, a.acmeClientV.Orders(order.Namespace).Delete(order.Name, nil)
+			return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
 		}
 
 		log.Info("certificate issued")

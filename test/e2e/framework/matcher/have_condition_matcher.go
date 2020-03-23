@@ -17,6 +17,7 @@ limitations under the License.
 package matcher
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -54,11 +55,11 @@ func toGenericCondition(c interface{}) (*genericCondition, error) {
 func (c *conditionMatcher) getUpToDateResource(obj interface{}) (interface{}, error) {
 	switch obj := obj.(type) {
 	case *cmapi.Certificate:
-		return c.f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+		return c.f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	case *cmapi.Issuer:
-		return c.f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+		return c.f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	case *cmapi.CertificateRequest:
-		return c.f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+		return c.f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	default:
 		return nil, fmt.Errorf("unsupported resource type %T", c)
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package acme
 
 import (
+	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
@@ -41,15 +42,15 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
+		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), testingACMEPrivateKey, metav1.DeleteOptions{})
 	})
 
 	It("should register ACME account", func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -73,7 +74,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), testingACMEPrivateKey, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		if len(secret.Data) != 1 {
 			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
@@ -84,7 +85,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -110,7 +111,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), testingACMEPrivateKey, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		if len(secret.Data) != 1 {
@@ -118,12 +119,12 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		}
 
 		By("Deleting the Issuer")
-		err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(acmeIssuer.Name, &metav1.DeleteOptions{})
+		err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), acmeIssuer.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Recreating the Issuer")
 		acmeIssuer = util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -155,7 +156,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, invalidACMEURL, testingACMEEmail, testingACMEPrivateKey)
 
 		By("Creating an Issuer with an invalid server")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become non-Ready")
@@ -172,7 +173,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 
 		By("Creating an Issuer")
-		acmeIssuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
+		acmeIssuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -196,7 +197,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), testingACMEPrivateKey, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		if len(secret.Data) != 1 {
 			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
@@ -215,9 +216,9 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Changing the email field")
-		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Get(acmeIssuer.Name, metav1.GetOptions{})
+		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Get(context.TODO(), acmeIssuer.Name, metav1.GetOptions{})
 		acmeIssuer.Spec.ACME.Email = testingACMEEmailAlternative
-		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Update(acmeIssuer)
+		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Update(context.TODO(), acmeIssuer, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")

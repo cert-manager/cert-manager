@@ -17,6 +17,7 @@ limitations under the License.
 package dnsproviders
 
 import (
+	"context"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -77,7 +78,7 @@ func (b *Cloudflare) Provision() error {
 		},
 	}
 
-	s, err := b.Base.Details().KubeClient.CoreV1().Secrets(b.Namespace).Create(secret)
+	s, err := b.Base.Details().KubeClient.CoreV1().Secrets(b.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -100,7 +101,7 @@ func (b *Cloudflare) Provision() error {
 }
 
 func (b *Cloudflare) Deprovision() error {
-	b.Base.Details().KubeClient.CoreV1().Secrets(b.createdSecret.Namespace).Delete(b.createdSecret.Name, nil)
+	b.Base.Details().KubeClient.CoreV1().Secrets(b.createdSecret.Namespace).Delete(context.TODO(), b.createdSecret.Name, metav1.DeleteOptions{})
 	return nil
 }
 

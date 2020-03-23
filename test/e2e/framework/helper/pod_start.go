@@ -17,6 +17,7 @@ limitations under the License.
 package helper
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -45,7 +46,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespace(ns string) error {
 func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time.Duration) error {
 	ginkgo.By("Waiting " + timeout.String() + " for all pods in namespace '" + ns + "' to be Ready")
 	return wait.PollImmediate(Poll, timeout, func() (bool, error) {
-		pods, err := h.KubeClient.CoreV1().Pods(ns).List(metav1.ListOptions{})
+		pods, err := h.KubeClient.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}

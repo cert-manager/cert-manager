@@ -17,10 +17,12 @@ limitations under the License.
 package tpp
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -53,7 +55,7 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 
 		By("Creating a Venafi Issuer resource")
 		issuer = tppAddon.Details().BuildIssuer()
-		issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+		issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -68,7 +70,7 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuer.Name, nil)
+		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
 	})
 
 	It("should obtain a signed certificate for a single domain", func() {
@@ -78,7 +80,7 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		crt.Spec.CommonName = cmutil.RandStringRunes(10) + ".venafi-e2e.example"
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(crt)
+		_, err := certClient.Create(context.TODO(), crt, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")

@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -83,7 +84,7 @@ var cmd = &cobra.Command{
 			return err
 		}
 
-		ingList, err := client.ExtensionsV1beta1().Ingresses("").List(metav1.ListOptions{})
+		ingList, err := client.ExtensionsV1beta1().Ingresses("").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return err
 		}

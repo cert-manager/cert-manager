@@ -18,6 +18,7 @@ limitations under the License.
 package vault
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -140,7 +141,7 @@ func (v *Vault) Provision() error {
 
 	retries := 5
 	for {
-		pods, err := kubeClient.CoreV1().Pods(v.Namespace).List(metav1.ListOptions{
+		pods, err := kubeClient.CoreV1().Pods(v.Namespace).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "app=vault",
 		})
 		if err != nil {

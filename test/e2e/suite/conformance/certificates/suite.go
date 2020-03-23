@@ -451,11 +451,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred(), "failed to generate expected name for created Certificate")
 
 			Expect(f.CertManagerClientSet.CertmanagerV1alpha2().
-				CertificateRequests(f.Namespace.Name).Delete(expectedReqName, &metav1.DeleteOptions{})).
+				CertificateRequests(f.Namespace.Name).Delete(context.TODO(), expectedReqName, metav1.DeleteOptions{})).
 				NotTo(HaveOccurred(), "failed to delete owned CertificateRequest")
 
 			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
-				Get(testCertificate.Spec.SecretName, metav1.GetOptions{})
+				Get(context.TODO(), testCertificate.Spec.SecretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
 
 			sec = sec.DeepCopy()
@@ -465,7 +465,7 @@ func (s *Suite) Define() {
 
 			sec.Data[corev1.TLSCertKey] = []byte{}
 
-			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(sec)
+			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.TODO(), sec, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate data")
 
 			By("Waiting for the Certificate to re-issue a certificate")
@@ -492,11 +492,11 @@ func (s *Suite) Define() {
 			secretName := "testcert-ingress-tls"
 
 			By("Creating an Ingress with the issuer name annotation set")
-			ingress, err := ingClient.Create(e2eutil.NewIngress(name, secretName, map[string]string{
+			ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
 				"cert-manager.io/issuer":       issuerRef.Name,
 				"cert-manager.io/issuer-kind":  issuerRef.Kind,
 				"cert-manager.io/issuer-group": issuerRef.Group,
-			}, s.newDomain()))
+			}, s.newDomain()), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			certName := ingress.Spec.TLS[0].SecretName

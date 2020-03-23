@@ -17,6 +17,7 @@ limitations under the License.
 package clusterissuers
 
 import (
+	"context"
 	"reflect"
 	"runtime/debug"
 	"testing"
@@ -59,7 +60,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 
 	originalIssuer := newFakeIssuerWithStatus("test", v1alpha2.IssuerStatus{})
 
-	issuer, err := fakeClient.CertmanagerV1alpha2().ClusterIssuers().Create(originalIssuer)
+	issuer, err := fakeClient.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), originalIssuer, metav1.CreateOptions{})
 	assertErrIsNil(t, fatalf, err)
 
 	assertNumberOfActions(t, fatalf, filter(fakeClient.Actions()), 1)

@@ -131,7 +131,7 @@ func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*extv1beta
 		ing = s.mergeIngressObjectMetaWithIngressResourceTemplate(ing, ch.Spec.Solver.HTTP01.Ingress.IngressTemplate)
 	}
 
-	return s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Create(ing)
+	return s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Create(context.TODO(), ing, metav1.CreateOptions{})
 }
 
 func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
@@ -234,11 +234,11 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 						return ing, nil
 					}
 					rule.HTTP.Paths[i] = ingPathToAdd
-					return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
+					return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
 				}
 			}
 			rule.HTTP.Paths = append([]extv1beta1.HTTPIngressPath{ingPathToAdd}, rule.HTTP.Paths...)
-			return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
+			return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
 		}
 	}
 
@@ -251,7 +251,7 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 			},
 		},
 	})
-	return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
+	return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
 }
 
 // cleanupIngresses will remove the rules added by cert-manager to an existing
@@ -278,7 +278,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 			log := logf.WithRelatedResource(log, ingress).V(logf.DebugLevel)
 
 			log.Info("deleting ingress resource")
-			err := s.Client.ExtensionsV1beta1().Ingresses(ingress.Namespace).Delete(ingress.Name, nil)
+			err := s.Client.ExtensionsV1beta1().Ingresses(ingress.Namespace).Delete(context.TODO(), ingress.Name, metav1.DeleteOptions{})
 			if err != nil {
 				log.Info("failed to delete ingress resource", "error", err)
 				errs = append(errs, err)
@@ -290,7 +290,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 	}
 
 	// otherwise, we need to remove any cert-manager added rules from the ingress resource
-	ing, err := s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Get(existingIngressName, metav1.GetOptions{})
+	ing, err := s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Get(context.TODO(), existingIngressName, metav1.GetOptions{})
 	if k8sErrors.IsNotFound(err) {
 		log.Error(err, "named ingress resource not found, skipping cleanup")
 		return nil
@@ -333,7 +333,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 
 	ing.Spec.Rules = ingRules
 
-	_, err = s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
+	_, err = s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

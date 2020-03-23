@@ -17,6 +17,7 @@ limitations under the License.
 package certificate
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -74,7 +75,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
 			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
@@ -95,7 +96,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying ACME account private key exists")
-			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), testingACMEPrivateKey, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			if len(secret.Data) != 1 {
 				Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
@@ -104,9 +105,9 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 		AfterEach(func() {
 			By("Cleaning up")
-			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
-			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
+			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
+			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), testingACMEPrivateKey, metav1.DeleteOptions{})
+			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), certificateSecretName, metav1.DeleteOptions{})
 		})
 
 		It("should call the dummy webhook provider and mark the challenges as presented=true", func() {
@@ -121,7 +122,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			)
 			cert.Namespace = f.Namespace.Name
 
-			cert, err := certClient.Create(cert)
+			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			var order *cmacme.Order
@@ -173,7 +174,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 })
 
 func listOwnedChallenges(cl versioned.Interface, owner *cmacme.Order) ([]*cmacme.Challenge, error) {
-	l, err := cl.AcmeV1alpha2().Challenges(owner.Namespace).List(metav1.ListOptions{})
+	l, err := cl.AcmeV1alpha2().Challenges(owner.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +191,7 @@ func listOwnedChallenges(cl versioned.Interface, owner *cmacme.Order) ([]*cmacme
 }
 
 func listOwnedOrders(cl versioned.Interface, owner *v1alpha2.Certificate) ([]*cmacme.Order, error) {
-	l, err := cl.AcmeV1alpha2().Orders(owner.Namespace).List(metav1.ListOptions{})
+	l, err := cl.AcmeV1alpha2().Orders(owner.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

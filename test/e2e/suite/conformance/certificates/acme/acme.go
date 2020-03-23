@@ -17,6 +17,7 @@ limitations under the License.
 package acme
 
 import (
+	"context"
 	"encoding/base64"
 
 	. "github.com/onsi/ginkgo"
@@ -112,12 +113,12 @@ type acmeIssuerProvisioner struct {
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	if a.eab != nil {
-		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(a.eab.Key.Name, nil)
+		err := f.KubeClientSet.CoreV1().Secrets(a.secretNamespace).Delete(context.TODO(), a.eab.Key.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 
 	if ref.Kind == "ClusterIssuer" {
-		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(ref.Name, nil)
+		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
@@ -139,7 +140,7 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
 	return cmmeta.ObjectReference{
@@ -160,7 +161,7 @@ func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework
 		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
 
 	return cmmeta.ObjectReference{
@@ -207,7 +208,7 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 		},
 		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
 
 	return cmmeta.ObjectReference{
@@ -227,7 +228,7 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 		},
 		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
 
 	return cmmeta.ObjectReference{
@@ -271,7 +272,7 @@ func (a *acmeIssuerProvisioner) ensureEABSecret(f *framework.Framework, ns strin
 	if ns == "" {
 		ns = f.Namespace.Name
 	}
-	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(&corev1.Secret{
+	sec, err := f.KubeClientSet.CoreV1().Secrets(ns).Create(context.TODO(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "external-account-binding-",
 			Namespace:    ns,
@@ -280,7 +281,7 @@ func (a *acmeIssuerProvisioner) ensureEABSecret(f *framework.Framework, ns strin
 			// base64 url encode (without padding) the HMAC key
 			"key": []byte(base64.RawURLEncoding.EncodeToString([]byte("kid-secret-1"))),
 		},
-	})
+	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	a.eab.Key = cmmeta.SecretKeySelector{

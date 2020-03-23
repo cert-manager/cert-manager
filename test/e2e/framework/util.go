@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -58,7 +59,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 		},
 	}
 	serviceAccountClient := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name)
-	serviceAccount, err := serviceAccountClient.Create(viewServiceAccount)
+	serviceAccount, err := serviceAccountClient.Create(context.TODO(), viewServiceAccount, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	viewServiceAccountName := serviceAccount.Name
 
@@ -77,7 +78,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 		},
 	}
 	roleBindingClient := f.KubeClientSet.RbacV1().ClusterRoleBindings()
-	_, err = roleBindingClient.Create(viewRoleBinding)
+	_, err = roleBindingClient.Create(context.TODO(), viewRoleBinding, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Sleeping for a second.")
@@ -103,7 +104,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 			},
 		},
 	}
-	response, err := sarClient.Create(sar)
+	response, err := sarClient.Create(context.TODO(), sar, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	return response.Status.Allowed
 }

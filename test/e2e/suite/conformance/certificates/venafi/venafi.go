@@ -17,8 +17,11 @@ limitations under the License.
 package venafi
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -63,7 +66,7 @@ func (v *venafiProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectRefe
 	Expect(v.tpp.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tpp venafi")
 
 	if ref.Kind == "ClusterIssuer" {
-		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(ref.Name, nil)
+		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
@@ -84,7 +87,7 @@ func (v *venafiProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectRe
 	Expect(v.tpp.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := v.tpp.Details().BuildIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return cmmeta.ObjectReference{
@@ -110,7 +113,7 @@ func (v *venafiProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.O
 	Expect(v.tpp.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := v.tpp.Details().BuildClusterIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(issuer)
+	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return cmmeta.ObjectReference{
