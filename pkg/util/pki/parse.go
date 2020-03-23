@@ -110,7 +110,7 @@ func DecodeX509CertificateChainBytes(certBytes []byte) ([]*x509.Certificate, err
 	}
 
 	if len(certs) == 0 {
-		return nil, errors.NewInvalidData("error decoding cert PEM block")
+		return nil, errors.NewInvalidData("error decoding certificate PEM block")
 	}
 
 	return certs, nil

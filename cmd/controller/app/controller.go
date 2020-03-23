@@ -231,7 +231,11 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
 		},
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef: opts.EnableCertificateOwnerRef,
+			EnableOwnerRef:                     opts.EnableCertificateOwnerRef,
+			ExperimentalIssuePKCS12:            opts.ExperimentalIssuePKCS12,
+			ExperimentalPKCS12KeystorePassword: opts.ExperimentalPKCS12KeystorePassword,
+			ExperimentalIssueJKS:               opts.ExperimentalIssueJKS,
+			ExperimentalJKSPassword:            opts.ExperimentalJKSPassword,
 		},
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
