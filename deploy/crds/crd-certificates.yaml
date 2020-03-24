@@ -219,8 +219,8 @@ spec:
                   type: string
               usages:
                 description: Usages is the set of x509 actions that are enabled for
-                  a given key. Defaults are ('digital signature', 'key encipherment')
-                  if empty
+                  a given key. Defaults are ('digital signature', 'key encipherment',
+                  'server auth', 'client auth') if empty
                 type: array
                 items:
                   description: 'KeyUsage specifies valid usage contexts for keys.
