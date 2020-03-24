@@ -167,5 +167,7 @@ const (
 func DefaultKeyUsages() []KeyUsage {
 	// The serverAuth EKU is required as of Mac OS Catalina: https://support.apple.com/en-us/HT210176
 	// Without this usage, certificates will _always_ flag a warning in newer Mac OS browsers.
-	return []KeyUsage{UsageDigitalSignature, UsageKeyEncipherment, UsageServerAuth}
+	// The clientAuth usage is required for certificates to be used by gRPC and is more consistent
+	// with how ACME certificates are issued
+	return []KeyUsage{UsageDigitalSignature, UsageKeyEncipherment, UsageServerAuth, UsageClientAuth}
 }
