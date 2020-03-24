@@ -28,7 +28,7 @@ API stability.
 Notably, we may choose to make breaking changes to our API specification (i.e. the
 Issuer, ClusterIssuer and Certificate resources) in new minor releases.
 
-These will always be clearly documented in the [upgrade section of the documentation](https://docs.cert-manager.io/en/latest/admin/upgrading/index.html).
+These will always be clearly documented in the [upgrade section of the documentation](https://cert-manager.io/docs/installation/upgrading/).
 
 ## Documentation
 
