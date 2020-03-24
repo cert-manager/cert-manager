@@ -74,8 +74,6 @@ func (o *Options) Validate() error {
 
 // Run executes version command
 func (o *Options) Run() error {
-	var err error
-
 	versionInfo := util.VersionInfo()
 
 	switch o.Output {
@@ -103,5 +101,5 @@ func (o *Options) Run() error {
 		return fmt.Errorf("VersionOptions were not validated: --output=%q should have been rejected", o.Output)
 	}
 
-	return err
+	return nil
 }
