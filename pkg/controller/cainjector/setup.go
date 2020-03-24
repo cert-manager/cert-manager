@@ -75,19 +75,12 @@ var (
 func registerAllInjectors(mgr ctrl.Manager, sources ...caDataSource) error {
 	for _, setup := range injectorSetups {
 		if err := registerInjector(mgr, setup, sources...); err != nil {
-			if meta.IsNoMatchError(err) {
-				if setup.injector.IsAlpha() {
-					ctrl.Log.Info("unable to register injector which is still in an alpha phase."+
-						" Enable the feature on the API server in order to use this injector",
-						"injector", setup)
-				} else {
-					ctrl.Log.Error(err,
-						"failed to register certificate based injector.",
-						"injector", setup)
-				}
-			} else {
+			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
 			}
+			ctrl.Log.Info("unable to register injector which is still in an alpha phase."+
+				" Enable the feature on the API server in order to use this injector",
+				"injector", setup.resourceName)
 		}
 	}
 	return nil
