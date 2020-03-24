@@ -408,13 +408,12 @@ func (c *controller) updateSecret(secret *corev1.Secret, pk, ca, crt []byte) err
 	secret.Data[cmmeta.TLSCAKey] = ca
 	secret.Type = corev1.SecretTypeTLS
 
-	_, err := c.kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret)
-	if apierrors.IsAlreadyExists(err) {
-		// If the secret already exists then we should update it
+	var err error
+	if secret.ResourceVersion == "" {
+		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret)
+	} else {
 		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(secret)
-		return err
 	}
-
 	if err != nil {
 		return err
 	}
