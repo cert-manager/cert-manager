@@ -16,7 +16,14 @@ limitations under the License.
 
 package tls
 
-import "crypto/tls"
+import (
+	"crypto/tls"
+	"errors"
+)
+
+var (
+	ErrNotAvailable = errors.New("no tls.Certificate available")
+)
 
 type CertificateSource interface {
 	// GetCertificate returns a Certificate based on the given
