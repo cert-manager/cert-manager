@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	"github.com/jetstack/cert-manager/pkg/webhook/server"
+	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
 )
 
 var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logs.Log, webhook.Scheme, webhook.ValidationRegistry)
@@ -33,16 +34,17 @@ var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaul
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
 func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struct{}) error {
-	var source server.CertificateSource
-	if opts.TLSCertFile == "" || opts.TLSKeyFile == "" {
-		log.Info("warning: serving insecurely as tls certificate data not provided")
-	} else {
-		log.Info("enabling TLS as certificate file flags specified")
-		source = &server.FileCertificateSource{
+	var source tls.CertificateSource
+	switch {
+	case opts.TLSCertFile != "" || opts.TLSKeyFile != "":
+		log.Info("using TLS certificate from local filesystem", "private_key_path", opts.TLSKeyFile, "certificate", opts.TLSCertFile)
+		source = &tls.FileCertificateSource{
 			CertPath: opts.TLSCertFile,
 			KeyPath:  opts.TLSKeyFile,
 			Log:      log,
 		}
+	default:
+		log.Info("warning: serving insecurely as tls certificate data not provided")
 	}
 
 	srv := server.Server{

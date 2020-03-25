@@ -11,6 +11,7 @@ go_library(
         "//pkg/webhook:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/server:go_default_library",
+        "//pkg/webhook/server/tls:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
     ],
 )

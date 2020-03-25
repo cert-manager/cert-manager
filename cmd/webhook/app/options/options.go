@@ -24,8 +24,11 @@ type WebhookOptions struct {
 	ListenPort  int
 	HealthzPort int
 
-	TLSCertFile     string
-	TLSKeyFile      string
+	// Path to TLS certificate and private key on disk.
+	// Both must be specified if either is.
+	TLSCertFile string
+	TLSKeyFile  string
+
 	TLSCipherSuites []string
 }
 
