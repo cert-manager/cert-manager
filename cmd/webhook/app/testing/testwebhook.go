@@ -56,7 +56,7 @@ type ServerOptions struct {
 
 func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	// Allow user to override options using flags
-	opts := &options.WebhookOptions{}
+	opts := options.WebhookOptions{}
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	opts.AddFlags(fs)
 	// Parse the arguments passed in into the WebhookOptions struct
@@ -67,7 +67,7 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if opts.TLSKeyFile == "" && opts.TLSCertFile == "" {
+	if !options.FileTLSSourceEnabled(opts) && !options.DynamicTLSSourceEnabled(opts) {
 		// Generate a CA and serving certificate
 		ca, certificatePEM, privateKeyPEM, err := generateTLSAssets()
 		if err != nil {
@@ -88,20 +88,21 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 
 	stopCh := make(chan struct{})
 	go func() {
-		if err := app.RunServer(log, *opts, stopCh); err != nil {
+		if err := app.RunServer(log, opts, stopCh); err != nil {
 			t.Fatalf("error running webhook server: %v", err)
 		}
 	}()
 
-	return ServerOptions{
-			URL:   fmt.Sprintf("https://127.0.0.1:%d", opts.ListenPort),
-			CAPEM: caPEM,
-		}, func() {
-			close(stopCh)
-			if err := os.RemoveAll(tempDir); err != nil {
-				t.Fatal(err)
-			}
+	serverOpts := ServerOptions{
+		URL:   fmt.Sprintf("https://127.0.0.1:%d", opts.ListenPort),
+		CAPEM: caPEM,
+	}
+	return serverOpts, func() {
+		close(stopCh)
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Fatal(err)
 		}
+	}
 }
 
 func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error) {
