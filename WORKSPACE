@@ -63,47 +63,28 @@ git_repository(
     shallow_since = "1561646721 -0700",
 )
 
-load(
-    "@io_bazel_rules_docker//repositories:repositories.bzl",
-    container_repositories = "repositories",
-)
+load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
 
 container_repositories()
 
-load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
-)
-load(
-    "@io_bazel_rules_docker//go:image.bzl",
-    _go_image_repos = "repositories",
-)
+load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 
 _go_image_repos()
 
-## Use 'static' distroless image for all builds
-container_pull(
-    name = "static_base",
-    registry = "gcr.io",
-    repository = "distroless/static",
-    digest = "sha256:cd0679a54d2abaf3644829f5e290ad8a10688847475f570fddb9963318cf9390",
-)
-
 # Load and define targets defined in //hack/bin
-load(
-    "//hack/bin:deps.bzl",
-    install_hack_bin = "install",
-)
+load("//hack/bin:deps.bzl", install_hack_bin = "install")
 
 install_hack_bin()
 
-# Load and define targets defined in //hack/bin
-load(
-    "//test/e2e:images.bzl",
-    install_e2e_images = "install",
-)
+# Load and define targets defined in //test/e2e
+load("//test/e2e:images.bzl", install_e2e_images = "install")
 
 install_e2e_images()
+
+# Install build image targets
+load("//build:images.bzl", "define_base_images")
+
+define_base_images()
 
 load("//hack/build:repos.bzl", "go_repositories")
 
