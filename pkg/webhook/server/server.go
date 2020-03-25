@@ -25,8 +25,6 @@ import (
 	"net/http"
 	"time"
 
-	ciphers "k8s.io/component-base/cli/flag"
-
 	"github.com/go-logr/logr"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -34,10 +32,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	ciphers "k8s.io/component-base/cli/flag"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
+	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
 )
 
 var (
@@ -87,7 +87,7 @@ type Server struct {
 
 	// If specified, the server will listen with TLS using certificates
 	// provided by this CertificateSource.
-	CertificateSource CertificateSource
+	CertificateSource servertls.CertificateSource
 
 	ValidationWebhook handlers.ValidatingAdmissionHook
 	MutationWebhook   handlers.MutatingAdmissionHook
