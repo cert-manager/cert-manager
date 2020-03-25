@@ -99,10 +99,6 @@ spec:
           - --default-issuer-group={{ .defaultIssuerGroup }}
           {{- end }}
           {{- end }}
-          - --webhook-namespace=$(POD_NAMESPACE)
-          - --webhook-ca-secret={{ include "webhook.rootCACertificate" . }}
-          - --webhook-serving-secret={{ include "webhook.servingCertificate" . }}
-          - --webhook-dns-names={{ .Values.webhook.serviceName }},{{ .Values.webhook.serviceName }}.{{ .Release.Namespace }},{{ .Values.webhook.serviceName }}.{{ .Release.Namespace }}.svc
           ports:
           - containerPort: 9402
             protocol: TCP

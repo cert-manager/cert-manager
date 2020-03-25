@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: issuers.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-tls
+    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status

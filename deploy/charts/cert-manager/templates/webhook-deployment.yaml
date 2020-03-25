@@ -56,8 +56,9 @@ spec:
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           - --secure-port={{ .Values.webhook.securePort }}
-          - --tls-cert-file=/certs/tls.crt
-          - --tls-private-key-file=/certs/tls.key
+          - --dynamic-serving-ca-secret-namespace={{ .Release.Namespace }}
+          - --dynamic-serving-ca-secret-name={{ .Values.webhook.rootCASecretName }}
+          - --dynamic-serving-dns-names={{ .Values.webhook.serviceName }},{{ .Values.webhook.serviceName }}.{{ .Release.Namespace }},{{ .Values.webhook.serviceName }}.{{ .Release.Namespace }}.svc
         {{- if .Values.webhook.extraArgs }}
 {{ toYaml .Values.webhook.extraArgs | indent 10 }}
         {{- end }}
@@ -66,11 +67,15 @@ spec:
               path: /livez
               port: 6080
               scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /healthz
               port: 6080
               scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
           env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -78,13 +83,6 @@ spec:
                 fieldPath: metadata.namespace
           resources:
 {{ toYaml .Values.webhook.resources | indent 12 }}
-          volumeMounts:
-          - name: certs
-            mountPath: /certs
-      volumes:
-      - name: certs
-        secret:
-          secretName: {{ include "webhook.servingCertificate" . }}
     {{- with .Values.webhook.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
