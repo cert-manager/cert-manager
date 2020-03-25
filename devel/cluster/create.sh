@@ -57,6 +57,10 @@ elif [[ "$K8S_VERSION" =~ 1\.17 ]] ; then
   # v1.17.0 @ sha256:9512edae126da271b66b990b6fff768fbb7cd786c7d39e86bdf55906352fdf62
   KIND_IMAGE_SHA="sha256:9512edae126da271b66b990b6fff768fbb7cd786c7d39e86bdf55906352fdf62"
   KIND_IMAGE_CONFIG="v1beta2"
+elif [[ "$K8S_VERSION" =~ 1\.18 ]] ; then
+  # v1.18.0 @ sha256:0e20578828edd939d25eb98496a685c76c98d54084932f76069f886ec315d694
+  KIND_IMAGE_SHA="sha256:0e20578828edd939d25eb98496a685c76c98d54084932f76069f886ec315d694"
+  KIND_IMAGE_CONFIG="v1beta2"
 else
   echo "Unrecognised Kubernetes version '${K8S_VERSION}'! Aborting..."
   exit 1
