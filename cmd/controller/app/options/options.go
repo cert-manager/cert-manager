@@ -36,7 +36,6 @@ import (
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
-	"github.com/jetstack/cert-manager/pkg/controller/webhookbootstrap"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -79,21 +78,6 @@ type ControllerOptions struct {
 	EnableCertificateOwnerRef bool
 
 	MaxConcurrentChallenges int
-
-	// Namespace is the namespace the webhook CA and serving secret will be
-	// created in.
-	// If not specified, it will default to the same namespace as cert-manager.
-	WebhookNamespace string
-
-	// CASecretName is the name of the secret containing the webhook's root CA
-	WebhookCASecretName string
-
-	// ServingSecretName is the name of the secret containing the webhook's
-	// serving certificate
-	WebhookServingSecretName string
-
-	// DNSNames are the dns names that should be set on the serving certificate
-	WebhookDNSNames []string
 
 	// ExperimentalIssuePKCS12, if true, will make the certificates controller
 	// create a `keystore.p12` in the Secret resource for each Certificate.
@@ -178,7 +162,6 @@ var (
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
-		webhookbootstrap.ControllerName,
 		cracmecontroller.CRControllerName,
 		crcacontroller.CRControllerName,
 		crselfsignedcontroller.CRControllerName,
@@ -304,15 +287,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
-
-	fs.StringVar(&s.WebhookNamespace, "webhook-namespace", defaultWebhookNamespace, "The namespace the webhook component is running in, "+
-		"used for provisioning TLS certificates for the conversion webhook.")
-	fs.StringVar(&s.WebhookCASecretName, "webhook-ca-secret", defaultWebhookCASecretName, "The name of the Secret used to store the webhook's "+
-		"CA data.")
-	fs.StringVar(&s.WebhookServingSecretName, "webhook-serving-secret", defaultWebhookServingSecretName, "The name of the Secret used to store the webhook's "+
-		"serving certificate.")
-	fs.StringSliceVar(&s.WebhookDNSNames, "webhook-dns-names", defaultWebhookDNSNames, "Comma-separated list of DNS names that should be present on "+
-		"the webhook's serving certificate.")
 
 	fs.BoolVar(&s.ExperimentalIssuePKCS12, "experimental-issue-pkcs12", false, "If true, the certificate controller will create 'keystore.p12' files in Secret resources it "+
 		"manages, containing a copy of the certificate data encrypted using the provided --experimental-pkcs12-keystore-password. "+
