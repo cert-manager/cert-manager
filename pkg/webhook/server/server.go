@@ -19,6 +19,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -99,6 +100,8 @@ type Server struct {
 
 	// CipherSuites is a slice of TLS Cipher Suite names
 	CipherSuites []string
+
+	listener net.Listener
 }
 
 func (s *Server) Run(stopCh <-chan struct{}) error {
@@ -137,6 +140,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	s.listener = l
 
 	// wrap the listener with TLS if a CertificateSource is provided
 	if s.CertificateSource != nil {
@@ -188,6 +192,18 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	s.Log.Info("server shutdown successfully")
 
 	return err
+}
+
+// Port returns the port number that the webhook listener is listening on
+func (s *Server) Port() (int, error) {
+	if s.listener == nil {
+		return 0, errors.New("Run() must be called before Port()")
+	}
+	tcpAddr, ok := s.listener.Addr().(*net.TCPAddr)
+	if !ok {
+		return 0, errors.New("unexpected listen address type (expected tcp)")
+	}
+	return tcpAddr.Port, nil
 }
 
 func (s *Server) startServer(l net.Listener, stopCh <-chan struct{}, handle http.Handler) <-chan error {

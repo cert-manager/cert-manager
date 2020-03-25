@@ -36,6 +36,15 @@ var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaul
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
 func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struct{}) error {
+	srv, err := NewServerWithOptions(log, opts)
+	if err != nil {
+		return err
+	}
+
+	return srv.Run(stopCh)
+}
+
+func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server.Server, error) {
 	var source tls.CertificateSource
 	switch {
 	case options.FileTLSSourceEnabled(opts):
@@ -48,7 +57,7 @@ func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struc
 	case options.DynamicTLSSourceEnabled(opts):
 		restcfg, err := clientcmd.BuildConfigFromFlags("", opts.Kubeconfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		log.Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", opts.DynamicServingCASecretNamespace, "secret_name", opts.DynamicServingCASecretName)
@@ -66,7 +75,7 @@ func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struc
 		log.Info("warning: serving insecurely as tls certificate data not provided")
 	}
 
-	srv := server.Server{
+	return &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", opts.ListenPort),
 		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
 		EnablePprof:       true,
@@ -76,9 +85,5 @@ func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struc
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
 		Log:               log,
-	}
-	if err := srv.Run(stopCh); err != nil {
-		return err
-	}
-	return nil
+	}, nil
 }
