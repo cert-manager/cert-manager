@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,8 +30,12 @@ import (
 
 // Options is a struct to support version command
 type Options struct {
+	// Output is the target output format for the version string. This may be of
+	// value "", "json" or "yaml".
 	Output string
-	Short  bool
+
+	// If true, prints the version number.
+	Short bool
 
 	genericclioptions.IOStreams
 }
@@ -57,19 +61,20 @@ func NewCmdVersion(ioStreams genericclioptions.IOStreams) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&o.Output, "output", "o", o.Output, "One of 'yaml' or 'json'.")
-	cmd.Flags().BoolVar(&o.Short, "short", o.Short, "If true, print just the version number.")
+	cmd.Flags().StringVarP(&o.Output, "output", "o", "", "One of '', 'yaml' or 'json'.")
+	cmd.Flags().BoolVar(&o.Short, "short", false, "If true, print just the version number.")
 
 	return cmd
 }
 
 // Validate validates the provided options
 func (o *Options) Validate() error {
-	if o.Output != "" && o.Output != "yaml" && o.Output != "json" {
-		return errors.New(`--output must be 'yaml' or 'json'`)
+	switch o.Output {
+	case "", "yaml", "json":
+		return nil
+	default:
+		return errors.New(`--output must be '', 'yaml' or 'json'`)
 	}
-
-	return nil
 }
 
 // Run executes version command
