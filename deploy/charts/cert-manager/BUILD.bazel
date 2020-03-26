@@ -20,6 +20,18 @@ helm_pkg(
     path = "deploy/charts/cert-manager",
 )
 
+genrule(
+    name = "README",
+    srcs = [
+        "README.template.md",
+        "//:version",
+    ],
+    outs = ["README.md"],
+    cmd = "cat $(location README.template.md) | sed -e \"s:{{RELEASE_VERSION}}:$$(cat $(location //:version)):g\" > $@",
+    stamp = 1,
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "chart-srcs",
     srcs = glob(
