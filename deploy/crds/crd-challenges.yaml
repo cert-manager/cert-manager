@@ -205,8 +205,12 @@ spec:
                       - subscriptionID
                       properties:
                         clientID:
+                          description: if both this and ClientSecret are left unset
+                            MSI will be used
                           type: string
                         clientSecretSecretRef:
+                          description: if both this and ClientID are left unset MSI
+                            will be used
                           type: object
                           required:
                           - name
@@ -233,6 +237,8 @@ spec:
                         subscriptionID:
                           type: string
                         tenantID:
+                          description: when specifying ClientID and ClientSecret then
+                            this field is also needed
                           type: string
                     clouddns:
                       description: ACMEIssuerDNS01ProviderCloudDNS is a structure

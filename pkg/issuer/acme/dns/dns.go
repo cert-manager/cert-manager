@@ -331,6 +331,8 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 	case providerConfig.AzureDNS != nil:
 		dbg.Info("preparing to create AzureDNS provider")
 		secret := ""
+		// if ClientID is empty, then we try to use MSI (azure metadata API for credentials)
+		// if ClientID is empty we don't even try to get the ClientSecret because it would not be used
 		if providerConfig.AzureDNS.ClientID != "" {
 			clientSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AzureDNS.ClientSecret.Name)
 			if err != nil {

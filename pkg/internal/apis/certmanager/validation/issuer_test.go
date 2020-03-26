@@ -607,6 +607,133 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
 			},
 		},
+		"invalid azuredns missing clientSecret and tenantID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientID: "some-client-id",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), ""),
+				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns missing clientID and tenantID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientSecret: &cmmeta.SecretKeySelector{
+						Key: "some-key",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "some-secret-name",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientID"), ""),
+				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns missing clientID and clientSecret": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					TenantID: "some-tenant-id",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientID"), ""),
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns missing clientID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientSecret: &cmmeta.SecretKeySelector{
+						Key: "some-key",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "some-secret-name",
+						},
+					},
+					TenantID: "some-tenant-id",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientID"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns missing clientSecret": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					TenantID: "some-tenant-id",
+					ClientID: "some-client-id",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns clientSecret missing key": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					TenantID: "some-tenant-id",
+					ClientID: "some-client-id",
+					ClientSecret: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "some-secret-name",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns clientSecret missing secret name": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					TenantID: "some-tenant-id",
+					ClientID: "some-client-id",
+					ClientSecret: &cmmeta.SecretKeySelector{
+						Key: "some-key",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns missing tenantID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientID: "some-client-id",
+					ClientSecret: &cmmeta.SecretKeySelector{
+						Key: "some-key",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "some-secret-name",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
 		"missing akamai config": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{},

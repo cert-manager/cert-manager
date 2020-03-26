@@ -13,7 +13,6 @@ package azuredns
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"k8s.io/klog"
@@ -35,22 +34,6 @@ type DNSProvider struct {
 	zoneName          string
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for the Azure
-// DNS service.
-// Credentials are automatically detected from environment variables
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
-
-	clientID := os.Getenv("AZURE_CLIENT_ID")
-	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	tenantID := os.Getenv("AZURE_TENANT_ID")
-	resourceGroupName := ("AZURE_RESOURCE_GROUP")
-	zoneName := ("AZURE_ZONE_NAME")
-	environment := ("AZURE_ENVIRONMENT")
-
-	return NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName, dns01Nameservers, true)
-}
-
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
 func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool) (*DNSProvider, error) {
@@ -62,31 +45,10 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 			return nil, err
 		}
 	}
-	spt := &adal.ServicePrincipalToken{}
-	if clientID != "" {
-		klog.Info("azuredns authenticating with clientID and secret key")
-		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
-		if err != nil {
-			return nil, err
-		}
-		spt, err = adal.NewServicePrincipalToken(*oauthConfig, clientID, clientSecret, env.ResourceManagerEndpoint)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		klog.Info("azuredns authenticating with managed identity")
-		if !ambient {
-			return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
-		}
-		msiEndpoint, err := adal.GetMSIVMEndpoint()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
-		}
 
-		spt, err = adal.NewServicePrincipalTokenFromMSI(msiEndpoint, env.ServiceManagementEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
-		}
+	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient)
+	if err != nil {
+		return nil, err
 	}
 
 	rc := dns.NewRecordSetsClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID)
@@ -102,6 +64,35 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		resourceGroupName: resourceGroupName,
 		zoneName:          zoneName,
 	}, nil
+}
+
+func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool) (*adal.ServicePrincipalToken, error) {
+	if clientID != "" {
+		klog.Info("azuredns authenticating with clientID and secret key")
+		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
+		if err != nil {
+			return nil, err
+		}
+		spt, err := adal.NewServicePrincipalToken(*oauthConfig, clientID, clientSecret, env.ResourceManagerEndpoint)
+		if err != nil {
+			return nil, err
+		}
+		return spt, nil
+	}
+	klog.Info("No ClientID found:  authenticating azuredns with managed identity (MSI)")
+	if !ambient {
+		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
+	}
+	msiEndpoint, err := adal.GetMSIVMEndpoint()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
+	}
+
+	spt, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, env.ServiceManagementEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+	}
+	return spt, nil
 }
 
 // Present creates a TXT record using the specified parameters
