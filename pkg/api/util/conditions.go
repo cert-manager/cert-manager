@@ -110,6 +110,15 @@ func CertificateHasCondition(crt *cmapi.Certificate, c cmapi.CertificateConditio
 	return false
 }
 
+func GetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType) *cmapi.CertificateCondition {
+	for _, cond := range crt.Status.Conditions {
+		if cond.Type == conditionType {
+			return &cond
+		}
+	}
+	return nil
+}
+
 // SetCertificateCondition will set a 'condition' on the given Certificate.
 // - If no condition of the same type already exists, the condition will be
 //   inserted with the LastTransitionTime set to the current time.
