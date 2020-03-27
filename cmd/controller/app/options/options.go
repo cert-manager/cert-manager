@@ -34,7 +34,6 @@ import (
 	crvenaficontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/venafi"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	certificatetriggercontroller "github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -169,7 +168,6 @@ var (
 		crvaultcontroller.CRControllerName,
 		crvenaficontroller.CRControllerName,
 		certificatescontroller.ControllerName,
-		certificatetriggercontroller.ControllerName,
 	}
 )
 
