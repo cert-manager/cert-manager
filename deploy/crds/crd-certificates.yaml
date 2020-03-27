@@ -298,11 +298,17 @@ spec:
               lastFailureTime:
                 type: string
                 format: date-time
+              nextPrivateKeySecretName:
+                description: TODO
+                type: string
               notAfter:
                 description: The expiration time of the certificate stored in the
                   secret named by this resource in spec.secretName.
                 type: string
                 format: date-time
+              revision:
+                description: TODO
+                type: integer
   - name: v1alpha3
     served: true
     storage: false

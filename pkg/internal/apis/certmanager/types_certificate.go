@@ -157,6 +157,14 @@ type CertificateStatus struct {
 	// The expiration time of the certificate stored in the secret named
 	// by this resource in spec.secretName.
 	NotAfter *metav1.Time
+
+	// TODO
+	// +optional
+	Revision *int `json:"revision,omitempty"`
+
+	// TODO
+	// +optional
+	NextPrivateKeySecretName *string `json:"nextPrivateKeySecretName,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.
@@ -191,4 +199,7 @@ const (
 	// - The target secret contains a private key valid for the certificate
 	// - The commonName and dnsNames attributes match those specified on the Certificate
 	CertificateConditionReady CertificateConditionType = "Ready"
+
+	// TODO
+	CertificateConditionIssuing CertificateConditionType = "Issuing"
 )

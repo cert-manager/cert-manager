@@ -628,6 +628,8 @@ func autoConvert_v1alpha3_CertificateStatus_To_certmanager_CertificateStatus(in 
 	out.Conditions = *(*[]certmanager.CertificateCondition)(unsafe.Pointer(&in.Conditions))
 	out.LastFailureTime = (*v1.Time)(unsafe.Pointer(in.LastFailureTime))
 	out.NotAfter = (*v1.Time)(unsafe.Pointer(in.NotAfter))
+	out.Revision = (*int)(unsafe.Pointer(in.Revision))
+	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
 	return nil
 }
 
@@ -640,6 +642,8 @@ func autoConvert_certmanager_CertificateStatus_To_v1alpha3_CertificateStatus(in 
 	out.Conditions = *(*[]v1alpha3.CertificateCondition)(unsafe.Pointer(&in.Conditions))
 	out.LastFailureTime = (*v1.Time)(unsafe.Pointer(in.LastFailureTime))
 	out.NotAfter = (*v1.Time)(unsafe.Pointer(in.NotAfter))
+	out.Revision = (*int)(unsafe.Pointer(in.Revision))
+	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
 	return nil
 }
 
