@@ -127,10 +127,6 @@ const defaultOrganization = "cert-manager"
 // Certificate resource.
 // If an Organization is not specifically set, a default will be used.
 func OrganizationForCertificate(crt *v1alpha2.Certificate) []string {
-	if len(crt.Spec.Organization) == 0 {
-		return []string{defaultOrganization}
-	}
-
 	return crt.Spec.Organization
 }
 
