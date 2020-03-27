@@ -34,6 +34,9 @@ strategy: {}
   #   maxSurge: 0
   #   maxUnavailable: 1
 
+# Comma separated list of feature gates that should be enabled on the
+# controller pod.
+featureGates: ""
 
 image:
   repository: quay.io/jetstack/cert-manager-controller

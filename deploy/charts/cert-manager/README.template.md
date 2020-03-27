@@ -97,6 +97,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod |
+| `featureGates` | Comma-separated list of feature gates to enable on the controller pod | `` |
 | `extraArgs` | Optional flags for cert-manager | `[]` |
 | `extraEnv` | Optional environment variables for cert-manager | `[]` |
 | `serviceAccount.create` | If `true`, create a new service account | `true` |
