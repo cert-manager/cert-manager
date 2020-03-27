@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/informers"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -18,6 +20,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
@@ -46,17 +49,30 @@ type controller struct {
 	clock                    clock.Clock
 }
 
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
-	// construct a new named logger to be reused throughout the controller
-	log := logf.FromContext(ctx.RootContext, ControllerName)
-
+func NewController(
+	log logr.Logger,
+	client cmclient.Interface,
+	factory informers.SharedInformerFactory,
+	cmFactory cminformers.SharedInformerFactory,
+	recorder record.EventRecorder,
+	clock clock.Clock,
+) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Certificates()
-	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().CertificateRequests()
-	secretsInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
+	certificateInformer := cmFactory.Certmanager().V1alpha2().Certificates()
+	certificateRequestInformer := cmFactory.Certmanager().V1alpha2().CertificateRequests()
+	secretsInformer := factory.Core().V1().Secrets()
+
+	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
+	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(log, queue, certificateGvk, certificates.CertificateGetFunc(certificateInformer.Lister())),
+	})
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+		// Trigger reconciles on changes to the Secret named `spec.secretName`
+		WorkFunc: certificates.EnqueueCertificatesForSecretNameFunc(log, certificateInformer.Lister(), labels.Everything(), queue),
+	})
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
@@ -66,23 +82,14 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		certificateInformer.Informer().HasSynced,
 	}
 
-	c.certificateLister = certificateInformer.Lister()
-	c.certificateRequestLister = certificateRequestInformer.Lister()
-	c.secretLister = secretsInformer.Lister()
-	c.recorder = ctx.Recorder
-	c.client = ctx.CMClient
-	c.clock = ctx.Clock
-
-	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
-	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(log, queue, certificateGvk, certificates.CertificateGetFunc(c.certificateLister)),
-	})
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		// Trigger reconciles on changes to the Secret named `spec.secretName`
-		WorkFunc: certificates.EnqueueCertificatesForSecretNameFunc(log, c.certificateLister, labels.Everything(), queue),
-	})
-
-	return queue, mustSync, nil, nil
+	return &controller{
+		certificateLister:        certificateInformer.Lister(),
+		certificateRequestLister: certificateRequestInformer.Lister(),
+		secretLister:             secretsInformer.Lister(),
+		client:                   client,
+		recorder:                 recorder,
+		clock:                    clock,
+	}, queue, mustSync
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
@@ -172,10 +179,32 @@ func (c *controller) buildPolicyInputForCertificate(crt *cmapi.Certificate) (*po
 	}, nil
 }
 
+// controllerWrapper wraps the `controller` structure to make it implement
+// the controllerpkg.queueingController interface
+type controllerWrapper struct {
+	*controller
+}
+
+func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	// construct a new named logger to be reused throughout the controller
+	log := logf.FromContext(ctx.RootContext, ControllerName)
+
+	ctrl, queue, mustSync := NewController(log,
+		ctx.CMClient,
+		ctx.KubeSharedInformerFactory,
+		ctx.SharedInformerFactory,
+		ctx.Recorder,
+		ctx.Clock,
+	)
+	c.controller = ctrl
+
+	return queue, mustSync, nil
+}
+
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, ControllerName).
-			For(&controller{}).
+			For(&controllerWrapper{}).
 			Complete()
 	})
 }
