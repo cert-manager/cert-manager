@@ -104,7 +104,7 @@ func New(issuerType string, issuer Issuer, extraInformers ...cache.SharedIndexIn
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
@@ -172,7 +172,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.log.Info("new certificate request controller registered",
 		"type", c.issuerType)
 
-	return c.queue, mustSync, nil, nil
+	return c.queue, mustSync, nil
 }
 
 func (c *Controller) ProcessItem(ctx context.Context, key string) error {

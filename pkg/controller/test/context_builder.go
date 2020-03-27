@@ -270,12 +270,9 @@ func (b *Builder) Stop() {
 	apiutil.Clock = clock.RealClock{}
 }
 
-func (b *Builder) Start(additional ...controller.RunFunc) {
+func (b *Builder) Start() {
 	b.KubeSharedInformerFactory.Start(b.stopCh)
 	b.SharedInformerFactory.Start(b.stopCh)
-	for _, fn := range additional {
-		go fn(b.stopCh)
-	}
 	// wait for caches to sync
 	b.Sync()
 }

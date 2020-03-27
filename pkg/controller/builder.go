@@ -88,16 +88,10 @@ func (b *Builder) Complete() (Interface, error) {
 	if b.impl == nil {
 		return nil, fmt.Errorf("controller implementation must be non-nil")
 	}
-	queue, mustSync, additionalInformers, err := b.impl.Register(b.context)
+	queue, mustSync, err := b.impl.Register(b.context)
 	if err != nil {
 		return nil, fmt.Errorf("error registering controller: %v", err)
 	}
-	return &controller{
-		ctx:                 b.ctx,
-		syncHandler:         b.impl.ProcessItem,
-		mustSync:            mustSync,
-		additionalInformers: additionalInformers,
-		runDurationFuncs:    b.runDurationFuncs,
-		queue:               queue,
-	}, nil
+
+	return NewController(b.ctx, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
 }

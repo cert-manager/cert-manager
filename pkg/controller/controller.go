@@ -37,8 +37,24 @@ type runDurationFunc struct {
 }
 
 type queueingController interface {
-	Register(*Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []RunFunc, error)
+	Register(*Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error)
 	ProcessItem(ctx context.Context, key string) error
+}
+
+func NewController(
+	ctx context.Context,
+	syncFunc func(ctx context.Context, key string) error,
+	mustSync []cache.InformerSynced,
+	runDurationFuncs []runDurationFunc,
+	queue workqueue.RateLimitingInterface,
+) Interface {
+	return &controller{
+		ctx:              ctx,
+		syncHandler:      syncFunc,
+		mustSync:         mustSync,
+		runDurationFuncs: runDurationFuncs,
+		queue:            queue,
+	}
 }
 
 type controller struct {
@@ -53,10 +69,6 @@ type controller struct {
 	// this controller can start
 	mustSync []cache.InformerSynced
 
-	// additionalInformers is a list of informer 'Run' functions that must be
-	// called before starting this controller
-	additionalInformers []RunFunc
-
 	// a set of functions that will be called just after controller initialisation, once.
 	runFirstFuncs []runFunc
 
@@ -67,8 +79,6 @@ type controller struct {
 	// to be processed
 	queue workqueue.RateLimitingInterface
 }
-
-type RunFunc func(stopCh <-chan struct{})
 
 // Run starts the controller loop
 func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
@@ -107,13 +117,6 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 	wg.Wait()
 	log.V(logf.DebugLevel).Info("workers exited")
 	return nil
-}
-
-// AdditionalInformers is a list of additional informer 'Run' functions
-// that will be started when the shared informer factories 'Start' function
-// is called.
-func (c *controller) AdditionalInformers() []RunFunc {
-	return c.additionalInformers
 }
 
 func (b *controller) worker(ctx context.Context) {
