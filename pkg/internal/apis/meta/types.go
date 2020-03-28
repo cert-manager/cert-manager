@@ -59,3 +59,18 @@ type SecretKeySelector struct {
 const (
 	TLSCAKey = "ca.crt"
 )
+
+// Describes how the ACME challenge self check behaves when it fails.
+type ACMESelfCheckFailurePolicy string
+
+const (
+	// The default failure policy. This policy will cause the request to be
+	// sent to the certificate provider ONLY if the ACME challenge self check
+	// succeeds. The request is retried continuously and the `Certificate` will
+	// remain `Pending` indefinitely.
+	ACMESelfCheckFailurePolicyRetryForever ACMESelfCheckFailurePolicy = "RetryForever"
+
+	// This policy will cause the ACME challenge self check response to be
+	// ignored and the request will always be sent to the certificate provider.
+	ACMESelfCheckFailurePolicyIgnore ACMESelfCheckFailurePolicy = "Ignore"
+)

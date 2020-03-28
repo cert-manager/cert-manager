@@ -82,6 +82,9 @@ type ACMEChallengeSolver struct {
 	HTTP01 *ACMEChallengeSolverHTTP01
 
 	DNS01 *ACMEChallengeSolverDNS01
+
+	// Controls the self check failure policy.
+	FailurePolicy cmmeta.ACMESelfCheckFailurePolicy
 }
 
 // CertificateDomainSelector selects certificates using a label selector, and

@@ -95,3 +95,9 @@ func SetChallengeProcessing(b bool) ChallengeModifier {
 		ch.Status.Processing = b
 	}
 }
+
+func SetChallengeSolver(s *cmacme.ACMEChallengeSolver) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Solver = s
+	}
+}

@@ -434,6 +434,12 @@ spec:
                             the webhook provider implementation. This will typically
                             be the name of the provider, e.g. 'cloudflare'.
                           type: string
+                failurePolicy:
+                  description: Controls how the self check behaves upon failure.
+                  type: string
+                  enum:
+                  - RetryForever
+                  - Ignore
                 http01:
                   description: ACMEChallengeSolverHTTP01 contains configuration detailing
                     how to solve HTTP01 challenges within a Kubernetes cluster. Typically

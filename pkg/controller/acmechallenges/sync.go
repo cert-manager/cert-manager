@@ -31,6 +31,7 @@ import (
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -182,19 +183,23 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 
 	err = solver.Check(ctx, genericIssuer, ch)
 	if err != nil {
-		log.Error(err, "propagation check failed")
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
+		if ch.Spec.Solver != nil && ch.Spec.Solver.FailurePolicy == cmmeta.ACMESelfCheckFailurePolicyIgnore {
+			log.Info("propagation check failed, but failure policy is 'Ignore'")
+		} else {
+			log.Error(err, "propagation check failed")
+			ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
-		key, err := controllerpkg.KeyFunc(ch)
-		// This is an unexpected edge case and should never occur
-		if err != nil {
-			return err
+			key, err := controllerpkg.KeyFunc(ch)
+			// This is an unexpected edge case and should never occur
+			if err != nil {
+				return err
+			}
+
+			// retry after 10s
+			c.queue.AddAfter(key, time.Second*10)
+
+			return nil
 		}
-
-		// retry after 10s
-		c.queue.AddAfter(key, time.Second*10)
-
-		return nil
 	}
 
 	err = c.acceptChallenge(ctx, cl, ch)

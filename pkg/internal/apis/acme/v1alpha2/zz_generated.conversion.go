@@ -24,12 +24,12 @@ import (
 	unsafe "unsafe"
 
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -418,6 +418,7 @@ func autoConvert_v1alpha2_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1
 	out.Selector = (*acme.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
 	out.HTTP01 = (*acme.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
 	out.DNS01 = (*acme.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
+	out.FailurePolicy = meta.ACMESelfCheckFailurePolicy(in.FailurePolicy)
 	return nil
 }
 
@@ -430,6 +431,7 @@ func autoConvert_acme_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(in *ac
 	out.Selector = (*v1alpha2.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
 	out.HTTP01 = (*v1alpha2.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
 	out.DNS01 = (*v1alpha2.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
+	out.FailurePolicy = v1.ACMESelfCheckFailurePolicy(in.FailurePolicy)
 	return nil
 }
 
@@ -497,7 +499,7 @@ func Convert_acme_ACMEChallengeSolverHTTP01_To_v1alpha2_ACMEChallengeSolverHTTP0
 }
 
 func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(in *v1alpha2.ACMEChallengeSolverHTTP01Ingress, out *acme.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
-	out.ServiceType = v1.ServiceType(in.ServiceType)
+	out.ServiceType = corev1.ServiceType(in.ServiceType)
 	out.Class = (*string)(unsafe.Pointer(in.Class))
 	out.Name = in.Name
 	out.PodTemplate = (*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
@@ -511,7 +513,7 @@ func Convert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolv
 }
 
 func autoConvert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1alpha2_ACMEChallengeSolverHTTP01Ingress(in *acme.ACMEChallengeSolverHTTP01Ingress, out *v1alpha2.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
-	out.ServiceType = v1.ServiceType(in.ServiceType)
+	out.ServiceType = corev1.ServiceType(in.ServiceType)
 	out.Class = (*string)(unsafe.Pointer(in.Class))
 	out.Name = in.Name
 	out.PodTemplate = (*v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
@@ -570,8 +572,8 @@ func Convert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1alpha2_ACME
 
 func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(in *v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec, out *acme.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
-	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
-	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
+	out.Affinity = (*corev1.Affinity)(unsafe.Pointer(in.Affinity))
+	out.Tolerations = *(*[]corev1.Toleration)(unsafe.Pointer(&in.Tolerations))
 	return nil
 }
 
@@ -582,8 +584,8 @@ func Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChalle
 
 func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec(in *acme.ACMEChallengeSolverHTTP01IngressPodSpec, out *v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
-	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
-	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
+	out.Affinity = (*corev1.Affinity)(unsafe.Pointer(in.Affinity))
+	out.Tolerations = *(*[]corev1.Toleration)(unsafe.Pointer(&in.Tolerations))
 	return nil
 }
 
@@ -834,7 +836,7 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01Pro
 }
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	out.ServiceAccount = (*metav1.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
+	out.ServiceAccount = (*v1.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
 	out.Project = in.Project
 	return nil
 }
@@ -858,8 +860,8 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01P
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
-	out.APIKey = (*metav1.SecretKeySelector)(unsafe.Pointer(in.APIKey))
-	out.APIToken = (*metav1.SecretKeySelector)(unsafe.Pointer(in.APIToken))
+	out.APIKey = (*v1.SecretKeySelector)(unsafe.Pointer(in.APIKey))
+	out.APIToken = (*v1.SecretKeySelector)(unsafe.Pointer(in.APIToken))
 	return nil
 }
 
@@ -1265,7 +1267,7 @@ func autoConvert_v1alpha2_OrderStatus_To_acme_OrderStatus(in *v1alpha2.OrderStat
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.State = acme.State(in.State)
 	out.Reason = in.Reason
-	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -1281,7 +1283,7 @@ func autoConvert_acme_OrderStatus_To_v1alpha2_OrderStatus(in *acme.OrderStatus, 
 	out.State = v1alpha2.State(in.State)
 	out.Reason = in.Reason
 	out.Authorizations = *(*[]v1alpha2.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
-	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 

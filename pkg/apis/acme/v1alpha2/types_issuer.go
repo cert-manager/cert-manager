@@ -91,6 +91,10 @@ type ACMEChallengeSolver struct {
 
 	// +optional
 	DNS01 *ACMEChallengeSolverDNS01 `json:"dns01,omitempty"`
+
+	// Controls how the self check behaves upon failure.
+	// +optional
+	FailurePolicy cmmeta.ACMESelfCheckFailurePolicy `json:"failurePolicy,omitempty"`
 }
 
 // CertificateDomainSelector selects certificates using a label selector, and

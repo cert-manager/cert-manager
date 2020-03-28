@@ -210,6 +210,71 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 		},
+		"accept the challenge if the self check is failing but FailurePolicy is Ignore": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeDNSName("test.com"),
+				gen.SetChallengeState(cmacme.Pending),
+				gen.SetChallengeType("http-01"),
+				gen.SetChallengePresented(true),
+				gen.SetChallengeSolver(&cmacme.ACMEChallengeSolver{
+					FailurePolicy: cmmeta.ACMESelfCheckFailurePolicyIgnore,
+				}),
+			),
+			httpSolver: &fakeSolver{
+				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+					return fmt.Errorf("some error")
+				},
+				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+					return nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeDNSName("test.com"),
+					gen.SetChallengeState(cmacme.Pending),
+					gen.SetChallengeType("http-01"),
+					gen.SetChallengePresented(true),
+					gen.SetChallengeSolver(&cmacme.ACMEChallengeSolver{
+						FailurePolicy: cmmeta.ACMESelfCheckFailurePolicyIgnore,
+					}),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.ChallengeFrom(baseChallenge,
+							gen.SetChallengeProcessing(true),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeDNSName("test.com"),
+							gen.SetChallengeState(cmacme.Valid),
+							gen.SetChallengeType("http-01"),
+							gen.SetChallengePresented(true),
+							gen.SetChallengeSolver(&cmacme.ACMEChallengeSolver{
+								FailurePolicy: cmmeta.ACMESelfCheckFailurePolicyIgnore,
+							}),
+							gen.SetChallengeReason("Successfully authorized domain"),
+						))),
+				},
+				ExpectedEvents: []string{
+					`Normal DomainVerified Domain "test.com" verified with "http-01" validation`,
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAccept: func(context.Context, *acmeapi.Challenge) (*acmeapi.Challenge, error) {
+					// return something other than valid here so we can verify that
+					// the challenge.status.state is set to the *authorizations*
+					// status and not the challenges
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				},
+				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
+				},
+			},
+		},
 		"mark certificate as failed if accepting the authorization fails": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
