@@ -19,6 +19,7 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
@@ -144,6 +145,85 @@ type ACMEChallengeSolver struct {
 	// Configures cert-manager to attempt to complete authorizations by
 	// performing the DNS01 challenge flow.
 	DNS01 *ACMEChallengeSolverDNS01
+
+	// Configures how cert-manager ensures that the challenge resources have
+	// been deployed before it informs an ACME server that it "accepts" the ACME
+	// challenge e.g. DNS records or Ingress configurations.
+	// The default strategy is "SelfCheck".
+	ReadinessStrategy *ChallengeReadinessStrategy
+
+	// If specified, all readiness gates will be evaluated for readiness.
+	// The challenge will be accepted only when all conditions specified in the
+	// readiness gates have status equal to "True".
+	// This allows you to implement your own readiness check in cases where the
+	// self-check mechanism does not work and you want something more precise
+	// than the "DelayedAccept" readiness strategy.
+	// Implement your own Challenge controller which sets a
+	// Challenge.Status.Condition e.g. example.com/CustomSelfCheckSucceeded when
+	// it has determined that the ACME server will be able to reach the DNS-01
+	// or HTTP-01 endpoint for the challenge and set:
+	//  readinessStrategy: {}
+	//  readinessGates:
+	//  - conditionType: example.com/CustomSelfCheckSucceeded
+	// Inspired by: https://git.k8s.io/enhancements/keps/sig-network/580-pod-readiness-gates
+	ReadinessGates []ChallengeReadinessGate
+}
+
+// ChallengeReadinessStrategy contains strategies for ensuring the readiness
+// of challenge resources.
+type ChallengeReadinessStrategy struct {
+	// SelfCheck configures cert-manager to perform a ‘self check’ to ensure
+	// that the challenge has ‘propagated’ (i.e. the authoritative DNS servers
+	// have been updated to respond correctly, or the changes to the ingress
+	// resources have been observed and in-use by the ingress controller).
+	// If the self check fails, cert-manager will retry the self check with a
+	// fixed 10 second retry interval. Challenges that do not ever complete the
+	// self check will continue retrying until the user intervenes by either
+	// retrying the Order (by deleting the Order resource) or amending the
+	// associated Certificate resource to resolve any configuration errors.
+	// Once the self check is passing, the "SelfCheckSucceeded" Condition will be
+	// added to the Challenge.Status.Conditions and the ACME ‘authorization’
+	// associated with this challenge will be ‘accepted’.
+	// SelfCheck is the default challenge readiness strategy.
+	// See https://cert-manager.io/docs/concepts/acme-orders-challenges/#challenge-lifecycle
+	// +optional
+	SelfCheck *ChallengeSelfCheckReadinessStrategy `json:"selfCheck,omitempty"`
+
+	// DelayedAccept configures cert-manager to wait for `timeout` after the
+	// Challenge has been created to allow time for the resources to be deployed
+	// ("presented") and for them to become ready.
+	// Once the timeout is reached, the "DelayedAcceptTimeoutReached" Condition
+	// will be added to Challenge.Status.Conditions and the ACME ‘authorization’
+	// associated with this challenge will be ‘accepted’.
+	// Use this strategy if the "SelfCheck" strategy does not work in your
+	// environment; due to hairpin NAT or spit-horizon DNS configurations for
+	// example.
+	DelayedAccept *ChallengeDelayedAcceptReadinessStrategy `json:"delayedAccept,omitempty"`
+
+	// None configures cert-manager to not use any of its builtin strategies.
+	// Use this if you have implemented an external readiness check and
+	// configured readinessGates and you do not want to also use any of the
+	// builtin strategies.
+	None *ChallengeNoReadinessStrategy `json:"none,omitempty"`
+}
+
+// ChallengeSelfCheckReadinessStrategy is a ChallengeReadinessStrategy.
+type ChallengeSelfCheckReadinessStrategy struct{}
+
+// ChallengeDelayedAcceptReadinessStrategy is a ChallengeReadinessStrategy.
+type ChallengeDelayedAcceptReadinessStrategy struct {
+	// Timeout is a duration after which the ACME ‘authorization’ associated with
+	// this challenge will be ‘accepted’.
+	Timeout metav1.Duration `json:"timeout,omitempty"`
+}
+
+// ChallengeNoReadinessStrategy is an ChallengeReadinessStrategy.
+type ChallengeNoReadinessStrategy struct{}
+
+// ChallengeReadinessGate contains the reference to a challenge condition.
+type ChallengeReadinessGate struct {
+	// ConditionType refers to a condition in the challenges's condition list with matching type.
+	ConditionType ChallengeConditionType `json:"conditionType"`
 }
 
 // CertificateDomainSelector selects certificates using a label selector, and

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -31,8 +32,10 @@ import (
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmapiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	dnsutil "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -170,38 +173,66 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 	}
 
 	if !ch.Status.Presented {
+		presented := true
+		conditionStatus := cmmeta.ConditionTrue
+		reason := reasonPresented
+		message := fmt.Sprintf("Presented challenge using %s challenge mechanism", ch.Spec.Type)
 		err := solver.Present(ctx, genericIssuer, ch)
 		if err != nil {
-			c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
-			ch.Status.Reason = err.Error()
+			presented = false
+			conditionStatus = cmmeta.ConditionFalse
+			reason = reasonPresentError
+			message = fmt.Sprintf("Error presenting challenge: %v", err)
+		}
+		ch.Status.Presented = presented
+		cmapiutil.SetChallengeCondition(ch, ch.Generation, cmacme.ChallengConditionPresented, conditionStatus, reason, message)
+		c.recorder.Event(ch, corev1.EventTypeNormal, reason, message)
+		if err != nil {
 			return err
 		}
-
-		ch.Status.Presented = true
-		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	err = solver.Check(ctx, genericIssuer, ch)
-	if err != nil {
-		log.Error(err, "propagation check failed")
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
+	// Make a copy of the challenge with all the defaults applied so that we
+	// don't have to do so much defensive checking for nil pointers in the
+	// readiness gates and readiness checker helpers.
+	chDefaulted := copyOfChallengeWithDefaultsApplied(ch)
 
+	// Accept challenge if all readiness gate conditions are true.
+	if c.allReadinessGateConditionsAreTrue(chDefaulted) {
+		return c.acceptChallenge(ctx, cl, ch)
+	}
+
+	// Run any configured readiness checks
+	checker, err := c.readinessStrategyFactory(chDefaulted)
+	if err != nil {
+		log.Error(err, "Unable to build a readiness checker")
+		return nil
+	}
+
+	switch t := checker.(type) {
+	case *selfCheck:
+		t.ch = ch
+		t.issuer = genericIssuer
+		t.solver = solver
+		t.retryPeriod = c.DNS01CheckRetryPeriod
+	case *delayedAccept:
+		t.ch = ch
+		t.currentTime = time.Now()
+	}
+
+	retryAfter, condition := checker.ready(ctx)
+	if retryAfter > 0 {
 		key, err := controllerpkg.KeyFunc(ch)
 		// This is an unexpected edge case and should never occur
 		if err != nil {
 			return err
 		}
-
-		c.queue.AddAfter(key, c.DNS01CheckRetryPeriod)
-
-		return nil
+		c.queue.AddAfter(key, retryAfter)
 	}
-
-	err = c.acceptChallenge(ctx, cl, ch)
-	if err != nil {
-		return err
+	if condition.Status == cmmeta.ConditionTrue {
+		cmapiutil.SetChallengeCondition(ch, ch.Generation, condition.Type, condition.Status, "ChallengeReadinessCheck", condition.Message)
 	}
-
+	ch.Status.Reason = condition.Message
 	return nil
 }
 

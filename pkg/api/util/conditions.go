@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/clock"
 
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
@@ -369,4 +370,82 @@ func CertificateRequestIsDenied(cr *cmapi.CertificateRequest) bool {
 	}
 
 	return false
+}
+
+// GetChallengeCondition returns a pointer to the condition with the supplied
+// type or nil if there is no matching condition.
+func GetChallengeCondition(ch *cmacme.Challenge, conditionType cmacme.ChallengeConditionType) *cmacme.ChallengeCondition {
+	for _, cond := range ch.Status.Conditions {
+		if cond.Type == conditionType {
+			return &cond
+		}
+	}
+	return nil
+}
+
+// ChallengeHasCondition will return true if the given Challenge has a
+// condition matching the provided ChallengeCondition.
+// Only the Type and Status field will be used in the comparison, meaning that
+// this function will return 'true' even if the Reason, Message and
+// LastTransitionTime fields do not match.
+func ChallengeHasCondition(o *cmacme.Challenge, c cmacme.ChallengeCondition) bool {
+	if o == nil {
+		return false
+	}
+	existingConditions := o.Status.Conditions
+	for _, cond := range existingConditions {
+		if c.Type == cond.Type && c.Status == cond.Status {
+			return true
+		}
+	}
+	return false
+}
+
+// SetIssuerCondition will set a 'condition' on the given GenericIssuer.
+// - If no condition of the same type already exists, the condition will be
+//   inserted with the LastTransitionTime set to the current time.
+// - If a condition of the same type and state already exists, the condition
+//   will be updated but the LastTransitionTime will not be modified.
+// - If a condition of the same type and different state already exists, the
+//   condition will be updated and the LastTransitionTime set to the current
+//   time.
+// This function works with both Issuer and ClusterIssuer resources.
+func SetChallengeCondition(i *cmacme.Challenge, observedGeneration int64, conditionType cmacme.ChallengeConditionType, status cmmeta.ConditionStatus, reason, message string) {
+	newCondition := cmacme.ChallengeCondition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+	}
+
+	nowTime := metav1.NewTime(Clock.Now())
+	newCondition.LastTransitionTime = &nowTime
+
+	// Set the condition generation
+	newCondition.ObservedGeneration = observedGeneration
+
+	// Search through existing conditions
+	for idx, cond := range i.Status.Conditions {
+		// Skip unrelated conditions
+		if cond.Type != conditionType {
+			continue
+		}
+
+		// If this update doesn't contain a state transition, we don't update
+		// the conditions LastTransitionTime to Now()
+		if cond.Status == status {
+			newCondition.LastTransitionTime = cond.LastTransitionTime
+		} else {
+			logf.V(logf.InfoLevel).Infof("Found status change for Challenge %q condition %q: %q -> %q; setting lastTransitionTime to %v", i.Name, conditionType, cond.Status, status, nowTime.Time)
+		}
+
+		// Overwrite the existing condition
+		i.Status.Conditions[idx] = newCondition
+		return
+	}
+
+	// If we've not found an existing condition of this type, we simply insert
+	// the new condition into the slice.
+	i.Status.Conditions = append(i.Status.Conditions, newCondition)
+	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for Challenge %q condition %q to %v", i.Name, conditionType, nowTime.Time)
 }

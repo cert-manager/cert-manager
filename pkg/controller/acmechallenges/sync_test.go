@@ -20,10 +20,13 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -33,6 +36,11 @@ import (
 	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
 	"github.com/cert-manager/cert-manager/pkg/issuer"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+)
+
+var (
+	fixedClockStart = time.Now()
+	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
 // Present the challenge value with the given solver.
@@ -61,15 +69,18 @@ type fakeSolver struct {
 }
 
 type testT struct {
-	challenge  *cmacme.Challenge
-	builder    *testpkg.Builder
-	httpSolver *fakeSolver
-	dnsSolver  *fakeSolver
-	expectErr  bool
-	acmeClient *acmecl.FakeACME
+	challenge                         *cmacme.Challenge
+	builder                           *testpkg.Builder
+	httpSolver                        *fakeSolver
+	dnsSolver                         *fakeSolver
+	expectErr                         bool
+	acmeClient                        *acmecl.FakeACME
+	allReadinessGateConditionsAreTrue bool
 }
 
 func TestSyncHappyPath(t *testing.T) {
+	nowMetaTime := metav1.NewTime(fixedClockStart)
+
 	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
 		Solvers: []cmacme.ACMEChallengeSolver{
 			{
@@ -206,6 +217,13 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengePresented(true),
 							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
+							gen.AddChallengeStatusCondition(cmacme.ChallengeCondition{
+								Type:               cmacme.ChallengConditionPresented,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             reasonPresented,
+								Message:            "Presented challenge using HTTP-01 challenge mechanism",
+								LastTransitionTime: &nowMetaTime,
+							}),
 						))),
 				},
 				ExpectedEvents: []string{
@@ -214,6 +232,7 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 		},
 		"accept the challenge if the self check is passing": {
+			allReadinessGateConditionsAreTrue: true,
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -270,6 +289,7 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 		},
 		"mark certificate as failed if accepting the authorization fails": {
+			allReadinessGateConditionsAreTrue: true,
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -329,6 +349,7 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 		},
 		"correctly persist ACME authorization error details as Challenge failure reason": {
+			allReadinessGateConditionsAreTrue: true,
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
@@ -465,6 +486,7 @@ func TestSyncHappyPath(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			fixedClock.SetTime(fixedClockStart)
 			runTest(t, test)
 		})
 	}
@@ -472,6 +494,7 @@ func TestSyncHappyPath(t *testing.T) {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
+	test.builder.Clock = fixedClock
 	test.builder.Init()
 	defer test.builder.Stop()
 
@@ -488,6 +511,9 @@ func runTest(t *testing.T, test testT) {
 	}
 	c.httpSolver = test.httpSolver
 	c.dnsSolver = test.dnsSolver
+	c.allReadinessGateConditionsAreTrue = func(_ *cmacme.Challenge) bool {
+		return test.allReadinessGateConditionsAreTrue
+	}
 	test.builder.Start()
 
 	err := c.Sync(context.Background(), test.challenge)

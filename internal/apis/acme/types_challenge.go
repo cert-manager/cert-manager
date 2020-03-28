@@ -128,4 +128,54 @@ type ChallengeStatus struct {
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.
 	State State
+
+	// List of status conditions to indicate the status of a Challenge.
+	// Known condition types are (`SelfCheckSucceeded`, `DelayedAcceptTimeoutReached`)
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []ChallengeCondition
 }
+
+// ChallengeCondition contains condition information for a Challenge.
+type ChallengeCondition struct {
+	// Type of the condition, known values are (`SelfCheckSucceeded`, `DelayedAcceptTimeoutReached`).
+	Type ChallengeConditionType
+
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
+	Status cmmeta.ConditionStatus
+
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime *metav1.Time
+
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string
+
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string
+
+	// If set, this represents the .metadata.generation that the condition was
+	// set based upon.
+	// For instance, if .metadata.generation is currently 12, but the
+	// .status.condition[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the Issuer.
+	ObservedGeneration int64
+}
+
+// ChallengeConditionType represents an Issuer condition value.
+type ChallengeConditionType string
+
+const (
+	// ChallengeConditionSelfCheckSucceeded means that a self check is passing,
+	// and the ACME ‘authorization’ associated with this challenge will be
+	// ‘accepted’.
+	ChallengConditionSelfCheckSucceeded ChallengeConditionType = "SelfCheckSucceeded"
+
+	// ChallengeConditionDelayedAcceptTimeoutReached means that the required
+	// time has passed since the creation of the Challenge, and the ACME
+	// ‘authorization’ associated with this challenge will be ‘accepted’.
+	ChallengConditionDelayedAcceptTimeoutReached ChallengeConditionType = "DelayedAcceptTimeoutReached"
+)

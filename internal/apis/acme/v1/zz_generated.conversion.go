@@ -304,6 +304,26 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*v1.ChallengeCondition)(nil), (*acme.ChallengeCondition)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ChallengeCondition_To_acme_ChallengeCondition(a.(*v1.ChallengeCondition), b.(*acme.ChallengeCondition), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeCondition)(nil), (*v1.ChallengeCondition)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeCondition_To_v1_ChallengeCondition(a.(*acme.ChallengeCondition), b.(*v1.ChallengeCondition), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.ChallengeDelayedAcceptReadinessStrategy)(nil), (*acme.ChallengeDelayedAcceptReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ChallengeDelayedAcceptReadinessStrategy_To_acme_ChallengeDelayedAcceptReadinessStrategy(a.(*v1.ChallengeDelayedAcceptReadinessStrategy), b.(*acme.ChallengeDelayedAcceptReadinessStrategy), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeDelayedAcceptReadinessStrategy)(nil), (*v1.ChallengeDelayedAcceptReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeDelayedAcceptReadinessStrategy_To_v1_ChallengeDelayedAcceptReadinessStrategy(a.(*acme.ChallengeDelayedAcceptReadinessStrategy), b.(*v1.ChallengeDelayedAcceptReadinessStrategy), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*v1.ChallengeList)(nil), (*acme.ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1_ChallengeList_To_acme_ChallengeList(a.(*v1.ChallengeList), b.(*acme.ChallengeList), scope)
 	}); err != nil {
@@ -311,6 +331,46 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*acme.ChallengeList)(nil), (*v1.ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_acme_ChallengeList_To_v1_ChallengeList(a.(*acme.ChallengeList), b.(*v1.ChallengeList), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.ChallengeNoReadinessStrategy)(nil), (*acme.ChallengeNoReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ChallengeNoReadinessStrategy_To_acme_ChallengeNoReadinessStrategy(a.(*v1.ChallengeNoReadinessStrategy), b.(*acme.ChallengeNoReadinessStrategy), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeNoReadinessStrategy)(nil), (*v1.ChallengeNoReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeNoReadinessStrategy_To_v1_ChallengeNoReadinessStrategy(a.(*acme.ChallengeNoReadinessStrategy), b.(*v1.ChallengeNoReadinessStrategy), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.ChallengeReadinessGate)(nil), (*acme.ChallengeReadinessGate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ChallengeReadinessGate_To_acme_ChallengeReadinessGate(a.(*v1.ChallengeReadinessGate), b.(*acme.ChallengeReadinessGate), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeReadinessGate)(nil), (*v1.ChallengeReadinessGate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeReadinessGate_To_v1_ChallengeReadinessGate(a.(*acme.ChallengeReadinessGate), b.(*v1.ChallengeReadinessGate), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.ChallengeReadinessStrategy)(nil), (*acme.ChallengeReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ChallengeReadinessStrategy_To_acme_ChallengeReadinessStrategy(a.(*v1.ChallengeReadinessStrategy), b.(*acme.ChallengeReadinessStrategy), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeReadinessStrategy)(nil), (*v1.ChallengeReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeReadinessStrategy_To_v1_ChallengeReadinessStrategy(a.(*acme.ChallengeReadinessStrategy), b.(*v1.ChallengeReadinessStrategy), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1.ChallengeSelfCheckReadinessStrategy)(nil), (*acme.ChallengeSelfCheckReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_ChallengeSelfCheckReadinessStrategy_To_acme_ChallengeSelfCheckReadinessStrategy(a.(*v1.ChallengeSelfCheckReadinessStrategy), b.(*acme.ChallengeSelfCheckReadinessStrategy), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeSelfCheckReadinessStrategy)(nil), (*v1.ChallengeSelfCheckReadinessStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeSelfCheckReadinessStrategy_To_v1_ChallengeSelfCheckReadinessStrategy(a.(*acme.ChallengeSelfCheckReadinessStrategy), b.(*v1.ChallengeSelfCheckReadinessStrategy), scope)
 	}); err != nil {
 		return err
 	}
@@ -451,6 +511,8 @@ func autoConvert_v1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1.ACMEC
 	} else {
 		out.DNS01 = nil
 	}
+	out.ReadinessStrategy = (*acme.ChallengeReadinessStrategy)(unsafe.Pointer(in.ReadinessStrategy))
+	out.ReadinessGates = *(*[]acme.ChallengeReadinessGate)(unsafe.Pointer(&in.ReadinessGates))
 	return nil
 }
 
@@ -471,6 +533,8 @@ func autoConvert_acme_ACMEChallengeSolver_To_v1_ACMEChallengeSolver(in *acme.ACM
 	} else {
 		out.DNS01 = nil
 	}
+	out.ReadinessStrategy = (*v1.ChallengeReadinessStrategy)(unsafe.Pointer(in.ReadinessStrategy))
+	out.ReadinessGates = *(*[]v1.ChallengeReadinessGate)(unsafe.Pointer(&in.ReadinessGates))
 	return nil
 }
 
@@ -1359,6 +1423,56 @@ func Convert_acme_Challenge_To_v1_Challenge(in *acme.Challenge, out *v1.Challeng
 	return autoConvert_acme_Challenge_To_v1_Challenge(in, out, s)
 }
 
+func autoConvert_v1_ChallengeCondition_To_acme_ChallengeCondition(in *v1.ChallengeCondition, out *acme.ChallengeCondition, s conversion.Scope) error {
+	out.Type = acme.ChallengeConditionType(in.Type)
+	out.Status = meta.ConditionStatus(in.Status)
+	out.LastTransitionTime = (*pkgapismetav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Reason = in.Reason
+	out.Message = in.Message
+	out.ObservedGeneration = in.ObservedGeneration
+	return nil
+}
+
+// Convert_v1_ChallengeCondition_To_acme_ChallengeCondition is an autogenerated conversion function.
+func Convert_v1_ChallengeCondition_To_acme_ChallengeCondition(in *v1.ChallengeCondition, out *acme.ChallengeCondition, s conversion.Scope) error {
+	return autoConvert_v1_ChallengeCondition_To_acme_ChallengeCondition(in, out, s)
+}
+
+func autoConvert_acme_ChallengeCondition_To_v1_ChallengeCondition(in *acme.ChallengeCondition, out *v1.ChallengeCondition, s conversion.Scope) error {
+	out.Type = v1.ChallengeConditionType(in.Type)
+	out.Status = apismetav1.ConditionStatus(in.Status)
+	out.LastTransitionTime = (*pkgapismetav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Reason = in.Reason
+	out.Message = in.Message
+	out.ObservedGeneration = in.ObservedGeneration
+	return nil
+}
+
+// Convert_acme_ChallengeCondition_To_v1_ChallengeCondition is an autogenerated conversion function.
+func Convert_acme_ChallengeCondition_To_v1_ChallengeCondition(in *acme.ChallengeCondition, out *v1.ChallengeCondition, s conversion.Scope) error {
+	return autoConvert_acme_ChallengeCondition_To_v1_ChallengeCondition(in, out, s)
+}
+
+func autoConvert_v1_ChallengeDelayedAcceptReadinessStrategy_To_acme_ChallengeDelayedAcceptReadinessStrategy(in *v1.ChallengeDelayedAcceptReadinessStrategy, out *acme.ChallengeDelayedAcceptReadinessStrategy, s conversion.Scope) error {
+	out.Timeout = in.Timeout
+	return nil
+}
+
+// Convert_v1_ChallengeDelayedAcceptReadinessStrategy_To_acme_ChallengeDelayedAcceptReadinessStrategy is an autogenerated conversion function.
+func Convert_v1_ChallengeDelayedAcceptReadinessStrategy_To_acme_ChallengeDelayedAcceptReadinessStrategy(in *v1.ChallengeDelayedAcceptReadinessStrategy, out *acme.ChallengeDelayedAcceptReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_v1_ChallengeDelayedAcceptReadinessStrategy_To_acme_ChallengeDelayedAcceptReadinessStrategy(in, out, s)
+}
+
+func autoConvert_acme_ChallengeDelayedAcceptReadinessStrategy_To_v1_ChallengeDelayedAcceptReadinessStrategy(in *acme.ChallengeDelayedAcceptReadinessStrategy, out *v1.ChallengeDelayedAcceptReadinessStrategy, s conversion.Scope) error {
+	out.Timeout = in.Timeout
+	return nil
+}
+
+// Convert_acme_ChallengeDelayedAcceptReadinessStrategy_To_v1_ChallengeDelayedAcceptReadinessStrategy is an autogenerated conversion function.
+func Convert_acme_ChallengeDelayedAcceptReadinessStrategy_To_v1_ChallengeDelayedAcceptReadinessStrategy(in *acme.ChallengeDelayedAcceptReadinessStrategy, out *v1.ChallengeDelayedAcceptReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_acme_ChallengeDelayedAcceptReadinessStrategy_To_v1_ChallengeDelayedAcceptReadinessStrategy(in, out, s)
+}
+
 func autoConvert_v1_ChallengeList_To_acme_ChallengeList(in *v1.ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
@@ -1399,6 +1513,86 @@ func autoConvert_acme_ChallengeList_To_v1_ChallengeList(in *acme.ChallengeList, 
 // Convert_acme_ChallengeList_To_v1_ChallengeList is an autogenerated conversion function.
 func Convert_acme_ChallengeList_To_v1_ChallengeList(in *acme.ChallengeList, out *v1.ChallengeList, s conversion.Scope) error {
 	return autoConvert_acme_ChallengeList_To_v1_ChallengeList(in, out, s)
+}
+
+func autoConvert_v1_ChallengeNoReadinessStrategy_To_acme_ChallengeNoReadinessStrategy(in *v1.ChallengeNoReadinessStrategy, out *acme.ChallengeNoReadinessStrategy, s conversion.Scope) error {
+	return nil
+}
+
+// Convert_v1_ChallengeNoReadinessStrategy_To_acme_ChallengeNoReadinessStrategy is an autogenerated conversion function.
+func Convert_v1_ChallengeNoReadinessStrategy_To_acme_ChallengeNoReadinessStrategy(in *v1.ChallengeNoReadinessStrategy, out *acme.ChallengeNoReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_v1_ChallengeNoReadinessStrategy_To_acme_ChallengeNoReadinessStrategy(in, out, s)
+}
+
+func autoConvert_acme_ChallengeNoReadinessStrategy_To_v1_ChallengeNoReadinessStrategy(in *acme.ChallengeNoReadinessStrategy, out *v1.ChallengeNoReadinessStrategy, s conversion.Scope) error {
+	return nil
+}
+
+// Convert_acme_ChallengeNoReadinessStrategy_To_v1_ChallengeNoReadinessStrategy is an autogenerated conversion function.
+func Convert_acme_ChallengeNoReadinessStrategy_To_v1_ChallengeNoReadinessStrategy(in *acme.ChallengeNoReadinessStrategy, out *v1.ChallengeNoReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_acme_ChallengeNoReadinessStrategy_To_v1_ChallengeNoReadinessStrategy(in, out, s)
+}
+
+func autoConvert_v1_ChallengeReadinessGate_To_acme_ChallengeReadinessGate(in *v1.ChallengeReadinessGate, out *acme.ChallengeReadinessGate, s conversion.Scope) error {
+	out.ConditionType = acme.ChallengeConditionType(in.ConditionType)
+	return nil
+}
+
+// Convert_v1_ChallengeReadinessGate_To_acme_ChallengeReadinessGate is an autogenerated conversion function.
+func Convert_v1_ChallengeReadinessGate_To_acme_ChallengeReadinessGate(in *v1.ChallengeReadinessGate, out *acme.ChallengeReadinessGate, s conversion.Scope) error {
+	return autoConvert_v1_ChallengeReadinessGate_To_acme_ChallengeReadinessGate(in, out, s)
+}
+
+func autoConvert_acme_ChallengeReadinessGate_To_v1_ChallengeReadinessGate(in *acme.ChallengeReadinessGate, out *v1.ChallengeReadinessGate, s conversion.Scope) error {
+	out.ConditionType = v1.ChallengeConditionType(in.ConditionType)
+	return nil
+}
+
+// Convert_acme_ChallengeReadinessGate_To_v1_ChallengeReadinessGate is an autogenerated conversion function.
+func Convert_acme_ChallengeReadinessGate_To_v1_ChallengeReadinessGate(in *acme.ChallengeReadinessGate, out *v1.ChallengeReadinessGate, s conversion.Scope) error {
+	return autoConvert_acme_ChallengeReadinessGate_To_v1_ChallengeReadinessGate(in, out, s)
+}
+
+func autoConvert_v1_ChallengeReadinessStrategy_To_acme_ChallengeReadinessStrategy(in *v1.ChallengeReadinessStrategy, out *acme.ChallengeReadinessStrategy, s conversion.Scope) error {
+	out.SelfCheck = (*acme.ChallengeSelfCheckReadinessStrategy)(unsafe.Pointer(in.SelfCheck))
+	out.DelayedAccept = (*acme.ChallengeDelayedAcceptReadinessStrategy)(unsafe.Pointer(in.DelayedAccept))
+	out.None = (*acme.ChallengeNoReadinessStrategy)(unsafe.Pointer(in.None))
+	return nil
+}
+
+// Convert_v1_ChallengeReadinessStrategy_To_acme_ChallengeReadinessStrategy is an autogenerated conversion function.
+func Convert_v1_ChallengeReadinessStrategy_To_acme_ChallengeReadinessStrategy(in *v1.ChallengeReadinessStrategy, out *acme.ChallengeReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_v1_ChallengeReadinessStrategy_To_acme_ChallengeReadinessStrategy(in, out, s)
+}
+
+func autoConvert_acme_ChallengeReadinessStrategy_To_v1_ChallengeReadinessStrategy(in *acme.ChallengeReadinessStrategy, out *v1.ChallengeReadinessStrategy, s conversion.Scope) error {
+	out.SelfCheck = (*v1.ChallengeSelfCheckReadinessStrategy)(unsafe.Pointer(in.SelfCheck))
+	out.DelayedAccept = (*v1.ChallengeDelayedAcceptReadinessStrategy)(unsafe.Pointer(in.DelayedAccept))
+	out.None = (*v1.ChallengeNoReadinessStrategy)(unsafe.Pointer(in.None))
+	return nil
+}
+
+// Convert_acme_ChallengeReadinessStrategy_To_v1_ChallengeReadinessStrategy is an autogenerated conversion function.
+func Convert_acme_ChallengeReadinessStrategy_To_v1_ChallengeReadinessStrategy(in *acme.ChallengeReadinessStrategy, out *v1.ChallengeReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_acme_ChallengeReadinessStrategy_To_v1_ChallengeReadinessStrategy(in, out, s)
+}
+
+func autoConvert_v1_ChallengeSelfCheckReadinessStrategy_To_acme_ChallengeSelfCheckReadinessStrategy(in *v1.ChallengeSelfCheckReadinessStrategy, out *acme.ChallengeSelfCheckReadinessStrategy, s conversion.Scope) error {
+	return nil
+}
+
+// Convert_v1_ChallengeSelfCheckReadinessStrategy_To_acme_ChallengeSelfCheckReadinessStrategy is an autogenerated conversion function.
+func Convert_v1_ChallengeSelfCheckReadinessStrategy_To_acme_ChallengeSelfCheckReadinessStrategy(in *v1.ChallengeSelfCheckReadinessStrategy, out *acme.ChallengeSelfCheckReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_v1_ChallengeSelfCheckReadinessStrategy_To_acme_ChallengeSelfCheckReadinessStrategy(in, out, s)
+}
+
+func autoConvert_acme_ChallengeSelfCheckReadinessStrategy_To_v1_ChallengeSelfCheckReadinessStrategy(in *acme.ChallengeSelfCheckReadinessStrategy, out *v1.ChallengeSelfCheckReadinessStrategy, s conversion.Scope) error {
+	return nil
+}
+
+// Convert_acme_ChallengeSelfCheckReadinessStrategy_To_v1_ChallengeSelfCheckReadinessStrategy is an autogenerated conversion function.
+func Convert_acme_ChallengeSelfCheckReadinessStrategy_To_v1_ChallengeSelfCheckReadinessStrategy(in *acme.ChallengeSelfCheckReadinessStrategy, out *v1.ChallengeSelfCheckReadinessStrategy, s conversion.Scope) error {
+	return autoConvert_acme_ChallengeSelfCheckReadinessStrategy_To_v1_ChallengeSelfCheckReadinessStrategy(in, out, s)
 }
 
 func autoConvert_v1_ChallengeSpec_To_acme_ChallengeSpec(in *v1.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
@@ -1450,6 +1644,7 @@ func autoConvert_v1_ChallengeStatus_To_acme_ChallengeStatus(in *v1.ChallengeStat
 	out.Presented = in.Presented
 	out.Reason = in.Reason
 	out.State = acme.State(in.State)
+	out.Conditions = *(*[]acme.ChallengeCondition)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 
@@ -1463,6 +1658,7 @@ func autoConvert_acme_ChallengeStatus_To_v1_ChallengeStatus(in *acme.ChallengeSt
 	out.Presented = in.Presented
 	out.Reason = in.Reason
 	out.State = v1.State(in.State)
+	out.Conditions = *(*[]v1.ChallengeCondition)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 

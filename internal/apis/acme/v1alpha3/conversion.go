@@ -93,3 +93,13 @@ func Convert_acme_ACMEIssuer_To_v1alpha3_ACMEIssuer(in *acme.ACMEIssuer, out *AC
 func Convert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer(in *ACMEIssuer, out *acme.ACMEIssuer, s conversion.Scope) error {
 	return autoConvert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer(in, out, s)
 }
+
+// Drop fields which have only been added to v1 since we stopped serving this
+// deprecated API
+func Convert_acme_ACMEChallengeSolver_To_v1alpha3_ACMEChallengeSolver(in *acme.ACMEChallengeSolver, out *ACMEChallengeSolver, s conversion.Scope) error {
+	return autoConvert_acme_ACMEChallengeSolver_To_v1alpha3_ACMEChallengeSolver(in, out, s)
+}
+
+func Convert_acme_ChallengeStatus_To_v1alpha3_ChallengeStatus(in *acme.ChallengeStatus, out *ChallengeStatus, s conversion.Scope) error {
+	return autoConvert_acme_ChallengeStatus_To_v1alpha3_ChallengeStatus(in, out, s)
+}

@@ -113,3 +113,31 @@ func SetChallengeFinalizers(finalizers []string) ChallengeModifier {
 		ch.Finalizers = finalizers
 	}
 }
+
+func SetChallengeSolver(s cmacme.ACMEChallengeSolver) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Solver = s
+	}
+}
+
+func SetChallengeStatusCondition(c cmacme.ChallengeCondition) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		if len(ch.Status.Conditions) == 0 {
+			ch.Status.Conditions = []cmacme.ChallengeCondition{c}
+			return
+		}
+		for i, existingC := range ch.Status.Conditions {
+			if existingC.Type == c.Type {
+				ch.Status.Conditions[i] = c
+				return
+			}
+		}
+		ch.Status.Conditions = append(ch.Status.Conditions, c)
+	}
+}
+
+func AddChallengeStatusCondition(c cmacme.ChallengeCondition) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Status.Conditions = append(ch.Status.Conditions, c)
+	}
+}

@@ -143,4 +143,63 @@ type ChallengeStatus struct {
 	// If not set, the state of the challenge is unknown.
 	// +optional
 	State State `json:"state,omitempty"`
+
+	// List of status conditions to indicate the status of a Challenge.
+	// Known condition types are (`SelfCheckSucceeded`, `DelayedAcceptTimeoutReached`)
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []ChallengeCondition `json:"conditions,omitempty"`
 }
+
+// ChallengeCondition contains condition information for a Challenge.
+type ChallengeCondition struct {
+	// Type of the condition, known values are (`SelfCheckSucceeded`, `DelayedAcceptTimeoutReached`).
+	Type ChallengeConditionType `json:"type"`
+
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
+	Status cmmeta.ConditionStatus `json:"status"`
+
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	// +optional
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	// +optional
+	Reason string `json:"reason,omitempty"`
+
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	// +optional
+	Message string `json:"message,omitempty"`
+
+	// If set, this represents the .metadata.generation that the condition was
+	// set based upon.
+	// For instance, if .metadata.generation is currently 12, but the
+	// .status.condition[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the Issuer.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+}
+
+// ChallengeConditionType represents an Issuer condition value.
+type ChallengeConditionType string
+
+const (
+	// ChallengeConditionPresented means that the resources required for solving
+	// the challenge have been deployed. For example DNS records or HTTP ingress
+	// configuration.
+	ChallengConditionPresented ChallengeConditionType = "Presented"
+
+	// ChallengeConditionSelfCheckSucceeded means that a self check is passing,
+	// and the ACME ‘authorization’ associated with this challenge will be
+	// ‘accepted’.
+	ChallengConditionSelfCheckSucceeded ChallengeConditionType = "SelfCheckSucceeded"
+
+	// ChallengeConditionDelayedAcceptTimeoutReached means that the required
+	// time has passed since the creation of the Challenge, and the ACME
+	// ‘authorization’ associated with this challenge will be ‘accepted’.
+	ChallengConditionDelayedAcceptTimeoutReached ChallengeConditionType = "DelayedAcceptTimeoutReached"
+)
