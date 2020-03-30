@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -97,7 +98,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 	}
 
 	t.Logf("Secret resource has been provisioned, deleting to ensure it is recreated")
-	if err := cl.CoreV1().Secrets(auth.SecretNamespace).Delete(auth.SecretName, &metav1.DeleteOptions{}); err != nil {
+	if err := cl.CoreV1().Secrets(auth.SecretNamespace).Delete(context.TODO(), auth.SecretName, metav1.DeleteOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -114,7 +115,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 // This can be used with the `k8s.io/apimachinery/pkg/util/wait` package.
 func authoritySecretReadyConditionFunc(t *testing.T, cl kubernetes.Interface, namespace, name string) wait.ConditionFunc {
 	return func() (done bool, err error) {
-		s, err := cl.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+		s, err := cl.CoreV1().Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			t.Logf("Secret resource %s/%s does not yet exist, waiting...", namespace, name)
 			return false, nil

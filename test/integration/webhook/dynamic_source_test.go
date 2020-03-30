@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"crypto/x509"
 	"math/big"
 	"testing"
@@ -134,7 +135,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	}
 
 	cl := kubernetes.NewForConfigOrDie(config)
-	if err := cl.CoreV1().Secrets(source.Authority.SecretNamespace).Delete(source.Authority.SecretName, &metav1.DeleteOptions{}); err != nil {
+	if err := cl.CoreV1().Secrets(source.Authority.SecretNamespace).Delete(context.TODO(), source.Authority.SecretName, metav1.DeleteOptions{}); err != nil {
 		t.Fatalf("Failed to delete CA secret: %v", err)
 	}
 
