@@ -153,73 +153,17 @@ filegroup(
 # Define rules for different kubectl versions
 def install_kubectl():
     http_file(
-        name = "kubectl_1_12_darwin",
+        name = "kubectl_1_18_darwin",
         executable = 1,
-        sha256 = "ccddf5b78cd24d5782f4fbe436eee974ca3d901a2d850c24693efa8824737979",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.12.3/bin/darwin/amd64/kubectl"],
+        sha256 = "5eda86058a3db112821761b32afce3fdd2f6963ab580b1780a638ac323864eba",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl"],
     )
 
     http_file(
-        name = "kubectl_1_12_linux",
+        name = "kubectl_1_18_linux",
         executable = 1,
-        sha256 = "a93cd2ffd146bbffb6ea651b71b57fe377ba1f158c7c0eb16c14aa93394cd576",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.12.3/bin/linux/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_13_darwin",
-        executable = 1,
-        sha256 = "e656a8ac9272d04febf2ed29b2e8866bfdb73f55e098026384268851d7aeba74",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/darwin/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_13_linux",
-        executable = 1,
-        sha256 = "2c7ab398559c7f4f91102c4a65184e0a5a3a137060c3179e9361d9c20b467181",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/linux/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_14_darwin",
-        executable = 1,
-        sha256 = "b4f6d583014f3dc9f3912d68b5aaa20a25394ecc43b42b2df3d37ef7c4a6f819",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.14.3/bin/darwin/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_14_linux",
-        executable = 1,
-        sha256 = "ebc8c2fadede148c2db1b974f0f7f93f39f19c8278619893fd530e20e9bec98f",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.14.3/bin/linux/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_15_darwin",
-        executable = 1,
-        sha256 = "63f1ace419edffa1f5ebb64a6c63597afd48f8d94a61d4fb44e820139adbbe54",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/darwin/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_15_linux",
-        executable = 1,
-        sha256 = "ecec7fe4ffa03018ff00f14e228442af5c2284e57771e4916b977c20ba4e5b39",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/linux/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_16_darwin",
-        executable = 1,
-        sha256 = "ab04b4e950fb7a8fa24da1d646af6d2fd7c1c7f09254af3783c920d258a94b1a",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.16.0-alpha.1/bin/darwin/amd64/kubectl"],
-    )
-
-    http_file(
-        name = "kubectl_1_16_linux",
-        executable = 1,
-        sha256 = "05942f4d57305dedeb76102a8d7ba0476914a1cd373e51d503923e6c96c4dc45",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.16.0-alpha.1/bin/linux/amd64/kubectl"],
+        sha256 = "bb16739fcad964c197752200ff89d89aad7b118cb1de5725dc53fe924c40e3f7",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl"],
     )
 
 ## Fetch kind images used during e2e tests
