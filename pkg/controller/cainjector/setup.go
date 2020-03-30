@@ -74,7 +74,7 @@ var (
 // graduation state of the injector decides how to log no kind/resource match errors
 func registerAllInjectors(mgr ctrl.Manager, sources ...caDataSource) error {
 	for _, setup := range injectorSetups {
-		if err := registerInjector(mgr, setup, sources...); err != nil {
+		if err := Register(mgr, setup, sources...); err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
 			}
@@ -86,8 +86,8 @@ func registerAllInjectors(mgr ctrl.Manager, sources ...caDataSource) error {
 	return nil
 }
 
-// registerInjector registers an injection controller with the given manager, and adds relevant indicies.
-func registerInjector(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
+// Register registers an injection controller with the given manager, and adds relevant indicies.
+func Register(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
 	typ := setup.injector.NewTarget().AsObject()
 	builder := ctrl.NewControllerManagedBy(mgr).For(typ)
 	for _, s := range sources {
