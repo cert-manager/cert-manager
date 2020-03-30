@@ -19,13 +19,12 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
-
-	ciphers "k8s.io/component-base/cli/flag"
 
 	"github.com/go-logr/logr"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -34,10 +33,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	ciphers "k8s.io/component-base/cli/flag"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
+	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
 )
 
 var (
@@ -87,7 +88,7 @@ type Server struct {
 
 	// If specified, the server will listen with TLS using certificates
 	// provided by this CertificateSource.
-	CertificateSource CertificateSource
+	CertificateSource servertls.CertificateSource
 
 	ValidationWebhook handlers.ValidatingAdmissionHook
 	MutationWebhook   handlers.MutatingAdmissionHook
@@ -99,6 +100,8 @@ type Server struct {
 
 	// CipherSuites is a slice of TLS Cipher Suite names
 	CipherSuites []string
+
+	listener net.Listener
 }
 
 func (s *Server) Run(stopCh <-chan struct{}) error {
@@ -137,6 +140,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	s.listener = l
 
 	// wrap the listener with TLS if a CertificateSource is provided
 	if s.CertificateSource != nil {
@@ -188,6 +192,18 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	s.Log.Info("server shutdown successfully")
 
 	return err
+}
+
+// Port returns the port number that the webhook listener is listening on
+func (s *Server) Port() (int, error) {
+	if s.listener == nil {
+		return 0, errors.New("Run() must be called before Port()")
+	}
+	tcpAddr, ok := s.listener.Addr().(*net.TCPAddr)
+	if !ok {
+		return 0, errors.New("unexpected listen address type (expected tcp)")
+	}
+	return tcpAddr.Port, nil
 }
 
 func (s *Server) startServer(l net.Listener, stopCh <-chan struct{}, handle http.Handler) <-chan error {

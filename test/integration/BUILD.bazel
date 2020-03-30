@@ -11,6 +11,7 @@ filegroup(
         ":package-srcs",
         "//test/integration/conversion:all-srcs",
         "//test/integration/framework:all-srcs",
+        "//test/integration/webhook:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

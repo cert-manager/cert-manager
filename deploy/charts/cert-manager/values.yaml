@@ -159,8 +159,16 @@ webhook:
   # conversion webhook configuration.
   # If you change this value, you must also manually update the
   # `spec.conversion.webhookClientConfig.service.name` field on all
-  # cert-manager CRD resources as well.
+  # cert-manager CRD resources.
   serviceName: cert-manager-webhook
+  # The name of the Secret resource that will be created and used to store the
+  # root CA used to sign serving certificates for the webhook.
+  # This will be automatically injected into the Mutating, Validating and CRD
+  # resources by the cainjector component.
+  # If you change this value, you must also manually update the
+  # `cert-manager.io/inject-ca-from-secret` value on all cert-manager CRD
+  # resources.
+  rootCASecretName: cert-manager-webhook-ca
 
   strategy: {}
     # type: RollingUpdate
@@ -194,13 +202,6 @@ webhook:
     # If no value is set, the chart's appVersion will be used.
     # tag: canary
     pullPolicy: IfNotPresent
-
-  # If true, the apiserver's cabundle will be automatically injected into the
-  # webhook's ValidatingWebhookConfiguration resource by the CA injector.
-  # in future this will default to false, as the apiserver can use the loopback
-  # configuration caBundle to talk to itself in kubernetes 1.11+
-  # see https://github.com/kubernetes/kubernetes/pull/62649
-  injectAPIServerCA: true
 
   # The port that the webhook should listen on for requests.
   # In GKE private clusters, by default kubernetes apiservers are allowed to

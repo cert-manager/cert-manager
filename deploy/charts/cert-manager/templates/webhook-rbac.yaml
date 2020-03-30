@@ -1,0 +1,47 @@
+{{- if .Values.global.rbac.create -}}
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: {{ template "webhook.fullname" . }}:dynamic-serving
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "webhook"
+    helm.sh/chart: {{ include "webhook.chart" . }}
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames:
+  - '{{ .Values.webhook.rootCASecretName }}'
+  verbs: ["get", "list", "watch", "update"]
+# It's not possible to grant CREATE permission on a single resourceName.
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create"]
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: {{ template "webhook.fullname" . }}:dynamic-serving
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "webhook"
+    helm.sh/chart: {{ include "webhook.chart" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "webhook.fullname" . }}:dynamic-serving
+subjects:
+- apiGroup: ""
+  kind: ServiceAccount
+  name: {{ include "webhook.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+
+{{- end -}}

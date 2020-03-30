@@ -20,12 +20,15 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/webhook"
+	"github.com/jetstack/cert-manager/pkg/webhook/authority"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	"github.com/jetstack/cert-manager/pkg/webhook/server"
+	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
 )
 
 var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logs.Log, webhook.Scheme, webhook.ValidationRegistry)
@@ -33,19 +36,46 @@ var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaul
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
 func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struct{}) error {
-	var source server.CertificateSource
-	if opts.TLSCertFile == "" || opts.TLSKeyFile == "" {
-		log.Info("warning: serving insecurely as tls certificate data not provided")
-	} else {
-		log.Info("enabling TLS as certificate file flags specified")
-		source = &server.FileCertificateSource{
+	srv, err := NewServerWithOptions(log, opts)
+	if err != nil {
+		return err
+	}
+
+	return srv.Run(stopCh)
+}
+
+func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server.Server, error) {
+	var source tls.CertificateSource
+	switch {
+	case options.FileTLSSourceEnabled(opts):
+		log.Info("using TLS certificate from local filesystem", "private_key_path", opts.TLSKeyFile, "certificate", opts.TLSCertFile)
+		source = &tls.FileCertificateSource{
 			CertPath: opts.TLSCertFile,
 			KeyPath:  opts.TLSKeyFile,
 			Log:      log,
 		}
+	case options.DynamicTLSSourceEnabled(opts):
+		restcfg, err := clientcmd.BuildConfigFromFlags("", opts.Kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+
+		log.Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", opts.DynamicServingCASecretNamespace, "secret_name", opts.DynamicServingCASecretName)
+		source = &tls.DynamicSource{
+			DNSNames: opts.DynamicServingDNSNames,
+			Authority: &authority.DynamicAuthority{
+				SecretNamespace: opts.DynamicServingCASecretNamespace,
+				SecretName:      opts.DynamicServingCASecretName,
+				RESTConfig:      restcfg,
+				Log:             log,
+			},
+			Log: log,
+		}
+	default:
+		log.Info("warning: serving insecurely as tls certificate data not provided")
 	}
 
-	srv := server.Server{
+	return &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", opts.ListenPort),
 		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
 		EnablePprof:       true,
@@ -55,9 +85,5 @@ func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struc
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
 		Log:               log,
-	}
-	if err := srv.Run(stopCh); err != nil {
-		return err
-	}
-	return nil
+	}, nil
 }

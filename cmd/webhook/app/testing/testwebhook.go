@@ -56,7 +56,7 @@ type ServerOptions struct {
 
 func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	// Allow user to override options using flags
-	opts := &options.WebhookOptions{}
+	opts := options.WebhookOptions{}
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	opts.AddFlags(fs)
 	// Parse the arguments passed in into the WebhookOptions struct
@@ -67,7 +67,7 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if opts.TLSKeyFile == "" && opts.TLSCertFile == "" {
+	if !options.FileTLSSourceEnabled(opts) && !options.DynamicTLSSourceEnabled(opts) {
 		// Generate a CA and serving certificate
 		ca, certificatePEM, privateKeyPEM, err := generateTLSAssets()
 		if err != nil {
@@ -86,22 +86,43 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 		opts.TLSCertFile = filepath.Join(tempDir, "tls.crt")
 	}
 
+	// Listen on a random port number
+	opts.ListenPort = 0
+	opts.HealthzPort = 0
+	srv, err := app.NewServerWithOptions(log, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	stopCh := make(chan struct{})
 	go func() {
-		if err := app.RunServer(log, *opts, stopCh); err != nil {
+		if err := srv.Run(stopCh); err != nil {
 			t.Fatalf("error running webhook server: %v", err)
 		}
 	}()
 
-	return ServerOptions{
-			URL:   fmt.Sprintf("https://127.0.0.1:%d", opts.ListenPort),
-			CAPEM: caPEM,
-		}, func() {
-			close(stopCh)
-			if err := os.RemoveAll(tempDir); err != nil {
-				t.Fatal(err)
-			}
+	// Determine the random port number that was chosen
+	var listenPort int
+	for i := 0; i < 10; i++ {
+		listenPort, err = srv.Port()
+		if err != nil {
+			t.Logf("Waiting for ListenPort to be allocated (got error: %v)", err)
+			time.Sleep(time.Second)
+			continue
 		}
+		break
+	}
+
+	serverOpts := ServerOptions{
+		URL:   fmt.Sprintf("https://127.0.0.1:%d", listenPort),
+		CAPEM: caPEM,
+	}
+	return serverOpts, func() {
+		close(stopCh)
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error) {

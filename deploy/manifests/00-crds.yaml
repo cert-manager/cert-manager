@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: certificaterequests.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-tls
+    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -209,7 +209,7 @@ kind: CustomResourceDefinition
 metadata:
   name: certificates.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-tls
+    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -758,7 +758,7 @@ kind: CustomResourceDefinition
 metadata:
   name: challenges.acme.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-tls
+    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.state
@@ -2193,7 +2193,7 @@ kind: CustomResourceDefinition
 metadata:
   name: clusterissuers.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-tls
+    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -3992,7 +3992,7 @@ kind: CustomResourceDefinition
 metadata:
   name: issuers.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-tls
+    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -5791,7 +5791,7 @@ kind: CustomResourceDefinition
 metadata:
   name: orders.acme.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-tls
+    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.state

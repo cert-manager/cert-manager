@@ -130,6 +130,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `no_proxy` | Value of the `NO_PROXY` environment variable in the cert-manager pod | |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
 | `webhook.serviceName` | The name of the Service resource deployed for the webhook pod | `cert-manager-webhook` |
+| `webhook.rootCASecretName` | The name of the Secret resource that will be used to store the webhook's root CA certificate | `cert-manager-webhook-ca` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
@@ -140,7 +141,6 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
 | `webhook.image.tag` | Webhook image tag | `{{RELEASE_VERSION}}` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
-| `webhook.injectAPIServerCA` | if true, the apiserver's CABundle will be automatically injected into the ValidatingWebhookConfiguration resource | `true` |
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |

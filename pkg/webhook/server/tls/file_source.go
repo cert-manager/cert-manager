@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package server
+package tls
 
 import (
 	"bytes"
@@ -113,7 +113,7 @@ func (f *FileCertificateSource) GetCertificate(*tls.ClientHelloInfo) (*tls.Certi
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	if f.cachedCertificate == nil {
-		return nil, fmt.Errorf("no tls.Certificate available")
+		return nil, ErrNotAvailable
 	}
 	return f.cachedCertificate, nil
 }
