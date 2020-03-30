@@ -78,7 +78,7 @@ type controller struct {
 	dns01Nameservers []string
 }
 
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
@@ -130,13 +130,13 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	var err error
 	c.dnsSolver, err = dns.NewSolver(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	// read options from context
 	c.dns01Nameservers = ctx.ACMEOptions.DNS01Nameservers
 
-	return c.queue, mustSync, nil, nil
+	return c.queue, mustSync, nil
 }
 
 // MaxChallengesPerSchedule is the maximum number of challenges that can be

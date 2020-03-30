@@ -113,7 +113,7 @@ type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, err
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
+func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 
@@ -167,19 +167,19 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	c.experimentalIssuePKCS12 = ctx.CertificateOptions.ExperimentalIssuePKCS12
 	c.experimentalPKCS12KeystorePassword = ctx.CertificateOptions.ExperimentalPKCS12KeystorePassword
 	if c.experimentalIssuePKCS12 && len(c.experimentalPKCS12KeystorePassword) == 0 {
-		return nil, nil, nil, fmt.Errorf("if experimental pkcs12 issuance is enabled, a keystore password must be provided")
+		return nil, nil, fmt.Errorf("if experimental pkcs12 issuance is enabled, a keystore password must be provided")
 	}
 	// Experimental JKS handling options
 	c.experimentalIssueJKS = ctx.CertificateOptions.ExperimentalIssueJKS
 	c.experimentalJKSPassword = ctx.CertificateOptions.ExperimentalJKSPassword
 	if c.experimentalIssueJKS && len(c.experimentalJKSPassword) == 0 {
-		return nil, nil, nil, fmt.Errorf("if experimental jks issuance is enabled, a keystore password must be provided")
+		return nil, nil, fmt.Errorf("if experimental jks issuance is enabled, a keystore password must be provided")
 	}
 
 	c.cmClient = ctx.CMClient
 	c.kubeClient = ctx.Client
 
-	return c.queue, mustSync, nil, nil
+	return c.queue, mustSync, nil
 }
 
 const (
