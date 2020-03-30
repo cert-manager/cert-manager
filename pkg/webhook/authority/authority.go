@@ -18,6 +18,7 @@ package authority
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/tls"
@@ -136,7 +137,8 @@ func (d *DynamicAuthority) Run(stopCh <-chan struct{}) error {
 	// Secret resource does not exist and so the informers handler functions
 	// are not triggered.
 	return wait.PollImmediateUntil(time.Second*10, func() (done bool, err error) {
-		if err := d.ensureCA(); err != nil {
+		ctx := context.Background()
+		if err := d.ensureCA(ctx); err != nil {
 			d.Log.Error(err, "error ensuring CA")
 		}
 		// never return 'done'.
@@ -219,19 +221,19 @@ func (d *DynamicAuthority) WatchRotation(stopCh <-chan struct{}) <-chan struct{}
 	return ch
 }
 
-func (d *DynamicAuthority) ensureCA() error {
+func (d *DynamicAuthority) ensureCA(ctx context.Context) error {
 	d.ensureMutex.Lock()
 	defer d.ensureMutex.Unlock()
 
 	s, err := d.lister.Get(d.SecretName)
 	if apierrors.IsNotFound(err) {
-		return d.regenerateCA(nil)
+		return d.regenerateCA(ctx, nil)
 	}
 	if err != nil {
 		return err
 	}
 	if d.caRequiresRegeneration(s) {
-		return d.regenerateCA(s.DeepCopy())
+		return d.regenerateCA(ctx, s.DeepCopy())
 	}
 	d.notifyWatches(s.Data[corev1.TLSCertKey], s.Data[corev1.TLSPrivateKeyKey])
 	return nil
@@ -307,7 +309,7 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 // regenerateCA will regenerate and store a new CA.
 // If the provided Secret is nil, a new secret resource will be Created.
 // Otherwise, the provided resource will be modified and Updated.
-func (d *DynamicAuthority) regenerateCA(s *corev1.Secret) error {
+func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) error {
 	d.Log.Info("Generating new root CA")
 	pk, err := pki.GenerateECPrivateKey(384)
 	if err != nil {
@@ -346,7 +348,7 @@ func (d *DynamicAuthority) regenerateCA(s *corev1.Secret) error {
 	}
 
 	if s == nil {
-		_, err := d.client.Create(&corev1.Secret{
+		_, err := d.client.Create(ctx, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      d.SecretName,
 				Namespace: d.SecretNamespace,
@@ -359,7 +361,7 @@ func (d *DynamicAuthority) regenerateCA(s *corev1.Secret) error {
 				corev1.TLSPrivateKeyKey: pkBytes,
 				cmmeta.TLSCAKey:         certBytes,
 			},
-		})
+		}, metav1.CreateOptions{})
 		return err
 	}
 
@@ -369,7 +371,7 @@ func (d *DynamicAuthority) regenerateCA(s *corev1.Secret) error {
 	s.Data[corev1.TLSCertKey] = certBytes
 	s.Data[corev1.TLSPrivateKeyKey] = pkBytes
 	s.Data[cmmeta.TLSCAKey] = certBytes
-	if _, err := d.client.Update(s); err != nil {
+	if _, err := d.client.Update(ctx, s, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 	d.Log.Info("Generated new root CA")
@@ -377,19 +379,22 @@ func (d *DynamicAuthority) regenerateCA(s *corev1.Secret) error {
 }
 
 func (d *DynamicAuthority) handleAdd(obj interface{}) {
-	if err := d.ensureCA(); err != nil {
+	ctx := context.Background()
+	if err := d.ensureCA(ctx); err != nil {
 		d.Log.Error(err, "error ensuring CA")
 	}
 }
 
 func (d *DynamicAuthority) handleUpdate(_, obj interface{}) {
-	if err := d.ensureCA(); err != nil {
+	ctx := context.Background()
+	if err := d.ensureCA(ctx); err != nil {
 		d.Log.Error(err, "error ensuring CA")
 	}
 }
 
 func (d *DynamicAuthority) handleDelete(obj interface{}) {
-	if err := d.ensureCA(); err != nil {
+	ctx := context.Background()
+	if err := d.ensureCA(ctx); err != nil {
 		d.Log.Error(err, "error ensuring CA")
 	}
 }
