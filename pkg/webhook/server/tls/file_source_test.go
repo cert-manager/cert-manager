@@ -33,7 +33,7 @@ import (
 )
 
 func TestFileSource_ReadsFile(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test-temp-dir-")
+	dir, err := ioutil.TempDir("", "test-filesource-readsfile-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestFileSource_ReadsFile(t *testing.T) {
 }
 
 func TestFileSource_UpdatesFile(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test-temp-dir-*")
+	dir, err := ioutil.TempDir("", "test-filesource-updatesfile-")
 	if err != nil {
 		t.Fatal(err)
 	}
