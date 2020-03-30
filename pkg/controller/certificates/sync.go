@@ -371,7 +371,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 			return err
 		}
 
-		req, err = c.cmClient.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(req)
+		req, err = c.cmClient.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(context.TODO(), req, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -387,7 +387,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	x509CSR, err := pki.DecodeX509CertificateRequestBytes(existingReq.Spec.CSRPEM)
 	if errors.IsInvalidData(err) {
 		log.Info("failed to decode existing CSR on CertificateRequest, deleting resource...")
-		return c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+		return c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(context.TODO(), existingReq.Name, metav1.DeleteOptions{})
 	}
 	if err != nil {
 		return err
@@ -404,7 +404,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// do anything with the certificate if it is issued
 	if !publicKeyMatches {
 		log.Info("stored private key is not valid for CSR stored on existing CertificateRequest, recreating CertificateRequest resource")
-		err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+		err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(context.TODO(), existingReq.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}
@@ -437,7 +437,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	case cmapi.CertificateRequestReasonFailed:
 		if existingReq.Status.FailureTime == nil || c.clock.Since(existingReq.Status.FailureTime.Time) > time.Hour {
 			log.Info("deleting failed certificate request")
-			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(context.TODO(), existingReq.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
@@ -477,7 +477,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		}
 		if !publicKeyMatches {
 			log.Info("private key stored in Secret does not match public key of issued certificate, deleting the old CertificateRequest resource")
-			return c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+			return c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(context.TODO(), existingReq.Name, metav1.DeleteOptions{})
 		}
 
 		// Check if the Certificate requires renewal according to the renewBefore
@@ -485,7 +485,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		log.Info("checking if certificate stored on CertificateRequest is up to date")
 		if c.certificateNeedsRenew(ctx, x509Cert, crt) {
 			log.Info("certificate stored on CertificateRequest needs renewal, so deleting the old CertificateRequest resource")
-			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(context.TODO(), existingReq.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
@@ -546,14 +546,14 @@ func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *c
 	}
 
 	if existingSecret == nil {
-		_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Create(newSecret)
+		_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Create(context.TODO(), newSecret, metav1.CreateOptions{})
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	}
 
-	_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(newSecret)
+	_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(context.TODO(), newSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -588,7 +588,7 @@ func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Contex
 		return err
 	}
 
-	newSecret, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(newSecret)
+	newSecret, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(context.TODO(), newSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -689,7 +689,7 @@ func (c *certificateRequestManager) cleanupExistingCertificateRequests(log logr.
 			continue
 		}
 
-		err = c.cmClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(req.Name, nil)
+		err = c.cmClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(context.TODO(), req.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}

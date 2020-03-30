@@ -17,6 +17,7 @@ limitations under the License.
 package selfsigned
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -42,7 +43,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 
 	JustBeforeEach(func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerSelfSignedIssuer(issuerName), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
@@ -70,16 +71,16 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateRequestSecretName, nil)
-		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), certificateRequestSecretName, metav1.DeleteOptions{})
+		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
 	})
 
 	Context("Self Signed and private key", func() {
 
 		BeforeEach(func() {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newPrivateKeySecret(
-				certificateRequestSecretName, f.Namespace.Name, rootRSAKey))
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), newPrivateKeySecret(
+				certificateRequestSecretName, f.Namespace.Name, rootRSAKey), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -90,9 +91,9 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			csr, err := generateRSACSR()
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = crClient.Create(gen.CertificateRequestFrom(basicCR,
+			_, err = crClient.Create(context.TODO(), gen.CertificateRequestFrom(basicCR,
 				gen.SetCertificateRequestCSR(csr),
-			))
+			), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Verifying the Certificate is valid")
@@ -102,8 +103,8 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 
 		It("should be able to obtain an ECDSA Certificate backed by a ECSDA key", func() {
 			// Replace RSA key secret with ECDSA one
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(newPrivateKeySecret(
-				certificateRequestSecretName, f.Namespace.Name, rootECKey))
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.TODO(), newPrivateKeySecret(
+				certificateRequestSecretName, f.Namespace.Name, rootECKey), metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
@@ -111,9 +112,9 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			csr, err := generateECCSR()
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = crClient.Create(gen.CertificateRequestFrom(basicCR,
+			_, err = crClient.Create(context.TODO(), gen.CertificateRequestFrom(basicCR,
 				gen.SetCertificateRequestCSR(csr),
-			))
+			), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Verifying the Certificate is valid")
@@ -145,15 +146,15 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				csr, err := generateRSACSR()
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = crClient.Create(gen.CertificateRequestFrom(basicCR,
+				_, err = crClient.Create(context.TODO(), gen.CertificateRequestFrom(basicCR,
 					gen.SetCertificateRequestCSR(csr),
-				))
+				), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Verifying the CertificateRequest is valid")
 				err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Second*30, rootRSAKeySigner)
 				Expect(err).NotTo(HaveOccurred())
-				cr, err := crClient.Get(certificateRequestName, metav1.GetOptions{})
+				cr, err := crClient.Get(context.TODO(), certificateRequestName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				f.CertificateRequestDurationValid(cr, v.expectedDuration, 0)
 			})

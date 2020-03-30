@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -164,7 +165,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
-		_, err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(ch)
+		_, err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return

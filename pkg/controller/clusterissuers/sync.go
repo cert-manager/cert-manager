@@ -23,6 +23,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -94,5 +95,5 @@ func (c *controller) updateIssuerStatus(old, new *v1alpha2.ClusterIssuer) (*v1al
 	if reflect.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
-	return c.cmClient.CertmanagerV1alpha2().ClusterIssuers().UpdateStatus(new)
+	return c.cmClient.CertmanagerV1alpha2().ClusterIssuers().UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
 }

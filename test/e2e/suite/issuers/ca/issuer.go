@@ -17,6 +17,7 @@ limitations under the License.
 package ca
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -24,6 +25,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("CA Issuer", func() {
@@ -34,18 +36,18 @@ var _ = framework.CertManagerDescribe("CA Issuer", func() {
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret(secretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), newSigningKeypairSecret(secretName), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 	})
 
 	It("should generate a signing keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerCAIssuer(issuerName, secretName), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),

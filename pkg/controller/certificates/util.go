@@ -29,6 +29,7 @@ import (
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
@@ -244,7 +245,7 @@ func updateCertificateStatus(ctx context.Context, cmClient cmclient.Interface, o
 		return nil, nil
 	}
 	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
-	return cmClient.CertmanagerV1alpha2().Certificates(new.Namespace).UpdateStatus(new)
+	return cmClient.CertmanagerV1alpha2().Certificates(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
 }
 
 func certificateHasTemporaryCertificateAnnotation(crt *v1alpha2.Certificate) bool {

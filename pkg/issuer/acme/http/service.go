@@ -96,7 +96,7 @@ func (s *Solver) createService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.Client.CoreV1().Services(ch.Namespace).Create(svc)
+	return s.Client.CoreV1().Services(ch.Namespace).Create(context.TODO(), svc, metav1.CreateOptions{})
 }
 
 func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
@@ -148,7 +148,7 @@ func (s *Solver) cleanupServices(ctx context.Context, ch *cmacme.Challenge) erro
 		log := logf.WithRelatedResource(log, service).V(logf.DebugLevel)
 		log.Info("deleting service resource")
 
-		err := s.Client.CoreV1().Services(service.Namespace).Delete(service.Name, nil)
+		err := s.Client.CoreV1().Services(service.Namespace).Delete(context.TODO(), service.Name, metav1.DeleteOptions{})
 		if err != nil {
 			log.Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)

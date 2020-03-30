@@ -410,9 +410,9 @@ func (c *controller) updateSecret(secret *corev1.Secret, pk, ca, crt []byte) err
 
 	var err error
 	if secret.ResourceVersion == "" {
-		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Create(secret)
+		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
 	} else {
-		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(secret)
+		_, err = c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
 	}
 	if err != nil {
 		return err

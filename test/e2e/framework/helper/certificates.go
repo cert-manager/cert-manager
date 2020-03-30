@@ -17,6 +17,7 @@ limitations under the License.
 package helper
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
@@ -44,7 +45,7 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for Certificate %v to be ready", name)
-			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(name, metav1.GetOptions{})
+			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
@@ -72,7 +73,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for Certificate %v to be ready", name)
-			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(name, metav1.GetOptions{})
+			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
@@ -97,7 +98,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 // correct as defined by the Certificate's spec.
 func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootCAPEM []byte) (*x509.Certificate, error) {
 	log.Logf("Getting the TLS certificate Secret resource")
-	secret, err := h.KubeClient.CoreV1().Secrets(certificate.Namespace).Get(certificate.Spec.SecretName, metav1.GetOptions{})
+	secret, err := h.KubeClient.CoreV1().Secrets(certificate.Namespace).Get(context.TODO(), certificate.Spec.SecretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +267,7 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 	var issuerSpec *cmapi.IssuerSpec
 	switch issuerRef.Kind {
 	case "ClusterIssuer":
-		issuerObj, err := h.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(issuerRef.Name, metav1.GetOptions{})
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return 0, nil, fmt.Errorf("failed to find referenced ClusterIssuer %v: %s",
 				issuerRef, err)
@@ -274,7 +275,7 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 
 		issuerSpec = &issuerObj.Spec
 	default:
-		issuerObj, err := h.CMClient.CertmanagerV1alpha2().Issuers(ns).Get(issuerRef.Name, metav1.GetOptions{})
+		issuerObj, err := h.CMClient.CertmanagerV1alpha2().Issuers(ns).Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return 0, nil, fmt.Errorf("failed to find referenced Issuer %v: %s",
 				issuerRef, err)

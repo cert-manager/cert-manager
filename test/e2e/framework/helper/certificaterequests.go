@@ -17,6 +17,7 @@ limitations under the License.
 package helper
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
@@ -43,7 +44,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for CertificateRequest %s to be ready", name)
-			cr, err = h.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Get(name, metav1.GetOptions{})
+			cr, err = h.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 			}

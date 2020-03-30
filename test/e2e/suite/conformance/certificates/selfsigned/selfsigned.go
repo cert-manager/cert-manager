@@ -17,6 +17,7 @@ limitations under the License.
 package selfsigned
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,12 +44,12 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned Issuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-issuer-",
 		},
 		Spec: createSelfSignedIssuerSpec(),
-	})
+	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
 	return cmmeta.ObjectReference{
@@ -59,19 +60,19 @@ func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 }
 
 func deleteSelfSignedClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
-	err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuer.Name, nil)
+	err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 
 func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned ClusterIssuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(&cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-cluster-issuer-",
 		},
 		Spec: createSelfSignedIssuerSpec(),
-	})
+	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
 	return cmmeta.ObjectReference{

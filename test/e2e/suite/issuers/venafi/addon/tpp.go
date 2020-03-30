@@ -17,6 +17,7 @@ limitations under the License.
 package addon
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -84,7 +85,7 @@ func (v *VenafiTPP) Provision() error {
 		},
 	}
 
-	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Create(secret)
+	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -107,7 +108,7 @@ func (v *VenafiTPP) Details() *TPPDetails {
 }
 
 func (v *VenafiTPP) Deprovision() error {
-	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(v.createdSecret.Name, nil)
+	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(context.TODO(), v.createdSecret.Name, metav1.DeleteOptions{})
 }
 
 func (v *VenafiTPP) SupportsGlobal() bool {

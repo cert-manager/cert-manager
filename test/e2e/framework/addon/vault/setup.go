@@ -17,6 +17,7 @@ limitations under the License.
 package vault
 
 import (
+	"context"
 	"fmt"
 	"path"
 
@@ -420,20 +421,20 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 // CreateKubernetesRole creates a service account and ClusterRoleBinding for Kubernetes auth delegation
 func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, namespace, roleName, serviceAccountName string) error {
 	serviceAccount := NewVaultServiceAccount(serviceAccountName)
-	_, err := client.CoreV1().ServiceAccounts(namespace).Create(serviceAccount)
+	_, err := client.CoreV1().ServiceAccounts(namespace).Create(context.TODO(), serviceAccount, metav1.CreateOptions{})
 
 	if err != nil {
 		return fmt.Errorf("error creating ServiceAccount for Kubernetes auth: %s", err.Error())
 	}
 
 	role := NewVaultServiceAccountRole(namespace)
-	_, err = client.RbacV1().ClusterRoles().Create(role)
+	_, err = client.RbacV1().ClusterRoles().Create(context.TODO(), role, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
 
 	roleBinding := NewVaultServiceAccountClusterRoleBinding(role.Name, namespace, serviceAccountName)
-	_, err = client.RbacV1().ClusterRoleBindings().Create(roleBinding)
+	_, err = client.RbacV1().ClusterRoleBindings().Create(context.TODO(), roleBinding, metav1.CreateOptions{})
 
 	if err != nil {
 		return fmt.Errorf("error creating RoleBinding for Kubernetes auth ServiceAccount: %s", err.Error())
@@ -457,15 +458,15 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 
 // CleanKubernetesRole cleans up the ClusterRoleBinding and ServiceAccount for Kubernetes auth delegation
 func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, namespace, roleName, serviceAccountName string) error {
-	if err := client.RbacV1().RoleBindings(namespace).Delete(roleName, nil); err != nil {
+	if err := client.RbacV1().RoleBindings(namespace).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	if err := client.RbacV1().Roles(namespace).Delete(roleName, nil); err != nil {
+	if err := client.RbacV1().Roles(namespace).Delete(context.TODO(), roleName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
-	if err := client.CoreV1().ServiceAccounts(namespace).Delete(serviceAccountName, nil); err != nil {
+	if err := client.CoreV1().ServiceAccounts(namespace).Delete(context.TODO(), serviceAccountName, metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 

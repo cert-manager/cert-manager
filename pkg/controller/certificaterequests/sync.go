@@ -24,6 +24,7 @@ import (
 
 	"github.com/kr/pretty"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -169,5 +170,5 @@ func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, ne
 	}
 
 	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
-	return c.cmClient.CertmanagerV1alpha2().CertificateRequests(new.Namespace).UpdateStatus(new)
+	return c.cmClient.CertmanagerV1alpha2().CertificateRequests(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
 }

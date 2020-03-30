@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"context"
 	time "time"
 
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
@@ -61,13 +62,13 @@ func NewFilteredCertificateInformer(client versioned.Interface, namespace string
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertmanagerV1alpha3().Certificates(namespace).List(options)
+				return client.CertmanagerV1alpha3().Certificates(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertmanagerV1alpha3().Certificates(namespace).Watch(options)
+				return client.CertmanagerV1alpha3().Certificates(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&certmanagerv1alpha3.Certificate{},

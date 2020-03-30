@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -229,7 +230,7 @@ func (f *Framework) Helper() *helper.Helper {
 
 func (f *Framework) CertificateDurationValid(c *v1alpha2.Certificate, duration, fuzz time.Duration) {
 	By("Verifying TLS certificate exists")
-	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(c.Spec.SecretName, metav1.GetOptions{})
+	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), c.Spec.SecretName, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	certBytes, ok := secret.Data[api.TLSCertKey]
 	if !ok {

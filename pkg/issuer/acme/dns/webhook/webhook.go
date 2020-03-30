@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,7 +49,7 @@ func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	result := cl.Post().Resource(solverName).Body(pl).Do()
+	result := cl.Post().Resource(solverName).Body(pl).Do(context.TODO())
 	// we will check this error after parsing the response
 	resErr := result.Error()
 
@@ -84,7 +85,7 @@ func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	result := cl.Post().Resource(solverName).Body(pl).Do()
+	result := cl.Post().Resource(solverName).Body(pl).Do(context.TODO())
 	// we will check this error after parsing the response
 	resErr := result.Error()
 

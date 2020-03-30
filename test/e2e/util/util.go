@@ -19,6 +19,7 @@ package util
 // TODO: we should break this file apart into separate more sane/reusable parts
 
 import (
+	"context"
 	"crypto"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -58,7 +59,7 @@ func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, d
 func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn func(*v1alpha2.Issuer) (bool, error)) error {
 	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
-			issuer, err := client.Get(name, metav1.GetOptions{})
+			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
 			}
@@ -72,7 +73,7 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			log.Logf("Waiting for issuer %v condition %#v", name, condition)
-			issuer, err := client.Get(name, metav1.GetOptions{})
+			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
 			}
@@ -89,7 +90,7 @@ func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollEr
 		return nil
 	}
 
-	issuer, err := client.Get(name, metav1.GetOptions{})
+	issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return pollErr
 	}
@@ -110,7 +111,7 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			log.Logf("Waiting for clusterissuer %v condition %#v", name, condition)
-			issuer, err := client.Get(name, metav1.GetOptions{})
+			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting ClusterIssuer %v: %v", name, err)
 			}
@@ -127,7 +128,7 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 		return nil
 	}
 
-	issuer, err := client.Get(name, metav1.GetOptions{})
+	issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return pollErr
 	}
@@ -148,7 +149,7 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			log.Logf("Waiting for Certificate %v condition %#v", name, condition)
-			certificate, err := client.Get(name, metav1.GetOptions{})
+			certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
@@ -190,7 +191,7 @@ func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterfa
 		return nil
 	}
 
-	certificate, err := client.Get(name, metav1.GetOptions{})
+	certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return pollErr
 	}
@@ -209,7 +210,7 @@ func WaitForCertificateToExist(client clientset.CertificateInterface, name strin
 	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			log.Logf("Waiting for Certificate %v to exist", name)
-			_, err := client.Get(name, metav1.GetOptions{})
+			_, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if errors.IsNotFound(err) {
 				return false, nil
 			}
@@ -228,7 +229,7 @@ func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, nam
 	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			log.Logf("Waiting for CRD %v to not exist", name)
-			_, err := client.Get(name, metav1.GetOptions{})
+			_, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil == err {
 				return false, nil
 			}

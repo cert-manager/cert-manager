@@ -117,7 +117,7 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 		log := logf.WithRelatedResource(log, pod).V(logf.DebugLevel)
 		log.Info("deleting pod resource")
 
-		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
+		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			log.Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)
@@ -133,7 +133,9 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 // domain, token and key.
 func (s *Solver) createPod(ch *cmacme.Challenge) (*corev1.Pod, error) {
 	return s.Client.CoreV1().Pods(ch.Namespace).Create(
-		s.buildPod(ch))
+		context.TODO(),
+		s.buildPod(ch),
+		metav1.CreateOptions{})
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
