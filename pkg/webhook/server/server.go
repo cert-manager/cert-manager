@@ -98,8 +98,13 @@ type Server struct {
 	// If not specified, no messages will be logged.
 	Log logr.Logger
 
-	// CipherSuites is a slice of TLS Cipher Suite names
+	// CipherSuites is the list of allowed cipher suites for the server.
+	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	CipherSuites []string
+
+	// MinTLSVersion is the minimum TLS version supported.
+	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
+	MinTLSVersion string
 
 	listener net.Listener
 }
@@ -150,11 +155,15 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
+		minVersion, err := ciphers.TLSVersion(s.MinTLSVersion)
+		if err != nil {
+			return err
+		}
 		l = tls.NewListener(l, &tls.Config{
 			GetCertificate:           s.CertificateSource.GetCertificate,
-			MinVersion:               tls.VersionTLS12,
-			PreferServerCipherSuites: true,
 			CipherSuites:             cipherSuites,
+			MinVersion:               minVersion,
+			PreferServerCipherSuites: true,
 		})
 	} else {
 		s.Log.Info("listening for insecure connections", "address", s.ListenAddr)
