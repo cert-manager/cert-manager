@@ -51,6 +51,7 @@ def multi_arch_container(
         docker_push_tags = None,
         tags = None,
         visibility = None,
+        user = "0",
         **kwargs):
 
     go_image(
@@ -61,6 +62,7 @@ def multi_arch_container(
         }),
         stamp = stamp,
         tags = tags,
+        user = user,
         visibility = ["//visibility:private"],
         **kwargs
     )
@@ -70,6 +72,7 @@ def multi_arch_container(
         base = ":%s-internal-notimestamp" % name,
         stamp = stamp,
         tags = tags,
+        user = user,
         visibility = ["//visibility:public"],
     )
 
