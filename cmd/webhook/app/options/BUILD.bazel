@@ -5,7 +5,10 @@ go_library(
     srcs = ["options.go"],
     importpath = "github.com/jetstack/cert-manager/cmd/webhook/app/options",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_spf13_pflag//:go_default_library"],
+    deps = [
+        "@com_github_spf13_pflag//:go_default_library",
+        "@io_k8s_component_base//cli/flag:go_default_library",
+    ],
 )
 
 filegroup(

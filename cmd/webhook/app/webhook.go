@@ -81,6 +81,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 		EnablePprof:       true,
 		CertificateSource: source,
 		CipherSuites:      opts.TLSCipherSuites,
+		MinTLSVersion:     opts.MinTLSVersion,
 		ValidationWebhook: validationHook,
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
