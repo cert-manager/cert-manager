@@ -22,6 +22,7 @@ def install():
     install_bazel_tools()
     install_helm()
     install_kubectl()
+    install_oc3()
     install_kind()
 
     # Install golang.org/x/build as kubernetes/repo-infra requires it for the
@@ -166,6 +167,40 @@ def install_kubectl():
         urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl"],
     )
 
+
+# Define rules for different oc versions
+def install_oc3():
+    http_archive(
+        name = "oc_3_11_darwin",
+        sha256 = "75d58500aec1a2cee9473dfa826c81199669dbc0f49806e31a13626b5e4cfcf0",
+        urls = ["https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-mac.zip"],
+        build_file_content =
+         """
+filegroup(
+     name = "file",
+     srcs = [
+        "openshift-origin-client-tools-v3.11.0-0cbc58b-mac-64bit/oc",
+     ],
+     visibility = ["//visibility:public"],
+)
+    """,
+    )
+
+    http_archive(
+        name = "oc_3_11_linux",
+        sha256 = "4b0f07428ba854174c58d2e38287e5402964c9a9355f6c359d1242efd0990da3",
+        urls = ["`https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz`"],
+        build_file_content =
+         """
+filegroup(
+     name = "file",
+     srcs = [
+        "openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc",
+     ],
+     visibility = ["//visibility:public"],
+)
+    """,
+    )
 ## Fetch kind images used during e2e tests
 def install_kind():
     # install kind binary

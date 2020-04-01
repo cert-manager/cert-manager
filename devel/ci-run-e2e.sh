@@ -34,8 +34,17 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
-echo "Ensuring a kind cluster exists..."
-"${SCRIPT_ROOT}/cluster/create.sh"
+echo "Ensuring a cluster exists..."
+if [[ "$IS_OPENSHIFT" == "true" ]]; then
+  if [[ "$OPENSHIFT_VERSION" =~ 3 ]] ; then
+    "${SCRIPT_ROOT}/cluster/create-openshift3.sh"
+  else
+    echo "Unsupported OpenShift version: ${OPENSHIFT_VERSION}"
+    exit 1
+  fi
+else
+  "${SCRIPT_ROOT}/cluster/create-kind.sh"
+fi
 
 trap "export_logs" ERR
 

@@ -20,7 +20,7 @@ set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT:=$(dirname "${BASH_SOURCE}")
 
 # Require kind & kubectl available on PATH
 check_tool kind

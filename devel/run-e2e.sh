@@ -20,7 +20,7 @@ set -o pipefail
 
 # This script will run the end-to-end test suite against an already configured
 # kind cluster.
-# If a cluster does not already exist, create one with 'cluster/create.sh'.
+# If a cluster does not already exist, create one with 'cluster/create-kind.sh'.
 
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
