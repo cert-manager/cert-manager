@@ -45,8 +45,10 @@ fi
 # Needed for `oc cluster up` as it places files in the current directory
 cd "${TMP_DIR}"
 
+mkdir -p "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/"
+
 # Let OpenShift generate all certificates and setup for the controller
-docker run -v "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/:/var/lib/origin/openshift.local.config/" \
+docker run -v $(pwd)/openshift.local.clusterup/kube-apiserver/:/var/lib/origin/openshift.local.config/ \
     "openshift/origin-control-plane:v${OPENSHIFT_VERSION}" start master \
     --write-config=/var/lib/origin/openshift.local.config \
     --master=127.0.0.1 \
@@ -54,6 +56,8 @@ docker run -v "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/:/var/lib/ori
     --dns=0.0.0.0:8053 \
     --public-master=https://127.0.0.1:8443 \
     --etcd-dir=/var/lib/etcd
+
+ls -la "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/"
 
 # Let OpenShift generate all certificates and setup for the node
 "$oc3" adm create-node-config \
