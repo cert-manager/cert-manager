@@ -25,7 +25,6 @@ OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"} # This is unlikely to change in t
 TMP_DIR=$(mktemp -d)
 
 # Require kind & kubectl available on PATH
-check_tool oc3
 check_tool kubectl
 check_tool docker
 
@@ -74,7 +73,7 @@ kubeletArguments:
 EOF
 
 # Set up the cluster itself
-oc3 cluster up
+bazel run //hack/bin:oc3 cluster up
 
 # Replace kube-dns with our patched CoreDNS
 kubectl apply -n=kube-kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
