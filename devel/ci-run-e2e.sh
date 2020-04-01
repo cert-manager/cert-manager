@@ -35,7 +35,7 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 setup_tools
 
 echo "Ensuring a cluster exists..."
-if [[ "$IS_OPENSHIFT" == "true" ]]; then
+if [[ -z ${$IS_OPENSHIFT+x} ]] && [[ "$IS_OPENSHIFT" == "true" ]] ; then
   if [[ "$OPENSHIFT_VERSION" =~ 3 ]] ; then
     "${SCRIPT_ROOT}/cluster/create-openshift3.sh"
   else
