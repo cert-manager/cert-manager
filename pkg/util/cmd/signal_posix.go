@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2020 The Jetstack cert-manager contributors.
 
@@ -14,27 +16,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cmd
 
 import (
-	"flag"
-
-	"k8s.io/klog"
-
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/cmd"
+	"os"
+	"syscall"
 )
 
-func main() {
-	logf.InitLogs(flag.CommandLine)
-	defer logf.FlushLogs()
-
-	stopCh := cmd.SetupSignalHandler()
-	cmd := NewCommandStartCertManagerController(stopCh)
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
-
-	flag.CommandLine.Parse([]string{})
-	if err := cmd.Execute(); err != nil {
-		klog.Info(err)
-	}
-}
+var shutdownSignals = []os.Signal{os.Interrupt, syscall.SIGTERM}

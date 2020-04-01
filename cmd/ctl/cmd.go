@@ -30,7 +30,7 @@ func NewCertManagerCtlCommand(in io.Reader, out, err io.Writer, stopCh <-chan st
 		Use:   "cert-manager-ctl",
 		Short: "cert-manager CLI tool to manage and configure cert-manager resources",
 		Long: `
-cert-manager-ctl is a CLI tool managage and confiure cert-manager resources for Kubernetes`,
+cert-manager-ctl is a CLI tool manage and configure cert-manager resources for Kubernetes`,
 		Run: runHelp,
 	}
 

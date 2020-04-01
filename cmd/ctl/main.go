@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"os"
 
-	genericapiserver "k8s.io/apiserver/pkg/server"
+	"github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 func main() {
-	stopCh := genericapiserver.SetupSignalHandler()
+	stopCh := cmd.SetupSignalHandler()
 	cmd := NewCertManagerCtlCommand(os.Stdin, os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 

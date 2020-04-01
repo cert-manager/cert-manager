@@ -10,8 +10,8 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//cmd/ctl/pkg/version:go_default_library",
+        "//pkg/util/cmd:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
-        "@io_k8s_apiserver//pkg/server:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
     ],
 )
