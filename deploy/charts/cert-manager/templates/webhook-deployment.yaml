@@ -57,8 +57,8 @@ spec:
           {{- end }}
           - --secure-port={{ .Values.webhook.securePort }}
           - --dynamic-serving-ca-secret-namespace={{ .Release.Namespace }}
-          - --dynamic-serving-ca-secret-name={{ .Values.webhook.rootCASecretName }}
-          - --dynamic-serving-dns-names={{ .Values.webhook.serviceName }},{{ .Values.webhook.serviceName }}.{{ .Release.Namespace }},{{ .Values.webhook.serviceName }}.{{ .Release.Namespace }}.svc
+          - --dynamic-serving-ca-secret-name={{ template "webhook.fullname" . }}-ca
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }}.svc
         {{- if .Values.webhook.extraArgs }}
 {{ toYaml .Values.webhook.extraArgs | indent 10 }}
         {{- end }}

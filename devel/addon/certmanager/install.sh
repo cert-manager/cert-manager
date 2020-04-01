@@ -49,7 +49,7 @@ wait
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 # Build the Helm chart package .tgz
-bazel build //deploy/charts/cert-manager:package
+bazel build //deploy/charts/cert-manager
 
 # Upgrade or install Pebble
 helm upgrade \

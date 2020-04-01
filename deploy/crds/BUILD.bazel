@@ -46,6 +46,7 @@ genrule(
     srcs = [":templates.%s" % variant],
     chart_name = "cert-manager",
     chart_yaml = "//deploy/charts/cert-manager:Chart.yaml",
+    readme_file = "//deploy/charts/cert-manager:README.md",
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
     ],
@@ -77,6 +78,7 @@ crds = [
     srcs = [":crd-%s.yaml" % crd],
     chart_name = "cert-manager",
     chart_yaml = "//deploy/charts/cert-manager:Chart.yaml",
+    readme_file = "//deploy/charts/cert-manager:README.md",
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
     ],

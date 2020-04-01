@@ -7,7 +7,7 @@ pkg_tar(
     mode = "0644",
     package_dir = "deploy",
     deps = [
-        "//deploy/charts/cert-manager",
+        "//deploy/charts/cert-manager:release-tar",
         "//deploy/manifests",
     ],
 )

@@ -19,6 +19,7 @@ def helm_pkg(
     chart_name,
     chart_yaml,
     values_yaml,
+    readme_file,
     tpl_files,
     srcs = [],
     helm_cmd = "//hack/bin:helm",
@@ -46,6 +47,7 @@ def helm_pkg(
         srcs = [
             chart_yaml,
             values_yaml,
+            readme_file,
         ],
         mode = "0644",
         visibility = ["//visibility:private"],

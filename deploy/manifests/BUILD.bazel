@@ -27,7 +27,7 @@ VARIANTS = {
 
 [helm_tmpl(
     name = "%s.manifests" % name,
-    helm_pkg = "//deploy/charts/cert-manager:package",
+    helm_pkg = "//deploy/charts/cert-manager",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
     values = meta["values"],

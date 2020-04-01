@@ -4,9 +4,9 @@ load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 load("//build:helm.bzl", "helm_pkg")
 
 pkg_tar(
-    name = "cert-manager",
+    name = "release-tar",
     srcs = [
-        ":package",
+        ":cert-manager",
     ],
     extension = "tar.gz",
     mode = "0644",
@@ -15,10 +15,11 @@ pkg_tar(
 )
 
 helm_pkg(
-    name = "package",
+    name = "cert-manager",
     srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"],
     chart_name = "cert-manager",
     chart_yaml = ":Chart.yaml",
+    readme_file = ":README.md",
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
     ],

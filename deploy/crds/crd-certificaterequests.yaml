@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: certificaterequests.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: '{{ .Release.Namespace }}/cert-manager-webhook-ca'
+    cert-manager.io/inject-ca-from-secret: '{{ template "webhook.caRef" . }}'
   labels:
     app: '{{ template "cert-manager.name" . }}'
     app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
@@ -38,10 +38,8 @@ spec:
     # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
     webhookClientConfig:
       service:
-        # If you have deployed cert-manager into a namespace other than
-        # 'cert-manager', be sure to update this value.
         namespace: '{{ .Release.Namespace }}'
-        name: cert-manager-webhook
+        name: '{{ template "webhook.fullname" . }}'
         path: /convert
   names:
     kind: CertificateRequest
