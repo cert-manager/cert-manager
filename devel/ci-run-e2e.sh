@@ -30,7 +30,7 @@ export_logs() {
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
-IS_OPENSHIFT=${IS_OPENSHIFT:-"true"}
+IS_OPENSHIFT=${IS_OPENSHIFT:-"false"}
 OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"4"}
 
 # Configure PATH to use bazel provided e2e tools
