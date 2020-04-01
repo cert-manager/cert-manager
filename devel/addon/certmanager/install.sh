@@ -37,12 +37,11 @@ export APP_VERSION="$(date +"%s")"
 # Build a copy of the cert-manager release images using the :bazel image tag
 bazel run --stamp=true --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 "//devel/addon/certmanager:bundle"
 
-# Load all images into the kind cluster
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
-
+# Load all images into the cluster
+load_image "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
 wait
 
 # Ensure the pebble namespace exists
@@ -61,6 +60,6 @@ helm upgrade \
     --set webhook.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
     --set featureGates="${FEATURE_GATES:-}" \
-    --set 'extraArgs={--dns01-recursive-nameservers=10.0.0.16:53,--dns01-recursive-nameservers-only=true}' \
+    --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"

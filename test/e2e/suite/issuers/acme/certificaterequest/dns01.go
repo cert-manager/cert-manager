@@ -44,17 +44,19 @@ const testingACMEEmail = "e2e@cert-manager.io"
 const testingACMEPrivateKey = "test-acme-private-key"
 
 var _ = framework.CertManagerDescribe("ACME CertificateRequest (DNS01)", func() {
-	// TODO: add additional DNS provider configs here
-	rfc := &dnsproviders.RFC2136{}
-
-	testDNSProvider("rfc2136", rfc)
+	// TODO: add better logic to handle other DNS providers
+	testRFC2136DNSProvider()
 })
 
-func testDNSProvider(name string, p dns01Provider) bool {
+func testRFC2136DNSProvider() bool {
+	name := "rfc2136"
 	return Context("With "+name+" credentials configured", func() {
 		f := framework.NewDefaultFramework("create-acme-certificate-request-dns01-" + name)
 		h := f.Helper()
 
+		p := &dnsproviders.RFC2136{
+			Nameserver: f.Config.Addons.ACMEServer.DNSServer,
+		}
 		f.RequireAddon(p)
 
 		issuerName := "test-acme-issuer"

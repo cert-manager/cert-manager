@@ -27,4 +27,10 @@ check_tool kind
 
 LOGS_DIR="${ARTIFACTS:-$REPO_ROOT/_artifacts}/cert-manager-e2e-logs"
 rm -rf $LOGS_DIR && mkdir -p $LOGS_DIR
-kind export logs $LOGS_DIR --name "${KIND_CLUSTER_NAME}"
+if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+  for container in $(docker ps -a -q); do
+    docker logs "$container" >"${LOGS_DIR}/${container}"
+  done
+else
+  kind export logs $LOGS_DIR --name "${KIND_CLUSTER_NAME}"
+fi

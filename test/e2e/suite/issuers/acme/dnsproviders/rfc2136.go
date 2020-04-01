@@ -22,7 +22,8 @@ import (
 )
 
 type RFC2136 struct {
-	details Details
+	details    Details
+	Nameserver string
 }
 
 func (b *RFC2136) Setup(c *config.Config) error {
@@ -35,7 +36,7 @@ func (b *RFC2136) Setup(c *config.Config) error {
 func (b *RFC2136) Provision() error {
 	b.details.ProviderConfig = cmacme.ACMEChallengeSolverDNS01{
 		RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
-			Nameserver: "10.0.0.16",
+			Nameserver: b.Nameserver,
 		},
 	}
 	b.details.BaseDomain = "dns01.example.com"
