@@ -91,6 +91,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.podSecurityPolicy.enabled` | If `true`, create and use PodSecurityPolicy (includes sub-charts) | `false` |
 | `global.podSecurityPolicy.useAppArmor` | If `true`, use Apparmor seccomp profile in PSP | `true` |
 | `global.leaderElection.namespace` | Override the namespace used to store the ConfigMap for leader election | `kube-system` |
+| `installCRDs` | If true, CRD resources will be installed as part of the Helm chart | `false` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
 | `image.tag` | Image tag | `{{RELEASE_VERSION}}` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |

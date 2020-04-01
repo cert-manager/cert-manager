@@ -11,8 +11,18 @@ RELEASE_NAME = "cert-manager"
 RELEASE_NAMESPACE = "cert-manager"
 
 VARIANTS = {
-    "cert-manager": {},
-    "cert-manager-legacy": {},
+    "cert-manager": {
+        "crd_variant": "regular",
+        "values": {
+            "installCRDs": "true",
+        },
+    },
+    "cert-manager-legacy": {
+        "crd_variant": "legacy",
+        "values": {
+            "installCRDs": "true",
+        },
+    },
 }
 
 [helm_tmpl(
@@ -20,52 +30,35 @@ VARIANTS = {
     helm_pkg = "//deploy/charts/cert-manager:package",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
-    values = values,
-) for (name, values) in VARIANTS.items()]
-
-[genrule(
-    name = "%s.crds.unlicensed" % name,
-    srcs = [
-        "00-crds.yaml",
-    ],
-    outs = ["%s.crds.unlicensed.yaml" % name],
-    cmd = " ".join([
-        "$(location //hack/filter-crd)",
-        "-variant=%s" % name,
-        "$(location 00-crds.yaml)",
-        "> $@",
-    ]),
-    tools = [
-        "//hack/filter-crd",
-    ],
-) for (name, values) in VARIANTS.items()]
+    values = meta["values"],
+) for (name, meta) in VARIANTS.items()]
 
 [licensed_file(
     name = "%s.crds.yaml" % name,
-    src = "%s.crds.unlicensed" % name,
-) for (name, values) in VARIANTS.items()]
+    src = "//deploy/crds:crds.%s" % meta["crd_variant"],
+) for (name, meta) in VARIANTS.items()]
 
 [genrule(
     name = "%s.unlicensed" % name,
     srcs = [
-        "%s.crds.unlicensed" % name,
+        "//deploy/crds:crds.%s" % meta["crd_variant"],
         "01-namespace.yaml",
         "%s.manifests" % name,
     ],
     outs = ["%s.unlicensed.yaml" % name],
     cmd = " ".join([
         "cat",
-        "$(location %s.crds.unlicensed)" % name,
+        "$(location //deploy/crds:crds.%s)" % meta["crd_variant"],
         "$(location 01-namespace.yaml)",
         "$(location %s.manifests)" % name,
         "> $@",
     ]),
-) for (name, values) in VARIANTS.items()]
+) for (name, meta) in VARIANTS.items()]
 
 [licensed_file(
     name = "%s.yaml" % name,
     src = "%s.unlicensed" % name,
-) for (name, values) in VARIANTS.items()]
+) for (name, meta) in VARIANTS.items()]
 
 pkg_tar(
     name = "manifests",

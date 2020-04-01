@@ -16,8 +16,13 @@ pkg_tar(
 
 helm_pkg(
     name = "package",
-    srcs = [":chart-srcs"],
-    path = "deploy/charts/cert-manager",
+    srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"],
+    chart_name = "cert-manager",
+    chart_yaml = ":Chart.yaml",
+    tpl_files = [
+        "//deploy/charts/cert-manager/templates:_helpers.tpl",
+    ],
+    values_yaml = ":values.yaml",
 )
 
 genrule(
@@ -34,15 +39,12 @@ genrule(
 
 filegroup(
     name = "chart-srcs",
-    srcs = glob(
+    srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"] + glob(
         [
             ".helmignore",
             "Chart.yaml",
             "README.md",
             "values.yaml",
-            "templates/*.tpl",
-            "templates/*.yaml",
-            "templates/*.txt",
         ],
     ),
 )
@@ -58,7 +60,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//deploy/charts/cert-manager/crds:all-srcs",
+        "//deploy/charts/cert-manager/templates:all-srcs",
     ],
     tags = ["automanaged"],
 )

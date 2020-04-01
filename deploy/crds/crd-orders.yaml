@@ -3,7 +3,13 @@ kind: CustomResourceDefinition
 metadata:
   name: orders.acme.cert-manager.io
   annotations:
-    cert-manager.io/inject-ca-from-secret: cert-manager/cert-manager-webhook-ca
+    cert-manager.io/inject-ca-from-secret: '{{ .Release.Namespace }}/cert-manager-webhook-ca'
+  labels:
+    app: '{{ template "cert-manager.name" . }}'
+    app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
+    app.kubernetes.io/instance: '{{ .Release.Name }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+    helm.sh/chart: '{{ template "cert-manager.chart" . }}'
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.state
@@ -34,7 +40,7 @@ spec:
       service:
         # If you have deployed cert-manager into a namespace other than
         # 'cert-manager', be sure to update this value.
-        namespace: cert-manager
+        namespace: '{{ .Release.Namespace }}'
         name: cert-manager-webhook
         path: /convert
   names:
