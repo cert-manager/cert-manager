@@ -28,6 +28,7 @@ export_logs() {
 }
 
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
+IS_OPENSHIFT:="false"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
@@ -35,7 +36,7 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 setup_tools
 
 echo "Ensuring a cluster exists..."
-if [[ -z ${IS_OPENSHIFT+x} ]] && [[ "$IS_OPENSHIFT" == "true" ]] ; then
+if [[ "$IS_OPENSHIFT" == "true" ]] ; then
   if [[ "$OPENSHIFT_VERSION" =~ 3 ]] ; then
     "${SCRIPT_ROOT}/cluster/create-openshift3.sh"
   else
