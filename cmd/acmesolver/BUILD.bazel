@@ -1,5 +1,6 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//build:version.bzl", "version_x_defs")
+load("//build:go_binary.bzl", "go_binary")
 
 go_library(
     name = "go_default_library",
@@ -17,7 +18,6 @@ go_binary(
     embed = [":go_default_library"],
     pure = "on",
     visibility = ["//visibility:public"],
-    x_defs = version_x_defs(),
 )
 
 filegroup(

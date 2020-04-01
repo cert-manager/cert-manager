@@ -60,7 +60,7 @@ multi_arch_container_push(
     architectures = UBI_PLATFORMS["linux"],
     base = "@com_redhat_access_registry_ubi8_ubi_minimal-{ARCH}//image",
     binary = select(for_platforms(
-        for_ubi = meta["target"],
+        for_ubi = "%s-ubi" % meta["target"],
         only_os = "linux",
     )),
     # Since the multi_arch_container macro replaces the {ARCH} format string,

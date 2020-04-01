@@ -23,6 +23,7 @@ def helm_pkg(
     tpl_files,
     srcs = [],
     helm_cmd = "//hack/bin:helm",
+    version_file = "//:version",
     **kwargs):
 
     pkg_tar(
@@ -66,7 +67,7 @@ def helm_pkg(
 
     cmds = []
     cmds = cmds + ["tar xf $(location %s.dir_tar)" % name]
-    cmds = cmds + ["version=$$(cat $(location //:version))"]
+    cmds = cmds + ["version=$$(cat $(location %s))" % version_file]
     cmds = cmds + [" ".join([
         "$(location %s)" % helm_cmd,
         "package",
@@ -78,7 +79,7 @@ def helm_pkg(
     native.genrule(
         name = name,
         srcs = [
-            "//:version",
+            version_file,
             ":%s.dir_tar" % name,
         ],
         stamp = 1,
