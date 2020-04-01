@@ -57,17 +57,17 @@ docker run -v "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/:/var/lib/ori
 
 # Let OpenShift generate all certificates and setup for the node
 "$oc3" adm create-node-config \
-    --node-dir=/openshift.local.clusterup/node  \
-    --certificate-authority=/openshift.local.clusterup/kube-apiserver/ca.crt  \
-    --dns-bind-address=0.0.0.0:8053  \
-    --hostnames=localhost  \
-    --hostnames=127.0.0.1  \
-    --images="openshift/origin-\$\{component\}:v${OPENSHIFT_VERSION}"  \
+    --node-dir="${TMP_DIR}/openshift.local.clusterup/node" \
+    --certificate-authority="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.crt " \
+    --dns-bind-address=0.0.0.0:8053 \
+    --hostnames=localhost \
+    --hostnames=127.0.0.1 \
+    --images="openshift/origin-\$\{component\}:v${OPENSHIFT_VERSION}" \
     --node=localhost  \
-    --node-client-certificate-authority=/openshift.local.clusterup/kube-apiserver/ca.crt  \
-    --signer-cert=/openshift.local.clusterup/kube-apiserver/ca.crt  \
-    --signer-key=/openshift.local.clusterup/kube-apiserver/ca.key  \
-    --signer-serial=/openshift.local.clusterup/kube-apiserver/ca.serial.txt  \
+    --node-client-certificate-authority="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.crt" \
+    --signer-cert="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.crt" \
+    --signer-key="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.key" \
+    --signer-serial="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.serial.txt "\
     --volume-dir=/var/lib/origin/cluster-up/openshift.local.clusterup/openshift.local.volumes
 
 # Patch the node configuration to disable features that do not work with Docker in Docker
