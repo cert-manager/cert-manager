@@ -37,11 +37,12 @@ go_test(
         "roundtrip_test.go",
     ],
     data = [
-        "//deploy:all-srcs",
+        "//deploy/crds:templated_files",
     ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/api:go_default_library",
+        "//pkg/api/testing:go_default_library",
         "//pkg/internal/apis/certmanager/fuzzer:go_default_library",
         "@com_github_munnerz_crd_schema_fuzz//:go_default_library",
         "@io_k8s_apimachinery//pkg/api/apitesting/roundtrip:go_default_library",

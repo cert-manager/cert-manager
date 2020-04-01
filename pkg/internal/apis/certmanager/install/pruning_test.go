@@ -17,22 +17,18 @@ limitations under the License.
 package install
 
 import (
-	"fmt"
 	"testing"
 
 	crdfuzz "github.com/munnerz/crd-schema-fuzz"
 
 	"github.com/jetstack/cert-manager/pkg/api"
+	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 	cmfuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/fuzzer"
 )
 
 func TestPruneTypes(t *testing.T) {
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("certificates"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("certificaterequests"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("issuers"), cmfuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("clusterissuers"), cmfuzzer.Funcs)
-}
-
-func crdPath(s string) string {
-	return fmt.Sprintf("../../../../../deploy/charts/cert-manager/crds/%s.yaml", s)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "certificates"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "certificaterequests"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "issuers"), cmfuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "clusterissuers"), cmfuzzer.Funcs)
 }

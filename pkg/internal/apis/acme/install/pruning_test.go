@@ -17,20 +17,16 @@ limitations under the License.
 package install
 
 import (
-	"fmt"
 	"testing"
 
 	crdfuzz "github.com/munnerz/crd-schema-fuzz"
 
 	"github.com/jetstack/cert-manager/pkg/api"
+	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 	acmefuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/acme/fuzzer"
 )
 
 func TestPruneTypes(t *testing.T) {
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("orders"), acmefuzzer.Funcs)
-	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, crdPath("challenges"), acmefuzzer.Funcs)
-}
-
-func crdPath(s string) string {
-	return fmt.Sprintf("../../../../../deploy/charts/cert-manager/crds/%s.yaml", s)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "orders"), acmefuzzer.Funcs)
+	crdfuzz.SchemaFuzzTestForCRDWithPath(t, api.Scheme, apitesting.PathForCRD(t, "challenges"), acmefuzzer.Funcs)
 }

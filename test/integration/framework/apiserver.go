@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -35,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
+	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 )
 
 func init() {
@@ -48,10 +50,7 @@ type StopFunc func()
 
 func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{})
-	crdsDir, err := getCRDsPath()
-	if err != nil {
-		t.Fatalf("error determining CRD directory path: %v", err)
-	}
+	crdsDir := apitesting.CRDDirectory(t)
 	crds := readCustomResourcesAtPath(t, crdsDir)
 	for _, crd := range crds {
 		t.Logf("Found CRD with name %q", crd.Name)
@@ -121,11 +120,11 @@ func readCustomResourcesAtPath(t *testing.T, path string) []*v1beta1.CustomResou
 		if filepath.Ext(path) != ".yaml" {
 			return nil
 		}
-		crd, err := readCRDAtPath(codec, converter, path)
+		crd, err := readCRDsAtPath(codec, converter, path)
 		if err != nil {
 			return err
 		}
-		crds = append(crds, crd)
+		crds = append(crds, crd...)
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -133,19 +132,35 @@ func readCustomResourcesAtPath(t *testing.T, path string) []*v1beta1.CustomResou
 	return crds
 }
 
-func readCRDAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) (*v1beta1.CustomResourceDefinition, error) {
+func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]*v1beta1.CustomResourceDefinition, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	internalCRD := &apiextensions.CustomResourceDefinition{}
-	if _, _, err := codec.Decode(data, nil, internalCRD); err != nil {
-		return nil, err
+	dataStr := string(data)
+	datas := strings.Split(dataStr, "---")
+	var crds []*v1beta1.CustomResourceDefinition
+	for _, d := range datas {
+		// skip empty YAML documents
+		if strings.TrimSpace(d) == "" {
+			continue
+		}
+
+		internalCRD := &apiextensions.CustomResourceDefinition{}
+		if _, _, err := codec.Decode([]byte(d), nil, internalCRD); err != nil {
+			return nil, err
+		}
+
+		out := &v1beta1.CustomResourceDefinition{}
+		if err := converter.Convert(internalCRD, out, nil); err != nil {
+			return nil, err
+		}
+
+		crds = append(crds, out)
 	}
 
-	output := &v1beta1.CustomResourceDefinition{}
-	return output, converter.Convert(internalCRD, output, nil)
+	return crds, nil
 }
 
 func crdsToRuntimeObjects(in []*v1beta1.CustomResourceDefinition) []runtime.Object {

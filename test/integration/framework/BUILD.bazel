@@ -7,7 +7,7 @@ go_library(
         "paths.go",
     ],
     data = [
-        "//deploy/charts/cert-manager/crds:all-srcs",
+        "//deploy/crds:crds.regular.yaml",
         "//hack/bin:com_coreos_etcd",
         "//hack/bin:io_kubernetes_kube-apiserver",
         "//hack/bin:kubectl",
@@ -16,6 +16,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/webhook/app/testing:go_default_library",
+        "//pkg/api/testing:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/install:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
