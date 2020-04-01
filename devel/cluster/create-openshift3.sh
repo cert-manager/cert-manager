@@ -47,7 +47,7 @@ docker run -v "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/:/var/lib/ori
     --etcd-dir=/var/lib/etcd
 
 # Let OpenShift generate all certificates and setup for the node
-oc adm create-node-config \
+bazel run //hack/bin:oc3 adm create-node-config \
     --node-dir=/openshift.local.clusterup/node  \
     --certificate-authority=/openshift.local.clusterup/kube-apiserver/ca.crt  \
     --dns-bind-address=0.0.0.0:8053  \
@@ -62,7 +62,7 @@ oc adm create-node-config \
     --volume-dir=/var/lib/origin/cluster-up/openshift.local.clusterup/openshift.local.volumes
 
 # Patch the node configuration to disable features that do not work with Docker in Docker
-cat << EOF >>/openshift.local.clusterup/node/node-config.yaml
+cat << EOF >>"${TMP_DIR}/openshift.local.clusterup/node/node-config.yaml"
 kubeletArguments:
   cgroups-per-qos:
     - "false"
