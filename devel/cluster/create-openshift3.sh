@@ -21,7 +21,7 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-OPENSHIFT_VERSION="3.11" # This is unlikely to change in the future as this is the last release in the OpenShift 3 series
+OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"} # This is unlikely to change in the future as this is the last release in the OpenShift 3 series
 TMP_DIR=$(mktemp -d)
 
 # Require kind & kubectl available on PATH
