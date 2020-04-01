@@ -21,11 +21,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"sigs.k8s.io/yaml"
+
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 // Options is a struct to support version command

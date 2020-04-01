@@ -19,6 +19,7 @@ package api
 import (
 	auditreg "k8s.io/api/auditregistration/v1alpha1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -77,6 +78,10 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 var AddToScheme = localSchemeBuilder.AddToScheme
 
 func init() {
+	// This is used to add the List object type for outputing multiple input objects
+	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
+	Scheme.AddKnownTypes(coreGroupVersion, &metainternalversion.List{})
+
 	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
 	utilruntime.Must(AddToScheme(Scheme))
 }
