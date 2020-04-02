@@ -42,6 +42,18 @@ if docker ps | grep "openshift/origin-node:v${OPENSHIFT_VERSION}" &>/dev/null; t
   exit 0
 fi
 
+# Patch Docker daemon for OpenShift internal registry
+mkdir /etc/docker/
+cat << EOF >> /etc/docker/daemon.json
+{
+ "insecure-registries": [
+    "172.30.0.0/16"
+ ]
+}
+EOF
+
+service docker restart
+
 # Needed for `oc cluster up` as it places files in the current directory
 cd "${TMP_DIR}"
 
