@@ -43,7 +43,6 @@ if docker ps | grep "openshift/origin-node:v${OPENSHIFT_VERSION}" &>/dev/null; t
 fi
 
 # Patch Docker daemon for OpenShift internal registry
-mkdir /etc/docker/
 cat << EOF >> /etc/docker/daemon.json
 {
  "insecure-registries": [
