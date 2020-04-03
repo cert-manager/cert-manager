@@ -1,0 +1,2 @@
+{{- if .Values.clusterIssuer }}
+{{ toYaml .Values.clusterIssuer }}
