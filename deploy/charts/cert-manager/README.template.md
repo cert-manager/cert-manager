@@ -156,6 +156,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.tag` | cainjector image tag | `{{RELEASE_VERSION}}` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
+| `clusterIssuer` | Cluster issuer configuration | `{}` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
