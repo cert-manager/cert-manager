@@ -55,6 +55,8 @@ const (
 // Annotation names for CertificateRequests
 const (
 	CRPrivateKeyAnnotationKey = "cert-manager.io/private-key-secret-name"
+	// Annotation to declare the CertificateRequest "revision", beloning to a Certificate Resource
+	CertificateRequestRevisionAnnotationKey = "cert-manager.io/certificate-revision"
 )
 
 const (

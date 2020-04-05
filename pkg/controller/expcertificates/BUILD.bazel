@@ -30,6 +30,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/controller/expcertificates/issuing:all-srcs",
         "//pkg/controller/expcertificates/trigger:all-srcs",
     ],
     tags = ["automanaged"],

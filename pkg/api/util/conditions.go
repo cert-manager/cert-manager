@@ -119,6 +119,15 @@ func GetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	return nil
 }
 
+func GetCertificateRequestCondition(req *cmapi.CertificateRequest, conditionType cmapi.CertificateRequestConditionType) *cmapi.CertificateRequestCondition {
+	for _, cond := range req.Status.Conditions {
+		if cond.Type == conditionType {
+			return &cond
+		}
+	}
+	return nil
+}
+
 // SetCertificateCondition will set a 'condition' on the given Certificate.
 // - If no condition of the same type already exists, the condition will be
 //   inserted with the LastTransitionTime set to the current time.
@@ -162,6 +171,21 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	// the new condition into the slice.
 	crt.Status.Conditions = append(crt.Status.Conditions, newCondition)
 	klog.Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
+}
+
+// RemoteCertificateCondition will remove any condition with this condition type
+func RemoveCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType) {
+	var updatedConditions []cmapi.CertificateCondition
+
+	// Search through existing conditions
+	for _, cond := range crt.Status.Conditions {
+		// Only add unrelated conditions
+		if cond.Type != conditionType {
+			updatedConditions = append(updatedConditions, cond)
+		}
+	}
+
+	crt.Status.Conditions = updatedConditions
 }
 
 // SetCertificateRequestCondition will set a 'condition' on the given CertificateRequest.

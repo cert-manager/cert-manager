@@ -91,7 +91,8 @@ func NewController(
 	})
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Trigger reconciles on changes to the Secret named `spec.secretName`
-		WorkFunc: certificates.EnqueueCertificatesForSecretNameFunc(log, certificateInformer.Lister(), labels.Everything(), queue),
+		WorkFunc: certificates.EnqueueCertificatesForSecretNameFunc(log, certificateInformer.Lister(), labels.Everything(),
+			certificates.WithSecretNamePredicateFunc, queue),
 	})
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
@@ -181,9 +182,9 @@ func (c *controller) buildPolicyInputForCertificate(ctx context.Context, crt *cm
 	// Attempt to fetch the CertificateRequest resource for the current 'status.revision'.
 	var req *cmapi.CertificateRequest
 	if crt.Status.Revision != nil {
-		reqs, err := certificates.ListCertificateRequestsMatchingPredicate(c.certificateRequestLister.CertificateRequests(crt.Namespace),
+		reqs, err := certificates.ListCertificateRequestsMatchingPredicates(c.certificateRequestLister.CertificateRequests(crt.Namespace),
 			labels.Everything(),
-			certificates.WithOwnerPredicateFunc(crt),
+			certificates.WithCertificateRequestOwnerPredicateFunc(crt),
 			certificates.WithCertificateRevisionPredicateFunc(*crt.Status.Revision),
 		)
 		if err != nil {
