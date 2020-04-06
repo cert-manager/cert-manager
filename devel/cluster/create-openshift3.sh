@@ -42,14 +42,13 @@ if docker ps | grep "openshift/origin-node:v${OPENSHIFT_VERSION}" &>/dev/null; t
   exit 0
 fi
 
-cat /etc/default/docker
-
 # Needed for `oc cluster up` as it places files in the current directory
 cd "${TMP_DIR}"
 
 mkdir -p "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/"
 
 # Let OpenShift generate all certificates and setup for the controller
+echo "Running 'start master'"
 docker run -v $(pwd)/openshift.local.clusterup/kube-apiserver/:/var/lib/origin/openshift.local.config/ \
     "openshift/origin-control-plane:v${OPENSHIFT_VERSION}" start master \
     --write-config=/var/lib/origin/openshift.local.config \
@@ -60,6 +59,7 @@ docker run -v $(pwd)/openshift.local.clusterup/kube-apiserver/:/var/lib/origin/o
     --etcd-dir=/var/lib/etcd
 
 # Let OpenShift generate all certificates and setup for the node
+echo "Running 'adm create-node-config'"
 "$oc3" adm create-node-config \
     --node-dir="${TMP_DIR}/openshift.local.clusterup/node" \
     --certificate-authority="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.crt" \
@@ -86,6 +86,7 @@ kubeletArguments:
 EOF
 
 # Set up the cluster itself
+echo "Running 'cluster up'"
 "$oc3" cluster up
 
 # Replace kube-dns with our patched CoreDNS
