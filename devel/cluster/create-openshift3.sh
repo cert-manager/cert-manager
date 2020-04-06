@@ -85,6 +85,8 @@ kubeletArguments:
     - ""
 EOF
 
+cat "${TMP_DIR}/openshift.local.clusterup/node/node-config.yaml"
+
 # Set up the cluster itself
 echo "Running 'cluster up'"
 "$oc3" cluster up
