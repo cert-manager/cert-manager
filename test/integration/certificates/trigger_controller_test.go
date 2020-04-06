@@ -40,21 +40,22 @@ func TestTriggerController(t *testing.T) {
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
 
+	ctx := context.TODO()
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
-	cert, err := cmCl.CertmanagerV1alpha2().Certificates("testns").Create(&cmapi.Certificate{
+	cert, err := cmCl.CertmanagerV1alpha2().Certificates("testns").Create(ctx, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",
 			IssuerRef:  cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
 		},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
-		c, err := cmCl.CertmanagerV1alpha2().Certificates(cert.Namespace).Get(cert.Name, metav1.GetOptions{})
+		c, err := cmCl.CertmanagerV1alpha2().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
 			return false, nil
