@@ -54,7 +54,7 @@ echo "Running 'adm create-node-config'"
     --dns-bind-address=0.0.0.0:8053 \
     --hostnames=localhost \
     --hostnames=127.0.0.1 \
-    --images="openshift/origin-\$\{component\}:v${OPENSHIFT_VERSION}" \
+    --images="openshift/origin-\${component}:v${OPENSHIFT_VERSION}" \
     --node=localhost  \
     --node-client-certificate-authority="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.crt" \
     --signer-cert="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.crt" \
@@ -75,6 +75,8 @@ EOF
 
 cat "${TMP_DIR}/openshift.local.clusterup/node/node-config.yaml"
 
+# Patch for OpenShift using -v ":shared" in Docker
+mount --make-shared /
 # Set up the cluster itself
 echo "Running 'cluster up'"
 "${OC3}" cluster up
