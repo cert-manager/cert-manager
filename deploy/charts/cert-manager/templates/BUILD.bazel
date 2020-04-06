@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+exports_files(["_helpers.tpl"])
 
 load("//build:files.bzl", "modify_file")
 
@@ -35,6 +35,7 @@ filegroup(
             "*.txt",
         ],
     ),
+    visibility = ["//visibility:public"],
 )
 
 filegroup(

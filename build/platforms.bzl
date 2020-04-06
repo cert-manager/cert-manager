@@ -36,16 +36,23 @@ UBI_PLATFORMS = {
     ],
 }
 
+OPERATOR_PLATFORMS = {
+    "linux": [
+        "amd64",
+        "ppc64le",
+        "s390x",
+    ],
+}
+
 TEST_PLATFORMS = {
     "linux": ["amd64"],
     "darwin": ["amd64"],
 }
 
-# Helper which produces the ALL_PLATFORMS dictionary, currently composed of
-# just the SERVER and TEST platforms
+# Helper which produces the ALL_PLATFORMS dictionary.
 def _all_platforms():
     all_platforms = {}
-    for platforms in [SERVER_PLATFORMS, UBI_PLATFORMS, TEST_PLATFORMS]:
+    for platforms in [SERVER_PLATFORMS, UBI_PLATFORMS, OPERATOR_PLATFORMS, TEST_PLATFORMS]:
         for os, archs in platforms.items():
             all_platforms[os] = sets.union(
                 all_platforms.setdefault(os, sets.make()),
@@ -140,6 +147,7 @@ def _update_dict_for_platform_category(d, value, platforms, only_os = None):
 # build/release-tars/BUILD.
 def for_platforms(
         for_server = None,
+        for_operator = None,
         for_test = None,
         for_ubi = None,
         for_all = None,
@@ -149,6 +157,7 @@ def for_platforms(
     if default != None:
         d["//conditions:default"] = default
     _update_dict_for_platform_category(d, for_server, SERVER_PLATFORMS, only_os)
+    _update_dict_for_platform_category(d, for_operator, OPERATOR_PLATFORMS, only_os)
     _update_dict_for_platform_category(d, for_test, TEST_PLATFORMS, only_os)
     _update_dict_for_platform_category(d, for_ubi, UBI_PLATFORMS, only_os)
     _update_dict_for_platform_category(d, for_all, ALL_PLATFORMS, only_os)

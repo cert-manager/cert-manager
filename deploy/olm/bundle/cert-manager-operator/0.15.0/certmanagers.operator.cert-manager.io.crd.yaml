@@ -1,0 +1,23 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: certmanagers.operator.cert-manager.io
+spec:
+  group: operator.cert-manager.io
+  names:
+    kind: CertManager
+    listKind: CertManagerList
+    plural: certmanagers
+    singular: certmanager
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      type: object
+      x-kubernetes-preserve-unknown-fields: true
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true

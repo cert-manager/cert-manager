@@ -26,6 +26,7 @@ filegroup(
         "//deploy/charts/cert-manager:all-srcs",
         "//deploy/crds:all-srcs",
         "//deploy/manifests:all-srcs",
+        "//deploy/olm:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

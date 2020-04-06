@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Implements hack/lib/version.sh's kube::version::ldflags() for Bazel.
+# Generate ldflags used to build binaries.
+# If 'variant' is set to 'ubi', the AppVersion will use the UBI version.
 def version_x_defs(variant = None):
     # This should match the list of packages in kube::version::ldflag
     stamp_pkgs = [

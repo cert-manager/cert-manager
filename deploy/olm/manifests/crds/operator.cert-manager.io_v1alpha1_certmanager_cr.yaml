@@ -1,0 +1,6 @@
+apiVersion: operator.cert-manager.io/v1alpha1
+kind: CertManager
+metadata:
+  name: cert-manager-2
+spec:
+  installCRDs: false

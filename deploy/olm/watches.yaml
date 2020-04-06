@@ -1,0 +1,5 @@
+---
+- version: v1alpha1
+  group: operator.cert-manager.io
+  kind: CertManager
+  chart: cert-manager/

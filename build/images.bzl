@@ -32,6 +32,18 @@ UBI_BASE_IMAGES = {
     },
 }
 
+OPERATOR_BASE_IMAGES = {
+    "amd64": {
+        "digest": "sha256:72083dc69195fd2182ea789bdd6a88cf37ce6491f3437c17de8e0af886988c19",
+    },
+    "ppc64le": {
+        "digest": "sha256:14b54dfe73e98bcef55838951cda12b9fcac01bea9ffc61767489c8fa3e8cd41",
+    },
+    "s390x": {
+        "digest": "sha256:c9198b5d498d579ecada93fd9023eb363532fd165b79fc10dc57645389773076",
+    },
+}
+
 def define_base_images():
     ## Use 'static' distroless image for all builds
     container_pull(
@@ -49,3 +61,12 @@ def define_base_images():
         digest = meta["digest"],
         cpu_variant = meta.get("variant", None),
     ) for arch, meta in UBI_BASE_IMAGES.items()]
+
+    [container_pull(
+        name = "io_quay_operator_framework_helm_operator-%s" % arch,
+        registry = "quay.io",
+        repository = "operator-framework/helm-operator",
+        architecture = arch,
+        digest = meta["digest"],
+        cpu_variant = meta.get("variant", None),
+    ) for arch, meta in OPERATOR_BASE_IMAGES.items()]

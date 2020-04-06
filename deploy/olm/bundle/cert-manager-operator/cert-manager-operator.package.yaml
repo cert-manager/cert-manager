@@ -1,0 +1,5 @@
+packageName: cert-manager-operator
+channels:
+- name: alpha
+  currentCSV: cert-manager-operator.v0.15.0
+defaultChannel: alpha

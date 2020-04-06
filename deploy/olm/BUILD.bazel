@@ -1,0 +1,60 @@
+load("//build:container.bzl", "multi_arch_container_image")
+load("//build:platforms.bzl", "OPERATOR_PLATFORMS")
+load("//build:helm.bzl", "helm_pkg")
+
+helm_pkg(
+    name = "chart",
+    srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"],
+    chart_name = "cert-manager",
+    chart_yaml = "//deploy/charts/cert-manager:Chart.yaml",
+    readme_file = "//deploy/charts/cert-manager:README.md",
+    tpl_files = ["//deploy/charts/cert-manager/templates:_helpers.tpl"],
+    values_yaml = "//deploy/charts/cert-manager:values.yaml",
+    version_file = "//:version-ubi",
+    visibility = ["//visibility:private"],
+)
+
+# A container_image does not play well with a .tgz file generated directly by
+# the helm_pkg target, so we have a hacky genrule here which extracts the chart
+# using 'tar' and creates a new non gzipped archive which is consumed by
+# the container_image.
+genrule(
+    name = "tarred_chart",
+    srcs = [":chart"],
+    outs = ["cert-manager.tar"],
+    cmd = "; ".join([
+        "tar xf $(location :chart)",
+        "tar cf $@ ./cert-manager",
+    ]),
+    visibility = ["//visibility:private"],
+)
+
+multi_arch_container_image(
+    name = "operator-ubi",
+    architectures = OPERATOR_PLATFORMS["linux"],
+    base = "@io_quay_operator_framework_helm_operator-{ARCH}//image",
+    data_path = "/deploy/olm",
+    directory = "/opt/helm",
+    files = [
+        "watches.yaml",
+    ],
+    tars = [
+        "cert-manager.tar",
+    ],
+    docker_tags = ["{{STABLE_DOCKER_REGISTRY}}/cert-manager-operator-{ARCH}:{{STABLE_DOCKER_TAG}}-ubi"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

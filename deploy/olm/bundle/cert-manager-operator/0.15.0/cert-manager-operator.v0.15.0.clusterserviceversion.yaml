@@ -1,0 +1,95 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    description: ""
+    createdAt: ""
+    support: ""
+    alm-examples: '[]'
+    capabilities: Full Lifecycle
+    categories: Security
+    certified: 'false'
+    containerImage: quay.io/jetstack/cert-manager-operator:v0.15.0
+    repository: https://github.com/jetstack/cert-manager
+  name: cert-manager-operator.v0.15.0
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - kind: CertManager
+      displayName: CertManager
+      name: certmanagers.operator.cert-manager.io
+      version: v1alpha1
+      description: 'Represents the cert-manager installation'
+  description: 'This is where the description goes'
+  displayName: cert-manager
+  icon:
+  - base64data: iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAgVBMVEX///8AAADBwcHU1NRjY2PZ2dn09PS6urr39/exsbEvLy8TExOZmZn8/PyMjIyGhoaAgIDd3d3u7u7Ozs7k5ORBQUF1dXUeHh5vb2/ExMSfn598fHxNTU0aGhro6OioqKg5OTlVVVVJSUknJydaWlqTk5MjIyM8PDwzMzNwcHBmZma8wvpDAAAJxklEQVR4nO2d6ZaiOhRGpVTEARXBuVqlrNH3f8CrIJCTnCRAAsS78v3o1YUK2RByhky9npWVlZWVlZWVlZWVVTPyRrNlJS3SfzVorqLDm1+Kzz06r6uFJwcMp12XUknbvgxw2HURlRWIAf3XfoIP/RMTzrounwbNhISv/wglD/H138KHhgLCfdeF06K9gPCt68Jp0ZslfHmpEf7cBt3q9q9hwrHg1+3o/X9P+NkwoejX7WjRMKHEr21B44YJWwPhqt8s4WdrIHw1S9h9Q9PrbRoldFvj4CtskvDYGoZI6wYJo9YoRJKVUoFw3hqEWHFThNdy6cjmFTVF2L21zyS2+rUJu3fYCgldt7qEJpjCQiKjWJNQlPzoQoKnWIvwYoadIMV/F2sQTg+tlbuCTrxIsTLh92zVWqmr6Q33bqoRbpehKVYQU4i1OKUJl6NRv0R3XNcKz7v1ZFuL0CT7J1NQi3DUWvnU1beEmSyhsbKEuSyhsbKEuSyhsbKEuSyhsbKEuSyhsbKEuSyhsbKEuaoRem5bkqb8miGU9qdrVNgJYZtjwsVjty2hJbSEltASWkJLaAnrE45aJJT11jbkeUfDtiQd62Kjp1yW0FhZwlyW0FhZwlyW0FhZwlyWkPr2uKb0T2tohlA+1ZEr7YOOjYsPRes61JIlzGUJgSyhJUTl7vcec0Q+N/dlCP1k+sSA+LgfP44sZXM+XoYwmwOzS6exeOHteeD9f0JIrIV3jTeb+Fr8LZmgaxwh7rYJu83FjVMzhMFlUk/XHXo+byIiXAtfxaZiC6+m8LMNxM/9rwtCnfIlgI5zE/zafEL/rcRaeN/8mbomE/pRELzNf+V8D13m+yCIkDfSXEL3KGxecE0WjJNjLGHg1NSJOpGphH7JyslqTZ3JVEKFBfCogW6mEsqX7eKK8uJMJZSaQL428EymEsb1CSnHrylC1Zn6P2jh48U5DKJoOJptvrmE1KJjzRAOpxXkLJAzICUfjMBtiw4cX2cC724zhF/cG4yKPQG7VNAcSRXv8aUg4TeNiA/ZExyob2xoO56V6oqc7vwKhFv4BeBXgxjZQ1a/mLwAIXyEa1jt1jCOQPpIwJpHRhLClbWptjFwYngAyXCQA6VMJAxAI0mvOHlkcjks4pVANJAQDvv7pU7tOuwKhogTW9Rk4whdyl+jjcQMO4hYp12W8jGN0KXCXuZKyVFmcaoP9qRr10xCqqgD+sxpFf6mnUIsXh40SVitl5t41ehGgzH0F04BsGir3yBhL3yrICK1ModlZBZFze4A3f70VgjhoUnCuqK26mEGAOfNELNnDLLJTzoC3DDCMyhiTH9cOOTMC4qsAz1mP+ieELYYZ/pj4m1jHi8bS6U2xTBCuBAwaGe81YrkP65WLmhRqVc4d4ZMIyQb0x//jhX0w9Fhuft8/2V2Priu48Fmft6Hw+gOy8yAGJpJSBrEW8+P6WLzNGJa0+wlNo6QCJy+emgTienetPrUoSyEMo4woMoIW1dcv8kLe4EHswDEOEKisqXJa/kmRZ+pkx2Dg9vMjzCO0C0SGM/0fMRPHCZaPn8JV2XNM27GEa4Ku5Z1QHjC3VVyoxmDw9/NRk8KirCrCJZ3LkJdatXZzCUwjpAwa0QUyAvH/hWuDb23X1YDjCO8FVchu1jw3rZ3wqvxqM+yX5tGeCLLT36AxbigD4bJRz1THaYRHpEypkIIQYcHnSbP+hENI3RBGcnULzbuCzxkdnnrtAobRgjTH+SLiLY1RHYACfLTUhpGSKVbiEFgSDYNPGSmkhqaxVjCMhIhMAaY+OapfKQTSiWLsXgLm1lunk7S5R/gm1V9cH9Y4NQjTPQ5078rAh0C5Q+JCDGORJuSfexR3XEPPbdVVSC8K9ZeXekmM7uJuVsdD0nczHHhp0sVCR3nR7oVtBrisx5mQ2inaRHd7H094PeFAFQmvDfpmjdI8G7g9GlS+OnRFGtgBHFyILWIiKX4y0ulTuj86m50YMOfPKakXu7AhUbJY338z2WHphCNsAZCZ6u7xYGIj9Lew6cP+n3wH07A/aDHmkqym1sHofOPM1Kitnbg9F89f4vuR7Ta3fFXrCUE3R1aCLVv2QXdU+czWnAu0J9jjQz4sh5CeiyZsqgk4pY3jNtbIoWBgxM1Eere84l5MjFqlfCBX3Aggy7CieZ6yl7hY0RdImJ6KlJN4aQNXYS6dyZDR7HfDv2T6/m+tzqNFhfsGw9RU71AdVAhvOgl5CYQt5f1j3gQPzW9pPQWQNKB13rdN/n2zFxRc4RAW6REiI0Sra+SPTKYluBEHsiYKxH+00pYpkOGIxjvwKhDidDRuokXNrainKbkrJmQGmGlRihb0Leaaj9E8Ajp0F+NULO9GEm6nHBNKAbKZqoRMiMnFOX3z7P5hmv2aP1s5rNxn3E8YLQpcr3khMu+gvicwU165bv+Ao5T5YEJVCKTpjARqYS+BFcusTr4VDDZGbRZoss0SijZeX4lmUV6FWYZCMdUuHl4o4RsCQcgbyCZjCjJMRTNsjBSlw8YqC/WzswcZ0bWPKHtyBtxbz9evCMUmdUXt4WSDa9VxC6KkFes6/HZ+pG5mOkVJC6eQ4OG89S8/CJNTurlCl/2HjNcRZ/YhS3AAgPrIbjB00V48v1TuMzfzaSKP7OLD22Y86W9GlJr1tjKuWy1ogYmJJX4+Vi/ct/QTY35NiA+TYW4HpHzUWIVsdhpRGzHAHMvk3vgjzfLMfB93fHxOE7qJNXdgcCUyum6+CbCimIbcNbppicvM6JmI3zXDQK8HXNtZV3YyyB9oZKtsRljIlpFQqywlAdVRWyFQruzhQmEE9u1prJb+CrAJVuVGndHWVvNcdEEoRlqqfWGcjrl8WKmXRhhq165fc6rI18iqyOJXnWmRnuDd2wOaSJmnL8hEhld5N0S+auS5aM60klQYvShiOIBIxdZFQ0kxeMC0axx3X1+GiSa8sbLAgns16XFopcTPmYmFTMLKJMviAiEAW8H8pkpI4WmfL9SlFnVnP5T1Z+gqKJWQ5TG0b8ssYJEhkLcxSxIAOjtalCTyFA4ku5XwXI93Pe3fYlCM2kXesz/rYoPrlXP7Pv6b34YRZSRkzeJlDf75Z7C83yXtrKG+ODR7jDeFxYaWIBJiXgWum/5ibz++KB7VJoegYUxSj0EMoT6kH+9exFd0yX7lomRYoZZQVyF9b+W/UnhvhkbGgLlZrz86tdZfgfJlxqpZ85UtqsaodW2wntrgNwkpy3NI5JKPXfdo7OaU+LFVfMrk5+YGdujiqs7JPPKN6VTrWoYtlu1et21ztUfh/ete7yEcUKTqlZWVlZWVlZWVlZWVk3qP0alpbec5zo1AAAAAElFTkSuQmCC
+    mediatype: image/png
+  install:
+    spec:
+      clusterPermissions:
+      - serviceAccountName: cert-manager-operator
+        rules:
+        - apiGroups:
+          - '*'
+          resources:
+          - '*'
+          verbs:
+          - '*'
+      deployments:
+      - name: cert-manager-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: cert-manager-operator
+          template:
+            metadata:
+              labels:
+                app: cert-manager-operator
+            spec:
+              serviceAccountName: cert-manager-operator
+              containers:
+              - name: cert-manager-operator
+                # Replace this with the built image name
+                image: bazel/deploy/olm:helm-operator
+                imagePullPolicy: Never
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: "cert-manager-operator"
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - TLS
+  - secrets
+  - security
+  - certificates
+  links:
+  - name: repository
+    url: https://github.com/jetstack/cert-manager
+  - name: conatinerImage
+    url: https://quay.io/jetstack/cert-manager:latest
+  maintainers:
+  - email: james@jetstack.io
+    name: James Munnelly
+  maturity: alpha
+  provider:
+    name: Jetstack
+  version: 0.15.0
