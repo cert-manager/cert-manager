@@ -18,24 +18,12 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
-  echo "Updating modules..." >&2
-elif ! command -v bazel &>/dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
-  exit 1
-else
-  (
-    set -o xtrace
-    bazel run //devel/cluster:create-openshift3 -- "$@"
-  )
-  exit 0
-fi
-
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"} # This is unlikely to change in the future as this is the last release in the OpenShift 3 series
 TMP_DIR=$(mktemp -d)
-oc3=$(realpath "$1")
-kubectl=$(realpath "$2")
+
+source "${SCRIPT_ROOT}/../lib/lib.sh"
+setup_tools
 
 if docker ps | grep "openshift/origin-node:v${OPENSHIFT_VERSION}" &>/dev/null; then
   echo "Existing OpenShift 3 cluster found, skipping creating cluster..."
@@ -60,7 +48,7 @@ docker run -v $(pwd)/openshift.local.clusterup/kube-apiserver/:/var/lib/origin/o
 
 # Let OpenShift generate all certificates and setup for the node
 echo "Running 'adm create-node-config'"
-"$oc3" adm create-node-config \
+"${OC3}" adm create-node-config \
     --node-dir="${TMP_DIR}/openshift.local.clusterup/node" \
     --certificate-authority="${TMP_DIR}/openshift.local.clusterup/kube-apiserver/ca.crt" \
     --dns-bind-address=0.0.0.0:8053 \
@@ -89,9 +77,9 @@ cat "${TMP_DIR}/openshift.local.clusterup/node/node-config.yaml"
 
 # Set up the cluster itself
 echo "Running 'cluster up'"
-"$oc3" cluster up
+"${OC3}" cluster up
 
 # Replace kube-dns with our patched CoreDNS
-"$kubectl" apply -n=kube-kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
-"$kubectl" delete --namespace=kube-dns ds kube-dns
-"$kubectl" rollout status deploy/coredns
+"${KUBECTL}" apply -n=kube-kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
+"${KUBECTL}" delete --namespace=kube-dns ds kube-dns
+"${KUBECTL}" rollout status deploy/coredns
