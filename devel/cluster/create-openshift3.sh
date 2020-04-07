@@ -82,6 +82,6 @@ echo "Running 'cluster up'"
 "${OC3}" cluster up --enable="-automation-service-broker,-centos-imagestreams,-persistent-volumes,-registry,-rhel-imagestreams,-router,-sample-templates,-service-catalog,-template-service-broker,-web-console"
 
 # Replace kube-dns with our patched CoreDNS
-"${KUBECTL}" apply -n=kube-kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
-"${KUBECTL}" delete --namespace=kube-dns ds kube-dns
-"${KUBECTL}" rollout status deploy/coredns
+"${KUBECTL}" apply -n=kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
+"${KUBECTL}" delete -n=kube-dns ds kube-dns
+"${KUBECTL}" rollout -n=kube-dns status deploy/coredns
