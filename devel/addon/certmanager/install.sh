@@ -61,7 +61,6 @@ bazel build //deploy/charts/cert-manager:package
 
 # Upgrade or install Pebble
 helm upgrade \
-    -v 7 \
     --install \
     --wait \
     --namespace "${NAMESPACE}" \

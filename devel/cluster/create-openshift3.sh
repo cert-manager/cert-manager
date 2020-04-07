@@ -73,6 +73,8 @@ kubeletArguments:
     - ""
 EOF
 
+sed -i 's/172.30.0.0/10.0.0.0/' "${TMP_DIR}/openshift.local.clusterup/kube-apiserver/master-config.yaml"
+
 cat "${TMP_DIR}/openshift.local.clusterup/node/node-config.yaml"
 
 # Patch for OpenShift using -v ":shared" in Docker
