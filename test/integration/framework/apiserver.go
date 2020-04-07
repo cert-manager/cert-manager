@@ -139,7 +139,7 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 	}
 
 	dataStr := string(data)
-	datas := strings.Split(dataStr, "---")
+	datas := strings.Split(dataStr, "\n---\n")
 	var crds []*v1beta1.CustomResourceDefinition
 	for _, d := range datas {
 		// skip empty YAML documents
