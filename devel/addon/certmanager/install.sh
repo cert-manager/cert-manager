@@ -38,11 +38,12 @@ export APP_VERSION="$(date +"%s")"
 bazel run --stamp=true --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 "//devel/addon/certmanager:bundle"
 
 # Load all images into the kind cluster
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
-kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
-
+if [[ "$IS_OPENSHIFT" != "true" ]] ; then
+  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
+  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
+  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
+  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
+fi
 wait
 
 # Ensure the pebble namespace exists
@@ -55,7 +56,7 @@ fi
 bazel build "//deploy/manifests:$crdsmanifest"
 
 # Install a copy of the CRDs
-kubectl apply -f "${REPO_ROOT}/bazel-bin/deploy/manifests/$crdsmanifest"
+kubectl apply --validate=false -f "${REPO_ROOT}/bazel-bin/deploy/manifests/$crdsmanifest"
 
 # Build the Helm chart package .tgz
 bazel build //deploy/charts/cert-manager:package
