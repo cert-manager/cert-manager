@@ -82,5 +82,19 @@ require_image() {
   bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 "${BAZEL_TARGET}"
 
   # Load the image into the kind cluster
+  load_image "$IMAGE_NAME"
+}
+
+# load_image will lod an image into the local cluster
+# for a kind cluster it will load it into the cluster
+# with name $KIND_CLUSTER_NAME
+load_image() {
+  IMAGE_NAME="$1"
+  if [[ "${IS_OPENSHIFT:-}" == "true" ]] ; then
+    # No loading into a cluster for OpenShift is needed
+    # as OpenShift shares the Docker daemon the image was
+    # built with
+    return
+  fi
   kind load docker-image --name "$KIND_CLUSTER_NAME" "$IMAGE_NAME"
 }

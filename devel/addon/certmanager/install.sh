@@ -37,13 +37,11 @@ export APP_VERSION="$(date +"%s")"
 # Build a copy of the cert-manager release images using the :bazel image tag
 bazel run --stamp=true --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 "//devel/addon/certmanager:bundle"
 
-# Load all images into the kind cluster
-if [[ "$IS_OPENSHIFT" != "true" ]] ; then
-  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
-  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
-  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
-  kind load docker-image --name "$KIND_CLUSTER_NAME" "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
-fi
+# Load all images into the cluster
+load_image "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
 wait
 
 # Ensure the pebble namespace exists
