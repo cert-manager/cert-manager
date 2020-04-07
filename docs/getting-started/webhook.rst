@@ -116,23 +116,6 @@ are set for fields on cert-manager resources).
 
 How you disable the webhook depends on your deployment method.
 
-With Helm
----------
-
-The Helm chart exposes an option that can be used to disable the webhook.
-
-To do so with an existing installation, you can run:
-
-.. code-block:: shell
-
-   helm upgrade cert-manager \
-      --reuse-values \
-      --set webhook.enabled=false
-
-If you have not installed cert-manager yet, you can add the
-``--set webhook.enabled=false`` to the ``helm install`` command used to install
-cert-manager.
-
 With static manifests
 ---------------------
 
