@@ -81,6 +81,9 @@ mount --make-shared /
 echo "Running 'cluster up'"
 "${OC3}" cluster up --enable="-automation-service-broker,-centos-imagestreams,-persistent-volumes,-registry,-rhel-imagestreams,-router,-sample-templates,-service-catalog,-template-service-broker,-web-console"
 
+# Set kubeconfig to be sysadmin
+"${OC3}" login -u system:admin
+
 # Replace kube-dns with our patched CoreDNS
 "${KUBECTL}" apply -n=kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
 "${KUBECTL}" delete -n=kube-dns ds kube-dns
