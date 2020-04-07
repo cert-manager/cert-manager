@@ -11,7 +11,7 @@ This package exposes a number of different Bazel targets:
 * `templates.regular`: the Helm templates for the 'regular' CRD manifests
 * `templates.legacy`: the Helm templates for the 'legacy' CRD manifests
 * `crds.regular`: the templated 'regular' CRD manifests (after running `helm template`)
-* `crds.legacy`: the templated 'regular' CRD manifests (after running `helm template`)
+* `crds.legacy`: the templated 'legacy' CRD manifests (after running `helm template`)
 * `crd-<crd-name>.templated`: for each CRD type, the one CRD after running `helm template`
 * `templated_files`: a filegroup containing all of the individual templated CRD files
 
