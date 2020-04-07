@@ -79,7 +79,7 @@ cat "${TMP_DIR}/openshift.local.clusterup/node/node-config.yaml"
 mount --make-shared /
 # Set up the cluster itself
 echo "Running 'cluster up'"
-"${OC3}" cluster up
+"${OC3}" cluster up --enable="-automation-service-broker,-centos-imagestreams,-persistent-volumes,-registry,-rhel-imagestreams,-router,-sample-templates,-service-catalog,-template-service-broker,-web-console"
 
 # Replace kube-dns with our patched CoreDNS
 "${KUBECTL}" apply -n=kube-kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
