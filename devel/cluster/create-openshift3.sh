@@ -41,7 +41,7 @@ docker run -v $(pwd)/openshift.local.clusterup/kube-apiserver/:/var/lib/origin/o
     "openshift/origin-control-plane:v${OPENSHIFT_VERSION}" start master \
     --write-config=/var/lib/origin/openshift.local.config \
     --master=127.0.0.1 \
-    --images='openshift/origin-${component}:v$OPENSHIFT_VERSION' \
+    --images="openshift/origin-\${component}:v$OPENSHIFT_VERSION" \
     --dns=0.0.0.0:8053 \
     --public-master=https://127.0.0.1:8443 \
     --etcd-dir=/var/lib/etcd
