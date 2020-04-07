@@ -121,8 +121,8 @@ def install_helm():
     ## the version numbers in these rules.
     http_archive(
         name = "helm_darwin",
-        sha256 = "05c7748da0ea8d5f85576491cd3c615f94063f20986fd82a0f5658ddc286cdb1",
-        urls = ["https://get.helm.sh/helm-v3.0.2-darwin-amd64.tar.gz"],
+        sha256 = "92b10652b05a150e76995e08910a662c200a8179cfdb16bd51766d0d5ecc981a",
+        urls = ["https://get.helm.sh/helm-v3.1.2-darwin-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -137,8 +137,8 @@ filegroup(
 
     http_archive(
         name = "helm_linux",
-        sha256 = "c6b7aa7e4ffc66e8abb4be328f71d48c643cb8f398d95c74d075cfb348710e1d",
-        urls = ["https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz"],
+        sha256 = "e6be589df85076108c33e12e60cfb85dcd82c5d756a6f6ebc8de0ee505c9fd4c",
+        urls = ["https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
