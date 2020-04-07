@@ -197,11 +197,29 @@ type CertificateStatus struct {
 	// +optional
 	NotAfter *metav1.Time `json:"notAfter,omitempty"`
 
-	// TODO
+	// The current 'revision' of the certificate as issued.
+	//
+	// When a CertificateRequest resource is created, it will have the
+	// `cert-manager.io/certificate-revision` set to one greater than the
+	// current value of this field.
+	//
+	// Upon issuance, this field will be set to the value of the annotation
+	// on the CertificateRequest resource used to issue the certificate.
+	//
+	// Persisting the value on the CertificateRequest resource allows the
+	// certificates controller to know whether a request is part of an old
+	// issuance or if it is part of the ongoing revision's issuance by
+	// checking if the revision value in the annotation is greater than this
+	// field.
 	// +optional
 	Revision *int `json:"revision,omitempty"`
 
-	// TODO
+	// The name of the Secret resource containing the private key to be used
+	// for the next certificate iteration.
+	// The keymanager controller will automatically set this field if the
+	// `Issuing` condition is set to `True`.
+	// It will automatically unset this field when the Issuing condition is
+	// not set or False.
 	// +optional
 	NextPrivateKeySecretName *string `json:"nextPrivateKeySecretName,omitempty"`
 }
@@ -242,6 +260,21 @@ const (
 	// - The commonName and dnsNames attributes match those specified on the Certificate
 	CertificateConditionReady CertificateConditionType = "Ready"
 
-	// TODO
+	// A condition added to Certificate resources when an issuance is required.
+	// This condition will be automatically added and set to true if:
+	//   * No keypair data exists in the target Secret
+	//   * The data stored in the Secret cannot be decoded
+	//   * The private key and certificate do not have matching public keys
+	//   * If a CertificateRequest for the current revision exists and the
+	//     certificate data stored in the Secret does not match the
+	//    `status.certificate` on the CertificateRequest.
+	//   * If no CertificateRequest resource exists for the current revision,
+	//     the options on the Certificate resource are compared against the
+	//     x509 data in the Secret, similar to what's done in earlier versions.
+	//     If there is a mismatch, an issuance is triggered.
+	// This condition may also be added by external API consumers to trigger
+	// a re-issuance manually for any other reason.
+	//
+	// It will be removed by the 'issuing' controller upon completing issuance.
 	CertificateConditionIssuing CertificateConditionType = "Issuing"
 )
