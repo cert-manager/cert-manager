@@ -82,6 +82,9 @@ echo "Running 'cluster up'"
 # Set kubeconfig to be sysadmin
 "${OC3}" login -u system:admin
 
+# Disable UID restrictions for our test dependancies
+"${OC3}" adm policy add-scc-to-group anyuid system:authenticated
+
 # Replace kube-dns with our patched CoreDNS
 "${KUBECTL}" apply -n=kube-dns -f "${SCRIPT_ROOT}/config/openshift-coredns.yaml"
 "${KUBECTL}" delete -n=kube-dns ds kube-dns
