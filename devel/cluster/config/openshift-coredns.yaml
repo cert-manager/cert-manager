@@ -69,7 +69,7 @@ data:
         loadbalance
     }
     example.com:53 {
-        forward . 10.0.0.16
+        forward . 172.30.0.16
     }
 ---
 apiVersion: apps/v1

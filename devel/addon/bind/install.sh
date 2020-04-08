@@ -29,6 +29,8 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
+SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
+
 check_tool kubectl
 require_image "sameersbn/bind:bazel" "//devel/addon/bind:bundle"
 
@@ -36,4 +38,4 @@ require_image "sameersbn/bind:bazel" "//devel/addon/bind:bundle"
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 # Upgrade or install bind
-kubectl apply --namespace "${NAMESPACE}" -f "$SCRIPT_ROOT/manifests/"
+sed "s/{SERVICE_IP_PREFIX}/${SERVICE_IP_PREFIX}/g" "$SCRIPT_ROOT/manifests/*" | kubectl apply --namespace "${NAMESPACE}" -f -
