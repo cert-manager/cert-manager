@@ -38,18 +38,18 @@ check_tool helm
 require_image "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.26.1" "//devel/addon/ingressnginx:bundle"
 require_image "k8s.gcr.io/defaultbackend-amd64:bazel" "//devel/addon/ingressnginx:bundle"
 
-# Ensure the pebble namespace exists
+# Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 helm repo add stable https://kubernetes-charts.storage.googleapis.com
 
 helm repo update
 
-# Upgrade or install Pebble
+# Upgrade or install ingress-nginx
 helm upgrade \
     --install \
     --wait \
-    --version 1.23.0 \
+    --version 1.36.0 \
     --namespace "${NAMESPACE}" \
     --set controller.image.tag=0.26.1 \
     --set controller.image.pullPolicy=Never \
@@ -58,5 +58,7 @@ helm upgrade \
     --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
+    --set controller.image.runAsUser="" \
+    --set controller.defaultBackend.runAsUser="" \
     "$RELEASE_NAME" \
     stable/nginx-ingress
