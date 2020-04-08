@@ -91,6 +91,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.podSecurityPolicy.enabled` | If `true`, create and use PodSecurityPolicy (includes sub-charts) | `false` |
 | `global.podSecurityPolicy.useAppArmor` | If `true`, use Apparmor seccomp profile in PSP | `true` |
 | `global.leaderElection.namespace` | Override the namespace used to store the ConfigMap for leader election | `kube-system` |
+| `installCRDs` | If true, CRD resources will be installed as part of the Helm chart. If enabled, when uninstalling CRD resources will be deleted causing all installed custom resources to be DELETED | `false` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
 | `image.tag` | Image tag | `{{RELEASE_VERSION}}` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
@@ -129,8 +130,6 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `https_proxy` | Value of the `HTTPS_PROXY` environment variable in the cert-manager pod | |
 | `no_proxy` | Value of the `NO_PROXY` environment variable in the cert-manager pod | |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
-| `webhook.serviceName` | The name of the Service resource deployed for the webhook pod | `cert-manager-webhook` |
-| `webhook.rootCASecretName` | The name of the Secret resource that will be used to store the webhook's root CA certificate | `cert-manager-webhook-ca` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |

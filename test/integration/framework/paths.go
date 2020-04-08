@@ -43,22 +43,6 @@ Either re-run this test using "bazel test //test/integration/{name}" or set the 
 	os.Setenv(key, p)
 }
 
-// getCRDsPath returns a path to a directory containing cert-manager CRDs.
-func getCRDsPath() (string, error) {
-	bazelPath := filepath.Join(os.Getenv("RUNFILES_DIR"), "com_github_jetstack_cert_manager", "deploy", "charts", "cert-manager", "crds")
-	d, err := os.Stat(bazelPath)
-	if err == os.ErrNotExist {
-		return filepath.Join(filepath.Dir(os.Getenv("GOMOD")), "deploy", "charts", "cert-manager", "crds"), nil
-	}
-	if err != nil {
-		return "", err
-	}
-	if m := d.Mode(); !m.IsDir() {
-		return "", fmt.Errorf("directory containing CRDs is not a directory")
-	}
-	return bazelPath, nil
-}
-
 func getPath(name string, path ...string) (string, error) {
 	bazelPath := filepath.Join(append([]string{os.Getenv("RUNFILES_DIR"), "com_github_jetstack_cert_manager"}, path...)...)
 	p, err := exec.LookPath(bazelPath)

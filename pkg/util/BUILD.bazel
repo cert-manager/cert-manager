@@ -10,11 +10,6 @@ go_library(
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/util",
     visibility = ["//visibility:public"],
-    x_defs = {
-        "AppVersion": "{STABLE_DOCKER_TAG}",
-        "AppGitCommit": "{STABLE_BUILD_GIT_COMMIT}",
-        "AppGitState": "{STABLE_BUILD_SCM_STATUS}",
-    },
 )
 
 go_test(

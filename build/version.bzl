@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Implements hack/lib/version.sh's kube::version::ldflags() for Bazel.
-def version_x_defs():
+def version_x_defs(variant = None):
     # This should match the list of packages in kube::version::ldflag
     stamp_pkgs = [
         "github.com/jetstack/cert-manager/pkg/util",
@@ -22,14 +22,16 @@ def version_x_defs():
     # This should match the list of vars in kube::version::ldflags
     # It should also match the list of vars set in hack/print-workspace-status.sh.
     stamp_vars = {
-        "AppVersion": "STABLE_DOCKER_TAG",
-        "AppGitCommit": "STABLE_BUILD_GIT_COMMIT",
-        "AppGitState": "STABLE_BUILD_SCM_STATUS",
+        "AppVersion": "{STABLE_DOCKER_TAG}",
+        "AppGitCommit": "{STABLE_BUILD_GIT_COMMIT}",
+        "AppGitState": "{STABLE_BUILD_SCM_STATUS}",
     }
+    if variant == "ubi":
+        stamp_vars["AppVersion"] = "{STABLE_DOCKER_TAG_UBI}"
 
     # Generate the cross-product.
     x_defs = {}
     for pkg in stamp_pkgs:
-        for var in stamp_vars:
-            x_defs["%s.%s" % (pkg, var)] = "{%s}" % var
+        for (var, val) in stamp_vars.items():
+            x_defs["%s.%s" % (pkg, var)] = val
     return x_defs

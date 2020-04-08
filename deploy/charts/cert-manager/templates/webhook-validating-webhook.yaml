@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/component: "webhook"
     helm.sh/chart: {{ include "webhook.chart" . }}
   annotations:
-    cert-manager.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ .Values.webhook.rootCASecretName }}"
+    cert-manager.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ template "webhook.fullname" . }}-ca"
 webhooks:
   - name: webhook.cert-manager.io
     namespaceSelector:
@@ -46,6 +46,6 @@ webhooks:
       caBundle: ""
 {{- end }}
       service:
-        name: {{ .Values.webhook.serviceName }}
+        name: {{ template "webhook.fullname" . }}
         namespace: {{ .Release.Namespace | quote }}
         path: /mutate

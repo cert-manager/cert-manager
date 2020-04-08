@@ -24,19 +24,18 @@ chart_dir="deploy/charts/cert-manager"
 
 echo "Linting chart: ${chart_dir}"
 
-cleanup() {
-    rm "${REPO_ROOT}/${chart_dir}"/requirements.lock > /dev/null 2>&1 || true
-}
+bazel build //deploy/charts/cert-manager
+tmpdir="$(mktemp -d -p "${REPO_ROOT}")"
+trap "rm -rf ${tmpdir}" EXIT
 
-cleanup
-trap cleanup EXIT
+tar -C "${tmpdir}" -xvf bazel-bin/deploy/charts/cert-manager/cert-manager.tgz
 
-if ! docker run -v ${REPO_ROOT}:/workspace --workdir /workspace \
-    quay.io/helmpack/chart-testing:v2.3.3 \
+if ! docker run -v ${tmpdir}:/workspace --workdir /workspace \
+    quay.io/helmpack/chart-testing:v3.0.0-beta.2 \
     ct lint \
         --check-version-increment=false \
-        --charts "/workspace/${chart_dir}" \
         --validate-maintainers=false \
+        --charts "/workspace/cert-manager" \
         --debug; then
     echo "Linting failed"
     exit 1

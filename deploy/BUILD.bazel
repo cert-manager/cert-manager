@@ -7,7 +7,7 @@ pkg_tar(
     mode = "0644",
     package_dir = "deploy",
     deps = [
-        "//deploy/charts/cert-manager",
+        "//deploy/charts/cert-manager:release-tar",
         "//deploy/manifests",
     ],
 )
@@ -24,6 +24,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//deploy/charts/cert-manager:all-srcs",
+        "//deploy/crds:all-srcs",
         "//deploy/manifests:all-srcs",
     ],
     tags = ["automanaged"],

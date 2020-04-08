@@ -4,9 +4,9 @@ load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 load("//build:helm.bzl", "helm_pkg")
 
 pkg_tar(
-    name = "cert-manager",
+    name = "release-tar",
     srcs = [
-        ":package",
+        ":cert-manager",
     ],
     extension = "tar.gz",
     mode = "0644",
@@ -15,9 +15,15 @@ pkg_tar(
 )
 
 helm_pkg(
-    name = "package",
-    srcs = [":chart-srcs"],
-    path = "deploy/charts/cert-manager",
+    name = "cert-manager",
+    srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"],
+    chart_name = "cert-manager",
+    chart_yaml = ":Chart.yaml",
+    readme_file = ":README.md",
+    tpl_files = [
+        "//deploy/charts/cert-manager/templates:_helpers.tpl",
+    ],
+    values_yaml = ":values.yaml",
 )
 
 genrule(
@@ -34,15 +40,12 @@ genrule(
 
 filegroup(
     name = "chart-srcs",
-    srcs = glob(
+    srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"] + glob(
         [
             ".helmignore",
             "Chart.yaml",
             "README.md",
             "values.yaml",
-            "templates/*.tpl",
-            "templates/*.yaml",
-            "templates/*.txt",
         ],
     ),
 )
@@ -58,7 +61,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//deploy/charts/cert-manager/crds:all-srcs",
+        "//deploy/charts/cert-manager/templates:all-srcs",
     ],
     tags = ["automanaged"],
 )

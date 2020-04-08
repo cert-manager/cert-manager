@@ -24,6 +24,8 @@ global:
     # Override the namespace used to store the ConfigMap for leader election
     namespace: "kube-system"
 
+installCRDs: false
+
 replicaCount: 1
 
 strategy: {}
@@ -152,23 +154,6 @@ tolerations: []
 
 webhook:
   replicaCount: 1
-
-  # The name of the webhook service is fixed in the values.yaml and not based
-  # on the name of the Helm release because the CRD manifests, which are not
-  # managed by Helm, need to hardcode the name of the service for their
-  # conversion webhook configuration.
-  # If you change this value, you must also manually update the
-  # `spec.conversion.webhookClientConfig.service.name` field on all
-  # cert-manager CRD resources.
-  serviceName: cert-manager-webhook
-  # The name of the Secret resource that will be created and used to store the
-  # root CA used to sign serving certificates for the webhook.
-  # This will be automatically injected into the Mutating, Validating and CRD
-  # resources by the cainjector component.
-  # If you change this value, you must also manually update the
-  # `cert-manager.io/inject-ca-from-secret` value on all cert-manager CRD
-  # resources.
-  rootCASecretName: cert-manager-webhook-ca
 
   strategy: {}
     # type: RollingUpdate
