@@ -55,7 +55,7 @@ helm upgrade \
     --set controller.image.pullPolicy=Never \
     --set defaultBackend.image.tag=bazel \
     --set defaultBackend.image.pullPolicy=Never \
-    --set controller.service.clusterIP="{$SERVICE_IP_PREFIX}.15"\
+    --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
     "$RELEASE_NAME" \

@@ -29,7 +29,7 @@ export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
 export SERVICE_IP_PREFIX="10.0.0"
-if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+if [[ "${IS_OPENSHIFT:-}" == "true" ]] ; then
   export SERVICE_IP_PREFIX="172.30.0"
 fi
 
