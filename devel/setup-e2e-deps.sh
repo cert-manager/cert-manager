@@ -28,6 +28,11 @@ SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
+export SERVICE_IP_PREFIX="10.0.0"
+if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+  export SERVICE_IP_PREFIX="172.30.0"
+fi
+
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 

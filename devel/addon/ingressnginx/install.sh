@@ -26,6 +26,7 @@ set -o pipefail
 NAMESPACE="${NAMESPACE:-ingress-nginx}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
+SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
@@ -54,7 +55,7 @@ helm upgrade \
     --set controller.image.pullPolicy=Never \
     --set defaultBackend.image.tag=bazel \
     --set defaultBackend.image.pullPolicy=Never \
-    --set controller.service.clusterIP=10.0.0.15 \
+    --set controller.service.clusterIP="{$SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
     "$RELEASE_NAME" \
