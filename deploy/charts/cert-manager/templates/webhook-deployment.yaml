@@ -34,8 +34,8 @@ spec:
         app.kubernetes.io/managed-by: {{ .Release.Service }}
         app.kubernetes.io/component: "webhook"
         helm.sh/chart: {{ include "webhook.chart" . }}
-      annotations:
       {{- if .Values.webhook.podAnnotations }}
+      annotations:
 {{ toYaml .Values.webhook.podAnnotations | indent 8 }}
       {{- end }}
     spec:
