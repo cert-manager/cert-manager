@@ -18,23 +18,19 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
-	"k8s.io/klog"
-
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 func main() {
-	logf.InitLogs(flag.CommandLine)
-	defer logf.FlushLogs()
-
 	stopCh := cmd.SetupSignalHandler()
-	cmd := NewCommandStartCertManagerController(stopCh)
+	cmd := NewCertManagerCtlCommand(os.Stdin, os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		klog.Info(err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 	}
 }

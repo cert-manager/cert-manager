@@ -50,15 +50,18 @@ require (
 	k8s.io/apiextensions-apiserver v0.18.0
 	k8s.io/apimachinery v0.18.0
 	k8s.io/apiserver v0.18.0
+	k8s.io/cli-runtime v0.18.0
 	k8s.io/client-go v0.18.0
 	k8s.io/code-generator v0.18.0
 	k8s.io/component-base v0.18.0
 	k8s.io/klog v1.0.0
 	k8s.io/kube-aggregator v0.18.0
 	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c
+	k8s.io/kubectl v0.18.0
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 	sigs.k8s.io/controller-runtime v0.5.1-0.20200307095134-d0de78d9f1c1
 	sigs.k8s.io/controller-tools v0.2.8
 	sigs.k8s.io/testing_frameworks v0.1.2
+	sigs.k8s.io/yaml v1.2.0
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20180114231543-2291e8f0f237
 )

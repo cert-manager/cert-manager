@@ -14,27 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cmd
 
 import (
-	"flag"
-
-	"k8s.io/klog"
-
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/cmd"
+	"os"
+	"os/signal"
 )
 
-func main() {
-	logf.InitLogs(flag.CommandLine)
-	defer logf.FlushLogs()
+var onlyOneSignalHandler = make(chan struct{})
 
-	stopCh := cmd.SetupSignalHandler()
-	cmd := NewCommandStartCertManagerController(stopCh)
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+// SetupSignalHandler registered for SIGTERM and SIGINT. A stop channel is returned
+// which is closed on one of these signals. If a second signal is caught, the program
+// is terminated with exit code 1.
+func SetupSignalHandler() <-chan struct{} {
+	close(onlyOneSignalHandler) // panics when called twice
 
-	flag.CommandLine.Parse([]string{})
-	if err := cmd.Execute(); err != nil {
-		klog.Info(err)
-	}
+	stop := make(chan struct{})
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, shutdownSignals...)
+	go func() {
+		<-c
+		close(stop)
+		<-c
+		os.Exit(1) // second signal. Exit directly.
+	}()
+
+	return stop
 }

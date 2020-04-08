@@ -34,10 +34,10 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
+trap "export_logs" ERR
+
 echo "Ensuring a kind cluster exists..."
 "${SCRIPT_ROOT}/cluster/create.sh"
-
-trap "export_logs" ERR
 
 echo "Ensuring all e2e test dependencies are installed..."
 "${SCRIPT_ROOT}/setup-e2e-deps.sh"

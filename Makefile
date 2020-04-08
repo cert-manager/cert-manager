@@ -65,7 +65,7 @@ help:
 # Alias targets
 ###############
 
-build: images
+build: ctl images
 push: docker_push
 
 verify:
@@ -99,3 +99,6 @@ images:
 	bazel run \
 		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
 		//build:server-images
+
+ctl:
+	bazel build //cmd/ctl

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 func main() {
@@ -31,7 +32,7 @@ func main() {
 	defer logs.FlushLogs()
 	ctrl.SetLogger(logs.Log)
 
-	stopCh := ctrl.SetupSignalHandler()
+	stopCh := cmd.SetupSignalHandler()
 	cmd := NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
