@@ -14,13 +14,13 @@ VARIANTS = {
     "cert-manager": {
         "crd_variant": "regular",
         "values": {
-            "installCRDs": "true",
+            "installCRDs": "false",
         },
     },
     "cert-manager-legacy": {
         "crd_variant": "legacy",
         "values": {
-            "installCRDs": "true",
+            "installCRDs": "false",
         },
     },
 }
