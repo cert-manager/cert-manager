@@ -57,6 +57,8 @@ go_test(
     srcs = [
         "issuing_controller_test.go",
         "keystore_test.go",
+        "secret_test.go",
+        "util_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
@@ -73,6 +75,7 @@ go_test(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_client_go//testing:go_default_library",
+        "@io_k8s_client_go//tools/cache:go_default_library",
         "@io_k8s_utils//clock/testing:go_default_library",
     ],
 )
