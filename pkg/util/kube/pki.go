@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 
 	api "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -37,13 +38,9 @@ func SecretTLSKeyRef(ctx context.Context, secretLister corelisters.SecretLister,
 		return nil, err
 	}
 
-	keyBytes, ok := secret.Data[keyName]
-	if !ok {
-		return nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", keyName, namespace, name)
-	}
-	key, err := pki.DecodePrivateKeyBytes(keyBytes)
+	key, _, err := ParseTLSKeyFromSecret(secret, keyName)
 	if err != nil {
-		return key, errors.NewInvalidData(err.Error())
+		return nil, err
 	}
 
 	return key, nil
@@ -54,6 +51,22 @@ func SecretTLSKeyRef(ctx context.Context, secretLister corelisters.SecretLister,
 // entry with name 'keyName'.
 func SecretTLSKey(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) (crypto.Signer, error) {
 	return SecretTLSKeyRef(ctx, secretLister, namespace, name, api.TLSPrivateKeyKey)
+}
+
+// ParseTLSKeyFromSecret will parse and decode a private key from the given
+// Secret at the given key index.
+func ParseTLSKeyFromSecret(secret *corev1.Secret, keyName string) (crypto.Signer, []byte, error) {
+	keyBytes, ok := secret.Data[keyName]
+	if !ok {
+		return nil, nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", keyName, secret.Namespace, secret.Name)
+	}
+
+	key, err := pki.DecodePrivateKeyBytes(keyBytes)
+	if err != nil {
+		return nil, keyBytes, errors.NewInvalidData(err.Error())
+	}
+
+	return key, keyBytes, nil
 }
 
 func SecretTLSCertChain(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, error) {

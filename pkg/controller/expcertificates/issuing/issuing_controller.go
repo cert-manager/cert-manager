@@ -67,37 +67,10 @@ type controller struct {
 	recorder                 record.EventRecorder
 	clock                    clock.Clock
 
-	client     cmclient.Interface
-	kubeClient kubernetes.Interface
+	client cmclient.Interface
 
-	// if true, Secret resources created by the controller will have an
-	// 'owner reference' set, meaning when the Certificate is deleted, the
-	// Secret resource will be automatically deleted.
-	// This option is disabled by default.
-	enableSecretOwnerReferences bool
-
-	// experimentalIssuePKCS12, if true, will make the certificates controller
-	// create a `keystore.p12` in the Secret resource for each Certificate.
-	// This can only be toggled globally, and the keystore will be encrypted
-	// with the supplied ExperimentalPKCS12KeystorePassword.
-	// This flag is likely to be removed in future in favour of native PKCS12
-	// keystore bundle support.
-	experimentalIssuePKCS12 bool
-	// ExperimentalPKCS12KeystorePassword is the password used to encrypt and
-	// decrypt PKCS#12 bundles stored in Secret resources.
-	// This option only has any affect is ExperimentalIssuePKCS12 is true.
-	experimentalPKCS12KeystorePassword string
-	// experimentalIssueJKS, if true, will make the certificates controller
-	// create a `keystore.jks` in the Secret resource for each Certificate.
-	// This can only be toggled globally, and the keystore will be encrypted
-	// with the supplied ExperimentalJKSPassword.
-	// This flag is likely to be removed in future in favour of native JKS
-	// keystore bundle support.
-	experimentalIssueJKS bool
-	// experimentalJKSPassword is the password used to encrypt and
-	// decrypt JKS files stored in Secret resources.
-	// This option only has any affect is experimentalIssueJKS is true.
-	experimentalJKSPassword string
+	// secretManager is used to create and update Secrets with certificate and key data
+	secretsManager *secretsManager
 }
 
 func NewController(
@@ -137,24 +110,26 @@ func NewController(
 		certificateInformer.Informer().HasSynced,
 	}
 
+	secretsManager := newSecretsManager(
+		kubeClient,
+		secretsInformer.Lister(),
+		certificateControllerOptions,
+	)
+
 	return &controller{
 		certificateLister:        certificateInformer.Lister(),
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
-		kubeClient:               kubeClient,
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
 
-		enableSecretOwnerReferences:        certificateControllerOptions.EnableOwnerRef,
-		experimentalIssuePKCS12:            certificateControllerOptions.ExperimentalIssuePKCS12,
-		experimentalPKCS12KeystorePassword: certificateControllerOptions.ExperimentalPKCS12KeystorePassword,
-		experimentalIssueJKS:               certificateControllerOptions.ExperimentalIssueJKS,
-		experimentalJKSPassword:            certificateControllerOptions.ExperimentalJKSPassword,
+		secretsManager: secretsManager,
 	}, queue, mustSync
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
+	// Set context deadline for full sync in 10 seconds
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -213,36 +188,15 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	reqReason := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady).Reason
 	switch reqReason {
-
 	// If the certificate request has failed, set the last failure time to now,
 	// and set the Issuing status condition to False with reason.
 	case cmapi.CertificateRequestReasonFailed:
-		nowTime := metav1.NewTime(c.clock.Now())
-		crt.Status.LastFailureTime = &nowTime
-
-		var reason, message string
-		condition := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
-
-		reason = condition.Reason
-		message = fmt.Sprintf("The certificate request has failed to complete and will be retried: %s",
-			condition.Message)
-
-		crt = crt.DeepCopy()
-		apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
-
-		_, err := c.client.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-
-		c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
-
-		return nil
+		return c.failIssueCertificate(ctx, crt, req)
 
 		// If the CertificateRequest is valid, verify its status and update
 		// accordingly.
 	case cmapi.CertificateRequestReasonIssued:
-		return c.issueCertificate(ctx, namespace, nextPrivateKeySecretName, nextRevision, crt, req)
+		return c.issueCertificate(ctx, nextPrivateKeySecretName, nextRevision, crt, req)
 
 	// CertificateRequest is not in a final state so do nothing.
 	default:
@@ -250,31 +204,62 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 }
 
+// failIssueCertificate will mark the condition Issuing of this Certificate as failed, and log an appropriate event
+func (c *controller) failIssueCertificate(ctx context.Context, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+	nowTime := metav1.NewTime(c.clock.Now())
+	crt.Status.LastFailureTime = &nowTime
+
+	var reason, message string
+	condition := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
+
+	reason = condition.Reason
+	message = fmt.Sprintf("The certificate has failed to complete and will be retried: %s",
+		condition.Message)
+
+	crt = crt.DeepCopy()
+	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
+
+	_, err := c.client.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	c.recorder.Event(crt, corev1.EventTypeWarning, reason, message)
+
+	return nil
+}
+
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, namespace, nextPrivateKeySecretName string, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+func (c *controller) issueCertificate(ctx context.Context, nextPrivateKeySecretName string, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
 	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
 	if err != nil {
 		return err
 	}
 
-	key, err := utilkube.SecretTLSKeyRef(ctx, c.secretLister, namespace, nextPrivateKeySecretName, corev1.TLSPrivateKeyKey)
+	//Encode and issue the key-pair (store it in the Secret)
+	nextPrivateKeySecret, err := c.secretLister.Secrets(crt.Namespace).Get(*crt.Status.NextPrivateKeySecretName)
 	if apierrors.IsNotFound(err) {
-		// If secret does not exist, then the public key does not match.  Do
-		// nothing (requestmanager will handle this).
+		// If secret does not exist, do nothing (keymanager will handle this).
 		return nil
 	}
 	if err != nil {
 		return err
 	}
 
-	publicKeyMatches, err := utilpki.PublicKeyMatchesCSR(key.Public, csr)
+	key, keyData, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
+	if err != nil {
+		// If the private key cannot be parsed here, do nothing as the key manager will handle this.
+		return nil
+	}
+
+	publicKeyMatches, err := utilpki.PublicKeyMatchesCSR(key.Public(), csr)
 	if err != nil {
 		return err
 	}
 
-	// If public key does not match, do nothing (requestmanager will handle this).
+	// If public key does not match, do nothing (keymanager will handle this).
 	if !publicKeyMatches {
 		return nil
 	}
@@ -290,25 +275,10 @@ func (c *controller) issueCertificate(ctx context.Context, namespace, nextPrivat
 		return nil
 	}
 
-	//Encode and issue the key-pair (store it in the Secret)
-	nextPrivateKeySecret, err := c.secretLister.Secrets(namespace).Get(*crt.Status.NextPrivateKeySecretName)
-	if err != nil {
-		// Even if the secret does not exist, we should error here as something
-		// potentially has gone very wrong. We should back off to be safe and try
-		// again once the next Secret has been created with the private key.
-		return err
-	}
-
-	keyData, ok := nextPrivateKeySecret.Data[corev1.TLSPrivateKeyKey]
-	if !ok {
-		return fmt.Errorf("failed to find private key in Secret %s/%s at key %q",
-			namespace, *crt.Status.NextPrivateKeySecretName, corev1.TLSPrivateKeyKey)
-	}
-
 	signedCertificate := req.Status.Certificate
 	ca := req.Status.CA
 
-	err = c.updateSecretData(ctx, namespace, crt, secretData{sk: keyData, cert: signedCertificate, ca: ca})
+	err = c.secretsManager.updateData(ctx, crt, secretData{sk: keyData, cert: signedCertificate, ca: ca})
 	if err != nil {
 		return err
 	}

@@ -118,6 +118,12 @@ func SetCertificateRenewBefore(renewBefore time.Duration) CertificateModifier {
 	}
 }
 
+func SetCertificateNextPrivateKeySecretName(name string) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		crt.Status.NextPrivateKeySecretName = &name
+	}
+}
+
 func SetCertificateStatusCondition(c v1alpha2.CertificateCondition) CertificateModifier {
 	return func(crt *v1alpha2.Certificate) {
 		if len(crt.Status.Conditions) == 0 {
@@ -159,7 +165,13 @@ func SetCertificateNamespace(namespace string) CertificateModifier {
 }
 
 func SetCertificateKeyUsages(usages ...v1alpha2.KeyUsage) CertificateModifier {
-	return func(cr *v1alpha2.Certificate) {
-		cr.Spec.Usages = usages
+	return func(crt *v1alpha2.Certificate) {
+		crt.Spec.Usages = usages
+	}
+}
+
+func SetCertificateRevision(revision int) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		crt.Status.Revision = &revision
 	}
 }
