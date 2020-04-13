@@ -148,6 +148,9 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
+	log = logf.WithResource(log, crt)
+	ctx = logf.NewContext(ctx, log)
+
 	if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
@@ -185,29 +188,33 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 
 	req := reqs[0]
+	log = logf.WithResource(log, req)
 
 	reqReason := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady).Reason
 	switch reqReason {
 	// If the certificate request has failed, set the last failure time to now,
 	// and set the Issuing status condition to False with reason.
 	case cmapi.CertificateRequestReasonFailed:
-		return c.failIssueCertificate(ctx, crt, req)
+		return c.failIssueCertificate(ctx, log, crt, req)
 
 		// If the CertificateRequest is valid, verify its status and update
 		// accordingly.
 	case cmapi.CertificateRequestReasonIssued:
-		return c.issueCertificate(ctx, nextPrivateKeySecretName, nextRevision, crt, req)
+		return c.issueCertificate(ctx, log, nextPrivateKeySecretName, nextRevision, crt, req)
 
 	// CertificateRequest is not in a final state so do nothing.
 	default:
+		log.V(4).Info("CertificateRequest not in final state")
 		return nil
 	}
 }
 
 // failIssueCertificate will mark the condition Issuing of this Certificate as failed, and log an appropriate event
-func (c *controller) failIssueCertificate(ctx context.Context, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
 	nowTime := metav1.NewTime(c.clock.Now())
 	crt.Status.LastFailureTime = &nowTime
+
+	log.Info("CertificateRequest in failed state so retrying issuance later")
 
 	var reason, message string
 	condition := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
@@ -232,7 +239,9 @@ func (c *controller) failIssueCertificate(ctx context.Context, crt *cmapi.Certif
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, nextPrivateKeySecretName string, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+func (c *controller) issueCertificate(ctx context.Context, log logr.Logger, nextPrivateKeySecretName string, nextRevision int,
+	crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+
 	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
 	if err != nil {
 		return err
@@ -251,6 +260,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextPrivateKeySecretN
 	key, keyData, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
 	if err != nil {
 		// If the private key cannot be parsed here, do nothing as the key manager will handle this.
+		logf.WithResource(log, nextPrivateKeySecret).Info("failed to parse next private key")
 		return nil
 	}
 
@@ -261,6 +271,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextPrivateKeySecretN
 
 	// If public key does not match, do nothing (keymanager will handle this).
 	if !publicKeyMatches {
+		logf.WithResource(log, nextPrivateKeySecret).Info("next private key does not match CSR public key")
 		return nil
 	}
 
@@ -272,6 +283,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextPrivateKeySecretN
 
 	// If there are violations in the spec, then the requestmanager will handle this.
 	if len(violations) > 0 {
+		log.Info("CertificateRequest does not match Certificate")
 		return nil
 	}
 
@@ -283,10 +295,10 @@ func (c *controller) issueCertificate(ctx context.Context, nextPrivateKeySecretN
 		return err
 	}
 
+	crt = crt.DeepCopy()
+
 	//Set status.revision to revision of the CertificateRequest
 	crt.Status.Revision = &nextRevision
-
-	crt = crt.DeepCopy()
 
 	// Remove Issuing status condition
 	apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionIssuing)
