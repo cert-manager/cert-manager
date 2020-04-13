@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/version"
 )
 
@@ -36,6 +37,7 @@ cert-manager-ctl is a CLI tool manage and configure cert-manager resources for K
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 	cmds.AddCommand(version.NewCmdVersion(ioStreams))
+	cmds.AddCommand(renew.NewCmdRenew(ioStreams))
 
 	return cmds
 }
