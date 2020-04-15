@@ -29,7 +29,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
@@ -180,7 +179,7 @@ func TestProcessItem(t *testing.T) {
 						Namespace: "testns",
 						Name:      "test",
 						Annotations: map[string]string{
-							certificates.CertificateRevisionAnnotationKey: "3",
+							cmapi.CertificateRequestRevisionAnnotationKey: "3",
 						},
 						OwnerReferences: []metav1.OwnerReference{
 							*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, cmapi.SchemeGroupVersion.WithKind("Certificate")),
@@ -227,7 +226,7 @@ func TestProcessItem(t *testing.T) {
 						Namespace: "testns",
 						Name:      "test",
 						Annotations: map[string]string{
-							certificates.CertificateRevisionAnnotationKey: "3",
+							cmapi.CertificateRequestRevisionAnnotationKey: "3",
 						},
 						OwnerReferences: []metav1.OwnerReference{
 							*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, cmapi.SchemeGroupVersion.WithKind("Certificate")),
@@ -239,7 +238,7 @@ func TestProcessItem(t *testing.T) {
 						Namespace: "testns",
 						Name:      "test-number-two",
 						Annotations: map[string]string{
-							certificates.CertificateRevisionAnnotationKey: "3",
+							cmapi.CertificateRequestRevisionAnnotationKey: "3",
 						},
 						OwnerReferences: []metav1.OwnerReference{
 							*metav1.NewControllerRef(&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"}}, cmapi.SchemeGroupVersion.WithKind("Certificate")),
