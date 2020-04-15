@@ -82,8 +82,8 @@ spec:
   - name: conatinerImage
     url: https://quay.io/jetstack/cert-manager:latest
   maintainers:
-  - email: james@jetstack.io
-    name: James Munnelly
+  - email: todo@jetstack.io
+    name: cert-manager team
   maturity: alpha
   provider:
     name: Jetstack
