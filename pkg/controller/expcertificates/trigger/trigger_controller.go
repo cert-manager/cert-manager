@@ -152,7 +152,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// check if we have had a recent failure, and if so do not trigger a
 	// reissue immediately
 	if crt.Status.LastFailureTime != nil {
-		if crt.Status.LastFailureTime.Add(time.Hour).Before(c.clock.Now()) {
+		if crt.Status.LastFailureTime.Add(time.Hour).After(c.clock.Now()) {
 			durationUntilRetry := c.clock.Now().Sub(crt.Status.LastFailureTime.Time)
 			log.Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_in", durationUntilRetry.String())
 			return nil
