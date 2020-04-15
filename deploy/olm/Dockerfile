@@ -16,7 +16,8 @@ LABEL name="cert-manager Operator" \
       description="This operator will deploy cert-manager to the cluster."
 
 # Required Licenses
-ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSES /licenses
+ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSE /licenses/LICENSE
+ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSES /licenses/LICENSES
 
 COPY --from=chart-get /cert-manager/ ${HOME}/helm-charts/cert-manager
 COPY watches.yaml ${HOME}/watches.yaml
