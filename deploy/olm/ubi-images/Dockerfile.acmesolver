@@ -1,0 +1,9 @@
+FROM quay.io/jetstack/cert-manager-acmesolver:v0.15.0-alpha.0 as source
+FROM registry.access.redhat.com/ubi8/ubi-minimal
+
+COPY --from=source /app /app
+# Required Licenses
+ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSE /licenses/LICENSE
+ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSES /licenses/LICENSES
+
+CMD "/app/cmd/acmesolver/acmesolver"

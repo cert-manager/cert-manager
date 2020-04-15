@@ -8,3 +8,4 @@
     webhook.image.tag: v0.15.0-alpha.0-ubi
     cainjector.image.tag: v0.15.0-alpha.0-ubi
     installCRDs: true
+    extraArgs[0]: --acme-http01-solver-image=TODO/cert-manager-acmesolver:v0.15.0-alpha.0-ubi
