@@ -391,7 +391,7 @@ func TestProcessItem(t *testing.T) {
 				if test.err != err.Error() {
 					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
 				}
-			case err == nil:
+			default:
 				if test.err != "" {
 					t.Errorf("got no error but expected: %s", test.err)
 				}
