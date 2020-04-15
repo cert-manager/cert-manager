@@ -6,4 +6,12 @@ COPY --from=source /app /app
 ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSE /licenses/LICENSE
 ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSES /licenses/LICENSES
 
+### Required OpenShift Labels
+LABEL name="cert-manager acmesolver" \
+      vendor="Jetstack" \
+      version="v0.15.0" \
+      release="1" \
+      summary="This is the cert-manager ACME HTTP01 solver image." \
+      description="This image contains the resolver vor ACME HTTP01 challenges."
+
 CMD "/app/cmd/acmesolver/acmesolver"

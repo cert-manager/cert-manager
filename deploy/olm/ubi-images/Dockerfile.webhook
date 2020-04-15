@@ -6,4 +6,12 @@ COPY --from=source /app /app
 ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSE /licenses/LICENSE
 ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSES /licenses/LICENSES
 
+### Required OpenShift Labels
+LABEL name="cert-manager webhook" \
+      vendor="Jetstack" \
+      version="v0.15.0" \
+      release="1" \
+      summary="This is the cert-manager webhook image." \
+      description="This image contains the webhook server for cert-manager."
+
 CMD "/app/cmd/webhook/webhook"
