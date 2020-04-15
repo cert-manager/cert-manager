@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/workqueue"
 
@@ -107,14 +108,27 @@ func WithCertificateRevisionPredicateFunc(revision int) CertificateRequestPredic
 	}
 }
 
-func ListCertificateRequestsMatchingPredicate(lister cmlisters.CertificateRequestNamespaceLister, selector labels.Selector, predicate CertificateRequestPredicateFunc) ([]*cmapi.CertificateRequest, error) {
+func WithOwnerPredicateFunc(owner metav1.Object) CertificateRequestPredicateFunc {
+	return func(req *cmapi.CertificateRequest) bool {
+		return metav1.IsControlledBy(req, owner)
+	}
+}
+
+func ListCertificateRequestsMatchingPredicate(lister cmlisters.CertificateRequestNamespaceLister, selector labels.Selector, predicates ...CertificateRequestPredicateFunc) ([]*cmapi.CertificateRequest, error) {
 	reqs, err := lister.List(selector)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]*cmapi.CertificateRequest, 0)
 	for _, req := range reqs {
-		if predicate(req) {
+		matches := true
+		for _, predicate := range predicates {
+			if !predicate(req) {
+				matches = false
+				break
+			}
+		}
+		if matches {
 			out = append(out, req)
 		}
 	}
