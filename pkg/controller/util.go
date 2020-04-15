@@ -68,7 +68,7 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 				// TODO: how to handle namespace of owner references?
 				order, err := get(metaobj.GetNamespace(), ref.Name)
 				if err != nil {
-					log.Error(err, "error getting order referenced by resource")
+					log.Error(err, "error getting referenced owning resource")
 					continue
 				}
 				objKey, err := KeyFunc(order)
