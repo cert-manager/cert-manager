@@ -17,6 +17,7 @@ go_library(
         "//pkg/controller/acmeorders:go_default_library",
         "//pkg/controller/certificates:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
+        "//pkg/controller/expcertificates/trigger:go_default_library",
         "//pkg/controller/ingress-shim:go_default_library",
         "//pkg/controller/issuers:go_default_library",
         "//pkg/issuer/acme:go_default_library",

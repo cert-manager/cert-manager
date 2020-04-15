@@ -22,6 +22,8 @@ import (
 	"net/url"
 	"sort"
 	"time"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 func OnlyOneNotNil(items ...interface{}) (any bool, one bool) {
@@ -94,6 +96,33 @@ func EqualURLsUnsorted(s1, s2 []*url.URL) bool {
 
 // Test for equal IP slices even if unsorted
 func EqualIPsUnsorted(s1, s2 []net.IP) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+	s1_2, s2_2 := make([]string, len(s1)), make([]string, len(s2))
+	// we may want to implement a sort interface here instead of []byte conversion
+	for i := range s1 {
+		s1_2[i] = string(s1[i])
+		s2_2[i] = string(s2[i])
+	}
+
+	sort.SliceStable(s1_2, func(i, j int) bool {
+		return s1_2[i] < s1_2[j]
+	})
+	sort.SliceStable(s2_2, func(i, j int) bool {
+		return s2_2[i] < s2_2[j]
+	})
+
+	for i, s := range s1_2 {
+		if s != s2_2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// Test for equal KeyUsage slices even if unsorted
+func EqualKeyUsagesUnsorted(s1, s2 []cmapi.KeyUsage) bool {
 	if len(s1) != len(s2) {
 		return false
 	}

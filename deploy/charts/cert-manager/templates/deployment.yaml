@@ -99,6 +99,9 @@ spec:
           - --default-issuer-group={{ .defaultIssuerGroup }}
           {{- end }}
           {{- end }}
+          {{- if .Values.featureGates }}
+          - --feature-gates={{ .Values.featureGates }}
+          {{- end }}
           ports:
           - containerPort: 9402
             protocol: TCP

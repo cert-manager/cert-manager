@@ -298,11 +298,30 @@ spec:
               lastFailureTime:
                 type: string
                 format: date-time
+              nextPrivateKeySecretName:
+                description: The name of the Secret resource containing the private
+                  key to be used for the next certificate iteration. The keymanager
+                  controller will automatically set this field if the `Issuing` condition
+                  is set to `True`. It will automatically unset this field when the
+                  Issuing condition is not set or False.
+                type: string
               notAfter:
                 description: The expiration time of the certificate stored in the
                   secret named by this resource in spec.secretName.
                 type: string
                 format: date-time
+              revision:
+                description: "The current 'revision' of the certificate as issued.
+                  \n When a CertificateRequest resource is created, it will have the
+                  `cert-manager.io/certificate-revision` set to one greater than the
+                  current value of this field. \n Upon issuance, this field will be
+                  set to the value of the annotation on the CertificateRequest resource
+                  used to issue the certificate. \n Persisting the value on the CertificateRequest
+                  resource allows the certificates controller to know whether a request
+                  is part of an old issuance or if it is part of the ongoing revision's
+                  issuance by checking if the revision value in the annotation is
+                  greater than this field."
+                type: integer
   - name: v1alpha3
     served: true
     storage: false
@@ -545,8 +564,27 @@ spec:
               lastFailureTime:
                 type: string
                 format: date-time
+              nextPrivateKeySecretName:
+                description: The name of the Secret resource containing the private
+                  key to be used for the next certificate iteration. The keymanager
+                  controller will automatically set this field if the `Issuing` condition
+                  is set to `True`. It will automatically unset this field when the
+                  Issuing condition is not set or False.
+                type: string
               notAfter:
                 description: The expiration time of the certificate stored in the
                   secret named by this resource in spec.secretName.
                 type: string
                 format: date-time
+              revision:
+                description: "The current 'revision' of the certificate as issued.
+                  \n When a CertificateRequest resource is created, it will have the
+                  `cert-manager.io/certificate-revision` set to one greater than the
+                  current value of this field. \n Upon issuance, this field will be
+                  set to the value of the annotation on the CertificateRequest resource
+                  used to issue the certificate. \n Persisting the value on the CertificateRequest
+                  resource allows the certificates controller to know whether a request
+                  is part of an old issuance or if it is part of the ongoing revision's
+                  issuance by checking if the revision value in the annotation is
+                  greater than this field."
+                type: integer

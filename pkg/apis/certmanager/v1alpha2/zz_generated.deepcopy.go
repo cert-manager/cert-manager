@@ -359,6 +359,16 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 		in, out := &in.NotAfter, &out.NotAfter
 		*out = (*in).DeepCopy()
 	}
+	if in.Revision != nil {
+		in, out := &in.Revision, &out.Revision
+		*out = new(int)
+		**out = **in
+	}
+	if in.NextPrivateKeySecretName != nil {
+		in, out := &in.NextPrivateKeySecretName, &out.NextPrivateKeySecretName
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

@@ -29,6 +29,7 @@ import (
 	_ "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	_ "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	_ "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
+	_ "github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger"
 	_ "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	_ "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/acme"

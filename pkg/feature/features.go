@@ -28,6 +28,12 @@ const (
 	//
 	// ValidateCAA enables CAA checking when issuing certificates
 	ValidateCAA featuregate.Feature = "ValidateCAA"
+
+	// alpha: v0.15.0
+	//
+	// ExperimentalCertificateControllers enables all experimental certificate
+	// controllers and disables the default certificates controller.
+	ExperimentalCertificateControllers featuregate.Feature = "ExperimentalCertificateControllers"
 )
 
 func init() {
@@ -38,5 +44,6 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available throughout Kubernetes binaries.
 var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
+	ValidateCAA:                        {Default: false, PreRelease: featuregate.Alpha},
+	ExperimentalCertificateControllers: {Default: false, PreRelease: featuregate.Alpha},
 }
