@@ -63,6 +63,7 @@ spec:
 {{ toYaml .Values.webhook.extraArgs | indent 10 }}
         {{- end }}
           ports:
+          - name: https
             containerPort: {{ .Values.webhook.securePort }}
           livenessProbe:
             httpGet:
