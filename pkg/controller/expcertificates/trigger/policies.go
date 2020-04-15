@@ -28,12 +28,26 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-// evaluatePolicyChain calls each provided policy function in order using the
-// provided input.
-// If any of the policies return reissue=true, it will immediately return with
-// the results of the call.
-func evaluatePolicyChain(input policyInput, policies ...triggerPolicyFunc) (string, string, bool) {
-	for _, policyFunc := range policies {
+// PolicyData contains input parameters used during evaluation of PolicyFuncs.
+type PolicyData struct {
+	Certificate            *cmapi.Certificate
+	CurrentRevisionRequest *cmapi.CertificateRequest
+	Secret                 *corev1.Secret
+}
+
+// A PolicyFunc evaluates the given input data and decides whether a
+// re-issuance is required, returning additional human readable information
+// in the 'reason' and 'message' return parameters if so.
+type PolicyFunc func(PolicyData) (reason, message string, reissue bool)
+
+// A chain of PolicyFuncs to be evaluated in order.
+type PolicyChain []PolicyFunc
+
+// Evaluate will evaluate the entire policy chain using the provided input.
+// As soon as a policy function indicates a re-issuance is required, the method
+// will return and not evaluate the rest of the chain.
+func (c PolicyChain) Evaluate(input PolicyData) (string, string, bool) {
+	for _, policyFunc := range c {
 		reason, message, reissue := policyFunc(input)
 		if reissue {
 			return reason, message, reissue
@@ -42,15 +56,7 @@ func evaluatePolicyChain(input policyInput, policies ...triggerPolicyFunc) (stri
 	return "", "", false
 }
 
-type policyInput struct {
-	certificate            *cmapi.Certificate
-	currentRevisionRequest *cmapi.CertificateRequest
-	secret                 *corev1.Secret
-}
-
-type triggerPolicyFunc func(policyInput) (reason, message string, reissue bool)
-
-var defaultPolicyChain = []triggerPolicyFunc{
+var DefaultPolicyChain = PolicyChain{
 	secretDoesNotExistPolicy,
 	secretHasDataPolicy,
 	secretPublicKeysMatch,
@@ -63,19 +69,19 @@ var defaultPolicyChain = []triggerPolicyFunc{
 	//  a re-issuance will be triggered.
 }
 
-func secretDoesNotExistPolicy(input policyInput) (string, string, bool) {
-	if input.secret == nil {
+func secretDoesNotExistPolicy(input PolicyData) (string, string, bool) {
+	if input.Secret == nil {
 		return "DoesNotExist", "Issuing certificate as Secret does not exist", true
 	}
 	return "", "", false
 }
 
-func secretHasDataPolicy(input policyInput) (string, string, bool) {
-	if input.secret.Data == nil {
+func secretHasDataPolicy(input PolicyData) (string, string, bool) {
+	if input.Secret.Data == nil {
 		return "MissingData", "Issuing certificate as Secret does not contain any data", true
 	}
-	pkData := input.secret.Data[corev1.TLSPrivateKeyKey]
-	certData := input.secret.Data[corev1.TLSCertKey]
+	pkData := input.Secret.Data[corev1.TLSPrivateKeyKey]
+	certData := input.Secret.Data[corev1.TLSCertKey]
 	if len(pkData) == 0 {
 		return "MissingData", "Issuing certificate as Secret does not contain a private key", true
 	}
@@ -85,9 +91,9 @@ func secretHasDataPolicy(input policyInput) (string, string, bool) {
 	return "", "", false
 }
 
-func secretPublicKeysMatch(input policyInput) (string, string, bool) {
-	pkData := input.secret.Data[corev1.TLSPrivateKeyKey]
-	certData := input.secret.Data[corev1.TLSCertKey]
+func secretPublicKeysMatch(input PolicyData) (string, string, bool) {
+	pkData := input.Secret.Data[corev1.TLSPrivateKeyKey]
+	certData := input.Secret.Data[corev1.TLSCertKey]
 	// TODO: replace this with a generic decoder that can handle different
 	//  formats such as JKS, P12 etc (i.e. add proper support for keystores)
 	_, err := tls.X509KeyPair(certData, pkData)
@@ -97,20 +103,20 @@ func secretPublicKeysMatch(input policyInput) (string, string, bool) {
 	return "", "", false
 }
 
-func secretHasUpToDateIssuerAnnotations(input policyInput) (string, string, bool) {
-	name := input.secret.Annotations[cmapi.IssuerNameAnnotationKey]
-	kind := input.secret.Annotations[cmapi.IssuerKindAnnotationKey]
-	group := input.secret.Annotations[cmapi.IssuerGroupAnnotationKey]
-	if name != input.certificate.Spec.IssuerRef.Name ||
-		!issuerKindsEqual(kind, input.certificate.Spec.IssuerRef.Kind) ||
-		!issuerGroupsEqual(group, input.certificate.Spec.IssuerRef.Group) {
+func secretHasUpToDateIssuerAnnotations(input PolicyData) (string, string, bool) {
+	name := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
+	kind := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
+	group := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
+	if name != input.Certificate.Spec.IssuerRef.Name ||
+		!issuerKindsEqual(kind, input.Certificate.Spec.IssuerRef.Kind) ||
+		!issuerGroupsEqual(group, input.Certificate.Spec.IssuerRef.Group) {
 		return "IncorrectIssuer", fmt.Sprintf("Issuing certificate as Secret was previously issued by %s", formatIssuerRef(name, kind, group)), true
 	}
 	return "", "", false
 }
 
-func currentCertificateRequestValidForSpec(input policyInput) (string, string, bool) {
-	if input.currentRevisionRequest == nil {
+func currentCertificateRequestValidForSpec(input PolicyData) (string, string, bool) {
+	if input.CurrentRevisionRequest == nil {
 		// Fallback to comparing the Certificate spec with the issued certificate.
 		// This case is encountered if the CertificateRequest that issued the current
 		// Secret is not available (most likely due to it being deleted).
@@ -120,7 +126,7 @@ func currentCertificateRequestValidForSpec(input policyInput) (string, string, b
 		return currentSecretValidForSpec(input)
 	}
 
-	violations, err := certificates.RequestMatchesSpec(input.currentRevisionRequest, input.certificate.Spec)
+	violations, err := certificates.RequestMatchesSpec(input.CurrentRevisionRequest, input.Certificate.Spec)
 	if err != nil {
 		// If parsing the request fails, we don't immediately trigger a re-issuance as
 		// the existing certificate stored in the Secret may still be valid/up to date.
@@ -136,8 +142,8 @@ func currentCertificateRequestValidForSpec(input policyInput) (string, string, b
 // currentSecretValidForSpec is not actually registered as part of the policy chain
 // and is instead called by currentCertificateRequestValidForSpec if no there
 // is no existing CertificateRequest resource.
-func currentSecretValidForSpec(input policyInput) (string, string, bool) {
-	violations, err := certificates.SecretDataAltNamesMatchSpec(input.secret, input.certificate.Spec)
+func currentSecretValidForSpec(input PolicyData) (string, string, bool) {
+	violations, err := certificates.SecretDataAltNamesMatchSpec(input.Secret, input.Certificate.Spec)
 	if err != nil {
 		// This case should never be reached as we already check the certificate data can
 		// be parsed in an earlier policy check, but handle it anyway.
@@ -152,8 +158,8 @@ func currentSecretValidForSpec(input policyInput) (string, string, bool) {
 	return "", "", false
 }
 
-func currentCertificateNearingExpiry(input policyInput) (string, string, bool) {
-	certData := input.secret.Data[corev1.TLSCertKey]
+func currentCertificateNearingExpiry(input PolicyData) (string, string, bool) {
+	certData := input.Secret.Data[corev1.TLSCertKey]
 	// TODO: replace this with a generic decoder that can handle different
 	//  formats such as JKS, P12 etc (i.e. add proper support for keystores)
 	cert, err := pki.DecodeX509CertificateBytes(certData)
@@ -164,8 +170,8 @@ func currentCertificateNearingExpiry(input policyInput) (string, string, bool) {
 	}
 
 	renewBefore := cmapi.DefaultRenewBefore
-	if input.certificate.Spec.RenewBefore != nil {
-		renewBefore = input.certificate.Spec.RenewBefore.Duration
+	if input.Certificate.Spec.RenewBefore != nil {
+		renewBefore = input.Certificate.Spec.RenewBefore.Duration
 	}
 	actualDuration := cert.NotAfter.Sub(cert.NotBefore)
 	if renewBefore > actualDuration {

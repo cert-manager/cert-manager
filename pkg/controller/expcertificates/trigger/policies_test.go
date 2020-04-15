@@ -466,14 +466,14 @@ func TestDefaultPolicyChain(t *testing.T) {
 			reissue: true,
 		},
 	}
-	policyChain := defaultPolicyChain
+	policyChain := DefaultPolicyChain
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			reason, message, reissue := evaluatePolicyChain(policyInput{
-				certificate:            test.certificate,
-				currentRevisionRequest: test.request,
-				secret:                 test.secret,
-			}, policyChain...)
+			reason, message, reissue := policyChain.Evaluate(PolicyData{
+				Certificate:            test.certificate,
+				CurrentRevisionRequest: test.request,
+				Secret:                 test.secret,
+			})
 
 			if test.reason != reason {
 				t.Errorf("unexpected 'reason' exp=%s, got=%s", test.reason, reason)

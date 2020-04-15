@@ -45,7 +45,7 @@ func TestTriggerController(t *testing.T) {
 
 	// Build, instantiate and run the trigger controller.
 	_, factory, cmCl, cmFactory := framework.NewClients(t, config)
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{})
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, trigger.DefaultPolicyChain)
 	c := controllerpkg.NewController(
 		context.Background(),
 		ctrl.ProcessItem,

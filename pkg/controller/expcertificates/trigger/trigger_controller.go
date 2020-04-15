@@ -58,6 +58,8 @@ var (
 // It triggers re-issuance by adding the `Issuing` status condition when a new
 // certificate is required.
 type controller struct {
+	// the trigger policies to run - named here to make testing simpler
+	policyChain              PolicyChain
 	certificateLister        cmlisters.CertificateLister
 	certificateRequestLister cmlisters.CertificateRequestLister
 	secretLister             corelisters.SecretLister
@@ -73,6 +75,7 @@ func NewController(
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
 	clock clock.Clock,
+	chain PolicyChain,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -100,6 +103,7 @@ func NewController(
 	}
 
 	return &controller{
+		policyChain:              chain,
 		certificateLister:        certificateInformer.Lister(),
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
@@ -111,6 +115,7 @@ func NewController(
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
+	ctx = logf.NewContext(ctx, log)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return nil
@@ -132,12 +137,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	input, err := c.buildPolicyInputForCertificate(crt)
+	input, err := c.buildPolicyInputForCertificate(ctx, crt)
 	if err != nil {
 		return err
 	}
 
-	reason, message, reissue := evaluatePolicyChain(*input, defaultPolicyChain...)
+	reason, message, reissue := c.policyChain.Evaluate(input)
 	if !reissue {
 		// no reissuance required, return early
 		return nil
@@ -164,11 +169,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *controller) buildPolicyInputForCertificate(crt *cmapi.Certificate) (*policyInput, error) {
-	// Attempt to fetch the secret being managed but tolerate NotFound errors.
+func (c *controller) buildPolicyInputForCertificate(ctx context.Context, crt *cmapi.Certificate) (PolicyData, error) {
+	log := logf.FromContext(ctx)
+	// Attempt to fetch the Secret being managed but tolerate NotFound errors.
 	secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 	if err != nil && !apierrors.IsNotFound(err) {
-		return nil, err
+		return PolicyData{}, err
 	}
 
 	// Attempt to fetch the CertificateRequest resource for the current 'status.revision'.
@@ -176,23 +182,26 @@ func (c *controller) buildPolicyInputForCertificate(crt *cmapi.Certificate) (*po
 	if crt.Status.Revision != nil {
 		reqs, err := certificates.ListCertificateRequestsMatchingPredicate(c.certificateRequestLister.CertificateRequests(crt.Namespace),
 			labels.Everything(),
+			certificates.WithOwnerPredicateFunc(crt),
 			certificates.WithCertificateRevisionPredicateFunc(*crt.Status.Revision),
 		)
 		if err != nil {
-			return nil, err
+			return PolicyData{}, err
 		}
-		if len(reqs) > 1 {
-			return nil, fmt.Errorf("multiple CertificateRequest resources for the current revision, not triggering new issuance until requests have been cleaned up")
-		}
-		if len(reqs) == 1 {
+		switch {
+		case len(reqs) > 1:
+			return PolicyData{}, fmt.Errorf("multiple CertificateRequest resources exist for the current revision, not triggering new issuance until requests have been cleaned up")
+		case len(reqs) == 1:
 			req = reqs[0]
+		case len(reqs) == 0:
+			log.V(logf.DebugLevel).Info("Found no CertificateRequest resources owned by this Certificate for the current revision", "revision", *crt.Status.Revision)
 		}
 	}
 
-	return &policyInput{
-		certificate:            crt,
-		currentRevisionRequest: req,
-		secret:                 secret,
+	return PolicyData{
+		Certificate:            crt,
+		CurrentRevisionRequest: req,
+		Secret:                 secret,
 	}, nil
 }
 
@@ -212,6 +221,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
+		DefaultPolicyChain,
 	)
 	c.controller = ctrl
 
