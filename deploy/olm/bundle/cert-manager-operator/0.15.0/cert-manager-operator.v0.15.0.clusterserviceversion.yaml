@@ -53,13 +53,8 @@ spec:
               containers:
               - name: cert-manager-operator
                 # Replace this with the built image name
-                image: bazel/deploy/olm:helm-operator
-                imagePullPolicy: Never
+                image: quay.io/maartje/cm-operator-image-devel:latest
                 env:
-                - name: WATCH_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
                 - name: POD_NAME
                   valueFrom:
                     fieldRef:

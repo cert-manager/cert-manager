@@ -2,4 +2,9 @@
 - version: v1alpha1
   group: operator.cert-manager.io
   kind: CertManager
-  chart: cert-manager/
+  chart: helm-charts/cert-manager
+  overrideValues:
+    image.tag: v0.15.0-alpha.0-ubi
+    webhook.image.tag: v0.15.0-alpha.0-ubi
+    cainjector.image.tag: v0.15.0-alpha.0-ubi
+    installCRDs: true
