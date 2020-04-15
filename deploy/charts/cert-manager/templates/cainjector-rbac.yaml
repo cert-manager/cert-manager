@@ -67,9 +67,10 @@ metadata:
     helm.sh/chart: {{ include "cainjector.chart" . }}
 rules:
   # Used for leader election by the controller
-  # TODO: refine the permission to *just* the leader election configmap
+  # Done: refine the permission to *just* the leader election configmaps
   - apiGroups: [""]
     resources: ["configmaps"]
+    resourceNames: ["cert-manager-cainjector-leader-election", "cert-manager-cainjector-leader-election-core", "cert-manager-controller"]
     verbs: ["get", "create", "update", "patch"]
 
 ---
