@@ -14,7 +14,6 @@ metadata:
     helm.sh/chart: {{ include "cert-manager.chart" . }}
 rules:
   # Used for leader election by the controller
-  # Done: refine the permission to *just* the leader election configmaps
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["cert-manager-controller"]
