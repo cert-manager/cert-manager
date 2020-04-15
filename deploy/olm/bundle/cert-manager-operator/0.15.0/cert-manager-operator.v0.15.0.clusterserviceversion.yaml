@@ -82,7 +82,7 @@ spec:
   - name: conatinerImage
     url: https://quay.io/jetstack/cert-manager:latest
   maintainers:
-  - email: todo@jetstack.io
+  - email: cert-manager-maintainers@jetstack.io
     name: cert-manager team
   maturity: alpha
   provider:
