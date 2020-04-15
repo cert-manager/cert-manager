@@ -31,7 +31,6 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -200,7 +199,7 @@ func TestIssuingController(t *testing.T) {
 								Type:               cmapi.CertificateConditionIssuing,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             "Failed",
-								Message:            "The certificate has failed to complete and will be retried: The certificate request failed because of reasons",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
@@ -208,7 +207,7 @@ func TestIssuingController(t *testing.T) {
 					)),
 				},
 				ExpectedEvents: []string{
-					"Warning Failed The certificate has failed to complete and will be retried: The certificate request failed because of reasons",
+					"Warning Failed The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
 				},
 			},
 			expectedErr: false,
@@ -456,24 +455,11 @@ func TestIssuingController(t *testing.T) {
 			test.builder.Init()
 			defer test.builder.Stop()
 
-			secretsLister := test.builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+			// Instantiate/setup the controller
+			w := controllerWrapper{}
+			w.Register(test.builder.Context)
 
-			secretManager := newSecretsManager(
-				test.builder.Client,
-				secretsLister,
-				controllerpkg.CertificateOptions{},
-			)
-
-			testManager := &controller{
-				certificateLister:        test.builder.SharedInformerFactory.Certmanager().V1alpha2().Certificates().Lister(),
-				certificateRequestLister: test.builder.SharedInformerFactory.Certmanager().V1alpha2().CertificateRequests().Lister(),
-				secretLister:             secretsLister,
-				recorder:                 test.builder.Recorder,
-				clock:                    fixedClock,
-				client:                   test.builder.CMClient,
-				secretsManager:           secretManager,
-			}
-
+			// Start the unit test builder
 			test.builder.Start()
 
 			key, err := cache.MetaNamespaceKeyFunc(test.certificate)
@@ -482,7 +468,7 @@ func TestIssuingController(t *testing.T) {
 				t.FailNow()
 			}
 
-			err = testManager.ProcessItem(context.Background(), key)
+			err = w.controller.ProcessItem(context.Background(), key)
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}

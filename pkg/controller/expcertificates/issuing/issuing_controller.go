@@ -165,8 +165,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	nextPrivateKeySecretName := *crt.Status.NextPrivateKeySecretName
-
 	// CertificateRequest revisions begin from 1. If no revision is set on the
 	// status then assume no revision yet set.
 	nextRevision := 1
@@ -200,7 +198,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		// If the CertificateRequest is valid, verify its status and update
 		// accordingly.
 	case cmapi.CertificateRequestReasonIssued:
-		return c.issueCertificate(ctx, log, nextPrivateKeySecretName, nextRevision, crt, req)
+		return c.issueCertificate(ctx, log, nextRevision, crt, req)
 
 	// CertificateRequest is not in a final state so do nothing.
 	default:
@@ -220,7 +218,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	condition := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
 
 	reason = condition.Reason
-	message = fmt.Sprintf("The certificate has failed to complete and will be retried: %s",
+	message = fmt.Sprintf("The certificate request has failed to complete and will be retried: %s",
 		condition.Message)
 
 	crt = crt.DeepCopy()
@@ -239,8 +237,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, log logr.Logger, nextPrivateKeySecretName string, nextRevision int,
-	crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+func (c *controller) issueCertificate(ctx context.Context, log logr.Logger, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
 
 	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
 	if err != nil {
