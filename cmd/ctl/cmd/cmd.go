@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
@@ -36,10 +37,16 @@ cert-manager-ctl is a CLI tool manage and configure cert-manager resources for K
 		Run: runHelp,
 	}
 
+	kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
+	kubeConfigFlags.AddFlags(cmds.PersistentFlags())
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
+	matchVersionKubeConfigFlags.AddFlags(cmds.PersistentFlags())
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 	cmds.AddCommand(version.NewCmdVersion(ioStreams))
 	cmds.AddCommand(convert.NewCmdConvert(ioStreams))
-	cmds.AddCommand(renew.NewCmdRenew(ioStreams))
+	cmds.AddCommand(renew.NewCmdRenew(ioStreams, factory))
 
 	return cmds
 }
