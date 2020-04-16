@@ -42,11 +42,12 @@ func CertificateGetFunc(lister cmlisters.CertificateLister) GetFunc {
 }
 
 // EnqueueCertificatesForSecretNameFunc will enqueue Certificate resources that
-// specify a `spec.secretName` equal to the name of the Secret resource being
-// processed.
+// satisfy a CertificatePredicateFunc based upon the name of the Secret resource
+// being processed.
 // This is used to trigger Certificates to reconcile for changes to the Secret
 // being managed.
-func EnqueueCertificatesForSecretNameFunc(log logr.Logger, lister cmlisters.CertificateLister, selector labels.Selector, queue workqueue.Interface) func(obj interface{}) {
+func EnqueueCertificatesForSecretNameFunc(log logr.Logger, lister cmlisters.CertificateLister, selector labels.Selector,
+	secretNamePredicate WithCertificatePredicateFunc, queue workqueue.Interface) func(obj interface{}) {
 	return func(obj interface{}) {
 		s, ok := obj.(*corev1.Secret)
 		if !ok {
@@ -54,7 +55,7 @@ func EnqueueCertificatesForSecretNameFunc(log logr.Logger, lister cmlisters.Cert
 			return
 		}
 
-		certs, err := ListCertificatesMatchingPredicate(lister.Certificates(s.Namespace), selector, WithSecretNamePredicateFunc(s.Name))
+		certs, err := ListCertificatesMatchingPredicate(lister.Certificates(s.Namespace), selector, secretNamePredicate(s.Name))
 		if err != nil {
 			log.Error(err, "Failed listing Certificate resources")
 			return
@@ -71,11 +72,22 @@ func EnqueueCertificatesForSecretNameFunc(log logr.Logger, lister cmlisters.Cert
 	}
 }
 
+type WithCertificatePredicateFunc func(string) CertificatePredicateFunc
+
 type CertificatePredicateFunc func(*cmapi.Certificate) bool
 
 func WithSecretNamePredicateFunc(name string) CertificatePredicateFunc {
 	return func(crt *cmapi.Certificate) bool {
 		return crt.Spec.SecretName == name
+	}
+}
+
+func WithNextPrivateKeySecretNamePredicateFunc(name string) CertificatePredicateFunc {
+	return func(crt *cmapi.Certificate) bool {
+		if crt.Status.NextPrivateKeySecretName == nil {
+			return false
+		}
+		return *crt.Status.NextPrivateKeySecretName == name
 	}
 }
 
@@ -93,10 +105,6 @@ func ListCertificatesMatchingPredicate(lister cmlisters.CertificateNamespaceList
 	return out, nil
 }
 
-const (
-	CertificateRevisionAnnotationKey = "cert-manager.io/certificate-revision"
-)
-
 type CertificateRequestPredicateFunc func(*cmapi.CertificateRequest) bool
 
 func WithCertificateRevisionPredicateFunc(revision int) CertificateRequestPredicateFunc {
@@ -104,17 +112,17 @@ func WithCertificateRevisionPredicateFunc(revision int) CertificateRequestPredic
 		if req.Annotations == nil {
 			return false
 		}
-		return req.Annotations[CertificateRevisionAnnotationKey] == fmt.Sprintf("%d", revision)
+		return req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == fmt.Sprintf("%d", revision)
 	}
 }
 
-func WithOwnerPredicateFunc(owner metav1.Object) CertificateRequestPredicateFunc {
+func WithCertificateRequestOwnerPredicateFunc(owner metav1.Object) CertificateRequestPredicateFunc {
 	return func(req *cmapi.CertificateRequest) bool {
 		return metav1.IsControlledBy(req, owner)
 	}
 }
 
-func ListCertificateRequestsMatchingPredicate(lister cmlisters.CertificateRequestNamespaceLister, selector labels.Selector, predicates ...CertificateRequestPredicateFunc) ([]*cmapi.CertificateRequest, error) {
+func ListCertificateRequestsMatchingPredicates(lister cmlisters.CertificateRequestNamespaceLister, selector labels.Selector, predicates ...CertificateRequestPredicateFunc) ([]*cmapi.CertificateRequest, error) {
 	reqs, err := lister.List(selector)
 	if err != nil {
 		return nil, err
@@ -132,6 +140,7 @@ func ListCertificateRequestsMatchingPredicate(lister cmlisters.CertificateReques
 			out = append(out, req)
 		}
 	}
+
 	return out, nil
 }
 
