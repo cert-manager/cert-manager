@@ -60,6 +60,7 @@ var DefaultPolicyChain = PolicyChain{
 	secretDoesNotExistPolicy,
 	secretHasDataPolicy,
 	secretPublicKeysMatch,
+	secretPrivateKeyMatchesSpec,
 	secretHasUpToDateIssuerAnnotations,
 	currentCertificateRequestValidForSpec,
 	currentCertificateNearingExpiry,
@@ -99,6 +100,27 @@ func secretPublicKeysMatch(input PolicyData) (string, string, bool) {
 	_, err := tls.X509KeyPair(certData, pkData)
 	if err != nil {
 		return "InvalidKeyPair", fmt.Sprintf("Issuing certificate as Secret contains an invalid key-pair: %v", err), true
+	}
+	return "", "", false
+}
+
+func secretPrivateKeyMatchesSpec(input PolicyData) (string, string, bool) {
+	if input.Secret.Data == nil || len(input.Secret.Data[corev1.TLSPrivateKeyKey]) == 0 {
+		return "SecretMismatch", fmt.Sprintf("Existing issued Secret does not contain private key data"), true
+	}
+
+	pkBytes := input.Secret.Data[corev1.TLSPrivateKeyKey]
+	pk, err := pki.DecodePrivateKeyBytes(pkBytes)
+	if err != nil {
+		return "SecretMismatch", fmt.Sprintf("Existing issued Secret contains invalid private key data: %v", err), true
+	}
+
+	violations, err := certificates.PrivateKeyMatchesSpec(pk, input.Certificate.Spec)
+	if err != nil {
+		return "SecretMismatch", fmt.Sprintf("Failed to check private key is up to date: %v", err), true
+	}
+	if len(violations) > 0 {
+		return "SecretMismatch", fmt.Sprintf("Existing private key is not up to date for spec: %v", violations), true
 	}
 	return "", "", false
 }
