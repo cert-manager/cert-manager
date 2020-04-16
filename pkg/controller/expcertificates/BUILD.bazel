@@ -39,6 +39,7 @@ filegroup(
         ":package-srcs",
         "//pkg/controller/expcertificates/internal/predicate:all-srcs",
         "//pkg/controller/expcertificates/issuing:all-srcs",
+        "//pkg/controller/expcertificates/keymanager:all-srcs",
         "//pkg/controller/expcertificates/trigger:all-srcs",
     ],
     tags = ["automanaged"],
