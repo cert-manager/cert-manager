@@ -17,132 +17,14 @@ limitations under the License.
 package certificates
 
 import (
-	"fmt"
 	"reflect"
 
-	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/util/workqueue"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
-
-type GetFunc func(namespace, name string) (interface{}, error)
-
-func CertificateGetFunc(lister cmlisters.CertificateLister) GetFunc {
-	return func(namespace, name string) (interface{}, error) {
-		return lister.Certificates(namespace).Get(name)
-	}
-}
-
-// EnqueueCertificatesForSecretNameFunc will enqueue Certificate resources that
-// satisfy a CertificatePredicateFunc based upon the name of the Secret resource
-// being processed.
-// This is used to trigger Certificates to reconcile for changes to the Secret
-// being managed.
-func EnqueueCertificatesForSecretNameFunc(log logr.Logger, lister cmlisters.CertificateLister, selector labels.Selector,
-	secretNamePredicate WithCertificatePredicateFunc, queue workqueue.Interface) func(obj interface{}) {
-	return func(obj interface{}) {
-		s, ok := obj.(*corev1.Secret)
-		if !ok {
-			log.Info("Non-Secret type resource passed to EnqueueCertificatesForSecretFunc")
-			return
-		}
-
-		certs, err := ListCertificatesMatchingPredicate(lister.Certificates(s.Namespace), selector, secretNamePredicate(s.Name))
-		if err != nil {
-			log.Error(err, "Failed listing Certificate resources")
-			return
-		}
-
-		for _, cert := range certs {
-			key, err := controllerpkg.KeyFunc(cert)
-			if err != nil {
-				log.Error(err, "Error determining 'key' for resource")
-				continue
-			}
-			queue.Add(key)
-		}
-	}
-}
-
-type WithCertificatePredicateFunc func(string) CertificatePredicateFunc
-
-type CertificatePredicateFunc func(*cmapi.Certificate) bool
-
-func WithSecretNamePredicateFunc(name string) CertificatePredicateFunc {
-	return func(crt *cmapi.Certificate) bool {
-		return crt.Spec.SecretName == name
-	}
-}
-
-func WithNextPrivateKeySecretNamePredicateFunc(name string) CertificatePredicateFunc {
-	return func(crt *cmapi.Certificate) bool {
-		if crt.Status.NextPrivateKeySecretName == nil {
-			return false
-		}
-		return *crt.Status.NextPrivateKeySecretName == name
-	}
-}
-
-func ListCertificatesMatchingPredicate(lister cmlisters.CertificateNamespaceLister, selector labels.Selector, predicate CertificatePredicateFunc) ([]*cmapi.Certificate, error) {
-	crts, err := lister.List(selector)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]*cmapi.Certificate, 0)
-	for _, crt := range crts {
-		if predicate(crt) {
-			out = append(out, crt)
-		}
-	}
-	return out, nil
-}
-
-type CertificateRequestPredicateFunc func(*cmapi.CertificateRequest) bool
-
-func WithCertificateRevisionPredicateFunc(revision int) CertificateRequestPredicateFunc {
-	return func(req *cmapi.CertificateRequest) bool {
-		if req.Annotations == nil {
-			return false
-		}
-		return req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == fmt.Sprintf("%d", revision)
-	}
-}
-
-func WithCertificateRequestOwnerPredicateFunc(owner metav1.Object) CertificateRequestPredicateFunc {
-	return func(req *cmapi.CertificateRequest) bool {
-		return metav1.IsControlledBy(req, owner)
-	}
-}
-
-func ListCertificateRequestsMatchingPredicates(lister cmlisters.CertificateRequestNamespaceLister, selector labels.Selector, predicates ...CertificateRequestPredicateFunc) ([]*cmapi.CertificateRequest, error) {
-	reqs, err := lister.List(selector)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]*cmapi.CertificateRequest, 0)
-	for _, req := range reqs {
-		matches := true
-		for _, predicate := range predicates {
-			if !predicate(req) {
-				matches = false
-				break
-			}
-		}
-		if matches {
-			out = append(out, req)
-		}
-	}
-
-	return out, nil
-}
 
 // RequestMatchesSpec compares a CertificateRequest with a CertificateSpec
 // and returns a list of field names on the Certificate that do not match their

@@ -1,0 +1,51 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "certificate.go",
+        "certificaterequest.go",
+        "generic.go",
+        "predicate.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate",
+    visibility = ["//pkg/controller/expcertificates:__subpackages__"],
+    deps = [
+        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "certificate_test.go",
+        "certificaterequest_test.go",
+        "generic_test.go",
+        "predicate_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
+    ],
+)
