@@ -17,15 +17,15 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal
 
 COPY --from=source /app /app
 # Required Licenses
-ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSE /licenses/LICENSE
-ADD https://raw.githubusercontent.com/jetstack/cert-manager/master/LICENSES /licenses/LICENSES
+ADD https://raw.githubusercontent.com/jetstack/cert-manager/v0.15.0-alpha.0/LICENSE /licenses/LICENSE
+ADD https://raw.githubusercontent.com/jetstack/cert-manager/v0.15.0-alpha.0/LICENSES /licenses/LICENSES
 
 ### Required OpenShift Labels
 LABEL name="cert-manager acmesolver" \
       vendor="Jetstack" \
-      version="v0.15.0" \
+      version="v0.15.0-alpha.1" \
       release="1" \
       summary="This is the cert-manager ACME HTTP01 solver image." \
-      description="This image contains the resolver vor ACME HTTP01 challenges."
+      description="This image contains the resolve for ACME HTTP01 challenges."
 
 CMD "/app/cmd/acmesolver/acmesolver"

@@ -5,7 +5,7 @@
   chart: helm-charts/cert-manager
   overrideValues:
     image.repository: registry.connect.redhat.com/jetstack/cert-manager-controller
-    image.tag: v0.15.0-alpha1.-ubi
+    image.tag: v0.15.0-alpha.1-ubi
     webhook.image.repository: registry.connect.redhat.com/jetstack/cert-manager-webhook
     webhook.image.tag: v0.15.0-alpha.1-ubi
     cainjector.image.repository: registry.connect.redhat.com/jetstack/cert-manager-cainjector
