@@ -15,6 +15,7 @@ go_library(
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/expcertificates/issuing:go_default_library",
         "//pkg/controller/expcertificates/keymanager:go_default_library",
+        "//pkg/controller/expcertificates/requestmanager:go_default_library",
         "//pkg/controller/expcertificates/trigger:go_default_library",
         "//pkg/feature:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",

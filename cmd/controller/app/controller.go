@@ -48,6 +48,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/issuing"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/keymanager"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/requestmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger"
 	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -83,6 +84,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		trigger.ControllerName,
 		issuing.ControllerName,
 		keymanager.ControllerName,
+		requestmanager.ControllerName,
 	}
 	enabledSet := sets.NewString(opts.EnabledControllers...)
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateControllers) {
