@@ -17,6 +17,10 @@ limitations under the License.
 package certificates
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"fmt"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
@@ -25,6 +29,59 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
+
+func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	switch spec.KeyAlgorithm {
+	case "", cmapi.RSAKeyAlgorithm:
+		return rsaPrivateKeyMatchesSpec(pk, spec)
+	case cmapi.ECDSAKeyAlgorithm:
+		return ecdsaPrivateKeyMatchesSpec(pk, spec)
+	default:
+		return nil, fmt.Errorf("unrecognised key algorithm type %q", spec.KeyAlgorithm)
+	}
+}
+
+func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	rsaPk, ok := pk.(*rsa.PrivateKey)
+	if !ok {
+		return []string{"spec.keyAlgorithm"}, nil
+	}
+	var violations []string
+	// TODO: we should not use implicit defaulting here, and instead rely on
+	//  defaulting performed within the Kubernetes apiserver here.
+	//  This requires careful handling in order to not interrupt users upgrading
+	//  from older versions.
+	// The default RSA keySize is set to 2048.
+	keySize := pki.MinRSAKeySize
+	if spec.KeySize > 0 {
+		keySize = spec.KeySize
+	}
+	if rsaPk.N.BitLen() != keySize {
+		violations = append(violations, "spec.keySize")
+	}
+	return violations, nil
+}
+
+func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	ecdsaPk, ok := pk.(*ecdsa.PrivateKey)
+	if !ok {
+		return []string{"spec.keyAlgorithm"}, nil
+	}
+	var violations []string
+	// TODO: we should not use implicit defaulting here, and instead rely on
+	//  defaulting performed within the Kubernetes apiserver here.
+	//  This requires careful handling in order to not interrupt users upgrading
+	//  from older versions.
+	// The default EC curve type is EC256
+	expectedKeySize := pki.ECCurve256
+	if spec.KeySize > 0 {
+		expectedKeySize = spec.KeySize
+	}
+	if expectedKeySize != ecdsaPk.Curve.Params().BitSize {
+		violations = append(violations, "spec.keySize")
+	}
+	return violations, nil
+}
 
 // RequestMatchesSpec compares a CertificateRequest with a CertificateSpec
 // and returns a list of field names on the Certificate that do not match their
