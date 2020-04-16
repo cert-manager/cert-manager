@@ -100,7 +100,13 @@ func NewController(
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Issuer reconciles on changes to the Secret named `spec.nextPrivateKeySecretName`
 		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+			predicate.ResourceOwnerOf,
 			predicate.ExtractResourceName(predicate.CertificateNextPrivateKeySecretName)),
+	})
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+		// Issuer reconciles on changes to the Secret named `spec.secretName`
+		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+			predicate.ExtractResourceName(predicate.CertificateSecretName)),
 	})
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
