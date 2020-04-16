@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package trigger
+package policies
 
 import (
 	"encoding/pem"
@@ -466,10 +466,10 @@ func TestDefaultPolicyChain(t *testing.T) {
 			reissue: true,
 		},
 	}
-	policyChain := DefaultPolicyChain
+	policyChain := TriggerPolicyChain
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			reason, message, reissue := policyChain.Evaluate(PolicyData{
+			reason, message, reissue := policyChain.Evaluate(Input{
 				Certificate:            test.certificate,
 				CurrentRevisionRequest: test.request,
 				Secret:                 test.secret,

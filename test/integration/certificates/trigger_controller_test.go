@@ -30,6 +30,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
@@ -45,7 +46,7 @@ func TestTriggerController(t *testing.T) {
 
 	// Build, instantiate and run the trigger controller.
 	_, factory, cmCl, cmFactory := framework.NewClients(t, config)
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, trigger.DefaultPolicyChain)
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, policies.TriggerPolicyChain)
 	c := controllerpkg.NewController(
 		context.Background(),
 		ctrl.ProcessItem,

@@ -13,6 +13,7 @@ go_test(
         "//pkg/controller:go_default_library",
         "//pkg/controller/expcertificates/issuing:go_default_library",
         "//pkg/controller/expcertificates/trigger:go_default_library",
+        "//pkg/controller/expcertificates/trigger/policies:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/integration/framework:go_default_library",

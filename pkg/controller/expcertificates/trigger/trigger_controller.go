@@ -18,7 +18,6 @@ package trigger
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -42,6 +41,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -60,13 +60,14 @@ var (
 // certificate is required.
 type controller struct {
 	// the trigger policies to run - named here to make testing simpler
-	policyChain              PolicyChain
+	policyChain              policies.Chain
 	certificateLister        cmlisters.CertificateLister
 	certificateRequestLister cmlisters.CertificateRequestLister
 	secretLister             corelisters.SecretLister
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
 	clock                    clock.Clock
+	gatherer                 *policies.Gatherer
 }
 
 func NewController(
@@ -76,7 +77,7 @@ func NewController(
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
 	clock clock.Clock,
-	chain PolicyChain,
+	chain policies.Chain,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -115,6 +116,10 @@ func NewController(
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
+		gatherer: &policies.Gatherer{
+			CertificateRequestLister: certificateRequestInformer.Lister(),
+			SecretLister:             secretsInformer.Lister(),
+		},
 	}, queue, mustSync
 }
 
@@ -143,7 +148,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	input, err := c.buildPolicyInputForCertificate(ctx, crt)
+	input, err := c.gatherer.DataForCertificate(ctx, crt)
 	if err != nil {
 		return err
 	}
@@ -175,42 +180,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *controller) buildPolicyInputForCertificate(ctx context.Context, crt *cmapi.Certificate) (PolicyData, error) {
-	log := logf.FromContext(ctx)
-	// Attempt to fetch the Secret being managed but tolerate NotFound errors.
-	secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return PolicyData{}, err
-	}
-
-	// Attempt to fetch the CertificateRequest resource for the current 'status.revision'.
-	var req *cmapi.CertificateRequest
-	if crt.Status.Revision != nil {
-		reqs, err := certificates.ListCertificateRequestsMatchingPredicates(c.certificateRequestLister.CertificateRequests(crt.Namespace),
-			labels.Everything(),
-			predicate.ResourceOwnedBy(crt),
-			predicate.CertificateRequestRevision(*crt.Status.Revision),
-		)
-		if err != nil {
-			return PolicyData{}, err
-		}
-		switch {
-		case len(reqs) > 1:
-			return PolicyData{}, fmt.Errorf("multiple CertificateRequest resources exist for the current revision, not triggering new issuance until requests have been cleaned up")
-		case len(reqs) == 1:
-			req = reqs[0]
-		case len(reqs) == 0:
-			log.V(logf.DebugLevel).Info("Found no CertificateRequest resources owned by this Certificate for the current revision", "revision", *crt.Status.Revision)
-		}
-	}
-
-	return PolicyData{
-		Certificate:            crt,
-		CurrentRevisionRequest: req,
-		Secret:                 secret,
-	}, nil
-}
-
 // controllerWrapper wraps the `controller` structure to make it implement
 // the controllerpkg.queueingController interface
 type controllerWrapper struct {
@@ -227,7 +196,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
-		DefaultPolicyChain,
+		policies.TriggerPolicyChain,
 	)
 	c.controller = ctrl
 
