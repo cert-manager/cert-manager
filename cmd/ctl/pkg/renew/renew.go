@@ -19,13 +19,10 @@ package renew
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
@@ -33,11 +30,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-)
-
-var (
-	pollInterval = time.Second
-	pollTimeout  = time.Minute
 )
 
 // Options is a struct to support version command
@@ -58,10 +50,8 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdRenew returns a cobra command for renewing Certificates
-func NewCmdRenew(ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
-
-	var factory cmdutil.Factory
 
 	cmd := &cobra.Command{
 		Use:   "renew",
@@ -75,16 +65,6 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&o.LabelSelector, "selector", "l", o.LabelSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-
-	kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
-
-	kubeConfigFlags.AddFlags(cmd.PersistentFlags())
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
-	matchVersionKubeConfigFlags.AddFlags(cmd.PersistentFlags())
-
-	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
-
-	factory = cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
 	return cmd
 }
@@ -158,44 +138,11 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 }
 
 func (o *Options) renewCertificate(cmClient *cmclient.Clientset, crt *cmapi.Certificate) error {
-	if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady); cond.Status != cmmeta.ConditionTrue {
-		return fmt.Errorf("Certificate %s not in ready condition: %v", crt.Name, cond)
-	}
-
-	fmt.Fprintf(o.Out, "Marking Certificate %s for renewal", crt.Name)
-
-	// TODO: Set Certificate Issuing Condition
-	// TODO: Wait for Certificate to now have Issuing condition
-
-	// TODO: be able to configure total polling interval and timeout?
-
-	// TODO: We probably want to break this out and have a "status" sub-command
-	// that does the poll behaviour for Certificates to be ready, and leave this
-	// to _only_ mark for renewal. Similar to kubectl rollout
-
-	err := wait.Poll(pollInterval, pollTimeout, func() (bool, error) {
-		fmt.Fprintf(o.Out, "Waiting for Certificate %s to renew", crt.Name)
-
-		c, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(context.TODO(), crt.Namespace, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-
-		if apiutil.CertificateHasCondition(c, cmapi.CertificateCondition{
-			Type:   cmapi.CertificateConditionReady,
-			Status: cmmeta.ConditionTrue,
-		}) {
-			return true, nil
-		}
-
-		return false, nil
-	})
-
+	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManuallyTriggered", "Certificate re-issuance manually triggered")
+	_, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(context.TODO(), crt, metav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to wait for Certificate %s to become ready", crt.Name)
+		return fmt.Errorf("failed to trigger issuance of Certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 	}
-
-	fmt.Fprintf(o.Out, "Certificate %s is ready", crt.Name)
-
+	fmt.Fprintf(o.Out, "Manually triggered issuance of Certificate %s/%s\n", crt.Namespace, crt.Name)
 	return nil
 }

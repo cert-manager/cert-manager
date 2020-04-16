@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/klog"
+
 	"github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
@@ -28,8 +30,13 @@ func main() {
 	stopCh := cmd.SetupSignalHandler()
 	cmd := NewCertManagerCtlCommand(os.Stdin, os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
-
 	flag.CommandLine.Parse([]string{})
+	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
+	klog.InitFlags(fakefs)
+	if err := fakefs.Parse([]string{"-logtostderr=false"}); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 	}
