@@ -195,8 +195,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	req := reqs[0]
 	log = logf.WithResource(log, req)
 
-	reqReason := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady).Reason
-	switch reqReason {
+	cond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
+	if cond == nil {
+		log.V(4).Info("CertificateRequest does not have Ready condition, waiting...")
+		return nil
+	}
+
+	switch cond.Reason {
 	// If the certificate request has failed, set the last failure time to now,
 	// and set the Issuing status condition to False with reason.
 	case cmapi.CertificateRequestReasonFailed:
@@ -209,7 +214,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	// CertificateRequest is not in a final state so do nothing.
 	default:
-		log.V(4).Info("CertificateRequest not in final state")
+		log.V(4).Info("CertificateRequest not in final state, waiting...")
 		return nil
 	}
 }
