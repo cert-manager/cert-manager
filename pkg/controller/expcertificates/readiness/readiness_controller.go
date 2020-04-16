@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,6 +41,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 const (
@@ -140,25 +142,43 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	reason, message, reissue := c.policyChain.Evaluate(input)
-	if !reissue {
-		crt = crt.DeepCopy()
-		apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionReady, cmmeta.ConditionTrue, "Ready", "Certificate is up to date and has not expired")
-		_, err = c.client.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-		return nil
-	}
+	condition := readyCondition(c.policyChain, input)
 
 	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionReady, cmmeta.ConditionFalse, reason, message)
+	apiutil.SetCertificateCondition(crt, condition.Type, condition.Status, condition.Reason, condition.Message)
+
+	if input.Secret != nil && input.Secret.Data != nil {
+		x509cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
+		if err == nil {
+			t := metav1.NewTime(x509cert.NotAfter)
+			crt.Status.NotAfter = &t
+		}
+	}
+
 	_, err = c.client.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func readyCondition(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
+	reason, message, reissue := chain.Evaluate(input)
+	if !reissue {
+		return cmapi.CertificateCondition{
+			Type:    cmapi.CertificateConditionReady,
+			Status:  cmmeta.ConditionTrue,
+			Reason:  "Ready",
+			Message: "Certificate is up to date and has not expired",
+		}
+	}
+	return cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionReady,
+		Status:  cmmeta.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	}
 }
 
 // controllerWrapper wraps the `controller` structure to make it implement
