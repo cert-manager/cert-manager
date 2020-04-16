@@ -18,14 +18,15 @@ package v1alpha2
 
 // Annotation names for Secrets
 const (
-	AltNamesAnnotationKey    = "cert-manager.io/alt-names"
-	IPSANAnnotationKey       = "cert-manager.io/ip-sans"
-	URISANAnnotationKey      = "cert-manager.io/uri-sans"
-	CommonNameAnnotationKey  = "cert-manager.io/common-name"
-	IssuerNameAnnotationKey  = "cert-manager.io/issuer-name"
-	IssuerKindAnnotationKey  = "cert-manager.io/issuer-kind"
-	IssuerGroupAnnotationKey = "cert-manager.io/issuer-group"
-	CertificateNameKey       = "cert-manager.io/certificate-name"
+	AltNamesAnnotationKey          = "cert-manager.io/alt-names"
+	IPSANAnnotationKey             = "cert-manager.io/ip-sans"
+	URISANAnnotationKey            = "cert-manager.io/uri-sans"
+	CommonNameAnnotationKey        = "cert-manager.io/common-name"
+	IssuerNameAnnotationKey        = "cert-manager.io/issuer-name"
+	IssuerKindAnnotationKey        = "cert-manager.io/issuer-kind"
+	IssuerGroupAnnotationKey       = "cert-manager.io/issuer-group"
+	CertificateNameKey             = "cert-manager.io/certificate-name"
+	IsNextPrivateKeySecretLabelKey = "cert-manager.io/next-private-key"
 )
 
 // Deprecated annotation names for Secrets
