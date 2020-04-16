@@ -130,8 +130,7 @@ func NewController(
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
-
-		secretsManager: secretsManager,
+		secretsManager:           secretsManager,
 	}, queue, mustSync
 }
 

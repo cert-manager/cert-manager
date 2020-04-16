@@ -19,6 +19,7 @@ package requestmanager
 import (
 	"bytes"
 	"context"
+	"crypto"
 	"encoding/pem"
 	"fmt"
 	"strconv"
@@ -251,7 +252,8 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 
 	if len(remainingRequests) == 1 {
-		// Do nothing as this indicates our job is done
+		// Nothing to do as we've already verified that the CertificateRequest
+		// is up to date above.
 		return nil
 	}
 
@@ -260,6 +262,11 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
+	return c.createNewCertificateRequest(ctx, crt, pk, nextRevision, nextPrivateKeySecret.Name)
+}
+
+func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer, nextRevision int, nextPrivateKeySecretName string) error {
+	log := logf.FromContext(ctx)
 	x509CSR, err := pki.GenerateCSR(crt)
 	if err != nil {
 		log.Error(err, "Failed to generate CSR - will not retry")
@@ -282,7 +289,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 			GenerateName: crt.Name + "-",
 			Annotations: map[string]string{
 				cmapi.CertificateRequestRevisionAnnotationKey: strconv.Itoa(nextRevision),
-				cmapi.CRPrivateKeyAnnotationKey:               nextPrivateKeySecret.Name,
+				cmapi.CRPrivateKeyAnnotationKey:               nextPrivateKeySecretName,
 			},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
