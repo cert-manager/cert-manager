@@ -18,6 +18,7 @@ go_library(
         "//pkg/client/listers/certmanager/v1alpha2:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/expcertificates:go_default_library",
+        "//pkg/controller/expcertificates/internal/predicate:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/kube:go_default_library",
         "//pkg/util/pki:go_default_library",

@@ -41,6 +41,7 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -86,13 +87,16 @@ func NewController(
 	secretsInformer := factory.Core().V1().Secrets()
 
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
+
+	// When a CertificateRequest resource changes, enqueue the Certificate resource that owns it.
 	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(log, queue, certificateGvk, certificates.CertificateGetFunc(certificateInformer.Lister())),
+		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
 	})
+	// When a Secret resource changes, enqueue any Certificate resources that name it as spec.secretName.
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Trigger reconciles on changes to the Secret named `spec.secretName`
-		WorkFunc: certificates.EnqueueCertificatesForSecretNameFunc(log, certificateInformer.Lister(), labels.Everything(),
-			certificates.WithSecretNamePredicateFunc, queue),
+		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+			predicate.ExtractResourceName(predicate.CertificateSecretName)),
 	})
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
@@ -184,8 +188,8 @@ func (c *controller) buildPolicyInputForCertificate(ctx context.Context, crt *cm
 	if crt.Status.Revision != nil {
 		reqs, err := certificates.ListCertificateRequestsMatchingPredicates(c.certificateRequestLister.CertificateRequests(crt.Namespace),
 			labels.Everything(),
-			certificates.WithCertificateRequestOwnerPredicateFunc(crt),
-			certificates.WithCertificateRevisionPredicateFunc(*crt.Status.Revision),
+			predicate.ResourceOwnedBy(crt),
+			predicate.CertificateRequestRevision(*crt.Status.Revision),
 		)
 		if err != nil {
 			return PolicyData{}, err

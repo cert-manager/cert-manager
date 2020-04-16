@@ -42,6 +42,7 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilkube "github.com/jetstack/cert-manager/pkg/util/kube"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
@@ -94,12 +95,12 @@ func NewController(
 
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
 	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(log, queue, certificateGvk, certificates.CertificateGetFunc(certificateInformer.Lister())),
+		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(), predicate.ResourceOwnerOf),
 	})
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
 		// Issuer reconciles on changes to the Secret named `spec.nextPrivateKeySecretName`
-		WorkFunc: certificates.EnqueueCertificatesForSecretNameFunc(log, certificateInformer.Lister(), labels.Everything(),
-			certificates.WithNextPrivateKeySecretNamePredicateFunc, queue),
+		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+			predicate.ExtractResourceName(predicate.CertificateNextPrivateKeySecretName)),
 	})
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
@@ -174,8 +175,8 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	reqs, err := certificates.ListCertificateRequestsMatchingPredicates(c.certificateRequestLister.CertificateRequests(crt.Namespace),
 		labels.Everything(),
-		certificates.WithCertificateRevisionPredicateFunc(nextRevision),
-		certificates.WithCertificateRequestOwnerPredicateFunc(crt),
+		predicate.CertificateRequestRevision(nextRevision),
+		predicate.ResourceOwnedBy(crt),
 	)
 	if err != nil || len(reqs) != 1 {
 		// If error return.
@@ -238,7 +239,6 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
 func (c *controller) issueCertificate(ctx context.Context, log logr.Logger, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
-
 	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
 	if err != nil {
 		return err
