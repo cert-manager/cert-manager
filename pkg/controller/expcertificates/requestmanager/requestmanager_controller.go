@@ -247,6 +247,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 			}
 			continue
 		}
+		remainingRequests = append(remainingRequests, req)
 	}
 
 	if len(remainingRequests) == 1 {
