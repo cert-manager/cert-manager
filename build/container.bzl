@@ -45,7 +45,6 @@ load(":platforms.bzl", "go_platform_constraint")
 def multi_arch_container(
         name,
         architectures,
-        binary,
         base,
         docker_tags,
         stamp = True,
@@ -61,35 +60,20 @@ def multi_arch_container(
             go_platform_constraint(os = "linux", arch = arch): base.format(ARCH = arch)
             for arch in architectures
         }),
+        stamp = stamp,
         tags = tags,
         user = user,
         visibility = ["//visibility:private"],
+        **kwargs
     )
-
-    multi_arch_container_image(name, architectures, base, docker_tags, stamp = stamp, docker_push_tags = docker_push_tags, tags = tags, visibility = visibility)
-
-def multi_arch_container_image(
-        name,
-        architectures,
-        base,
-        docker_tags,
-        stamp = True,
-        docker_push_tags = None,
-        tags = None,
-        visibility = None,
-        **kwargs):
 
     container_image(
         name = "%s.image" % name,
-        base = select({
-            go_platform_constraint(os = "linux", arch = arch): base.format(ARCH = arch)
-            for arch in architectures
-        }),
+        base = ":%s-internal-notimestamp" % name,
         stamp = stamp,
         tags = tags,
         user = user,
         visibility = ["//visibility:public"],
-        **kwargs
     )
 
     for arch in architectures:
@@ -109,7 +93,6 @@ def multi_arch_container_image(
             go_platform_constraint(os = "linux", arch = arch): "%s-%s" % (name, arch)
             for arch in architectures
         }),
-        visibility = visibility,
     )
     native.genrule(
         name = "gen_%s.tar" % name,
