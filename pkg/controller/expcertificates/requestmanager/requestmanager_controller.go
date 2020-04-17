@@ -112,28 +112,6 @@ func NewController(
 	}, queue, mustSync
 }
 
-/*
-* If the `Issuing` condition is `True`:
-    * If the `status.nextPrivateKeySecretName` field is not set:
-        * Do nothing
-    * List all owned CertificateRequest resources, delete all that have a
-      'revision' not equal to `status.revision` + 1 (or `1` if
-      `status.revision` is not set).
-        * If multiple have the same current revision, delete any that do not 'match'
-          as per the two verification steps below. If multiple still exist, log an
-          event and delete all but one.
-    * If no CertificateRequest for the current revision exists:
-        Create a CertificateRequest based on the `certificate.spec`.
-    * Verify the public key of the certificate request matches the public key
-      of the stored `status.nextPrivateKeySecretName`
-        * If not, delete the CertificateRequest & log an Event
-    * Verify the CSR options match what is requested in `certificate.spec`
-        * If not, delete the CertificateRequest & log an Event
-* If the `Issuing` condition is `False` or not set:
-    * Delete any CertificateRequest resources that do not have a 'revision'
-      equal to `status.revision`.
-*/
-
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
@@ -165,6 +143,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 	nextPrivateKeySecret, err := c.secretLister.Secrets(crt.Namespace).Get(*crt.Status.NextPrivateKeySecretName)
+	if apierrors.IsNotFound(err) {
+		log.V(logf.DebugLevel).Info("nextPrivateKeySecretName Secret resource does not exist, waiting for keymanager to create it before continuing")
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -184,85 +166,130 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
+	// delete any existing CertificateRequest resources that do not have a
+	// revision annotation
+	if requests, err = c.deleteRequestsWithoutRevision(ctx, requests...); err != nil {
+		return err
+	}
+
 	currentCertificateRevision := 0
 	if crt.Status.Revision != nil {
 		currentCertificateRevision = *crt.Status.Revision
 	}
 	nextRevision := currentCertificateRevision + 1
-	var nextRevisionRequests []*cmapi.CertificateRequest
-	for _, req := range requests {
+
+	requests, err = requestsWithRevision(requests, nextRevision)
+	if err != nil {
+		return err
+	}
+
+	requests, err = c.deleteRequestsNotMatchingSpec(ctx, crt, pk.Public(), requests...)
+	if err != nil {
+		return err
+	}
+
+	if len(requests) > 1 {
+		// TODO: we should handle this case better, but for now do nothing to
+		//  avoid getting into loops where we keep creating multiple requests
+		//  and deleting them again.
+		log.Info("Multiple matching CertificateRequest resources exist, delete one of them. This is likely an error and should be reported on the issue tracker!")
+		return nil
+	}
+
+	if len(requests) == 1 {
+		// Nothing to do as we've already verified that the CertificateRequest
+		// is up to date above.
+		return nil
+	}
+
+	return c.createNewCertificateRequest(ctx, crt, pk, nextRevision, nextPrivateKeySecret.Name)
+}
+
+func (c *controller) deleteRequestsWithoutRevision(ctx context.Context, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
+	log := logf.FromContext(ctx)
+	var remaining []*cmapi.CertificateRequest
+	for _, req := range reqs {
 		log := logf.WithRelatedResource(log, req)
 		if req.Annotations == nil || req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == "" {
 			log.V(logf.DebugLevel).Info("Deleting CertificateRequest as it does not contain a revision annotation")
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 		reqRevisionStr := req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey]
-		reqRevision, err := strconv.ParseInt(reqRevisionStr, 10, 0)
+		_, err := strconv.ParseInt(reqRevisionStr, 10, 0)
 		if err != nil {
 			log.V(logf.DebugLevel).Info("Deleting CertificateRequest as it contains an invalid revision annotation")
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 
-		if reqRevision == int64(nextRevision) {
-			nextRevisionRequests = append(nextRevisionRequests, req)
+		remaining = append(remaining, req)
+	}
+	return remaining, nil
+}
+
+func requestsWithRevision(reqs []*cmapi.CertificateRequest, revision int) ([]*cmapi.CertificateRequest, error) {
+	var remaining []*cmapi.CertificateRequest
+	for _, req := range reqs {
+		if req.Annotations == nil || req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == "" {
+			return nil, fmt.Errorf("certificaterequest %q does not contain revision annotation", req.Name)
+		}
+		reqRevisionStr := req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey]
+		reqRevision, err := strconv.ParseInt(reqRevisionStr, 10, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		if reqRevision == int64(revision) {
+			remaining = append(remaining, req)
 		}
 	}
+	return remaining, nil
+}
 
-	var remainingRequests []*cmapi.CertificateRequest
-	for _, req := range nextRevisionRequests {
+func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cmapi.Certificate, publicKey crypto.PublicKey, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
+	log := logf.FromContext(ctx)
+	var remaining []*cmapi.CertificateRequest
+	for _, req := range reqs {
 		log := logf.WithRelatedResource(log, req)
 		violations, err := certificates.RequestMatchesSpec(req, crt.Spec)
 		if err != nil {
 			log.Error(err, "Failed to check if CertificateRequest matches spec, deleting CertificateRequest")
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 		if len(violations) > 0 {
 			log.V(logf.DebugLevel).Info("CertificateRequest does not match requirements on certificate.spec, deleting CertificateRequest", "violations", violations)
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 		x509Req, err := pki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
 		if err != nil {
 			// this case cannot happen as RequestMatchesSpec would have returned an error too
-			return err
+			return nil, err
 		}
-		matches, err := pki.PublicKeyMatchesCSR(pk.Public(), x509Req)
+		matches, err := pki.PublicKeyMatchesCSR(publicKey, x509Req)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !matches {
 			log.V(logf.DebugLevel).Info("CertificateRequest contains a CSR that does not have the same public key as the stored next private key secret, deleting CertificateRequest")
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
-		remainingRequests = append(remainingRequests, req)
+		remaining = append(remaining, req)
 	}
-
-	if len(remainingRequests) == 1 {
-		// Nothing to do as we've already verified that the CertificateRequest
-		// is up to date above.
-		return nil
-	}
-
-	if len(remainingRequests) > 1 {
-		log.Info("Multiple matching CertificateRequest resources exist, delete one of them !!")
-		return nil
-	}
-
-	return c.createNewCertificateRequest(ctx, crt, pk, nextRevision, nextPrivateKeySecret.Name)
+	return remaining, nil
 }
 
 func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer, nextRevision int, nextPrivateKeySecretName string) error {
@@ -290,6 +317,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 			Annotations: map[string]string{
 				cmapi.CertificateRequestRevisionAnnotationKey: strconv.Itoa(nextRevision),
 				cmapi.CRPrivateKeyAnnotationKey:               nextPrivateKeySecretName,
+				cmapi.CertificateNameKey:                      crt.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},

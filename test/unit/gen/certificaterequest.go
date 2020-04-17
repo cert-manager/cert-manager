@@ -136,7 +136,12 @@ func AddCertificateRequestOwnerReferences(owners ...metav1.OwnerReference) Certi
 
 func SetCertificateRequestAnnotations(annotations map[string]string) CertificateRequestModifier {
 	return func(cr *v1alpha2.CertificateRequest) {
-		cr.SetAnnotations(annotations)
+		if cr.Annotations == nil {
+			cr.Annotations = make(map[string]string)
+		}
+		for k, v := range annotations {
+			cr.Annotations[k] = v
+		}
 	}
 }
 
