@@ -126,7 +126,31 @@ type CertificateSpec struct {
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
 	KeyEncoding KeyEncoding
+
+	// Options to control private keys used for the Certificate.
+	// +optional
+	PrivateKey *CertificatePrivateKey
 }
+
+// CertificatePrivateKey contains configuration options for private keys
+// used by the Certificate controller.
+// This allows control of how private keys are rotated.
+type CertificatePrivateKey struct {
+	// RotationPolicy controls how private keys should be regenerated when a
+	// re-issuance is being processed.
+	// If set to Never, a private key will only be generated if one does not
+	// already exist in the target `spec.secretName`. If one does exists but it
+	// does not have the correct algorithm or size, a warning will be raised
+	// to await user intervention.
+	// If set to Always, a private key matching the specified requirements
+	// will be generated whenever a re-issuance occurs.
+	// Default is 'Never' for backward compatibility.
+	RotationPolicy PrivateKeyRotationPolicy
+}
+
+// Denotes how private keys should be generated or sourced when a Certificate
+// is being issued.
+type PrivateKeyRotationPolicy string
 
 // X509Subject Full X509 name specification
 type X509Subject struct {
