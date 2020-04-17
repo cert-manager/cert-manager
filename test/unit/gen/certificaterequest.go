@@ -145,6 +145,15 @@ func SetCertificateRequestAnnotations(annotations map[string]string) Certificate
 	}
 }
 
+func DeleteCertificateRequestAnnotation(key string) CertificateRequestModifier {
+	return func(cr *v1alpha2.CertificateRequest) {
+		if cr.Annotations == nil {
+			return
+		}
+		delete(cr.Annotations, key)
+	}
+}
+
 func SetCertificateRequestFailureTime(p metav1.Time) CertificateRequestModifier {
 	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Status.FailureTime = &p
