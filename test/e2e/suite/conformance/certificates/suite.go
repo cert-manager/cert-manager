@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -446,14 +445,7 @@ func (s *Suite) Define() {
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Deleting existing certificate data in Secret and owned CertificateRequest")
-			expectedReqName, err := apiutil.ComputeCertificateRequestName(testCertificate)
-			Expect(err).NotTo(HaveOccurred(), "failed to generate expected name for created Certificate")
-
-			Expect(f.CertManagerClientSet.CertmanagerV1alpha2().
-				CertificateRequests(f.Namespace.Name).Delete(context.TODO(), expectedReqName, metav1.DeleteOptions{})).
-				NotTo(HaveOccurred(), "failed to delete owned CertificateRequest")
-
+			By("Deleting existing certificate data in Secret")
 			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
 				Get(context.TODO(), testCertificate.Spec.SecretName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
