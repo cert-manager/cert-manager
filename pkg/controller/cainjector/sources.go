@@ -140,7 +140,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 
 func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
 	typ := setup.injector.NewTarget().AsObject()
-	if err := mgr.GetFieldIndexer().IndexField(typ, injectFromPath, injectableCAFromIndexer); err != nil {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), typ, injectFromPath, injectableCAFromIndexer); err != nil {
 		return err
 	}
 
@@ -213,7 +213,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 
 func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
 	typ := setup.injector.NewTarget().AsObject()
-	if err := mgr.GetFieldIndexer().IndexField(typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
 		return err
 	}
 

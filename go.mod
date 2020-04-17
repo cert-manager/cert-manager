@@ -4,10 +4,6 @@ go 1.12
 
 replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.4
 
-replace sigs.k8s.io/controller-runtime => github.com/munnerz/controller-runtime v0.1.8-0.20200318092001-e22ac1073450
-
-replace sigs.k8s.io/controller-tools => github.com/munnerz/controller-tools v0.1.10-0.20200323145043-a2d268fbf03d
-
 replace golang.org/x/crypto => github.com/munnerz/crypto v0.0.0-20191203200931-e1844778daa5
 
 require (
@@ -59,8 +55,8 @@ require (
 	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c
 	k8s.io/kubectl v0.18.0
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
-	sigs.k8s.io/controller-runtime v0.5.1-0.20200307095134-d0de78d9f1c1
-	sigs.k8s.io/controller-tools v0.2.8
+	sigs.k8s.io/controller-runtime v0.5.1-0.20200416234307-5377effd4043
+	sigs.k8s.io/controller-tools v0.2.9-0.20200414181213-645d44dca7c0
 	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20180114231543-2291e8f0f237

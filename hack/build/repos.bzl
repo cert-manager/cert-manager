@@ -1879,18 +1879,16 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "sigs.k8s.io/controller-runtime",
-        replace = "github.com/munnerz/controller-runtime",
-        sum = "h1:JVe6Zq1UU0+Sips4INYr3tmQYCBU8SsSx3UlGd9RPh8=",
-        version = "v0.1.8-0.20200318092001-e22ac1073450",
+        sum = "h1:J1LXpXsQccTWk2V2OZZBc4mC2tEL70bBb/cXQyVhOYY=",
+        version = "v0.5.1-0.20200416234307-5377effd4043",
     )
     go_repository(
         name = "io_k8s_sigs_controller_tools",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "sigs.k8s.io/controller-tools",
-        replace = "github.com/munnerz/controller-tools",
-        sum = "h1:dTHZ9GYcAirNN04tOtCpRgqceNDzChH9y8IHnSAqeOU=",
-        version = "v0.1.10-0.20200323145043-a2d268fbf03d",
+        sum = "h1:PXOHvyYAjWfO0UfQvaUo33HpXNCOilV3i/Vjc7iM1/A=",
+        version = "v0.2.9-0.20200414181213-645d44dca7c0",
     )
     go_repository(
         name = "io_k8s_sigs_structured_merge_diff",
