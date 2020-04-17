@@ -16,6 +16,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "con
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load(":platforms.bzl", "go_platform_constraint")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 # multi_arch_container produces a private internal container_image, multiple
 # arch-specific tagged container_bundles (named NAME-ARCH), an alias
@@ -67,9 +68,17 @@ def multi_arch_container(
         **kwargs
     )
 
+    # Create a tar file containing the created license files
+    pkg_tar(
+        name = "%s.licence_tar" % name,
+        srcs = ["//:LICENSE", "//:LICENSES"],
+        package_dir = "licences",
+    )
+
     container_image(
         name = "%s.image" % name,
         base = ":%s-internal-notimestamp" % name,
+        tars = [":%s.licence_tar" % name],
         stamp = stamp,
         tags = tags,
         user = user,
