@@ -145,6 +145,7 @@ type CertificatePrivateKey struct {
 	// If set to Always, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
 	// Default is 'Never' for backward compatibility.
+	// +optional
 	RotationPolicy PrivateKeyRotationPolicy
 }
 
