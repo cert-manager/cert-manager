@@ -232,8 +232,8 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 		return nil, err
 	}
 
-	if len(commonName) == 0 && len(dnsNames) == 0 {
-		return nil, fmt.Errorf("no domains specified on certificate")
+	if len(commonName) == 0 && len(dnsNames) == 0 && len(ipAddresses) == 0 && len(crt.Spec.URISANs) == 0 && len(crt.Spec.EmailSANs) == 0 {
+		return nil, fmt.Errorf("no common name or subject alt names requested on certificate")
 	}
 
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
