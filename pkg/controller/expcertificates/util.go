@@ -24,6 +24,7 @@ import (
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -165,17 +166,40 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 	}
 
 	var violations []string
-	if x509cert.Subject.CommonName != spec.CommonName {
-		violations = append(violations, "spec.commonName")
+
+	// Perform a 'loose' check on the x509 certificate to determine if the
+	// commonName and dnsNames fields are up to date.
+	// This check allows names to move between the DNSNames and CommonName
+	// field freely in order to account for CAs behaviour of promoting DNSNames
+	// to be CommonNames or vice-versa.
+	expectedDNSNames := sets.NewString(spec.DNSNames...)
+	if spec.CommonName != "" {
+		expectedDNSNames.Insert(spec.CommonName)
 	}
-	if !util.EqualUnsorted(x509cert.DNSNames, spec.DNSNames) {
-		violations = append(violations, "spec.dnsNames")
+	allDNSNames := sets.NewString(x509cert.DNSNames...)
+	if x509cert.Subject.CommonName != "" {
+		allDNSNames.Insert(x509cert.Subject.CommonName)
 	}
+	if !allDNSNames.Equal(expectedDNSNames) {
+		// We know a mismatch occurred, so now determine which fields mismatched.
+		if (spec.CommonName != "" && !allDNSNames.Has(spec.CommonName)) || (x509cert.Subject.CommonName != "" && !expectedDNSNames.Has(x509cert.Subject.CommonName)) {
+			violations = append(violations, "spec.commonName")
+		}
+
+		if !allDNSNames.HasAll(spec.DNSNames...) || !expectedDNSNames.HasAll(x509cert.DNSNames...) {
+			violations = append(violations, "spec.dnsNames")
+		}
+	}
+
 	if !util.EqualUnsorted(pki.IPAddressesToString(x509cert.IPAddresses), spec.IPAddresses) {
 		violations = append(violations, "spec.ipAddresses")
 	}
 	if !util.EqualUnsorted(pki.URLsToString(x509cert.URIs), spec.URISANs) {
 		violations = append(violations, "spec.uriSANs")
 	}
+	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailSANs) {
+		violations = append(violations, "spec.emailSANs")
+	}
+
 	return violations, nil
 }

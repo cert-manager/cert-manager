@@ -21,6 +21,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/labels:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/sets:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
         "@io_k8s_client_go//util/workqueue:go_default_library",
     ],
@@ -55,5 +56,6 @@ go_test(
     deps = [
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/util/pki:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
     ],
 )
