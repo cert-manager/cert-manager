@@ -310,15 +310,20 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		return err
 	}
 
+	annotations := make(map[string]string, len(crt.Annotations)+3)
+	for k, v := range crt.Annotations {
+		annotations[k] = v
+	}
+	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = strconv.Itoa(nextRevision)
+	annotations[cmapi.CRPrivateKeyAnnotationKey] = nextPrivateKeySecretName
+	annotations[cmapi.CertificateNameKey] = crt.Name
+
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    crt.Namespace,
-			GenerateName: crt.Name + "-",
-			Annotations: map[string]string{
-				cmapi.CertificateRequestRevisionAnnotationKey: strconv.Itoa(nextRevision),
-				cmapi.CRPrivateKeyAnnotationKey:               nextPrivateKeySecretName,
-				cmapi.CertificateNameKey:                      crt.Name,
-			},
+			Namespace:       crt.Namespace,
+			GenerateName:    crt.Name + "-",
+			Annotations:     annotations,
+			Labels:          crt.Labels,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: cmapi.CertificateRequestSpec{
