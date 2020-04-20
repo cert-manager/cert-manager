@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package trigger
+package readiness
 
 import (
 	"context"
@@ -28,9 +28,7 @@ import (
 	"k8s.io/client-go/informers"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -43,30 +41,32 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 const (
-	ControllerName = "CertificateTrigger"
+	ControllerName = "CertificateReadiness"
 )
 
 var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
-// This controller observes the state of the certificate's currently
-// issued `spec.secretName` and the rest of the `certificate.spec` fields to
-// determine whether a re-issuance is required.
-// It triggers re-issuance by adding the `Issuing` status condition when a new
-// certificate is required.
+var PolicyChain = policies.Chain{
+	policies.SecretDoesNotExist,
+	policies.SecretHasData,
+	policies.SecretPublicKeysMatch,
+	policies.CurrentCertificateRequestValidForSpec,
+	policies.CurrentCertificateHasExpired,
+}
+
 type controller struct {
-	// the trigger policies to run - named here to make testing simpler
+	// the policies to use to define readiness - named here to make testing simpler
 	policyChain              policies.Chain
 	certificateLister        cmlisters.CertificateLister
 	certificateRequestLister cmlisters.CertificateRequestLister
 	secretLister             corelisters.SecretLister
 	client                   cmclient.Interface
-	recorder                 record.EventRecorder
-	clock                    clock.Clock
 	gatherer                 *policies.Gatherer
 }
 
@@ -75,8 +75,6 @@ func NewController(
 	client cmclient.Interface,
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
-	recorder record.EventRecorder,
-	clock clock.Clock,
 	chain policies.Chain,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
@@ -114,8 +112,6 @@ func NewController(
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
 		client:                   client,
-		recorder:                 recorder,
-		clock:                    clock,
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -140,44 +136,49 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	if err != nil {
 		return err
 	}
-	if apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
-		Type:   cmapi.CertificateConditionIssuing,
-		Status: cmmeta.ConditionTrue,
-	}) {
-		// Do nothing if an issuance is already in progress.
-		return nil
-	}
 
 	input, err := c.gatherer.DataForCertificate(ctx, crt)
 	if err != nil {
 		return err
 	}
 
-	reason, message, reissue := c.policyChain.Evaluate(input)
-	if !reissue {
-		// no reissuance required, return early
-		return nil
-	}
+	condition := readyCondition(c.policyChain, input)
 
-	// check if we have had a recent failure, and if so do not trigger a
-	// reissue immediately
-	if crt.Status.LastFailureTime != nil {
-		if crt.Status.LastFailureTime.Add(time.Hour).After(c.clock.Now()) {
-			durationUntilRetry := c.clock.Now().Sub(crt.Status.LastFailureTime.Time)
-			log.Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_in", durationUntilRetry.String())
-			return nil
+	crt = crt.DeepCopy()
+	apiutil.SetCertificateCondition(crt, condition.Type, condition.Status, condition.Reason, condition.Message)
+
+	if input.Secret != nil && input.Secret.Data != nil {
+		x509cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
+		if err == nil {
+			t := metav1.NewTime(x509cert.NotAfter)
+			crt.Status.NotAfter = &t
 		}
 	}
 
-	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, reason, message)
 	_, err = c.client.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
-	c.recorder.Event(crt, corev1.EventTypeNormal, "Issuing", message)
 
 	return nil
+}
+
+func readyCondition(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
+	reason, message, reissue := chain.Evaluate(input)
+	if !reissue {
+		return cmapi.CertificateCondition{
+			Type:    cmapi.CertificateConditionReady,
+			Status:  cmmeta.ConditionTrue,
+			Reason:  "Ready",
+			Message: "Certificate is up to date and has not expired",
+		}
+	}
+	return cmapi.CertificateCondition{
+		Type:    cmapi.CertificateConditionReady,
+		Status:  cmmeta.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	}
 }
 
 // controllerWrapper wraps the `controller` structure to make it implement
@@ -194,8 +195,6 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
-		ctx.Recorder,
-		ctx.Clock,
 		policies.TriggerPolicyChain,
 	)
 	c.controller = ctrl

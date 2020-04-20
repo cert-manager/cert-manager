@@ -172,13 +172,13 @@ func TestSign(t *testing.T) {
 		"a CertificateRequest with no cert-manager.io/selfsigned-private-key annotation should fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				// no annotation
-				gen.SetCertificateRequestAnnotations(map[string]string{}),
+				gen.DeleteCertificateRequestAnnotation(cmapi.CRPrivateKeyAnnotationKey),
 			),
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{},
 				CertManagerObjects: []runtime.Object{gen.CertificateRequestFrom(baseCR,
 					// no annotation
-					gen.SetCertificateRequestAnnotations(map[string]string{}),
+					gen.DeleteCertificateRequestAnnotation(cmapi.CRPrivateKeyAnnotationKey),
 				), baseIssuer},
 				ExpectedEvents: []string{
 					`Warning MissingAnnotation Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
@@ -189,7 +189,7 @@ func TestSign(t *testing.T) {
 						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestAnnotations(map[string]string{}),
+							gen.DeleteCertificateRequestAnnotation(cmapi.CRPrivateKeyAnnotationKey),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,

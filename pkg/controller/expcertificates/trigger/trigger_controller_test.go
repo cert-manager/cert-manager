@@ -29,11 +29,12 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
-// policyFuncBuilder wraps a PolicyFunc to allow injecting a testing.T
-type policyFuncBuilder func(t *testing.T) PolicyFunc
+// policyFuncBuilder wraps a policies.Func to allow injecting a testing.T
+type policyFuncBuilder func(t *testing.T) policies.Func
 
 func TestProcessItem(t *testing.T) {
 	// now time is the current time at the start of the test (the clock is fixed)
@@ -114,8 +115,8 @@ func TestProcessItem(t *testing.T) {
 			policyFuncs: []policyFuncBuilder{
 				// Add a policy function that ensures only the input's 'certificate'
 				// field is set.
-				func(t *testing.T) PolicyFunc {
-					return func(input PolicyData) (string, string, bool) {
+				func(t *testing.T) policies.Func {
+					return func(input policies.Input) (string, string, bool) {
 						if input.Certificate == nil {
 							t.Error("expected policy data 'Certificate' field to be set but it was not")
 						}
@@ -144,8 +145,8 @@ func TestProcessItem(t *testing.T) {
 			policyFuncs: []policyFuncBuilder{
 				// Add a policy function that ensures only the input's 'certificate'
 				// field is set.
-				func(t *testing.T) PolicyFunc {
-					return func(input PolicyData) (string, string, bool) {
+				func(t *testing.T) policies.Func {
+					return func(input policies.Input) (string, string, bool) {
 						if input.Certificate == nil {
 							t.Error("expected policy data 'Certificate' field to be set but it was not")
 						}
@@ -191,8 +192,8 @@ func TestProcessItem(t *testing.T) {
 			policyFuncs: []policyFuncBuilder{
 				// Add a policy function that ensures only the input's 'certificate'
 				// field is set.
-				func(t *testing.T) PolicyFunc {
-					return func(input PolicyData) (string, string, bool) {
+				func(t *testing.T) policies.Func {
+					return func(input policies.Input) (string, string, bool) {
 						if input.Certificate == nil {
 							t.Error("expected policy data 'Certificate' field to be set but it was not")
 						}
@@ -337,10 +338,10 @@ func TestProcessItem(t *testing.T) {
 				t.Fatal(err)
 			}
 			// Fake out the default policy chain
-			w.policyChain = []PolicyFunc{}
+			w.policyChain = []policies.Func{}
 			// Record whether the policy chain was evaluated
 			evaluated := false
-			w.policyChain = append(w.policyChain, func(_ PolicyData) (string, string, bool) {
+			w.policyChain = append(w.policyChain, func(_ policies.Input) (string, string, bool) {
 				evaluated = true
 				return "", "", false
 			})
@@ -349,7 +350,7 @@ func TestProcessItem(t *testing.T) {
 			// If the chain should trigger an issuance, inject an 'always reissue'
 			// policyFunc at the end of the chain
 			if test.chainShouldTriggerIssuance {
-				w.policyChain = append(w.policyChain, func(_ PolicyData) (string, string, bool) {
+				w.policyChain = append(w.policyChain, func(_ policies.Input) (string, string, bool) {
 					return forceTriggeredReason, forceTriggeredMessage, true
 				})
 			}
@@ -416,8 +417,8 @@ func TestProcessItem(t *testing.T) {
 	}
 }
 
-func buildTestPolicyChain(t *testing.T, funcs ...policyFuncBuilder) PolicyChain {
-	c := PolicyChain{}
+func buildTestPolicyChain(t *testing.T, funcs ...policyFuncBuilder) policies.Chain {
+	c := policies.Chain{}
 	for _, f := range funcs {
 		c = append(c, f(t))
 	}
