@@ -14,6 +14,7 @@ go_library(
         "//pkg/util/cmd:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
+        "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
         "@io_k8s_klog//:go_default_library",
         "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
     ],
