@@ -786,10 +786,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01Provi
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(in *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, out *acme.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	out.ClientID = in.ClientID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
-		return err
-	}
+	out.ClientSecret = (*meta.SecretKeySelector)(unsafe.Pointer(in.ClientSecret))
 	out.SubscriptionID = in.SubscriptionID
 	out.TenantID = in.TenantID
 	out.ResourceGroupName = in.ResourceGroupName
@@ -805,10 +802,7 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01Pro
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS(in *acme.ACMEIssuerDNS01ProviderAzureDNS, out *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	out.ClientID = in.ClientID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
-		return err
-	}
+	out.ClientSecret = (*metav1.SecretKeySelector)(unsafe.Pointer(in.ClientSecret))
 	out.SubscriptionID = in.SubscriptionID
 	out.TenantID = in.TenantID
 	out.ResourceGroupName = in.ResourceGroupName

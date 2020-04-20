@@ -343,13 +343,20 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
-	ClientID string `json:"clientID"`
 
-	ClientSecret cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
+	// if both this and ClientSecret are left unset MSI will be used
+	// +optional
+	ClientID string `json:"clientID,omitempty"`
+
+	// if both this and ClientID are left unset MSI will be used
+	// +optional
+	ClientSecret *cmmeta.SecretKeySelector `json:"clientSecretSecretRef,omitempty"`
 
 	SubscriptionID string `json:"subscriptionID"`
 
-	TenantID string `json:"tenantID"`
+	// when specifying ClientID and ClientSecret then this field is also needed
+	// +optional
+	TenantID string `json:"tenantID,omitempty"`
 
 	ResourceGroupName string `json:"resourceGroupName"`
 
