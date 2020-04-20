@@ -35,7 +35,7 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
-// Options is a struct to support version command
+// Options is a struct to support renew command
 type Options struct {
 	// The Namespace that the Certificate to be renewed resided in
 	Namespace string
@@ -95,10 +95,6 @@ func (o *Options) Validate(cmd *cobra.Command, args []string) error {
 		return errors.New("cannot specify Certificate arguments as well as --all flag")
 	}
 
-	if o.All && len(o.LabelSelector) > 0 {
-		return errors.New("cannot specify label selector as well as --all flag")
-	}
-
 	return nil
 }
 
@@ -113,7 +109,7 @@ func (o *Options) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string)
 	return nil
 }
 
-// Run executes version command
+// Run executes renew command
 func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -146,15 +142,7 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 	var crts []cmapi.Certificate
 	for _, ns := range nss {
 		switch {
-		case o.All:
-			crtsList, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).List(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-
-			crts = append(crts, crtsList.Items...)
-
-		case len(o.LabelSelector) > 0:
+		case o.All, len(o.LabelSelector) > 0:
 			crtsList, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).List(context.TODO(), metav1.ListOptions{
 				LabelSelector: o.LabelSelector,
 			})
