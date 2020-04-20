@@ -86,6 +86,8 @@ type Injectable interface {
 type CertInjector interface {
 	// NewTarget creates a new InjectTarget containing an empty underlying object.
 	NewTarget() InjectTarget
+	// IsAlpha tells the client to disregard "no matching kind" type of errors
+	IsAlpha() bool
 }
 
 // genericInjectReconciler is a reconciler that knows how to check if a given object is

@@ -17,6 +17,7 @@ go_library(
         "//pkg/logs:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//admissionregistration/v1beta1:go_default_library",
+        "@io_k8s_api//auditregistration/v1alpha1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",

@@ -20,7 +20,9 @@ import (
 	"io/ioutil"
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
+	"k8s.io/api/auditregistration/v1alpha1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,11 +60,33 @@ var (
 		listType:     &apiext.CustomResourceDefinitionList{},
 	}
 
-	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
+	AuditSinkSetup = injectorSetup{
+		resourceName: "auditsink",
+		injector:     auditSinkTarget{},
+		listType:     &v1alpha1.AuditSinkList{},
+	}
+
+	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup, AuditSinkSetup}
 	ControllerNames []string
 )
 
-// Register registers an injection controller with the given manager, and adds relevant indices.
+// registerAllInjectors registers all injectors and based on the
+// graduation state of the injector decides how to log no kind/resource match errors
+func registerAllInjectors(mgr ctrl.Manager, sources ...caDataSource) error {
+	for _, setup := range injectorSetups {
+		if err := Register(mgr, setup, sources...); err != nil {
+			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
+				return err
+			}
+			ctrl.Log.Info("unable to register injector which is still in an alpha phase."+
+				" Enable the feature on the API server in order to use this injector",
+				"injector", setup.resourceName)
+		}
+	}
+	return nil
+}
+
+// Register registers an injection controller with the given manager, and adds relevant indicies.
 func Register(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
 	typ := setup.injector.NewTarget().AsObject()
 	builder := ctrl.NewControllerManagedBy(mgr).For(typ)
@@ -106,13 +130,7 @@ func RegisterCertificateBased(mgr ctrl.Manager) error {
 	sources := []caDataSource{
 		&certificateDataSource{client: mgr.GetClient()},
 	}
-	for _, setup := range injectorSetups {
-		if err := Register(mgr, setup, sources...); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return registerAllInjectors(mgr, sources...)
 }
 
 // RegisterSecretBased registers all known injection controllers that
@@ -125,11 +143,5 @@ func RegisterSecretBased(mgr ctrl.Manager) error {
 		&secretDataSource{client: mgr.GetClient()},
 		&kubeconfigDataSource{},
 	}
-	for _, setup := range injectorSetups {
-		if err := Register(mgr, setup, sources...); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return registerAllInjectors(mgr, sources...)
 }
