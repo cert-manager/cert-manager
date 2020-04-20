@@ -58,8 +58,7 @@ func ValidateCertificateSpec(crt *cmapi.CertificateSpec, fldPath *field.Path) fi
 	}
 
 	switch crt.KeyAlgorithm {
-	case cmapi.KeyAlgorithm(""):
-	case cmapi.RSAKeyAlgorithm:
+	case "", cmapi.RSAKeyAlgorithm:
 		if crt.KeySize > 0 && (crt.KeySize < 2048 || crt.KeySize > 8192) {
 			el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "must be between 2048 & 8192 for rsa keyAlgorithm"))
 		}

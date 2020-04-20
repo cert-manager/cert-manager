@@ -17,7 +17,9 @@ limitations under the License.
 package certificates
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
@@ -53,6 +55,25 @@ func ListCertificatesMatchingPredicates(lister cmlisters.CertificateNamespaceLis
 	}
 	funcs := predicate.Funcs(predicates)
 	out := make([]*cmapi.Certificate, 0)
+	for _, req := range reqs {
+		if funcs.Evaluate(req) {
+			out = append(out, req)
+		}
+	}
+
+	return out, nil
+}
+
+// ListSecretsMatchingPredicates will list Secret resources using
+// the provided lister, optionally applying the given predicate functions to
+// filter the Secret resources returned.
+func ListSecretsMatchingPredicates(lister corelisters.SecretNamespaceLister, selector labels.Selector, predicates ...predicate.Func) ([]*corev1.Secret, error) {
+	reqs, err := lister.List(selector)
+	if err != nil {
+		return nil, err
+	}
+	funcs := predicate.Funcs(predicates)
+	out := make([]*corev1.Secret, 0)
 	for _, req := range reqs {
 		if funcs.Evaluate(req) {
 			out = append(out, req)
