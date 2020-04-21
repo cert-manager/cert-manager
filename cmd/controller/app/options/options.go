@@ -96,30 +96,14 @@ const (
 	defaultIssuerAmbientCredentials        = false
 	defaultRenewBeforeExpiryDuration       = cmapi.DefaultRenewBefore
 
-	defaultTLSACMEIssuerName           = ""
-	defaultTLSACMEIssuerKind           = "Issuer"
-	defaultTLSACMEIssuerGroup          = cm.GroupName
-	defaultACMEIssuerChallengeType     = "http01"
-	defaultACMEIssuerDNS01ProviderName = ""
-	defaultEnableCertificateOwnerRef   = false
+	defaultTLSACMEIssuerName         = ""
+	defaultTLSACMEIssuerKind         = "Issuer"
+	defaultTLSACMEIssuerGroup        = cm.GroupName
+	defaultEnableCertificateOwnerRef = false
 
 	defaultDNS01RecursiveNameserversOnly = false
 
 	defaultMaxConcurrentChallenges = 60
-
-	defaultWebhookNamespace         = "cert-manager"
-	defaultWebhookCASecretName      = "cert-manager-webhook-ca"
-	defaultWebhookServingSecretName = "cert-manager-webhook-tls"
-)
-
-var (
-	defaultWebhookDNSNames = []string{
-		"cert-manager-webhook",
-		"cert-manager-webhook.cert-manager",
-		"cert-manager-webhook.cert-manager.svc",
-		"cert-manager-webhook.cert-manager.svc.cluster",
-		"cert-manager-webhook.cert-manager.svc.cluster.local",
-	}
 )
 
 var (
