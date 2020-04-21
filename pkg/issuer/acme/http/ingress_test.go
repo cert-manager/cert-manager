@@ -444,7 +444,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),

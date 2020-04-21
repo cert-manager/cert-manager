@@ -190,7 +190,7 @@ dGVzdA==
 					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
 				},
 				ExpectedEvents: []string{
-					`Normal Created Created Challenge resource "testorder-1335133199" for domain "test.com"`,
+					`Normal Created Created Challenge resource "testorder-3664516355" for domain "test.com"`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
