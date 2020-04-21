@@ -77,7 +77,7 @@ func encodePKCS12Keystore(password string, rawKey []byte, certPem []byte, caPem 
 	return keystoreData, nil
 }
 
-func encodeJKSKeystore(password string, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
+func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
 	// encode the private key to PKCS8
 	key, err := pki.DecodePrivateKeyBytes(rawKey)
 	if err != nil {
@@ -129,7 +129,7 @@ func encodeJKSKeystore(password string, rawKey []byte, certPem []byte, caPem []b
 	}
 
 	buf := &bytes.Buffer{}
-	if err := jks.Encode(buf, ks, []byte(password)); err != nil {
+	if err := jks.Encode(buf, ks, password); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

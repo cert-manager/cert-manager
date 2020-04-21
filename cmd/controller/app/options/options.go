@@ -78,30 +78,6 @@ type ControllerOptions struct {
 	EnableCertificateOwnerRef bool
 
 	MaxConcurrentChallenges int
-
-	// ExperimentalIssuePKCS12, if true, will make the certificates controller
-	// create a `keystore.p12` in the Secret resource for each Certificate.
-	// This can only be toggled globally, and the keystore will be encrypted
-	// with the supplied ExperimentalPKCS12KeystorePassword.
-	// This flag is likely to be removed in future in favour of native PKCS12
-	// keystore bundle support.
-	ExperimentalIssuePKCS12 bool
-	// ExperimentalPKCS12KeystorePassword is the password used to encrypt and
-	// decrypt PKCS#12 bundles stored in Secret resources.
-	// This option only has any affect is ExperimentalIssuePKCS12 is true.
-	ExperimentalPKCS12KeystorePassword string
-
-	// ExperimentalIssueJKS, if true, will make the certificates controller
-	// create a `keystore.jks` in the Secret resource for each Certificate.
-	// This can only be toggled globally, and the keystore will be encrypted
-	// with the supplied ExperimentalJKSPassword.
-	// This flag is likely to be removed in future in favour of native JKS
-	// keystore bundle support.
-	ExperimentalIssueJKS bool
-	// ExperimentalJKSPassword is the password used to encrypt and
-	// decrypt JKS bundles stored in Secret resources.
-	// This option only has any affect is ExperimentalIssueJKS is true.
-	ExperimentalJKSPassword string
 }
 
 const (
@@ -287,17 +263,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
-
-	fs.BoolVar(&s.ExperimentalIssuePKCS12, "experimental-issue-pkcs12", false, "If true, the certificate controller will create 'keystore.p12' files in Secret resources it "+
-		"manages, containing a copy of the certificate data encrypted using the provided --experimental-pkcs12-keystore-password. "+
-		"If true, --experimental-pkcs12-keystore-password must be provided.")
-	fs.StringVar(&s.ExperimentalPKCS12KeystorePassword, "experimental-pkcs12-keystore-password", "", "The password used to encrypt and decrypt PKCS#12 "+
-		"bundles stored in Secret resources. This field is required if --experimental-issue-pkcs12 is enabled.")
-	fs.BoolVar(&s.ExperimentalIssueJKS, "experimental-issue-jks", false, "If true, the certificate controller will create 'keystore.jks' files in Secret resources it "+
-		"manages, containing a copy of the certificate data encrypted using the provided --experimental-jks-password. "+
-		"If true, --experimental-jks-password must be provided.")
-	fs.StringVar(&s.ExperimentalJKSPassword, "experimental-jks-password", "", "The password used to encrypt and decrypt JKS "+
-		"bundles stored in Secret resources. This field is required if --experimental-issue-jks is enabled.")
 }
 
 func (o *ControllerOptions) Validate() error {
@@ -314,10 +279,6 @@ func (o *ControllerOptions) Validate() error {
 		if err != nil {
 			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
 		}
-	}
-
-	if o.ExperimentalIssuePKCS12 && len(o.ExperimentalPKCS12KeystorePassword) == 0 {
-		return fmt.Errorf("--experimental-pkcs12-keystore-password must be specified if --experimental-issue-pkcs12 is enabled")
 	}
 
 	return nil

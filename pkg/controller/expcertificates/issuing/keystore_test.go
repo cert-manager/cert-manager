@@ -139,7 +139,7 @@ func TestEncodeJKSKeystore(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, err := encodeJKSKeystore(test.password, test.rawKey, test.certPEM, test.caPEM)
+			out, err := encodeJKSKeystore([]byte(test.password), test.rawKey, test.certPEM, test.caPEM)
 			test.verify(t, out, err)
 		})
 	}

@@ -815,36 +815,53 @@ func (c *certificateRequestManager) setSecretValues(ctx context.Context, crt *cm
 		s.Data = make(map[string][]byte)
 	}
 
-	// Handle the experimental PKCS12 support
-	if c.experimentalIssuePKCS12 {
-		// Only write a new PKCS12 file if any of the private key/certificate/CA data has
-		// actually changed.
-		if data.pk != nil && data.cert != nil &&
-			(!bytes.Equal(s.Data[corev1.TLSPrivateKeyKey], data.pk) ||
-				!bytes.Equal(s.Data[corev1.TLSCertKey], data.cert) ||
-				!bytes.Equal(s.Data[cmmeta.TLSCAKey], data.ca)) {
-			keystoreData, err := encodePKCS12Keystore(c.experimentalPKCS12KeystorePassword, data.pk, data.cert, data.ca)
+	// Only write a new PKCS12/JKS file if any of the private key/certificate/CA
+	// data has actually changed.
+	if data.pk != nil && data.cert != nil &&
+		(!bytes.Equal(s.Data[corev1.TLSPrivateKeyKey], data.pk) ||
+			!bytes.Equal(s.Data[corev1.TLSCertKey], data.cert) ||
+			!bytes.Equal(s.Data[cmmeta.TLSCAKey], data.ca)) {
+
+		// Handle the experimental PKCS12 support
+		if crt.Spec.Keystores != nil && crt.Spec.Keystores.PKCS12 != nil && crt.Spec.Keystores.PKCS12.Create {
+			ref := crt.Spec.Keystores.PKCS12.PasswordSecretRef
+			pwSecret, err := c.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+			if err != nil {
+				return fmt.Errorf("fetching PKCS12 keystore password from Secret: %v", err)
+			}
+			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+				return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
+			}
+			pw := pwSecret.Data[ref.Key]
+			keystoreData, err := encodePKCS12Keystore(string(pw), data.pk, data.cert, data.ca)
 			if err != nil {
 				return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
 			}
 			// always overwrite the keystore entry for now
 			s.Data[pkcs12SecretKey] = keystoreData
+		} else {
+			delete(s.Data, pkcs12SecretKey)
 		}
-	}
-	// Handle the experimental JKS support
-	if c.experimentalIssueJKS {
-		// Only write a new JKS file if any of the private key/certificate/CA data has
-		// actually changed.
-		if data.pk != nil && data.cert != nil &&
-			(!bytes.Equal(s.Data[corev1.TLSPrivateKeyKey], data.pk) ||
-				!bytes.Equal(s.Data[corev1.TLSCertKey], data.cert) ||
-				!bytes.Equal(s.Data[cmmeta.TLSCAKey], data.ca)) {
-			keystoreData, err := encodeJKSKeystore(c.experimentalJKSPassword, data.pk, data.cert, data.ca)
+
+		// Handle the experimental JKS support
+		if crt.Spec.Keystores != nil && crt.Spec.Keystores.JKS != nil && crt.Spec.Keystores.JKS.Create {
+			ref := crt.Spec.Keystores.JKS.PasswordSecretRef
+			pwSecret, err := c.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+			if err != nil {
+				return fmt.Errorf("fetching JKS keystore password from Secret: %v", err)
+			}
+			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+				return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
+			}
+			pw := pwSecret.Data[ref.Key]
+			keystoreData, err := encodeJKSKeystore(pw, data.pk, data.cert, data.ca)
 			if err != nil {
 				return fmt.Errorf("error encoding JKS bundle: %w", err)
 			}
 			// always overwrite the keystore entry for now
 			s.Data[jksSecretKey] = keystoreData
+		} else {
+			delete(s.Data, jksSecretKey)
 		}
 	}
 

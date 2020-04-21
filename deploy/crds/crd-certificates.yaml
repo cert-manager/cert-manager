@@ -162,6 +162,73 @@ spec:
                 type: integer
                 maximum: 8192
                 minimum: 0
+              keystores:
+                description: Keystores configures additional keystore output formrats
+                  stored in the `secretName` Secret resource.
+                type: object
+                properties:
+                  jks:
+                    description: JKS configures options for storing a JKS keystore
+                      in the `spec.secretName` Secret resource.
+                    type: object
+                    required:
+                    - create
+                    - passwordSecretRef
+                    properties:
+                      create:
+                        description: Create enables JKS keystore creation for the
+                          Certificate. If true, a file named `keystore.jks` will be
+                          created in the target Secret resource, encrypted using the
+                          password stored in `passwordSecretRef`. The keystore file
+                          will only be updated upon re-issuance.
+                        type: boolean
+                      passwordSecretRef:
+                        description: PasswordSecretRef is a reference to a key in
+                          a Secret resource containing the password used to encrypt
+                          the JKS keystore.
+                        type: object
+                        required:
+                        - name
+                        properties:
+                          key:
+                            description: The key of the secret to select from. Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                  pkcs12:
+                    description: PKCS12 configures options for storing a PKCS12 keystore
+                      in the `spec.secretName` Secret resource.
+                    type: object
+                    required:
+                    - create
+                    - passwordSecretRef
+                    properties:
+                      create:
+                        description: Create enables PKCS12 keystore creation for the
+                          Certificate. If true, a file named `keystore.p12` will be
+                          created in the target Secret resource, encrypted using the
+                          password stored in `passwordSecretRef`. The keystore file
+                          will only be updated upon re-issuance.
+                        type: boolean
+                      passwordSecretRef:
+                        description: PasswordSecretRef is a reference to a key in
+                          a Secret resource containing the password used to encrypt
+                          the PKCS12 keystore.
+                        type: object
+                        required:
+                        - name
+                        properties:
+                          key:
+                            description: The key of the secret to select from. Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
               organization:
                 description: Organization is the organization to be used on the Certificate
                 type: array
@@ -443,6 +510,73 @@ spec:
                 type: integer
                 maximum: 8192
                 minimum: 0
+              keystores:
+                description: Keystores configures additional keystore output formrats
+                  stored in the `secretName` Secret resource.
+                type: object
+                properties:
+                  jks:
+                    description: JKS configures options for storing a JKS keystore
+                      in the `spec.secretName` Secret resource.
+                    type: object
+                    required:
+                    - create
+                    - passwordSecretRef
+                    properties:
+                      create:
+                        description: Create enables JKS keystore creation for the
+                          Certificate. If true, a file named `keystore.jks` will be
+                          created in the target Secret resource, encrypted using the
+                          password stored in `passwordSecretRef`. The keystore file
+                          will only be updated upon re-issuance.
+                        type: boolean
+                      passwordSecretRef:
+                        description: PasswordSecretRef is a reference to a key in
+                          a Secret resource containing the password used to encrypt
+                          the JKS keystore.
+                        type: object
+                        required:
+                        - name
+                        properties:
+                          key:
+                            description: The key of the secret to select from. Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                  pkcs12:
+                    description: PKCS12 configures options for storing a PKCS12 keystore
+                      in the `spec.secretName` Secret resource.
+                    type: object
+                    required:
+                    - create
+                    - passwordSecretRef
+                    properties:
+                      create:
+                        description: Create enables PKCS12 keystore creation for the
+                          Certificate. If true, a file named `keystore.p12` will be
+                          created in the target Secret resource, encrypted using the
+                          password stored in `passwordSecretRef`. The keystore file
+                          will only be updated upon re-issuance.
+                        type: boolean
+                      passwordSecretRef:
+                        description: PasswordSecretRef is a reference to a key in
+                          a Secret resource containing the password used to encrypt
+                          the PKCS12 keystore.
+                        type: object
+                        required:
+                        - name
+                        properties:
+                          key:
+                            description: The key of the secret to select from. Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
               privateKey:
                 description: Options to control private keys used for the Certificate.
                 type: object

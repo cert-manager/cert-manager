@@ -117,6 +117,11 @@ type CertificateSpec struct {
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
 
+	// Keystores configures additional keystore output formrats stored in the
+	// `secretName` Secret resource.
+	// +optional
+	Keystores *CertificateKeystores `json:"keystores,omitempty"`
+
 	// IssuerRef is a reference to the issuer for this certificate.
 	// If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
 	// with the given name in the same namespace as the Certificate will be used.
@@ -220,6 +225,48 @@ type X509Subject struct {
 	// Serial number to be used on the Certificate.
 	// +optional
 	SerialNumber string `json:"serialNumber,omitempty"`
+}
+
+// CertificateKeystores configures additional keystore output formats to be
+// created in the Certificate's output Secret.
+type CertificateKeystores struct {
+	// JKS configures options for storing a JKS keystore in the
+	// `spec.secretName` Secret resource.
+	JKS *JKSKeystore `json:"jks,omitempty"`
+
+	// PKCS12 configures options for storing a PKCS12 keystore in the
+	// `spec.secretName` Secret resource.
+	PKCS12 *PKCS12Keystore `json:"pkcs12,omitempty"`
+}
+
+// JKS configures options for storing a JKS keystore in the `spec.secretName`
+// Secret resource.
+type JKSKeystore struct {
+	// Create enables JKS keystore creation for the Certificate.
+	// If true, a file named `keystore.jks` will be created in the target
+	// Secret resource, encrypted using the password stored in
+	// `passwordSecretRef`.
+	// The keystore file will only be updated upon re-issuance.
+	Create bool `json:"create"`
+
+	// PasswordSecretRef is a reference to a key in a Secret resource
+	// containing the password used to encrypt the JKS keystore.
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
+}
+
+// PKCS12 configures options for storing a JKS keystore in the
+// `spec.secretName` Secret resource.
+type PKCS12Keystore struct {
+	// Create enables PKCS12 keystore creation for the Certificate.
+	// If true, a file named `keystore.p12` will be created in the target
+	// Secret resource, encrypted using the password stored in
+	// `passwordSecretRef`.
+	// The keystore file will only be updated upon re-issuance.
+	Create bool `json:"create"`
+
+	// PasswordSecretRef is a reference to a key in a Secret resource
+	// containing the password used to encrypt the PKCS12 keystore.
+	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
 }
 
 // CertificateStatus defines the observed state of Certificate
