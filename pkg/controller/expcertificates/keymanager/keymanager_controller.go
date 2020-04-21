@@ -18,6 +18,7 @@ package keymanager
 
 import (
 	"context"
+	"crypto"
 	"fmt"
 	"time"
 
@@ -86,6 +87,12 @@ func NewController(
 			predicate.ResourceOwnerOf,
 		),
 	})
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+		// Trigger reconciles on changes to certificates named as spec.secretName
+		WorkFunc: certificates.EnqueueCertificatesForResourceUsingPredicates(log, queue, certificateInformer.Lister(), labels.Everything(),
+			predicate.ExtractResourceName(predicate.CertificateSecretName),
+		),
+	})
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
@@ -150,28 +157,38 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return c.setNextPrivateKeySecretName(ctx, crt, nil)
 	}
 
+	// if there is no existing Secret resource, create a new one
+	if len(secrets) == 0 {
+		rotationPolicy := cmapi.RotationPolicyNever
+		if crt.Spec.PrivateKey != nil && crt.Spec.PrivateKey.RotationPolicy != "" {
+			rotationPolicy = crt.Spec.PrivateKey.RotationPolicy
+		}
+		switch rotationPolicy {
+		case cmapi.RotationPolicyNever:
+			return c.createNextPrivateKeyRotationPolicyNever(ctx, crt)
+		case cmapi.RotationPolicyAlways:
+			log.V(logf.DebugLevel).Info("Creating new nextPrivateKeySecretName Secret because no existing Secret found")
+			return c.createAndSetNextPrivateKey(ctx, crt)
+		default:
+			log.Info("Certificate with unknown certificate.spec.privateKey.rotationPolicy value", "rotation_policy", rotationPolicy)
+			return nil
+		}
+	}
+
 	// always clean up if multiple are found
 	if len(secrets) > 1 {
 		// TODO: if nextPrivateKeySecretName is set, we should skip deleting that one Secret resource
 		log.V(logf.DebugLevel).Info("Cleaning up Secret resources as multiple nextPrivateKeySecretName candidates found")
 		return c.deleteSecretResources(ctx, secrets)
 	}
-	// if there is no existing Secret resource, create a new one
-	if len(secrets) == 0 {
-		log.V(logf.DebugLevel).Info("Creating new nextPrivateKeySecretName Secret because no existing Secret found")
-		s, err := c.createNewPrivateKeySecret(ctx, crt)
-		if err != nil {
-			return err
-		}
-		return c.setNextPrivateKeySecretName(ctx, crt, &s.Name)
-	}
+
 	secret := secrets[0]
 	log = logf.WithRelatedResource(log, secret)
 	ctx = logf.NewContext(ctx, log)
 
 	if crt.Status.NextPrivateKeySecretName == nil {
 		log.V(logf.DebugLevel).Info("Adopting existing private key Secret")
-		return c.setNextPrivateKeySecretName(ctx, crt, &secrets[0].Name)
+		return c.setNextPrivateKeySecretName(ctx, crt, &secret.Name)
 	}
 	if *crt.Status.NextPrivateKeySecretName != secrets[0].Name {
 		log.V(logf.DebugLevel).Info("Deleting existing private key secret as name does not match status.nextPrivateKeySecretName")
@@ -203,6 +220,62 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
+func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context, crt *cmapi.Certificate) error {
+	log := logf.FromContext(ctx)
+	s, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+	if apierrors.IsNotFound(err) {
+		log.V(logf.DebugLevel).Info("Creating new nextPrivateKeySecretName Secret because no existing Secret found and rotation policy is Never")
+		return c.createAndSetNextPrivateKey(ctx, crt)
+	}
+	if err != nil {
+		return err
+	}
+	if s.Data == nil || len(s.Data[corev1.TLSPrivateKeyKey]) == 0 {
+		log.V(logf.DebugLevel).Info("Creating new nextPrivateKeySecretName Secret because existing Secret contains empty data and rotation policy is Never")
+		return c.createAndSetNextPrivateKey(ctx, crt)
+	}
+	existingPKData := s.Data[corev1.TLSPrivateKeyKey]
+	pk, err := pki.DecodePrivateKeyBytes(existingPKData)
+	if err != nil {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, "DecodeFailed", "Failed to decode private key stored in Secret %q - generating new key", crt.Spec.SecretName)
+		return c.createAndSetNextPrivateKey(ctx, crt)
+	}
+	violations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
+	if err != nil {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, "DecodeFailed", "Failed to check if private key stored in Secret %q is up to date - generating new key", crt.Spec.SecretName)
+		return c.createAndSetNextPrivateKey(ctx, crt)
+	}
+	if len(violations) > 0 {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, "DecodeFailed", "Existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v", crt.Spec.SecretName, violations)
+		return nil
+	}
+
+	nextPkSecret, err := c.createNewPrivateKeySecret(ctx, crt, pk)
+	if err != nil {
+		return err
+	}
+
+	c.recorder.Event(crt, corev1.EventTypeNormal, "Reused", fmt.Sprintf("Reusing private key stored in existing Secret resource %q", s.Name))
+
+	return c.setNextPrivateKeySecretName(ctx, crt, &nextPkSecret.Name)
+}
+
+func (c *controller) createAndSetNextPrivateKey(ctx context.Context, crt *cmapi.Certificate) error {
+	pk, err := pki.GeneratePrivateKeyForCertificate(crt)
+	if err != nil {
+		return err
+	}
+
+	s, err := c.createNewPrivateKeySecret(ctx, crt, pk)
+	if err != nil {
+		return err
+	}
+
+	c.recorder.Event(crt, corev1.EventTypeNormal, "Generated", fmt.Sprintf("Stored new private key in temporary Secret resource %q", s.Name))
+
+	return c.setNextPrivateKeySecretName(ctx, crt, &s.Name)
+}
+
 // deleteSecretResources will delete the given secret resources
 func (c *controller) deleteSecretResources(ctx context.Context, secrets []*corev1.Secret) error {
 	log := logf.FromContext(ctx)
@@ -231,17 +304,12 @@ func (c *controller) setNextPrivateKeySecretName(ctx context.Context, crt *cmapi
 	return err
 }
 
-func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.Certificate) (*corev1.Secret, error) {
+func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer) (*corev1.Secret, error) {
 	// if the 'nextPrivateKeySecretName' field is already set, use this as the
 	// name of the Secret resource.
 	name := ""
 	if crt.Status.NextPrivateKeySecretName != nil {
 		name = *crt.Status.NextPrivateKeySecretName
-	}
-
-	pk, err := pki.GeneratePrivateKeyForCertificate(crt)
-	if err != nil {
-		return nil, err
 	}
 
 	pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
@@ -270,7 +338,6 @@ func (c *controller) createNewPrivateKeySecret(ctx context.Context, crt *cmapi.C
 	if err != nil {
 		return nil, err
 	}
-	c.recorder.Event(crt, corev1.EventTypeNormal, "Generated", fmt.Sprintf("Stored new private key in temporary Secret resource %q", s.Name))
 	return s, nil
 }
 
