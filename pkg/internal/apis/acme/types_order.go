@@ -22,9 +22,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
-// TODO: these types should be moved into their own API group once we have a loose
-// coupling between ACME Issuers and their solver configurations (see: Solver proposal)
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Order is a type to represent an Order with an ACME server

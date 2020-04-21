@@ -125,8 +125,7 @@ func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*extv1beta
 	}
 
 	// Override the defaults if they have changed in the ingress template.
-	if ch.Spec.Solver != nil &&
-		ch.Spec.Solver.HTTP01 != nil &&
+	if ch.Spec.Solver.HTTP01 != nil &&
 		ch.Spec.Solver.HTTP01.Ingress != nil {
 		ing = s.mergeIngressObjectMetaWithIngressResourceTemplate(ing, ch.Spec.Solver.HTTP01.Ingress.IngressTemplate)
 	}

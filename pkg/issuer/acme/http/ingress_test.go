@@ -42,7 +42,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -75,7 +75,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -125,7 +125,7 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),
@@ -158,7 +158,7 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),
@@ -230,7 +230,7 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Name: "testingress",
@@ -317,7 +317,7 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Name: "testingress",
@@ -350,7 +350,7 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),
@@ -394,7 +394,7 @@ func TestEnsureIngress(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -444,7 +444,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),

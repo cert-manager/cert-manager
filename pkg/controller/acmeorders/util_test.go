@@ -128,7 +128,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 							Name: "test-name-to-override",
@@ -167,7 +167,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 							Class: pointer.StringPtr("test-class-to-override"),
@@ -234,7 +234,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeDNS01.Token,
 				Key:     "dns01",
-				Solver:  &emptySelectorSolverDNS01,
+				Solver:  emptySelectorSolverDNS01,
 			},
 		},
 		"should use configured default solver when no others are present": {
@@ -262,7 +262,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &emptySelectorSolverHTTP01,
+				Solver:  emptySelectorSolverHTTP01,
 			},
 		},
 		"should use configured default solver when no others are present but selector is non-nil": {
@@ -299,7 +299,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{},
 					HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 						Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
@@ -337,7 +337,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &emptySelectorSolverHTTP01,
+				Solver:  emptySelectorSolverHTTP01,
 			},
 		},
 		"should use DNS01 solver over HTTP01 if challenge is of type DNS01": {
@@ -368,7 +368,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeDNS01.Token,
 				Key:     "dns01",
-				Solver:  &emptySelectorSolverDNS01,
+				Solver:  emptySelectorSolverDNS01,
 			},
 		},
 		"should return an error if none match": {
@@ -423,7 +423,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &exampleComDNSNameSelectorSolver,
+				Solver:  exampleComDNSNameSelectorSolver,
 			},
 		},
 		"uses default solver if dnsName does not match": {
@@ -454,7 +454,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "notexample.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &emptySelectorSolverHTTP01,
+				Solver:  emptySelectorSolverHTTP01,
 			},
 		},
 		"if two solvers specify the same dnsName, the one with the most labels should be chosen": {
@@ -502,7 +502,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						MatchLabels: map[string]string{
 							"label": "exists",
@@ -561,7 +561,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &exampleComDNSNameSelectorSolver,
+				Solver:  exampleComDNSNameSelectorSolver,
 			},
 		},
 		// identical to the test above, but the solvers are listed in reverse
@@ -610,7 +610,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &exampleComDNSNameSelectorSolver,
+				Solver:  exampleComDNSNameSelectorSolver,
 			},
 		},
 		"if one solver matches with dnsNames, and the other solver matches with 2 labels, the dnsName solver should be chosen": {
@@ -659,7 +659,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &exampleComDNSNameSelectorSolver,
+				Solver:  exampleComDNSNameSelectorSolver,
 			},
 		},
 		"should choose the solver with the most labels matching if multiple match": {
@@ -719,7 +719,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						MatchLabels: map[string]string{
 							"label":   "exists",
@@ -773,7 +773,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						DNSNames: []string{"*.example.com"},
 					},
@@ -822,7 +822,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &exampleComDNSNameSelectorSolver,
+				Solver:  exampleComDNSNameSelectorSolver,
 			},
 		},
 		"dnsName selectors should take precedence over dnsZone selectors (reversed order)": {
@@ -862,7 +862,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &exampleComDNSNameSelectorSolver,
+				Solver:  exampleComDNSNameSelectorSolver,
 			},
 		},
 		"should allow matching with dnsZones": {
@@ -904,7 +904,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						DNSZones: []string{"example.com"},
 					},
@@ -964,7 +964,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						DNSZones: []string{"prod.example.com"},
 					},
@@ -1024,7 +1024,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						DNSZones: []string{"prod.example.com"},
 					},
@@ -1090,7 +1090,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						MatchLabels: map[string]string{
 							"label": "exists",
@@ -1152,7 +1152,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						DNSZones: []string{"example.com"},
 						DNSNames: []string{"www.example.com"},
@@ -1212,7 +1212,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &cmacme.ACMEChallengeSolver{
+				Solver: cmacme.ACMEChallengeSolver{
 					Selector: &cmacme.CertificateDNSNameSelector{
 						DNSZones: []string{"example.com"},
 						DNSNames: []string{"www.example.com"},
@@ -1253,7 +1253,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver:  &exampleComDNSNameSelectorSolver,
+				Solver:  exampleComDNSNameSelectorSolver,
 			},
 		},
 	}

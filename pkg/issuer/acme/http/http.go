@@ -85,14 +85,11 @@ func http01LogCtx(ctx context.Context) context.Context {
 }
 
 func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
-	if ch.Spec.Solver != nil {
-		if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
-			return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
-				"Ensure solvers[].http01.ingress is specified on your issuer resource")
-		}
-		return ch.Spec.Solver.HTTP01.Ingress, nil
+	if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
+		return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
+			"Ensure solvers[].http01.ingress is specified on your issuer resource")
 	}
-	return nil, fmt.Errorf("no HTTP01 ingress configuration found on challenge")
+	return ch.Spec.Solver.HTTP01.Ingress, nil
 }
 
 // Present will realise the resources required to solve the given HTTP01

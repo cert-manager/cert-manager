@@ -144,8 +144,7 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 	pod := s.buildDefaultPod(ch)
 
 	// Override defaults if they have changed in the pod template.
-	if ch.Spec.Solver != nil &&
-		ch.Spec.Solver.HTTP01 != nil &&
+	if ch.Spec.Solver.HTTP01 != nil &&
 		ch.Spec.Solver.HTTP01.Ingress != nil {
 		pod = s.mergePodObjectMetaWithPodTemplate(pod,
 			ch.Spec.Solver.HTTP01.Ingress.PodTemplate)

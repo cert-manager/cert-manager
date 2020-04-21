@@ -38,7 +38,7 @@ func TestEnsurePod(t *testing.T) {
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -81,7 +81,7 @@ func TestEnsurePod(t *testing.T) {
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -133,7 +133,7 @@ func TestEnsurePod(t *testing.T) {
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -188,7 +188,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -221,7 +221,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
@@ -270,7 +270,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
@@ -352,7 +352,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &cmacme.ACMEChallengeSolver{
+					Solver: cmacme.ACMEChallengeSolver{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},

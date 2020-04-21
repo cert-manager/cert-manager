@@ -281,13 +281,14 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 
 	// 5. construct Challenge resource with spec.solver field set
 	return &cmacme.ChallengeSpec{
-		AuthzURL:  authz.URL,
-		Type:      selectedChallenge.Type,
-		URL:       selectedChallenge.URL,
-		DNSName:   authz.Identifier,
-		Token:     selectedChallenge.Token,
-		Key:       key,
-		Solver:    selectedSolver,
+		AuthzURL: authz.URL,
+		Type:     selectedChallenge.Type,
+		URL:      selectedChallenge.URL,
+		DNSName:  authz.Identifier,
+		Token:    selectedChallenge.Token,
+		Key:      key,
+		// selectedSolver cannot be nil due to the check above.
+		Solver:    *selectedSolver,
 		Wildcard:  wc,
 		IssuerRef: o.Spec.IssuerRef,
 	}, nil
