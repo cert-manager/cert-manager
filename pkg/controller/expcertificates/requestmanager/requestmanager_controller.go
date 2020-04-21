@@ -310,7 +310,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		return err
 	}
 
-	annotations := make(map[string]string, len(crt.Annotations)+3)
+	annotations := make(map[string]string)
 	for k, v := range crt.Annotations {
 		annotations[k] = v
 	}
