@@ -44,32 +44,6 @@ type secretsManager struct {
 	// Secret resource will be automatically deleted.
 	// This option is disabled by default.
 	enableSecretOwnerReferences bool
-
-	// experimentalIssuePKCS12, if true, will make the certificates controller
-	// create a `keystore.p12` in the Secret resource for each Certificate.
-	// This can only be toggled globally, and the keystore will be encrypted
-	// with the supplied ExperimentalPKCS12KeystorePassword.
-	// This flag is likely to be removed in future in favour of native PKCS12
-	// keystore bundle support.
-	experimentalIssuePKCS12 bool
-
-	// ExperimentalPKCS12KeystorePassword is the password used to encrypt and
-	// decrypt PKCS#12 bundles stored in Secret resources.
-	// This option only has any affect is ExperimentalIssuePKCS12 is true.
-	experimentalPKCS12KeystorePassword string
-
-	// experimentalIssueJKS, if true, will make the certificates controller
-	// create a `keystore.jks` in the Secret resource for each Certificate.
-	// This can only be toggled globally, and the keystore will be encrypted
-	// with the supplied ExperimentalJKSPassword.
-	// This flag is likely to be removed in future in favour of native JKS
-	// keystore bundle support.
-	experimentalIssueJKS bool
-
-	// experimentalJKSPassword is the password used to encrypt and
-	// decrypt JKS files stored in Secret resources.
-	// This option only has any affect is experimentalIssueJKS is true.
-	experimentalJKSPassword string
 }
 
 // secretData is a structure wrapping private key, certificate and CA data
@@ -83,13 +57,9 @@ func newSecretsManager(
 	certificateControllerOptions controllerpkg.CertificateOptions,
 ) *secretsManager {
 	return &secretsManager{
-		kubeClient:                         kubeClient,
-		secretLister:                       secretLister,
-		enableSecretOwnerReferences:        certificateControllerOptions.EnableOwnerRef,
-		experimentalIssuePKCS12:            certificateControllerOptions.ExperimentalIssuePKCS12,
-		experimentalPKCS12KeystorePassword: certificateControllerOptions.ExperimentalPKCS12KeystorePassword,
-		experimentalIssueJKS:               certificateControllerOptions.ExperimentalIssueJKS,
-		experimentalJKSPassword:            certificateControllerOptions.ExperimentalJKSPassword,
+		kubeClient:                  kubeClient,
+		secretLister:                secretLister,
+		enableSecretOwnerReferences: certificateControllerOptions.EnableOwnerRef,
 	}
 }
 
@@ -157,36 +127,63 @@ func (s *secretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Data = make(map[string][]byte)
 	}
 
-	// Handle the experimental PKCS12 support
-	if s.experimentalIssuePKCS12 {
-		// Only write a new PKCS12 file if any of the private key/certificate/CA data has
-		// actually changed.
-		if data.sk != nil && data.cert != nil &&
-			(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.sk) ||
-				!bytes.Equal(secret.Data[corev1.TLSCertKey], data.cert) ||
-				!bytes.Equal(secret.Data[cmmeta.TLSCAKey], data.ca)) {
-			keystoreData, err := encodePKCS12Keystore(s.experimentalPKCS12KeystorePassword, data.sk, data.cert, data.ca)
+	// Only write a new PKCS12/JKS file if any of the private key/certificate/CA
+	// data has actually changed.
+	if data.sk != nil && data.cert != nil &&
+		(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.sk) ||
+			!bytes.Equal(secret.Data[corev1.TLSCertKey], data.cert) ||
+			!bytes.Equal(secret.Data[cmmeta.TLSCAKey], data.ca)) {
+
+		// Handle the experimental PKCS12 support
+		if crt.Spec.Keystores != nil && crt.Spec.Keystores.PKCS12 != nil && crt.Spec.Keystores.PKCS12.Create {
+			ref := crt.Spec.Keystores.PKCS12.PasswordSecretRef
+			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+			if err != nil {
+				return fmt.Errorf("fetching PKCS12 keystore password from Secret: %v", err)
+			}
+			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+				return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
+			}
+			pw := pwSecret.Data[ref.Key]
+			keystoreData, err := encodePKCS12Keystore(string(pw), data.sk, data.cert, data.ca)
 			if err != nil {
 				return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
 			}
 			// always overwrite the keystore entry for now
 			secret.Data[pkcs12SecretKey] = keystoreData
+		} else {
+			delete(secret.Data, pkcs12SecretKey)
 		}
-	}
-	// Handle the experimental JKS support
-	if s.experimentalIssueJKS {
-		// Only write a new JKS file if any of the private key/certificate/CA data has
-		// actually changed.
-		if data.sk != nil && data.cert != nil &&
-			(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.sk) ||
-				!bytes.Equal(secret.Data[corev1.TLSCertKey], data.cert) ||
-				!bytes.Equal(secret.Data[cmmeta.TLSCAKey], data.ca)) {
-			keystoreData, err := encodeJKSKeystore(s.experimentalJKSPassword, data.sk, data.cert, data.ca)
+
+		// Handle the experimental JKS support
+		if crt.Spec.Keystores != nil && crt.Spec.Keystores.JKS != nil && crt.Spec.Keystores.JKS.Create {
+			ref := crt.Spec.Keystores.JKS.PasswordSecretRef
+			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+			if err != nil {
+				return fmt.Errorf("fetching JKS keystore password from Secret: %v", err)
+			}
+			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+				return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
+			}
+			pw := pwSecret.Data[ref.Key]
+			keystoreData, err := encodeJKSKeystore(pw, data.sk, data.cert, data.ca)
 			if err != nil {
 				return fmt.Errorf("error encoding JKS bundle: %w", err)
 			}
-			// always overwrite the keystore entry for now
+			// always overwrite the keystore entry
 			secret.Data[jksSecretKey] = keystoreData
+
+			if len(data.ca) > 0 {
+				truststoreData, err := encodeJKSTruststore(pw, data.ca)
+				if err != nil {
+					return fmt.Errorf("error encoding JKS trust store bundle: %w", err)
+				}
+				// always overwrite the keystore entry
+				secret.Data[jksTruststoreKey] = truststoreData
+			}
+		} else {
+			delete(secret.Data, jksSecretKey)
+			delete(secret.Data, jksTruststoreKey)
 		}
 	}
 
