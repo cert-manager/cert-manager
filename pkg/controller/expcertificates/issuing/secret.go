@@ -170,10 +170,20 @@ func (s *secretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 			if err != nil {
 				return fmt.Errorf("error encoding JKS bundle: %w", err)
 			}
-			// always overwrite the keystore entry for now
+			// always overwrite the keystore entry
 			secret.Data[jksSecretKey] = keystoreData
+
+			if len(data.ca) > 0 {
+				truststoreData, err := encodeJKSTruststore(pw, data.ca)
+				if err != nil {
+					return fmt.Errorf("error encoding JKS trust store bundle: %w", err)
+				}
+				// always overwrite the keystore entry
+				secret.Data[jksTruststoreKey] = truststoreData
+			}
 		} else {
 			delete(secret.Data, jksSecretKey)
+			delete(secret.Data, jksTruststoreKey)
 		}
 	}
 

@@ -163,7 +163,7 @@ spec:
                 maximum: 8192
                 minimum: 0
               keystores:
-                description: Keystores configures additional keystore output formrats
+                description: Keystores configures additional keystore output formats
                   stored in the `secretName` Secret resource.
                 type: object
                 properties:
@@ -511,7 +511,7 @@ spec:
                 maximum: 8192
                 minimum: 0
               keystores:
-                description: Keystores configures additional keystore output formrats
+                description: Keystores configures additional keystore output formats
                   stored in the `secretName` Secret resource.
                 type: object
                 properties:

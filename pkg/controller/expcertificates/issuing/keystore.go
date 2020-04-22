@@ -41,7 +41,8 @@ const (
 
 	// jksSecretKey is the name of the data entry in the Secret resource
 	// used to store the jks file.
-	jksSecretKey = "keystore.jks"
+	jksSecretKey     = "keystore.jks"
+	jksTruststoreKey = "truststore.jks"
 )
 
 // encodePKCS12Keystore will encode a PKCS12 keystore using the password provided.
@@ -126,6 +127,31 @@ func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []b
 				Content: ca.Raw,
 			},
 		}
+	}
+
+	buf := &bytes.Buffer{}
+	if err := jks.Encode(buf, ks, password); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func encodeJKSTruststore(password []byte, caPem []byte) ([]byte, error) {
+	ca, err := pki.DecodeX509CertificateBytes(caPem)
+	if err != nil {
+		return nil, err
+	}
+
+	ks := jks.KeyStore{
+		"ca": &jks.TrustedCertificateEntry{
+			Entry: jks.Entry{
+				CreationDate: time.Now(),
+			},
+			Certificate: jks.Certificate{
+				Type:    "X509",
+				Content: ca.Raw,
+			},
+		},
 	}
 
 	buf := &bytes.Buffer{}

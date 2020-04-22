@@ -858,10 +858,20 @@ func (c *certificateRequestManager) setSecretValues(ctx context.Context, crt *cm
 			if err != nil {
 				return fmt.Errorf("error encoding JKS bundle: %w", err)
 			}
-			// always overwrite the keystore entry for now
+			// always overwrite the keystore entry
 			s.Data[jksSecretKey] = keystoreData
+
+			if len(data.ca) > 0 {
+				truststoreData, err := encodeJKSTruststore(pw, data.ca)
+				if err != nil {
+					return fmt.Errorf("error encoding JKS trust store bundle: %w", err)
+				}
+				// always overwrite the keystore entry
+				s.Data[jksTruststoreKey] = truststoreData
+			}
 		} else {
 			delete(s.Data, jksSecretKey)
+			delete(s.Data, jksTruststoreKey)
 		}
 	}
 

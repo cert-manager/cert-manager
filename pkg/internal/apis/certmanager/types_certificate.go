@@ -93,7 +93,7 @@ type CertificateSpec struct {
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string
 
-	// Keystores configures additional keystore output formrats stored in the
+	// Keystores configures additional keystore output formats stored in the
 	// `secretName` Secret resource.
 	// +optional
 	Keystores *CertificateKeystores
@@ -205,7 +205,7 @@ type JKSKeystore struct {
 	PasswordSecretRef cmmeta.SecretKeySelector
 }
 
-// PKCS12 configures options for storing a JKS keystore in the
+// PKCS12 configures options for storing a PKCS12 keystore in the
 // `spec.secretName` Secret resource.
 type PKCS12Keystore struct {
 	// Create enables PKCS12 keystore creation for the Certificate.
