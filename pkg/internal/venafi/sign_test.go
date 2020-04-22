@@ -179,10 +179,17 @@ func TestSign(t *testing.T) {
 			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok"}},
 			client: internalfake.Connector{
 				RetrieveCertificateFunc: func(r *certificate.Request) (*certificate.PEMCollection, error) {
-					if len(r.CustomFields) == 0 {
+					// we set 1 field by default
+					if len(r.CustomFields) <= 1 {
 						return nil, errors.New("custom fields not set")
 					}
-					if r.CustomFields[0].Name != "test" || r.CustomFields[0].Value != "ok" {
+					foundFields := false
+					for _, fieldSet := range r.CustomFields {
+						if fieldSet.Name != "test" && fieldSet.Value != "ok" {
+							foundFields = true
+						}
+					}
+					if !foundFields {
 						return nil, errors.New("custom fields content not correct")
 					}
 					return internalfake.Connector{}.Default().RetrieveCertificate(r) // hack to return to normal

@@ -58,9 +58,16 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 	// Create a vcert Request structure
 	vreq := newVRequest(tmpl)
 
+	// Add cert-manager origin tag
+	vreq.CustomFields = []certificate.CustomField{
+		{
+			Type:  certificate.CustomFieldOrigin,
+			Value: "Jetstack cert-manager",
+		},
+	}
+
 	// Convert over custom fields from our struct type to venafi's
 	if len(customFields) > 0 {
-		vreq.CustomFields = []certificate.CustomField{}
 		for _, field := range customFields {
 			var fieldType certificate.CustomFieldType
 			switch field.Type {
