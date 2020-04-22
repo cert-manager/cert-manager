@@ -5,6 +5,7 @@ load(
     "SERVER_PLATFORMS",
     "TEST_PLATFORMS",
     "UBI_PLATFORMS",
+    "CLIENT_PLATFORMS",
     "for_platforms",
     "go_platform_constraint",
 )
@@ -32,6 +33,9 @@ release_filegroup(
         ],
         for_ubi = [
             ":cert-manager-ubi-{OS}-{ARCH}.tar.gz",
+        ],
+        for_client = [
+            ":cert-manager-ctl-{OS}-{ARCH}.tar.gz",
         ],
     ),
     tags = [
@@ -90,6 +94,20 @@ pkg_tar(
     visibility = ["//visibility:private"],
 )
 
+pkg_tar(
+    name = "_ctl",
+    srcs = [
+        "//build:client-artifacts",
+    ],
+    mode = "0755",
+    package_dir = "client/ctl",
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    visibility = ["//visibility:private"],
+)
+
 [[pkg_tar(
     name = "cert-manager-server-%s-%s" % (os, arch),
     srcs = [
@@ -129,6 +147,26 @@ pkg_tar(
         ],
     }),
 ) for arch in archs] for os, archs in UBI_PLATFORMS.items()]
+
+[[pkg_tar(
+    name = "cert-manager-ctl-%s-%s" % (os, arch),
+    srcs = [
+        ":license-targets",
+        "//:version",
+    ],
+    extension = "tar.gz",
+    mode = "0644",
+    package_dir = "cert-manager-ctl-%s-%s" % (os, arch),
+    tags = [
+        "manual",
+        "no-cache",
+    ],
+    deps = select({
+        go_platform_constraint(os, arch): [
+            ":_ctl",
+        ],
+    }),
+) for arch in archs] for os, archs in CLIENT_PLATFORMS.items()]
 
 pkg_tar(
     name = "_test-bin",

@@ -130,6 +130,13 @@ release_filegroup(
     tags = ["manual"],
 )
 
+release_filegroup(
+    name = "client-artifacts",
+    conditioned_srcs = for_platforms(for_client = [
+        "//cmd/ctl:ctl",
+    ]),
+)
+
 filegroup(
     name = "test-targets",
     srcs = select(for_platforms(
