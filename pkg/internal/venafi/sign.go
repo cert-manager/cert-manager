@@ -60,7 +60,10 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 
 	// Add cert-manager origin tag
 	vreq.CustomFields = []certificate.CustomField{
-		{Type: certificate.CustomFieldOrigin, Value: "Jetstack cert-manager"},
+		{
+			Type:  certificate.CustomFieldOrigin,
+			Value: "Jetstack cert-manager",
+		},
 	}
 
 	// Convert over custom fields from our struct type to venafi's
