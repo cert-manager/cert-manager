@@ -29,6 +29,7 @@ webhooks:
           - "acme.cert-manager.io"
         apiVersions:
           - v1alpha2
+          - v1alpha3
         operations:
           - CREATE
           - UPDATE
@@ -48,4 +49,4 @@ webhooks:
       service:
         name: {{ .Values.webhook.serviceName }}
         namespace: {{ .Release.Namespace | quote }}
-        path: /mutate
+        path: /validate
