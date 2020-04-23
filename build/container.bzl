@@ -70,15 +70,15 @@ def multi_arch_container(
 
     # Create a tar file containing the created license files
     pkg_tar(
-        name = "%s.licence_tar" % name,
+        name = "%s.license_tar" % name,
         srcs = ["//:LICENSE", "//:LICENSES"],
-        package_dir = "licences",
+        package_dir = "licenses",
     )
 
     container_image(
         name = "%s.image" % name,
         base = ":%s-internal-notimestamp" % name,
-        tars = [":%s.licence_tar" % name],
+        tars = [":%s.license_tar" % name],
         stamp = stamp,
         tags = tags,
         user = user,
