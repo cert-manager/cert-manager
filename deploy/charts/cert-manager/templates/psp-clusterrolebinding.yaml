@@ -16,6 +16,6 @@ roleRef:
   name: {{ template "cert-manager.fullname" . }}-psp
 subjects:
   - kind: ServiceAccount
-    name: {{ include "cert-manager.fullname" . }}
+    name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 {{- end }}

@@ -39,7 +39,7 @@ spec:
 {{ toYaml .Values.webhook.podAnnotations | indent 8 }}
       {{- end }}
     spec:
-      serviceAccountName: {{ include "webhook.fullname" . }}
+      serviceAccountName: {{ template "webhook.serviceAccountName" . }}
       {{- if .Values.global.priorityClassName }}
       priorityClassName: {{ .Values.global.priorityClassName | quote }}
       {{- end }}

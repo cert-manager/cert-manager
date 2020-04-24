@@ -50,7 +50,7 @@ roleRef:
   kind: ClusterRole
   name: {{ template "cainjector.fullname" . }}
 subjects:
-  - name: {{ include "cainjector.fullname" . }}
+  - name: {{ template "cainjector.serviceAccountName" . }}
     namespace: {{ .Release.Namespace | quote }}
     kind: ServiceAccount
 
@@ -103,7 +103,7 @@ roleRef:
   name: {{ template "cainjector.fullname" . }}:leaderelection
 subjects:
   - kind: ServiceAccount
-    name: {{ include "cainjector.fullname" . }}
+    name: {{ template "cainjector.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 
 
