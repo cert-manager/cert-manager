@@ -2,10 +2,10 @@ package(default_visibility = ["//visibility:public"])
 
 load(
     "//build:platforms.bzl",
+    "CLIENT_PLATFORMS",
     "SERVER_PLATFORMS",
     "TEST_PLATFORMS",
     "UBI_PLATFORMS",
-    "CLIENT_PLATFORMS",
     "for_platforms",
     "go_platform_constraint",
 )
@@ -25,6 +25,9 @@ release_filegroup(
         for_all = [
             ":cert-manager-manifests.tar.gz",
         ],
+        for_client = [
+            ":cert-manager-ctl-{OS}-{ARCH}.tar.gz",
+        ],
         for_server = [
             ":cert-manager-server-{OS}-{ARCH}.tar.gz",
         ],
@@ -33,9 +36,6 @@ release_filegroup(
         ],
         for_ubi = [
             ":cert-manager-ubi-{OS}-{ARCH}.tar.gz",
-        ],
-        for_client = [
-            ":cert-manager-ctl-{OS}-{ARCH}.tar.gz",
         ],
     ),
     tags = [
