@@ -102,7 +102,7 @@ pkg_tar(
     mode = "0755",
     package_dir = "client/ctl",
     tags = [
-        "manual",
+    "manual",
         "no-cache",
     ],
     visibility = ["//visibility:private"],
