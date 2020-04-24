@@ -28,11 +28,34 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/util/i18n"
+	"k8s.io/kubectl/pkg/util/templates"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+)
+
+const (
+	// poll time used when waiting for Certificates to become ready
+	pollTime = time.Second * 2
+)
+
+var (
+	long = templates.LongDesc(i18n.T(`
+	Mark cert-manager Certificate resources for manual renewal.
+`))
+
+	example = templates.Examples(i18n.T(`
+		# Renew the Certificates named 'my-app' and 'vault' in the current context namespace and wait until they are ready.
+		ctl renew my-app vault --wait
+
+		# Renew all Certificates in the 'kube-system' namespace.
+		ctl renew --namespace kube-system --all
+
+		# Renew all Certificates in all namespaces that have the label 'app=my-service'.
+		ctl renew --all-namespaces -l app=my-service`))
 )
 
 // Options is a struct to support renew command
@@ -65,9 +88,10 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
-		Use:   "renew",
-		Short: "Mark a Certificate for manual renewal",
-		Long:  "Mark a Certificate for manual renewal",
+		Use:     "renew",
+		Short:   "Mark a Certificate for manual renewal",
+		Long:    "Mark a Certificate for manual renewal",
+		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(factory, cmd, args))
 			cmdutil.CheckErr(o.Validate(cmd, args))
@@ -79,8 +103,8 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If present, wait for Certificates across all namespaces to become ready. Namespace in current context is ignored even if specified with --namespace.")
 	cmd.Flags().BoolVar(&o.All, "all", o.All, "Renew all Certificates in the given Namespace, or all namespaces with --all-namespaces enabled.")
 	cmd.Flags().BoolVarP(&o.Wait, "wait", "w", o.Wait, "Wait for all Certificates to become ready once being marked for renewal.")
-	cmd.Flags().DurationVar(&o.PollTime, "poll-time", time.Second*2, "Poll period between checking Certificates to become ready. Used in conjunction with --wait.")
-	cmd.Flags().DurationVar(&o.Timeout, "timeout", 0, "The length of time to wait before ending watch, zero means never. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h).")
+	timeoutDescription := fmt.Sprintf("The length of time to wait before ending watch, zero means never. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h). Cannot be less than the poll time %s, if not zero", pollTime)
+	cmd.Flags().DurationVar(&o.Timeout, "timeout", 0, timeoutDescription)
 
 	return cmd
 }
@@ -88,11 +112,21 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 // Validate validates the provided options
 func (o *Options) Validate(cmd *cobra.Command, args []string) error {
 	if len(o.LabelSelector) > 0 && len(args) > 0 {
-		return errors.New("cannot specify Certificate arguments as well as label selectors")
+		return errors.New("cannot specify Certificate names in conjunction with label selectors")
+	}
+
+	if len(o.LabelSelector) > 0 && o.All {
+		return errors.New("cannot specify label selectors in conjunction with --all flag")
 	}
 
 	if o.All && len(args) > 0 {
-		return errors.New("cannot specify Certificate arguments as well as --all flag")
+		return errors.New("cannot specify Certificate names in conjunction with --all flag")
+	}
+
+	// Only validate timeout if we are also waiting
+	if o.Wait && o.Timeout != 0 && o.Timeout < pollTime {
+		return fmt.Errorf("timeout of %s cannot be less than the poll time of %s if timeout is not zero",
+			o.Timeout, pollTime)
 	}
 
 	return nil
@@ -111,6 +145,8 @@ func (o *Options) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string)
 
 // Run executes renew command
 func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
+	ctx := context.TODO()
+
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
 		return err
@@ -131,7 +167,7 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 			return err
 		}
 
-		nsList, err := kubeClient.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+		nsList, err := kubeClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -143,7 +179,7 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 	for _, ns := range nss {
 		switch {
 		case o.All, len(o.LabelSelector) > 0:
-			crtsList, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).List(context.TODO(), metav1.ListOptions{
+			crtsList, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).List(ctx, metav1.ListOptions{
 				LabelSelector: o.LabelSelector,
 			})
 			if err != nil {
@@ -154,7 +190,7 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 
 		default:
 			for _, crtName := range args {
-				crt, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).Get(context.TODO(), crtName, metav1.GetOptions{})
+				crt, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).Get(ctx, crtName, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -175,13 +211,13 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 	}
 
 	for _, crt := range crts {
-		if err := o.renewCertificate(cmClient, &crt); err != nil {
+		if err := o.renewCertificate(ctx, cmClient, &crt); err != nil {
 			return err
 		}
 	}
 
 	if o.Wait {
-		if err := o.waitCertificatesReady(cmClient, crts); err != nil {
+		if err := o.waitCertificatesReady(ctx, cmClient, crts); err != nil {
 			return err
 		}
 
@@ -191,9 +227,9 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 	return nil
 }
 
-func (o *Options) renewCertificate(cmClient *cmclient.Clientset, crt *cmapi.Certificate) error {
+func (o *Options) renewCertificate(ctx context.Context, cmClient *cmclient.Clientset, crt *cmapi.Certificate) error {
 	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManuallyTriggered", "Certificate re-issuance manually triggered")
-	_, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(context.TODO(), crt, metav1.UpdateOptions{})
+	_, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to trigger issuance of Certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 	}
@@ -201,12 +237,9 @@ func (o *Options) renewCertificate(cmClient *cmclient.Clientset, crt *cmapi.Cert
 	return nil
 }
 
-func (o *Options) waitCertificatesReady(cmClient *cmclient.Clientset, crts []cmapi.Certificate) error {
-	// TODO: start poll time after all get requests?
-	ticker := time.NewTicker(o.PollTime)
+func (o *Options) waitCertificatesReady(ctx context.Context, cmClient *cmclient.Clientset, crts []cmapi.Certificate) error {
+	ticker := time.NewTicker(pollTime)
 	defer ticker.Stop()
-
-	ctx := context.TODO()
 
 	if o.Timeout > 0 {
 		var cancel func()
@@ -218,7 +251,7 @@ func (o *Options) waitCertificatesReady(cmClient *cmclient.Clientset, crts []cma
 		lenReady := 0
 
 		for _, crt := range crts {
-			crt, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(context.TODO(), crt.Name, metav1.GetOptions{})
+			crt, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 			if err != nil {
 				// TODO: handle certificate no longer existing?
 				return err
@@ -243,7 +276,8 @@ func (o *Options) waitCertificatesReady(cmClient *cmclient.Clientset, crts []cma
 		case <-ticker.C:
 			continue
 		case <-ctx.Done():
-			return fmt.Errorf("%d Certificates failed to become ready in time", len(crts)-lenReady)
+			return fmt.Errorf("within %s %d Certificates failed to become ready in time",
+				o.Timeout, len(crts)-lenReady)
 		}
 	}
 }
