@@ -47,7 +47,7 @@ The default output will be printed to stdout in YAML format. One can use -o opti
 to change to output destination.`
 )
 
-// Options is a struct to support version command
+// Options is a struct to support convert command
 type Options struct {
 	PrintFlags *genericclioptions.PrintFlags
 	Printer    printers.ResourcePrinter
@@ -82,9 +82,8 @@ func NewCmdConvert(ioStreams genericclioptions.IOStreams) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&o.OutputVersion, "output-version", o.OutputVersion, "Output the formatted object with the given group version (for ex: 'cert-manager.io/v1alpha3').")
+	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "path to a file containing cert-manager resources to be converted")
 	o.PrintFlags.AddFlags(cmd)
-
-	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "to need to get converted.")
 
 	return cmd
 }
@@ -112,8 +111,7 @@ func (o *Options) Run() error {
 	r := builder.Unstructured().LocalParam(true).ContinueOnError().
 		FilenameParam(false, &o.FilenameOptions).Flatten().Do()
 
-	err := r.Err()
-	if err != nil {
+	if err := r.Err(); err != nil {
 		return fmt.Errorf("error here: %s", err)
 	}
 
@@ -203,15 +201,20 @@ func asVersionedObjects(infos []*resource.Info, specifiedOutputVersion schema.Gr
 		// objects that are not part of api.Scheme must be converted to JSON
 		// TODO: convert to map[string]interface{}, attach to runtime.Unknown?
 		if !specifiedOutputVersion.Empty() {
-			if _, _, err := api.Scheme.ObjectKinds(info.Object); runtime.IsNotRegisteredError(err) {
-				// TODO: ideally this would encode to version, but we don't expose multiple codecs here.
-				data, err := runtime.Encode(encoder, info.Object)
-				if err != nil {
-					return nil, err
+			_, _, err := api.Scheme.ObjectKinds(info.Object)
+			if err != nil {
+				if runtime.IsNotRegisteredError(err) {
+					// TODO: ideally this would encode to version, but we don't expose multiple codecs here.
+					data, err := runtime.Encode(encoder, info.Object)
+					if err != nil {
+						return nil, err
+					}
+					// TODO: Set ContentEncoding and ContentType.
+					objects = append(objects, &runtime.Unknown{Raw: data})
+					continue
 				}
-				// TODO: Set ContentEncoding and ContentType.
-				objects = append(objects, &runtime.Unknown{Raw: data})
-				continue
+
+				return nil, err
 			}
 
 			targetVersions = append(targetVersions, specifiedOutputVersion)
