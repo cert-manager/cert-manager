@@ -134,6 +134,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
+| `webhook.serviceAccount.create` | If `true`, create a new service account for the webhook component | `true` |
+| `webhook.serviceAccount.name` | Service account for the webhook component to be used. If not set and `webhook.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
+| `webhook.serviceAccount.annotations` | Annotations to add to the service account for the webhook component |  |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | `{}` |
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
 | `webhook.affinity` | Node affinity for webhook pod assignment | `{}` |
@@ -148,6 +151,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
 | `cainjector.deploymentAnnotations` | Annotations to add to the cainjector deployment | `{}` |
 | `cainjector.extraArgs` | Optional flags for cert-manager cainjector component | `[]` |
+| `cainjector.serviceAccount.create` | If `true`, create a new service account for the webhook cainjector | `true` |
+| `cainjector.serviceAccount.name` | Service account to be used for the webhook cainjector. If not set and `cainjector.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
+| `cainjector.serviceAccount.annotations` | Annotations to add to the service account for the webhook cainjector |  |
 | `cainjector.resources` | CPU/memory resource requests/limits for the cainjector pods | `{}` |
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.affinity` | Node affinity for cainjector pod assignment | `{}` |
