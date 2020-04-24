@@ -30,12 +30,21 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/klog"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/util/i18n"
+	"k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/jetstack/cert-manager/pkg/api"
 )
 
-const (
-	longDesc = `
+var (
+	example = templates.Examples(i18n.T(`
+		# Convert 'cert.yaml' to latest version and print to stdout.
+		kubectl convert -f cert.yaml
+
+		# Convert kustomize overlay under current directory to 'cert-manager.io/v1alpha3'
+		kubectl convert -k . --output-version cert-manager.io/v1alpha3`))
+
+	longDesc = templates.LongDesc(i18n.T(`
 Convert cert-manager config files between different API versions. Both YAML
 and JSON formats are accepted.
 
@@ -44,7 +53,7 @@ of version specified by --output-version flag. If target version is not specifie
 not supported, convert to latest version.
 
 The default output will be printed to stdout in YAML format. One can use -o option
-to change to output destination.`
+to change to output destination.`))
 )
 
 // Options is a struct to support convert command
@@ -74,6 +83,7 @@ func NewCmdConvert(ioStreams genericclioptions.IOStreams) *cobra.Command {
 		Use:                   "convert",
 		Short:                 "Convert cert-manager config files between different API versions",
 		Long:                  longDesc,
+		Example:               example,
 		DisableFlagsInUseLine: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(cmd))
