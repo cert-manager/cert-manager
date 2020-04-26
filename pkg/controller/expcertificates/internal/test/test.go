@@ -21,6 +21,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
@@ -33,6 +34,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
+
+const staticTemporarySerialNumber = 0x1234567890
 
 var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
@@ -60,6 +63,7 @@ type CryptoBundle struct {
 	// certificateRequest is the request that is expected to be created to
 	// obtain a certificate when using this bundle
 	CertificateRequest                     *cmapi.CertificateRequest
+	CertificateRequestPending              *cmapi.CertificateRequest
 	CertificateRequestReady                *cmapi.CertificateRequest
 	CertificateRequestFailed               *cmapi.CertificateRequest
 	CertificateRequestFailedInvalidRequest *cmapi.CertificateRequest
@@ -67,6 +71,8 @@ type CryptoBundle struct {
 	// cert is a signed certificate
 	Cert      *x509.Certificate
 	CertBytes []byte
+
+	LocalTemporaryCertificateBytes []byte
 }
 
 func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate) CryptoBundle {
@@ -147,6 +153,14 @@ func createCryptoBundle(crt *cmapi.Certificate) (*CryptoBundle, error) {
 		}),
 	)
 
+	certificateRequestPending := gen.CertificateRequestFrom(certificateRequest,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:   cmapi.CertificateRequestConditionReady,
+			Status: cmmeta.ConditionFalse,
+			Reason: cmapi.CertificateRequestReasonPending,
+		}),
+	)
+
 	certificateRequestFailed := gen.CertificateRequestFrom(certificateRequest,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:   cmapi.CertificateRequestConditionReady,
@@ -163,6 +177,11 @@ func createCryptoBundle(crt *cmapi.Certificate) (*CryptoBundle, error) {
 		}),
 	)
 
+	tempCertBytes, err := generateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
+	if err != nil {
+		panic("failed to generate test fixture: " + err.Error())
+	}
+
 	return &CryptoBundle{
 		Certificate:                            crt,
 		ExpectedRequestName:                    reqName,
@@ -171,11 +190,13 @@ func createCryptoBundle(crt *cmapi.Certificate) (*CryptoBundle, error) {
 		CSR:                                    csr,
 		CSRBytes:                               csrPEM,
 		CertificateRequest:                     certificateRequest,
+		CertificateRequestPending:              certificateRequestPending,
 		CertificateRequestReady:                certificateRequestReady,
 		CertificateRequestFailed:               certificateRequestFailed,
 		CertificateRequestFailedInvalidRequest: certificateRequestFailedInvalidRequest,
 		Cert:                                   cert,
 		CertBytes:                              certBytes,
+		LocalTemporaryCertificateBytes:         tempCertBytes,
 	}, nil
 }
 
@@ -295,4 +316,44 @@ func generateCSRImpl(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	})
 
 	return csrPEM, nil
+}
+
+func generateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []byte) ([]byte, error) {
+	// generate a throwaway self-signed root CA
+	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
+	if err != nil {
+		return nil, err
+	}
+	caCertTemplate, err := pki.GenerateTemplate(&cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{
+			CommonName: "cert-manager.local",
+			IsCA:       true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	_, caCert, err := pki.SignCertificate(caCertTemplate, caCertTemplate, caPk.Public(), caPk)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign a temporary certificate using the root CA
+	template, err := pki.GenerateTemplate(crt)
+	if err != nil {
+		return nil, err
+	}
+	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
+
+	signeeKey, err := pki.DecodePrivateKeyBytes(pkData)
+	if err != nil {
+		return nil, err
+	}
+
+	b, _, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }

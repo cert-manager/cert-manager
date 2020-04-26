@@ -175,3 +175,15 @@ func SetCertificateRevision(revision int) CertificateModifier {
 		crt.Status.Revision = &revision
 	}
 }
+
+func AddCertificateAnnotations(annotations map[string]string) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
+		}
+
+		for k, v := range annotations {
+			crt.Annotations[k] = v
+		}
+	}
+}

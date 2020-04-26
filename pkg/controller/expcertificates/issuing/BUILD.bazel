@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "issuing_controller.go",
-        "temporary_certificate.go",
+        "temporary.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/controller/expcertificates/issuing",
     visibility = ["//visibility:public"],
@@ -19,6 +19,7 @@ go_library(
         "//pkg/controller/expcertificates:go_default_library",
         "//pkg/controller/expcertificates/internal/predicate:go_default_library",
         "//pkg/controller/expcertificates/internal/secretsmanager:go_default_library",
+        "//pkg/controller/expcertificates/trigger/policies:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/kube:go_default_library",
         "//pkg/util/pki:go_default_library",

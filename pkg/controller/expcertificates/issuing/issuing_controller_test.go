@@ -35,6 +35,12 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
+func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
+	return func(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
+		return b, nil
+	}
+}
+
 func TestIssuingController(t *testing.T) {
 	type testT struct {
 		builder *testpkg.Builder
@@ -450,6 +456,332 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+
+		"if certificate is in Issuing state with temp annotation, one CertificateRequest Pending, no target Secret, create target secret with temporary certificate": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.AddCertificateAnnotations(map[string]string{
+							cmapi.IssueTemporaryCertificateAnnotation: "true"},
+						),
+					),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: gen.DefaultTestNamespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Annotations: map[string]string{
+									cmapi.CertificateNameKey:      "test",
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.IPSANAnnotationKey:      "",
+									cmapi.URISANAnnotationKey:     "",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+								cmmeta.TLSCAKey:         nil,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal Issuing Issued temporary certificate",
+				},
+			},
+			expectedErr: false,
+		},
+
+		"if certificate is in Issuing state with temp annotation, one CertificateRequest Pending, a target Secret but with no data, issue temporary certificate to that Secret": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.AddCertificateAnnotations(map[string]string{
+							cmapi.IssueTemporaryCertificateAnnotation: "true"},
+						),
+					),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: gen.DefaultTestNamespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle.Certificate.Spec.SecretName,
+							Namespace: gen.DefaultTestNamespace,
+							Annotations: map[string]string{
+								"my-custom": "annotation",
+							},
+						},
+						Data: nil,
+						Type: corev1.SecretTypeTLS,
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Annotations: map[string]string{
+									"my-custom": "annotation",
+
+									cmapi.CertificateNameKey:      "test",
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.IPSANAnnotationKey:      "",
+									cmapi.URISANAnnotationKey:     "",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+								cmmeta.TLSCAKey:         nil,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal Issuing Issued temporary certificate",
+				},
+			},
+			expectedErr: false,
+		},
+
+		"if certificate is in Issuing state with temp annotation, one CertificateRequest Pending, a target Secret but with a cert/key with unmatching key, issue temporary certificate to that Secret": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.AddCertificateAnnotations(map[string]string{
+							cmapi.IssueTemporaryCertificateAnnotation: "true"},
+						),
+					),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: gen.DefaultTestNamespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle.Certificate.Spec.SecretName,
+							Namespace: gen.DefaultTestNamespace,
+							Annotations: map[string]string{
+								"my-custom": "annotation",
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       exampleBundleAlt.CertBytes,
+							corev1.TLSPrivateKeyKey: exampleBundleAlt.PrivateKeyBytes,
+						},
+						Type: corev1.SecretTypeTLS,
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Annotations: map[string]string{
+									"my-custom": "annotation",
+
+									cmapi.CertificateNameKey:      "test",
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.IPSANAnnotationKey:      "",
+									cmapi.URISANAnnotationKey:     "",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+								cmmeta.TLSCAKey:         nil,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal Issuing Issued temporary certificate",
+				},
+			},
+			expectedErr: false,
+		},
+
+		"if certificate is in Issuing state with temp annotation, one CertificateRequest Pending, a target Secret with a cert/key that are garbage, issue temporary certificate": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.AddCertificateAnnotations(map[string]string{
+							cmapi.IssueTemporaryCertificateAnnotation: "true"},
+						),
+					),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: gen.DefaultTestNamespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle.Certificate.Spec.SecretName,
+							Namespace: gen.DefaultTestNamespace,
+							Annotations: map[string]string{
+								"my-custom": "annotation",
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       []byte("garbo"),
+							corev1.TLSPrivateKeyKey: []byte("abc"),
+						},
+						Type: corev1.SecretTypeTLS,
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Annotations: map[string]string{
+									"my-custom": "annotation",
+
+									cmapi.CertificateNameKey:      "test",
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.IPSANAnnotationKey:      "",
+									cmapi.URISANAnnotationKey:     "",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
+								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+								cmmeta.TLSCAKey:         nil,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal Issuing Issued temporary certificate",
+				},
+			},
+			expectedErr: false,
+		},
+
+		"if certificate is in Issuing state with temp annotation, one CertificateRequest Pending, a target Secret with a cert/key with a matching key, do not issue temporary certificate": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert,
+						gen.AddCertificateAnnotations(map[string]string{
+							cmapi.IssueTemporaryCertificateAnnotation: "true"},
+						),
+					),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: gen.DefaultTestNamespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle.Certificate.Spec.SecretName,
+							Namespace: gen.DefaultTestNamespace,
+							Annotations: map[string]string{
+								"my-custom": "annotation",
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes, // Cert not valid but still matches private key
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+						Type: corev1.SecretTypeTLS,
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{},
+			},
+			expectedErr: false,
+		},
 	}
 
 	for name, test := range tests {
@@ -462,6 +794,7 @@ func TestIssuingController(t *testing.T) {
 			// Instantiate/setup the controller
 			w := controllerWrapper{}
 			w.Register(test.builder.Context)
+			w.controller.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle.LocalTemporaryCertificateBytes)
 
 			// Start the unit test builder
 			test.builder.Start()
