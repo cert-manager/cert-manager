@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -61,17 +62,16 @@ var (
 // Options is a struct to support renew command
 type Options struct {
 	// The Namespace that the Certificate to be renewed resided in
-	Namespace string
+	Namespace  string
+	CMClient   cmclient.Interface
+	RestConfig *restclient.Config
 
 	LabelSelector string
-
-	All  bool
-	Wait bool
-
+	All           bool
+	Wait          bool
 	AllNamespaces bool
 
-	PollTime time.Duration
-	Timeout  time.Duration
+	Timeout time.Duration
 
 	genericclioptions.IOStreams
 }
@@ -93,9 +93,9 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 		Long:    "Mark a Certificate for manual renewal",
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmdutil.CheckErr(o.Complete(factory, cmd, args))
-			cmdutil.CheckErr(o.Validate(cmd, args))
-			cmdutil.CheckErr(o.Run(factory, cmd, args))
+			cmdutil.CheckErr(o.Complete(factory))
+			cmdutil.CheckErr(o.Validate(args))
+			cmdutil.CheckErr(o.Run(args))
 		},
 	}
 
@@ -110,7 +110,7 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 }
 
 // Validate validates the provided options
-func (o *Options) Validate(cmd *cobra.Command, args []string) error {
+func (o *Options) Validate(args []string) error {
 	if len(o.LabelSelector) > 0 && len(args) > 0 {
 		return errors.New("cannot specify Certificate names in conjunction with label selectors")
 	}
@@ -133,9 +133,19 @@ func (o *Options) Validate(cmd *cobra.Command, args []string) error {
 }
 
 // Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
+func (o *Options) Complete(f cmdutil.Factory) error {
 	var err error
 	o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
+	if err != nil {
+		return err
+	}
+
+	o.RestConfig, err = f.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	o.CMClient, err = cmclient.NewForConfig(o.RestConfig)
 	if err != nil {
 		return err
 	}
@@ -144,25 +154,15 @@ func (o *Options) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string)
 }
 
 // Run executes renew command
-func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
+func (o *Options) Run(args []string) error {
 	ctx := context.TODO()
-
-	restConfig, err := f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	cmClient, err := cmclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
 
 	nss := []corev1.Namespace{{ObjectMeta: metav1.ObjectMeta{Name: o.Namespace}}}
 
 	// TODO: handle network context
 
 	if o.AllNamespaces {
-		kubeClient, err := kubernetes.NewForConfig(restConfig)
+		kubeClient, err := kubernetes.NewForConfig(o.RestConfig)
 		if err != nil {
 			return err
 		}
@@ -179,7 +179,7 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 	for _, ns := range nss {
 		switch {
 		case o.All, len(o.LabelSelector) > 0:
-			crtsList, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).List(ctx, metav1.ListOptions{
+			crtsList, err := o.CMClient.CertmanagerV1alpha2().Certificates(ns.Name).List(ctx, metav1.ListOptions{
 				LabelSelector: o.LabelSelector,
 			})
 			if err != nil {
@@ -190,7 +190,7 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 
 		default:
 			for _, crtName := range args {
-				crt, err := cmClient.CertmanagerV1alpha2().Certificates(ns.Name).Get(ctx, crtName, metav1.GetOptions{})
+				crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(ns.Name).Get(ctx, crtName, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -211,13 +211,13 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 	}
 
 	for _, crt := range crts {
-		if err := o.renewCertificate(ctx, cmClient, &crt); err != nil {
+		if err := o.renewCertificate(ctx, &crt); err != nil {
 			return err
 		}
 	}
 
 	if o.Wait {
-		if err := o.waitCertificatesReady(ctx, cmClient, crts); err != nil {
+		if err := o.waitCertificatesReady(ctx, crts); err != nil {
 			return err
 		}
 
@@ -227,9 +227,9 @@ func (o *Options) Run(f cmdutil.Factory, cmd *cobra.Command, args []string) erro
 	return nil
 }
 
-func (o *Options) renewCertificate(ctx context.Context, cmClient *cmclient.Clientset, crt *cmapi.Certificate) error {
+func (o *Options) renewCertificate(ctx context.Context, crt *cmapi.Certificate) error {
 	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManuallyTriggered", "Certificate re-issuance manually triggered")
-	_, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	_, err := o.CMClient.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to trigger issuance of Certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 	}
@@ -237,7 +237,7 @@ func (o *Options) renewCertificate(ctx context.Context, cmClient *cmclient.Clien
 	return nil
 }
 
-func (o *Options) waitCertificatesReady(ctx context.Context, cmClient *cmclient.Clientset, crts []cmapi.Certificate) error {
+func (o *Options) waitCertificatesReady(ctx context.Context, crts []cmapi.Certificate) error {
 	ticker := time.NewTicker(pollTime)
 	defer ticker.Stop()
 
@@ -251,16 +251,18 @@ func (o *Options) waitCertificatesReady(ctx context.Context, cmClient *cmclient.
 		lenReady := 0
 
 		for _, crt := range crts {
-			crt, err := cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+			crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 			if err != nil {
 				// TODO: handle certificate no longer existing?
 				return err
 			}
 
+			// If still in Issuing=true state, continue
 			if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil && cond.Status == cmmeta.ConditionTrue {
 				continue
 			}
 
+			// If Certificate is in a ready state, add ready
 			if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady); cond != nil && cond.Status == cmmeta.ConditionTrue {
 				lenReady++
 			}
