@@ -1,0 +1,40 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    srcs = ["ctl_renew_test.go"],
+    deps = [
+        "//cmd/ctl/pkg/renew:go_default_library",
+        "//pkg/api/util:go_default_library",
+        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/controller/expcertificates/issuing:go_default_library",
+        "//pkg/controller/expcertificates/readiness:go_default_library",
+        "//pkg/controller/expcertificates/trigger/policies:go_default_library",
+        "//pkg/logs:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "//test/integration/framework:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
+        "@io_k8s_client_go//tools/cache:go_default_library",
+        "@io_k8s_client_go//util/workqueue:go_default_library",
+        "@io_k8s_utils//clock:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
