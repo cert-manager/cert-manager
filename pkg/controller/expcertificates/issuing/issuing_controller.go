@@ -44,6 +44,7 @@ import (
 	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/secretsmanager"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilkube "github.com/jetstack/cert-manager/pkg/util/kube"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
@@ -59,6 +60,8 @@ var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
+type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
+
 // This controller observes the state of the certificate's 'Issuing' condition,
 // which will then copy the singed certificates and private key to the target
 // Secret resource.
@@ -73,6 +76,10 @@ type controller struct {
 
 	// secretManager is used to create and update Secrets with certificate and key data
 	secretsManager *secretsmanager.SecretsManager
+	// gatherer is used to gather resource data to make evaluations on whether to issue temporary certificates
+	gatherer *policies.Gatherer
+	// localTemporarySigner signs a certificate that is stored temporarily
+	localTemporarySigner localTemporarySignerFn
 }
 
 func NewController(
@@ -132,6 +139,11 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		secretsManager:           secretsManager,
+		localTemporarySigner:     generateLocallySignedTemporaryCertificate,
+		gatherer: &policies.Gatherer{
+			CertificateRequestLister: certificateRequestInformer.Lister(),
+			SecretLister:             secretsInformer.Lister(),
+		},
 	}, queue, mustSync
 }
 
@@ -267,7 +279,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return c.issueCertificate(ctx, log, nextRevision, crt, req, pkData)
 	}
 
-	// issueTemporaryCertificate
+	// Issue temporary certificate if needed
+	if err := c.ensureTemporaryCertificate(ctx, crt, pkData); err != nil {
+		return err
+	}
 
 	// CertificateRequest is not in a final state so do nothing.
 	log.V(4).Info("CertificateRequest not in final state, waiting...")
