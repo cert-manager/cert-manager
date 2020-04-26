@@ -188,7 +188,17 @@ func TestIssuingController(t *testing.T) {
 							Message: "The certificate request failed because of reasons",
 						}),
 					)},
-				KubeObjects: []runtime.Object{},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: gen.DefaultTestNamespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+						},
+					},
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
