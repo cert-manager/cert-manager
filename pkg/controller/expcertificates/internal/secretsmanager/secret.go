@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack Certificate-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package issuing
+package secretsmanager
 
 import (
 	"bytes"
@@ -35,7 +35,11 @@ import (
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-type secretsManager struct {
+var (
+	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
+)
+
+type SecretsManager struct {
 	kubeClient   kubernetes.Interface
 	secretLister corelisters.SecretLister
 
@@ -46,31 +50,31 @@ type secretsManager struct {
 	enableSecretOwnerReferences bool
 }
 
-// secretData is a structure wrapping private key, certificate and CA data
-type secretData struct {
-	sk, cert, ca []byte
+// SecretData is a structure wrapping private key, Certificateificate and CA data
+type SecretData struct {
+	PrivateKey, Certificate, CA []byte
 }
 
-func newSecretsManager(
+func New(
 	kubeClient kubernetes.Interface,
 	secretLister corelisters.SecretLister,
-	certificateControllerOptions controllerpkg.CertificateOptions,
-) *secretsManager {
-	return &secretsManager{
+	CertificateificateControllerOptions controllerpkg.CertificateOptions,
+) *SecretsManager {
+	return &SecretsManager{
 		kubeClient:                  kubeClient,
 		secretLister:                secretLister,
-		enableSecretOwnerReferences: certificateControllerOptions.EnableOwnerRef,
+		enableSecretOwnerReferences: CertificateificateControllerOptions.EnableOwnerRef,
 	}
 }
 
-// updateData will ensure the Secret resource contains the given secret
+// UpdateData will ensure the Secret resource contains the given secret
 // data as well as appropriate metadata.
 // If the Secret resource does not exist, it will be created.
 // Otherwise, the existing resource will be updated.
 // The first return argument will be true if the resource was updated/created
 // without error.
-// updateData will also update deprecated annotations if they exist.
-func (s *secretsManager) updateData(ctx context.Context, crt *cmapi.Certificate, data secretData) error {
+// UpdateData will also update deprecated annotations if they exist.
+func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate, data SecretData) error {
 	// Fetch a copy of the existing Secret resource
 	secret, err := s.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 	if !apierrors.IsNotFound(err) && err != nil {
@@ -121,18 +125,18 @@ func (s *secretsManager) updateData(ctx context.Context, crt *cmapi.Certificate,
 // If updating an existing Secret resource returned by an api client 'lister',
 // make sure to DeepCopy the object first to avoid modifying data in-cache.
 // It will also update depreciated issuer name and kind annotations if they exist.
-func (s *secretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret, data secretData) error {
+func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
 	// initialize the `Data` field if it is nil
 	if secret.Data == nil {
 		secret.Data = make(map[string][]byte)
 	}
 
-	// Only write a new PKCS12/JKS file if any of the private key/certificate/CA
+	// Only write a new PKCS12/JKS file if any of the private key/Certificateificate/CA
 	// data has actually changed.
-	if data.sk != nil && data.cert != nil &&
-		(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.sk) ||
-			!bytes.Equal(secret.Data[corev1.TLSCertKey], data.cert) ||
-			!bytes.Equal(secret.Data[cmmeta.TLSCAKey], data.ca)) {
+	if data.PrivateKey != nil && data.Certificate != nil &&
+		(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.PrivateKey) ||
+			!bytes.Equal(secret.Data[corev1.TLSCertKey], data.Certificate) ||
+			!bytes.Equal(secret.Data[cmmeta.TLSCAKey], data.CA)) {
 
 		// Handle the experimental PKCS12 support
 		if crt.Spec.Keystores != nil && crt.Spec.Keystores.PKCS12 != nil && crt.Spec.Keystores.PKCS12.Create {
@@ -145,7 +149,7 @@ func (s *secretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 				return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
 			}
 			pw := pwSecret.Data[ref.Key]
-			keystoreData, err := encodePKCS12Keystore(string(pw), data.sk, data.cert, data.ca)
+			keystoreData, err := encodePKCS12Keystore(string(pw), data.PrivateKey, data.Certificate, data.CA)
 			if err != nil {
 				return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
 			}
@@ -166,15 +170,15 @@ func (s *secretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 				return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
 			}
 			pw := pwSecret.Data[ref.Key]
-			keystoreData, err := encodeJKSKeystore(pw, data.sk, data.cert, data.ca)
+			keystoreData, err := encodeJKSKeystore(pw, data.PrivateKey, data.Certificate, data.CA)
 			if err != nil {
 				return fmt.Errorf("error encoding JKS bundle: %w", err)
 			}
 			// always overwrite the keystore entry
 			secret.Data[jksSecretKey] = keystoreData
 
-			if len(data.ca) > 0 {
-				truststoreData, err := encodeJKSTruststore(pw, data.ca)
+			if len(data.CA) > 0 {
+				truststoreData, err := encodeJKSTruststore(pw, data.CA)
 				if err != nil {
 					return fmt.Errorf("error encoding JKS trust store bundle: %w", err)
 				}
@@ -187,9 +191,9 @@ func (s *secretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		}
 	}
 
-	secret.Data[corev1.TLSPrivateKeyKey] = data.sk
-	secret.Data[corev1.TLSCertKey] = data.cert
-	secret.Data[cmmeta.TLSCAKey] = data.ca
+	secret.Data[corev1.TLSPrivateKeyKey] = data.PrivateKey
+	secret.Data[corev1.TLSCertKey] = data.Certificate
+	secret.Data[cmmeta.TLSCAKey] = data.CA
 
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
@@ -208,14 +212,14 @@ func (s *secretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 	}
 
-	// if the certificate data is empty, clear the subject related annotations
-	if len(data.cert) == 0 {
+	// if the Certificateificate data is empty, clear the subject related annotations
+	if len(data.Certificate) == 0 {
 		delete(secret.Annotations, cmapi.CommonNameAnnotationKey)
 		delete(secret.Annotations, cmapi.AltNamesAnnotationKey)
 		delete(secret.Annotations, cmapi.IPSANAnnotationKey)
 		delete(secret.Annotations, cmapi.URISANAnnotationKey)
 	} else {
-		x509Cert, err := utilpki.DecodeX509CertificateBytes(data.cert)
+		x509Cert, err := utilpki.DecodeX509CertificateBytes(data.Certificate)
 		// TODO: handle InvalidData here?
 		if err != nil {
 			return err

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package issuing
+package secretsmanager
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	internaltest "github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -41,7 +42,7 @@ func TestSecretsManager(t *testing.T) {
 
 		certificateOptions controllerpkg.CertificateOptions
 		certificate        *cmapi.Certificate
-		secretData         secretData
+		SecretData         SecretData
 
 		expectedErr bool
 	}
@@ -52,14 +53,14 @@ func TestSecretsManager(t *testing.T) {
 		gen.SetCertificateRenewBefore(time.Hour*36),
 		gen.SetCertificateDNSNames("example.com"),
 	)
-	exampleBundle := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+	exampleBundle := internaltest.MustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
 	))
 
 	tests := map[string]testT{
 		"if secret does not exists and unable to decode certificate, then error": {
-			certificate: exampleBundle.certificate,
-			secretData:  secretData{cert: []byte("test-cert"), ca: []byte("test-ca"), sk: []byte("test-key")},
+			certificate: exampleBundle.Certificate,
+			SecretData:  SecretData{Certificate: []byte("test-cert"), CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
 			builder: &testpkg.Builder{
 				KubeObjects:     []runtime.Object{},
 				ExpectedActions: []testpkg.Action{},
@@ -68,11 +69,11 @@ func TestSecretsManager(t *testing.T) {
 		},
 
 		"if secret does not exist, create new Secret, with owner enabled": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			certificateOptions: controllerpkg.CertificateOptions{
 				EnableOwnerRef: true,
 			},
-			secretData: secretData{cert: exampleBundle.certBytes, ca: []byte("test-ca"), sk: []byte("test-key")},
+			SecretData: SecretData{Certificate: exampleBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{},
 				ExpectedActions: []testpkg.Action{
@@ -85,18 +86,18 @@ func TestSecretsManager(t *testing.T) {
 								Name:      "output",
 								Annotations: map[string]string{
 									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Name,
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
 
-									cmapi.CommonNameAnnotationKey: exampleBundle.cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.cert.URIs), ","),
+									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
+									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
+									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
+									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
 								},
-								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle.certificate, certificateGvk)},
+								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle.Certificate, certificateGvk)},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSCertKey:       exampleBundle.CertBytes,
 								corev1.TLSPrivateKeyKey: []byte("test-key"),
 								cmmeta.TLSCAKey:         []byte("test-ca"),
 							},
@@ -109,11 +110,11 @@ func TestSecretsManager(t *testing.T) {
 		},
 
 		"if secret does exist, update existing Secret and leave custom annotations, with owner enabled": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			certificateOptions: controllerpkg.CertificateOptions{
 				EnableOwnerRef: true,
 			},
-			secretData: secretData{cert: exampleBundle.certBytes, ca: []byte("test-ca"), sk: []byte("test-key")},
+			SecretData: SecretData{Certificate: exampleBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -144,18 +145,18 @@ func TestSecretsManager(t *testing.T) {
 									"my-custom": "annotation",
 
 									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Name,
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
 
-									cmapi.CommonNameAnnotationKey: exampleBundle.cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.cert.URIs), ","),
+									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
+									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
+									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
+									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
 								},
-								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle.certificate, certificateGvk)},
+								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle.Certificate, certificateGvk)},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSCertKey:       exampleBundle.CertBytes,
 								corev1.TLSPrivateKeyKey: []byte("test-key"),
 								cmmeta.TLSCAKey:         []byte("test-ca"),
 							},
@@ -168,11 +169,11 @@ func TestSecretsManager(t *testing.T) {
 		},
 
 		"if secret does not exist, create new Secret, with owner disabled": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			certificateOptions: controllerpkg.CertificateOptions{
 				EnableOwnerRef: false,
 			},
-			secretData: secretData{cert: exampleBundle.certBytes, ca: []byte("test-ca"), sk: []byte("test-key")},
+			SecretData: SecretData{Certificate: exampleBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{},
 				ExpectedActions: []testpkg.Action{
@@ -185,17 +186,17 @@ func TestSecretsManager(t *testing.T) {
 								Name:      "output",
 								Annotations: map[string]string{
 									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Name,
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
 
-									cmapi.CommonNameAnnotationKey: exampleBundle.cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.cert.URIs), ","),
+									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
+									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
+									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
+									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSCertKey:       exampleBundle.CertBytes,
 								corev1.TLSPrivateKeyKey: []byte("test-key"),
 								cmmeta.TLSCAKey:         []byte("test-ca"),
 							},
@@ -208,11 +209,11 @@ func TestSecretsManager(t *testing.T) {
 		},
 
 		"if secret does exist, update existing Secret and leave custom annotations, with owner disabled.": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			certificateOptions: controllerpkg.CertificateOptions{
 				EnableOwnerRef: false,
 			},
-			secretData: secretData{cert: exampleBundle.certBytes, ca: []byte("test-ca"), sk: []byte("test-key")},
+			SecretData: SecretData{Certificate: exampleBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -243,17 +244,17 @@ func TestSecretsManager(t *testing.T) {
 									"my-custom": "annotation",
 
 									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Name,
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
 
-									cmapi.CommonNameAnnotationKey: exampleBundle.cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.cert.URIs), ","),
+									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
+									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
+									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
+									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       exampleBundle.certBytes,
+								corev1.TLSCertKey:       exampleBundle.CertBytes,
 								corev1.TLSPrivateKeyKey: []byte("test-key"),
 								cmmeta.TLSCAKey:         []byte("test-ca"),
 							},
@@ -270,8 +271,7 @@ func TestSecretsManager(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			fixedClock.SetTime(fixedClockStart)
-			test.builder.Clock = fixedClock
+			test.builder.Clock = internaltest.FixedClock
 			test.builder.T = t
 			test.builder.Init()
 			defer test.builder.Stop()
@@ -279,7 +279,7 @@ func TestSecretsManager(t *testing.T) {
 			kubeClient := test.builder.Client
 			secretsLister := test.builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
 
-			testManager := newSecretsManager(
+			testManager := New(
 				kubeClient,
 				secretsLister,
 				test.certificateOptions,
@@ -287,7 +287,7 @@ func TestSecretsManager(t *testing.T) {
 
 			test.builder.Start()
 
-			err := testManager.updateData(context.Background(), test.certificate, test.secretData)
+			err := testManager.UpdateData(context.Background(), test.certificate, test.SecretData)
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}

@@ -27,17 +27,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
-	fakeclock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	internaltest "github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-)
-
-var (
-	fixedClockStart = time.Now()
-	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
 func TestIssuingController(t *testing.T) {
@@ -59,9 +54,9 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateRevision(1),
 		gen.SetCertificateNextPrivateKeySecretName(nextPrivateKeySecretName),
 	)
-	exampleBundle := mustCreateCryptoBundle(t, baseCert.DeepCopy())
+	exampleBundle := internaltest.MustCreateCryptoBundle(t, baseCert.DeepCopy())
 
-	exampleBundleAlt := mustCreateCryptoBundle(t, baseCert.DeepCopy())
+	exampleBundleAlt := internaltest.MustCreateCryptoBundle(t, baseCert.DeepCopy())
 
 	issuingCert := gen.CertificateFrom(baseCert.DeepCopy(),
 		gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -70,11 +65,11 @@ func TestIssuingController(t *testing.T) {
 		}),
 	)
 
-	metaFixedClockStart := metav1.NewTime(fixedClockStart)
+	metaFixedClockStart := metav1.NewTime(internaltest.FixedClockStart)
 
 	tests := map[string]testT{
 		"if certificate is not in Issuing state, then do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					baseCert.DeepCopy(),
@@ -86,7 +81,7 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is an Issuing state but is set to False, then do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(baseCert.DeepCopy(),
@@ -103,7 +98,7 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is in Issuing state, but no NextPrivateKeySecretName, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert.DeepCopy(),
@@ -117,7 +112,7 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is in Issuing state, but no CertificateRequests, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					issuingCert.DeepCopy(),
@@ -129,17 +124,17 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is in Issuing state, but two CertificateRequests, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					issuingCert.DeepCopy(),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
 					),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
-						gen.SetCertificateRequestName(fmt.Sprintf("%s-2", exampleBundle.certificateRequestReady.Name)),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.SetCertificateRequestName(fmt.Sprintf("%s-2", exampleBundle.CertificateRequestReady.Name)),
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -152,11 +147,11 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is in Issuing state, one CertificateRequest, but not in final state, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					issuingCert.DeepCopy(),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -173,11 +168,11 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is in Issuing state, one CertificateRequest, but has failed, set failed state and log event": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestFailed,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -195,7 +190,7 @@ func TestIssuingController(t *testing.T) {
 							Namespace: gen.DefaultTestNamespace,
 						},
 						Data: map[string][]byte{
-							corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
 					},
 				},
@@ -204,7 +199,7 @@ func TestIssuingController(t *testing.T) {
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						"status",
 						gen.DefaultTestNamespace,
-						gen.CertificateFrom(exampleBundle.certificate,
+						gen.CertificateFrom(exampleBundle.Certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionIssuing,
 								Status:             cmmeta.ConditionFalse,
@@ -223,11 +218,11 @@ func TestIssuingController(t *testing.T) {
 			expectedErr: false,
 		},
 		"if certificate is in Issuing state, one CertificateRequest, and is ready, but the Secret storing the private key does not exist, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -239,11 +234,11 @@ func TestIssuingController(t *testing.T) {
 			expectedErr: false,
 		},
 		"if certificate is in Issuing state, one CertificateRequest, and is ready, but the private key stored in the Secret cannot be parsed, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -265,11 +260,11 @@ func TestIssuingController(t *testing.T) {
 			expectedErr: false,
 		},
 		"if certificate is in Issuing state, one CertificateRequest, and is ready, but the private key stored in the Secret does not match that creating the CSR, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -281,7 +276,7 @@ func TestIssuingController(t *testing.T) {
 							Namespace: gen.DefaultTestNamespace,
 						},
 						Data: map[string][]byte{
-							corev1.TLSPrivateKeyKey: exampleBundleAlt.privateKeyBytes,
+							corev1.TLSPrivateKeyKey: exampleBundleAlt.PrivateKeyBytes,
 						},
 					},
 				},
@@ -291,11 +286,11 @@ func TestIssuingController(t *testing.T) {
 			expectedErr: false,
 		},
 		"if certificate is in Issuing state, one CertificateRequest, and is ready, but the CertificateRequest contains a violation, do nothing": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -308,7 +303,7 @@ func TestIssuingController(t *testing.T) {
 							Namespace: gen.DefaultTestNamespace,
 						},
 						Data: map[string][]byte{
-							corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
 					},
 				},
@@ -319,11 +314,11 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is in Issuing state, one CertificateRequests, and is ready, store the signed certificate, ca, and private key to a new secret, and log an event": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -335,7 +330,7 @@ func TestIssuingController(t *testing.T) {
 							Namespace: gen.DefaultTestNamespace,
 						},
 						Data: map[string][]byte{
-							corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
 					},
 				},
@@ -344,7 +339,7 @@ func TestIssuingController(t *testing.T) {
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						"status",
 						gen.DefaultTestNamespace,
-						gen.CertificateFrom(exampleBundle.certificate,
+						gen.CertificateFrom(exampleBundle.Certificate,
 							gen.SetCertificateRevision(2),
 						),
 					)),
@@ -357,8 +352,8 @@ func TestIssuingController(t *testing.T) {
 								Name:      "output",
 								Annotations: map[string]string{
 									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Name,
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
 									cmapi.CommonNameAnnotationKey: "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
 									cmapi.IPSANAnnotationKey:      "",
@@ -366,9 +361,9 @@ func TestIssuingController(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       exampleBundle.certificateRequestReady.Status.Certificate,
-								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmmeta.TLSCAKey:         exampleBundle.certificateRequestReady.Status.CA,
+								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
+								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundle.CertificateRequestReady.Status.CA,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -382,11 +377,11 @@ func TestIssuingController(t *testing.T) {
 		},
 
 		"if certificate is in Issuing state, one CertificateRequests, and is ready, store the signed certificate, ca, and private key to an existing secret, and log an event": {
-			certificate: exampleBundle.certificate,
+			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
 					gen.CertificateFrom(issuingCert),
-					gen.CertificateRequestFrom(exampleBundle.certificateRequestReady,
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
 							cmapi.CertificateRequestRevisionAnnotationKey: "2",
 						}),
@@ -398,7 +393,7 @@ func TestIssuingController(t *testing.T) {
 							Namespace: gen.DefaultTestNamespace,
 						},
 						Data: map[string][]byte{
-							corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
 					},
 					&corev1.Secret{
@@ -417,7 +412,7 @@ func TestIssuingController(t *testing.T) {
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						"status",
 						gen.DefaultTestNamespace,
-						gen.CertificateFrom(exampleBundle.certificate,
+						gen.CertificateFrom(exampleBundle.Certificate,
 							gen.SetCertificateRevision(2),
 						),
 					)),
@@ -432,8 +427,8 @@ func TestIssuingController(t *testing.T) {
 									"my-custom": "annotation",
 
 									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.certificate.Spec.IssuerRef.Name,
+									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
+									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
 									cmapi.CommonNameAnnotationKey: "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
 									cmapi.IPSANAnnotationKey:      "",
@@ -441,9 +436,9 @@ func TestIssuingController(t *testing.T) {
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       exampleBundle.certificateRequestReady.Status.Certificate,
-								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmmeta.TLSCAKey:         exampleBundle.certificateRequestReady.Status.CA,
+								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
+								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+								cmmeta.TLSCAKey:         exampleBundle.CertificateRequestReady.Status.CA,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -459,8 +454,7 @@ func TestIssuingController(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			fixedClock.SetTime(fixedClockStart)
-			test.builder.Clock = fixedClock
+			test.builder.Clock = internaltest.FixedClock
 			test.builder.T = t
 			test.builder.Init()
 			defer test.builder.Stop()
