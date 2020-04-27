@@ -349,6 +349,7 @@ func (c *controller) issuerForIngress(ing *extv1beta1.Ingress) (name, kind, grou
 	issuerName, issuerNameOK := annotations[cmapi.IngressIssuerNameAnnotationKey]
 	if issuerNameOK {
 		name = issuerName
+		kind = cmapi.IssuerKind
 	}
 
 	clusterIssuerName, clusterIssuerNameOK := annotations[cmapi.IngressClusterIssuerNameAnnotationKey]
