@@ -184,43 +184,43 @@ func TestSign(t *testing.T) {
 	}
 
 	clientReturnsPending := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
-			return nil, endpoint.ErrCertificatePending{
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, []byte, error) {
+			return nil, nil, endpoint.ErrCertificatePending{
 				CertificateID: "test-cert-id",
 				Status:        "test-status-pending",
 			}
 		},
 	}
 	clientReturnsTimeout := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
-			return nil, endpoint.ErrRetrieveCertificateTimeout{
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, []byte, error) {
+			return nil, nil, endpoint.ErrRetrieveCertificateTimeout{
 				CertificateID: "test-cert-id",
 			}
 		},
 	}
 	clientReturnsGenericError := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
-			return nil, errors.New("this is an error")
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, []byte, error) {
+			return nil, nil, errors.New("this is an error")
 		},
 	}
 	clientReturnsCert := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
-			return certPEM, nil
+		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, []byte, error) {
+			return certPEM, nil, nil
 		},
 	}
 
 	clientReturnsCertIfCustomField := &internalvenafifake.Venafi{
-		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
+		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, []byte, error) {
 			if len(fields) > 0 && fields[0].Name == "cert-manager-test" && fields[0].Value == "test ok" {
-				return certPEM, nil
+				return certPEM, nil, nil
 			}
-			return nil, errors.New("Custom field not set")
+			return nil, nil, errors.New("Custom field not set")
 		},
 	}
 
 	clientReturnsInvalidCustomFieldType := &internalvenafifake.Venafi{
-		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
-			return nil, internalvenafi.ErrCustomFieldsType{Type: fields[0].Type}
+		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, []byte, error) {
+			return nil, nil, internalvenafi.ErrCustomFieldsType{Type: fields[0].Type}
 		},
 	}
 

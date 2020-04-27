@@ -234,7 +234,7 @@ func (s *testSignT) runTest(t *testing.T) {
 		client: client,
 	}
 
-	resp, err := v.Sign(s.csrPEM, time.Minute, s.customFields)
+	resp, _, err := v.Sign(s.csrPEM, time.Minute, s.customFields)
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

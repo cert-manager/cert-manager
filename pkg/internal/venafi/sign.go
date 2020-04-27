@@ -41,18 +41,18 @@ func (err ErrCustomFieldsType) Error() string {
 // This function sends a request to Venafi to for a signed certificate.
 // The CSR will be decoded to be validated against the zone configuration policy.
 // Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
-func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []internalvanafiapi.CustomField) (cert []byte, err error) {
+func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []internalvanafiapi.CustomField) (cert []byte, chain []byte, err error) {
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
 	zoneCfg, err := v.client.ReadZoneConfiguration()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	tmpl, err := pki.GenerateTemplateFromCSRPEM(csrPEM, duration, false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create a vcert Request structure
@@ -78,7 +78,7 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 				fieldType = certificate.CustomFieldPlain
 				break
 			default:
-				return nil, ErrCustomFieldsType{Type: field.Type}
+				return nil, nil, ErrCustomFieldsType{Type: field.Type}
 			}
 
 			vreq.CustomFields = append(vreq.CustomFields, certificate.CustomField{
@@ -97,7 +97,7 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 	// however, as this will be done again server side.
 	err = zoneCfg.ValidateCertificateRequest(vreq)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	vreq.SetCSR(csrPEM)
@@ -119,19 +119,19 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 		vreq.FriendlyName = tmpl.URIs[0].String()
 		break
 	default:
-		return nil, errors.New(
+		return nil, nil, errors.New(
 			"certificate request contains no Common Name, DNS Name, nor URI SAN, at least one must be supplied to be used as the Venafi certificate objects name")
 	}
 
 	// Set the request CSR with the passed value
 	if err := vreq.SetCSR(csrPEM); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Send the certificate signing request to Venafi
 	requestID, err := v.client.RequestCertificate(vreq)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Set the PickupID so vcert does not have to look it up by the fingerprint
@@ -140,14 +140,14 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 	// Retrieve the certificate from request
 	pemCollection, err := v.client.RetrieveCertificate(vreq)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Construct the certificate chain and return the new keypair
-	cs := append([]string{pemCollection.Certificate}, pemCollection.Chain...)
-	chain := strings.Join(cs, "\n")
+	cs := append(pemCollection.Chain)
+	outputChain := strings.Join(cs, "\n")
 
-	return []byte(chain), nil
+	return []byte(pemCollection.Certificate), []byte(outputChain), nil
 }
 
 func newVRequest(cert *x509.Certificate) *certificate.Request {

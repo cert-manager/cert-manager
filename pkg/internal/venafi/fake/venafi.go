@@ -26,7 +26,7 @@ import (
 
 type Venafi struct {
 	PingFn                  func() error
-	SignFn                  func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error)
+	SignFn                  func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, []byte, error)
 	ReadZoneConfigurationFn func() (*endpoint.ZoneConfiguration, error)
 }
 
@@ -34,7 +34,7 @@ func (v *Venafi) Ping() error {
 	return v.PingFn()
 }
 
-func (v *Venafi) Sign(b []byte, t time.Duration, f []internalvanafiapi.CustomField) ([]byte, error) {
+func (v *Venafi) Sign(b []byte, t time.Duration, f []internalvanafiapi.CustomField) ([]byte, []byte, error) {
 	return v.SignFn(b, t, f)
 }
 

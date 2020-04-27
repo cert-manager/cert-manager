@@ -104,7 +104,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		}
 	}
 
-	certPem, err := client.Sign(cr.Spec.CSRPEM, duration, customFields)
+	certPem, chain, err := client.Sign(cr.Spec.CSRPEM, duration, customFields)
 
 	// Check some known error types
 	if err != nil {
@@ -144,5 +144,6 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	return &issuerpkg.IssueResponse{
 		Certificate: certPem,
+		CA:          chain,
 	}, nil
 }
