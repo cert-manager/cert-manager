@@ -62,7 +62,7 @@ TEST_PLATFORMS = {
 # just the SERVER and TEST platforms
 def _all_platforms():
     all_platforms = {}
-    for platforms in [SERVER_PLATFORMS, UBI_PLATFORMS, TEST_PLATFORMS]:
+    for platforms in [SERVER_PLATFORMS, UBI_PLATFORMS, TEST_PLATFORMS, CLIENT_PLATFORMS]:
         for os, archs in platforms.items():
             all_platforms[os] = sets.union(
                 all_platforms.setdefault(os, sets.make()),
