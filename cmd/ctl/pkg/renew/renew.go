@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -38,19 +37,14 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
-const (
-	// poll time used when waiting for Certificates to become ready
-	pollTime = time.Second * 2
-)
-
 var (
 	long = templates.LongDesc(i18n.T(`
 	Mark cert-manager Certificate resources for manual renewal.
 `))
 
 	example = templates.Examples(i18n.T(`
-		# Renew the Certificates named 'my-app' and 'vault' in the current context namespace and wait until they are ready.
-		ctl renew my-app vault --wait
+		# Renew the Certificates named 'my-app' and 'vault' in the current context namespace.
+		ctl renew my-app vault
 
 		# Renew all Certificates in the 'kube-system' namespace.
 		ctl renew --namespace kube-system --all
@@ -68,10 +62,7 @@ type Options struct {
 
 	LabelSelector string
 	All           bool
-	Wait          bool
 	AllNamespaces bool
-
-	Timeout time.Duration
 
 	genericclioptions.IOStreams
 }
@@ -100,11 +91,8 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 	}
 
 	cmd.Flags().StringVarP(&o.LabelSelector, "selector", "l", o.LabelSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If present, wait for Certificates across all namespaces to become ready. Namespace in current context is ignored even if specified with --namespace.")
+	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If present, mark Certificates across namespaces for manual renewal. Namespace in current context is ignored even if specified with --namespace.")
 	cmd.Flags().BoolVar(&o.All, "all", o.All, "Renew all Certificates in the given Namespace, or all namespaces with --all-namespaces enabled.")
-	cmd.Flags().BoolVarP(&o.Wait, "wait", "w", o.Wait, "Wait for all Certificates to become ready once being marked for renewal.")
-	timeoutDescription := fmt.Sprintf("The length of time to wait before ending watch, zero means never. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h). Cannot be less than the poll time %s, if not zero", pollTime)
-	cmd.Flags().DurationVar(&o.Timeout, "timeout", 0, timeoutDescription)
 
 	return cmd
 }
@@ -121,12 +109,6 @@ func (o *Options) Validate(args []string) error {
 
 	if o.All && len(args) > 0 {
 		return errors.New("cannot specify Certificate names in conjunction with --all flag")
-	}
-
-	// Only validate timeout if we are also waiting
-	if o.Wait && o.Timeout != 0 && o.Timeout < pollTime {
-		return fmt.Errorf("timeout of %s cannot be less than the poll time of %s if timeout is not zero",
-			o.Timeout, pollTime)
 	}
 
 	return nil
@@ -216,14 +198,6 @@ func (o *Options) Run(args []string) error {
 		}
 	}
 
-	if o.Wait {
-		if err := o.waitCertificatesReady(ctx, crts); err != nil {
-			return err
-		}
-
-		fmt.Fprintf(o.Out, "%d Certificates successfully renewed\n", len(crts))
-	}
-
 	return nil
 }
 
@@ -235,51 +209,4 @@ func (o *Options) renewCertificate(ctx context.Context, crt *cmapi.Certificate) 
 	}
 	fmt.Fprintf(o.Out, "Manually triggered issuance of Certificate %s/%s\n", crt.Namespace, crt.Name)
 	return nil
-}
-
-func (o *Options) waitCertificatesReady(ctx context.Context, crts []cmapi.Certificate) error {
-	ticker := time.NewTicker(pollTime)
-	defer ticker.Stop()
-
-	if o.Timeout > 0 {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, o.Timeout)
-		defer cancel()
-	}
-
-	for {
-		lenReady := 0
-
-		for _, crt := range crts {
-			crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
-			if err != nil {
-				// TODO: handle certificate no longer existing?
-				return err
-			}
-
-			// If still in Issuing=true state, continue
-			if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil && cond.Status == cmmeta.ConditionTrue {
-				continue
-			}
-
-			// If Certificate is in a ready state, add ready
-			if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionReady); cond != nil && cond.Status == cmmeta.ConditionTrue {
-				lenReady++
-			}
-		}
-
-		if lenReady == len(crts) {
-			return nil
-		}
-
-		fmt.Fprintf(o.Out, "Currently %d Certificates out of %d are ready...\n", lenReady, len(crts))
-
-		select {
-		case <-ticker.C:
-			continue
-		case <-ctx.Done():
-			return fmt.Errorf("within %s %d Certificates failed to become ready in time",
-				o.Timeout, len(crts)-lenReady)
-		}
-	}
 }

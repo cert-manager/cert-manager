@@ -18,7 +18,6 @@ package renew
 
 import (
 	"testing"
-	"time"
 )
 
 func TestValidate(t *testing.T) {
@@ -48,27 +47,6 @@ func TestValidate(t *testing.T) {
 			},
 			args:   []string{"abc"},
 			expErr: true,
-		},
-		"If waiting, and timeout is less than poll time, but not zero, error": {
-			options: &Options{
-				Timeout: time.Second,
-				Wait:    true,
-			},
-			expErr: true,
-		},
-		"If waiting, and timeout is less than poll time, but zero, don't error": {
-			options: &Options{
-				Timeout: 0,
-				Wait:    true,
-			},
-			expErr: false,
-		},
-		"If not waiting, and timeout is less than poll time, but not zero, don't error": {
-			options: &Options{
-				Timeout: time.Second,
-				Wait:    false,
-			},
-			expErr: false,
 		},
 		"If all certificates in all namespaces selected, don't error": {
 			options: &Options{
