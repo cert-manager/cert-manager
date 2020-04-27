@@ -31,7 +31,6 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -58,12 +57,12 @@ type SecretData struct {
 func New(
 	kubeClient kubernetes.Interface,
 	secretLister corelisters.SecretLister,
-	CertificateificateControllerOptions controllerpkg.CertificateOptions,
+	enableSecretOwnerReferences bool,
 ) *SecretsManager {
 	return &SecretsManager{
 		kubeClient:                  kubeClient,
 		secretLister:                secretLister,
-		enableSecretOwnerReferences: CertificateificateControllerOptions.EnableOwnerRef,
+		enableSecretOwnerReferences: enableSecretOwnerReferences,
 	}
 }
 
@@ -131,7 +130,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Data = make(map[string][]byte)
 	}
 
-	// Only write a new PKCS12/JKS file if any of the private key/Certificateificate/CA
+	// Only write a new PKCS12/JKS file if any of the private key/Certificate/CA
 	// data has actually changed.
 	if data.PrivateKey != nil && data.Certificate != nil &&
 		(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.PrivateKey) ||
@@ -212,7 +211,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 	}
 
-	// if the Certificateificate data is empty, clear the subject related annotations
+	// if the Certificate data is empty, clear the subject related annotations
 	if len(data.Certificate) == 0 {
 		delete(secret.Annotations, cmapi.CommonNameAnnotationKey)
 		delete(secret.Annotations, cmapi.AltNamesAnnotationKey)

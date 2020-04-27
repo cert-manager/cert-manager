@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"math/big"
 	"testing"
 	"time"
 
@@ -31,17 +30,13 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-const staticTemporarySerialNumber = 0x1234567890
-
 var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
-
-	FixedClockStart = time.Now()
-	FixedClock      = fakeclock.NewFakeClock(FixedClockStart)
 )
 
 type CryptoBundle struct {
@@ -73,17 +68,19 @@ type CryptoBundle struct {
 	CertBytes []byte
 
 	LocalTemporaryCertificateBytes []byte
+
+	FixedClock *fakeclock.FakeClock
 }
 
-func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate) CryptoBundle {
-	c, err := createCryptoBundle(crt)
+func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) CryptoBundle {
+	c, err := createCryptoBundle(crt, fixedClock)
 	if err != nil {
 		t.Fatalf("error generating crypto bundle: %v", err)
 	}
 	return *c
 }
 
-func createCryptoBundle(crt *cmapi.Certificate) (*CryptoBundle, error) {
+func createCryptoBundle(crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) (*CryptoBundle, error) {
 	reqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return nil, err
@@ -177,7 +174,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*CryptoBundle, error) {
 		}),
 	)
 
-	tempCertBytes, err := generateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
+	tempCertBytes, err := certificates.GenerateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
@@ -197,6 +194,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*CryptoBundle, error) {
 		Cert:                                   cert,
 		CertBytes:                              certBytes,
 		LocalTemporaryCertificateBytes:         tempCertBytes,
+		FixedClock:                             fixedClock,
 	}, nil
 }
 
@@ -253,7 +251,7 @@ func (c *CryptoBundle) generateCertificateExpiring1H(crt *cmapi.Certificate) []b
 		panic("failed to generate test fixture: " + err.Error())
 	}
 
-	nowTime := FixedClock.Now()
+	nowTime := c.FixedClock.Now()
 	duration := unsignedCert.NotAfter.Sub(unsignedCert.NotBefore)
 	unsignedCert.NotBefore = nowTime.Add(time.Hour).Add(-1 * duration)
 	unsignedCert.NotAfter = nowTime.Add(time.Hour)
@@ -282,7 +280,7 @@ func (c *CryptoBundle) generateCertificateExpired(crt *cmapi.Certificate) []byte
 		panic("failed to generate test fixture: " + err.Error())
 	}
 
-	nowTime := FixedClock.Now()
+	nowTime := c.FixedClock.Now()
 	duration := unsignedCert.NotAfter.Sub(unsignedCert.NotBefore)
 	unsignedCert.NotBefore = nowTime.Add(-1 * time.Hour).Add(-1 * duration)
 	unsignedCert.NotAfter = nowTime.Add(-1 * time.Hour)
@@ -316,44 +314,4 @@ func generateCSRImpl(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	})
 
 	return csrPEM, nil
-}
-
-func generateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []byte) ([]byte, error) {
-	// generate a throwaway self-signed root CA
-	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
-	if err != nil {
-		return nil, err
-	}
-	caCertTemplate, err := pki.GenerateTemplate(&cmapi.Certificate{
-		Spec: cmapi.CertificateSpec{
-			CommonName: "cert-manager.local",
-			IsCA:       true,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	_, caCert, err := pki.SignCertificate(caCertTemplate, caCertTemplate, caPk.Public(), caPk)
-	if err != nil {
-		return nil, err
-	}
-
-	// sign a temporary certificate using the root CA
-	template, err := pki.GenerateTemplate(crt)
-	if err != nil {
-		return nil, err
-	}
-	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
-
-	signeeKey, err := pki.DecodePrivateKeyBytes(pkData)
-	if err != nil {
-		return nil, err
-	}
-
-	b, _, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
 }

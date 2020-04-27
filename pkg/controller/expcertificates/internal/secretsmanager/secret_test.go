@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -34,6 +35,11 @@ import (
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+)
+
+var (
+	fixedClockStart = time.Now()
+	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
 func TestSecretsManager(t *testing.T) {
@@ -55,7 +61,7 @@ func TestSecretsManager(t *testing.T) {
 	)
 	exampleBundle := internaltest.MustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
-	))
+	), fixedClock)
 
 	tests := map[string]testT{
 		"if secret does not exists and unable to decode certificate, then error": {
@@ -271,7 +277,8 @@ func TestSecretsManager(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			test.builder.Clock = internaltest.FixedClock
+			fixedClock.SetTime(fixedClockStart)
+			test.builder.Clock = fixedClock
 			test.builder.T = t
 			test.builder.Init()
 			defer test.builder.Stop()
@@ -282,7 +289,7 @@ func TestSecretsManager(t *testing.T) {
 			testManager := New(
 				kubeClient,
 				secretsLister,
-				test.certificateOptions,
+				test.certificateOptions.EnableOwnerRef,
 			)
 
 			test.builder.Start()
