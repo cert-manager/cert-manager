@@ -3,16 +3,21 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/jetstack/cert-manager/cmd/ctl",
+    importpath = "github.com/jetstack/cert-manager/hack/cobra",
     visibility = ["//visibility:private"],
     deps = [
+        "//cmd/cainjector/cmd:go_default_library",
+        "//cmd/controller/cmd:go_default_library",
         "//cmd/ctl/cmd:go_default_library",
-        "//pkg/util/cmd:go_default_library",
+        "@com_github_mitchellh_go_homedir//:go_default_library",
+        "@com_github_spf13_cobra//:go_default_library",
+        "@com_github_spf13_cobra//doc:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
     ],
 )
 
 go_binary(
-    name = "ctl",
+    name = "cobra",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
@@ -26,12 +31,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//cmd/ctl/cmd:all-srcs",
-        "//cmd/ctl/pkg/convert:all-srcs",
-        "//cmd/ctl/pkg/version:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

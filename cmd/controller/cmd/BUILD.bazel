@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["start.go"],
+    importpath = "github.com/jetstack/cert-manager/cmd/controller/cmd",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cmd/controller/app:go_default_library",
+        "//cmd/controller/app/options:go_default_library",
+        "//pkg/controller/acmechallenges:go_default_library",
+        "//pkg/controller/acmeorders:go_default_library",
+        "//pkg/controller/certificates:go_default_library",
+        "//pkg/controller/clusterissuers:go_default_library",
+        "//pkg/controller/expcertificates/trigger:go_default_library",
+        "//pkg/controller/ingress-shim:go_default_library",
+        "//pkg/controller/issuers:go_default_library",
+        "//pkg/issuer/acme:go_default_library",
+        "//pkg/issuer/ca:go_default_library",
+        "//pkg/issuer/selfsigned:go_default_library",
+        "//pkg/issuer/vault:go_default_library",
+        "//pkg/issuer/venafi:go_default_library",
+        "//pkg/logs:go_default_library",
+        "//pkg/util:go_default_library",
+        "//pkg/util/feature:go_default_library",
+        "@com_github_spf13_cobra//:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/errors:go_default_library",
+        "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
