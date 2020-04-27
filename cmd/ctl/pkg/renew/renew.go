@@ -19,14 +19,19 @@ package renew
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
+	// Load all auth plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/klog"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -39,27 +44,27 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-	Mark cert-manager Certificate resources for manual renewal.
-`))
+Mark cert-manager Certificate resources for manual renewal.`))
 
 	example = templates.Examples(i18n.T(`
-		# Renew the Certificates named 'my-app' and 'vault' in the current context namespace.
-		ctl renew my-app vault
+# Renew the Certificates named 'my-app' and 'vault' in the current context namespace.
+ctl renew my-app vault
 
-		# Renew all Certificates in the 'kube-system' namespace.
-		ctl renew --namespace kube-system --all
+# Renew all Certificates in the 'kube-system' namespace.
+ctl renew --namespace kube-system --all
 
-		# Renew all Certificates in all namespaces that have the label 'app=my-service'.
-		ctl renew --all-namespaces -l app=my-service`))
+# Renew all Certificates in all namespaces, provided those Certificates have the label 'app=my-service
+ctl renew --all-namespaces -l app=my-service`))
 )
 
 // Options is a struct to support renew command
 type Options struct {
-	// The Namespace that the Certificate to be renewed resided in
-	Namespace  string
 	CMClient   cmclient.Interface
-	RestConfig *restclient.Config
+	RESTConfig *restclient.Config
 
+	// The Namespace that the Certificate to be renewed resided in.
+	// This flag registration is handled by cmdutil.Factory
+	Namespace     string
 	LabelSelector string
 	All           bool
 	AllNamespaces bool
@@ -75,17 +80,18 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdRenew returns a cobra command for renewing Certificates
-func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdRenew(ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
+	var factory cmdutil.Factory
 
 	cmd := &cobra.Command{
 		Use:     "renew",
 		Short:   "Mark a Certificate for manual renewal",
-		Long:    "Mark a Certificate for manual renewal",
+		Long:    long,
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(factory))
-			cmdutil.CheckErr(o.Validate(args))
+			cmdutil.CheckErr(o.Validate(cmd, args))
 			cmdutil.CheckErr(o.Run(args))
 		},
 	}
@@ -94,11 +100,26 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If present, mark Certificates across namespaces for manual renewal. Namespace in current context is ignored even if specified with --namespace.")
 	cmd.Flags().BoolVar(&o.All, "all", o.All, "Renew all Certificates in the given Namespace, or all namespaces with --all-namespaces enabled.")
 
+	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
+	kubeConfigFlags.AddFlags(cmd.PersistentFlags())
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
+	matchVersionKubeConfigFlags.AddFlags(cmd.PersistentFlags())
+	factory = cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+	flag.CommandLine.Parse([]string{})
+	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
+	klog.InitFlags(fakefs)
+	if err := fakefs.Parse([]string{"-logtostderr=false"}); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
 	return cmd
 }
 
 // Validate validates the provided options
-func (o *Options) Validate(args []string) error {
+func (o *Options) Validate(cmd *cobra.Command, args []string) error {
 	if len(o.LabelSelector) > 0 && len(args) > 0 {
 		return errors.New("cannot specify Certificate names in conjunction with label selectors")
 	}
@@ -109,6 +130,10 @@ func (o *Options) Validate(args []string) error {
 
 	if o.All && len(args) > 0 {
 		return errors.New("cannot specify Certificate names in conjunction with --all flag")
+	}
+
+	if o.All && cmd.PersistentFlags().Changed("namespace") {
+		return errors.New("cannot specify --namespace flag in conjunction with --all flag")
 	}
 
 	return nil
@@ -122,12 +147,12 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 		return err
 	}
 
-	o.RestConfig, err = f.ToRESTConfig()
+	o.RESTConfig, err = f.ToRESTConfig()
 	if err != nil {
 		return err
 	}
 
-	o.CMClient, err = cmclient.NewForConfig(o.RestConfig)
+	o.CMClient, err = cmclient.NewForConfig(o.RESTConfig)
 	if err != nil {
 		return err
 	}
@@ -141,10 +166,8 @@ func (o *Options) Run(args []string) error {
 
 	nss := []corev1.Namespace{{ObjectMeta: metav1.ObjectMeta{Name: o.Namespace}}}
 
-	// TODO: handle network context
-
 	if o.AllNamespaces {
-		kubeClient, err := kubernetes.NewForConfig(o.RestConfig)
+		kubeClient, err := kubernetes.NewForConfig(o.RESTConfig)
 		if err != nil {
 			return err
 		}

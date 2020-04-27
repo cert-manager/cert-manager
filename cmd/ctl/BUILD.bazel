@@ -8,7 +8,12 @@ go_library(
     deps = [
         "//cmd/ctl/cmd:go_default_library",
         "//pkg/util/cmd:go_default_library",
+<<<<<<< HEAD
         "@io_k8s_klog//:go_default_library",
+=======
+        "@com_github_spf13_cobra//:go_default_library",
+        "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
+>>>>>>> 65e8ff5db... Cleans up renew kube flags and adds --namespace validation
     ],
 )
 

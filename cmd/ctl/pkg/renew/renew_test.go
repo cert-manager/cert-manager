@@ -18,13 +18,20 @@ package renew
 
 import (
 	"testing"
+
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
+
+type stringFlag struct {
+	name, value string
+}
 
 func TestValidate(t *testing.T) {
 	tests := map[string]struct {
-		options *Options
-		args    []string
-		expErr  bool
+		options        *Options
+		args           []string
+		setStringFlags []stringFlag
+		expErr         bool
 	}{
 		"If there are arguments, as well as label selector, error": {
 			options: &Options{
@@ -55,12 +62,30 @@ func TestValidate(t *testing.T) {
 			},
 			expErr: false,
 		},
+		"If --namespace and --all namespace specified, error": {
+			options: &Options{
+				All: true,
+			},
+			setStringFlags: []stringFlag{
+				{name: "namespace", value: "foo"},
+			},
+			expErr: true,
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := test.options.Validate(test.args)
+			cmd := NewCmdRenew(genericclioptions.IOStreams{})
 
+			if test.setStringFlags != nil {
+				for _, s := range test.setStringFlags {
+					if err := cmd.PersistentFlags().Set(s.name, s.value); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+
+			err := test.options.Validate(cmd, test.args)
 			if test.expErr != (err != nil) {
 				t.Errorf("expected error=%t got=%v",
 					test.expErr, err)
