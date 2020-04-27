@@ -23,14 +23,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -44,84 +42,151 @@ func TestCtlRenew(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
 	defer cancel()
 
-	// Build, instantiate and run the issuing controller.
+	// Build clients
 	kubeClient, _, cmCl, _ := framework.NewClients(t, config)
 
 	var (
-		crtName                  = "testcrt"
-		namespace                = "testns"
-		nextPrivateKeySecretName = "next-private-key-test-crt"
-		secretName               = "test-crt-tls"
+		crt1Name = "testcrt-1"
+		crt2Name = "testcrt-2"
+		crt3Name = "testcrt-3"
+		crt4Name = "testcrt-4"
+		ns1      = "testns-1"
+		ns2      = "testns-2"
 	)
 
-	// Create a new private key
-	sk, err := utilpki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	skBytes := utilpki.EncodePKCS1PrivateKey(sk)
-
-	// Store new private key in secret
-	_, err = kubeClient.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nextPrivateKeySecretName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			corev1.TLSPrivateKeyKey: skBytes,
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create Certificate
-	crt := gen.Certificate(crtName,
-		gen.SetCertificateNamespace(namespace),
-		gen.SetCertificateDNSNames("example.com"),
-		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
-		gen.SetCertificateKeySize(2048),
-		gen.SetCertificateSecretName(secretName),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer"}),
-	)
-
-	crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Run ctl renew command and wait for ready
-	streams, _, _, _ := genericclioptions.NewTestIOStreams()
-
-	cmd := &renew.Options{
-		Namespace:  "testns",
-		CMClient:   cmCl,
-		RestConfig: config,
-		IOStreams:  streams,
-	}
-
-	if err := cmd.Run([]string{"testcrt"}); err != nil {
-		t.Fatal(err)
-	}
-
-	// Wait for the Certificate to have the 'Issuing' condition set
-	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
-		crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+	// Create Namespaces
+	for _, ns := range []string{ns1, ns2} {
+		_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
 		if err != nil {
-			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
-			return false, nil
+			t.Fatal(err)
 		}
+	}
 
-		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond == nil || cond.Status != cmmeta.ConditionTrue {
-			t.Logf("Certificate does not have expected condition, got=%#v", cond)
-			return false, nil
-		}
+	crt1 := gen.Certificate(crt1Name,
+		gen.SetCertificateNamespace(ns1),
+	)
+	crt2 := gen.Certificate(crt2Name,
+		gen.SetCertificateNamespace(ns1),
+		gen.AddCertificateLabels(map[string]string{
+			"foo": "bar",
+		}),
+	)
+	crt3 := gen.Certificate(crt3Name,
+		gen.SetCertificateNamespace(ns2),
+		gen.AddCertificateLabels(map[string]string{
+			"foo": "bar",
+		}),
+	)
+	crt4 := gen.Certificate(crt4Name,
+		gen.SetCertificateNamespace(ns2),
+	)
 
-		return true, nil
-	})
+	tests := map[string]struct {
+		inputArgs          []string
+		inputLabels        string
+		inputNamespace     string
+		inputAll           bool
+		inputAllNamespaces bool
 
-	if err != nil {
-		t.Fatalf("Failed to wait for final state: %+v", crt)
+		crtsWithIssuing map[*cmapi.Certificate]bool
+	}{
+		"certificate name and namespace given": {
+			inputArgs:      []string{crt1Name, crt2Name},
+			inputNamespace: ns1,
+			crtsWithIssuing: map[*cmapi.Certificate]bool{
+				crt1: true,
+				crt2: true,
+				crt3: false,
+				crt4: false,
+			},
+		},
+		"--all and namespace given": {
+			inputAll:       true,
+			inputNamespace: ns2,
+
+			crtsWithIssuing: map[*cmapi.Certificate]bool{
+				crt1: false,
+				crt2: false,
+				crt3: true,
+				crt4: true,
+			},
+		},
+		"--all and --all-namespaces given": {
+			inputAll:           true,
+			inputAllNamespaces: true,
+
+			crtsWithIssuing: map[*cmapi.Certificate]bool{
+				crt1: true,
+				crt2: true,
+				crt3: true,
+				crt4: true,
+			},
+		},
+		"--all-namespaces and -l foo=bar given": {
+			inputAllNamespaces: true,
+			inputLabels:        "foo=bar",
+
+			crtsWithIssuing: map[*cmapi.Certificate]bool{
+				crt1: false,
+				crt2: true,
+				crt3: true,
+				crt4: false,
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			// Create Certificates
+			for _, crt := range []*cmapi.Certificate{crt1, crt2, crt3, crt4} {
+				_, err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// Run ctl renew command with input options
+			streams, _, _, _ := genericclioptions.NewTestIOStreams()
+
+			cmd := &renew.Options{
+				LabelSelector: test.inputLabels,
+				Namespace:     test.inputNamespace,
+				All:           test.inputAll,
+				AllNamespaces: test.inputAllNamespaces,
+
+				CMClient:   cmCl,
+				RESTConfig: config,
+				IOStreams:  streams,
+			}
+
+			if err := cmd.Run(test.inputArgs); err != nil {
+				t.Fatal(err)
+			}
+
+			// Check issuing condition against Certificates
+			for crt, shouldIssue := range test.crtsWithIssuing {
+				gotCrt, err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				hasCondition := true
+				if cond := apiutil.GetCertificateCondition(gotCrt, cmapi.CertificateConditionIssuing); cond == nil || cond.Status != cmmeta.ConditionTrue {
+					hasCondition = false
+				}
+
+				if shouldIssue != hasCondition {
+					t.Errorf("%s/%s expected to have issuing condition=%t got=%t", crt.Namespace, crt.Name, shouldIssue, hasCondition)
+				}
+			}
+
+			// Clean up Certificates
+			for _, crt := range []*cmapi.Certificate{crt1, crt2, crt3, crt4} {
+				err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+		})
 	}
 }
