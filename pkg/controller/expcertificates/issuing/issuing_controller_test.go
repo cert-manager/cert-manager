@@ -141,14 +141,9 @@ func TestIssuingController(t *testing.T) {
 				CertManagerObjects: []runtime.Object{
 					issuingCert.DeepCopy(),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
-						}),
-					),
-					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.SetCertificateRequestName(fmt.Sprintf("%s-2", exampleBundle.CertificateRequestReady.Name)),
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					),
 				},
@@ -165,7 +160,7 @@ func TestIssuingController(t *testing.T) {
 					issuingCert.DeepCopy(),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 							Type:   cmapi.CertificateRequestConditionReady,
@@ -186,7 +181,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 							Type:    cmapi.CertificateRequestConditionReady,
@@ -236,7 +231,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 							Type:    cmapi.CertificateRequestConditionReady,
@@ -258,7 +253,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects:     []runtime.Object{},
@@ -274,7 +269,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -300,7 +295,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -326,7 +321,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 						gen.SetCertificateRequestKeyUsages(cmapi.UsageCRLSign),
 					)},
@@ -354,7 +349,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -417,7 +412,7 @@ func TestIssuingController(t *testing.T) {
 					gen.CertificateFrom(issuingCert),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -495,7 +490,7 @@ func TestIssuingController(t *testing.T) {
 					),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -554,7 +549,7 @@ func TestIssuingController(t *testing.T) {
 					),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -625,7 +620,7 @@ func TestIssuingController(t *testing.T) {
 					),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -670,7 +665,7 @@ func TestIssuingController(t *testing.T) {
 					),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -743,7 +738,7 @@ func TestIssuingController(t *testing.T) {
 					),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestPending,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -787,7 +782,7 @@ func TestIssuingController(t *testing.T) {
 					),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 					)},
 				KubeObjects: []runtime.Object{
@@ -856,7 +851,7 @@ func TestIssuingController(t *testing.T) {
 					),
 					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
 						gen.AddCertificateRequestAnnotations(map[string]string{
-							cmapi.CertificateRequestRevisionAnnotationKey: "2",
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
 						}),
 						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 							Type:    cmapi.CertificateRequestConditionReady,
