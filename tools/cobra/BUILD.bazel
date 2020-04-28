@@ -1,13 +1,13 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/jetstack/cert-manager/hack/cobra",
+    importpath = "github.com/jetstack/cert-manager/tools/cobra",
     visibility = ["//visibility:private"],
     deps = [
-        "//cmd/cainjector/cmd:go_default_library",
-        "//cmd/controller/cmd:go_default_library",
+        "//cmd/cainjector/app:go_default_library",
+        "//cmd/controller/app:go_default_library",
         "//cmd/ctl/cmd:go_default_library",
         "@com_github_mitchellh_go_homedir//:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
@@ -34,4 +34,10 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["main_test.go"],
+    embed = [":go_default_library"],
 )

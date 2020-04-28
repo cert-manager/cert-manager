@@ -27,34 +27,54 @@ import (
 	"github.com/spf13/cobra/doc"
 	"github.com/spf13/pflag"
 
-	cainjcmd "github.com/jetstack/cert-manager/cmd/cainjector/cmd"
-	controllercmd "github.com/jetstack/cert-manager/cmd/controller/cmd"
+	cainjectorapp "github.com/jetstack/cert-manager/cmd/cainjector/app"
+	controllerapp "github.com/jetstack/cert-manager/cmd/controller/app"
 	ctlcmd "github.com/jetstack/cert-manager/cmd/ctl/cmd"
 )
 
 func main() {
-	args := os.Args
+	if err := run(os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		os.Exit(1)
+	}
+
+	os.Exit(0)
+}
+
+func run(args []string) error {
 	if len(args) != 2 {
-		must(errors.New("expecting single output directory argument"))
+		return errors.New("expecting single output directory argument")
 	}
 
 	// remove all global flags that are imported in
 	pflag.CommandLine = nil
 
 	root, err := homedir.Expand(args[1])
-	must(err)
+	if err != nil {
+		return err
+	}
 
-	must(ensureDirectory(root))
+	if err := ensureDirectory(root); err != nil {
+		return err
+	}
 
 	for _, c := range []*cobra.Command{
-		cainjcmd.NewCommandStartInjectorController(nil, nil, nil),
-		controllercmd.NewCommandStartCertManagerController(nil),
+		cainjectorapp.NewCommandStartInjectorController(nil, nil, nil),
+		controllerapp.NewCommandStartCertManagerController(nil),
 		ctlcmd.NewCertManagerCtlCommand(nil, nil, nil, nil),
 	} {
 		dir := filepath.Join(root, c.Use)
-		must(ensureDirectory(dir))
-		must(doc.GenMarkdownTree(c, dir))
+
+		if err := ensureDirectory(dir); err != nil {
+			return err
+		}
+
+		if err := doc.GenMarkdownTree(c, dir); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func ensureDirectory(dir string) error {
@@ -71,11 +91,4 @@ func ensureDirectory(dir string) error {
 	}
 
 	return nil
-}
-
-func must(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		os.Exit(1)
-	}
 }
