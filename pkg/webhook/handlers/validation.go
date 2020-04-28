@@ -74,17 +74,26 @@ func (r *registryBackedValidator) Validate(admissionSpec *admissionv1beta1.Admis
 		}
 	}
 
-	requestGVK := schema.GroupVersionKind{
-		Group:   admissionSpec.RequestKind.Group,
-		Version: admissionSpec.RequestKind.Version,
-		Kind:    admissionSpec.RequestKind.Kind,
+	// RequestKind field is only present from Kubernetes 1.15 onwards, so
+	// use the regular 'kind' if RequestKind is not present
+	gvk := schema.GroupVersionKind{
+		Group:   admissionSpec.Kind.Group,
+		Version: admissionSpec.Kind.Version,
+		Kind:    admissionSpec.Kind.Kind,
+	}
+	if admissionSpec.RequestKind != nil {
+		gvk = schema.GroupVersionKind{
+			Group:   admissionSpec.RequestKind.Group,
+			Version: admissionSpec.RequestKind.Version,
+			Kind:    admissionSpec.RequestKind.Kind,
+		}
 	}
 	errs := field.ErrorList{}
 	// perform validation on new version of resource
-	errs = append(errs, r.registry.Validate(obj, requestGVK)...)
+	errs = append(errs, r.registry.Validate(obj, gvk)...)
 	if oldObj != nil {
 		// perform update validation on resource
-		errs = append(errs, r.registry.ValidateUpdate(oldObj, obj, requestGVK)...)
+		errs = append(errs, r.registry.ValidateUpdate(oldObj, obj, gvk)...)
 	}
 	// return with allowed = false if any errors occurred
 	if err := errs.ToAggregate(); err != nil {
