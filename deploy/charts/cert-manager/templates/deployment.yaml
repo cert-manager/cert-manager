@@ -105,6 +105,8 @@ spec:
           ports:
           - containerPort: 9402
             protocol: TCP
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           {{- if .Values.volumeMounts }}
           volumeMounts:
 {{ toYaml .Values.volumeMounts | indent 12 }}
