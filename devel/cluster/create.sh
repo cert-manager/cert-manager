@@ -79,6 +79,8 @@ fi
 
 # Create the kind cluster
 kind create cluster \
+  -v=4 \
+  --retain \
   --config "${SCRIPT_ROOT}/config/${KIND_IMAGE_CONFIG}.yaml" \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
