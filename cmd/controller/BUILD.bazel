@@ -8,7 +8,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/cmd/controller",
     visibility = ["//visibility:private"],
     deps = [
-        "//cmd/controller/cmd:go_default_library",
+        "//cmd/controller/app:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/cmd:go_default_library",
         "@io_k8s_klog//:go_default_library",
@@ -34,7 +34,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//cmd/controller/app:all-srcs",
-        "//cmd/controller/cmd:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

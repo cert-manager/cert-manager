@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package app
 
 import (
 	"fmt"
@@ -23,7 +23,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/jetstack/cert-manager/cmd/controller/app"
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	_ "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	_ "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
@@ -93,5 +92,5 @@ func (o CertManagerControllerOptions) Validate(args []string) error {
 }
 
 func (o CertManagerControllerOptions) RunCertManagerController(stopCh <-chan struct{}) {
-	app.Run(o.ControllerOptions, stopCh)
+	Run(o.ControllerOptions, stopCh)
 }

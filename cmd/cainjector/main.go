@@ -23,7 +23,7 @@ import (
 	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	cainjcmd "github.com/jetstack/cert-manager/cmd/cainjector/cmd"
+	"github.com/jetstack/cert-manager/cmd/cainjector/app"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
@@ -34,7 +34,7 @@ func main() {
 	ctrl.SetLogger(logs.Log)
 
 	stopCh := utilcmd.SetupSignalHandler()
-	cmd := cainjcmd.NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
+	cmd := app.NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})

@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/klog"
 
-	ctrlcmd "github.com/jetstack/cert-manager/cmd/controller/cmd"
+	"github.com/jetstack/cert-manager/cmd/controller/app"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
@@ -31,7 +31,7 @@ func main() {
 	defer logf.FlushLogs()
 
 	stopCh := utilcmd.SetupSignalHandler()
-	cmd := ctrlcmd.NewCommandStartCertManagerController(stopCh)
+	cmd := app.NewCommandStartCertManagerController(stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})
