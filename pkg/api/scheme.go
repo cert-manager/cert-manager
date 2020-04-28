@@ -78,11 +78,6 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 var AddToScheme = localSchemeBuilder.AddToScheme
 
 func init() {
-	// This is used to add the List object type for outputing multiple input
-	// objects. This is required for the ctl conversion CLI command.
-	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
-	Scheme.AddKnownTypes(coreGroupVersion, &metainternalversion.List{})
-
 	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
 	utilruntime.Must(AddToScheme(Scheme))
 }

@@ -20,20 +20,31 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	auditreg "k8s.io/api/auditregistration/v1alpha1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/jetstack/cert-manager/pkg/api"
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 var (
@@ -48,13 +59,43 @@ var (
 Convert cert-manager config files between different API versions. Both YAML
 and JSON formats are accepted.
 
-The command takes filename, directory, or URL as input, and convert it into format
-of version specified by --output-version flag. If target version is not specified or
-not supported, convert to latest version.
+The command takes filename, directory, or URL as input, and converts into the
+format of the version specified by --output-version flag. If target version is
+not specified or not supported, it will convert to the latest version
 
 The default output will be printed to stdout in YAML format. One can use -o option
 to change to output destination.`))
 )
+
+var (
+	scheme             = runtime.NewScheme()
+	codecs             = serializer.NewCodecFactory(scheme)
+	parameterCodec     = runtime.NewParameterCodec(scheme)
+	localSchemeBuilder = runtime.SchemeBuilder{
+		cmapi.AddToScheme,
+		cmapiv1alpha3.AddToScheme,
+		cmacme.AddToScheme,
+		cmacmev1alpha3.AddToScheme,
+		cmmeta.AddToScheme,
+		whapi.AddToScheme,
+		kscheme.AddToScheme,
+		apireg.AddToScheme,
+		apiext.AddToScheme,
+		auditreg.AddToScheme,
+	}
+
+	addToScheme = localSchemeBuilder.AddToScheme
+)
+
+func init() {
+	// This is used to add the List object type for outputing multiple input
+	// objects.
+	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
+	scheme.AddKnownTypes(coreGroupVersion, &metainternalversion.List{})
+
+	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
+	utilruntime.Must(addToScheme(scheme))
+}
 
 // Options is a struct to support convert command
 type Options struct {
@@ -86,21 +127,21 @@ func NewCmdConvert(ioStreams genericclioptions.IOStreams) *cobra.Command {
 		Example:               example,
 		DisableFlagsInUseLine: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmdutil.CheckErr(o.Complete(cmd))
+			cmdutil.CheckErr(o.Complete())
 			cmdutil.CheckErr(o.Run())
 		},
 	}
 
 	cmd.Flags().StringVar(&o.OutputVersion, "output-version", o.OutputVersion, "Output the formatted object with the given group version (for ex: 'cert-manager.io/v1alpha3').")
-	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "path to a file containing cert-manager resources to be converted")
+	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "Path to a file containing cert-manager resources to be converted.")
 	o.PrintFlags.AddFlags(cmd)
 
 	return cmd
 }
 
 // Complete collects information required to run Convert command from command line.
-func (o *Options) Complete(cmd *cobra.Command) (err error) {
-	err = o.FilenameOptions.RequireFilenameOrKustomize()
+func (o *Options) Complete() error {
+	err := o.FilenameOptions.RequireFilenameOrKustomize()
 	if err != nil {
 		return err
 	}
@@ -114,7 +155,7 @@ func (o *Options) Complete(cmd *cobra.Command) (err error) {
 	return nil
 }
 
-// Run executes version command
+// Run executes convert command
 func (o *Options) Run() error {
 	builder := new(resource.Builder)
 
@@ -143,8 +184,8 @@ func (o *Options) Run() error {
 		}
 	}
 
-	factory := serializer.NewCodecFactory(api.Scheme)
-	serializer := apijson.NewSerializerWithOptions(apijson.DefaultMetaFactory, api.Scheme, api.Scheme, apijson.SerializerOptions{})
+	factory := serializer.NewCodecFactory(scheme)
+	serializer := apijson.NewSerializerWithOptions(apijson.DefaultMetaFactory, scheme, scheme, apijson.SerializerOptions{})
 	encoder := factory.WithoutConversion().EncoderForVersion(serializer, nil)
 	objects, err := asVersionedObject(infos, !singleItemImplied, specifiedOutputVersion, encoder)
 	if err != nil {
@@ -174,6 +215,8 @@ func asVersionedObject(infos []*resource.Info, forceList bool, specifiedOutputVe
 		if !specifiedOutputVersion.Empty() {
 			targetVersions = append(targetVersions, specifiedOutputVersion)
 		}
+		// This is needed so we are able to handle the List object when converting
+		// multiple resources
 		targetVersions = append(targetVersions, schema.GroupVersion{Group: "", Version: "v1"})
 
 		converted, err := tryConvert(object, targetVersions...)
@@ -209,17 +252,14 @@ func asVersionedObjects(infos []*resource.Info, specifiedOutputVersion schema.Gr
 
 		targetVersions := []schema.GroupVersion{}
 		// objects that are not part of api.Scheme must be converted to JSON
-		// TODO: convert to map[string]interface{}, attach to runtime.Unknown?
 		if !specifiedOutputVersion.Empty() {
-			_, _, err := api.Scheme.ObjectKinds(info.Object)
+			_, _, err := scheme.ObjectKinds(info.Object)
 			if err != nil {
 				if runtime.IsNotRegisteredError(err) {
-					// TODO: ideally this would encode to version, but we don't expose multiple codecs here.
 					data, err := runtime.Encode(encoder, info.Object)
 					if err != nil {
 						return nil, err
 					}
-					// TODO: Set ContentEncoding and ContentType.
 					objects = append(objects, &runtime.Unknown{Raw: data})
 					continue
 				}
@@ -229,10 +269,10 @@ func asVersionedObjects(infos []*resource.Info, specifiedOutputVersion schema.Gr
 
 			targetVersions = append(targetVersions, specifiedOutputVersion)
 		} else {
-			gvks, _, err := api.Scheme.ObjectKinds(info.Object)
+			gvks, _, err := scheme.ObjectKinds(info.Object)
 			if err == nil {
 				for _, gvk := range gvks {
-					targetVersions = append(targetVersions, api.Scheme.PrioritizedVersionsForGroup(gvk.Group)...)
+					targetVersions = append(targetVersions, scheme.PrioritizedVersionsForGroup(gvk.Group)...)
 				}
 			}
 		}
@@ -255,7 +295,7 @@ func tryConvert(object runtime.Object, versions ...schema.GroupVersion) (runtime
 		if version.Empty() {
 			return object, nil
 		}
-		obj, err := api.Scheme.ConvertToVersion(object, version)
+		obj, err := scheme.ConvertToVersion(object, version)
 		if err != nil {
 			last = err
 			continue
