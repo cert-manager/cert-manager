@@ -97,8 +97,3 @@ const (
 	UsageMicrosoftSGC       KeyUsage = "microsoft sgc"
 	UsageNetscapeSGC        KeyUsage = "netscape sgc"
 )
-
-// DefaultKeyUsages contains the default list of key usages
-func DefaultKeyUsages() []KeyUsage {
-	return []KeyUsage{UsageDigitalSignature, UsageKeyEncipherment}
-}
