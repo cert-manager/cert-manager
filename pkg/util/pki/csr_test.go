@@ -45,19 +45,17 @@ func TestBuildUsages(t *testing.T) {
 	}
 	tests := []testT{
 		{
-			name:                "default",
-			usages:              []v1alpha2.KeyUsage{},
-			expectedKeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-			expectedError:       false,
+			name:             "default",
+			usages:           []v1alpha2.KeyUsage{},
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+			expectedError:    false,
 		},
 		{
-			name:                "isCa",
-			usages:              []v1alpha2.KeyUsage{},
-			isCa:                true,
-			expectedKeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign,
-			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-			expectedError:       false,
+			name:             "isCa",
+			usages:           []v1alpha2.KeyUsage{},
+			isCa:             true,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign,
+			expectedError:    false,
 		},
 		{
 			name:             "existing keyusage",
