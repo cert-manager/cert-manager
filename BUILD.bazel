@@ -95,6 +95,7 @@ filegroup(
         "//test/integration:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",
+        "//tools/cobra:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jetstack/cert-manager/pkg/util/cmd"
+	ctlcmd "github.com/jetstack/cert-manager/cmd/ctl/cmd"
+	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 func main() {
-	stopCh := cmd.SetupSignalHandler()
-	cmd := NewCertManagerCtlCommand(os.Stdin, os.Stdout, os.Stderr, stopCh)
+	stopCh := utilcmd.SetupSignalHandler()
+	cmd := ctlcmd.NewCertManagerCtlCommand(os.Stdin, os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})

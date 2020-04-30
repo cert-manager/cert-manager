@@ -27,6 +27,7 @@ require (
 	github.com/kr/pretty v0.1.0
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 	github.com/miekg/dns v0.0.0-20170721150254-0f3adef2e220
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/munnerz/crd-schema-fuzz v1.0.0
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
