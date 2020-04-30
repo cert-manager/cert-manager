@@ -49,7 +49,7 @@ type SecretsManager struct {
 	enableSecretOwnerReferences bool
 }
 
-// SecretData is a structure wrapping private key, Certificateificate and CA data
+// SecretData is a structure wrapping private key, Certificate and CA data
 type SecretData struct {
 	PrivateKey, Certificate, CA []byte
 }
@@ -130,7 +130,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Data = make(map[string][]byte)
 	}
 
-	// Only write a new PKCS12/JKS file if any of the private key/Certificate/CA
+	// Only write a new PKCS12/JKS file if any of the private key/certificate/CA
 	// data has actually changed.
 	if data.PrivateKey != nil && data.Certificate != nil &&
 		(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.PrivateKey) ||
@@ -211,7 +211,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 	}
 
-	// if the Certificate data is empty, clear the subject related annotations
+	// if the certificate data is empty, clear the subject related annotations
 	if len(data.Certificate) == 0 {
 		delete(secret.Annotations, cmapi.CommonNameAnnotationKey)
 		delete(secret.Annotations, cmapi.AltNamesAnnotationKey)
