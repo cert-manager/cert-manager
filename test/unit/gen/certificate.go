@@ -187,3 +187,14 @@ func AddCertificateAnnotations(annotations map[string]string) CertificateModifie
 		}
 	}
 }
+
+func AddCertificateLabels(labels map[string]string) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		if crt.Labels == nil {
+			crt.Labels = make(map[string]string)
+		}
+		for k, v := range labels {
+			crt.Labels[k] = v
+		}
+	}
+}

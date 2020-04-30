@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -28,9 +27,7 @@ import (
 func main() {
 	stopCh := utilcmd.SetupSignalHandler()
 	cmd := ctlcmd.NewCertManagerCtlCommand(os.Stdin, os.Stdout, os.Stderr, stopCh)
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
-	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 	}

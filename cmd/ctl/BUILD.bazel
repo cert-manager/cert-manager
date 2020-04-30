@@ -30,6 +30,7 @@ filegroup(
         ":package-srcs",
         "//cmd/ctl/cmd:all-srcs",
         "//cmd/ctl/pkg/convert:all-srcs",
+        "//cmd/ctl/pkg/renew:all-srcs",
         "//cmd/ctl/pkg/version:all-srcs",
     ],
     tags = ["automanaged"],

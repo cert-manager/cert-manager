@@ -17,12 +17,21 @@ limitations under the License.
 package cmd
 
 import (
+	"flag"
+	"fmt"
 	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	// Load all auth plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/klog"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/version"
 )
 
@@ -35,9 +44,25 @@ cert-manager-ctl is a CLI tool manage and configure cert-manager resources for K
 		Run: runHelp,
 	}
 
+	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
+	kubeConfigFlags.AddFlags(cmds.PersistentFlags())
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
+	matchVersionKubeConfigFlags.AddFlags(cmds.PersistentFlags())
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	cmds.Flags().AddGoFlagSet(flag.CommandLine)
+	flag.CommandLine.Parse([]string{})
+	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
+	klog.InitFlags(fakefs)
+	if err := fakefs.Parse([]string{"-logtostderr=false"}); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 	cmds.AddCommand(version.NewCmdVersion(ioStreams))
 	cmds.AddCommand(convert.NewCmdConvert(ioStreams))
+	cmds.AddCommand(renew.NewCmdRenew(ioStreams, factory))
 
 	return cmds
 }
