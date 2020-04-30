@@ -151,9 +151,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
 | `cainjector.deploymentAnnotations` | Annotations to add to the cainjector deployment | `{}` |
 | `cainjector.extraArgs` | Optional flags for cert-manager cainjector component | `[]` |
-| `cainjector.serviceAccount.create` | If `true`, create a new service account for the webhook cainjector | `true` |
-| `cainjector.serviceAccount.name` | Service account to be used for the webhook cainjector. If not set and `cainjector.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
-| `cainjector.serviceAccount.annotations` | Annotations to add to the service account for the webhook cainjector |  |
+| `cainjector.serviceAccount.create` | If `true`, create a new service account for the cainjector component | `true` |
+| `cainjector.serviceAccount.name` | Service account to be used for the cainjector component If not set and `cainjector.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
+| `cainjector.serviceAccount.annotations` | Annotations to add to the service account for the cainjector component |  |
 | `cainjector.resources` | CPU/memory resource requests/limits for the cainjector pods | `{}` |
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.affinity` | Node affinity for cainjector pod assignment | `{}` |
