@@ -17,7 +17,7 @@ roleRef:
   name: {{ template "cainjector.fullname" . }}-psp
 subjects:
   - kind: ServiceAccount
-    name: {{ include "cainjector.fullname" . }}
+    name: {{ template "cainjector.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
 {{- end }}

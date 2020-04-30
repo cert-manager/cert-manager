@@ -76,6 +76,17 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
+Create the name of the service account to use
+*/}}
+{{- define "webhook.serviceAccountName" -}}
+{{- if .Values.webhook.serviceAccount.create -}}
+    {{ default (include "webhook.fullname" .) .Values.webhook.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.webhook.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 cainjector templates
 */}}
 
@@ -103,4 +114,15 @@ Create chart name and version as used by the chart label.
 */}}
 {{- define "cainjector.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "cainjector.serviceAccountName" -}}
+{{- if .Values.cainjector.serviceAccount.create -}}
+    {{ default (include "cainjector.fullname" .) .Values.cainjector.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.cainjector.serviceAccount.name }}
+{{- end -}}
 {{- end -}}

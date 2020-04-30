@@ -40,7 +40,7 @@ spec:
 {{ toYaml .Values.cainjector.podAnnotations | indent 8 }}
       {{- end }}
     spec:
-      serviceAccountName: {{ include "cainjector.fullname" . }}
+      serviceAccountName: {{ template "cainjector.serviceAccountName" . }}
       {{- if .Values.global.priorityClassName }}
       priorityClassName: {{ .Values.global.priorityClassName | quote }}
       {{- end }}

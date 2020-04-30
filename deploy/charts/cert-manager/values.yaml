@@ -196,6 +196,15 @@ webhook:
     # tag: canary
     pullPolicy: IfNotPresent
 
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    # name: ""
+    # Optional additional annotations to add to the controller's ServiceAccount
+    # annotations: {}
+
   # The port that the webhook should listen on for requests.
   # In GKE private clusters, by default kubernetes apiservers are allowed to
   # talk to the cluster nodes only on 443 and 10250. so configuring
@@ -241,3 +250,12 @@ cainjector:
     # If no value is set, the chart's appVersion will be used.
     # tag: canary
     pullPolicy: IfNotPresent
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    # name: ""
+    # Optional additional annotations to add to the controller's ServiceAccount
+    # annotations: {}
