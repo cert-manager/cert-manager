@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package issuing
+package test
 
 import (
 	"crypto"
@@ -25,51 +25,62 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-type cryptoBundle struct {
+var (
+	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
+)
+
+type CryptoBundle struct {
 	// certificate is the Certificate resource used to create this bundle
-	certificate *cmapi.Certificate
+	Certificate *cmapi.Certificate
 	// expectedRequestName is the name of the CertificateRequest that is
 	// expected to be created to issue this certificate
-	expectedRequestName string
+	ExpectedRequestName string
 
 	// privateKey is the private key used as the complement to the certificates
 	// in this bundle
-	privateKey      crypto.Signer
-	privateKeyBytes []byte
+	PrivateKey      crypto.Signer
+	PrivateKeyBytes []byte
 
 	// csr is the CSR used to obtain the certificate in this bundle
-	csr      *x509.CertificateRequest
-	csrBytes []byte
+	CSR      *x509.CertificateRequest
+	CSRBytes []byte
 
 	// certificateRequest is the request that is expected to be created to
 	// obtain a certificate when using this bundle
-	certificateRequest                     *cmapi.CertificateRequest
-	certificateRequestReady                *cmapi.CertificateRequest
-	certificateRequestFailed               *cmapi.CertificateRequest
-	certificateRequestFailedInvalidRequest *cmapi.CertificateRequest
+	CertificateRequest                     *cmapi.CertificateRequest
+	CertificateRequestPending              *cmapi.CertificateRequest
+	CertificateRequestReady                *cmapi.CertificateRequest
+	CertificateRequestFailed               *cmapi.CertificateRequest
+	CertificateRequestFailedInvalidRequest *cmapi.CertificateRequest
 
 	// cert is a signed certificate
-	cert      *x509.Certificate
-	certBytes []byte
+	Cert      *x509.Certificate
+	CertBytes []byte
+
+	LocalTemporaryCertificateBytes []byte
+
+	FixedClock *fakeclock.FakeClock
 }
 
-func mustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate) cryptoBundle {
-	c, err := createCryptoBundle(crt)
+func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) CryptoBundle {
+	c, err := createCryptoBundle(crt, fixedClock)
 	if err != nil {
 		t.Fatalf("error generating crypto bundle: %v", err)
 	}
 	return *c
 }
 
-func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
+func createCryptoBundle(crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) (*CryptoBundle, error) {
 	reqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return nil, err
@@ -139,6 +150,14 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		}),
 	)
 
+	certificateRequestPending := gen.CertificateRequestFrom(certificateRequest,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:   cmapi.CertificateRequestConditionReady,
+			Status: cmmeta.ConditionFalse,
+			Reason: cmapi.CertificateRequestReasonPending,
+		}),
+	)
+
 	certificateRequestFailed := gen.CertificateRequestFrom(certificateRequest,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:   cmapi.CertificateRequestConditionReady,
@@ -155,24 +174,32 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		}),
 	)
 
-	return &cryptoBundle{
-		certificate:                            crt,
-		expectedRequestName:                    reqName,
-		privateKey:                             privateKey,
-		privateKeyBytes:                        privateKeyBytes,
-		csr:                                    csr,
-		csrBytes:                               csrPEM,
-		certificateRequest:                     certificateRequest,
-		certificateRequestReady:                certificateRequestReady,
-		certificateRequestFailed:               certificateRequestFailed,
-		certificateRequestFailedInvalidRequest: certificateRequestFailedInvalidRequest,
-		cert:                                   cert,
-		certBytes:                              certBytes,
+	tempCertBytes, err := certificates.GenerateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
+	if err != nil {
+		panic("failed to generate test fixture: " + err.Error())
+	}
+
+	return &CryptoBundle{
+		Certificate:                            crt,
+		ExpectedRequestName:                    reqName,
+		PrivateKey:                             privateKey,
+		PrivateKeyBytes:                        privateKeyBytes,
+		CSR:                                    csr,
+		CSRBytes:                               csrPEM,
+		CertificateRequest:                     certificateRequest,
+		CertificateRequestPending:              certificateRequestPending,
+		CertificateRequestReady:                certificateRequestReady,
+		CertificateRequestFailed:               certificateRequestFailed,
+		CertificateRequestFailedInvalidRequest: certificateRequestFailedInvalidRequest,
+		Cert:                                   cert,
+		CertBytes:                              certBytes,
+		LocalTemporaryCertificateBytes:         tempCertBytes,
+		FixedClock:                             fixedClock,
 	}, nil
 }
 
-func (c *cryptoBundle) generateTestCSR(crt *cmapi.Certificate) []byte {
-	csrPEM, err := generateCSRImpl(crt, c.privateKeyBytes)
+func (c *CryptoBundle) generateTestCSR(crt *cmapi.Certificate) []byte {
+	csrPEM, err := generateCSRImpl(crt, c.PrivateKeyBytes)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
@@ -180,7 +207,7 @@ func (c *cryptoBundle) generateTestCSR(crt *cmapi.Certificate) []byte {
 	return csrPEM
 }
 
-func (c *cryptoBundle) generateTestCertificate(crt *cmapi.Certificate, notBefore *time.Time) []byte {
+func (c *CryptoBundle) generateTestCertificate(crt *cmapi.Certificate, notBefore *time.Time) []byte {
 	csr := c.generateTestCSR(crt)
 	certificateRequest := &cmapi.CertificateRequest{
 		Spec: cmapi.CertificateRequestSpec{
@@ -200,7 +227,7 @@ func (c *cryptoBundle) generateTestCertificate(crt *cmapi.Certificate, notBefore
 		unsignedCert.NotBefore = *notBefore
 	}
 
-	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.privateKey.Public(), c.privateKey)
+	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.PrivateKey.Public(), c.PrivateKey)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
@@ -208,7 +235,7 @@ func (c *cryptoBundle) generateTestCertificate(crt *cmapi.Certificate, notBefore
 	return certBytes
 }
 
-func (c *cryptoBundle) generateCertificateExpiring1H(crt *cmapi.Certificate) []byte {
+func (c *CryptoBundle) generateCertificateExpiring1H(crt *cmapi.Certificate) []byte {
 	csr := c.generateTestCSR(crt)
 	certificateRequest := &cmapi.CertificateRequest{
 		Spec: cmapi.CertificateRequestSpec{
@@ -224,12 +251,12 @@ func (c *cryptoBundle) generateCertificateExpiring1H(crt *cmapi.Certificate) []b
 		panic("failed to generate test fixture: " + err.Error())
 	}
 
-	nowTime := fixedClock.Now()
+	nowTime := c.FixedClock.Now()
 	duration := unsignedCert.NotAfter.Sub(unsignedCert.NotBefore)
 	unsignedCert.NotBefore = nowTime.Add(time.Hour).Add(-1 * duration)
 	unsignedCert.NotAfter = nowTime.Add(time.Hour)
 
-	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.privateKey.Public(), c.privateKey)
+	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.PrivateKey.Public(), c.PrivateKey)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}
@@ -237,7 +264,7 @@ func (c *cryptoBundle) generateCertificateExpiring1H(crt *cmapi.Certificate) []b
 	return certBytes
 }
 
-func (c *cryptoBundle) generateCertificateExpired(crt *cmapi.Certificate) []byte {
+func (c *CryptoBundle) generateCertificateExpired(crt *cmapi.Certificate) []byte {
 	csr := c.generateTestCSR(crt)
 	certificateRequest := &cmapi.CertificateRequest{
 		Spec: cmapi.CertificateRequestSpec{
@@ -253,12 +280,12 @@ func (c *cryptoBundle) generateCertificateExpired(crt *cmapi.Certificate) []byte
 		panic("failed to generate test fixture: " + err.Error())
 	}
 
-	nowTime := fixedClock.Now()
+	nowTime := c.FixedClock.Now()
 	duration := unsignedCert.NotAfter.Sub(unsignedCert.NotBefore)
 	unsignedCert.NotBefore = nowTime.Add(-1 * time.Hour).Add(-1 * duration)
 	unsignedCert.NotAfter = nowTime.Add(-1 * time.Hour)
 
-	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.privateKey.Public(), c.privateKey)
+	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.PrivateKey.Public(), c.PrivateKey)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
 	}

@@ -203,3 +203,52 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 
 	return violations, nil
 }
+
+// staticTemporarySerialNumber is a fixed serial number we use for temporary certificates
+const staticTemporarySerialNumber = "1234567890"
+
+// GenerateLocallySignedTemporaryCertificate signs a temporary certificate for
+// the given certificate resource using a one-use temporary CA that is then
+// discarded afterwards.
+// This is to mitigate a potential attack against x509 certificates that use a
+// predictable serial number and weak MD5 hashing algorithms.
+// In practice, this shouldn't really be a concern anyway.
+func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []byte) ([]byte, error) {
+	// generate a throwaway self-signed root CA
+	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
+	if err != nil {
+		return nil, err
+	}
+	caCertTemplate, err := pki.GenerateTemplate(&cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{
+			CommonName: "cert-manager.local",
+			IsCA:       true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	_, caCert, err := pki.SignCertificate(caCertTemplate, caCertTemplate, caPk.Public(), caPk)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign a temporary certificate using the root CA
+	template, err := pki.GenerateTemplate(crt)
+	if err != nil {
+		return nil, err
+	}
+	template.Subject.SerialNumber = staticTemporarySerialNumber
+
+	signeeKey, err := pki.DecodePrivateKeyBytes(pkData)
+	if err != nil {
+		return nil, err
+	}
+
+	b, _, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}

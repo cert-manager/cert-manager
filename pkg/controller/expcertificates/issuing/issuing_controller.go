@@ -43,6 +43,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/secretsmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilkube "github.com/jetstack/cert-manager/pkg/util/kube"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
@@ -58,6 +59,8 @@ var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
+type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
+
 // This controller observes the state of the certificate's 'Issuing' condition,
 // which will then copy the singed certificates and private key to the target
 // Secret resource.
@@ -71,7 +74,9 @@ type controller struct {
 	client cmclient.Interface
 
 	// secretManager is used to create and update Secrets with certificate and key data
-	secretsManager *secretsManager
+	secretsManager *secretsmanager.SecretsManager
+	// localTemporarySigner signs a certificate that is stored temporarily
+	localTemporarySigner localTemporarySignerFn
 }
 
 func NewController(
@@ -117,10 +122,10 @@ func NewController(
 		certificateInformer.Informer().HasSynced,
 	}
 
-	secretsManager := newSecretsManager(
+	secretsManager := secretsmanager.New(
 		kubeClient,
 		secretsInformer.Lister(),
-		certificateControllerOptions,
+		certificateControllerOptions.EnableOwnerRef,
 	)
 
 	return &controller{
@@ -131,6 +136,7 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		secretsManager:           secretsManager,
+		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
 
@@ -171,6 +177,35 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
+	// Fetch and parse the 'next private key secret'
+	nextPrivateKeySecret, err := c.secretLister.Secrets(crt.Namespace).Get(*crt.Status.NextPrivateKeySecretName)
+	if apierrors.IsNotFound(err) {
+		log.V(logf.DebugLevel).Info("Next private key secret does not exist, waiting for keymanager controller")
+		// If secret does not exist, do nothing (keymanager will handle this).
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if nextPrivateKeySecret.Data == nil || len(nextPrivateKeySecret.Data[corev1.TLSPrivateKeyKey]) == 0 {
+		logf.WithResource(log, nextPrivateKeySecret).Info("Next private key secret does not contain any private key data, waiting for keymanager controller")
+		return nil
+	}
+	pk, pkData, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
+	if err != nil {
+		// If the private key cannot be parsed here, do nothing as the key manager will handle this.
+		logf.WithResource(log, nextPrivateKeySecret).Error(err, "failed to parse next private key, waiting for keymanager controller")
+		return nil
+	}
+	pkVioations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
+	if err != nil {
+		return err
+	}
+	if len(pkVioations) > 0 {
+		logf.WithResource(log, nextPrivateKeySecret).Info("stored next private key does not match requirements on Certificate resource, waiting for keymanager controller", "violations", pkVioations)
+		return nil
+	}
+
 	// CertificateRequest revisions begin from 1. If no revision is set on the
 	// status then assume no revision yet set.
 	nextRevision := 1
@@ -200,22 +235,53 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	switch cond.Reason {
 	// If the certificate request has failed, set the last failure time to now,
 	// and set the Issuing status condition to False with reason.
-	case cmapi.CertificateRequestReasonFailed:
+	if cond.Reason == cmapi.CertificateRequestReasonFailed {
 		return c.failIssueCertificate(ctx, log, crt, req)
+	}
 
-		// If the CertificateRequest is valid, verify its status and update
-		// accordingly.
-	case cmapi.CertificateRequestReasonIssued:
-		return c.issueCertificate(ctx, log, nextRevision, crt, req)
-
-	// CertificateRequest is not in a final state so do nothing.
-	default:
-		log.V(4).Info("CertificateRequest not in final state, waiting...")
+	// Verify the CSR options match what is requested in certificate.spec.
+	// If there are violations in the spec, then the requestmanager will handle this.
+	requestViolations, err := certificates.RequestMatchesSpec(req, crt.Spec)
+	if err != nil {
+		return err
+	}
+	if len(requestViolations) > 0 {
+		log.Info("CertificateRequest does not match Certificate, waiting for keymanager controller")
 		return nil
 	}
+
+	// If public key does not match, do nothing (requestmanager will handle this).
+	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
+	if err != nil {
+		return err
+	}
+	publicKeyMatchesCSR, err := utilpki.PublicKeyMatchesCSR(pk.Public(), csr)
+	if err != nil {
+		return err
+	}
+	if !publicKeyMatchesCSR {
+		logf.WithResource(log, nextPrivateKeySecret).Info("next private key does not match CSR public key, waiting for requestmanager controller")
+		return nil
+	}
+
+	// If the CertificateRequest is valid and ready, verify its status and issue
+	// accordingly.
+	if cond.Reason == cmapi.CertificateRequestReasonIssued {
+		return c.issueCertificate(ctx, nextRevision, crt, req, pkData)
+	}
+
+	// Issue temporary certificate if needed. If a certificate was issued, then
+	// return early - we will sync again since the target Secret has been
+	// updated.
+	if issued, err := c.ensureTemporaryCertificate(ctx, crt, pkData); err != nil || issued {
+		return err
+	}
+
+	// CertificateRequest is not in a final state so do nothing.
+	log.V(4).Info("CertificateRequest not in final state, waiting...", "reason", cond.Reason)
+	return nil
 }
 
 // failIssueCertificate will mark the condition Issuing of this Certificate as failed, and log an appropriate event
@@ -248,56 +314,14 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, log logr.Logger, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
-	csr, err := utilpki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
-	if err != nil {
-		return err
+func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pkData []byte) error {
+	secretData := secretsmanager.SecretData{
+		PrivateKey:  pkData,
+		Certificate: req.Status.Certificate,
+		CA:          req.Status.CA,
 	}
 
-	//Encode and issue the key-pair (store it in the Secret)
-	nextPrivateKeySecret, err := c.secretLister.Secrets(crt.Namespace).Get(*crt.Status.NextPrivateKeySecretName)
-	if apierrors.IsNotFound(err) {
-		// If secret does not exist, do nothing (keymanager will handle this).
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	key, keyData, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
-	if err != nil {
-		// If the private key cannot be parsed here, do nothing as the key manager will handle this.
-		logf.WithResource(log, nextPrivateKeySecret).Info("failed to parse next private key")
-		return nil
-	}
-
-	publicKeyMatches, err := utilpki.PublicKeyMatchesCSR(key.Public(), csr)
-	if err != nil {
-		return err
-	}
-
-	// If public key does not match, do nothing (keymanager will handle this).
-	if !publicKeyMatches {
-		logf.WithResource(log, nextPrivateKeySecret).Info("next private key does not match CSR public key")
-		return nil
-	}
-
-	// Verify the CSR options match what is requested in certificate.spec.
-	violations, err := certificates.RequestMatchesSpec(req, crt.Spec)
-	if err != nil {
-		return err
-	}
-
-	// If there are violations in the spec, then the requestmanager will handle this.
-	if len(violations) > 0 {
-		log.Info("CertificateRequest does not match Certificate")
-		return nil
-	}
-
-	signedCertificate := req.Status.Certificate
-	ca := req.Status.CA
-
-	err = c.secretsManager.updateData(ctx, crt, secretData{sk: keyData, cert: signedCertificate, ca: ca})
+	err := c.secretsManager.UpdateData(ctx, crt, secretData)
 	if err != nil {
 		return err
 	}

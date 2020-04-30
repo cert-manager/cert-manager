@@ -39,6 +39,8 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/controller/expcertificates/internal/predicate:all-srcs",
+        "//pkg/controller/expcertificates/internal/secretsmanager:all-srcs",
+        "//pkg/controller/expcertificates/internal/test:all-srcs",
         "//pkg/controller/expcertificates/issuing:all-srcs",
         "//pkg/controller/expcertificates/keymanager:all-srcs",
         "//pkg/controller/expcertificates/readiness:all-srcs",
