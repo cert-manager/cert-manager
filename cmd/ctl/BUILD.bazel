@@ -5,7 +5,10 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/jetstack/cert-manager/cmd/ctl",
     visibility = ["//visibility:private"],
-    deps = ["//pkg/util/cmd:go_default_library"],
+    deps = [
+        "//cmd/ctl/cmd:go_default_library",
+        "//pkg/util/cmd:go_default_library",
+    ],
 )
 
 go_binary(

@@ -75,7 +75,12 @@ func TestValidate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmd := NewCmdRenew(genericclioptions.IOStreams{})
+			cmd := NewCmdRenew(genericclioptions.IOStreams{}, nil)
+
+			// This is normally registered in the main func. We add here to test
+			// against flags normally inherited.
+			kubeConfigFlags := genericclioptions.NewConfigFlags(true)
+			kubeConfigFlags.AddFlags(cmd.PersistentFlags())
 
 			if test.setStringFlags != nil {
 				for _, s := range test.setStringFlags {
