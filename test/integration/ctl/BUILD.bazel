@@ -2,9 +2,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
 go_test(
     name = "go_default_test",
-    srcs = ["ctl_convert_test.go"],
+    srcs = [
+        "ctl_convert_test.go",
+        "ctl_renew_test.go",
+    ],
     data = glob(["testdata/**"]),
     deps = [
+        "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/renew:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha2:go_default_library",

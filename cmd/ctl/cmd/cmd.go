@@ -62,7 +62,7 @@ cert-manager-ctl is a CLI tool manage and configure cert-manager resources for K
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 	cmds.AddCommand(version.NewCmdVersion(ioStreams))
 	cmds.AddCommand(convert.NewCmdConvert(ioStreams))
-	cmds.AddCommand(renew.NewCmdRenew(ioStreams))
+	cmds.AddCommand(renew.NewCmdRenew(ioStreams, factory))
 
 	return cmds
 }

@@ -19,19 +19,14 @@ package renew
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
-	// Load all auth plugins
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/klog"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -80,10 +75,8 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdRenew returns a cobra command for renewing Certificates
-func NewCmdRenew(ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
-	var factory cmdutil.Factory
-
 	cmd := &cobra.Command{
 		Use:     "renew",
 		Short:   "Mark a Certificate for manual renewal",
@@ -99,21 +92,6 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams) *cobra.Command {
 	cmd.Flags().StringVarP(&o.LabelSelector, "selector", "l", o.LabelSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If present, mark Certificates across namespaces for manual renewal. Namespace in current context is ignored even if specified with --namespace.")
 	cmd.Flags().BoolVar(&o.All, "all", o.All, "Renew all Certificates in the given Namespace, or all namespaces with --all-namespaces enabled.")
-
-	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
-	kubeConfigFlags.AddFlags(cmd.PersistentFlags())
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
-	matchVersionKubeConfigFlags.AddFlags(cmd.PersistentFlags())
-	factory = cmdutil.NewFactory(matchVersionKubeConfigFlags)
-
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
-	flag.CommandLine.Parse([]string{})
-	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
-	klog.InitFlags(fakefs)
-	if err := fakefs.Parse([]string{"-logtostderr=false"}); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
-	}
 
 	return cmd
 }
