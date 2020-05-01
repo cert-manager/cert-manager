@@ -368,6 +368,7 @@ func autoConvert_v1alpha2_ACMEAuthorization_To_acme_ACMEAuthorization(in *v1alph
 	out.URL = in.URL
 	out.Identifier = in.Identifier
 	out.Wildcard = (*bool)(unsafe.Pointer(in.Wildcard))
+	out.InitialState = acme.State(in.InitialState)
 	out.Challenges = *(*[]acme.ACMEChallenge)(unsafe.Pointer(&in.Challenges))
 	return nil
 }
@@ -381,6 +382,7 @@ func autoConvert_acme_ACMEAuthorization_To_v1alpha2_ACMEAuthorization(in *acme.A
 	out.URL = in.URL
 	out.Identifier = in.Identifier
 	out.Wildcard = (*bool)(unsafe.Pointer(in.Wildcard))
+	out.InitialState = v1alpha2.State(in.InitialState)
 	out.Challenges = *(*[]v1alpha2.ACMEChallenge)(unsafe.Pointer(&in.Challenges))
 	return nil
 }

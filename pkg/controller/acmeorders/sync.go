@@ -303,6 +303,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 			return err
 		}
 
+		authz.InitialState = cmacme.State(acmeAuthz.Status)
 		authz.Identifier = acmeAuthz.Identifier.Value
 		authz.Wildcard = &acmeAuthz.Wildcard
 		authz.Challenges = make([]cmacme.ACMEChallenge, len(acmeAuthz.Challenges))
