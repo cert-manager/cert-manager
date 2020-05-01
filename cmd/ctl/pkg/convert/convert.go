@@ -50,10 +50,10 @@ import (
 var (
 	example = templates.Examples(i18n.T(`
 		# Convert 'cert.yaml' to latest version and print to stdout.
-		kubectl convert -f cert.yaml
+		kubectl cert-manager convert -f cert.yaml
 
 		# Convert kustomize overlay under current directory to 'cert-manager.io/v1alpha3'
-		kubectl convert -k . --output-version cert-manager.io/v1alpha3`))
+		kubectl cert-manager convert -k . --output-version cert-manager.io/v1alpha3`))
 
 	longDesc = templates.LongDesc(i18n.T(`
 Convert cert-manager config files between different API versions. Both YAML
