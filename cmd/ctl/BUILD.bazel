@@ -1,4 +1,5 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build:go_binary.bzl", "go_binary")
 
 go_library(
     name = "go_default_library",
@@ -14,6 +15,7 @@ go_library(
 go_binary(
     name = "ctl",
     embed = [":go_default_library"],
+    pure = "on",
     visibility = ["//visibility:public"],
 )
 
