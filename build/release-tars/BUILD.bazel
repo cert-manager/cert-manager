@@ -26,7 +26,7 @@ release_filegroup(
             ":cert-manager-manifests.tar.gz",
         ],
         for_client = [
-            ":cert-manager-ctl-{OS}-{ARCH}.tar.gz",
+            ":cert-manager-kubectl-cert_manager-{OS}-{ARCH}.tar.gz",
         ],
         for_server = [
             ":cert-manager-server-{OS}-{ARCH}.tar.gz",
@@ -100,7 +100,6 @@ pkg_tar(
         "//build:client-artifacts",
     ],
     mode = "0755",
-    package_dir = "client/ctl",
     tags = [
         "manual",
         "no-cache",
@@ -149,14 +148,12 @@ pkg_tar(
 ) for arch in archs] for os, archs in UBI_PLATFORMS.items()]
 
 [[pkg_tar(
-    name = "cert-manager-ctl-%s-%s" % (os, arch),
+    name = "kubectl-cert-manager-%s-%s" % (os, arch),
     srcs = [
         ":license-targets",
-        "//:version",
     ],
     extension = "tar.gz",
     mode = "0644",
-    package_dir = "cert-manager-ctl-%s-%s" % (os, arch),
     tags = [
         "manual",
         "no-cache",
@@ -166,6 +163,23 @@ pkg_tar(
             ":_ctl",
         ],
     }),
+) for arch in archs] for os, archs in CLIENT_PLATFORMS.items()]
+
+# This tarball contains the actual kubectl-cert-manager.tar.gz
+# This is meant to transport that file inside the build system
+[[pkg_tar(
+    name = "cert-manager-kubectl-cert_manager-%s-%s" % (os, arch),
+    srcs = [
+        ":kubectl-cert-manager-%s-%s" % (os, arch),
+        "//:version",
+    ],
+    extension = "tar.gz",
+    mode = "0644",
+    package_dir = "cert-manager-kubectl-cert_manager-%s-%s" % (os, arch),
+    tags = [
+        "manual",
+        "no-cache",
+    ],
 ) for arch in archs] for os, archs in CLIENT_PLATFORMS.items()]
 
 pkg_tar(
