@@ -22,14 +22,6 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
-genrule(
-    name = "save_docker_version-ubi",
-    outs = ["version-ubi"],
-    cmd = "grep '^STABLE_DOCKER_TAG_UBI ' bazel-out/stable-status.txt | awk '{print $$2}' >$@",
-    stamp = 1,
-    visibility = ["//visibility:public"],
-)
-
 container_bundle(
     name = "images",
     images = {

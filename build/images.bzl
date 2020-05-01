@@ -14,24 +14,6 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 
-UBI_BASE_IMAGES = {
-    # Pinned to release https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8-minimal/images/8.1-407
-    # Ensure you update _all_ image digests when upgrading the UBI base image.
-    "amd64": {
-        "digest": "sha256:39df7365f1343e9a49132f96edd852ddb80e4dcdec03ef8fe1779acb5418d37e",
-    },
-    "arm64": {
-        "digest": "sha256:2166f0122117868485b429170d0848b2da566c20a61e517d44d059c360e2ed2b",
-        "variant": "v8",
-    },
-    "ppc64le": {
-        "digest": "sha256:e55721eb97b2517542b695c3ad36e9534fb8f7a8641d06b2ad87e802e36dd8d2",
-    },
-    "s390x": {
-        "digest": "sha256:d41676554f34c417c82a016c94790179fb4116063547b757ec7a65a52235c9c8",
-    },
-}
-
 def define_base_images():
     ## Use 'static' distroless image for all builds
     container_pull(
@@ -41,11 +23,3 @@ def define_base_images():
         digest = "sha256:cd0679a54d2abaf3644829f5e290ad8a10688847475f570fddb9963318cf9390",
     )
 
-    [container_pull(
-        name = "com_redhat_access_registry_ubi8_ubi_minimal-%s" % arch,
-        registry = "registry.access.redhat.com",
-        repository = "ubi8/ubi-minimal",
-        architecture = arch,
-        digest = meta["digest"],
-        cpu_variant = meta.get("variant", None),
-    ) for arch, meta in UBI_BASE_IMAGES.items()]

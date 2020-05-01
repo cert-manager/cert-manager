@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@io_k8s_repo_infra//defs:build.bzl", "release_filegroup")
 load(":container.bzl", "multi_arch_container", "multi_arch_container_push")
-load(":platforms.bzl", "SERVER_PLATFORMS", "UBI_PLATFORMS", "for_platforms")
+load(":platforms.bzl", "SERVER_PLATFORMS", "for_platforms")
 
 # This list defines the docker images that consist a release
 DOCKERIZED_BINARIES = {
@@ -55,52 +55,11 @@ multi_arch_container_push(
     tags = ["manual"],
 )
 
-[multi_arch_container(
-    name = "%s-ubi" % binary,
-    architectures = UBI_PLATFORMS["linux"],
-    base = "@com_redhat_access_registry_ubi8_ubi_minimal-{ARCH}//image",
-    binary = select(for_platforms(
-        for_ubi = "%s-ubi" % meta["target"],
-        only_os = "linux",
-    )),
-    # Since the multi_arch_container macro replaces the {ARCH} format string,
-    # we need to escape the stamping vars.
-    docker_tags = ["{{STABLE_DOCKER_REGISTRY}}/cert-manager-%s-{ARCH}:{{STABLE_DOCKER_TAG}}-ubi" % binary],
-    stamp = True,
-    symlinks = {
-        # Some cluster startup scripts expect to find the binaries in /usr/local/bin,
-        # but the debs install the binaries into /usr/bin.
-        "/usr/local/bin/" + binary: "/usr/bin/" + binary,
-    },
-    tags = ["manual"],
-    user = "1000",
-    visibility = ["//visibility:private"],
-) for binary, meta in DOCKERIZED_BINARIES.items()]
-
-# Also roll up all images into a single bundle to push with one target.
-multi_arch_container_push(
-    name = "ubi-images",
-    architectures = UBI_PLATFORMS["linux"],
-    docker_tags_images = {
-        "{{STABLE_DOCKER_REGISTRY}}/cert-manager-%s-{ARCH}:{{STABLE_DOCKER_TAG}}-ubi" % binary: "%s-internal" % binary
-        for binary in DOCKERIZED_BINARIES.keys()
-    },
-    tags = ["manual"],
-)
-
 [genrule(
     name = binary + "_docker_tag",
     srcs = [meta["target"]],
     outs = [binary + ".docker_tag"],
     cmd = "grep ^STABLE_DOCKER_TAG bazel-out/stable-status.txt | awk '{print $$2}' >$@",
-    stamp = 1,
-) for binary, meta in DOCKERIZED_BINARIES.items()]
-
-[genrule(
-    name = "%s-ubi_docker_tag" % binary,
-    srcs = [meta["target"]],
-    outs = ["%s-ubi.docker_tag" % binary],
-    cmd = "grep ^STABLE_DOCKER_TAG bazel-out/stable-status.txt | awk '{print $$2\"-ubi\"}' >$@",
     stamp = 1,
 ) for binary, meta in DOCKERIZED_BINARIES.items()]
 
@@ -120,13 +79,6 @@ release_filegroup(
     name = "server-artifacts",
     srcs = [":%s.tar" % binary for binary in DOCKERIZED_BINARIES.keys()] +
            [":%s.docker_tag" % binary for binary in DOCKERIZED_BINARIES.keys()],
-    tags = ["manual"],
-)
-
-release_filegroup(
-    name = "ubi-artifacts",
-    srcs = [":%s-ubi.tar" % binary for binary in DOCKERIZED_BINARIES.keys()] +
-           [":%s-ubi.docker_tag" % binary for binary in DOCKERIZED_BINARIES.keys()],
     tags = ["manual"],
 )
 
