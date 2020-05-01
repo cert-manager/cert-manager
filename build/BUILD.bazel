@@ -2,6 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@io_k8s_repo_infra//defs:build.bzl", "release_filegroup")
 load(":container.bzl", "multi_arch_container", "multi_arch_container_push")
+load(":platforms.bzl", "SERVER_PLATFORMS", "for_platforms")
 
 # This list defines the docker images that consist a release
 DOCKERIZED_BINARIES = {
