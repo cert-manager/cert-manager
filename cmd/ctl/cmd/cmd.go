@@ -37,10 +37,10 @@ import (
 
 func NewCertManagerCtlCommand(in io.Reader, out, err io.Writer, stopCh <-chan struct{}) *cobra.Command {
 	cmds := &cobra.Command{
-		Use:   "cert-manager-ctl",
+		Use:   "kubectl cert-manager",
 		Short: "cert-manager CLI tool to manage and configure cert-manager resources",
 		Long: `
-cert-manager-ctl is a CLI tool manage and configure cert-manager resources for Kubernetes`,
+kubectl cert-manager is a CLI tool manage and configure cert-manager resources for Kubernetes`,
 		Run: runHelp,
 	}
 

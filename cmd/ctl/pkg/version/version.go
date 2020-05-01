@@ -54,8 +54,8 @@ func NewCmdVersion(ioStreams genericclioptions.IOStreams) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print the cert-manager-ctl version",
-		Long:  "Print the cert-manager-ctl version",
+		Short: "Print the kubectl cert-manager version",
+		Long:  "Print the kubectl cert-manager version",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate())
 			cmdutil.CheckErr(o.Run())
