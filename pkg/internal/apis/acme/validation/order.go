@@ -90,6 +90,9 @@ func ValidateOrderStatusUpdate(old, new cmacme.OrderStatus, fldPath *field.Path)
 			if old.Wildcard != nil && (new.Wildcard == nil || *old.Wildcard != *new.Wildcard) {
 				el = append(el, field.Forbidden(fldPath.Child("wildcard"), "field is immutable once set"))
 			}
+			if old.InitialState != "" && (old.InitialState != new.InitialState) {
+				el = append(el, field.Forbidden(fldPath.Child("initialState"), "field is immutable once set"))
+			}
 
 			if len(old.Challenges) > 0 {
 				fldPath := fldPath.Child("challenges")

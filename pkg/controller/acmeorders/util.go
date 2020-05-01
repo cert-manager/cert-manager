@@ -37,13 +37,21 @@ var (
 )
 
 func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order) ([]cmacme.Challenge, error) {
-	chs := make([]cmacme.Challenge, len(o.Status.Authorizations))
-	for i, a := range o.Status.Authorizations {
+	chs := make([]cmacme.Challenge, 0)
+	for _, a := range o.Status.Authorizations {
+		if a.InitialState == cmacme.Valid {
+			wc := false
+			if a.Wildcard != nil {
+				wc = *a.Wildcard
+			}
+			logf.FromContext(ctx).V(logf.DebugLevel).Info("Authorization already valid, not creating Challenge resource", "identifier", a.Identifier, "is_wildcard", wc)
+			continue
+		}
 		ch, err := buildChallenge(ctx, cl, issuer, o, a)
 		if err != nil {
 			return nil, err
 		}
-		chs[i] = *ch
+		chs = append(chs, *ch)
 	}
 	return chs, nil
 }

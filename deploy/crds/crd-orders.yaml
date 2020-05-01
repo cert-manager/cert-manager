@@ -169,6 +169,24 @@ spec:
                     description: Identifier is the DNS name to be validated as part
                       of this authorization
                     type: string
+                  initialState:
+                    description: InitialState is the initial state of the ACME authorization
+                      when first fetched from the ACME server. If an Authorization
+                      is already 'valid', the Order controller will not create a Challenge
+                      resource for the authorization. This will occur when working
+                      with an ACME server that enables 'authz reuse' (such as Let's
+                      Encrypt's production endpoint). If not set and 'identifier'
+                      is set, the state is assumed to be pending and a Challenge will
+                      be created.
+                    type: string
+                    enum:
+                    - valid
+                    - ready
+                    - pending
+                    - processing
+                    - invalid
+                    - expired
+                    - errored
                   url:
                     description: URL is the URL of the Authorization that must be
                       completed

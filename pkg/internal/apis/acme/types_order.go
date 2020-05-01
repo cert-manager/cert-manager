@@ -124,6 +124,17 @@ type ACMEAuthorization struct {
 	// field will be 'true' and the 'identifier' field will be 'example.com'.
 	Wildcard *bool
 
+	// InitialState is the initial state of the ACME authorization when first
+	// fetched from the ACME server.
+	// If an Authorization is already 'valid', the Order controller will not
+	// create a Challenge resource for the authorization. This will occur when
+	// working with an ACME server that enables 'authz reuse' (such as Let's
+	// Encrypt's production endpoint).
+	// If not set and 'identifier' is set, the state is assumed to be pending
+	// and a Challenge will be created.
+	// +optional
+	InitialState State
+
 	// Challenges specifies the challenge types offered by the ACME server.
 	// One of these challenge types will be selected when validating the DNS
 	// name and an appropriate Challenge resource will be created to perform
