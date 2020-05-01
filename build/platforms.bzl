@@ -27,15 +27,6 @@ SERVER_PLATFORMS = {
     ],
 }
 
-UBI_PLATFORMS = {
-    "linux": [
-        "amd64",
-        "arm64",
-        "ppc64le",
-        "s390x",
-    ],
-}
-
 CLIENT_PLATFORMS = {
     "linux": [
         "amd64",
@@ -62,7 +53,7 @@ TEST_PLATFORMS = {
 # just the SERVER and TEST platforms
 def _all_platforms():
     all_platforms = {}
-    for platforms in [SERVER_PLATFORMS, UBI_PLATFORMS, TEST_PLATFORMS, CLIENT_PLATFORMS]:
+    for platforms in [SERVER_PLATFORMS, TEST_PLATFORMS, CLIENT_PLATFORMS]:
         for os, archs in platforms.items():
             all_platforms[os] = sets.union(
                 all_platforms.setdefault(os, sets.make()),
@@ -158,7 +149,6 @@ def _update_dict_for_platform_category(d, value, platforms, only_os = None):
 def for_platforms(
         for_server = None,
         for_test = None,
-        for_ubi = None,
         for_client = None,
         for_all = None,
         default = None,
@@ -168,7 +158,6 @@ def for_platforms(
         d["//conditions:default"] = default
     _update_dict_for_platform_category(d, for_server, SERVER_PLATFORMS, only_os)
     _update_dict_for_platform_category(d, for_test, TEST_PLATFORMS, only_os)
-    _update_dict_for_platform_category(d, for_ubi, UBI_PLATFORMS, only_os)
     _update_dict_for_platform_category(d, for_client, CLIENT_PLATFORMS, only_os)
     _update_dict_for_platform_category(d, for_all, ALL_PLATFORMS, only_os)
     return d

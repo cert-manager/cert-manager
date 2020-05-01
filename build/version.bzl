@@ -26,8 +26,6 @@ def version_x_defs(variant = None):
         "AppGitCommit": "{STABLE_BUILD_GIT_COMMIT}",
         "AppGitState": "{STABLE_BUILD_SCM_STATUS}",
     }
-    if variant == "ubi":
-        stamp_vars["AppVersion"] = "{STABLE_DOCKER_TAG_UBI}"
 
     # Generate the cross-product.
     x_defs = {}

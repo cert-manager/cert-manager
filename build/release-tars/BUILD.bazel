@@ -5,7 +5,6 @@ load(
     "CLIENT_PLATFORMS",
     "SERVER_PLATFORMS",
     "TEST_PLATFORMS",
-    "UBI_PLATFORMS",
     "for_platforms",
     "go_platform_constraint",
 )
@@ -34,9 +33,6 @@ release_filegroup(
         for_test = [
             ":cert-manager-test-{OS}-{ARCH}.tar.gz",
         ],
-        for_ubi = [
-            ":cert-manager-ubi-{OS}-{ARCH}.tar.gz",
-        ],
     ),
     tags = [
         "manual",
@@ -62,20 +58,6 @@ filegroup(
     name = "license-targets",
     srcs = [
         "//:LICENSES",
-    ],
-    visibility = ["//visibility:private"],
-)
-
-pkg_tar(
-    name = "_ubi-images",
-    srcs = [
-        "//build:ubi-artifacts",
-    ],
-    mode = "0755",
-    package_dir = "ubi/images",
-    tags = [
-        "manual",
-        "no-cache",
     ],
     visibility = ["//visibility:private"],
 )
@@ -126,26 +108,6 @@ pkg_tar(
         ],
     }),
 ) for arch in archs] for os, archs in SERVER_PLATFORMS.items()]
-
-[[pkg_tar(
-    name = "cert-manager-ubi-%s-%s" % (os, arch),
-    srcs = [
-        ":license-targets",
-        "//:version",
-    ],
-    extension = "tar.gz",
-    mode = "0644",
-    package_dir = "cert-manager-ubi-%s-%s" % (os, arch),
-    tags = [
-        "manual",
-        "no-cache",
-    ],
-    deps = select({
-        go_platform_constraint(os, arch): [
-            ":_ubi-images",
-        ],
-    }),
-) for arch in archs] for os, archs in UBI_PLATFORMS.items()]
 
 [[pkg_tar(
     name = "kubectl-cert-manager-%s-%s" % (os, arch),

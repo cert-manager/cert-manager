@@ -21,9 +21,3 @@ def go_binary(name, **kwargs):
         x_defs = version_x_defs(),
         **kwargs,
     )
-
-    real_go_binary(
-        name = "%s-ubi" % name,
-        x_defs = version_x_defs(variant = "ubi"),
-        **kwargs,
-    )
