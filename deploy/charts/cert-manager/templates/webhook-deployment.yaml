@@ -86,6 +86,9 @@ spec:
                 fieldPath: metadata.namespace
           resources:
 {{ toYaml .Values.webhook.resources | indent 12 }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
     {{- with .Values.webhook.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
@@ -98,4 +101,6 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
-
+  volumes:
+    - emptyDir: {}
+      name: tmp
