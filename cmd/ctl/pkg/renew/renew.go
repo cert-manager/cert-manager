@@ -43,13 +43,13 @@ Mark cert-manager Certificate resources for manual renewal.`))
 
 	example = templates.Examples(i18n.T(`
 # Renew the Certificates named 'my-app' and 'vault' in the current context namespace.
-ctl renew my-app vault
+kubectl cert-manager renew my-app vault
 
 # Renew all Certificates in the 'kube-system' namespace.
-ctl renew --namespace kube-system --all
+kubectl cert-manager renew --namespace kube-system --all
 
 # Renew all Certificates in all namespaces, provided those Certificates have the label 'app=my-service
-ctl renew --all-namespaces -l app=my-service`))
+kubectl cert-manager renew --all-namespaces -l app=my-service`))
 )
 
 // Options is a struct to support renew command

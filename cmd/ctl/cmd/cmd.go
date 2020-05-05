@@ -37,12 +37,12 @@ import (
 
 func NewCertManagerCtlCommand(in io.Reader, out, err io.Writer, stopCh <-chan struct{}) *cobra.Command {
 	cmds := &cobra.Command{
-		Use:   "kubectl-cert-manager",
+		Use:   "cert-manager",
 		Short: "cert-manager CLI tool to manage and configure cert-manager resources",
 		Long: `
 kubectl cert-manager is a CLI tool manage and configure cert-manager resources for Kubernetes`,
-		Run: runHelp,
 	}
+	cmds.SetUsageTemplate(usageTemplate)
 
 	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
 	kubeConfigFlags.AddFlags(cmds.PersistentFlags())
@@ -67,6 +67,27 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	return cmds
 }
 
-func runHelp(cmd *cobra.Command, args []string) {
-	cmd.Help()
-}
+const usageTemplate = `Usage:{{if .Runnable}}
+  kubectl {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  kubectl {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "kubectl {{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
