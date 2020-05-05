@@ -91,7 +91,7 @@ securityContext: {}
 #   runAsUser: 1000
 #   runAsNonRoot: true
 
-# Container Security Context
+# Container Security Context to be set on the controller component container
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 containerSecurityContext: {}
   # capabilities:
@@ -179,7 +179,7 @@ webhook:
 
   securityContext: {}
 
-  # Container Security Context for Webhook Container
+  # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   containerSecurityContext: {}
     # capabilities:
@@ -234,7 +234,7 @@ cainjector:
 
   securityContext: {}
 
-  # Container Security Context for cainjector Container
+  # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   containerSecurityContext: {}
     # capabilities:

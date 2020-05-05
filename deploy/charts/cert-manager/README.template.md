@@ -108,6 +108,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `resources` | CPU/memory resource requests/limits | `{}` |
 | `securityContext` | Optional security context. The yaml block should adhere to the [SecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.16/#securitycontext-v1-core) | `{}` |
 | `securityContext.enabled` | Deprecated (use `securityContext`) - Enable security context | `false` |
+| `containerSecurityContext` | Security context to be set on the controller component container | `{}` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
@@ -143,6 +144,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
+| `webhook.containerSecurityContext` | Security context to be set on the webhook component container | `{}` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
@@ -156,6 +158,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.tag` | cainjector image tag | `{{RELEASE_VERSION}}` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
+| `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | `{}` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
