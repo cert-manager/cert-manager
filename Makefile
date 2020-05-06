@@ -97,6 +97,7 @@ images:
 	APP_VERSION=$(APP_VERSION) \
 	DOCKER_REGISTRY=$(DOCKER_REPO) \
 	bazel run \
+		--stamp \
 		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
 		//build:server-images
 
