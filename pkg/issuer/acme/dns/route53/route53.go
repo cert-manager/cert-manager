@@ -17,7 +17,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -62,9 +61,7 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 
 	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "")
 
-	r := client.DefaultRetryer{}
-	r.NumMaxRetries = maxRetries
-	config := request.WithRetryer(aws.NewConfig(), r)
+	config := aws.NewConfig()
 	sessionOpts := session.Options{
 		Config: *config,
 	}
