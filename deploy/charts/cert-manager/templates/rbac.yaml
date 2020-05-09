@@ -229,6 +229,9 @@ rules:
   - apiGroups: ["route.openshift.io"]
     resources: ["routes/custom-host"]
     verbs: ["create"]
+  - apiGroups: ["networking.istio.io"]
+    resources: ["gateways", "virtualservices"]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
   # We require these rules to support users with the OwnerReferencesPermissionEnforcement
   # admission controller enabled:
   # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement

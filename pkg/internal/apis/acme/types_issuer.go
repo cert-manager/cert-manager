@@ -125,6 +125,8 @@ type ACMEChallengeSolverHTTP01 struct {
 	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
 	// provisioned by cert-manager for each Challenge to be completed.
 	Ingress *ACMEChallengeSolverHTTP01Ingress
+
+	Istio *ACMEChallengeSolverHTTP01Istio
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
@@ -200,6 +202,11 @@ type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
 
 	// Labels that should be added to the created ACME HTTP01 solver ingress.
 	Labels map[string]string
+}
+
+type ACMEChallengeSolverHTTP01Istio struct {
+	GatewayNamespace string
+	GatewayName      string
 }
 
 type ACMEChallengeSolverDNS01 struct {

@@ -138,6 +138,9 @@ type ACMEChallengeSolverHTTP01 struct {
 	// provisioned by cert-manager for each Challenge to be completed.
 	// +optional
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
+
+	// +optional
+	Istio *ACMEChallengeSolverHTTP01Istio `json:"istio"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
@@ -228,6 +231,14 @@ type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
 	// Labels that should be added to the created ACME HTTP01 solver ingress.
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01Istio struct {
+	// +optional
+	GatewayNamespace string `json:"gatewayNamespace,omitempty"`
+
+	// +optional
+	GatewayName string `json:"gatewayName,omitempty"`
 }
 
 type ACMEChallengeSolverDNS01 struct {

@@ -20,6 +20,8 @@ go_library(
         "//pkg/logs:go_default_library",
         "//pkg/metrics:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
+        "@io_istio_client_go//pkg/clientset/versioned:go_default_library",
+        "@io_istio_client_go//pkg/informers/externalversions:go_default_library",
         "@io_k8s_apimachinery//pkg/api/resource:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",

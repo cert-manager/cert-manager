@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "http.go",
         "ingress.go",
+        "istio.go",
         "pod.go",
         "service.go",
     ],
@@ -16,6 +17,8 @@ go_library(
         "//pkg/controller:go_default_library",
         "//pkg/issuer/acme/http/solver:go_default_library",
         "//pkg/logs:go_default_library",
+        "@io_istio_api//networking/v1beta1:go_default_library",
+        "@io_istio_client_go//pkg/apis/networking/v1beta1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//extensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
@@ -34,6 +37,7 @@ go_test(
     srcs = [
         "http_test.go",
         "ingress_test.go",
+        #        "istio_test.go",
         "pod_test.go",
         "service_test.go",
         "util_test.go",

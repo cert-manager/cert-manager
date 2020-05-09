@@ -24,6 +24,8 @@ go_library(
         "//test/e2e/framework/util/errors:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",
+        "@io_istio_client_go//pkg/apis/networking/v1alpha3:go_default_library",
+        "@io_istio_client_go//pkg/apis/networking/v1beta1:go_default_library",
         "@io_k8s_api//authorization/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//rbac/v1:go_default_library",

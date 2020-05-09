@@ -23,6 +23,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	api "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -52,6 +54,8 @@ var Scheme = runtime.NewScheme()
 func init() {
 	kscheme.AddToScheme(Scheme)
 	certmgrscheme.AddToScheme(Scheme)
+	istionetworkingv1alpha3.AddToScheme(Scheme)
+	istionetworkingv1beta1.AddToScheme(Scheme)
 	apiext.AddToScheme(Scheme)
 	apireg.AddToScheme(Scheme)
 }

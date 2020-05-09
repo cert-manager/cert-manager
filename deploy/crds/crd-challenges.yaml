@@ -1363,6 +1363,13 @@ spec:
                           description: Optional service type for Kubernetes solver
                             service
                           type: string
+                    istio:
+                      type: object
+                      properties:
+                        gatewayName:
+                          type: string
+                        gatewayNamespace:
+                          type: string
                 selector:
                   description: Selector selects a set of DNSNames on the Certificate
                     resource that should be solved using this challenge solver.

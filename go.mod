@@ -44,12 +44,14 @@ require (
 	google.golang.org/api v0.4.0
 	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.18.0
+	istio.io/api v0.0.0-20200505181140-d58b531533d4
+	istio.io/client-go v0.0.0-20200505182340-146ba01d5357
+	k8s.io/api v0.18.1
 	k8s.io/apiextensions-apiserver v0.18.0
-	k8s.io/apimachinery v0.18.0
+	k8s.io/apimachinery v0.18.1
 	k8s.io/apiserver v0.18.0
 	k8s.io/cli-runtime v0.18.0
-	k8s.io/client-go v0.18.0
+	k8s.io/client-go v0.18.1
 	k8s.io/code-generator v0.18.0
 	k8s.io/component-base v0.18.0
 	k8s.io/klog v1.0.0

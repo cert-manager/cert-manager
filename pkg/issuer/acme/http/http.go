@@ -103,7 +103,8 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
+	//_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
+	_, ingressErr := s.ensureIstio(ctx, ch, svc.Name)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
