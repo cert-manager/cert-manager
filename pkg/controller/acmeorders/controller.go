@@ -28,7 +28,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	"github.com/jetstack/cert-manager/pkg/acme"
+	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
@@ -40,8 +40,9 @@ import (
 type controller struct {
 	// issuer helper is used to obtain references to issuers, used by Sync()
 	helper issuer.Helper
-	// acmehelper is used to obtain references to ACME clients
-	acmeHelper acme.Helper
+
+	// used to fetch ACME clients used in the controller
+	accountRegistry accounts.Getter
 
 	// all the listers used by this controller
 	orderLister         cmacmelisters.OrderLister
@@ -114,11 +115,11 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// instantiate additional helpers used by this controller
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
-	c.acmeHelper = acme.NewHelper(c.secretLister, ctx.ClusterResourceNamespace)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
 	// clock is used when setting the failureTime on an Order's status
 	c.clock = ctx.Clock
+	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
 	return c.queue, mustSync, nil
 }

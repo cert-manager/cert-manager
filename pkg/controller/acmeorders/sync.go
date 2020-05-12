@@ -67,7 +67,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", o.Spec.IssuerRef.Name, err)
 	}
-	cl, err := c.acmeHelper.ClientForIssuer(genericIssuer)
+	cl, err := c.accountRegistry.GetClient(string(genericIssuer.GetUID()))
 	if err != nil {
 		return err
 	}

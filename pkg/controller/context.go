@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
 
+	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 )
@@ -117,6 +118,10 @@ type ACMEOptions struct {
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string
+
+	// AccountRegistry is used as a cache of ACME accounts between various
+	// components of cert-manager
+	AccountRegistry accounts.Registry
 }
 
 type IngressShimOptions struct {

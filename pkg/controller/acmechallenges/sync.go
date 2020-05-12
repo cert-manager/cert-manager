@@ -118,7 +118,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		return nil
 	}
 
-	cl, err := c.acmeHelper.ClientForIssuer(genericIssuer)
+	cl, err := c.accountRegistry.GetClient(string(genericIssuer.GetUID()))
 	if err != nil {
 		return err
 	}

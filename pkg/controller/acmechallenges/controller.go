@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack/cert-manager/pkg/acme"
+	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
@@ -44,8 +44,9 @@ import (
 type controller struct {
 	// issuer helper is used to obtain references to issuers, used by Sync()
 	helper issuer.Helper
-	// acmehelper is used to obtain references to ACME clients
-	acmeHelper acme.Helper
+
+	// used to fetch ACME clients used in the controller
+	accountRegistry accounts.Getter
 
 	// all the listers used by this controller
 	challengeLister     cmacmelisters.ChallengeLister
@@ -122,11 +123,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
-	c.acmeHelper = acme.NewHelper(c.secretLister, ctx.ClusterResourceNamespace)
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
 	c.httpSolver = http.NewSolver(ctx)
+	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
+
 	var err error
 	c.dnsSolver, err = dns.NewSolver(ctx)
 	if err != nil {
