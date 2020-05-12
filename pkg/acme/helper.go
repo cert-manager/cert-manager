@@ -19,6 +19,7 @@ package acme
 import (
 	"crypto/rsa"
 	"fmt"
+
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	acme "github.com/jetstack/cert-manager/pkg/acme/client"

@@ -10,18 +10,16 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/acme",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/acme/accounts:go_default_library",
         "//pkg/acme/client:go_default_library",
-        "//pkg/acme/client/middleware:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/acme/v1alpha2:go_default_library",
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/util:go_default_library",
         "//pkg/util/errors:go_default_library",
         "//pkg/util/pki:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
-        "@org_golang_x_crypto//acme:go_default_library",
     ],
 )
 
@@ -36,6 +34,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/acme/accounts:all-srcs",
         "//pkg/acme/client:all-srcs",
         "//pkg/acme/fake:all-srcs",
         "//pkg/acme/webhook:all-srcs",
