@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
+	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -422,8 +422,8 @@ func runTest(t *testing.T, test testT) {
 		test.builder.SharedInformerFactory.Certmanager().V1alpha2().Issuers().Lister(),
 		test.builder.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers().Lister(),
 	)
-	c.acmeHelper = &acmefake.Helper{
-		ClientForIssuerFunc: func(iss v1alpha2.GenericIssuer) (acmecl.Interface, error) {
+	c.accountRegistry = &accountstest.FakeRegistry{
+		GetClientFunc: func(_ string) (acmecl.Interface, error) {
 			return test.acmeClient, nil
 		},
 	}

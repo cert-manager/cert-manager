@@ -25,17 +25,19 @@ import (
 	"strings"
 
 	acmeapi "golang.org/x/crypto/acme"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
+	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -72,7 +74,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// therefore we should check for the ACME private key in the 'cluster resource namespace'.
 	ns := a.issuer.GetObjectMeta().Namespace
 	if ns == "" {
-		ns = a.IssuerOptions.ClusterResourceNamespace
+		ns = a.clusterResourceNamespace
 	}
 
 	log = logf.WithRelatedResourceName(log, a.issuer.GetSpec().ACME.PrivateKey.Name, ns, "Secret")
@@ -81,11 +83,12 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// if it does not exist then we generate one
 	// if it contains invalid data, warn the user and return without error.
 	// if any other error occurs, return it and retry.
-	pk, err := a.helper.ReadPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
+	privateKeySelector := acme.PrivateKeySelector(a.issuer.GetSpec().ACME.PrivateKey)
+	pk, err := kube.SecretTLSKeyRef(ctx, a.secretsLister, ns, privateKeySelector.Name, privateKeySelector.Key)
 	switch {
 	case apierrors.IsNotFound(err):
 		log.Info("generating acme account private key")
-		pk, err = a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
+		pk, err = a.createAccountPrivateKey(privateKeySelector, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
 			apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
@@ -102,19 +105,18 @@ func (a *Acme) Setup(ctx context.Context) error {
 		s := messageAccountVerificationFailed + err.Error()
 		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, s)
 		return fmt.Errorf(s)
-
+	}
+	rsaPk, ok := pk.(*rsa.PrivateKey)
+	if !ok {
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, fmt.Sprintf("ACME private key in %q is not of type RSA", a.issuer.GetSpec().ACME.PrivateKey.Name))
+		return nil
 	}
 
-	acme.ClearClientCache()
-
-	cl, err := acme.ClientWithKey(a.issuer, pk)
-	if err != nil {
-		s := messageAccountVerificationFailed + err.Error()
-		log.Error(err, "failed to verify acme account")
-		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, s)
-		return err
-	}
+	// TODO: don't always clear the client cache.
+	//  In future we should intelligently manage items in the account cache
+	//  and remove them when the corresponding issuer is updated/deleted.
+	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
+	cl := accounts.NewClient(*a.issuer.GetSpec().ACME, rsaPk)
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
@@ -129,7 +131,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if err != nil {
 		r := "InvalidURL"
 		s := fmt.Sprintf("Failed to parse existing ACME server URI %q: %v", rawServerURL, err)
-		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, r, s)
+		a.recorder.Eventf(a.issuer, corev1.EventTypeWarning, r, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, r, s)
 		// absorb errors as retrying will not help resolve this error
 		return nil
@@ -140,7 +142,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if err != nil {
 		r := "InvalidURL"
 		s := fmt.Sprintf("Failed to parse existing ACME account URI %q: %v", rawAccountURL, err)
-		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, r, s)
+		a.recorder.Eventf(a.issuer, corev1.EventTypeWarning, r, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, r, s)
 		// absorb errors as retrying will not help resolve this error
 		return nil
@@ -161,6 +163,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 		a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail == a.issuer.GetSpec().ACME.Email {
 		log.Info("skipping re-verifying ACME account as cached registration " +
 			"details look sufficient")
+		// ensure the cached client in the account registry is up to date
+		a.accountRegistry.AddClient(string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
 		return nil
 	}
 
@@ -180,7 +184,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 			log.Error(err, "failed to verify ACME account")
 			s := messageAccountRegistrationFailed + err.Error()
 
-			a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
+			a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountRegistrationFailed, s)
 			apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse,
 				errorAccountRegistrationFailed, fmt.Sprintf("External Account Binding MAC key is invalid: %v", err))
 
@@ -206,7 +210,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		log.Error(err, "failed to verify ACME account")
-		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
+		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountVerificationFailed, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
 
 		acmeErr, ok := err.(*acmeapi.Error)
@@ -235,7 +239,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if err != nil {
 		s := messageAccountUpdateFailed + err.Error()
 		log.Error(err, "failed to update ACME account")
-		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountUpdateFailed, s)
+		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountUpdateFailed, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountUpdateFailed, s)
 
 		acmeErr, ok := err.(*acmeapi.Error)
@@ -261,6 +265,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 	apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
+	// ensure the cached client in the account registry is up to date
+	a.accountRegistry.AddClient(string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
 
 	return nil
 }
@@ -329,7 +335,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAcco
 
 func (a *Acme) getEABKey(ns string) ([]byte, error) {
 	eab := a.issuer.GetSpec().ACME.ExternalAccountBinding.Key
-	sec, err := a.Client.CoreV1().Secrets(ns).Get(context.TODO(), eab.Name, metav1.GetOptions{})
+	sec, err := a.secretsClient.Secrets(ns).Get(context.TODO(), eab.Name, metav1.GetOptions{})
 	// Surface IsNotFound API error to not cause re-sync
 	if apierrors.IsNotFound(err) {
 		return nil, err
@@ -365,7 +371,7 @@ func (a *Acme) createAccountPrivateKey(sel cmmeta.SecretKeySelector, ns string) 
 		return nil, err
 	}
 
-	_, err = a.Client.CoreV1().Secrets(ns).Create(context.TODO(), &v1.Secret{
+	_, err = a.secretsClient.Secrets(ns).Create(context.TODO(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,
