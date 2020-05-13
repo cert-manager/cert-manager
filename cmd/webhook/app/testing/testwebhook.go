@@ -89,12 +89,13 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	// Listen on a random port number
 	opts.ListenPort = 0
 	opts.HealthzPort = 0
-	srv, err := app.NewServerWithOptions(log, opts)
+
+	stopCh := make(chan struct{})
+	srv, err := app.NewServer(opts, stopCh)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	stopCh := make(chan struct{})
 	go func() {
 		if err := srv.Run(stopCh); err != nil {
 			t.Fatalf("error running webhook server: %v", err)

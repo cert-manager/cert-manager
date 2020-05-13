@@ -39,7 +39,7 @@ var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBacked
 var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
-func RunServer(opts options.WebhookOptions, stopCh <-chan struct{}) error {
+func NewServer(opts options.WebhookOptions, stopCh <-chan struct{}) (*server.Server, error) {
 	rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
 	rootCtx = logf.NewContext(rootCtx, nil, "webhook")
 	log := logf.FromContext(rootCtx)
@@ -56,7 +56,7 @@ func RunServer(opts options.WebhookOptions, stopCh <-chan struct{}) error {
 	case options.DynamicTLSSourceEnabled(opts):
 		restcfg, err := clientcmd.BuildConfigFromFlags("", opts.Kubeconfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		log.Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", opts.DynamicServingCASecretNamespace, "secret_name", opts.DynamicServingCASecretName)
@@ -74,7 +74,7 @@ func RunServer(opts options.WebhookOptions, stopCh <-chan struct{}) error {
 		log.Info("warning: serving insecurely as tls certificate data not provided")
 	}
 
-	srv := &server.Server{
+	return &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", opts.ListenPort),
 		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
 		EnablePprof:       true,
@@ -85,9 +85,7 @@ func RunServer(opts options.WebhookOptions, stopCh <-chan struct{}) error {
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
 		Log:               log,
-	}
-
-	return srv.Run(stopCh)
+	}, nil
 }
 
 func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
@@ -97,7 +95,12 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 		Use:   "cert-manager-webhook",
 		Short: fmt.Sprintf("Webhook for automated TLS controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return RunServer(opts, stopCh)
+			srv, err := NewServer(opts, stopCh)
+			if err != nil {
+				return err
+			}
+
+			return srv.Run(stopCh)
 		},
 	}
 
