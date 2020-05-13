@@ -73,7 +73,7 @@ func NewDefaultRegistry() Registry {
 
 // Implementation of the Registry interface
 type registry struct {
-	lock sync.Mutex
+	lock sync.RWMutex
 
 	// a map of an issuer's 'uid' to an ACME client with metadata
 	clients map[string]clientWithMeta
@@ -127,6 +127,9 @@ func (r *registry) AddClient(uid string, config cmacme.ACMEIssuer, privateKey *r
 // even if the client does not need replacing/updating without causing issues for
 // consumers of the registry.
 func (r *registry) ensureClient(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
+	// acquire a read-write lock even if we hit the fast-path where the client
+	// is already present to avoid having to RLock, RUnlock and Lock again,
+	// which could itself cause a race
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	newOpts := newStableOptions(uid, config, privateKey)
@@ -146,8 +149,8 @@ func (r *registry) ensureClient(uid string, config cmacme.ACMEIssuer, privateKey
 // resources that constructed it.
 // If no client is found, ErrNotFound will be returned.
 func (r *registry) GetClient(uid string) (acmecl.Interface, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	// fast-path if the client is already registered
 	if c, ok := r.clients[uid]; ok {
 		return c.Interface, nil
@@ -171,8 +174,8 @@ func (r *registry) RemoveClient(uid string) {
 // on any clients that should no longer be registered, e.g. because their
 // corresponding Issuer resource has been deleted.
 func (r *registry) ListClients() map[string]acmecl.Interface {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	// strip the client metadata before returning
 	out := make(map[string]acmecl.Interface)
 	for k, v := range r.clients {
