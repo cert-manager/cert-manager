@@ -67,14 +67,14 @@ TLS certificates from various issuing sources.
 It will ensure certificates are valid and up to date periodically, and attempt
 to renew certificates at an appropriate time before expiry.`,
 
-		// TODO: Refactor this function from this package
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := o.Validate(args); err != nil {
-				logf.Log.Error(err, "error validating options")
+				return fmt.Errorf("error validating options: %s", err)
 			}
 
 			logf.Log.Info("starting controller", "version", util.AppVersion, "git-commit", util.AppGitCommit)
 			o.RunCertManagerController(stopCh)
+			return nil
 		},
 	}
 
