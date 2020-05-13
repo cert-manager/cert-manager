@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -10,39 +10,24 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme:go_default_library",
+        "//pkg/acme/accounts:go_default_library",
         "//pkg/acme/client:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/client/listers/acme/v1alpha2:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/errors:go_default_library",
+        "//pkg/util/kube:go_default_library",
         "//pkg/util/pki:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_client_go//kubernetes/typed/core/v1:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
-        "@io_k8s_utils//clock:go_default_library",
+        "@io_k8s_client_go//tools/record:go_default_library",
         "@org_golang_x_crypto//acme:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "setup_test.go",
-        "util_test.go",
-    ],
-    embed = [":go_default_library"],
-    deps = [
-        "//pkg/acme/client:go_default_library",
-        "//pkg/apis/acme/v1alpha2:go_default_library",
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
-        "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/controller/test:go_default_library",
-        "@io_k8s_utils//clock/testing:go_default_library",
     ],
 )
 
