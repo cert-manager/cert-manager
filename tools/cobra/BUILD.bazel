@@ -6,9 +6,11 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/tools/cobra",
     visibility = ["//visibility:private"],
     deps = [
+        "//cmd/acmesolver/app:go_default_library",
         "//cmd/cainjector/app:go_default_library",
         "//cmd/controller/app:go_default_library",
         "//cmd/ctl/cmd:go_default_library",
+        "//cmd/webhook/app:go_default_library",
         "@com_github_mitchellh_go_homedir//:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@com_github_spf13_cobra//doc:go_default_library",
