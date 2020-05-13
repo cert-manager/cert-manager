@@ -18,7 +18,6 @@ package app
 
 import (
 	"context"
-	"flag"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -39,7 +38,7 @@ var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBacked
 var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
-func NewServer(opts options.WebhookOptions, stopCh <-chan struct{}) (*server.Server, error) {
+func NewServer(opts *options.WebhookOptions, stopCh <-chan struct{}) (*server.Server, error) {
 	rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
 	rootCtx = logf.NewContext(rootCtx, nil, "webhook")
 	log := logf.FromContext(rootCtx)
@@ -89,7 +88,7 @@ func NewServer(opts options.WebhookOptions, stopCh <-chan struct{}) (*server.Ser
 }
 
 func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
-	opts := options.WebhookOptions{}
+	opts := new(options.WebhookOptions)
 
 	cmd := &cobra.Command{
 		Use:   "cert-manager-webhook",
@@ -104,7 +103,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

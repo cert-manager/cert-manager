@@ -79,14 +79,14 @@ func (o *WebhookOptions) AddFlags(fs *pflag.FlagSet) {
 			"Possible values: "+strings.Join(tlsPossibleVersions, ", "))
 }
 
-func FileTLSSourceEnabled(o WebhookOptions) bool {
+func FileTLSSourceEnabled(o *WebhookOptions) bool {
 	if o.TLSCertFile != "" || o.TLSKeyFile != "" {
 		return true
 	}
 	return false
 }
 
-func DynamicTLSSourceEnabled(o WebhookOptions) bool {
+func DynamicTLSSourceEnabled(o *WebhookOptions) bool {
 	if o.DynamicServingCASecretNamespace != "" || o.DynamicServingCASecretName != "" {
 		return true
 	}

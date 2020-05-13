@@ -32,7 +32,7 @@ func NewACMESolverCommand(ctx context.Context) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "acme-solver",
+		Use:   "cert-manager-acme-solver",
 		Short: "HTTP server used to solver ACME challenges.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s := &solver.HTTP01Solver{

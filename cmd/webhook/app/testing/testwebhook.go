@@ -56,7 +56,7 @@ type ServerOptions struct {
 
 func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	// Allow user to override options using flags
-	opts := options.WebhookOptions{}
+	opts := new(options.WebhookOptions)
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	opts.AddFlags(fs)
 	// Parse the arguments passed in into the WebhookOptions struct
