@@ -8,12 +8,13 @@ go_library(
     deps = [
         "//cmd/webhook/app/options:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/util:go_default_library",
         "//pkg/webhook:go_default_library",
         "//pkg/webhook/authority:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/server:go_default_library",
         "//pkg/webhook/server/tls:go_default_library",
-        "@com_github_go_logr_logr//:go_default_library",
+        "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_client_go//tools/clientcmd:go_default_library",
     ],
 )

@@ -17,31 +17,25 @@ limitations under the License.
 package main
 
 import (
-	goflag "flag"
-	"os"
+	"flag"
 
-	"github.com/spf13/pflag"
 	"k8s.io/klog"
-	"k8s.io/klog/klogr"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
-	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	"github.com/jetstack/cert-manager/pkg/util/cmd"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 func main() {
-	gofs := &goflag.FlagSet{}
-	klog.InitFlags(gofs)
-	pflag.CommandLine.AddGoFlagSet(gofs)
-	opts := &options.WebhookOptions{}
-	opts.AddFlags(pflag.CommandLine)
-	pflag.Parse()
+	logf.InitLogs(flag.CommandLine)
+	defer logf.FlushLogs()
 
-	log := klogr.New()
-	stopCh := cmd.SetupSignalHandler()
+	stopCh := utilcmd.SetupSignalHandler()
+	cmd := app.NewServerCommand(stopCh)
+	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
-	if err := app.RunServer(log, *opts, stopCh); err != nil {
-		log.Error(err, "error running server")
-		os.Exit(1)
+	flag.CommandLine.Parse([]string{})
+	if err := cmd.Execute(); err != nil {
+		klog.Info(err)
 	}
 }

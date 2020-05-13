@@ -17,13 +17,17 @@ limitations under the License.
 package app
 
 import (
+	"context"
+	"flag"
 	"fmt"
 
-	"github.com/go-logr/logr"
+	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
 	"github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/pkg/webhook/authority"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
@@ -35,16 +39,11 @@ var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBacked
 var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
 
-func RunServer(log logr.Logger, opts options.WebhookOptions, stopCh <-chan struct{}) error {
-	srv, err := NewServerWithOptions(log, opts)
-	if err != nil {
-		return err
-	}
+func RunServer(opts options.WebhookOptions, stopCh <-chan struct{}) error {
+	rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
+	rootCtx = logf.NewContext(rootCtx, nil, "webhook")
+	log := logf.FromContext(rootCtx)
 
-	return srv.Run(stopCh)
-}
-
-func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server.Server, error) {
 	var source tls.CertificateSource
 	switch {
 	case options.FileTLSSourceEnabled(opts):
@@ -57,7 +56,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 	case options.DynamicTLSSourceEnabled(opts):
 		restcfg, err := clientcmd.BuildConfigFromFlags("", opts.Kubeconfig)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		log.Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", opts.DynamicServingCASecretNamespace, "secret_name", opts.DynamicServingCASecretName)
@@ -75,7 +74,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 		log.Info("warning: serving insecurely as tls certificate data not provided")
 	}
 
-	return &server.Server{
+	srv := &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", opts.ListenPort),
 		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
 		EnablePprof:       true,
@@ -86,5 +85,23 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
 		Log:               log,
-	}, nil
+	}
+
+	return srv.Run(stopCh)
+}
+
+func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
+	opts := options.WebhookOptions{}
+
+	cmd := &cobra.Command{
+		Use:   "cert-manager-webhook",
+		Short: fmt.Sprintf("Webhook for automated TLS controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return RunServer(opts, stopCh)
+		},
+	}
+
+	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+
+	return cmd
 }
