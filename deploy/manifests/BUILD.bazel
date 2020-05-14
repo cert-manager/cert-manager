@@ -5,6 +5,7 @@ exports_files(["00-crds.yaml"])
 load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 load("//build:helm.bzl", "helm_tmpl")
 load("//build:licensing.bzl", "licensed_file")
+load("//build:files.bzl", "modify_file")
 
 RELEASE_NAME = "cert-manager"
 
@@ -81,5 +82,14 @@ filegroup(
     name = "all-srcs",
     srcs = [":package-srcs"],
     tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+modify_file(
+    name = "kustomize-base-regular",
+    src = "//deploy:kustomize-base",
+    out = "kustomize.yaml",
+    prefix = "",
+    suffix = "\n  - cert-manager.yaml",
     visibility = ["//visibility:public"],
 )

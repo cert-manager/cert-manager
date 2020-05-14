@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
+load("//build:files.bzl", "modify_file")
 
 pkg_tar(
     name = "manifests",
@@ -28,5 +29,22 @@ filegroup(
         "//deploy/manifests:all-srcs",
     ],
     tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "kustomize-base",
+    srcs = ["kustomize-base.yml"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+# legacy kustomize base in parent is a little awkward
+modify_file(
+    name = "kustomize-base-legacy",
+    src = "//deploy:kustomize-base",
+    out = "kustomize.yml",
+    prefix = "",
+    suffix = "\n  - manifests/cert-manager-legacy.yaml",
     visibility = ["//visibility:public"],
 )
