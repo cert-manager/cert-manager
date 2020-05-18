@@ -146,6 +146,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	defer cancel()
 
 	log := logf.FromContext(ctx).WithValues("key", key)
+
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return nil

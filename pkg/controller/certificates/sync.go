@@ -40,7 +40,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -65,9 +64,6 @@ func (c *certificateRequestManager) ProcessItem(ctx context.Context, key string)
 	log = logf.WithResource(log, crt)
 	ctx = logf.NewContext(ctx, log)
 	updatedCert := crt.DeepCopy()
-
-	defer metrics.Default.UpdateCertificateExpiry(updatedCert, c.secretLister)
-	defer metrics.Default.UpdateCertificateStatus(updatedCert)
 
 	err = c.processCertificate(ctx, updatedCert)
 	log.V(logf.DebugLevel).Info("check if certificate status update is required")

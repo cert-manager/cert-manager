@@ -31,7 +31,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
@@ -43,8 +42,6 @@ const (
 )
 
 func (c *controller) Sync(ctx context.Context, iss *v1alpha2.Issuer) (err error) {
-	metrics.Default.IncrementSyncCallCount(ControllerName)
-
 	log := logf.FromContext(ctx)
 
 	issuerCopy := iss.DeepCopy()

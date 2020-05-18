@@ -34,7 +34,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
@@ -43,8 +42,6 @@ var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	log := logs.WithResource(logs.FromContext(ctx), ing)
 	ctx = logs.NewContext(ctx, log)
-
-	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
 		log.Info(fmt.Sprintf("not syncing ingress resource as it does not contain a %q or %q annotation",

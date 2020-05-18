@@ -18,6 +18,7 @@ go_library(
         "//pkg/client/informers/externalversions:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/metrics:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_kr_pretty//:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",

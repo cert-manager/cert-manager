@@ -31,6 +31,9 @@ type Builder struct {
 	// the queueingController
 	context *Context
 
+	// name is the name for this controller
+	name string
+
 	// a reference to the root context for this controller, used
 	// as a basis for other contexts and for logging
 	ctx context.Context
@@ -54,6 +57,7 @@ func NewBuilder(controllerctx *Context, name string) *Builder {
 	return &Builder{
 		context: controllerctx,
 		ctx:     ctx,
+		name:    name,
 	}
 }
 
@@ -93,5 +97,5 @@ func (b *Builder) Complete() (Interface, error) {
 		return nil, fmt.Errorf("error registering controller: %v", err)
 	}
 
-	return NewController(b.ctx, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
+	return NewController(b.ctx, b.name, b.context.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
 }

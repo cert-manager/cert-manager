@@ -42,8 +42,6 @@ var (
 )
 
 func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) (err error) {
-	c.metrics.IncrementSyncCallCount(ControllerName)
-
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
@@ -126,7 +124,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 		return nil
 	}
 
-	// TODO: Metrics??
+	// TODO (@joshvanl): add certificaterequest inc up?
 
 	dbg.Info("invoking sign function as existing certificate does not exist")
 

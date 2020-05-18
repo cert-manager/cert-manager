@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 type runFunc func(context.Context)
@@ -43,6 +44,8 @@ type queueingController interface {
 
 func NewController(
 	ctx context.Context,
+	name string,
+	metrics *metrics.Metrics,
 	syncFunc func(ctx context.Context, key string) error,
 	mustSync []cache.InformerSynced,
 	runDurationFuncs []runDurationFunc,
@@ -50,6 +53,8 @@ func NewController(
 ) Interface {
 	return &controller{
 		ctx:              ctx,
+		name:             name,
+		metrics:          metrics,
 		syncHandler:      syncFunc,
 		mustSync:         mustSync,
 		runDurationFuncs: runDurationFuncs,
@@ -60,6 +65,9 @@ func NewController(
 type controller struct {
 	// ctx is the root golang context for the controller
 	ctx context.Context
+
+	// name is the name for this controller
+	name string
 
 	// the function that should be called when an item is popped
 	// off the workqueue
@@ -78,6 +86,9 @@ type controller struct {
 	// queue is a reference to the queue used to enqueue resources
 	// to be processed
 	queue workqueue.RateLimitingInterface
+
+	// metrics is used to expose Prometheus, shared by all controllers
+	metrics *metrics.Metrics
 }
 
 // Run starts the controller loop
@@ -139,6 +150,10 @@ func (b *controller) worker(ctx context.Context) {
 			}
 			log := log.WithValues("key", key)
 			log.Info("syncing item")
+
+			// Increase sync count for this controller
+			b.metrics.IncrementSyncCallCount(b.name)
+
 			if err := b.syncHandler(ctx, key); err != nil {
 				log.Error(err, "re-queuing item  due to error processing")
 				b.queue.AddRateLimited(obj)
