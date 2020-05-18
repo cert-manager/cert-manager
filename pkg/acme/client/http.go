@@ -36,30 +36,41 @@ import (
 // request it processes. It allows to be configured with callbacks that process
 // request path and query into a suitable label value.
 type Transport struct {
-	next http.RoundTripper
+	metrics *metrics.Metrics
+
+	wrappedRT http.RoundTripper
 }
 
-// pathProcessor will trim the provided path to only include the first 2
-// segments in order to reduce the number of prometheus labels generated
-func pathProcessor(path string) string {
-	p := strings.Split(path, "/")
-	// only record the first two path segments as a prometheus label value
-	if len(p) > 3 {
-		p = p[:3]
+// NewInstrumentedClient takes a *http.Client and returns a *http.Client that
+// has its RoundTripper wrapped with instrumentation.
+func NewInstrumentedClient(metrics *metrics.Metrics, client *http.Client) *http.Client {
+	// If next client is not defined we'll use http.DefaultClient.
+	if client == nil {
+		client = http.DefaultClient
 	}
-	return strings.Join(p, "/")
+
+	if client.Transport == nil {
+		client.Transport = http.DefaultTransport
+	}
+
+	client.Transport = &Transport{
+		wrappedRT: client.Transport,
+		metrics:   metrics,
+	}
+
+	return client
 }
 
 // RoundTrip implements http.RoundTripper. It forwards the request to the
-// next RoundTripper and measures the time it took in Prometheus summary.
+// wrapped RoundTripper and measures the time it took in Prometheus summary.
 func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	statusCode := 999
 
 	// Remember the current time.
-	now := time.Now()
+	start := time.Now()
 
-	// Make the request using the next RoundTripper.
-	resp, err := it.next.RoundTrip(req)
+	// Make the request using the wrappd RoundTripper.
+	resp, err := it.wrappedRT.RoundTrip(req)
 	if resp != nil {
 		statusCode = resp.StatusCode
 	}
@@ -72,37 +83,20 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		fmt.Sprintf("%d", statusCode),
 	}
 	// Observe the time it took to make the request.
-	metrics.Default.ACMEClientRequestDurationSeconds.
-		WithLabelValues(labels...).
-		Observe(time.Since(now).Seconds())
-
-	metrics.Default.ACMEClientRequestCount.
-		WithLabelValues(labels...).Inc()
+	it.metrics.ObserveACMERequestDuration(time.Since(start), labels...)
+	it.metrics.IncrementACMERequestCount(labels...)
 
 	// return the response and error reported from the next RoundTripper.
 	return resp, err
 }
 
-// NewInstrumentedClient takes a *http.Client and returns a *http.Client that
-// has its RoundTripper wrapped with instrumentation.
-func NewInstrumentedClient(next *http.Client) *http.Client {
-	// If next client is not defined we'll use http.DefaultClient.
-	if next == nil {
-		next = http.DefaultClient
+// pathProcessor will trim the provided path to only include the first 2
+// segments in order to reduce the number of prometheus labels generated
+func pathProcessor(path string) string {
+	p := strings.Split(path, "/")
+	// only record the first two path segments as a prometheus label value
+	if len(p) > 3 {
+		p = p[:3]
 	}
-
-	next.Transport = newTransport(next.Transport)
-
-	return next
-}
-
-// NewTransport takes a http.RoundTripper, wraps it with instrumentation and
-// returns it as a new http.RoundTripper.
-func newTransport(next http.RoundTripper) http.RoundTripper {
-	// If next RoundTripper is not defined we'll use http.DefaultTransport.
-	if next == nil {
-		next = http.DefaultTransport
-	}
-
-	return &Transport{next: next}
+	return strings.Join(p, "/")
 }

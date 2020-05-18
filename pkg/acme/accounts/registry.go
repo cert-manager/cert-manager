@@ -18,18 +18,11 @@ package accounts
 
 import (
 	"crypto/rsa"
-	"crypto/tls"
 	"errors"
-	"net"
-	"net/http"
 	"sync"
-	"time"
-
-	acmeapi "golang.org/x/crypto/acme"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 // ErrNotFound is returned by GetClient if there is no ACME client registered.
@@ -64,10 +57,11 @@ type Getter interface {
 	ListClients() map[string]acmecl.Interface
 }
 
-// NewDefaultRegistry returns a new default instantiation of a client registry.
-func NewDefaultRegistry() Registry {
+// NewDefaultRegistryFactory returns a new default instantiation of a client registry.
+func NewDefaultRegistry(factory Factory) Registry {
 	return &registry{
 		clients: make(map[string]clientWithMeta),
+		Factory: factory,
 	}
 }
 
@@ -77,6 +71,8 @@ type registry struct {
 
 	// a map of an issuer's 'uid' to an ACME client with metadata
 	clients map[string]clientWithMeta
+
+	Factory
 }
 
 // stableOptions contains data about an ACME client that can be used to compare
@@ -140,7 +136,7 @@ func (r *registry) ensureClient(uid string, config cmacme.ACMEIssuer, privateKey
 	// create a new client if one is not registered or if the
 	// 'metadata' does not match
 	r.clients[uid] = clientWithMeta{
-		Interface:     NewClient(config, privateKey),
+		Interface:     r.NewClient(config, privateKey),
 		stableOptions: newOpts,
 	}
 }
@@ -182,37 +178,4 @@ func (r *registry) ListClients() map[string]acmecl.Interface {
 		out[k] = v.Interface
 	}
 	return out
-}
-
-func NewClient(config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface {
-	return &acmeapi.Client{
-		Key:          privateKey,
-		HTTPClient:   buildHTTPClient(config.SkipTLSVerify),
-		DirectoryURL: config.Server,
-		UserAgent:    util.CertManagerUserAgent,
-	}
-}
-
-// buildHTTPClient returns an HTTP client to be used by the ACME client.
-// For the time being, we construct a new HTTP client on each invocation.
-// This is because we need to set the 'skipTLSVerify' flag on the HTTP client
-// itself.
-// In future, we may change to having two global HTTP clients - one that ignores
-// TLS connection errors, and the other that does not.
-func buildHTTPClient(skipTLSVerify bool) *http.Client {
-	return acmecl.NewInstrumentedClient(&http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: skipTLSVerify},
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-		Timeout: time.Second * 30,
-	})
 }

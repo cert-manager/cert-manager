@@ -20,11 +20,12 @@ import (
 	"testing"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func TestRegistry_AddClient(t *testing.T) {
-	r := NewDefaultRegistry()
+	r := NewDefaultRegistry(NewDefaultFactory(new(metrics.Metrics)))
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
@@ -43,7 +44,7 @@ func TestRegistry_AddClient(t *testing.T) {
 }
 
 func TestRegistry_RemoveClient(t *testing.T) {
-	r := NewDefaultRegistry()
+	r := NewDefaultRegistry(NewDefaultFactory(new(metrics.Metrics)))
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +72,7 @@ func TestRegistry_RemoveClient(t *testing.T) {
 }
 
 func TestRegistry_RemoveClient_EmptyRegistry(t *testing.T) {
-	r := NewDefaultRegistry()
+	r := NewDefaultRegistry(NewDefaultFactory(new(metrics.Metrics)))
 	r.RemoveClient("abc")
 	c, err := r.GetClient("abc")
 	if err != ErrNotFound {
@@ -83,7 +84,7 @@ func TestRegistry_RemoveClient_EmptyRegistry(t *testing.T) {
 }
 
 func TestRegistry_ListClients(t *testing.T) {
-	r := NewDefaultRegistry()
+	r := NewDefaultRegistry(NewDefaultFactory(new(metrics.Metrics)))
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +121,7 @@ func TestRegistry_ListClients(t *testing.T) {
 }
 
 func TestRegistry_AddClient_UpdatesExistingWhenPrivateKeyChanges(t *testing.T) {
-	r := NewDefaultRegistry()
+	r := NewDefaultRegistry(NewDefaultFactory(new(metrics.Metrics)))
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
