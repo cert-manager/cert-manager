@@ -31,11 +31,11 @@ export K8S_VERSION=${K8S_VERSION:-1.17}
 # versions of the tools required for development
 setup_tools() {
   check_bazel
-  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //devel/bin:ginkgo
+  bazel build //tools/bin:helm //tools/bin:kind //tools/bin:kubectl //devel/bin:ginkgo
   local bindir="$(bazel info bazel-genfiles)"
-  export HELM="${bindir}/hack/bin/helm"
-  export KIND="${bindir}/hack/bin/kind"
-  export KUBECTL="${bindir}/hack/bin/kubectl"
+  export HELM="${bindir}/tools/bin/helm"
+  export KIND="${bindir}/tools/bin/kind"
+  export KUBECTL="${bindir}/tools/bin/kubectl"
   export GINKGO="${bindir}/devel/bin/ginkgo"
   # Configure PATH to use bazel provided e2e tools
   export PATH="${SCRIPT_ROOT}/bin:$PATH"

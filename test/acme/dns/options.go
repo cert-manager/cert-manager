@@ -55,7 +55,7 @@ func applyDefaults(f *fixture) {
 	runfiles := os.Getenv("TEST_SRCDIR")
 	if f.binariesPath == "" {
 		if runfiles != "" {
-			f.binariesPath = runfiles + "/com_github_jetstack_cert_manager/hack/bin"
+			f.binariesPath = runfiles + "/com_github_jetstack_cert_manager/tools/bin"
 		}
 	}
 	if f.jsonConfig == nil {

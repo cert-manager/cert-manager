@@ -1,4 +1,4 @@
-# gazelle:repository_macro hack/build/repos.bzl%go_repositories
+# gazelle:repository_macro tools/build/repos.bzl%go_repositories
 workspace(name = "com_github_jetstack_cert_manager")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -31,7 +31,7 @@ go_rules_dependencies()
 
 go_register_toolchains(
     go_version = "1.14.2",
-    nogo = "@//hack/build:nogo_vet",
+    nogo = "@//tools/build:nogo_vet",
 )
 
 ## Load gazelle and dependencies
@@ -71,10 +71,10 @@ load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 
 _go_image_repos()
 
-# Load and define targets defined in //hack/bin
-load("//hack/bin:deps.bzl", install_hack_bin = "install")
+# Load and define targets defined in //tools/bin
+load("//tools/bin:deps.bzl", install_tools_bin = "install")
 
-install_hack_bin()
+install_tools_bin()
 
 # Load and define targets defined in //test/e2e
 load("//test/e2e:images.bzl", install_e2e_images = "install")
@@ -86,6 +86,6 @@ load("//build:images.bzl", "define_base_images")
 
 define_base_images()
 
-load("//hack/build:repos.bzl", "go_repositories")
+load("//tools/build:repos.bzl", "go_repositories")
 
 go_repositories()

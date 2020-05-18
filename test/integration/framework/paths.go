@@ -26,9 +26,9 @@ import (
 // setEnvTestEnv configures environment variables for controller-runtime's
 // 'envtest' package.
 func setUpEnvTestEnv() {
-	maybeSetEnv("TEST_ASSET_ETCD", "etcd", "hack", "bin", "etcd")
-	maybeSetEnv("TEST_ASSET_KUBE_APISERVER", "kube-apiserver", "hack", "bin", "kube-apiserver")
-	maybeSetEnv("TEST_ASSET_KUBECTL", "kubectl", "hack", "bin", "kubectl")
+	maybeSetEnv("TEST_ASSET_ETCD", "etcd", "tools", "bin", "etcd")
+	maybeSetEnv("TEST_ASSET_KUBE_APISERVER", "kube-apiserver", "tools", "bin", "kube-apiserver")
+	maybeSetEnv("TEST_ASSET_KUBECTL", "kubectl", "tools", "bin", "kubectl")
 }
 
 func maybeSetEnv(key, bin string, path ...string) {

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Implements hack/lib/version.sh's kube::version::ldflags() for Bazel.
+# Implements tools/lib/version.sh's kube::version::ldflags() for Bazel.
 def version_x_defs(variant = None):
     # This should match the list of packages in kube::version::ldflag
     stamp_pkgs = [
@@ -20,7 +20,7 @@ def version_x_defs(variant = None):
     ]
 
     # This should match the list of vars in kube::version::ldflags
-    # It should also match the list of vars set in hack/print-workspace-status.sh.
+    # It should also match the list of vars set in tools/print-workspace-status.sh.
     stamp_vars = {
         "AppVersion": "{STABLE_DOCKER_TAG}",
         "AppGitCommit": "{STABLE_BUILD_GIT_COMMIT}",

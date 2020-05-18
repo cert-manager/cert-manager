@@ -22,13 +22,13 @@ genrule(
     ],
     outs = ["templates.legacy.out"],
     cmd = " ".join([
-        "$(location //hack/filter-crd)",
+        "$(location //tools/filter-crd)",
         "-variant=cert-manager-legacy",
         "$(location :templates.regular)",
         "> $@",
     ]),
     tools = [
-        "//hack/filter-crd",
+        "//tools/filter-crd",
     ],
     visibility = ["//visibility:public"],
 )

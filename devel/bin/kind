@@ -24,8 +24,8 @@ if ! command -v bazel &>/dev/null; then
 fi
 
 if [ -z "${KIND:-}" ]; then
-    bazel build //hack/bin:kind
-    export KIND="$(bazel info bazel-genfiles)/hack/bin/kind"
+    bazel build //tools/bin:kind
+    export KIND="$(bazel info bazel-genfiles)/tools/bin/kind"
 fi
 
 "${KIND}" "$@"

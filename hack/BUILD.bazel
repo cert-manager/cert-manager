@@ -10,7 +10,7 @@ GOROOT = "@go_sdk//:files"
 
 GOFMT = "@go_sdk//:bin/gofmt"
 
-JQ = "//hack/bin:jq"
+JQ = "//tools/bin:jq"
 
 CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
 
@@ -272,11 +272,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//hack/api-migration:all-srcs",
-        "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
-        "//hack/build:all-srcs",
-        "//hack/filter-crd:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

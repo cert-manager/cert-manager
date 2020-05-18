@@ -24,8 +24,8 @@ if ! command -v bazel &>/dev/null; then
 fi
 
 if [ -z "${KUBECTL:-}" ]; then
-    bazel build //hack/bin:kubectl
-    export KUBECTL="$(bazel info bazel-genfiles)/hack/bin/kubectl"
+    bazel build //tools/bin:kubectl
+    export KUBECTL="$(bazel info bazel-genfiles)/tools/bin/kubectl"
 fi
 
 "${KUBECTL}" "$@"

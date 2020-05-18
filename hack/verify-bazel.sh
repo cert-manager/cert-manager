@@ -47,7 +47,7 @@ export GO111MODULE=on
 echo "Running gazelle..."
 gazelle_diff=$("$gazelle" fix --mode=diff --external=external || true)
 echo "Running kazel..."
-kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./hack/build/.kazelcfg.json)
+kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./tools/build/.kazelcfg.json)
 
 if [[ -n "${gazelle_diff}${kazel_diff}" ]]; then
   echo "Current rules (-) do not match expected (+):" >&2

@@ -22,7 +22,7 @@ def helm_pkg(
     readme_file,
     tpl_files,
     srcs = [],
-    helm_cmd = "//hack/bin:helm",
+    helm_cmd = "//tools/bin:helm",
     version_file = "//:version",
     **kwargs):
 
@@ -95,7 +95,7 @@ def helm_tmpl(
         release_namespace,
         release_name,
         values = {},
-        helm_cmd = "//hack/bin:helm",
+        helm_cmd = "//tools/bin:helm",
         **kwargs,
 ):
     cmds = []

@@ -9,9 +9,9 @@ go_library(
         "util.go",
     ],
     data = [
-        "//hack/bin:etcd",
-        "//hack/bin:kube-apiserver",
-        "//hack/bin:kubectl",
+        "//tools/bin:etcd",
+        "//tools/bin:kube-apiserver",
+        "//tools/bin:kubectl",
     ],
     importpath = "github.com/jetstack/cert-manager/test/acme/dns",
     visibility = ["//visibility:public"],
