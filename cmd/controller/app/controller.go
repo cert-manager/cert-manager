@@ -79,7 +79,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	go func() {
 		defer wg.Done()
-		metrics.Default.Start(stopCh)
+		ctx.Metrics.Start(stopCh)
 	}()
 
 	var experimentalCertificateControllers = []string{
@@ -225,6 +225,11 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, time.Second*30, informers.WithNamespace(opts.Namespace))
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, time.Second*30, kubeinformers.WithNamespace(opts.Namespace))
+
+	metrics := metrics.New(log)
+	acmeAccountFactory := accounts.NewDefaultFactory(metrics)
+	acmeAccountRegistry := accounts.NewDefaultRegistry(acmeAccountFactory)
+
 	return &controller.Context{
 		RootContext:               ctx,
 		StopCh:                    stopCh,
@@ -236,6 +241,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		SharedInformerFactory:     sharedInformerFactory,
 		Namespace:                 opts.Namespace,
 		Clock:                     clock.RealClock{},
+		Metrics:                   metrics,
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
@@ -244,7 +250,8 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
 			DNS01CheckAuthoritative:           !opts.DNS01RecursiveNameserversOnly,
 			DNS01Nameservers:                  nameservers,
-			AccountRegistry:                   accounts.NewDefaultRegistry(),
+			AccountFactory:                    acmeAccountFactory,
+			AccountRegistry:                   acmeAccountRegistry,
 		},
 		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
