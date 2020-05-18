@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 // Acme is an issuer for an ACME server. It can be used to register and obtain
@@ -44,6 +45,10 @@ type Acme struct {
 	clusterResourceNamespace string
 	// used as a cache for ACME clients
 	accountRegistry accounts.Registry
+	// used to create new ACME clients
+	accountFactory accounts.Factory
+
+	metrics *metrics.Metrics
 }
 
 // New returns a new ACME issuer interface for the given issuer.
@@ -61,6 +66,8 @@ func New(ctx *controller.Context, issuer v1alpha2.GenericIssuer) (issuer.Interfa
 		recorder:                 ctx.Recorder,
 		clusterResourceNamespace: ctx.IssuerOptions.ClusterResourceNamespace,
 		accountRegistry:          ctx.ACMEOptions.AccountRegistry,
+		accountFactory:           ctx.ACMEOptions.AccountFactory,
+		metrics:                  ctx.Metrics,
 	}
 
 	return a, nil

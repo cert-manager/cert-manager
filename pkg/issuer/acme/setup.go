@@ -30,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -116,7 +115,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	//  In future we should intelligently manage items in the account cache
 	//  and remove them when the corresponding issuer is updated/deleted.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
-	cl := accounts.NewClient(*a.issuer.GetSpec().ACME, rsaPk)
+	cl := a.accountFactory.NewClient(*a.issuer.GetSpec().ACME, rsaPk)
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
