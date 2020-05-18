@@ -4,6 +4,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "issuing_controller_test.go",
+        "metrics_controller_test.go",
         "trigger_controller_test.go",
     ],
     deps = [
@@ -14,7 +15,9 @@ go_test(
         "//pkg/controller/expcertificates/issuing:go_default_library",
         "//pkg/controller/expcertificates/trigger:go_default_library",
         "//pkg/controller/expcertificates/trigger/policies:go_default_library",
+        "//pkg/controller/metrics:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/metrics:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/integration/framework:go_default_library",
         "//test/unit/gen:go_default_library",

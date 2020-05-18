@@ -35,6 +35,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/issuing"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -55,9 +56,14 @@ func TestIssuingController(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	defer cancel()
+
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
 	c := controllerpkg.NewController(
 		context.Background(),
+		"issuing_test",
+		metrics.New(logf.Log),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,
@@ -65,9 +71,6 @@ func TestIssuingController(t *testing.T) {
 	)
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
 
 	var (
 		crtName                  = "testcrt"

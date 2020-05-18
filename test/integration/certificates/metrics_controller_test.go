@@ -1,0 +1,174 @@
+/*
+Copyright 2020 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package certificates
+
+import (
+	"context"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	controllermetrics "github.com/jetstack/cert-manager/pkg/controller/metrics"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/metrics"
+	"github.com/jetstack/cert-manager/test/integration/framework"
+	"github.com/jetstack/cert-manager/test/unit/gen"
+)
+
+// TestMetricscontoller performs a basic test to ensure that Certificates
+// metrics are exposed when a Certificate is created, updated, and removed when
+// it is deleted.
+func TestMetricsController(t *testing.T) {
+	config, stopFn := framework.RunControlPlane(t)
+	defer stopFn()
+
+	// Build, instantiate and run the issuing controller.
+	_, factory, cmClient, cmFactory := framework.NewClients(t, config)
+
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	defer cancel()
+
+	metricsHandler := metrics.New(logf.Log)
+	go metricsHandler.Start(make(chan struct{}))
+	time.Sleep(time.Second)
+
+	ctrl, queue, mustSync := controllermetrics.NewController(factory, cmFactory, metricsHandler)
+	c := controllerpkg.NewController(
+		context.Background(),
+		"metrics_test",
+		metricsHandler,
+		ctrl.ProcessItem,
+		mustSync,
+		nil,
+		queue,
+	)
+	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer stopController()
+
+	var (
+		crtName   = "testcrt"
+		namespace = "testns"
+
+		lastErr error
+	)
+
+	testMetrics := func(expectedOutput string) error {
+		resp, err := http.DefaultClient.Get("http://127.0.0.1:9402/metrics")
+		if err != nil {
+			return err
+		}
+
+		output, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		if strings.TrimSpace(string(output)) != strings.TrimSpace(expectedOutput) {
+			return fmt.Errorf("got unexpected metrics output\nexp:\n%s\ngot:\n%s\n",
+				expectedOutput, output)
+		}
+
+		return nil
+	}
+
+	waitForMetrics := func(expectedOutput string) {
+		err := wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
+			if err := testMetrics(expectedOutput); err != nil {
+				lastErr = err
+				return false, nil
+			}
+
+			return true, nil
+		})
+		if err != nil {
+			t.Fatalf("%s: failed to wait for expected metrics to be exposed: %s", err, lastErr)
+		}
+	}
+
+	// Should expose no metrics
+
+	// Create Certificate
+	crt := gen.Certificate(crtName,
+		gen.SetCertificateNamespace(namespace),
+		gen.SetCertificateUID("uid-1"),
+	)
+
+	waitForMetrics("")
+	crt, err := cmClient.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
+certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="testns"} 0
+# HELP certmanager_certificate_ready_status The ready status of the certificate.
+# TYPE certmanager_certificate_ready_status gauge
+certmanager_certificate_ready_status{condition="False",name="testcrt",namespace="testns"} 0
+certmanager_certificate_ready_status{condition="True",name="testcrt",namespace="testns"} 0
+certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespace="testns"} 1
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# TYPE certmanager_controller_sync_call_count counter
+certmanager_controller_sync_call_count{controller="metrics_test"} 1
+`)
+
+	// Set Certificate Expiry and Ready status True
+	crt.Status.NotAfter = &metav1.Time{
+		Time: time.Unix(100, 0),
+	}
+	crt.Status.Conditions = []cmapi.CertificateCondition{
+		{
+			Type:   cmapi.CertificateConditionReady,
+			Status: cmmeta.ConditionTrue,
+		},
+	}
+	_, err = cmClient.CertmanagerV1alpha2().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
+# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
+certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="testns"} 100
+# HELP certmanager_certificate_ready_status The ready status of the certificate.
+# TYPE certmanager_certificate_ready_status gauge
+certmanager_certificate_ready_status{condition="False",name="testcrt",namespace="testns"} 0
+certmanager_certificate_ready_status{condition="True",name="testcrt",namespace="testns"} 1
+certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespace="testns"} 0
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# TYPE certmanager_controller_sync_call_count counter
+certmanager_controller_sync_call_count{controller="metrics_test"} 2
+`)
+
+	err = cmClient.CertmanagerV1alpha2().Certificates(namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForMetrics(`# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+# TYPE certmanager_controller_sync_call_count counter
+certmanager_controller_sync_call_count{controller="metrics_test"} 3
+`)
+}

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -173,6 +174,12 @@ func SetCertificateKeyUsages(usages ...v1alpha2.KeyUsage) CertificateModifier {
 func SetCertificateRevision(revision int) CertificateModifier {
 	return func(crt *v1alpha2.Certificate) {
 		crt.Status.Revision = &revision
+	}
+}
+
+func SetCertificateUID(uid types.UID) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		crt.UID = uid
 	}
 }
 
