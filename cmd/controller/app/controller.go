@@ -226,7 +226,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, time.Second*30, informers.WithNamespace(opts.Namespace))
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, time.Second*30, kubeinformers.WithNamespace(opts.Namespace))
 
-	metrics := metrics.New(log)
+	metrics := metrics.New(log, opts.MetricsListenAddress)
 	acmeAccountFactory := accounts.NewDefaultFactory(metrics)
 	acmeAccountRegistry := accounts.NewDefaultRegistry(acmeAccountFactory)
 

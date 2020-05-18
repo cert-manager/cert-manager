@@ -63,7 +63,7 @@ func TestIssuingController(t *testing.T) {
 	c := controllerpkg.NewController(
 		context.Background(),
 		"issuing_test",
-		metrics.New(logf.Log),
+		metrics.New(logf.Log, "127.0.0.1:9402"),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,

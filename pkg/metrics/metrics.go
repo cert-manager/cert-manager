@@ -43,7 +43,6 @@ import (
 const (
 	// Namespace is the namespace for cert-manager metric names
 	namespace                              = "certmanager"
-	prometheusMetricsServerAddress         = "127.0.0.1:9402"
 	prometheusMetricsServerShutdownTimeout = 5 * time.Second
 	prometheusMetricsServerReadTimeout     = 8 * time.Second
 	prometheusMetricsServerWriteTimeout    = 8 * time.Second
@@ -70,7 +69,7 @@ type Metrics struct {
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
 
-func New(log logr.Logger) *Metrics {
+func New(log logr.Logger, listenAddress string) *Metrics {
 	var (
 		certificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -132,7 +131,7 @@ func New(log logr.Logger) *Metrics {
 		log:      log.WithName("metrics"),
 		registry: prometheus.NewRegistry(),
 		server: &http.Server{
-			Addr:           prometheusMetricsServerAddress,
+			Addr:           listenAddress,
 			ReadTimeout:    prometheusMetricsServerReadTimeout,
 			WriteTimeout:   prometheusMetricsServerWriteTimeout,
 			MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,

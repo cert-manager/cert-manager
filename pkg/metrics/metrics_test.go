@@ -125,7 +125,7 @@ func TestCertificateMetrics(t *testing.T) {
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			m := New(logtesting.TestLogger{T: t})
+			m := New(logtesting.TestLogger{T: t}, "")
 			m.UpdateCertificate(context.TODO(), test.crt)
 
 			if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
@@ -146,7 +146,7 @@ func TestCertificateMetrics(t *testing.T) {
 }
 
 func TestCertificateCache(t *testing.T) {
-	m := New(logtesting.TestLogger{T: t})
+	m := New(logtesting.TestLogger{T: t}, "")
 
 	crt1 := gen.Certificate("crt1",
 		gen.SetCertificateUID("uid-1"),

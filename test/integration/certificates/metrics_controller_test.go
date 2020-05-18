@@ -51,7 +51,7 @@ func TestMetricsController(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
 	defer cancel()
 
-	metricsHandler := metrics.New(logf.Log)
+	metricsHandler := metrics.New(logf.Log, "127.0.0.1:9402")
 	go metricsHandler.Start(make(chan struct{}))
 	time.Sleep(time.Second)
 

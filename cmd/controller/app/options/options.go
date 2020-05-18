@@ -78,6 +78,10 @@ type ControllerOptions struct {
 	EnableCertificateOwnerRef bool
 
 	MaxConcurrentChallenges int
+
+	// The host and port address, separated by a ':', that the Prometheus server
+	// should expose metrics on.
+	MetricsListenAddress string
 }
 
 const (
@@ -104,6 +108,8 @@ const (
 	defaultDNS01RecursiveNameserversOnly = false
 
 	defaultMaxConcurrentChallenges = 60
+
+	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 )
 
 var (
@@ -152,6 +158,7 @@ func NewControllerOptions() *ControllerOptions {
 		DNS01RecursiveNameservers:         []string{},
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
+		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 	}
 }
 
@@ -247,6 +254,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
+
+	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
+		"The default host and port address for the metrics to be exposed on."+
+		"Metrics will be exposed at the /metrics path.")
 }
 
 func (o *ControllerOptions) Validate() error {
