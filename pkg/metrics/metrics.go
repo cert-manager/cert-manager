@@ -26,18 +26,14 @@ package metrics
 import (
 	"context"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"k8s.io/client-go/tools/cache"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
@@ -56,15 +52,11 @@ type Metrics struct {
 	registry *prometheus.Registry
 	server   *http.Server
 
-	mux sync.Mutex
-
 	certificateExpiryTimeSeconds     *prometheus.GaugeVec
 	certificateReadyStatus           *prometheus.GaugeVec
 	acmeClientRequestDurationSeconds *prometheus.SummaryVec
 	acmeClientRequestCount           *prometheus.CounterVec
 	controllerSyncCallCount          *prometheus.CounterVec
-
-	registeredCertificates map[string]struct{}
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -138,8 +130,6 @@ func New(log logr.Logger, listenAddress string) *Metrics {
 			Handler:        router,
 		},
 
-		registeredCertificates: make(map[string]struct{}),
-
 		certificateExpiryTimeSeconds:     certificateExpiryTimeSeconds,
 		certificateReadyStatus:           certificateReadyStatus,
 		acmeClientRequestCount:           acmeClientRequestCount,
@@ -175,110 +165,9 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 	m.shutdown()
 }
 
-// ObserveACMERequestDuration increases bucket counters for that ACME client duration.
-func (m *Metrics) ObserveACMERequestDuration(duration time.Duration, labels ...string) {
-	m.acmeClientRequestDurationSeconds.WithLabelValues(labels...).Observe(duration.Seconds())
-}
-
-// IncrementACMERequestCount increases the acme client request counter.
-func (m *Metrics) IncrementACMERequestCount(labels ...string) {
-	m.acmeClientRequestCount.WithLabelValues(labels...).Inc()
-}
-
 // IncrementSyncCallCount will increase the sync counter for that controller.
 func (m *Metrics) IncrementSyncCallCount(controllerName string) {
 	m.controllerSyncCallCount.WithLabelValues(controllerName).Inc()
-}
-
-// UpdateCertificate will update that Certificate metric with expiry and Ready
-// condition.
-func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate) {
-	key, err := cache.MetaNamespaceKeyFunc(crt)
-	if err != nil {
-		log := logf.WithRelatedResource(m.log, crt)
-		log.Error(err, "failed to get key from certificate object")
-		return
-	}
-
-	m.updateCertificateStatus(key, crt)
-	m.updateCertificateExpiry(ctx, key, crt)
-}
-
-// updateCertificateExpiry updates the expiry time of a certificate
-func (m *Metrics) updateCertificateExpiry(ctx context.Context, key string, crt *cmapi.Certificate) {
-	expiryTime := 0.0
-
-	if crt.Status.NotAfter != nil {
-		expiryTime = float64(crt.Status.NotAfter.Unix())
-	}
-
-	m.certificateExpiryTimeSeconds.With(prometheus.Labels{
-		"name":      crt.Name,
-		"namespace": crt.Namespace}).Set(expiryTime)
-
-	m.mux.Lock()
-	m.registeredCertificates[key] = struct{}{}
-	m.mux.Unlock()
-}
-
-// updateCertificateStatus will update the metric for that Certificate
-func (m *Metrics) updateCertificateStatus(key string, crt *cmapi.Certificate) {
-	defer func() {
-		m.mux.Lock()
-		m.registeredCertificates[key] = struct{}{}
-		m.mux.Unlock()
-	}()
-
-	for _, c := range crt.Status.Conditions {
-		if c.Type == cmapi.CertificateConditionReady {
-			m.updateCertificateReadyStatus(crt, c.Status)
-			return
-		}
-	}
-
-	// If no status condition set yet, set to Unknown
-	m.updateCertificateReadyStatus(crt, cmmeta.ConditionUnknown)
-}
-
-func (m *Metrics) updateCertificateReadyStatus(crt *cmapi.Certificate, current cmmeta.ConditionStatus) {
-	for _, condition := range readyConditionStatuses {
-		value := 0.0
-
-		if current == condition {
-			value = 1.0
-		}
-
-		m.certificateReadyStatus.With(prometheus.Labels{
-			"name":      crt.Name,
-			"namespace": crt.Namespace,
-			"condition": string(condition),
-		}).Set(value)
-	}
-}
-
-// RemoveCertificate will delete the Certificate metrics from continuing to be
-// exposed.
-func (m *Metrics) RemoveCertificate(key string) {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		m.log.Error(err, "failed to get namespace and name from key")
-		return
-	}
-
-	// If the certificate is not registered, exit early
-	if _, ok := m.registeredCertificates[key]; !ok {
-		return
-	}
-
-	m.certificateExpiryTimeSeconds.DeleteLabelValues(name, namespace)
-	for _, condition := range readyConditionStatuses {
-		m.certificateReadyStatus.DeleteLabelValues(name, namespace, string(condition))
-	}
-
-	delete(m.registeredCertificates, key)
 }
 
 func (m *Metrics) shutdown() {

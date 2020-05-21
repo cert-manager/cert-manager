@@ -2,7 +2,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["metrics.go"],
+    srcs = [
+        "acme.go",
+        "certificates.go",
+        "metrics.go",
+    ],
     importpath = "github.com/jetstack/cert-manager/pkg/metrics",
     visibility = ["//visibility:public"],
     deps = [
@@ -33,7 +37,7 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = ["metrics_test.go"],
+    srcs = ["certificates_test.go"],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
