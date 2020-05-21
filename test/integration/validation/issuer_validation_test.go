@@ -47,7 +47,7 @@ func TestValidationIssuer(t *testing.T) {
 		error       error
 		expectError bool
 	}{
-		"reject acme issuer with missing fields": {
+		"reject acme issuer with missing server field": {
 			input: &v1alpha3.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
@@ -60,9 +60,9 @@ func TestValidationIssuer(t *testing.T) {
 				},
 			},
 			expectError: true,
-			error:       errors.New(`admission webhook "webhook.cert-manager.io" denied the request: [spec.acme.privateKeySecretRef.name: Required value: private key secret name is a required field, spec.acme.server: Required value: acme server URL is a required field]`),
+			error:       errors.New(`Issuer.cert-manager.io "test" is invalid: spec.acme.server: Invalid value: "": spec.acme.server in body should be at least 1 chars long`),
 		},
-		"reject acme issuer having empty solver": {
+		"reject acme dns issuer having empty solver": {
 			input: &v1alpha3.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
@@ -122,7 +122,7 @@ func TestValidationIssuer(t *testing.T) {
 				},
 			},
 			expectError: true,
-			error:       errors.New(`admission webhook "webhook.cert-manager.io" denied the request: spec.acme.solvers[0].dns01.clouddns.project: Required value`),
+			error:       errors.New(`Issuer.cert-manager.io "test" is invalid: spec.acme.solvers.dns01.clouddns.project: Invalid value: "": spec.acme.solvers.dns01.clouddns.project in body should be at least 1 chars long`),
 		},
 		"reject for missing cloudflare api key": {
 			input: &v1alpha3.Issuer{
@@ -234,7 +234,7 @@ func TestValidationIssuer(t *testing.T) {
 				},
 			},
 			expectError: true,
-			error:       errors.New(`admission webhook "webhook.cert-manager.io" denied the request: spec.acme.solvers[0].dns01.rfc2136.tsigAlgorithm: Unsupported value: "": supported values: "HMACMD5", "HMACSHA1", "HMACSHA256", "HMACSHA512"`),
+			error:       errors.New(`Issuer.cert-manager.io "test" is invalid: spec.acme.solvers.dns01.rfc2136.tsigAlgorithm: Unsupported value: "HAMMOCK": supported values: "HMACMD5", "HMACSHA1", "HMACSHA256", "HMACSHA512"`),
 		},
 	}
 	for name, test := range tests {

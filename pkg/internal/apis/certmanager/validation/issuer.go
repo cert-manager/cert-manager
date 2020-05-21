@@ -19,7 +19,6 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -199,14 +198,6 @@ func ValidateVenafiIssuerConfig(iss *certmanager.VenafiIssuer, fldPath *field.Pa
 	return nil
 }
 
-// This list must be kept in sync with pkg/issuer/acme/dns/rfc2136/rfc2136.go
-var supportedTSIGAlgorithms = []string{
-	"HMACMD5",
-	"HMACSHA1",
-	"HMACSHA256",
-	"HMACSHA512",
-}
-
 func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
@@ -309,17 +300,6 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		} else {
 			if _, err := util.ValidNameserver(p.RFC2136.Nameserver); err != nil {
 				el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), p.RFC2136.Nameserver, "nameserver must be set in the form host:port where host is an IPv4 address, an enclosed IPv6 address or a hostname and port is an optional port number."))
-			}
-		}
-		if len(p.RFC2136.TSIGAlgorithm) > 0 {
-			present := false
-			for _, b := range supportedTSIGAlgorithms {
-				if b == strings.ToUpper(p.RFC2136.TSIGAlgorithm) {
-					present = true
-				}
-			}
-			if !present {
-				el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms))
 			}
 		}
 
