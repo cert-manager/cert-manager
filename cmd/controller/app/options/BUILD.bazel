@@ -16,6 +16,7 @@ go_library(
         "//pkg/controller/certificaterequests/vault:go_default_library",
         "//pkg/controller/certificaterequests/venafi:go_default_library",
         "//pkg/controller/certificates:go_default_library",
+        "//pkg/controller/certificates/metrics:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/ingress-shim:go_default_library",
         "//pkg/controller/issuers:go_default_library",

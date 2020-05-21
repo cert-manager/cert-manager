@@ -126,10 +126,6 @@ type ACMEOptions struct {
 	// AccountRegistry is used as a cache of ACME accounts between various
 	// components of cert-manager
 	AccountRegistry accounts.Registry
-
-	// AccountFactory is used to create new ACME clients between various
-	// components of cert-manger.
-	AccountFactory accounts.Factory
 }
 
 type IngressShimOptions struct {

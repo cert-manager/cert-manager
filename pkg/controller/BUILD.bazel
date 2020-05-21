@@ -55,7 +55,6 @@ filegroup(
         "//pkg/controller/expcertificates:all-srcs",
         "//pkg/controller/ingress-shim:all-srcs",
         "//pkg/controller/issuers:all-srcs",
-        "//pkg/controller/metrics:all-srcs",
         "//pkg/controller/test:all-srcs",
     ],
     tags = ["automanaged"],

@@ -124,8 +124,6 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 		return nil
 	}
 
-	// TODO (@joshvanl): add certificaterequest inc up?
-
 	dbg.Info("invoking sign function as existing certificate does not exist")
 
 	// Attempt to call the Sign function on our issuer

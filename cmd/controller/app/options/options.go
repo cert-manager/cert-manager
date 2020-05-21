@@ -33,6 +33,7 @@ import (
 	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
 	crvenaficontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/venafi"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
+	certificatesmetricscontroller "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
@@ -125,6 +126,7 @@ var (
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatescontroller.ControllerName,
+		certificatesmetricscontroller.ControllerName,
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
@@ -256,8 +258,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
-		"The default host and port address for the metrics to be exposed on."+
-		"Metrics will be exposed at the /metrics path.")
+		"The host and port that the metrics endpoint to listen on.")
 }
 
 func (o *ControllerOptions) Validate() error {
