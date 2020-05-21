@@ -8,6 +8,7 @@ go_test(
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/certmanager/v1alpha3:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//test/integration/framework:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
