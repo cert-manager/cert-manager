@@ -45,9 +45,8 @@ type Acme struct {
 	clusterResourceNamespace string
 	// used as a cache for ACME clients
 	accountRegistry accounts.Registry
-	// used to create new ACME clients
-	accountFactory accounts.Factory
 
+	// metrics is used to create instrumented ACME clients
 	metrics *metrics.Metrics
 }
 
@@ -66,7 +65,6 @@ func New(ctx *controller.Context, issuer v1alpha2.GenericIssuer) (issuer.Interfa
 		recorder:                 ctx.Recorder,
 		clusterResourceNamespace: ctx.IssuerOptions.ClusterResourceNamespace,
 		accountRegistry:          ctx.ACMEOptions.AccountRegistry,
-		accountFactory:           ctx.ACMEOptions.AccountFactory,
 		metrics:                  ctx.Metrics,
 	}
 

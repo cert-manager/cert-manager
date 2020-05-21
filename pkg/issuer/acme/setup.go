@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
+	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -115,7 +116,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 	//  In future we should intelligently manage items in the account cache
 	//  and remove them when the corresponding issuer is updated/deleted.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
-	cl := a.accountFactory.NewClient(*a.issuer.GetSpec().ACME, rsaPk)
+	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify)
+	cl := accounts.NewClient(httpClient, *a.issuer.GetSpec().ACME, rsaPk)
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
@@ -163,7 +165,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		log.Info("skipping re-verifying ACME account as cached registration " +
 			"details look sufficient")
 		// ensure the cached client in the account registry is up to date
-		a.accountRegistry.AddClient(string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
+		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
 		return nil
 	}
 
@@ -265,7 +267,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 	// ensure the cached client in the account registry is up to date
-	a.accountRegistry.AddClient(string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
+	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
 
 	return nil
 }

@@ -31,42 +31,24 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-// Factory is an interface that is used to create new ACME Clients
-type Factory interface {
-	// NewClient will create a new ACME client,
-	NewClient(config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface
-}
-
-// Implementation of the Factory interface
-type factory struct {
-	metrics *metrics.Metrics
-}
-
-// NewDefaultRegistryFactory returns a new default instantiation of a client registry.
-func NewDefaultFactory(metrics *metrics.Metrics) Factory {
-	return &factory{
-		metrics: metrics,
-	}
-}
-
-// newClient will return a new ACME client however will _not_ commit the client
-// to the local cache registry.
-func (f *factory) NewClient(config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface {
+// NewClient will return a new ACME client.
+func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface {
 	return &acmeapi.Client{
 		Key:          privateKey,
-		HTTPClient:   buildHTTPClient(f.metrics, config.SkipTLSVerify),
+		HTTPClient:   client,
 		DirectoryURL: config.Server,
 		UserAgent:    util.CertManagerUserAgent,
 	}
 }
 
-// buildHTTPClient returns an HTTP client to be used by the ACME client.
+// BuildHTTPClient returns a instramented HTTP client to be used by the ACME
+// client.
 // For the time being, we construct a new HTTP client on each invocation.
 // This is because we need to set the 'skipTLSVerify' flag on the HTTP client
 // itself.
 // In future, we may change to having two global HTTP clients - one that ignores
 // TLS connection errors, and the other that does not.
-func buildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client {
+func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client {
 	return acmecl.NewInstrumentedClient(metrics,
 		&http.Client{
 			Transport: &http.Transport{

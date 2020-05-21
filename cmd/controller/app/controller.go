@@ -227,8 +227,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, time.Second*30, kubeinformers.WithNamespace(opts.Namespace))
 
 	metrics := metrics.New(log, opts.MetricsListenAddress)
-	acmeAccountFactory := accounts.NewDefaultFactory(metrics)
-	acmeAccountRegistry := accounts.NewDefaultRegistry(acmeAccountFactory)
+	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
 	return &controller.Context{
 		RootContext:               ctx,
@@ -250,7 +249,6 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
 			DNS01CheckAuthoritative:           !opts.DNS01RecursiveNameserversOnly,
 			DNS01Nameservers:                  nameservers,
-			AccountFactory:                    acmeAccountFactory,
 			AccountRegistry:                   acmeAccountRegistry,
 		},
 		IssuerOptions: controller.IssuerOptions{
