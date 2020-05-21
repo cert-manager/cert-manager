@@ -54,7 +54,7 @@ func TestTriggerController(t *testing.T) {
 	c := controllerpkg.NewController(
 		context.Background(),
 		"trigger_test",
-		metrics.New(logf.Log, "127.0.0.1:9402"),
+		metrics.New(logf.Log, "127.0.0.1:0"),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,

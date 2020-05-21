@@ -56,14 +56,11 @@ func TestIssuingController(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
-
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
 	c := controllerpkg.NewController(
 		context.Background(),
 		"issuing_test",
-		metrics.New(logf.Log, "127.0.0.1:9402"),
+		metrics.New(logf.Log, "127.0.0.1:0"),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,
@@ -71,6 +68,9 @@ func TestIssuingController(t *testing.T) {
 	)
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
+
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	defer cancel()
 
 	var (
 		crtName                  = "testcrt"

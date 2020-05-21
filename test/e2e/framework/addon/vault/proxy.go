@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package vault
 import (
 	"crypto/x509"
 	"fmt"
-	"net"
 	"net/http"
 	"os/exec"
 	"sync"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
+	testnet "github.com/jetstack/cert-manager/test/unit/net"
 )
 
 type proxy struct {
@@ -55,7 +55,7 @@ func newProxy(ns, podName, kubectl string, vaultCA []byte) *proxy {
 }
 
 func (p *proxy) init() (*vault.Client, error) {
-	listenPort, err := p.freePort()
+	listenPort, err := testnet.FreePort()
 	if err != nil {
 		return nil, err
 	}
@@ -194,17 +194,4 @@ func (p *proxy) runProxy() error {
 	}
 
 	return nil
-}
-
-func (p *proxy) freePort() (int, error) {
-	l, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.ParseIP("127.0.0.1"),
-		Port: 0,
-	})
-	if err != nil {
-		return -1, err
-	}
-	defer l.Close()
-
-	return l.Addr().(*net.TCPAddr).Port, nil
 }

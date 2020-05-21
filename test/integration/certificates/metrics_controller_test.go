@@ -31,11 +31,12 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	controllermetrics "github.com/jetstack/cert-manager/pkg/controller/metrics"
+	controllermetrics "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	testnet "github.com/jetstack/cert-manager/test/unit/net"
 )
 
 // TestMetricscontoller performs a basic test to ensure that Certificates
@@ -48,10 +49,13 @@ func TestMetricsController(t *testing.T) {
 	// Build, instantiate and run the issuing controller.
 	_, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
+	metricsPort, err := testnet.FreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	metricsAddress := fmt.Sprintf("127.0.0.1:%d", metricsPort)
 
-	metricsHandler := metrics.New(logf.Log, "127.0.0.1:9402")
+	metricsHandler := metrics.New(logf.Log, metricsAddress)
 	go metricsHandler.Start(make(chan struct{}))
 	time.Sleep(time.Second)
 
@@ -68,15 +72,19 @@ func TestMetricsController(t *testing.T) {
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
 
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	defer cancel()
+
 	var (
-		crtName   = "testcrt"
-		namespace = "testns"
+		crtName         = "testcrt"
+		namespace       = "testns"
+		metricsEndpoint = fmt.Sprintf("http://%s/metrics", metricsAddress)
 
 		lastErr error
 	)
 
 	testMetrics := func(expectedOutput string) error {
-		resp, err := http.DefaultClient.Get("http://127.0.0.1:9402/metrics")
+		resp, err := http.DefaultClient.Get(metricsEndpoint)
 		if err != nil {
 			return err
 		}
@@ -109,6 +117,7 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	// Should expose no metrics
+	waitForMetrics("")
 
 	// Create Certificate
 	crt := gen.Certificate(crtName,
@@ -116,12 +125,12 @@ func TestMetricsController(t *testing.T) {
 		gen.SetCertificateUID("uid-1"),
 	)
 
-	waitForMetrics("")
-	crt, err := cmClient.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmClient.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Should expose that Certificate as unkown with no expiry
 	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="testns"} 0
@@ -150,6 +159,7 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 		t.Fatal(err)
 	}
 
+	// Should expose that Certificate as ready with expiry
 	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="testns"} 100
@@ -167,6 +177,8 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 2
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Should expose no Certificates and only metrics sync count increase
 	waitForMetrics(`# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 3

@@ -87,6 +87,7 @@ filegroup(
         "//test/integration:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",
+        "//test/unit/net:all-srcs",
         "//tools/cobra:all-srcs",
     ],
     tags = ["automanaged"],
