@@ -79,6 +79,10 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 5
+          {{- if .Values.webhook.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.webhook.containerSecurityContext | nindent 12 }}
+          {{- end }}
           env:
           - name: POD_NAMESPACE
             valueFrom:

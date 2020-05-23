@@ -65,6 +65,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          {{- if .Values.cainjector.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.cainjector.containerSecurityContext | nindent 12 }}
+          {{- end }}
           resources:
 {{ toYaml .Values.cainjector.resources | indent 12 }}
     {{- with .Values.cainjector.nodeSelector }}
