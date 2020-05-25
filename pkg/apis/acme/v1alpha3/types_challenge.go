@@ -54,18 +54,15 @@ type ChallengeList struct {
 type ChallengeSpec struct {
 	// URL is the URL of the ACME Challenge resource for this challenge.
 	// This can be used to lookup details about the status of this challenge.
-	// +kubebuilder:validation:MinLength=1
 	URL string `json:"url"`
 
 	// AuthzURL is the URL to the ACME Authorization resource that this
 	// challenge is a part of.
-	// +kubebuilder:validation:MinLength=1
 	AuthzURL string `json:"authzURL"`
 
 	// DNSName is the identifier that this challenge is for, e.g. example.com.
 	// If the requested DNSName is a 'wildcard', this field MUST be set to the
 	// non-wildcard domain, e.g. for `*.example.com`, it must be `example.com`.
-	// +kubebuilder:validation:MinLength=1
 	DNSName string `json:"dnsName"`
 
 	// Wildcard will be true if this challenge is for a wildcard identifier,

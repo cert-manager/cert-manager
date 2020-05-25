@@ -188,7 +188,6 @@ type ACMEChallenge struct {
 
 // ACMEChallengeType denotes a type of ACME challenge
 // +kubebuilder:validation:Enum=dns-01;http-01
-// +kubebuilder:validation:MinLength=1
 type ACMEChallengeType string
 
 const (

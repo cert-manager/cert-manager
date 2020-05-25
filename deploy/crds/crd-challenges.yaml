@@ -88,14 +88,12 @@ spec:
                 description: AuthzURL is the URL to the ACME Authorization resource
                   that this challenge is a part of.
                 type: string
-                minLength: 1
               dnsName:
                 description: DNSName is the identifier that this challenge is for,
                   e.g. example.com. If the requested DNSName is a 'wildcard', this
                   field MUST be set to the non-wildcard domain, e.g. for `*.example.com`,
                   it must be `example.com`.
                 type: string
-                minLength: 1
               issuerRef:
                 description: IssuerRef references a properly configured ACME-type
                   Issuer which should be used to create this Challenge. If the Issuer
@@ -122,7 +120,6 @@ spec:
                   from acme server for challenge>` text that must be set as the TXT
                   record content.'
                 type: string
-                minLength: 1
               solver:
                 description: Solver contains the domain solving configuration that
                   should be used to solve this challenge resource.
@@ -1451,12 +1448,10 @@ spec:
                 description: Token is the ACME challenge token for this challenge.
                   This is the raw value returned from the ACME server.
                 type: string
-                minLength: 1
               type:
                 description: Type is the type of ACME challenge this resource represents,
                   e.g. "dns-01" or "http-01".
                 type: string
-                minLength: 1
                 enum:
                 - dns-01
                 - http-01
@@ -1465,7 +1460,6 @@ spec:
                   challenge. This can be used to lookup details about the status of
                   this challenge.
                 type: string
-                minLength: 1
               wildcard:
                 description: Wildcard will be true if this challenge is for a wildcard
                   identifier, for example '*.example.com'.
@@ -1543,14 +1537,12 @@ spec:
                 description: AuthzURL is the URL to the ACME Authorization resource
                   that this challenge is a part of.
                 type: string
-                minLength: 1
               dnsName:
                 description: DNSName is the identifier that this challenge is for,
                   e.g. example.com. If the requested DNSName is a 'wildcard', this
                   field MUST be set to the non-wildcard domain, e.g. for `*.example.com`,
                   it must be `example.com`.
                 type: string
-                minLength: 1
               issuerRef:
                 description: IssuerRef references a properly configured ACME-type
                   Issuer which should be used to create this Challenge. If the Issuer
@@ -2906,7 +2898,6 @@ spec:
                 description: Type is the type of ACME challenge this resource represents,
                   e.g. "dns01" or "http01".
                 type: string
-                minLength: 1
                 enum:
                 - dns-01
                 - http-01
@@ -2915,7 +2906,6 @@ spec:
                   challenge. This can be used to lookup details about the status of
                   this challenge.
                 type: string
-                minLength: 1
               wildcard:
                 description: Wildcard will be true if this challenge is for a wildcard
                   identifier, for example '*.example.com'.

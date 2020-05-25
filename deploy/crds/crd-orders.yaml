@@ -163,7 +163,6 @@ spec:
                           description: Type is the type of challenge being offered,
                             e.g. http-01, dns-01
                           type: string
-                          minLength: 1
                           enum:
                           - dns-01
                           - http-01
