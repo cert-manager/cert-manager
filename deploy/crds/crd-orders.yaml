@@ -163,9 +163,6 @@ spec:
                           description: Type is the type of challenge being offered,
                             e.g. http-01, dns-01
                           type: string
-                          enum:
-                          - dns-01
-                          - http-01
                         url:
                           description: URL is the URL of this challenge. It can be
                             used to retrieve additional metadata about the Challenge

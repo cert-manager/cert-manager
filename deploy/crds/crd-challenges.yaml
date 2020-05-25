@@ -1452,9 +1452,6 @@ spec:
                 description: Type is the type of ACME challenge this resource represents,
                   e.g. "dns-01" or "http-01".
                 type: string
-                enum:
-                - dns-01
-                - http-01
               url:
                 description: URL is the URL of the ACME Challenge resource for this
                   challenge. This can be used to lookup details about the status of
@@ -2898,9 +2895,6 @@ spec:
                 description: Type is the type of ACME challenge this resource represents,
                   e.g. "dns01" or "http01".
                 type: string
-                enum:
-                - dns-01
-                - http-01
               url:
                 description: URL is the URL of the ACME Challenge resource for this
                   challenge. This can be used to lookup details about the status of
