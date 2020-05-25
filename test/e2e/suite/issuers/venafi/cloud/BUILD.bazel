@@ -3,21 +3,22 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "featureset.go",
-        "suite.go",
+        "certificate.go",
+        "certificaterequest.go",
+        "doc.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates",
+    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/cloud",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util:go_default_library",
-        "//pkg/util/pki:go_default_library",
         "//test/e2e/framework:go_default_library",
+        "//test/e2e/suite/issuers/venafi/addon:go_default_library",
         "//test/e2e/util:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",
-        "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
     ],
 )
@@ -31,15 +32,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//test/e2e/suite/conformance/certificates/acme:all-srcs",
-        "//test/e2e/suite/conformance/certificates/ca:all-srcs",
-        "//test/e2e/suite/conformance/certificates/selfsigned:all-srcs",
-        "//test/e2e/suite/conformance/certificates/vault:all-srcs",
-        "//test/e2e/suite/conformance/certificates/venafi:all-srcs",
-        "//test/e2e/suite/conformance/certificates/venaficloud:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

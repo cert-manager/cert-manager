@@ -21,6 +21,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/e2e/suite/issuers/venafi/addon:all-srcs",
+        "//test/e2e/suite/issuers/venafi/cloud:all-srcs",
         "//test/e2e/suite/issuers/venafi/tpp:all-srcs",
     ],
     tags = ["automanaged"],

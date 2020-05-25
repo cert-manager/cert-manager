@@ -23,7 +23,8 @@ import (
 
 // Venafi global configuration for Venafi TPP/Cloud instances
 type Venafi struct {
-	TPP VenafiTPPConfiguration
+	TPP   VenafiTPPConfiguration
+	Cloud VenafiCloudConfiguration
 }
 
 type VenafiTPPConfiguration struct {
@@ -33,12 +34,18 @@ type VenafiTPPConfiguration struct {
 	Password string
 }
 
+type VenafiCloudConfiguration struct {
+	Zone     string
+	APIToken string
+}
+
 func (v *Venafi) AddFlags(fs *flag.FlagSet) {
 	v.TPP.AddFlags(fs)
+	v.Cloud.AddFlags(fs)
 }
 
 func (v *Venafi) Validate() []error {
-	return v.TPP.Validate()
+	return append(v.TPP.Validate(), v.Cloud.Validate()...)
 }
 
 func (v *VenafiTPPConfiguration) AddFlags(fs *flag.FlagSet) {
@@ -50,5 +57,15 @@ func (v *VenafiTPPConfiguration) AddFlags(fs *flag.FlagSet) {
 
 // TODO: make missing venafi vars not fail validation (i.e. skip venafi tests)
 func (v *VenafiTPPConfiguration) Validate() []error {
+	return nil
+}
+
+func (v *VenafiCloudConfiguration) AddFlags(fs *flag.FlagSet) {
+	fs.StringVar(&v.Zone, "global.venafi-cloud-zone", os.Getenv("VENAFI_CLOUD_ZONE"), "Zone to use during Venafi Cloud end-to-end tests")
+	fs.StringVar(&v.APIToken, "global.venafi-cloud-apitoken", os.Getenv("VENAFI_CLOUD_APITOKEN"), "Username to use when authenticating with the Venafi Cloud instance")
+}
+
+// TODO: make missing venafi vars not fail validation (i.e. skip venafi tests)
+func (v *VenafiCloudConfiguration) Validate() []error {
 	return nil
 }
