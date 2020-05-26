@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package venafi
+package client
 
 import (
 	"context"
@@ -26,6 +26,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
 	corev1 "k8s.io/api/core/v1"
@@ -42,9 +44,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	internalvenafi "github.com/jetstack/cert-manager/pkg/internal/venafi"
-	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
-	internalvenafifake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
+	internalvenafifake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
@@ -184,7 +184,7 @@ func TestSign(t *testing.T) {
 	}
 
 	clientReturnsPending := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []client.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrCertificatePending{
 				CertificateID: "test-cert-id",
 				Status:        "test-status-pending",
@@ -192,25 +192,25 @@ func TestSign(t *testing.T) {
 		},
 	}
 	clientReturnsTimeout := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []client.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrRetrieveCertificateTimeout{
 				CertificateID: "test-cert-id",
 			}
 		},
 	}
 	clientReturnsGenericError := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []client.CustomField) ([]byte, error) {
 			return nil, errors.New("this is an error")
 		},
 	}
 	clientReturnsCert := &internalvenafifake.Venafi{
-		SignFn: func([]byte, time.Duration, []internalvanafiapi.CustomField) ([]byte, error) {
+		SignFn: func([]byte, time.Duration, []client.CustomField) ([]byte, error) {
 			return certPEM, nil
 		},
 	}
 
 	clientReturnsCertIfCustomField := &internalvenafifake.Venafi{
-		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
+		SignFn: func(csr []byte, t time.Duration, fields []client.CustomField) ([]byte, error) {
 			if len(fields) > 0 && fields[0].Name == "cert-manager-test" && fields[0].Value == "test ok" {
 				return certPEM, nil
 			}
@@ -219,8 +219,8 @@ func TestSign(t *testing.T) {
 	}
 
 	clientReturnsInvalidCustomFieldType := &internalvenafifake.Venafi{
-		SignFn: func(csr []byte, t time.Duration, fields []internalvanafiapi.CustomField) ([]byte, error) {
-			return nil, internalvenafi.ErrCustomFieldsType{Type: fields[0].Type}
+		SignFn: func(csr []byte, t time.Duration, fields []client.CustomField) ([]byte, error) {
+			return nil, client.ErrCustomFieldsType{Type: fields[0].Type}
 		},
 	}
 
@@ -721,7 +721,7 @@ func runTest(t *testing.T, test testT) {
 
 	if test.fakeClient != nil {
 		v.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
-			issuer cmapi.GenericIssuer) (internalvenafi.Interface, error) {
+			issuer cmapi.GenericIssuer) (client.Interface, error) {
 			return test.fakeClient, nil
 		}
 	}

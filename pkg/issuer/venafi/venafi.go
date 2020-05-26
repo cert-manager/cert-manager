@@ -17,12 +17,12 @@ limitations under the License.
 package venafi
 
 import (
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/internal/venafi"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
@@ -38,7 +38,7 @@ type Venafi struct {
 	// For ClusterIssuers, this will be the cluster resource namespace.
 	resourceNamespace string
 
-	clientBuilder venafi.VenafiClientBuilder
+	clientBuilder client.VenafiClientBuilder
 }
 
 func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Interface, error) {
@@ -46,7 +46,7 @@ func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Inte
 		issuer:            issuer,
 		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
-		clientBuilder:     venafi.New,
+		clientBuilder:     client.New,
 		Context:           ctx,
 	}, nil
 }

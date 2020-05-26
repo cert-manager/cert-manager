@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package venafi
+package client
 
 import (
 	"crypto"
@@ -30,8 +30,7 @@ import (
 	"github.com/Venafi/vcert/pkg/endpoint"
 	"github.com/Venafi/vcert/pkg/venafi/fake"
 
-	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
-	internalfake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
+	internalfake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -184,7 +183,7 @@ func TestSign(t *testing.T) {
 		},
 		"obtain a certificate with custom fields specified": {
 			csrPEM:       csrPEM,
-			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok"}},
+			customFields: []CustomField{{Name: "test", Value: "ok"}},
 			client: internalfake.Connector{
 				RetrieveCertificateFunc: func(r *certificate.Request) (*certificate.PEMCollection, error) {
 					// we set 1 field by default
@@ -208,7 +207,7 @@ func TestSign(t *testing.T) {
 		},
 		"If invalid custom field type found the error": {
 			csrPEM:       csrPEM,
-			customFields: []internalvanafiapi.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
+			customFields: []CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
 			checkFn:      checkNoCertificateIssued,
 			expectedErr:  true,
 		},
@@ -227,7 +226,7 @@ type testSignT struct {
 
 	expectedErr bool
 
-	customFields []internalvanafiapi.CustomField
+	customFields []CustomField
 
 	checkFn func(*testing.T, []byte, []byte)
 }
