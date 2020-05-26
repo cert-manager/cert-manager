@@ -877,7 +877,7 @@ func (c *certificateRequestManager) setSecretValues(ctx context.Context, crt *cm
 
 	s.Data[corev1.TLSPrivateKeyKey] = data.pk
 	s.Data[corev1.TLSCertKey] = data.cert
-	if data.ca != nil && len(data.ca) > 0 {
+	if len(data.ca) > 0 {
 		s.Data[cmmeta.TLSCAKey] = data.ca
 	} else {
 		delete(s.Data, cmmeta.TLSCAKey)
