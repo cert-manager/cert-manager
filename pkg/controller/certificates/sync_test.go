@@ -367,7 +367,7 @@ func TestBuildCertificateRequest(t *testing.T) {
 		}
 
 		if err == nil && test.expectedErr {
-			t.Error("expected and error but got 'nil'")
+			t.Error("expected an error but got 'nil'")
 		}
 
 		if cr == nil {
@@ -421,7 +421,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -467,7 +466,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -516,7 +514,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -565,7 +562,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -753,7 +749,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -810,7 +805,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -868,7 +862,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -899,7 +892,6 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateTestCertificate(exampleBundle1.certificate, nil),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -963,7 +955,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1276,7 +1267,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1325,7 +1315,6 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1412,7 +1401,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1470,7 +1458,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1528,7 +1515,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1559,7 +1545,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1590,7 +1575,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1652,7 +1636,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1688,7 +1671,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								),
 							),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1753,7 +1735,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
