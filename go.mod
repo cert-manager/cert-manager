@@ -13,7 +13,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.3.0
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/Venafi/vcert v0.0.0-20200310111556-eba67a23943f
-	github.com/aws/aws-sdk-go v1.24.1
+	github.com/aws/aws-sdk-go v1.31.3
 	github.com/cloudflare/cloudflare-go v0.8.5
 	github.com/cpu/goacmedns v0.0.0-20180701200144-565ecf2a84df
 	github.com/digitalocean/godo v1.29.0
@@ -32,13 +32,13 @@ require (
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pavel-v-chernykh/keystore-go v2.1.0+incompatible
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
-	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.4.0
 	gopkg.in/ini.v1 v1.52.0 // indirect
