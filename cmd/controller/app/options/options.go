@@ -258,7 +258,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
-		"The host and port that the metrics endpoint to listen on.")
+		"The host and port that the metrics endpoint should listen on.")
 }
 
 func (o *ControllerOptions) Validate() error {

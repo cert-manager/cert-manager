@@ -36,7 +36,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	testnet "github.com/jetstack/cert-manager/test/unit/net"
 )
 
 // TestMetricscontoller performs a basic test to ensure that Certificates
@@ -49,15 +48,12 @@ func TestMetricsController(t *testing.T) {
 	// Build, instantiate and run the issuing controller.
 	_, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
-	metricsPort, err := testnet.FreePort()
+	metricsHandler := metrics.New(logf.Log)
+	server, err := metricsHandler.Start("127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	metricsAddress := fmt.Sprintf("127.0.0.1:%d", metricsPort)
-
-	metricsHandler := metrics.New(logf.Log, metricsAddress)
-	go metricsHandler.Start(make(chan struct{}))
-	time.Sleep(time.Second)
+	defer metricsHandler.Shutdown(server)
 
 	ctrl, queue, mustSync := controllermetrics.NewController(factory, cmFactory, metricsHandler)
 	c := controllerpkg.NewController(
@@ -78,7 +74,7 @@ func TestMetricsController(t *testing.T) {
 	var (
 		crtName         = "testcrt"
 		namespace       = "testns"
-		metricsEndpoint = fmt.Sprintf("http://%s/metrics", metricsAddress)
+		metricsEndpoint = fmt.Sprintf("http://%s/metrics", server.Addr)
 
 		lastErr error
 	)

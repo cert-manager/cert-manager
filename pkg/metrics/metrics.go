@@ -25,6 +25,7 @@ package metrics
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 
@@ -50,7 +51,6 @@ const (
 type Metrics struct {
 	log      logr.Logger
 	registry *prometheus.Registry
-	server   *http.Server
 
 	certificateExpiryTimeSeconds     *prometheus.GaugeVec
 	certificateReadyStatus           *prometheus.GaugeVec
@@ -61,7 +61,7 @@ type Metrics struct {
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
 
-func New(log logr.Logger, listenAddress string) *Metrics {
+func New(log logr.Logger) *Metrics {
 	var (
 		certificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -116,19 +116,10 @@ func New(log logr.Logger, listenAddress string) *Metrics {
 		)
 	)
 
-	router := mux.NewRouter()
-
 	// Create server and register Prometheus metrics handler
 	m := &Metrics{
 		log:      log.WithName("metrics"),
 		registry: prometheus.NewRegistry(),
-		server: &http.Server{
-			Addr:           listenAddress,
-			ReadTimeout:    prometheusMetricsServerReadTimeout,
-			WriteTimeout:   prometheusMetricsServerWriteTimeout,
-			MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
-			Handler:        router,
-		},
 
 		certificateExpiryTimeSeconds:     certificateExpiryTimeSeconds,
 		certificateReadyStatus:           certificateReadyStatus,
@@ -137,32 +128,44 @@ func New(log logr.Logger, listenAddress string) *Metrics {
 		controllerSyncCallCount:          controllerSyncCallCount,
 	}
 
-	router.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
-
 	return m
 }
 
 // Start will register the Prometheu metrics, and start the Prometheus server
-func (m *Metrics) Start(stopCh <-chan struct{}) {
+func (m *Metrics) Start(listenAddress string) (*http.Server, error) {
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 
+	router := mux.NewRouter()
+	router.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+
+	ln, err := net.Listen("tcp", listenAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	server := &http.Server{
+		Addr:           ln.Addr().String(),
+		ReadTimeout:    prometheusMetricsServerReadTimeout,
+		WriteTimeout:   prometheusMetricsServerWriteTimeout,
+		MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
+		Handler:        router,
+	}
+
 	go func() {
-		log := m.log.WithValues("address", m.server.Addr)
+		log := m.log.WithValues("address", ln.Addr())
 		log.Info("listening for connections on")
-		if err := m.server.ListenAndServe(); err != nil {
+
+		if err := server.Serve(ln); err != nil {
 			log.Error(err, "error running prometheus metrics server")
 			return
 		}
-
-		log.Info("prometheus metrics server exited")
 	}()
 
-	<-stopCh
-	m.shutdown()
+	return server, nil
 }
 
 // IncrementSyncCallCount will increase the sync counter for that controller.
@@ -170,13 +173,13 @@ func (m *Metrics) IncrementSyncCallCount(controllerName string) {
 	m.controllerSyncCallCount.WithLabelValues(controllerName).Inc()
 }
 
-func (m *Metrics) shutdown() {
+func (m *Metrics) Shutdown(server *http.Server) {
 	m.log.Info("stopping Prometheus metrics server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), prometheusMetricsServerShutdownTimeout)
 	defer cancel()
 
-	if err := m.server.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(ctx); err != nil {
 		m.log.Error(err, "prometheus metrics server shutdown failed", err)
 		return
 	}

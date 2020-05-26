@@ -21,7 +21,6 @@ go_test(
         "//pkg/util/pki:go_default_library",
         "//test/integration/framework:go_default_library",
         "//test/unit/gen:go_default_library",
-        "//test/unit/net:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
