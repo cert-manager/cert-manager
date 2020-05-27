@@ -152,6 +152,12 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 
 func newVRequest(cert *x509.Certificate) *certificate.Request {
 	req := certificate.NewRequest(cert)
+
+	if len(cert.Subject.Organization) == 0 {
+		// Venafi TPP errors on an empty DN
+		// this applies the pre-0.15 default again if no other DN field is set
+		cert.Subject.Organization = []string{"cert-manager"}
+	}
 	// overwrite entire Subject block
 	req.Subject = cert.Subject
 	return req
