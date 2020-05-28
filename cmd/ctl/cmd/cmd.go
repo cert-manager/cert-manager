@@ -31,9 +31,9 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/version"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 )
 
 func NewCertManagerCtlCommand(in io.Reader, out, err io.Writer, stopCh <-chan struct{}) *cobra.Command {
