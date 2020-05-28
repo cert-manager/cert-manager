@@ -26,7 +26,7 @@ func NewCmdCreate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory
 	cmds := &cobra.Command{
 		Use:   "create",
 		Short: "Create something",
-		Long: `Create something e.g. CertificateRequest`,
+		Long:  `Create something e.g. CertificateRequest`,
 	}
 	//cmds.SetUsageTemplate(usageTemplate)
 
