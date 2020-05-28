@@ -18,6 +18,11 @@ package conversion
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/pem"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -32,10 +37,35 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
 
+func generateCSR(t *testing.T) []byte {
+	skRSA, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asn1Subj, _ := asn1.Marshal(pkix.Name{
+		CommonName: "test",
+	}.ToRDNSequence())
+	template := x509.CertificateRequest{
+		RawSubject: asn1Subj,
+	}
+
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, skRSA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+
+	return csr
+}
+
 func TestConversion(t *testing.T) {
+	testCSR := generateCSR(t)
+
 	tests := map[string]struct {
 		input     runtime.Object
 		targetGVK schema.GroupVersionKind
@@ -49,6 +79,7 @@ func TestConversion(t *testing.T) {
 				},
 				Spec: v1alpha2.CertificateSpec{
 					SecretName: "something",
+					CommonName: "test",
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
@@ -62,6 +93,7 @@ func TestConversion(t *testing.T) {
 				},
 				Spec: v1alpha3.CertificateSpec{
 					SecretName: "something",
+					CommonName: "test",
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
@@ -75,9 +107,7 @@ func TestConversion(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: v1alpha2.CertificateRequestSpec{
-					// validating webhook isn't currently configured in test
-					// environment so this passes validation.
-					CSRPEM: []byte("a"),
+					CSRPEM: testCSR,
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
@@ -90,9 +120,7 @@ func TestConversion(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: v1alpha3.CertificateRequestSpec{
-					// validating webhook isn't currently configured in test
-					// environment so this passes validation.
-					CSRPEM: []byte("a"),
+					CSRPEM: testCSR,
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
@@ -107,6 +135,7 @@ func TestConversion(t *testing.T) {
 				},
 				Spec: v1alpha2.CertificateSpec{
 					SecretName:   "abc",
+					CommonName:   "test",
 					Organization: []string{"test"},
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
@@ -121,6 +150,7 @@ func TestConversion(t *testing.T) {
 				},
 				Spec: v1beta1.CertificateSpec{
 					SecretName: "abc",
+					CommonName: "test",
 					Subject: &v1beta1.X509Subject{
 						Organizations: []string{"test"},
 					},

@@ -18,6 +18,11 @@ package ctl
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/pem"
 	"fmt"
 	"regexp"
 	"strings"
@@ -35,11 +40,36 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
+func generateCSR(t *testing.T) []byte {
+	skRSA, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asn1Subj, _ := asn1.Marshal(pkix.Name{
+		CommonName: "test",
+	}.ToRDNSequence())
+	template := x509.CertificateRequest{
+		RawSubject: asn1Subj,
+	}
+
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, skRSA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+
+	return csr
+}
+
 func TestCtlStatusCert(t *testing.T) {
+	testCSR := generateCSR(t)
+
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
@@ -117,7 +147,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
-			clusterIssuer:  gen.ClusterIssuer("letsencrypt-prod"),
+			clusterIssuer:  gen.ClusterIssuer("letsencrypt-prod", gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{})),
 			expErr:         false,
 			expOutput: `^Name: testcrt-1
 Namespace: testns-1
@@ -151,17 +181,27 @@ No CertificateRequest found for this Certificate$`,
 			req: gen.CertificateRequest(req1Name,
 				gen.SetCertificateRequestNamespace(ns1),
 				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
-				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "Issuer"}),
+				gen.SetCertificateRequestCSR(testCSR)),
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer: gen.Issuer("letsencrypt-prod",
 				gen.SetIssuerNamespace(ns1),
-				gen.SetIssuerACME(cmacme.ACMEIssuer{})),
+				gen.SetIssuerACME(cmacme.ACMEIssuer{
+					Server: "https://dummy.acme.local/",
+					PrivateKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "test",
+						},
+						Key: "test",
+					},
+				})),
 			secret: gen.Secret("existing-tls-secret",
 				gen.SetSecretNamespace(ns1),
 				gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
 			order: gen.Order("example-order",
 				gen.SetOrderNamespace(ns1),
-				gen.SetOrderCsr([]byte("dummyCSR")),
+				gen.SetOrderCsr(testCSR),
+				gen.SetOrderIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "Issuer"}),
 				gen.SetOrderDNSNames("www.example.com")),
 			expErr: false,
 			expOutput: `^Name: testcrt-2
@@ -217,7 +257,8 @@ Order:
 			req: gen.CertificateRequest(req2Name,
 				gen.SetCertificateRequestNamespace(ns1),
 				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
-				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Name: "non-existing-issuer", Kind: "Issuer"}),
+				gen.SetCertificateRequestCSR(testCSR)),
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer:    nil,
 			expErr:    false,
@@ -254,8 +295,9 @@ CertificateRequest:
 			inputNamespace: ns1,
 			req: gen.CertificateRequest(req3Name,
 				gen.SetCertificateRequestNamespace(ns1),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Name: "non-existing-clusterissuer", Kind: "ClusterIssuer"}),
 				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
-				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+				gen.SetCertificateRequestCSR(testCSR)),
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer:    nil,
 			expErr:    false,

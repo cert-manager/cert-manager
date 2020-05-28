@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"strings"
 	"testing"
 
+	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -33,9 +35,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/versioning"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
+	"github.com/jetstack/cert-manager/pkg/api"
 	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 )
 
@@ -56,16 +60,34 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Logf("Found CRD with name %q", crd.Name)
 	}
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
-	// environment variables
+
 	env := &envtest.Environment{
 		AttachControlPlaneOutput: false,
 		CRDs:                     crdsToRuntimeObjects(crds),
 	}
+
 	config, err := env.Start()
 	if err != nil {
 		t.Fatalf("failed to start control plane: %v", err)
 	}
-	// TODO: configure Validating and Mutating webhook
+
+	cl, err := client.New(config, client.Options{Scheme: api.Scheme})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// installing the validating webhooks, not using WebhookInstallOptions as it patches the CA to be it's own
+	err = cl.Create(context.Background(), getValidatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// installing the mutating webhooks, not using WebhookInstallOptions as it patches the CA to be it's own
+	err = cl.Create(context.Background(), getMutatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	return config, func() {
 		defer stopWebhook()
 		if err := env.Stop(); err != nil {
@@ -171,4 +193,78 @@ func crdsToRuntimeObjects(in []*v1beta1.CustomResourceDefinition) []runtime.Obje
 	}
 
 	return out
+}
+
+func getValidatingWebhookConfig(url string, caPEM []byte) runtime.Object {
+	failurePolicy := admissionregistrationv1beta1.Fail
+	sideEffects := admissionregistrationv1beta1.SideEffectClassNone
+	validateURL := fmt.Sprintf("%s/validate", url)
+	webhook := admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cert-manager-webhook",
+		},
+		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{
+			{
+				Name: "webhook.cert-manager.io",
+				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+					URL:      &validateURL,
+					CABundle: caPEM,
+				},
+				Rules: []admissionregistrationv1beta1.RuleWithOperations{
+					{
+						Operations: []admissionregistrationv1beta1.OperationType{
+							admissionregistrationv1beta1.Create,
+							admissionregistrationv1beta1.Update,
+						},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
+							APIVersions: []string{"*"},
+							Resources:   []string{"*/*"},
+						},
+					},
+				},
+				FailurePolicy: &failurePolicy,
+				SideEffects:   &sideEffects,
+			},
+		},
+	}
+
+	return &webhook
+}
+
+func getMutatingWebhookConfig(url string, caPEM []byte) runtime.Object {
+	failurePolicy := admissionregistrationv1beta1.Fail
+	sideEffects := admissionregistrationv1beta1.SideEffectClassNone
+	validateURL := fmt.Sprintf("%s/mutate", url)
+	webhook := admissionregistrationv1beta1.MutatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cert-manager-webhook",
+		},
+		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{
+			{
+				Name: "webhook.cert-manager.io",
+				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+					URL:      &validateURL,
+					CABundle: caPEM,
+				},
+				Rules: []admissionregistrationv1beta1.RuleWithOperations{
+					{
+						Operations: []admissionregistrationv1beta1.OperationType{
+							admissionregistrationv1beta1.Create,
+							admissionregistrationv1beta1.Update,
+						},
+						Rule: admissionregistrationv1beta1.Rule{
+							APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
+							APIVersions: []string{"*"},
+							Resources:   []string{"*/*"},
+						},
+					},
+				},
+				FailurePolicy: &failurePolicy,
+				SideEffects:   &sideEffects,
+			},
+		},
+	}
+
+	return &webhook
 }
