@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/base64"
 
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -80,6 +82,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
+		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
+			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 
 	(&certificates.Suite{
@@ -88,6 +92,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerDNS01.createDNS01Issuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
+		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
+			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 
 	(&certificates.Suite{
@@ -95,6 +101,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
+		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
+			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 
 	(&certificates.Suite{
@@ -103,6 +111,8 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerDNS01.createDNS01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
+		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
+			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 }
 

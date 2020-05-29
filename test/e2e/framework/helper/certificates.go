@@ -26,6 +26,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -263,8 +264,15 @@ func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsa
 	return us
 }
 
-func (h *Helper) WaitCertificateIssuedValid(ns, name string, timeout time.Duration) error {
-	return h.WaitCertificateIssuedValidTLS(ns, name, timeout, nil)
+func (h *Helper) WaitCertificateIssued(ns, name string, timeout time.Duration) error {
+	certificate, err := h.WaitForCertificateReady(ns, name, timeout)
+	if err != nil {
+		log.Logf("Error waiting for Certificate to become Ready: %v", err)
+		h.Kubectl(ns).DescribeResource("certificate", name)
+		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
+	}
+	return err
 }
 
 func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectReference) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
@@ -337,22 +345,43 @@ func (h *Helper) keyUsagesMatch(aKU x509.KeyUsage, aEKU []x509.ExtKeyUsage,
 	return true
 }
 
-func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Duration, rootCAPEM []byte) error {
-	certificate, err := h.WaitForCertificateReady(ns, name, timeout)
+// IsTrustedCertificate checks if the cert is signed by the root CA if one is provided
+func (h *Helper) IsTrustedCertificate(ns, name string, rootCAPEM []byte) error {
+	// if we don't know the root CA we will skip this tests and return no errors.
+	if rootCAPEM == nil {
+		return nil
+	}
+
+	certificate, err := h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
-		log.Logf("Error waiting for Certificate to become Ready: %v", err)
-		h.Kubectl(ns).DescribeResource("certificate", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		h.describeCertificateRequestFromCertificate(ns, certificate)
+		return err
+	}
+	secret, err := h.KubeClient.CoreV1().Secrets(certificate.Namespace).Get(context.TODO(), certificate.Spec.SecretName, metav1.GetOptions{})
+	if err != nil {
 		return err
 	}
 
-	_, err = h.ValidateIssuedCertificate(certificate, rootCAPEM)
+	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
-		log.Logf("Error validating issued certificate: %v", err)
-		h.Kubectl(ns).DescribeResource("certificate", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		h.describeCertificateRequestFromCertificate(ns, certificate)
+		return err
+	}
+
+	var dnsName string
+	if len(certificate.Spec.DNSNames) > 0 {
+		dnsName = certificate.Spec.DNSNames[0]
+	}
+
+	rootCertPool := x509.NewCertPool()
+	rootCertPool.AppendCertsFromPEM(rootCAPEM)
+	intermediateCertPool := x509.NewCertPool()
+	intermediateCertPool.AppendCertsFromPEM(secret.Data[corev1.TLSCertKey])
+	opts := x509.VerifyOptions{
+		DNSName:       dnsName,
+		Intermediates: intermediateCertPool,
+		Roots:         rootCertPool,
+	}
+
+	if _, err := cert.Verify(opts); err != nil {
 		return err
 	}
 

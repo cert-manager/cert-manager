@@ -57,9 +57,6 @@ func (v *VenafiCloud) Setup(cfg *config.Config) error {
 		}
 	}
 
-	if v.config.Addons.Venafi.Cloud.URL == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi Cloud URL must be set"))
-	}
 	if v.config.Addons.Venafi.Cloud.Zone == "" {
 		return errors.NewSkip(fmt.Errorf("Venafi Cloud Zone must be set"))
 	}

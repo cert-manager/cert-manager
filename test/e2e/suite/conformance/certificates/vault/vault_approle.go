@@ -20,6 +20,8 @@ import (
 	"context"
 	"path"
 
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +53,11 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		CreateIssuerFunc:    provisioner.createIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
+		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
+			validations.ExpectKeyUsageKeyUsageKeyAgreement,
+			validations.ExpectEmailsToMatch,
+			validations.ExpectCertificateURIsToMatch,
+			validations.ExpectCertificateURIsToMatch),
 	}).Define()
 
 	(&certificates.Suite{
@@ -58,6 +65,11 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		CreateIssuerFunc:    provisioner.createClusterIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
+		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
+			validations.ExpectKeyUsageKeyUsageKeyAgreement,
+			validations.ExpectEmailsToMatch,
+			validations.ExpectCertificateURIsToMatch,
+			validations.ExpectCertificateURIsToMatch),
 	}).Define()
 })
 

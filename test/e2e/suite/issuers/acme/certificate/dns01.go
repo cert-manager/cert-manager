@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +50,6 @@ func testRFC2136DNSProvider() bool {
 	name := "rfc2136"
 	return Context("With "+name+" credentials configured", func() {
 		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
-		h := f.Helper()
 
 		issuerName := "test-acme-issuer"
 		certificateName := "test-acme-certificate"
@@ -128,7 +129,13 @@ func testRFC2136DNSProvider() bool {
 
 			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(validations.DefaultCertificateValidations, f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -144,7 +151,13 @@ func testRFC2136DNSProvider() bool {
 
 			cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(validations.DefaultCertificateValidations, f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -161,7 +174,12 @@ func testRFC2136DNSProvider() bool {
 			cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.TODO(), cert, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
-			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*10)
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*10)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(validations.DefaultCertificateValidations, f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

@@ -55,7 +55,6 @@ func (v *VenafiTPPConfiguration) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&v.Password, "global.venafi-tpp-password", os.Getenv("VENAFI_TPP_PASSWORD"), "Password to use when authenticating with the Venafi TPP instance")
 }
 
-// TODO: make missing venafi vars not fail validation (i.e. skip venafi tests)
 func (v *VenafiTPPConfiguration) Validate() []error {
 	return nil
 }
@@ -65,7 +64,6 @@ func (v *VenafiCloudConfiguration) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&v.APIToken, "global.venafi-cloud-apitoken", os.Getenv("VENAFI_CLOUD_APITOKEN"), "Username to use when authenticating with the Venafi Cloud instance")
 }
 
-// TODO: make missing venafi vars not fail validation (i.e. skip venafi tests)
 func (v *VenafiCloudConfiguration) Validate() []error {
 	return nil
 }

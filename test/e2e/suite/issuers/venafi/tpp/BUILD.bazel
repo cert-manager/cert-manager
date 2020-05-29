@@ -2,6 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
+<<<<<<< HEAD
     srcs = [
         "certificate.go",
         "certificaterequest.go",
@@ -15,12 +16,19 @@ go_library(
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util:go_default_library",
         "//test/e2e/framework:go_default_library",
+        "//test/e2e/framework/helper/validations:go_default_library",
         "//test/e2e/suite/issuers/venafi/addon:go_default_library",
         "//test/e2e/util:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
     ],
+=======
+    srcs = ["doc.go"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/tpp",
+    visibility = ["//visibility:public"],
+    deps = ["//test/e2e/framework:go_default_library"],
+>>>>>>> 3f7b6ac24... Add bazel files
 )
 
 filegroup(

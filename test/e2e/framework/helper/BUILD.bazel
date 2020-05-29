@@ -9,6 +9,7 @@ go_library(
         "kubectl.go",
         "pod_start.go",
         "secret.go",
+        "validate.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/framework/helper",
     tags = ["manual"],
@@ -39,7 +40,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//test/e2e/framework/helper/validations:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

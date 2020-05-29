@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -33,7 +35,6 @@ import (
 
 var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 	f := framework.NewDefaultFramework("create-selfsigned-certificate")
-	h := f.Helper()
 
 	issuerName := "test-selfsigned-issuer"
 	certificateName := "test-selfsigned-certificate"
@@ -57,7 +58,12 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		By("Creating a Certificate")
 		_, err = certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(validations.DefaultCertificateValidations, f.Namespace.Name, certificateName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -101,8 +107,14 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			By("Creating a Certificate")
 			cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1.IssuerKind, v.inputDuration, v.inputRenewBefore), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(validations.DefaultCertificateValidations, f.Namespace.Name, certificateName)
+			Expect(err).NotTo(HaveOccurred())
+
 			f.CertificateDurationValid(cert, v.expectedDuration, 0)
 		})
 	}
@@ -122,8 +134,12 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		_, err = certClient.Create(context.TODO(), crt, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Verifying the Certificate is valid")
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(validations.DefaultCertificateValidations, f.Namespace.Name, certificateName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

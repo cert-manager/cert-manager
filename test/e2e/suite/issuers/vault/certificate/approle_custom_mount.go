@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
@@ -43,7 +44,6 @@ var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole 
 
 func runVaultCustomAppRoleTests(issuerKind string) {
 	f := framework.NewDefaultFramework("create-vault-certificate")
-	h := f.Helper()
 
 	var (
 		vault = &vaultaddon.Vault{
@@ -153,7 +153,12 @@ func runVaultCustomAppRoleTests(issuerKind string) {
 		_, err = certClient.Create(context.TODO(), util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, vaultIssuerName, issuerKind, nil, nil), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(validations.DefaultCertificateValidations, f.Namespace.Name, certificateName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 }

@@ -19,8 +19,6 @@ package venaficloud
 import (
 	"context"
 
-	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +26,9 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
+	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
 )
 
@@ -41,22 +41,27 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// support signing certificates that pair with an elliptic curve private
 		// key or using the same private key multiple times.
 		certificates.ECDSAFeature,
-		certificates.ReusePrivateKeyFeature,
+		certificates.EmailSANsFeature,
+		certificates.CommonNameFeature,
+		certificates.IPAddressFeature,
+		certificates.URISANsFeature,
 	)
 
 	provisioner := new(venafiProvisioner)
 	(&certificates.Suite{
-		Name:                "Venafi Cloud Issuer",
-		CreateIssuerFunc:    provisioner.createIssuer,
-		DeleteIssuerFunc:    provisioner.delete,
-		UnsupportedFeatures: unsupportedFeatures,
+		Name:                      "Venafi Cloud Issuer",
+		CreateIssuerFunc:          provisioner.createIssuer,
+		DeleteIssuerFunc:          provisioner.delete,
+		UnsupportedFeatures:       unsupportedFeatures,
+		ValidateCertificateChecks: validations.DefaultCertificateValidations,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "Venafi Cloud ClusterIssuer",
-		CreateIssuerFunc:    provisioner.createClusterIssuer,
-		DeleteIssuerFunc:    provisioner.delete,
-		UnsupportedFeatures: unsupportedFeatures,
+		Name:                      "Venafi Cloud ClusterIssuer",
+		CreateIssuerFunc:          provisioner.createClusterIssuer,
+		DeleteIssuerFunc:          provisioner.delete,
+		UnsupportedFeatures:       unsupportedFeatures,
+		ValidateCertificateChecks: validations.DefaultCertificateValidations,
 	}).Define()
 })
 
@@ -84,7 +89,7 @@ func (v *venafiProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectRe
 	if errors.IsSkip(err) {
 		framework.Skipf("Skipping test as addon could not be setup: %v", err)
 	}
-	Expect(err).NotTo(HaveOccurred(), "failed to setup tpp venafi")
+	Expect(err).NotTo(HaveOccurred(), "failed to provision venafi cloud issuer")
 
 	Expect(v.cloud.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
