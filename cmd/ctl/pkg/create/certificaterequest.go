@@ -17,8 +17,11 @@ limitations under the License.
 package create
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/resource"
 	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
@@ -45,9 +48,8 @@ type Options struct {
 	// The Namespace that the CertificateRequest to be created resides in.
 	// This flag registration is handled by cmdutil.Factory
 	Namespace string
-	// Path to the manifest for the Certificate resource (yaml file)
-	FilePath string
 
+	resource.FilenameOptions
 	genericclioptions.IOStreams
 }
 
@@ -73,7 +75,7 @@ func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdut
 		},
 	}
 
-	cmd.Flags().StringVarP(&o.FilePath, "from-file", "f", o.FilePath, "Path to the manifest for the Certificate resource (yaml file) based on which the CertificateRequest is going to be created.")
+	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "Path to a the manifest of Certificate resource.")
 
 	return cmd
 }
@@ -81,6 +83,12 @@ func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdut
 // Complete takes the command arguments and factory and infers any remaining options.
 func (o *Options) Complete(f cmdutil.Factory) error {
 	var err error
+
+	err = o.FilenameOptions.RequireFilenameOrKustomize()
+	if err != nil {
+		return err
+	}
+
 	o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
@@ -101,5 +109,33 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 
 // Run executes renew command
 func (o *Options) Run(args []string) error {
+	builder := new(resource.Builder)
+
+	r := builder.Unstructured().LocalParam(true).ContinueOnError().
+		FilenameParam(false, &o.FilenameOptions).Flatten().Do()
+
+	if err := r.Err(); err != nil {
+		return fmt.Errorf("error here: %s", err)
+	}
+
+	singleItemImplied := false
+	infos, err := r.IntoSingleItemImplied(&singleItemImplied).Infos()
+	if err != nil {
+		return fmt.Errorf("error here instead: %s", err)
+	}
+
+	if len(infos) == 0 {
+		return fmt.Errorf("no certificate passed to create certificaterequest")
+	}
+
+	for _, info := range infos {
+		if info.Object.GetObjectKind().GroupVersionKind().Kind != "Certificate" {
+			return fmt.Errorf("the manifest passed in should be for resource of kind Certificate")
+		}
+		// TODO: (Functions with?) Bulk of logic about parsing and creating CR
+		// What is needed to create CR?
+		// first need a private key, a name for cr,
+	}
+
 	return nil
 }
