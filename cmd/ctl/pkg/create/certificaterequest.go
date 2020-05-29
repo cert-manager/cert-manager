@@ -17,9 +17,12 @@ limitations under the License.
 package create
 
 import (
+	"context"
+	"encoding/pem"
 	"fmt"
 
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	restclient "k8s.io/client-go/rest"
@@ -27,7 +30,10 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var (
@@ -38,9 +44,11 @@ Create a cert-manager CertificateRequest resource for one-time Certificate issui
 `))
 
 	alias = []string{"cr"}
+
+	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
-// Options is a struct to support renew command
+// Options is a struct to support create certificaterequest command
 type Options struct {
 	CMClient   cmclient.Interface
 	RESTConfig *restclient.Config
@@ -60,7 +68,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 	}
 }
 
-// NewCmdRenew returns a cobra command for renewing Certificates
+// NewCmdCreateCertficate returns a cobra command for create CertificateRequest
 func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
@@ -107,7 +115,7 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 	return nil
 }
 
-// Run executes renew command
+// Run executes create certificaterequest command
 func (o *Options) Run(args []string) error {
 	builder := new(resource.Builder)
 
@@ -132,10 +140,94 @@ func (o *Options) Run(args []string) error {
 		if info.Object.GetObjectKind().GroupVersionKind().Kind != "Certificate" {
 			return fmt.Errorf("the manifest passed in should be for resource of kind Certificate")
 		}
-		// TODO: (Functions with?) Bulk of logic about parsing and creating CR
-		// What is needed to create CR?
-		// first need a private key, a name for cr,
+
+		fmt.Println(info.Object)
+
+		//TODO: decode that info into Certificate
+		crt := &cmapi.Certificate{}
+
+		expectedReqName, err := apiutil.ComputeCertificateRequestName(crt)
+		if err != nil {
+			return fmt.Errorf("internal error hashing certificate spec: %v", err)
+		}
+
+		signer, err := pki.GeneratePrivateKeyForCertificate(crt)
+		if err != nil {
+			return fmt.Errorf("error when generating private key")
+		}
+
+		keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
+		if err != nil {
+			return fmt.Errorf("error when encoding private key")
+		}
+
+		req, err := o.buildCertificateRequest(crt, expectedReqName, keyData)
+		if err != nil {
+			return err
+		}
+
+		req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(context.TODO(), req, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("error when creating CertifcateRequest through client")
+		}
+
 	}
 
 	return nil
+}
+
+func (o *Options) buildCertificateRequest(crt *cmapi.Certificate, name string, pk []byte) (*cmapi.CertificateRequest, error) {
+	csrPEM, err := generateCSR(crt, pk)
+	if err != nil {
+		return nil, err
+	}
+
+	annotations := make(map[string]string, len(crt.Annotations)+2)
+	for k, v := range crt.Annotations {
+		annotations[k] = v
+	}
+	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
+	annotations[cmapi.CertificateNameKey] = crt.Name
+
+	cr := &cmapi.CertificateRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            name,
+			Namespace:       crt.Namespace,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+			Annotations:     annotations,
+			Labels:          crt.Labels,
+		},
+		Spec: cmapi.CertificateRequestSpec{
+			CSRPEM:    csrPEM,
+			Duration:  crt.Spec.Duration,
+			IssuerRef: crt.Spec.IssuerRef,
+			IsCA:      crt.Spec.IsCA,
+			Usages:    crt.Spec.Usages,
+		},
+	}
+
+	return cr, nil
+}
+
+func generateCSR(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
+	csr, err := pki.GenerateCSR(crt)
+	if err != nil {
+		return nil, err
+	}
+
+	signer, err := pki.DecodePrivateKeyBytes(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	csrDER, err := pki.EncodeCSR(csr, signer)
+	if err != nil {
+		return nil, err
+	}
+
+	csrPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
+	})
+
+	return csrPEM, nil
 }
