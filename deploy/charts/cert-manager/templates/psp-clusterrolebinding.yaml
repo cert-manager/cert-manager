@@ -17,5 +17,5 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ template "cert-manager.serviceAccountName" . }}
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ template "cert-manager.namespace" . }}
 {{- end }}

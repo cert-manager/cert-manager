@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "webhook.fullname" . }}
-  namespace: {{ .Release.Namespace | quote }}
+  namespace: {{ include "cert-manager.namespace" . | quote }}
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
@@ -56,9 +56,9 @@ spec:
           - --v={{ .Values.global.logLevel }}
           {{- end }}
           - --secure-port={{ .Values.webhook.securePort }}
-          - --dynamic-serving-ca-secret-namespace={{ .Release.Namespace }}
+          - --dynamic-serving-ca-secret-namespace={{ template "cert-manager.namespace" . }}
           - --dynamic-serving-ca-secret-name={{ template "webhook.fullname" . }}-ca
-          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }}.svc
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }},{{ template "webhook.fullname" . }}.{{ template "cert-manager.namespace" . }},{{ template "webhook.fullname" . }}.{{ template "cert-manager.namespace" . }}.svc
         {{- if .Values.webhook.extraArgs }}
 {{ toYaml .Values.webhook.extraArgs | indent 10 }}
         {{- end }}

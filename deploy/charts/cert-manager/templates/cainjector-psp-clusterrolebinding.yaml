@@ -18,6 +18,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ template "cainjector.serviceAccountName" . }}
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ template "cert-manager.namespace" . }}
 {{- end }}
 {{- end }}
