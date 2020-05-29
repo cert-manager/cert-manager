@@ -192,7 +192,11 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 
 	secret.Data[corev1.TLSPrivateKeyKey] = data.PrivateKey
 	secret.Data[corev1.TLSCertKey] = data.Certificate
-	secret.Data[cmmeta.TLSCAKey] = data.CA
+	if len(data.CA) > 0 {
+		secret.Data[cmmeta.TLSCAKey] = data.CA
+	} else {
+		delete(secret.Data, cmmeta.TLSCAKey)
+	}
 
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)

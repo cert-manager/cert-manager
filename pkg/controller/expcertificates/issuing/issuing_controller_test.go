@@ -392,7 +392,6 @@ func TestIssuingController(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
 								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-								cmmeta.TLSCAKey:         exampleBundle.CertificateRequestReady.Status.CA,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -466,7 +465,6 @@ func TestIssuingController(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
 								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-								cmmeta.TLSCAKey:         exampleBundle.CertificateRequestReady.Status.CA,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -525,7 +523,6 @@ func TestIssuingController(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -596,7 +593,6 @@ func TestIssuingController(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -714,7 +710,6 @@ func TestIssuingController(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -828,7 +823,6 @@ func TestIssuingController(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
 								corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
-								cmmeta.TLSCAKey:         exampleBundle.CertificateRequestReady.Status.CA,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
