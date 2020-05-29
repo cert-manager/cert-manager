@@ -23,6 +23,8 @@ import (
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	restclient "k8s.io/client-go/rest"
@@ -31,9 +33,10 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 var (
@@ -44,18 +47,20 @@ Create a cert-manager CertificateRequest resource for one-time Certificate issui
 `))
 
 	alias = []string{"cr"}
+)
 
-	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
+var (
+	// Use the webhook's scheme as it already has the internal cert-manager types,
+	// and their conversion functions registered.
+	// In future we may we want to consider creating a dedicated scheme used by
+	// the ctl tool.
+	scheme = webhook.Scheme
 )
 
 // Options is a struct to support create certificaterequest command
 type Options struct {
 	CMClient   cmclient.Interface
 	RESTConfig *restclient.Config
-
-	// The Namespace that the CertificateRequest to be created resides in.
-	// This flag registration is handled by cmdutil.Factory
-	Namespace string
 
 	resource.FilenameOptions
 	genericclioptions.IOStreams
@@ -79,7 +84,7 @@ func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdut
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(factory))
-			cmdutil.CheckErr(o.Run(args))
+			cmdutil.CheckErr(o.Run(factory, args))
 		},
 	}
 
@@ -93,11 +98,6 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 	var err error
 
 	err = o.FilenameOptions.RequireFilenameOrKustomize()
-	if err != nil {
-		return err
-	}
-
-	o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
 	}
@@ -116,11 +116,19 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 }
 
 // Run executes create certificaterequest command
-func (o *Options) Run(args []string) error {
+func (o *Options) Run(f cmdutil.Factory, args []string) error {
 	builder := new(resource.Builder)
 
-	r := builder.Unstructured().LocalParam(true).ContinueOnError().
-		FilenameParam(false, &o.FilenameOptions).Flatten().Do()
+	cmdNamespace, enforceNamespace, err := f.ToRawKubeConfigLoader().Namespace()
+	if err != nil {
+		return err
+	}
+
+	r := builder.
+		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
+		LocalParam(true).ContinueOnError().
+		NamespaceParam(cmdNamespace).DefaultNamespace().
+		FilenameParam(enforceNamespace, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {
 		return fmt.Errorf("error here: %s", err)
@@ -133,18 +141,24 @@ func (o *Options) Run(args []string) error {
 	}
 
 	if len(infos) == 0 {
-		return fmt.Errorf("no certificate passed to create certificaterequest")
+		return fmt.Errorf("no object passed to create certificaterequest")
+	}
+	if len(infos) > 1 {
+		return fmt.Errorf("multiple objects passed to create certificaterequest")
 	}
 
 	for _, info := range infos {
-		if info.Object.GetObjectKind().GroupVersionKind().Kind != "Certificate" {
-			return fmt.Errorf("the manifest passed in should be for resource of kind Certificate")
+		crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1alpha2.SchemeGroupVersion)
+		if err != nil {
+			return fmt.Errorf("failed to convert certificate into version v1alpha2: %v", err)
 		}
 
-		fmt.Println(info.Object)
+		crt, ok := crtObj.(*cmapiv1alpha2.Certificate)
+		if !ok {
+			return fmt.Errorf("decoded object is not a v1alpha2 Certificate")
+		}
 
-		//TODO: decode that info into Certificate
-		crt := &cmapi.Certificate{}
+		fmt.Printf("Finally, decoded the object: %#v", crt)
 
 		expectedReqName, err := apiutil.ComputeCertificateRequestName(crt)
 		if err != nil {
@@ -166,17 +180,20 @@ func (o *Options) Run(args []string) error {
 			return err
 		}
 
-		req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(context.TODO(), req, metav1.CreateOptions{})
-		if err != nil {
-			return fmt.Errorf("error when creating CertifcateRequest through client")
+		ns := crt.Namespace
+		if ns == "" {
+			ns = cmdNamespace
 		}
-
+		req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("error when creating CertifcateRequest through client: %v", err)
+		}
 	}
 
 	return nil
 }
 
-func (o *Options) buildCertificateRequest(crt *cmapi.Certificate, name string, pk []byte) (*cmapi.CertificateRequest, error) {
+func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, name string, pk []byte) (*cmapiv1alpha2.CertificateRequest, error) {
 	csrPEM, err := generateCSR(crt, pk)
 	if err != nil {
 		return nil, err
@@ -186,18 +203,16 @@ func (o *Options) buildCertificateRequest(crt *cmapi.Certificate, name string, p
 	for k, v := range crt.Annotations {
 		annotations[k] = v
 	}
-	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
-	annotations[cmapi.CertificateNameKey] = crt.Name
+	annotations[cmapiv1alpha2.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
+	annotations[cmapiv1alpha2.CertificateNameKey] = crt.Name
 
-	cr := &cmapi.CertificateRequest{
+	cr := &cmapiv1alpha2.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       crt.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-			Annotations:     annotations,
-			Labels:          crt.Labels,
+			GenerateName: crt.Name + "-",
+			Annotations:  annotations,
+			Labels:       crt.Labels,
 		},
-		Spec: cmapi.CertificateRequestSpec{
+		Spec: cmapiv1alpha2.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
@@ -209,7 +224,7 @@ func (o *Options) buildCertificateRequest(crt *cmapi.Certificate, name string, p
 	return cr, nil
 }
 
-func generateCSR(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
+func generateCSR(crt *cmapiv1alpha2.Certificate, pk []byte) ([]byte, error) {
 	csr, err := pki.GenerateCSR(crt)
 	if err != nil {
 		return nil, err
