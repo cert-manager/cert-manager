@@ -349,6 +349,8 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 	// +optional
 	ServiceAccount *cmmeta.SecretKeySelector `json:"serviceAccountSecretRef,omitempty"`
 	Project        string                    `json:"project"`
+	// +optional
+	HostedZoneName string `json:"hostedZoneName"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
