@@ -419,15 +419,7 @@ func Convert_acme_ACMEChallenge_To_v1alpha3_ACMEChallenge(in *acme.ACMEChallenge
 func autoConvert_v1alpha3_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1alpha3.ACMEChallengeSolver, out *acme.ACMEChallengeSolver, s conversion.Scope) error {
 	out.Selector = (*acme.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
 	out.HTTP01 = (*acme.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
-	if in.DNS01 != nil {
-		in, out := &in.DNS01, &out.DNS01
-		*out = new(acme.ACMEChallengeSolverDNS01)
-		if err := Convert_v1alpha3_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.DNS01 = nil
-	}
+	out.DNS01 = (*acme.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
@@ -439,15 +431,7 @@ func Convert_v1alpha3_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1alph
 func autoConvert_acme_ACMEChallengeSolver_To_v1alpha3_ACMEChallengeSolver(in *acme.ACMEChallengeSolver, out *v1alpha3.ACMEChallengeSolver, s conversion.Scope) error {
 	out.Selector = (*v1alpha3.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
 	out.HTTP01 = (*v1alpha3.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
-	if in.DNS01 != nil {
-		in, out := &in.DNS01, &out.DNS01
-		*out = new(v1alpha3.ACMEChallengeSolverDNS01)
-		if err := Convert_acme_ACMEChallengeSolverDNS01_To_v1alpha3_ACMEChallengeSolverDNS01(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.DNS01 = nil
-	}
+	out.DNS01 = (*v1alpha3.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
@@ -459,15 +443,7 @@ func Convert_acme_ACMEChallengeSolver_To_v1alpha3_ACMEChallengeSolver(in *acme.A
 func autoConvert_v1alpha3_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *v1alpha3.ACMEChallengeSolverDNS01, out *acme.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	out.CNAMEStrategy = acme.CNAMEStrategy(in.CNAMEStrategy)
 	out.Akamai = (*acme.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	if in.CloudDNS != nil {
-		in, out := &in.CloudDNS, &out.CloudDNS
-		*out = new(acme.ACMEIssuerDNS01ProviderCloudDNS)
-		if err := Convert_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.CloudDNS = nil
-	}
+	out.CloudDNS = (*acme.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
 	out.Cloudflare = (*acme.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
 	out.Route53 = (*acme.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
 	out.AzureDNS = (*acme.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
@@ -486,15 +462,7 @@ func Convert_v1alpha3_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(
 func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1alpha3_ACMEChallengeSolverDNS01(in *acme.ACMEChallengeSolverDNS01, out *v1alpha3.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	out.CNAMEStrategy = v1alpha3.CNAMEStrategy(in.CNAMEStrategy)
 	out.Akamai = (*v1alpha3.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	if in.CloudDNS != nil {
-		in, out := &in.CloudDNS, &out.CloudDNS
-		*out = new(v1alpha3.ACMEIssuerDNS01ProviderCloudDNS)
-		if err := Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.CloudDNS = nil
-	}
+	out.CloudDNS = (*v1alpha3.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
 	out.Cloudflare = (*v1alpha3.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
 	out.Route53 = (*v1alpha3.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
 	out.AzureDNS = (*v1alpha3.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
@@ -719,17 +687,7 @@ func autoConvert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer(in *v1alpha3.ACMEIssuer,
 	if err := s.Convert(&in.PrivateKey, &out.PrivateKey, 0); err != nil {
 		return err
 	}
-	if in.Solvers != nil {
-		in, out := &in.Solvers, &out.Solvers
-		*out = make([]acme.ACMEChallengeSolver, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha3_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Solvers = nil
-	}
+	out.Solvers = *(*[]acme.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
 	return nil
 }
 
@@ -747,17 +705,7 @@ func autoConvert_acme_ACMEIssuer_To_v1alpha3_ACMEIssuer(in *acme.ACMEIssuer, out
 	if err := s.Convert(&in.PrivateKey, &out.PrivateKey, 0); err != nil {
 		return err
 	}
-	if in.Solvers != nil {
-		in, out := &in.Solvers, &out.Solvers
-		*out = make([]v1alpha3.ACMEChallengeSolver, len(*in))
-		for i := range *in {
-			if err := Convert_acme_ACMEChallengeSolver_To_v1alpha3_ACMEChallengeSolver(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Solvers = nil
-	}
+	out.Solvers = *(*[]v1alpha3.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
 	return nil
 }
 
@@ -873,13 +821,19 @@ func Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha3_ACMEIssuerDNS01Pro
 func autoConvert_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *v1alpha3.ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	out.ServiceAccount = (*meta.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
 	out.Project = in.Project
-	// WARNING: in.HostedZoneName requires manual conversion: does not exist in peer-type
+	out.HostedZoneName = in.HostedZoneName
 	return nil
+}
+
+// Convert_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS is an autogenerated conversion function.
+func Convert_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *v1alpha3.ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+	return autoConvert_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in, out, s)
 }
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *v1alpha3.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	out.ServiceAccount = (*metav1.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
 	out.Project = in.Project
+	out.HostedZoneName = in.HostedZoneName
 	return nil
 }
 
@@ -1108,17 +1062,7 @@ func Convert_acme_Challenge_To_v1alpha3_Challenge(in *acme.Challenge, out *v1alp
 
 func autoConvert_v1alpha3_ChallengeList_To_acme_ChallengeList(in *v1alpha3.ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]acme.Challenge, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha3_Challenge_To_acme_Challenge(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]acme.Challenge)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -1129,17 +1073,7 @@ func Convert_v1alpha3_ChallengeList_To_acme_ChallengeList(in *v1alpha3.Challenge
 
 func autoConvert_acme_ChallengeList_To_v1alpha3_ChallengeList(in *acme.ChallengeList, out *v1alpha3.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha3.Challenge, len(*in))
-		for i := range *in {
-			if err := Convert_acme_Challenge_To_v1alpha3_Challenge(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]v1alpha3.Challenge)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
