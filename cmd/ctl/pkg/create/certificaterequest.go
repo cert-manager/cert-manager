@@ -173,7 +173,12 @@ func (o *Options) Run(f cmdutil.Factory, args []string) error {
 		return fmt.Errorf("error when encoding private key: %v", err)
 	}
 
-	req, err := o.buildCertificateRequest(crt, keyData)
+	// Use name for CertificateRequest if specified as arg, else will use name of the Certificate as GenerateName
+	crName := ""
+	if len(args) > 0 {
+		crName = args[0]
+	}
+	req, err := o.buildCertificateRequest(crt, keyData, crName)
 	if err != nil {
 		return fmt.Errorf("error when building CertificateRequest: %v", err)
 	}
@@ -193,7 +198,7 @@ func (o *Options) Run(f cmdutil.Factory, args []string) error {
 }
 
 // Builds a CertificateRequest
-func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte) (*cmapiv1alpha2.CertificateRequest, error) {
+func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName string) (*cmapiv1alpha2.CertificateRequest, error) {
 	csrPEM, err := generateCSR(crt, pk)
 	if err != nil {
 		return nil, err
@@ -208,9 +213,8 @@ func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []b
 
 	cr := &cmapiv1alpha2.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: crt.Name + "-",
-			Annotations:  annotations,
-			Labels:       crt.Labels,
+			Annotations: annotations,
+			Labels:      crt.Labels,
 		},
 		Spec: cmapiv1alpha2.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
@@ -219,6 +223,11 @@ func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []b
 			IsCA:      crt.Spec.IsCA,
 			Usages:    crt.Spec.Usages,
 		},
+	}
+	if crName != "" {
+		cr.Name = crName
+	} else {
+		cr.GenerateName = crt.Name + "-"
 	}
 
 	return cr, nil
