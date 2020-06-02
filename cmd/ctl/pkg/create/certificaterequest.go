@@ -32,7 +32,6 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -124,6 +123,7 @@ func (o *Options) Run(f cmdutil.Factory, args []string) error {
 		return err
 	}
 
+	// Read file as internal API version
 	r := builder.
 		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
@@ -131,15 +131,16 @@ func (o *Options) Run(f cmdutil.Factory, args []string) error {
 		FilenameParam(enforceNamespace, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {
-		return fmt.Errorf("error here: %s", err)
+		return fmt.Errorf("error when getting Result from Builder: %s", err)
 	}
 
 	singleItemImplied := false
 	infos, err := r.IntoSingleItemImplied(&singleItemImplied).Infos()
 	if err != nil {
-		return fmt.Errorf("error here instead: %s", err)
+		return fmt.Errorf("error when getting infos out of Result: %s", err)
 	}
 
+	// Ensure only one object per command
 	if len(infos) == 0 {
 		return fmt.Errorf("no object passed to create certificaterequest")
 	}
@@ -147,53 +148,52 @@ func (o *Options) Run(f cmdutil.Factory, args []string) error {
 		return fmt.Errorf("multiple objects passed to create certificaterequest")
 	}
 
-	for _, info := range infos {
-		crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1alpha2.SchemeGroupVersion)
-		if err != nil {
-			return fmt.Errorf("failed to convert certificate into version v1alpha2: %v", err)
-		}
-
-		crt, ok := crtObj.(*cmapiv1alpha2.Certificate)
-		if !ok {
-			return fmt.Errorf("decoded object is not a v1alpha2 Certificate")
-		}
-
-		fmt.Printf("Finally, decoded the object: %#v", crt)
-
-		expectedReqName, err := apiutil.ComputeCertificateRequestName(crt)
-		if err != nil {
-			return fmt.Errorf("internal error hashing certificate spec: %v", err)
-		}
-
-		signer, err := pki.GeneratePrivateKeyForCertificate(crt)
-		if err != nil {
-			return fmt.Errorf("error when generating private key")
-		}
-
-		keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
-		if err != nil {
-			return fmt.Errorf("error when encoding private key")
-		}
-
-		req, err := o.buildCertificateRequest(crt, expectedReqName, keyData)
-		if err != nil {
-			return err
-		}
-
-		ns := crt.Namespace
-		if ns == "" {
-			ns = cmdNamespace
-		}
-		req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
-		if err != nil {
-			return fmt.Errorf("error when creating CertifcateRequest through client: %v", err)
-		}
+	info := infos[0]
+	// Convert to v1alpha2 because that version is needed for functions that follow
+	crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1alpha2.SchemeGroupVersion)
+	if err != nil {
+		return fmt.Errorf("failed to convert object into version v1alpha2: %v", err)
 	}
+
+	// Cast Object into Certificate
+	crt, ok := crtObj.(*cmapiv1alpha2.Certificate)
+	if !ok {
+		return fmt.Errorf("decoded object is not a v1alpha2 Certificate")
+	}
+
+	fmt.Println("Successfully decoded the object to a v1alpha2 Certificate")
+
+	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
+	if err != nil {
+		return fmt.Errorf("error when generating private key: %v", err)
+	}
+
+	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
+	if err != nil {
+		return fmt.Errorf("error when encoding private key: %v", err)
+	}
+
+	req, err := o.buildCertificateRequest(crt, keyData)
+	if err != nil {
+		return fmt.Errorf("error when building CertificateRequest: %v", err)
+	}
+
+	ns := crt.Namespace
+	if ns == "" {
+		ns = cmdNamespace
+	}
+	req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("error when creating CertificateRequest through client: %v", err)
+	}
+
+	fmt.Printf("CertificateRequest %v has been created in namespace %v\n", req.Name, req.Namespace)
 
 	return nil
 }
 
-func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, name string, pk []byte) (*cmapiv1alpha2.CertificateRequest, error) {
+// Builds a CertificateRequest
+func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte) (*cmapiv1alpha2.CertificateRequest, error) {
 	csrPEM, err := generateCSR(crt, pk)
 	if err != nil {
 		return nil, err
