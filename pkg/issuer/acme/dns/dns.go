@@ -239,7 +239,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 		}
 
 		// attempt to construct the cloud dns provider
-		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentials(issuer))
+		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentials(issuer), providerConfig.CloudDNS.HostedZoneName)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
