@@ -58,8 +58,10 @@ var (
 
 // Options is a struct to support create certificaterequest command
 type Options struct {
-	CMClient   cmclient.Interface
-	RESTConfig *restclient.Config
+	CMClient         cmclient.Interface
+	RESTConfig       *restclient.Config
+	CmdNamespace     string
+	EnforceNamespace bool
 
 	resource.FilenameOptions
 	genericclioptions.IOStreams
@@ -83,7 +85,7 @@ func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdut
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(factory))
-			cmdutil.CheckErr(o.Run(factory, args))
+			cmdutil.CheckErr(o.Run(args))
 		},
 	}
 
@@ -97,6 +99,11 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 	var err error
 
 	err = o.FilenameOptions.RequireFilenameOrKustomize()
+	if err != nil {
+		return err
+	}
+
+	o.CmdNamespace, o.EnforceNamespace, err = f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
 	}
@@ -115,20 +122,15 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 }
 
 // Run executes create certificaterequest command
-func (o *Options) Run(f cmdutil.Factory, args []string) error {
+func (o *Options) Run(args []string) error {
 	builder := new(resource.Builder)
-
-	cmdNamespace, enforceNamespace, err := f.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return err
-	}
 
 	// Read file as internal API version
 	r := builder.
 		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
-		NamespaceParam(cmdNamespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, &o.FilenameOptions).Flatten().Do()
+		NamespaceParam(o.CmdNamespace).DefaultNamespace().
+		FilenameParam(o.EnforceNamespace, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {
 		return fmt.Errorf("error when getting Result from Builder: %s", err)
@@ -185,7 +187,7 @@ func (o *Options) Run(f cmdutil.Factory, args []string) error {
 
 	ns := crt.Namespace
 	if ns == "" {
-		ns = cmdNamespace
+		ns = o.CmdNamespace
 	}
 	req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
 	if err != nil {
