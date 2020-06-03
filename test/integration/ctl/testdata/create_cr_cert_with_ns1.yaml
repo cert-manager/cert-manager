@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: testcert-1
+  namespace: testns-1
+spec:
+  isCA: true
+  secretName: ca-key-pair
+  commonName: my-csi-app
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io

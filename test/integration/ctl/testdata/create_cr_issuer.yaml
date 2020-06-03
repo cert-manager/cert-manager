@@ -1,0 +1,8 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: ca-issuer
+  namespace: testns-1
+spec:
+  ca:
+    secretName: ca-key-pair
