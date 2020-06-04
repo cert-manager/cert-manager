@@ -28,9 +28,6 @@ func NewCmdCreate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory
 		Short: "Create something",
 		Long:  `Create something e.g. CertificateRequest`,
 	}
-	//cmds.SetUsageTemplate(usageTemplate)
-
-	// TODO: add flags
 
 	cmds.AddCommand(NewCmdCreateCertficate(ioStreams, factory))
 

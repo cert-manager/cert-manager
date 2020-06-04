@@ -43,6 +43,14 @@ var (
 Create a cert-manager CertificateRequest resource for one-time Certificate issuing without auto renewal.`))
 
 	example = templates.Examples(i18n.T(`
+# Create a certificate request from from file.
+kubectl cert-manager create certificaterequest -f my-certificate.yaml
+
+# Create a certificate request in namespace sandbox, provided no conflict with namesapce defined in file.
+kubectl cert-manager create certificaterequest --namespace sandbox -f my-certificate.yaml
+
+# Create a certificate request with the name 'my-cr'.
+kubectl cert-manager create certificaterequest -f my-certificate.yaml my-cr
 `))
 
 	alias = []string{"cr"}
@@ -83,6 +91,12 @@ func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdut
 		Short:   "Create a CertificateRequest resource",
 		Long:    long,
 		Example: example,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 1 {
+				return fmt.Errorf("only one argument can be passed in as the name of the certificate request")
+			}
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(args))
