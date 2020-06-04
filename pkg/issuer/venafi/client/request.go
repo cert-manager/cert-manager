@@ -60,8 +60,7 @@ func (v *Venafi) RetreiveCertificate(pickupID string, csrPEM []byte, duration ti
 	}
 
 	vreq.PickupID = pickupID
-	// TODO: better set the timeout here. Right now, we'll block for this amount of time.
-	vreq.Timeout = time.Minute * 5
+	vreq.Timeout = time.Second * 10
 
 	// Retrieve the certificate from request
 	pemCollection, err := v.vcertClient.RetrieveCertificate(vreq)
