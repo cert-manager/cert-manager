@@ -22,6 +22,7 @@ go_library(
         "//pkg/util/pki:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
     ],
 )
 

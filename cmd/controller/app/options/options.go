@@ -33,6 +33,7 @@ import (
 	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
 	crvenaficontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/venafi"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
+	certificatesmetricscontroller "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
@@ -78,6 +79,10 @@ type ControllerOptions struct {
 	EnableCertificateOwnerRef bool
 
 	MaxConcurrentChallenges int
+
+	// The host and port address, separated by a ':', that the Prometheus server
+	// should expose metrics on.
+	MetricsListenAddress string
 }
 
 const (
@@ -104,6 +109,8 @@ const (
 	defaultDNS01RecursiveNameserversOnly = false
 
 	defaultMaxConcurrentChallenges = 60
+
+	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 )
 
 var (
@@ -119,6 +126,7 @@ var (
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatescontroller.ControllerName,
+		certificatesmetricscontroller.ControllerName,
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
@@ -152,6 +160,7 @@ func NewControllerOptions() *ControllerOptions {
 		DNS01RecursiveNameservers:         []string{},
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
+		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 	}
 }
 
@@ -247,6 +256,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
+
+	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
+		"The host and port that the metrics endpoint should listen on.")
 }
 
 func (o *ControllerOptions) Validate() error {

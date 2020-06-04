@@ -35,7 +35,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
@@ -59,10 +58,9 @@ type solver interface {
 // Sync will process this ACME Challenge.
 // It is the core control function for ACME challenges.
 func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error) {
-	metrics.Default.IncrementSyncCallCount(ControllerName)
-
 	log := logf.FromContext(ctx).WithValues("dnsName", ch.Spec.DNSName, "type", ch.Spec.Type)
 	ctx = logf.NewContext(ctx, log)
+
 	oldChal := ch
 	ch = ch.DeepCopy()
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ func newProxy(ns, podName, kubectl string, vaultCA []byte) *proxy {
 }
 
 func (p *proxy) init() (*vault.Client, error) {
-	listenPort, err := p.freePort()
+	listenPort, err := freePort()
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (p *proxy) runProxy() error {
 	return nil
 }
 
-func (p *proxy) freePort() (int, error) {
+func freePort() (int, error) {
 	l, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: 0,

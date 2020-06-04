@@ -35,14 +35,11 @@ import (
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
-
-	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	oldOrder := o
 	o = o.DeepCopy()

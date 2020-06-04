@@ -33,7 +33,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 const (
@@ -54,8 +53,7 @@ type Controller struct {
 
 	certificateRequestLister cmlisters.CertificateRequestLister
 
-	queue   workqueue.RateLimitingInterface
-	metrics *metrics.Metrics
+	queue workqueue.RateLimitingInterface
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -155,9 +153,6 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 			WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(c.log, c.queue, certificateRequestGvk, certificateRequestGetter(c.certificateRequestLister)),
 		})
 	}
-
-	// instantiate metrics interface with default metrics implementation
-	c.metrics = metrics.Default
 
 	// create an issuer helper for reading generic issuers
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)

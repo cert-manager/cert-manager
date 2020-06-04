@@ -18,18 +18,12 @@ package accounts
 
 import (
 	"crypto/rsa"
-	"crypto/tls"
 	"errors"
-	"net"
 	"net/http"
 	"sync"
-	"time"
-
-	acmeapi "golang.org/x/crypto/acme"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 // ErrNotFound is returned by GetClient if there is no ACME client registered.
@@ -41,7 +35,7 @@ var ErrNotFound = errors.New("ACME client for issuer not initialised/available")
 type Registry interface {
 	// AddClient will ensure the registry has a stored ACME client for the Issuer
 	// object with the given UID, configuration and private key.
-	AddClient(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey)
+	AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey)
 
 	// RemoveClient will remove a registered client using the UID of the Issuer
 	// resource that constructed it.
@@ -116,9 +110,9 @@ type clientWithMeta struct {
 
 // AddClient will ensure the registry has a stored ACME client for the Issuer
 // object with the given UID, configuration and private key.
-func (r *registry) AddClient(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
+func (r *registry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
 	// ensure the client is up to date for the current configuration
-	r.ensureClient(uid, config, privateKey)
+	r.ensureClient(client, uid, config, privateKey)
 }
 
 // ensureClient will ensure an ACME client with the given parameters is registered.
@@ -126,7 +120,7 @@ func (r *registry) AddClient(uid string, config cmacme.ACMEIssuer, privateKey *r
 // the client will NOT be mutated or replaced, allowing this method to be called
 // even if the client does not need replacing/updating without causing issues for
 // consumers of the registry.
-func (r *registry) ensureClient(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
+func (r *registry) ensureClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
 	// acquire a read-write lock even if we hit the fast-path where the client
 	// is already present to avoid having to RLock, RUnlock and Lock again,
 	// which could itself cause a race
@@ -140,7 +134,7 @@ func (r *registry) ensureClient(uid string, config cmacme.ACMEIssuer, privateKey
 	// create a new client if one is not registered or if the
 	// 'metadata' does not match
 	r.clients[uid] = clientWithMeta{
-		Interface:     NewClient(config, privateKey),
+		Interface:     NewClient(client, config, privateKey),
 		stableOptions: newOpts,
 	}
 }
@@ -182,37 +176,4 @@ func (r *registry) ListClients() map[string]acmecl.Interface {
 		out[k] = v.Interface
 	}
 	return out
-}
-
-func NewClient(config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface {
-	return &acmeapi.Client{
-		Key:          privateKey,
-		HTTPClient:   buildHTTPClient(config.SkipTLSVerify),
-		DirectoryURL: config.Server,
-		UserAgent:    util.CertManagerUserAgent,
-	}
-}
-
-// buildHTTPClient returns an HTTP client to be used by the ACME client.
-// For the time being, we construct a new HTTP client on each invocation.
-// This is because we need to set the 'skipTLSVerify' flag on the HTTP client
-// itself.
-// In future, we may change to having two global HTTP clients - one that ignores
-// TLS connection errors, and the other that does not.
-func buildHTTPClient(skipTLSVerify bool) *http.Client {
-	return acmecl.NewInstrumentedClient(&http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: skipTLSVerify},
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-		Timeout: time.Second * 30,
-	})
 }

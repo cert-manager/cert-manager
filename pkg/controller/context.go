@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 // Context contains various types that are used by controller implementations.
@@ -66,6 +67,9 @@ type Context struct {
 	// Clock should be used to access the current time instead of relying on
 	// time.Now, to make it easier to test controllers that utilise time
 	Clock clock.Clock
+
+	// Metrics is used for exposing Prometheus metrics across the controllers
+	Metrics *metrics.Metrics
 
 	IssuerOptions
 	ACMEOptions

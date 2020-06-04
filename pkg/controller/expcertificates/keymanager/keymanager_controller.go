@@ -125,6 +125,7 @@ func init() {
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	ctx = logf.NewContext(ctx, log)
+
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		log.Error(err, "invalid resource key passed to ProcessItem")

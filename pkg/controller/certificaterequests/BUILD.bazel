@@ -21,7 +21,6 @@ go_library(
         "//pkg/internal/apis/certmanager:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
-        "//pkg/metrics:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//pkg/webhook:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
