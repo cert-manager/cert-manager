@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,6 +71,7 @@ type Options struct {
 	RESTConfig       *restclient.Config
 	CmdNamespace     string
 	EnforceNamespace bool
+	KeyFileName      string
 
 	resource.FilenameOptions
 	genericclioptions.IOStreams
@@ -104,6 +106,8 @@ func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdut
 	}
 
 	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "Path to a the manifest of Certificate resource.")
+	cmd.Flags().StringVar(&o.KeyFileName, "output-key-file", o.KeyFileName,
+		"Name of the file the private key is to be stored in")
 
 	return cmd
 }
@@ -208,6 +212,17 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when creating CertificateRequest through client: %v", err)
 	}
 
+	// Storing private key to file
+	keyFileName := req.Name + ".key"
+	if o.KeyFileName != "" {
+		keyFileName = o.KeyFileName
+	}
+	err = ioutil.WriteFile(keyFileName, keyData, 0644)
+	if err != nil {
+		return fmt.Errorf("error when storing private key to file: %v", err)
+	}
+
+	fmt.Printf("Private key stored to file %v\n", keyFileName)
 	fmt.Printf("CertificateRequest %v has been created in namespace %v\n", req.Name, req.Namespace)
 
 	return nil
