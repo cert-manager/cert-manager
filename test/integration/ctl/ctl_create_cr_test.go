@@ -18,13 +18,18 @@ package ctl
 
 import (
 	"context"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
-	"github.com/jetstack/cert-manager/test/integration/framework"
+	"io/ioutil"
+	"os"
+	"testing"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"testing"
-	"time"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/test/integration/framework"
 )
 
 // TestCtlCreateCR tests the renewal logic of the ctl CLI command against the
@@ -55,7 +60,6 @@ func TestCtlCreateCR(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// TODO: what bout filepath
 	tests := map[string]struct {
 		inputFile      string
 		inputArgs      []string
@@ -116,6 +120,7 @@ func TestCtlCreateCR(t *testing.T) {
 			opts.Filenames = []string{test.inputFile}
 
 			err := opts.Run(test.inputArgs)
+			defer cleanupFileIfExists(test.expName + ".key")
 
 			if err != nil {
 				if !test.expErr {
@@ -146,6 +151,17 @@ func TestCtlCreateCR(t *testing.T) {
 				t.Errorf("CR created has unexpected Name")
 			}
 
+			// Check the file where the private key is stored
+			keyFileName := crName + ".key"
+			keyData, err := ioutil.ReadFile(keyFileName)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = pki.DecodePrivateKeyBytes(keyData)
+			if err != nil {
+				t.Errorf("Invalid private key: %v", err)
+			}
+
 			// Clean up CertificateRequest
 			// Everything is expected, so clean up with what is expected
 			err = cmCl.CertmanagerV1alpha2().CertificateRequests(test.expNamespace).Delete(ctx, test.expName, metav1.DeleteOptions{})
@@ -153,5 +169,12 @@ func TestCtlCreateCR(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func cleanupFileIfExists(fileName string) {
+	_, err := os.Stat(fileName)
+	if err == nil {
+		err = os.Remove(fileName)
 	}
 }
