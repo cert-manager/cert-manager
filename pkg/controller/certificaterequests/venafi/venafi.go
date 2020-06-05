@@ -23,6 +23,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
+
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 
@@ -97,7 +99,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 
-	var customFields []venaficlient.CustomField
+	var customFields []api.CustomField
 	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFieldsAnnotationKey]; exists && annotation != "" {
 		err := json.Unmarshal([]byte(annotation), &customFields)
 		if err != nil {
@@ -135,13 +137,17 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 			}
 		}
 
+		v.reporter.Pending(cr, err, "IssuancePending", "Venafi certificate is requested")
+
+		if cr.ObjectMeta.Annotations == nil {
+			cr.ObjectMeta.Annotations = map[string]string{}
+		}
 		cr.ObjectMeta.Annotations[VenafiPickupIDAnnotation] = pickupID
 		_, err = v.cmClient.CertmanagerV1alpha2().CertificateRequests(cr.GetNamespace()).Update(ctx, cr, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, err
 		}
 
-		v.reporter.Pending(cr, err, "IssuancePending", "Venafi certificate is requested")
 		return nil, nil
 	}
 

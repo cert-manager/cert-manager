@@ -3,7 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "customfield.go",
         "request.go",
         "venaficlient.go",
     ],
@@ -11,6 +10,7 @@ go_library(
     visibility = ["//pkg:__subpackages__"],
     deps = [
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/issuer/venafi/client/api:go_default_library",
         "//pkg/util/pki:go_default_library",
         "@com_github_venafi_vcert//:go_default_library",
         "@com_github_venafi_vcert//pkg/certificate:go_default_library",
@@ -30,6 +30,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/issuer/venafi/client/api:all-srcs",
         "//pkg/issuer/venafi/client/fake:all-srcs",
     ],
     tags = ["automanaged"],
@@ -46,6 +47,7 @@ go_test(
     deps = [
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/issuer/venafi/client/api:go_default_library",
         "//pkg/issuer/venafi/client/fake:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",

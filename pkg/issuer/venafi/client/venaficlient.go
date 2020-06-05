@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
+
 	"github.com/Venafi/vcert"
 	"github.com/Venafi/vcert/pkg/certificate"
 	"github.com/Venafi/vcert/pkg/endpoint"
@@ -40,8 +42,8 @@ type VenafiClientBuilder func(namespace string, secretsLister corelisters.Secret
 
 // Interface implements a Venafi client
 type Interface interface {
-	RequestCertificate(csrPEM []byte, duration time.Duration, customFields []CustomField) (string, error)
-	RetreiveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []CustomField) ([]byte, error)
+	RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
+	RetreiveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)

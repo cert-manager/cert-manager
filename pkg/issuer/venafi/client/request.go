@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
+
 	"github.com/Venafi/vcert/pkg/certificate"
 
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -30,7 +32,7 @@ import (
 
 // ErrCustomFieldsType provides a common error structure for an invalid Venafi custom field type
 type ErrCustomFieldsType struct {
-	Type CustomFieldType
+	Type api.CustomFieldType
 }
 
 func (err ErrCustomFieldsType) Error() string {
@@ -43,7 +45,7 @@ var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi i
 // The CSR will be decoded to be validated against the zone configuration policy.
 // Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
 // It will return a pickup ID which can be used with RetreiveCertificate to get the certificate
-func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, customFields []CustomField) (string, error) {
+func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
 	vreq, err := v.buildVReq(csrPEM, duration, customFields)
 	if err != nil {
 		return "", err
@@ -53,7 +55,7 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 	return requestID, err
 }
 
-func (v *Venafi) RetreiveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []CustomField) ([]byte, error) {
+func (v *Venafi) RetreiveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
 	vreq, err := v.buildVReq(csrPEM, duration, customFields)
 	if err != nil {
 		return nil, err
@@ -75,7 +77,7 @@ func (v *Venafi) RetreiveCertificate(pickupID string, csrPEM []byte, duration ti
 	return []byte(chain), nil
 }
 
-func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields []CustomField) (*certificate.Request, error) {
+func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (*certificate.Request, error) {
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
@@ -131,13 +133,13 @@ func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields [
 	return vreq, nil
 }
 
-func convertCustomFieldsToVcert(customFields []CustomField) ([]certificate.CustomField, error) {
+func convertCustomFieldsToVcert(customFields []api.CustomField) ([]certificate.CustomField, error) {
 	var out []certificate.CustomField
 	if len(customFields) > 0 {
 		for _, field := range customFields {
 			var fieldType certificate.CustomFieldType
 			switch field.Type {
-			case CustomFieldTypePlain, "":
+			case api.CustomFieldTypePlain, "":
 				fieldType = certificate.CustomFieldPlain
 				break
 			default:

@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
+
 	"github.com/Venafi/vcert/pkg/certificate"
 	"github.com/Venafi/vcert/pkg/endpoint"
 	"github.com/Venafi/vcert/pkg/venafi/fake"
@@ -183,7 +185,7 @@ func TestSign(t *testing.T) {
 		},
 		"obtain a certificate with custom fields specified": {
 			csrPEM:       csrPEM,
-			customFields: []CustomField{{Name: "test", Value: "ok"}},
+			customFields: []api.CustomField{{Name: "test", Value: "ok"}},
 			client: internalfake.Connector{
 				RetrieveCertificateFunc: func(r *certificate.Request) (*certificate.PEMCollection, error) {
 					// we set 1 field by default
@@ -207,7 +209,7 @@ func TestSign(t *testing.T) {
 		},
 		"If invalid custom field type found the error": {
 			csrPEM:       csrPEM,
-			customFields: []CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
+			customFields: []api.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
 			checkFn:      checkNoCertificateIssued,
 			expectedErr:  true,
 		},
@@ -224,9 +226,10 @@ type testSignT struct {
 	csrPEM []byte
 	client connector
 
-	expectedErr bool
+	expectedErr        bool
+	expectedRequestErr bool
 
-	customFields []CustomField
+	customFields []api.CustomField
 
 	checkFn func(*testing.T, []byte, []byte)
 }
@@ -238,10 +241,18 @@ func (s *testSignT) runTest(t *testing.T) {
 	}
 
 	v := &Venafi{
-		client: client,
+		vcertClient: client,
 	}
 
-	resp, err := v.Sign(s.csrPEM, time.Minute, s.customFields)
+	pickupID, err := v.RequestCertificate(s.csrPEM, time.Minute, s.customFields)
+	if err != nil && !s.expectedRequestErr {
+		t.Errorf("expected to not get an error, but got: %v", err)
+	}
+	if err == nil && s.expectedRequestErr {
+		t.Errorf("expected to get an error but did not get one")
+	}
+
+	resp, err := v.RetreiveCertificate(pickupID, s.csrPEM, time.Minute, s.customFields)
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
