@@ -120,9 +120,9 @@ func TestSign(t *testing.T) {
 
 	tests := map[string]testSignT{
 		"if reading the zone configuration fails then error": {
-			csrPEM:      csrPEM,
-			checkFn:     checkNoCertificateIssued,
-			expectedErr: true,
+			csrPEM:             csrPEM,
+			checkFn:            checkNoCertificateIssued,
+			expectedRequestErr: true,
 			client: internalfake.Connector{
 				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
 					return nil, errors.New("zone configuration error")
@@ -130,9 +130,9 @@ func TestSign(t *testing.T) {
 			}.Default(),
 		},
 		"if validating the certificate fails then error": {
-			csrPEM:      csrPEM,
-			checkFn:     checkNoCertificateIssued,
-			expectedErr: true,
+			csrPEM:             csrPEM,
+			checkFn:            checkNoCertificateIssued,
+			expectedRequestErr: true,
 			client: internalfake.Connector{
 				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
 					return &endpoint.ZoneConfiguration{
@@ -144,9 +144,9 @@ func TestSign(t *testing.T) {
 			}.Default(),
 		},
 		"a badly formed CSR should error": {
-			csrPEM:      []byte("a badly formed CSR"),
-			checkFn:     checkNoCertificateIssued,
-			expectedErr: true,
+			csrPEM:             []byte("a badly formed CSR"),
+			checkFn:            checkNoCertificateIssued,
+			expectedRequestErr: true,
 		},
 		"a CSR wiuth empty DN sshould error": {
 			csrPEM:      csrPEMNoDN,
@@ -160,8 +160,8 @@ func TestSign(t *testing.T) {
 					return "", errors.New("request error")
 				},
 			}.Default(),
-			checkFn:     checkNoCertificateIssued,
-			expectedErr: true,
+			checkFn:            checkNoCertificateIssued,
+			expectedRequestErr: true,
 		},
 		"if retrieve certificate fails, sign should error": {
 			csrPEM: csrPEM,
@@ -174,9 +174,9 @@ func TestSign(t *testing.T) {
 			expectedErr: true,
 		},
 		"if no Common Name, DNS Name, or URI SANs in CSR then error": {
-			csrPEM:      csrNonePEM,
-			checkFn:     checkNoCertificateIssued,
-			expectedErr: true,
+			csrPEM:             csrNonePEM,
+			checkFn:            checkNoCertificateIssued,
+			expectedRequestErr: true,
 		},
 		"obtain a certificate with DNS names specified": {
 			csrPEM:      csrPEM,
@@ -208,10 +208,10 @@ func TestSign(t *testing.T) {
 			expectedErr: false,
 		},
 		"If invalid custom field type found the error": {
-			csrPEM:       csrPEM,
-			customFields: []api.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
-			checkFn:      checkNoCertificateIssued,
-			expectedErr:  true,
+			csrPEM:             csrPEM,
+			customFields:       []api.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
+			checkFn:            checkNoCertificateIssued,
+			expectedRequestErr: true,
 		},
 	}
 
@@ -250,6 +250,11 @@ func (s *testSignT) runTest(t *testing.T) {
 	}
 	if err == nil && s.expectedRequestErr {
 		t.Errorf("expected to get an error but did not get one")
+	}
+
+	if err != nil {
+		// do not call RetreiveCertificate if RequestCertificate failed
+		return
 	}
 
 	resp, err := v.RetreiveCertificate(pickupID, s.csrPEM, time.Minute, s.customFields)
