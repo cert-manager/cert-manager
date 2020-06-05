@@ -25,11 +25,11 @@ import (
 func NewCmdCreate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	cmds := &cobra.Command{
 		Use:   "create",
-		Short: "Create something",
-		Long:  `Create something e.g. CertificateRequest`,
+		Short: "Create cert-manager resources",
+		Long:  `Create cert-manager resources e.g. a CertificateRequest`,
 	}
 
-	cmds.AddCommand(NewCmdCreateCertficate(ioStreams, factory))
+	cmds.AddCommand(NewCmdCreateCR(ioStreams, factory))
 
 	return cmds
 }

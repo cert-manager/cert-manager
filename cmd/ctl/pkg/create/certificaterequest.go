@@ -19,6 +19,7 @@ package create
 import (
 	"context"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 
@@ -41,20 +42,21 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Create a cert-manager CertificateRequest resource for one-time Certificate issuing without auto renewal.`))
+Create a cert-manager CertificateRequest resource and store private key on local file.`))
 
 	example = templates.Examples(i18n.T(`
-# Create a certificate request from from file.
+# Create a CertificateRequest from from file.
 kubectl cert-manager create certificaterequest -f my-certificate.yaml
 
-# Create a certificate request in namespace sandbox, provided no conflict with namesapce defined in file.
-kubectl cert-manager create certificaterequest --namespace sandbox -f my-certificate.yaml
+# Create a CertificateRequest in namespace default, provided no conflict with namespace defined in file.
+kubectl cert-manager create certificaterequest --namespace default -f my-certificate.yaml
 
-# Create a certificate request with the name 'my-cr'.
-kubectl cert-manager create certificaterequest -f my-certificate.yaml my-cr
+# Create a CertificateRequest with the name 'my-cr', private key will be stored in file 'my-cr.key'.
+kubectl cert-manager create certificaterequest my-cr -f my-certificate.yaml
+
+# Create a CertificateRequest and store private key in file 'new.key'.
+kubectl cert-manager create certificaterequest my-cr -f my-certificate.yaml --output-key-file new.key
 `))
-
-	alias = []string{"cr"}
 )
 
 var (
@@ -84,18 +86,18 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 	}
 }
 
-// NewCmdCreateCertficate returns a cobra command for create CertificateRequest
-func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+// NewCmdCreateCR returns a cobra command for create CertificateRequest
+func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "certificaterequest",
-		Aliases: alias,
-		Short:   "Create a CertificateRequest resource",
+		Aliases: []string{"cr"},
+		Short:   "Create a cert-manager CertificateRequest resource",
 		Long:    long,
 		Example: example,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 1 {
-				return fmt.Errorf("only one argument can be passed in as the name of the certificate request")
+				return errors.New("only one argument can be passed in: the name of the CertificateRequest")
 			}
 			return nil
 		},
@@ -105,7 +107,7 @@ func NewCmdCreateCertficate(ioStreams genericclioptions.IOStreams, factory cmdut
 		},
 	}
 
-	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "Path to a the manifest of Certificate resource.")
+	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "Path to the manifest of a Certificate resource")
 	cmd.Flags().StringVar(&o.KeyFileName, "output-key-file", o.KeyFileName,
 		"Name of the file the private key is to be stored in")
 
@@ -162,12 +164,22 @@ func (o *Options) Run(args []string) error {
 
 	// Ensure only one object per command
 	if len(infos) == 0 {
-		return fmt.Errorf("no object passed to create certificaterequest")
+		return errors.New("no object passed to create certificaterequest")
 	}
 	if len(infos) > 1 {
-		return fmt.Errorf("multiple objects passed to create certificaterequest")
+		objects := ""
+		for _, info := range infos {
+			namespace := info.Namespace
+			if namespace ==  "" {
+				namespace = "default"
+			}
+			objects = objects + fmt.Sprintf("Object with kind %s, name %s, namespace %s\n",
+											info.Object.GetObjectKind().GroupVersionKind().Kind,
+											info.Name,
+											namespace)
+		}
+		return fmt.Errorf("multiple objects passed to create certificaterequest:\n%s", objects)
 	}
-
 	info := infos[0]
 	// Convert to v1alpha2 because that version is needed for functions that follow
 	crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1alpha2.SchemeGroupVersion)
@@ -178,19 +190,17 @@ func (o *Options) Run(args []string) error {
 	// Cast Object into Certificate
 	crt, ok := crtObj.(*cmapiv1alpha2.Certificate)
 	if !ok {
-		return fmt.Errorf("decoded object is not a v1alpha2 Certificate")
+		return errors.New("decoded object is not a v1alpha2 Certificate")
 	}
-
-	fmt.Println("Successfully decoded the object to a v1alpha2 Certificate")
 
 	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
-		return fmt.Errorf("error when generating private key: %v", err)
+		return fmt.Errorf("error when generating new private key for CertificateRequest: %v", err)
 	}
 
 	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
 	if err != nil {
-		return fmt.Errorf("error when encoding private key: %v", err)
+		return fmt.Errorf("failed to encode new private key for CertificateRequest: %v", err)
 	}
 
 	// Use name for CertificateRequest if specified as arg, else will use name of the Certificate as GenerateName
@@ -198,7 +208,7 @@ func (o *Options) Run(args []string) error {
 	if len(args) > 0 {
 		crName = args[0]
 	}
-	req, err := o.buildCertificateRequest(crt, keyData, crName)
+	req, err := buildCertificateRequest(crt, keyData, crName)
 	if err != nil {
 		return fmt.Errorf("error when building CertificateRequest: %v", err)
 	}
@@ -211,25 +221,24 @@ func (o *Options) Run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("error when creating CertificateRequest through client: %v", err)
 	}
+	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
 
 	// Storing private key to file
 	keyFileName := req.Name + ".key"
 	if o.KeyFileName != "" {
 		keyFileName = o.KeyFileName
 	}
-	err = ioutil.WriteFile(keyFileName, keyData, 0644)
-	if err != nil {
-		return fmt.Errorf("error when storing private key to file: %v", err)
+	if err := ioutil.WriteFile(keyFileName, keyData, 0644); err != nil {
+		return fmt.Errorf("error when writing private key to file: %v", err)
 	}
 
-	fmt.Printf("Private key stored to file %v\n", keyFileName)
-	fmt.Printf("CertificateRequest %v has been created in namespace %v\n", req.Name, req.Namespace)
+	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
 
 	return nil
 }
 
 // Builds a CertificateRequest
-func (o *Options) buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName string) (*cmapiv1alpha2.CertificateRequest, error) {
+func buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName string) (*cmapiv1alpha2.CertificateRequest, error) {
 	csrPEM, err := generateCSR(crt, pk)
 	if err != nil {
 		return nil, err

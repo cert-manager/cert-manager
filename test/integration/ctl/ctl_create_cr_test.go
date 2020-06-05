@@ -32,8 +32,6 @@ import (
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
 
-// TestCtlCreateCR tests the renewal logic of the ctl CLI command against the
-// cert-manager Issuing controller.
 func TestCtlCreateCR(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
@@ -125,14 +123,13 @@ func TestCtlCreateCR(t *testing.T) {
 			if err != nil {
 				if !test.expErr {
 					t.Errorf("got unexpected error when trying to create CR: %v", err)
-				} else {
-					t.Logf("got an error, which was expected, details: %v", err)
-					return
 				}
+				t.Logf("got an error, which was expected, details: %v", err)
+				return
 			} else {
 				// got no error
 				if test.expErr {
-					t.Errorf("expected but got no error when to creating CR")
+					t.Errorf("expected but got no error when creating CR")
 				}
 			}
 
@@ -144,22 +141,22 @@ func TestCtlCreateCR(t *testing.T) {
 			}
 
 			if gotCr.Namespace != test.expNamespace {
-				t.Errorf("CR created in unexpected Namespace")
+				t.Errorf("CR created in unexpected Namespace, expected: %s, actual: %s", test.expNamespace, gotCr.Namespace)
 			}
 
 			if gotCr.Name != test.expName {
-				t.Errorf("CR created has unexpected Name")
+				t.Errorf("CR created has unexpected Name, expectedL %s, actualL %s", test.expName, gotCr.Name)
 			}
 
 			// Check the file where the private key is stored
 			keyFileName := crName + ".key"
 			keyData, err := ioutil.ReadFile(keyFileName)
 			if err != nil {
-				t.Fatal(err)
+				t.Errorf("error when reading file storing private key: %v", err)
 			}
 			_, err = pki.DecodePrivateKeyBytes(keyData)
 			if err != nil {
-				t.Errorf("Invalid private key: %v", err)
+				t.Errorf("invalid private key: %v", err)
 			}
 
 			// Clean up CertificateRequest
