@@ -313,8 +313,6 @@ spec:
                             description: ACMEIssuerDNS01ProviderCloudflare is a structure
                               containing the DNS configuration for Cloudflare
                             type: object
-                            required:
-                            - email
                             properties:
                               apiKeySecretRef:
                                 type: object
