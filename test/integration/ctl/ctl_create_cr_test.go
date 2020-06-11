@@ -42,6 +42,14 @@ func TestCtlCreateCR(t *testing.T) {
 	// Build clients
 	kubeClient, _, cmCl, _ := framework.NewClients(t, config)
 
+	// Create tmp directory and cd into it to store private key files
+	if err := os.Mkdir("tmp", 0777); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir("tmp"); err != nil {
+		t.Fatal(err)
+	}
+
 	var (
 		cr1Name = "testcr-1"
 		cr2Name = "testcr-2"
@@ -49,6 +57,8 @@ func TestCtlCreateCR(t *testing.T) {
 		cr4Name = "testcr-4"
 		ns1     = "testns-1"
 		ns2     = "testns-2"
+
+		testdataPath = "../testdata/"
 	)
 
 	// Create Namespaces
@@ -70,7 +80,7 @@ func TestCtlCreateCR(t *testing.T) {
 		expKeyFilename string
 	}{
 		"v1alpha2 Certificate given": {
-			inputFile:      "./testdata/create_cr_cert_with_ns1.yaml",
+			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr1Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -80,7 +90,7 @@ func TestCtlCreateCR(t *testing.T) {
 			expKeyFilename: cr1Name + ".key",
 		},
 		"v1alpha3 Certificate given": {
-			inputFile:      "./testdata/create_cr_v1alpha3_cert_with_ns1.yaml",
+			inputFile:      testdataPath + "create_cr_v1alpha3_cert_with_ns1.yaml",
 			inputArgs:      []string{cr2Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -90,7 +100,7 @@ func TestCtlCreateCR(t *testing.T) {
 			expKeyFilename: cr2Name + ".key",
 		},
 		"conflicting namespaces defined in flag and file": {
-			inputFile:      "./testdata/create_cr_cert_with_ns1.yaml",
+			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr3Name},
 			inputNamespace: ns2,
 			keyFilename:    "",
@@ -100,7 +110,7 @@ func TestCtlCreateCR(t *testing.T) {
 			expKeyFilename: "",
 		},
 		"file passed in defines resource other than certificate": {
-			inputFile:      "./testdata/create_cr_issuer.yaml",
+			inputFile:      testdataPath + "create_cr_issuer.yaml",
 			inputArgs:      []string{cr4Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -110,7 +120,7 @@ func TestCtlCreateCR(t *testing.T) {
 			expKeyFilename: "",
 		},
 		"path to file to store private key provided": {
-			inputFile:      "./testdata/create_cr_cert_with_ns1.yaml",
+			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr1Name},
 			inputNamespace: ns1,
 			keyFilename:    "test.key",
@@ -139,7 +149,6 @@ func TestCtlCreateCR(t *testing.T) {
 			opts.Filenames = []string{test.inputFile}
 
 			err := opts.Run(test.inputArgs)
-			defer cleanupFileIfExists(test.expName + ".key")
 
 			if err != nil {
 				if !test.expErr {
@@ -162,20 +171,24 @@ func TestCtlCreateCR(t *testing.T) {
 			}
 
 			if gotCr.Namespace != test.expNamespace {
+				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
 				t.Errorf("CR created in unexpected Namespace, expected: %s, actual: %s", test.expNamespace, gotCr.Namespace)
 			}
 
 			if gotCr.Name != test.expName {
+				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
 				t.Errorf("CR created has unexpected Name, expectedL %s, actualL %s", test.expName, gotCr.Name)
 			}
 
 			// Check the file where the private key is stored
 			keyData, err := ioutil.ReadFile(test.expKeyFilename)
 			if err != nil {
+				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
 			_, err = pki.DecodePrivateKeyBytes(keyData)
 			if err != nil {
+				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
 				t.Errorf("invalid private key: %v", err)
 			}
 
@@ -187,11 +200,12 @@ func TestCtlCreateCR(t *testing.T) {
 			}
 		})
 	}
-}
 
-func cleanupFileIfExists(fileName string) {
-	_, err := os.Stat(fileName)
-	if err == nil {
-		err = os.Remove(fileName)
+	// Clean up tmp folder with private key files
+	if err := os.Chdir(".."); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll("tmp"); err != nil {
+		t.Fatal(err)
 	}
 }
