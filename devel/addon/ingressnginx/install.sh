@@ -34,7 +34,7 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 # Require helm available on PATH
 check_tool kubectl
 check_tool helm
-require_image "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.26.1" "//devel/addon/ingressnginx:bundle"
+require_image "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.33.0" "//devel/addon/ingressnginx:bundle"
 require_image "k8s.gcr.io/defaultbackend-amd64:bazel" "//devel/addon/ingressnginx:bundle"
 
 # Ensure the pebble namespace exists
@@ -50,7 +50,7 @@ helm upgrade \
     --wait \
     --version 1.23.0 \
     --namespace "${NAMESPACE}" \
-    --set controller.image.tag=0.26.1 \
+    --set controller.image.tag=0.33.0 \
     --set controller.image.pullPolicy=Never \
     --set defaultBackend.image.tag=bazel \
     --set defaultBackend.image.pullPolicy=Never \
