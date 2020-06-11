@@ -62,42 +62,62 @@ func TestCtlCreateCR(t *testing.T) {
 		inputFile      string
 		inputArgs      []string
 		inputNamespace string
+		keyFilename    string
 
-		expErr       bool
-		expNamespace string
-		expName      string
+		expErr         bool
+		expNamespace   string
+		expName        string
+		expKeyFilename string
 	}{
 		"v1alpha2 Certificate given": {
 			inputFile:      "./testdata/create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr1Name},
 			inputNamespace: ns1,
+			keyFilename:    "",
 			expErr:         false,
 			expNamespace:   ns1,
 			expName:        cr1Name,
+			expKeyFilename: cr1Name + ".key",
 		},
 		"v1alpha3 Certificate given": {
 			inputFile:      "./testdata/create_cr_v1alpha3_cert_with_ns1.yaml",
 			inputArgs:      []string{cr2Name},
 			inputNamespace: ns1,
+			keyFilename:    "",
 			expErr:         false,
 			expNamespace:   ns1,
 			expName:        cr2Name,
+			expKeyFilename: cr2Name + ".key",
 		},
 		"conflicting namespaces defined in flag and file": {
 			inputFile:      "./testdata/create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr3Name},
 			inputNamespace: ns2,
+			keyFilename:    "",
 			expErr:         true,
 			expNamespace:   "",
 			expName:        "",
+			expKeyFilename: "",
 		},
 		"file passed in defines resource other than certificate": {
 			inputFile:      "./testdata/create_cr_issuer.yaml",
 			inputArgs:      []string{cr4Name},
 			inputNamespace: ns1,
+			keyFilename:    "",
 			expErr:         true,
 			expNamespace:   "",
 			expName:        "",
+			expKeyFilename: "",
+		},
+		"path to file to store private key provided": {
+			inputFile:      "./testdata/create_cr_cert_with_ns1.yaml",
+			inputArgs:      []string{cr1Name},
+			inputNamespace: ns1,
+			keyFilename:    "test.key",
+			expErr:         false,
+			expNamespace:   ns1,
+			expName:        cr1Name,
+			expKeyFilename: "test.key",
 		},
 	}
 
@@ -113,6 +133,7 @@ func TestCtlCreateCR(t *testing.T) {
 				IOStreams:        streams,
 				CmdNamespace:     test.inputNamespace,
 				EnforceNamespace: test.inputNamespace != "",
+				KeyFilename:      test.keyFilename,
 			}
 
 			opts.Filenames = []string{test.inputFile}
@@ -149,8 +170,7 @@ func TestCtlCreateCR(t *testing.T) {
 			}
 
 			// Check the file where the private key is stored
-			keyFileName := crName + ".key"
-			keyData, err := ioutil.ReadFile(keyFileName)
+			keyData, err := ioutil.ReadFile(test.expKeyFilename)
 			if err != nil {
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
