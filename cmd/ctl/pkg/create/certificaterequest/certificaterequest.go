@@ -74,8 +74,8 @@ type Options struct {
 	CmdNamespace     string
 	EnforceNamespace bool
 	KeyFilename      string
+	InputFilenames   []string
 
-	resource.FilenameOptions
 	genericclioptions.IOStreams
 }
 
@@ -107,7 +107,7 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 		},
 	}
 
-	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "Path to the manifest of a Certificate resource")
+	cmdutil.AddJsonFilenameFlag(cmd.Flags(), &o.InputFilenames, "Path to a single file containing the manifest of a Certificate resource")
 	cmd.Flags().StringVar(&o.KeyFilename, "output-key-file", o.KeyFilename,
 		"Name of the file the private key is to be stored in")
 
@@ -118,9 +118,11 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 func (o *Options) Complete(f cmdutil.Factory) error {
 	var err error
 
-	err = o.FilenameOptions.RequireFilenameOrKustomize()
-	if err != nil {
-		return err
+	if len(o.InputFilenames) < 1 {
+		return errors.New("at least one file containing the manifest of a Certificate resource required")
+	}
+	if len(o.InputFilenames) > 1 {
+		return errors.New("at most one file can be provided")
 	}
 
 	o.CmdNamespace, o.EnforceNamespace, err = f.ToRawKubeConfigLoader().Namespace()
@@ -150,7 +152,7 @@ func (o *Options) Run(args []string) error {
 		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
 		NamespaceParam(o.CmdNamespace).DefaultNamespace().
-		FilenameParam(o.EnforceNamespace, &o.FilenameOptions).Flatten().Do()
+		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: o.InputFilenames}).Flatten().Do()
 
 	if err := r.Err(); err != nil {
 		return fmt.Errorf("error when getting Result from Builder: %s", err)

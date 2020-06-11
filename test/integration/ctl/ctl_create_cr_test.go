@@ -146,7 +146,7 @@ func TestCtlCreateCR(t *testing.T) {
 				KeyFilename:      test.keyFilename,
 			}
 
-			opts.Filenames = []string{test.inputFile}
+			opts.InputFilenames = []string{test.inputFile}
 
 			err := opts.Run(test.inputArgs)
 
