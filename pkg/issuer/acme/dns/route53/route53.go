@@ -12,13 +12,11 @@ package route53
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -42,28 +40,6 @@ type DNSProvider struct {
 	hostedZoneID     string
 }
 
-// customRetryer implements the client.Retryer interface by composing the
-// DefaultRetryer. It controls the logic for retrying recoverable request
-// errors (e.g. when rate limits are exceeded).
-type customRetryer struct {
-	client.DefaultRetryer
-}
-
-// RetryRules overwrites the DefaultRetryer's method.
-// It uses a basic exponential backoff algorithm that returns an initial
-// delay of ~400ms with an upper limit of ~30 seconds which should prevent
-// causing a high number of consecutive throttling errors.
-// For reference: Route 53 enforces an account-wide(!) 5req/s query limit.
-func (d customRetryer) RetryRules(r *request.Request) time.Duration {
-	retryCount := r.RetryCount
-	if retryCount > 7 {
-		retryCount = 7
-	}
-
-	delay := (1 << uint(retryCount)) * (rand.Intn(50) + 200)
-	return time.Duration(delay) * time.Millisecond
-}
-
 type sessionProvider struct {
 	AccessKeyID     string
 	SecretAccessKey string
@@ -85,9 +61,7 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 
 	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "")
 
-	r := customRetryer{}
-	r.NumMaxRetries = maxRetries
-	config := request.WithRetryer(aws.NewConfig(), r)
+	config := aws.NewConfig()
 	sessionOpts := session.Options{
 		Config: *config,
 	}
