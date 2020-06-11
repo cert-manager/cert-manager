@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package create
+package certificaterequest
 
 import (
 	"context"
@@ -73,7 +73,7 @@ type Options struct {
 	RESTConfig       *restclient.Config
 	CmdNamespace     string
 	EnforceNamespace bool
-	KeyFileName      string
+	KeyFilename      string
 
 	resource.FilenameOptions
 	genericclioptions.IOStreams
@@ -108,7 +108,7 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 	}
 
 	cmdutil.AddFilenameOptionFlags(cmd, &o.FilenameOptions, "Path to the manifest of a Certificate resource")
-	cmd.Flags().StringVar(&o.KeyFileName, "output-key-file", o.KeyFileName,
+	cmd.Flags().StringVar(&o.KeyFilename, "output-key-file", o.KeyFilename,
 		"Name of the file the private key is to be stored in")
 
 	return cmd
@@ -170,13 +170,13 @@ func (o *Options) Run(args []string) error {
 		objects := ""
 		for _, info := range infos {
 			namespace := info.Namespace
-			if namespace ==  "" {
+			if namespace == "" {
 				namespace = "default"
 			}
 			objects = objects + fmt.Sprintf("Object with kind %s, name %s, namespace %s\n",
-											info.Object.GetObjectKind().GroupVersionKind().Kind,
-											info.Name,
-											namespace)
+				info.Object.GetObjectKind().GroupVersionKind().Kind,
+				info.Name,
+				namespace)
 		}
 		return fmt.Errorf("multiple objects passed to create certificaterequest:\n%s", objects)
 	}
@@ -225,8 +225,8 @@ func (o *Options) Run(args []string) error {
 
 	// Storing private key to file
 	keyFileName := req.Name + ".key"
-	if o.KeyFileName != "" {
-		keyFileName = o.KeyFileName
+	if o.KeyFilename != "" {
+		keyFileName = o.KeyFilename
 	}
 	if err := ioutil.WriteFile(keyFileName, keyData, 0644); err != nil {
 		return fmt.Errorf("error when writing private key to file: %v", err)

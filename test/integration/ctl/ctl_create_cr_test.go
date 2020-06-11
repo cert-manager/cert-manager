@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
@@ -107,7 +107,7 @@ func TestCtlCreateCR(t *testing.T) {
 			streams, _, _, _ := genericclioptions.NewTestIOStreams()
 
 			// Options to run create CR command
-			opts := &create.Options{
+			opts := &certificaterequest.Options{
 				CMClient:         cmCl,
 				RESTConfig:       config,
 				IOStreams:        streams,
