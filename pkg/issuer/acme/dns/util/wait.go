@@ -156,7 +156,7 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 		udp := &dns.Client{Net: "udp", Timeout: DNSTimeout}
 		in, _, err = udp.Exchange(m, ns)
 
-		if err == dns.ErrTruncated ||
+		if (in != nil && in.Truncated) ||
 			(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
 			klog.V(6).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
 			tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}

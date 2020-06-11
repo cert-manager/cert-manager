@@ -80,7 +80,7 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr string) err
 	// update the ctx with the new logger
 	ctx = logf.NewContext(ctx, log)
 
-	b.server = &dns.Server{PacketConn: pc, ReadTimeout: time.Hour, WriteTimeout: time.Hour}
+	b.server = &dns.Server{PacketConn: pc, ReadTimeout: time.Hour, WriteTimeout: time.Hour, MsgAcceptFunc: msgAcceptFunc}
 	if b.EnableTSIG {
 		log.Info("enabling TSIG support")
 		b.server.TsigSecret = map[string]string{b.TSIGKeyName: b.TSIGKeySecret}
@@ -118,4 +118,12 @@ func (b *BasicServer) ListenAddr() string {
 
 func (b *BasicServer) Shutdown() error {
 	return b.server.Shutdown()
+}
+
+func msgAcceptFunc(dh dns.Header) dns.MsgAcceptAction {
+	// the miekg/dns message accept function disallows rfc2136 headers
+	// this function replaces that behaviour to always accept the request
+	// since this is always running in the controlled environment of tests
+	// it should not be an issue
+	return dns.MsgAccept
 }

@@ -1222,8 +1222,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/miekg/dns",
-        sum = "h1:XMdRBCTXUEnj/+IMBiv3IsARZaMcx3KUkRUdxZn5t4I=",
-        version = "v0.0.0-20170721150254-0f3adef2e220",
+        sum = "h1:xHBEhR+t5RzcFJjBLJlax2daXOrTYtr9z4WdKEfWFzg=",
+        version = "v1.1.29",
     )
     go_repository(
         name = "com_github_mitchellh_copystructure",
@@ -2008,8 +2008,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/net",
-        sum = "h1:CCH4IOTTfewWjGOlSp+zGcjutRKlBEZQ6wTn8ozI/nI=",
-        version = "v0.0.0-20200202094626-16171245cfb2",
+        sum = "h1:QPwSajcTUrFriMF1nJ3XzgoqakqQEsnZf9LdXdi2nkI=",
+        version = "v0.0.0-20200421231249-e086a090c8fd",
     )
     go_repository(
         name = "org_golang_x_oauth2",
@@ -2032,8 +2032,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/sys",
-        sum = "h1:HmbHVPwrPEKPGLAcHSrMe6+hqSUlvZU0rab6x5EXfGU=",
-        version = "v0.0.0-20191022100944-742c48ecaeb7",
+        sum = "h1:gWF768j/LaZugp8dyS4UwsslYCYz9XgFxvlgsn0n9H8=",
+        version = "v0.0.0-20200420163511-1957bb5e6d1f",
     )
     go_repository(
         name = "org_golang_x_text",
@@ -2056,8 +2056,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/tools",
-        sum = "h1:bw9doJza/SFBEweII/rHQh338oozWyiFsBRHtrflcws=",
-        version = "v0.0.0-20190920225731-5eefd052ad72",
+        sum = "h1:VvQyQJN0tSuecqgcIxMWnnfG5kSmgy9KZR9sW3W5QeA=",
+        version = "v0.0.0-20191216052735-49a3e744a425",
     )
     go_repository(
         name = "org_gonum_v1_gonum",
@@ -2256,8 +2256,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/xerrors",
-        sum = "h1:9zdDQZ7Thm29KFXgAX/+yaf3eVbP7djjWp/dXAppNCc=",
-        version = "v0.0.0-20190717185122-a985d3407aa7",
+        sum = "h1:/atklqdjdhuosWIl6AIbOeHJjicWYPqR9bpxqxYG2pA=",
+        version = "v0.0.0-20191011141410-1b5146add898",
     )
     go_repository(
         name = "io_etcd_go_bbolt",
@@ -2682,4 +2682,12 @@ def go_repositories():
         importpath = "vbom.ml/util",
         sum = "h1:MksmcCZQWAQJCTA5T0jgI/0sJ51AVm4Z41MrmfczEoc=",
         version = "v0.0.0-20160121211510-db5cfe13f5cc",
+    )
+    go_repository(
+        name = "org_golang_x_mod",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "golang.org/x/mod",
+        sum = "h1:WG0RUwxtNT4qqaXX3DPA8zHFNm/D9xaBpxzHt1WcA/E=",
+        version = "v0.1.1-0.20191105210325-c90efee705ee",
     )
