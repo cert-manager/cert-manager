@@ -39,7 +39,7 @@ def install():
         name = "io_kubernetes_ingress-nginx",
         registry = "quay.io",
         repository = "kubernetes-ingress-controller/nginx-ingress-controller",
-        tag = "0.29.0",
+        tag = "0.33.0",
         # For some reason, the suggested sha256 returns an error when fetched from
         # quay.io by digest.
         # digest = "sha256:f7f08fdbbeddaf3179829c662da360a3feac1ecf8c4b1305949fffd8c8f59879",

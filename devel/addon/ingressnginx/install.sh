@@ -34,28 +34,29 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 # Require helm available on PATH
 check_tool kubectl
 check_tool helm
-require_image "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.29.0" "//devel/addon/ingressnginx:bundle"
+require_image "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.33.0" "//devel/addon/ingressnginx:bundle"
 require_image "k8s.gcr.io/defaultbackend-amd64:bazel" "//devel/addon/ingressnginx:bundle"
 
 # Ensure the pebble namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 
 helm repo update
 
-# Upgrade or install Pebble
+# Upgrade or install nginx-ingress
 helm upgrade \
     --install \
     --wait \
-    --version 1.23.0 \
+    --version 2.4.0 \
     --namespace "${NAMESPACE}" \
-    --set controller.image.tag=0.29.0 \
+    --set controller.image.tag=0.33.0 \
     --set controller.image.pullPolicy=Never \
     --set defaultBackend.image.tag=bazel \
     --set defaultBackend.image.pullPolicy=Never \
     --set controller.service.clusterIP=10.0.0.15 \
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
+    --set admissionWebhooks.enabled=false \
     "$RELEASE_NAME" \
-    stable/nginx-ingress
+    ingress-nginx/ingress-nginx
