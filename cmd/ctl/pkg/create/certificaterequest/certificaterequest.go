@@ -42,16 +42,16 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Create a cert-manager CertificateRequest resource and store private key on local file.`))
+Create a new CertificateRequest resource based on a Certificate resource, by generating a private key locally and create a 'certificate signing request' to be submitted to a cert-manager Issuer.`))
 
 	example = templates.Examples(i18n.T(`
-# Create a CertificateRequest from from file.
+# Create a CertificateRequest from file.
 kubectl cert-manager create certificaterequest -f my-certificate.yaml
 
 # Create a CertificateRequest in namespace default, provided no conflict with namespace defined in file.
 kubectl cert-manager create certificaterequest --namespace default -f my-certificate.yaml
 
-# Create a CertificateRequest with the name 'my-cr', private key will be stored in file 'my-cr.key'.
+# Create a CertificateRequest with the name 'my-cr', saving the private key in a file named 'my-cr.key'.
 kubectl cert-manager create certificaterequest my-cr -f my-certificate.yaml
 
 # Create a CertificateRequest and store private key in file 'new.key'.
@@ -69,12 +69,20 @@ var (
 
 // Options is a struct to support create certificaterequest command
 type Options struct {
-	CMClient         cmclient.Interface
-	RESTConfig       *restclient.Config
-	CmdNamespace     string
+	CMClient   cmclient.Interface
+	RESTConfig *restclient.Config
+	// Namespace resulting from the merged result of all overrides
+	// since namespace can be specified in file, as flag and in kube config
+	CmdNamespace string
+	// boolean indicating if there was an Override in determining CmdNamespace
 	EnforceNamespace bool
-	KeyFilename      string
-	InputFilenames   []string
+	// Name of file that the generated private key will be written to
+	// If not specified, the private key will be written to <NameOfCR>.key
+	KeyFilename string
+	// Path to a file containing a Certificate resource used as a template
+	// when generating the CertificateRequest resource
+	// Required
+	InputFilename string
 
 	genericclioptions.IOStreams
 }
@@ -92,7 +100,7 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 	cmd := &cobra.Command{
 		Use:     "certificaterequest",
 		Aliases: []string{"cr"},
-		Short:   "Create a cert-manager CertificateRequest resource",
+		Short:   "Create a cert-manager CertificateRequest resource, using a Certificate resource as a template",
 		Long:    long,
 		Example: example,
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -102,28 +110,31 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			cmdutil.CheckErr(o.Validate())
 			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(args))
 		},
 	}
-
-	cmdutil.AddJsonFilenameFlag(cmd.Flags(), &o.InputFilenames, "Path to a single file containing the manifest of a Certificate resource")
+	cmd.Flags().StringVar(&o.InputFilename, "from-file", o.InputFilename,
+		"Path to a file containing a Certificate resource used as a template when generating the CertificateRequest resource")
 	cmd.Flags().StringVar(&o.KeyFilename, "output-key-file", o.KeyFilename,
-		"Name of the file the private key is to be stored in")
+		"Name of file that the generated private key will be written to")
 
 	return cmd
+}
+
+// Validate validates the provided options
+func (o *Options) Validate() error {
+	if o.KeyFilename != "" && (len(o.KeyFilename) < 4 || o.KeyFilename[len(o.KeyFilename)-4:] != ".key") {
+		return errors.New("file to store private key must end in '.key'")
+	}
+
+	return nil
 }
 
 // Complete takes the command arguments and factory and infers any remaining options.
 func (o *Options) Complete(f cmdutil.Factory) error {
 	var err error
-
-	if len(o.InputFilenames) < 1 {
-		return errors.New("at least one file containing the manifest of a Certificate resource required")
-	}
-	if len(o.InputFilenames) > 1 {
-		return errors.New("at most one file can be provided")
-	}
 
 	o.CmdNamespace, o.EnforceNamespace, err = f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
@@ -152,7 +163,7 @@ func (o *Options) Run(args []string) error {
 		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
 		NamespaceParam(o.CmdNamespace).DefaultNamespace().
-		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: o.InputFilenames}).Flatten().Do()
+		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: []string{o.InputFilename}}).Flatten().Do()
 
 	if err := r.Err(); err != nil {
 		return fmt.Errorf("error when getting Result from Builder: %s", err)
@@ -221,7 +232,7 @@ func (o *Options) Run(args []string) error {
 	}
 	req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("error when creating CertificateRequest through client: %v", err)
+		return fmt.Errorf("error creating CertificateRequest: %v", err)
 	}
 	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
 
@@ -250,8 +261,6 @@ func buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName s
 	for k, v := range crt.Annotations {
 		annotations[k] = v
 	}
-	annotations[cmapiv1alpha2.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
-	annotations[cmapiv1alpha2.CertificateNameKey] = crt.Name
 
 	cr := &cmapiv1alpha2.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
