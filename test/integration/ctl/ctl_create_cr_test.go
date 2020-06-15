@@ -23,11 +23,11 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
@@ -40,34 +40,30 @@ func TestCtlCreateCR(t *testing.T) {
 	defer cancel()
 
 	// Build clients
-	kubeClient, _, cmCl, _ := framework.NewClients(t, config)
+	_, _, cmCl, _ := framework.NewClients(t, config)
 
 	// Create tmp directory and cd into it to store private key files
-	if err := os.Mkdir("tmp", 0777); err != nil {
+	dir, err := ioutil.TempDir(".", "tmp")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chdir("tmp"); err != nil {
+	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
+	defer cleanUpTmpDir(dir)
 
 	var (
 		cr1Name = "testcr-1"
 		cr2Name = "testcr-2"
 		cr3Name = "testcr-3"
 		cr4Name = "testcr-4"
+		cr5Name = "testcr-5"
 		ns1     = "testns-1"
 		ns2     = "testns-2"
 
 		testdataPath = "../testdata/"
 	)
 
-	// Create Namespaces
-	for _, ns := range []string{ns1, ns2} {
-		_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
 	tests := map[string]struct {
 		inputFile      string
 		inputArgs      []string
@@ -77,6 +73,7 @@ func TestCtlCreateCR(t *testing.T) {
 		expErr         bool
 		expNamespace   string
 		expName        string
+		expNamePrefix  string
 		expKeyFilename string
 	}{
 		"v1alpha2 Certificate given": {
@@ -121,13 +118,24 @@ func TestCtlCreateCR(t *testing.T) {
 		},
 		"path to file to store private key provided": {
 			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
-			inputArgs:      []string{cr1Name},
+			inputArgs:      []string{cr5Name},
 			inputNamespace: ns1,
 			keyFilename:    "test.key",
 			expErr:         false,
 			expNamespace:   ns1,
-			expName:        cr1Name,
+			expName:        cr5Name,
 			expKeyFilename: "test.key",
+		},
+		"CR name not passed as arg": {
+			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputArgs:      []string{},
+			inputNamespace: ns1,
+			keyFilename:    "",
+			expErr:         false,
+			expNamespace:   ns1,
+			// Can't specify expected name as it will be generated randomly
+			expNamePrefix:  "testcert-1-",
+			expKeyFilename: "",
 		},
 	}
 
@@ -146,7 +154,7 @@ func TestCtlCreateCR(t *testing.T) {
 				KeyFilename:      test.keyFilename,
 			}
 
-			opts.InputFilenames = []string{test.inputFile}
+			opts.InputFilename = test.inputFile
 
 			err := opts.Run(test.inputArgs)
 
@@ -164,39 +172,55 @@ func TestCtlCreateCR(t *testing.T) {
 			}
 
 			// Finished creating CR, check if everything is expected
-			crName := test.inputArgs[0]
-			gotCr, err := cmCl.CertmanagerV1alpha2().CertificateRequests(test.inputNamespace).Get(ctx, crName, metav1.GetOptions{})
-			if err != nil {
-				t.Fatal(err)
+			var gotCr *v1alpha2.CertificateRequest = nil
+
+			if len(test.inputArgs) > 0 {
+				// If CR name provided as arg, we can check if it is as expected
+				crName := test.inputArgs[0]
+				gotCr, err = cmCl.CertmanagerV1alpha2().CertificateRequests(test.inputNamespace).Get(ctx, crName, metav1.GetOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if gotCr.Name != test.expName {
+					t.Errorf("CR created has unexpected Name, expected: %s, actual: %s", test.expName, gotCr.Name)
+				}
+			} else {
+				// No arguments passed in, so the name of the CR will be generated from GenerateName, can't check exactly
+				// Check for a CR with a name that has the name of the Certificate resource the CR is based on as prefix
+				crList, err := cmCl.CertmanagerV1alpha2().CertificateRequests(test.inputNamespace).List(ctx, metav1.ListOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				for _, crItem := range crList.Items {
+					prefixLength := len(test.expNamePrefix)
+					if len(crItem.Name) > prefixLength && crItem.Name[:prefixLength] == test.expNamePrefix {
+						gotCr = &crItem
+						break
+					}
+				}
+				if gotCr == nil {
+					t.Fatalf("no CR found with the expected prefix %q", test.expNamePrefix)
+				}
 			}
 
 			if gotCr.Namespace != test.expNamespace {
-				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
 				t.Errorf("CR created in unexpected Namespace, expected: %s, actual: %s", test.expNamespace, gotCr.Namespace)
 			}
 
-			if gotCr.Name != test.expName {
-				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
-				t.Errorf("CR created has unexpected Name, expectedL %s, actualL %s", test.expName, gotCr.Name)
-			}
-
 			// Check the file where the private key is stored
-			keyData, err := ioutil.ReadFile(test.expKeyFilename)
+			expKeyFilename := test.expKeyFilename
+			if test.keyFilename == "" && len(test.inputArgs) == 0 {
+				expKeyFilename = gotCr.Name + ".key"
+			}
+			keyData, err := ioutil.ReadFile(expKeyFilename)
 			if err != nil {
-				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
 			_, err = pki.DecodePrivateKeyBytes(keyData)
 			if err != nil {
-				cmCl.CertmanagerV1alpha2().CertificateRequests(gotCr.Namespace).Delete(ctx, gotCr.Name, metav1.DeleteOptions{})
 				t.Errorf("invalid private key: %v", err)
-			}
-
-			// Clean up CertificateRequest
-			// Everything is expected, so clean up with what is expected
-			err = cmCl.CertmanagerV1alpha2().CertificateRequests(test.expNamespace).Delete(ctx, test.expName, metav1.DeleteOptions{})
-			if err != nil {
-				t.Fatal(err)
 			}
 		})
 	}
@@ -208,4 +232,14 @@ func TestCtlCreateCR(t *testing.T) {
 	if err := os.RemoveAll("tmp"); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func cleanUpTmpDir(dir string) error {
+	if err := os.Chdir(".."); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}
+	return nil
 }
