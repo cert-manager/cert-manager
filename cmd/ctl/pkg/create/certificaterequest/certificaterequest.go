@@ -214,8 +214,18 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("failed to encode new private key for CertificateRequest: %v", err)
 	}
 
-	// Build CertificateRequest with name as specified by argument
 	crName := args[0]
+
+	// Storing private key to file
+	keyFileName := crName + ".key"
+	if o.KeyFilename != "" {
+		keyFileName = o.KeyFilename
+	}
+	if err := ioutil.WriteFile(keyFileName, keyData, 0600); err != nil {
+		return fmt.Errorf("error when writing private key to file: %v", err)
+	}
+
+	// Build CertificateRequest with name as specified by argument
 	req, err := buildCertificateRequest(crt, keyData, crName)
 	if err != nil {
 		return fmt.Errorf("error when building CertificateRequest: %v", err)
@@ -230,15 +240,6 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error creating CertificateRequest: %v", err)
 	}
 	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
-
-	// Storing private key to file
-	keyFileName := req.Name + ".key"
-	if o.KeyFilename != "" {
-		keyFileName = o.KeyFilename
-	}
-	if err := ioutil.WriteFile(keyFileName, keyData, 0644); err != nil {
-		return fmt.Errorf("error when writing private key to file: %v", err)
-	}
 
 	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
 
