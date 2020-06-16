@@ -6,6 +6,9 @@ replace github.com/prometheus/client_golang => github.com/prometheus/client_gola
 
 replace golang.org/x/crypto => github.com/munnerz/crypto v0.0.0-20191203200931-e1844778daa5
 
+// go.etcd.io/etcd requires grpc v1.26.0 (fails to compile with v1.27.0+), but istio.io/client-go pulls in v1.28.1
+replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
+
 require (
 	github.com/Azure/azure-sdk-for-go v32.5.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.0
