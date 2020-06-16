@@ -45,14 +45,11 @@ var (
 Create a new CertificateRequest resource based on a Certificate resource, by generating a private key locally and create a 'certificate signing request' to be submitted to a cert-manager Issuer.`))
 
 	example = templates.Examples(i18n.T(`
-# Create a CertificateRequest from file.
-kubectl cert-manager create certificaterequest -f my-certificate.yaml
-
-# Create a CertificateRequest in namespace default, provided no conflict with namespace defined in file.
-kubectl cert-manager create certificaterequest --namespace default -f my-certificate.yaml
-
 # Create a CertificateRequest with the name 'my-cr', saving the private key in a file named 'my-cr.key'.
 kubectl cert-manager create certificaterequest my-cr -f my-certificate.yaml
+
+# Create a CertificateRequest in namespace default, provided no conflict with namespace defined in file.
+kubectl cert-manager create certificaterequest my-cr --namespace default -f my-certificate.yaml
 
 # Create a CertificateRequest and store private key in file 'new.key'.
 kubectl cert-manager create certificaterequest my-cr -f my-certificate.yaml --output-key-file new.key
@@ -103,14 +100,8 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 		Short:   "Create a cert-manager CertificateRequest resource, using a Certificate resource as a template",
 		Long:    long,
 		Example: example,
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 1 {
-				return errors.New("only one argument can be passed in: the name of the CertificateRequest")
-			}
-			return nil
-		},
 		Run: func(cmd *cobra.Command, args []string) {
-			cmdutil.CheckErr(o.Validate())
+			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(args))
 		},
@@ -124,7 +115,14 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 }
 
 // Validate validates the provided options
-func (o *Options) Validate() error {
+func (o *Options) Validate(args []string) error {
+	if len(args) < 1 {
+		return errors.New("the name of the CertificateRequest to be created has to be provided as argument")
+	}
+	if len(args) > 1 {
+		return errors.New("only one argument can be passed in: the name of the CertificateRequest")
+	}
+
 	if o.KeyFilename != "" && (len(o.KeyFilename) < 4 || o.KeyFilename[len(o.KeyFilename)-4:] != ".key") {
 		return errors.New("file to store private key must end in '.key'")
 	}
@@ -216,11 +214,8 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("failed to encode new private key for CertificateRequest: %v", err)
 	}
 
-	// Use name for CertificateRequest if specified as arg, else will use name of the Certificate as GenerateName
-	crName := ""
-	if len(args) > 0 {
-		crName = args[0]
-	}
+	// Build CertificateRequest with name as specified by argument
+	crName := args[0]
 	req, err := buildCertificateRequest(crt, keyData, crName)
 	if err != nil {
 		return fmt.Errorf("error when building CertificateRequest: %v", err)
@@ -264,6 +259,7 @@ func buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName s
 
 	cr := &cmapiv1alpha2.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
+			Name:        crName,
 			Annotations: annotations,
 			Labels:      crt.Labels,
 		},
@@ -274,11 +270,6 @@ func buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName s
 			IsCA:      crt.Spec.IsCA,
 			Usages:    crt.Spec.Usages,
 		},
-	}
-	if crName != "" {
-		cr.Name = crName
-	} else {
-		cr.GenerateName = crt.Name + "-"
 	}
 
 	return cr, nil

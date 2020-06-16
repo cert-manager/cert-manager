@@ -27,7 +27,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
@@ -70,10 +69,10 @@ func TestCtlCreateCR(t *testing.T) {
 		inputNamespace string
 		keyFilename    string
 
-		expErr         bool
+		expValidateErr bool
+		expRunErr      bool
 		expNamespace   string
 		expName        string
-		expNamePrefix  string
 		expKeyFilename string
 	}{
 		"v1alpha2 Certificate given": {
@@ -81,7 +80,8 @@ func TestCtlCreateCR(t *testing.T) {
 			inputArgs:      []string{cr1Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
-			expErr:         false,
+			expValidateErr: false,
+			expRunErr:      false,
 			expNamespace:   ns1,
 			expName:        cr1Name,
 			expKeyFilename: cr1Name + ".key",
@@ -91,7 +91,8 @@ func TestCtlCreateCR(t *testing.T) {
 			inputArgs:      []string{cr2Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
-			expErr:         false,
+			expValidateErr: false,
+			expRunErr:      false,
 			expNamespace:   ns1,
 			expName:        cr2Name,
 			expKeyFilename: cr2Name + ".key",
@@ -101,7 +102,8 @@ func TestCtlCreateCR(t *testing.T) {
 			inputArgs:      []string{cr3Name},
 			inputNamespace: ns2,
 			keyFilename:    "",
-			expErr:         true,
+			expValidateErr: false,
+			expRunErr:      true,
 			expNamespace:   "",
 			expName:        "",
 			expKeyFilename: "",
@@ -111,7 +113,8 @@ func TestCtlCreateCR(t *testing.T) {
 			inputArgs:      []string{cr4Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
-			expErr:         true,
+			expValidateErr: false,
+			expRunErr:      true,
 			expNamespace:   "",
 			expName:        "",
 			expKeyFilename: "",
@@ -121,7 +124,8 @@ func TestCtlCreateCR(t *testing.T) {
 			inputArgs:      []string{cr5Name},
 			inputNamespace: ns1,
 			keyFilename:    "test.key",
-			expErr:         false,
+			expValidateErr: false,
+			expRunErr:      false,
 			expNamespace:   ns1,
 			expName:        cr5Name,
 			expKeyFilename: "test.key",
@@ -131,10 +135,9 @@ func TestCtlCreateCR(t *testing.T) {
 			inputArgs:      []string{},
 			inputNamespace: ns1,
 			keyFilename:    "",
-			expErr:         false,
+			expValidateErr: true,
+			expRunErr:      false,
 			expNamespace:   ns1,
-			// Can't specify expected name as it will be generated randomly
-			expNamePrefix:  "testcert-1-",
 			expKeyFilename: "",
 		},
 	}
@@ -156,53 +159,45 @@ func TestCtlCreateCR(t *testing.T) {
 
 			opts.InputFilename = test.inputFile
 
-			err := opts.Run(test.inputArgs)
-
+			// Validating args and flags
+			err := opts.Validate(test.inputArgs)
 			if err != nil {
-				if !test.expErr {
+				if !test.expValidateErr {
+					t.Errorf("got unexpected error when validating args and flags: %v", err)
+				}
+				t.Logf("got an error, which was expected, details: %v", err)
+				return
+			} else {
+				// got no error
+				if test.expValidateErr {
+					t.Errorf("expected but got no error validating args and flags")
+				}
+			}
+
+			// Create CR
+			err = opts.Run(test.inputArgs)
+			if err != nil {
+				if !test.expRunErr {
 					t.Errorf("got unexpected error when trying to create CR: %v", err)
 				}
 				t.Logf("got an error, which was expected, details: %v", err)
 				return
 			} else {
 				// got no error
-				if test.expErr {
+				if test.expRunErr {
 					t.Errorf("expected but got no error when creating CR")
 				}
 			}
 
 			// Finished creating CR, check if everything is expected
-			var gotCr *v1alpha2.CertificateRequest = nil
+			crName := test.inputArgs[0]
+			gotCr, err := cmCl.CertmanagerV1alpha2().CertificateRequests(test.inputNamespace).Get(ctx, crName, metav1.GetOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			if len(test.inputArgs) > 0 {
-				// If CR name provided as arg, we can check if it is as expected
-				crName := test.inputArgs[0]
-				gotCr, err = cmCl.CertmanagerV1alpha2().CertificateRequests(test.inputNamespace).Get(ctx, crName, metav1.GetOptions{})
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if gotCr.Name != test.expName {
-					t.Errorf("CR created has unexpected Name, expected: %s, actual: %s", test.expName, gotCr.Name)
-				}
-			} else {
-				// No arguments passed in, so the name of the CR will be generated from GenerateName, can't check exactly
-				// Check for a CR with a name that has the name of the Certificate resource the CR is based on as prefix
-				crList, err := cmCl.CertmanagerV1alpha2().CertificateRequests(test.inputNamespace).List(ctx, metav1.ListOptions{})
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				for _, crItem := range crList.Items {
-					prefixLength := len(test.expNamePrefix)
-					if len(crItem.Name) > prefixLength && crItem.Name[:prefixLength] == test.expNamePrefix {
-						gotCr = &crItem
-						break
-					}
-				}
-				if gotCr == nil {
-					t.Fatalf("no CR found with the expected prefix %q", test.expNamePrefix)
-				}
+			if gotCr.Name != test.expName {
+				t.Errorf("CR created has unexpected Name, expected: %s, actual: %s", test.expName, gotCr.Name)
 			}
 
 			if gotCr.Namespace != test.expNamespace {
