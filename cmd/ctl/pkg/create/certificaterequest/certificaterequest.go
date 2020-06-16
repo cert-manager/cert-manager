@@ -46,13 +46,13 @@ Create a new CertificateRequest resource based on a Certificate resource, by gen
 
 	example = templates.Examples(i18n.T(`
 # Create a CertificateRequest with the name 'my-cr', saving the private key in a file named 'my-cr.key'.
-kubectl cert-manager create certificaterequest my-cr -f my-certificate.yaml
+kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml
 
 # Create a CertificateRequest in namespace default, provided no conflict with namespace defined in file.
-kubectl cert-manager create certificaterequest my-cr --namespace default -f my-certificate.yaml
+kubectl cert-manager create certificaterequest my-cr --namespace default --from-certificate-file my-certificate.yaml
 
 # Create a CertificateRequest and store private key in file 'new.key'.
-kubectl cert-manager create certificaterequest my-cr -f my-certificate.yaml --output-key-file new.key
+kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --output-key-file new.key
 `))
 )
 
@@ -106,7 +106,7 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 			cmdutil.CheckErr(o.Run(args))
 		},
 	}
-	cmd.Flags().StringVar(&o.InputFilename, "from-file", o.InputFilename,
+	cmd.Flags().StringVar(&o.InputFilename, "from-certificate-file", o.InputFilename,
 		"Path to a file containing a Certificate resource used as a template when generating the CertificateRequest resource")
 	cmd.Flags().StringVar(&o.KeyFilename, "output-key-file", o.KeyFilename,
 		"Name of file that the generated private key will be written to")
