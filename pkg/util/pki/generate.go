@@ -25,7 +25,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 

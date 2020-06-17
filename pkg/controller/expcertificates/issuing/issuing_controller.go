@@ -18,6 +18,7 @@ package issuing
 
 import (
 	"context"
+	"crypto"
 	"fmt"
 	"time"
 
@@ -270,7 +271,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// If the CertificateRequest is valid and ready, verify its status and issue
 	// accordingly.
 	if cond.Reason == cmapi.CertificateRequestReasonIssued {
-		return c.issueCertificate(ctx, nextRevision, crt, req, pkData)
+		return c.issueCertificate(ctx, nextRevision, crt, req, pk)
 	}
 
 	// Issue temporary certificate if needed. If a certificate was issued, then
@@ -315,14 +316,18 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pkData []byte) error {
+func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
+	pkData, err := utilpki.EncodePrivateKey(pk, crt.Spec.KeyEncoding)
+	if err != nil {
+		return err
+	}
 	secretData := secretsmanager.SecretData{
 		PrivateKey:  pkData,
 		Certificate: req.Status.Certificate,
 		CA:          req.Status.CA,
 	}
 
-	err := c.secretsManager.UpdateData(ctx, crt, secretData)
+	err = c.secretsManager.UpdateData(ctx, crt, secretData)
 	if err != nil {
 		return err
 	}
