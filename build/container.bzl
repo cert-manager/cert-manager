@@ -61,6 +61,10 @@ def multi_arch_container(
             go_platform_constraint(os = "linux", arch = arch): base.format(ARCH = arch)
             for arch in architectures
         }),
+        architecture = select({
+            go_platform_constraint(os = "linux", arch = arch): arch
+            for arch in architectures
+        }),
         stamp = stamp,
         tags = tags,
         user = user,
@@ -82,6 +86,10 @@ def multi_arch_container(
         stamp = stamp,
         tags = tags,
         user = user,
+        architecture = select({
+            go_platform_constraint(os = "linux", arch = arch): arch
+            for arch in architectures
+        }),
         visibility = ["//visibility:public"],
     )
 

@@ -59,7 +59,7 @@ http_archive(
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    commit = "80ea3aae060077e5fe0cdef1a5c570d4b7622100",
+    commit = "f1557ebc5381e2a662314e21585aa8080e9508be",
     shallow_since = "1561646721 -0700",
 )
 
