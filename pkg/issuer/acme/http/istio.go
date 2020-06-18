@@ -32,7 +32,7 @@ import (
 func (s *Solver) ensureIstio(ctx context.Context, ch *cmacme.Challenge, svcName string) (bool *istioclientnetworking.VirtualService, err error) {
 	log := logf.FromContext(ctx).WithName("ensureIstio")
 
-	gateway, err := s.getGateway(ctx, ch)
+	gateway, err := s.getGateway(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -62,10 +62,14 @@ func (s *Solver) ensureIstio(ctx context.Context, ch *cmacme.Challenge, svcName 
 	return virtualservice, nil
 }
 
-func (s *Solver) getGateway(ctx context.Context, ch *cmacme.Challenge) (*istioclientnetworking.Gateway, error) {
+func (s *Solver) cleanupVirtualServices(_ context.Context, _ *cmacme.Challenge) error {
+	// Nothing to do, GC will take care of deleting the VirtualServices when the Challenge is deleted
+	return nil
+}
+
+func (s *Solver) getGateway(ch *cmacme.Challenge) (*istioclientnetworking.Gateway, error) {
 	http01Istio := ch.Spec.Solver.HTTP01.Istio
-	return s.IstioClient.NetworkingV1beta1().Gateways(http01Istio.GatewayNamespace).
-		Get(ctx, http01Istio.GatewayName, metav1.GetOptions{})
+	return s.gatewayLister.Gateways(http01Istio.GatewayNamespace).Get(http01Istio.GatewayName)
 }
 
 func (s *Solver) getVirtualService(ctx context.Context, ch *cmacme.Challenge) (*istioclientnetworking.VirtualService, error) {
@@ -123,7 +127,7 @@ func createVirtualServiceSpec(ch *cmacme.Challenge, svcName string, gateway *ist
 	ingPath := ingressPath(ch.Spec.Token, svcName)
 
 	return istioapinetworking.VirtualService{
-		ExportTo: []string{"*"}, // TODO this should be "."
+		ExportTo: []string{"*"},
 		Hosts:    []string{ch.Spec.DNSName},
 		Gateways: []string{gateway.Namespace + "/" + gateway.Name},
 		Http: []*istioapinetworking.HTTPRoute{

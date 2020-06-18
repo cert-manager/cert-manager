@@ -21,6 +21,8 @@ go_library(
         "//pkg/metrics:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_kr_pretty//:go_default_library",
+        "@io_istio_client_go//pkg/clientset/versioned/fake:go_default_library",
+        "@io_istio_client_go//pkg/informers/externalversions:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/errors:go_default_library",

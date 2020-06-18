@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	istiov1beta1listers "istio.io/client-go/pkg/listers/networking/v1beta1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
@@ -57,9 +58,11 @@ var (
 type Solver struct {
 	*controller.Context
 
-	podLister     corev1listers.PodLister
-	serviceLister corev1listers.ServiceLister
-	ingressLister extv1beta1listers.IngressLister
+	podLister            corev1listers.PodLister
+	serviceLister        corev1listers.ServiceLister
+	ingressLister        extv1beta1listers.IngressLister
+	gatewayLister        istiov1beta1listers.GatewayLister
+	virtualServiceLister istiov1beta1listers.VirtualServiceLister
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -71,12 +74,14 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 // TODO: refactor this to have fewer args
 func NewSolver(ctx *controller.Context) *Solver {
 	return &Solver{
-		Context:          ctx,
-		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
-		testReachability: testReachability,
-		requiredPasses:   5,
+		Context:              ctx,
+		podLister:            ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:        ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
+		gatewayLister:        ctx.IstioSharedInformerFactory.Networking().V1beta1().Gateways().Lister(),
+		virtualServiceLister: ctx.IstioSharedInformerFactory.Networking().V1beta1().VirtualServices().Lister(),
+		testReachability:     testReachability,
+		requiredPasses:       5,
 	}
 }
 
@@ -117,7 +122,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *c
 	// Call present again to be certain.
 	// if the listers are nil, that means we're in the present checks
 	// test
-	if s.podLister != nil && s.serviceLister != nil && s.ingressLister != nil {
+	if s.podLister != nil && s.serviceLister != nil && s.ingressLister != nil && s.gatewayLister != nil && s.virtualServiceLister != nil {
 		log.V(logf.DebugLevel).Info("calling Present function before running self check to ensure required resources exist")
 		err := s.Present(ctx, issuer, ch)
 		if err != nil {
@@ -154,6 +159,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 	errs = append(errs, s.cleanupPods(ctx, ch))
 	errs = append(errs, s.cleanupServices(ctx, ch))
 	errs = append(errs, s.cleanupIngresses(ctx, ch))
+	errs = append(errs, s.cleanupVirtualServices(ctx, ch))
 	return utilerrors.NewAggregate(errs)
 }
 

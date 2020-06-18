@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
+	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -57,6 +59,7 @@ type Builder struct {
 	T *testing.T
 
 	KubeObjects        []runtime.Object
+	IstioObjects       []runtime.Object
 	CertManagerObjects []runtime.Object
 	ExpectedActions    []Action
 	ExpectedEvents     []string
@@ -112,12 +115,15 @@ func (b *Builder) Init() {
 	}
 	b.requiredReactors = make(map[string]bool)
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
+	b.IstioClient = istiofake.NewSimpleClientset(b.IstioObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.Recorder = new(FakeRecorder)
 
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
+	b.FakeIstioClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
+	b.IstioSharedInformerFactory = istioinformers.NewSharedInformerFactory(b.IstioClient, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
 	b.Metrics = metrics.New(logs.Log)
@@ -139,6 +145,14 @@ func (b *Builder) FakeKubeClient() *kubefake.Clientset {
 
 func (b *Builder) FakeKubeInformerFactory() kubeinformers.SharedInformerFactory {
 	return b.Context.KubeSharedInformerFactory
+}
+
+func (b *Builder) FakeIstioClient() *istiofake.Clientset {
+	return b.Context.IstioClient.(*istiofake.Clientset)
+}
+
+func (b *Builder) FakeIstioInformerFactory() istioinformers.SharedInformerFactory {
+	return b.Context.IstioSharedInformerFactory
 }
 
 func (b *Builder) FakeCMClient() *cmfake.Clientset {
@@ -274,6 +288,7 @@ func (b *Builder) Stop() {
 
 func (b *Builder) Start() {
 	b.KubeSharedInformerFactory.Start(b.stopCh)
+	b.IstioSharedInformerFactory.Start(b.stopCh)
 	b.SharedInformerFactory.Start(b.stopCh)
 	// wait for caches to sync
 	b.Sync()
@@ -282,6 +297,9 @@ func (b *Builder) Start() {
 func (b *Builder) Sync() {
 	if err := mustAllSync(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
+	}
+	if err := mustAllSync(b.IstioSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
+		panic("Error waiting for istioSharedInformerFactory to sync: " + err.Error())
 	}
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for SharedInformerFactory to sync: " + err.Error())
