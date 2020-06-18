@@ -175,21 +175,10 @@ func (o *Options) Run(args []string) error {
 
 	// Ensure only one object per command
 	if len(infos) == 0 {
-		return errors.New("no object passed to create certificaterequest")
+		return fmt.Errorf("no objects found in manifest file %q. Expected one Certificate object", o.InputFilename)
 	}
 	if len(infos) > 1 {
-		objects := ""
-		for _, info := range infos {
-			namespace := info.Namespace
-			if namespace == "" {
-				namespace = "default"
-			}
-			objects = objects + fmt.Sprintf("Object with kind %s, name %s, namespace %s\n",
-				info.Object.GetObjectKind().GroupVersionKind().Kind,
-				info.Name,
-				namespace)
-		}
-		return fmt.Errorf("multiple objects passed to create certificaterequest:\n%s", objects)
+		return fmt.Errorf("multiple objects found in manifest file %q. Expected only one Certificate object", o.InputFilename)
 	}
 	info := infos[0]
 	// Convert to v1alpha2 because that version is needed for functions that follow
@@ -224,6 +213,7 @@ func (o *Options) Run(args []string) error {
 	if err := ioutil.WriteFile(keyFileName, keyData, 0600); err != nil {
 		return fmt.Errorf("error when writing private key to file: %v", err)
 	}
+	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
 
 	// Build CertificateRequest with name as specified by argument
 	req, err := buildCertificateRequest(crt, keyData, crName)
@@ -241,8 +231,6 @@ func (o *Options) Run(args []string) error {
 	}
 	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
 
-	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
-
 	return nil
 }
 
@@ -253,15 +241,10 @@ func buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName s
 		return nil, err
 	}
 
-	annotations := make(map[string]string, len(crt.Annotations)+2)
-	for k, v := range crt.Annotations {
-		annotations[k] = v
-	}
-
 	cr := &cmapiv1alpha2.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        crName,
-			Annotations: annotations,
+			Annotations: crt.Annotations,
 			Labels:      crt.Labels,
 		},
 		Spec: cmapiv1alpha2.CertificateRequestSpec{

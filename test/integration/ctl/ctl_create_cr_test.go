@@ -41,16 +41,10 @@ func TestCtlCreateCR(t *testing.T) {
 	// Build clients
 	_, _, cmCl, _ := framework.NewClients(t, config)
 
-	// Create tmp directory and cd into it to store private key files
-	dir, err := ioutil.TempDir(".", "tmp")
+	testWorkingDirectory, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer cleanUpTmpDir(dir)
-
 	var (
 		cr1Name = "testcr-1"
 		cr2Name = "testcr-2"
@@ -60,7 +54,7 @@ func TestCtlCreateCR(t *testing.T) {
 		ns1     = "testns-1"
 		ns2     = "testns-2"
 
-		testdataPath = "../testdata/"
+		testdataPath = testWorkingDirectory + "/testdata/"
 	)
 
 	tests := map[string]struct {
@@ -147,6 +141,9 @@ func TestCtlCreateCR(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			streams, _, _, _ := genericclioptions.NewTestIOStreams()
 
+			cleanUpFunc := setupPathForTest(t)
+			defer cleanUpFunc()
+
 			// Options to run create CR command
 			opts := &certificaterequest.Options{
 				CMClient:         cmCl,
@@ -177,6 +174,8 @@ func TestCtlCreateCR(t *testing.T) {
 			// Create CR
 			err = opts.Run(test.inputArgs)
 			if err != nil {
+				// TODO: Maybe it is desirable to make the test more fine grained, i.e. specify which error is expected,
+				// to know where exactly things should fail and then check the correctness of the parts that shouldn't have failed
 				if !test.expRunErr {
 					t.Errorf("got unexpected error when trying to create CR: %v", err)
 				}
@@ -219,22 +218,29 @@ func TestCtlCreateCR(t *testing.T) {
 			}
 		})
 	}
-
-	// Clean up tmp folder with private key files
-	if err := os.Chdir(".."); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.RemoveAll("tmp"); err != nil {
-		t.Fatal(err)
-	}
 }
 
-func cleanUpTmpDir(dir string) error {
-	if err := os.Chdir(".."); err != nil {
-		return err
+func setupPathForTest(t *testing.T) func() {
+	workingDirectoryBeforeTest, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
 	}
-	if err := os.RemoveAll(dir); err != nil {
-		return err
+
+	// Create tmp directory and cd into it to store private key files
+	tmpDir, err := ioutil.TempDir("", "tmp-ctl-test-*")
+	if err != nil {
+		t.Fatal(err)
 	}
-	return nil
+
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	return func() {
+		if err := os.Chdir(workingDirectoryBeforeTest); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.RemoveAll(tmpDir); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
