@@ -40,11 +40,8 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 var (
@@ -68,15 +65,14 @@ to change to output destination.`))
 )
 
 var (
-	scheme             = runtime.NewScheme()
+	// Use the webhook's scheme as it already has the internal cert-manager types,
+	// and their conversion functions registered.
+	// In future we may we want to consider creating a dedicated scheme used by
+	// the ctl tool.
+	scheme             = webhook.Scheme
 	codecs             = serializer.NewCodecFactory(scheme)
 	parameterCodec     = runtime.NewParameterCodec(scheme)
 	localSchemeBuilder = runtime.SchemeBuilder{
-		cmapi.AddToScheme,
-		cmapiv1alpha3.AddToScheme,
-		cmacme.AddToScheme,
-		cmacmev1alpha3.AddToScheme,
-		cmmeta.AddToScheme,
 		whapi.AddToScheme,
 		kscheme.AddToScheme,
 		apireg.AddToScheme,
@@ -159,7 +155,9 @@ func (o *Options) Complete() error {
 func (o *Options) Run() error {
 	builder := new(resource.Builder)
 
-	r := builder.Unstructured().LocalParam(true).ContinueOnError().
+	r := builder.
+		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
+		LocalParam(true).ContinueOnError().
 		FilenameParam(false, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {
