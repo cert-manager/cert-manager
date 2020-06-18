@@ -48,6 +48,7 @@ go_test(
         "//pkg/apis/acme/v1alpha2:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@io_istio_api//networking/v1beta1:go_default_library",
         "@io_istio_client_go//pkg/apis/networking/v1beta1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//extensions/v1beta1:go_default_library",
