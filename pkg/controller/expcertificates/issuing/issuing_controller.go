@@ -193,7 +193,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		logf.WithResource(log, nextPrivateKeySecret).Info("Next private key secret does not contain any private key data, waiting for keymanager controller")
 		return nil
 	}
-	pk, pkData, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
+	pk, _, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
 	if err != nil {
 		// If the private key cannot be parsed here, do nothing as the key manager will handle this.
 		logf.WithResource(log, nextPrivateKeySecret).Error(err, "failed to parse next private key, waiting for keymanager controller")
@@ -277,7 +277,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// Issue temporary certificate if needed. If a certificate was issued, then
 	// return early - we will sync again since the target Secret has been
 	// updated.
-	if issued, err := c.ensureTemporaryCertificate(ctx, crt, pkData); err != nil || issued {
+	if issued, err := c.ensureTemporaryCertificate(ctx, crt, pk); err != nil || issued {
 		return err
 	}
 
