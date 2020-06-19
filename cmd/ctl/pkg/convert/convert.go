@@ -20,8 +20,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	auditreg "k8s.io/api/auditregistration/v1alpha1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,12 +32,10 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 )
@@ -69,28 +65,17 @@ var (
 	// and their conversion functions registered.
 	// In future we may we want to consider creating a dedicated scheme used by
 	// the ctl tool.
-	scheme             = webhook.Scheme
-	codecs             = serializer.NewCodecFactory(scheme)
-	parameterCodec     = runtime.NewParameterCodec(scheme)
-	localSchemeBuilder = runtime.SchemeBuilder{
-		whapi.AddToScheme,
-		kscheme.AddToScheme,
-		apireg.AddToScheme,
-		apiext.AddToScheme,
-		auditreg.AddToScheme,
-	}
-
-	addToScheme = localSchemeBuilder.AddToScheme
+	scheme = webhook.Scheme
 )
 
 func init() {
-	// This is used to add the List object type for outputing multiple input
+	// This is used to add the List object type for outputting multiple input
 	// objects.
 	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
 	scheme.AddKnownTypes(coreGroupVersion, &metainternalversion.List{})
 
 	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
-	utilruntime.Must(addToScheme(scheme))
+	utilruntime.Must(kscheme.AddToScheme(scheme))
 }
 
 // Options is a struct to support convert command
@@ -157,8 +142,7 @@ func (o *Options) Run() error {
 
 	r := builder.
 		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
-		LocalParam(true).ContinueOnError().
-		FilenameParam(false, &o.FilenameOptions).Flatten().Do()
+		LocalParam(true).FilenameParam(false, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {
 		return fmt.Errorf("error here: %s", err)
