@@ -73,13 +73,19 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
 func NewSolver(ctx *controller.Context) *Solver {
+	var gatewayLister istiov1beta1listers.GatewayLister
+	var virtualServiceLister istiov1beta1listers.VirtualServiceLister
+	if ctx.IstioSharedInformerFactory != nil {
+		gatewayLister = ctx.IstioSharedInformerFactory.Networking().V1beta1().Gateways().Lister()
+		virtualServiceLister = ctx.IstioSharedInformerFactory.Networking().V1beta1().VirtualServices().Lister()
+	}
 	return &Solver{
 		Context:              ctx,
 		podLister:            ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
 		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
 		ingressLister:        ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
-		gatewayLister:        ctx.IstioSharedInformerFactory.Networking().V1beta1().Gateways().Lister(),
-		virtualServiceLister: ctx.IstioSharedInformerFactory.Networking().V1beta1().VirtualServices().Lister(),
+		gatewayLister:        gatewayLister,
+		virtualServiceLister: virtualServiceLister,
 		testReachability:     testReachability,
 		requiredPasses:       5,
 	}
@@ -108,9 +114,9 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	//_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
-	_, ingressErr := s.ensureIstio(ctx, ch, svc.Name)
-	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
+	_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
+	_, istioErr := s.ensureIstio(ctx, ch, svc.Name)
+	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr, istioErr})
 }
 
 func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {

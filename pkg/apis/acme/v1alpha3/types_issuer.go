@@ -140,7 +140,7 @@ type ACMEChallengeSolverHTTP01 struct {
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
 
 	// +optional
-	Istio *ACMEChallengeSolverHTTP01Istio `json:"istio"`
+	Istio *ACMEChallengeSolverHTTP01Istio `json:"istio,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {

@@ -95,8 +95,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
 	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
 	ingressInformer := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
-	gatewayInformer := ctx.IstioSharedInformerFactory.Networking().V1beta1().Gateways()
-	virtualServiceInformer := ctx.IstioSharedInformerFactory.Networking().V1beta1().VirtualServices()
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
@@ -106,8 +104,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		podInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
 		ingressInformer.Informer().HasSynced,
-		gatewayInformer.Informer().HasSynced,
-		virtualServiceInformer.Informer().HasSynced,
+	}
+
+	if ctx.IstioSharedInformerFactory != nil {
+		gatewayInformer := ctx.IstioSharedInformerFactory.Networking().V1beta1().Gateways()
+		virtualServiceInformer := ctx.IstioSharedInformerFactory.Networking().V1beta1().VirtualServices()
+		mustSync = append(mustSync, gatewayInformer.Informer().HasSynced, virtualServiceInformer.Informer().HasSynced)
 	}
 
 	// set all the references to the listers for used by the Sync function
