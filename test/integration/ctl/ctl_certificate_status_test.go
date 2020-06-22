@@ -18,16 +18,20 @@ package ctl
 
 import (
 	"context"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate/status"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/test/integration/framework"
-	"github.com/jetstack/cert-manager/test/unit/gen"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"strings"
 	"testing"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate/status"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/test/integration/framework"
+	"github.com/jetstack/cert-manager/test/unit/gen"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 )
 
 func TestCtlCertStatus(t *testing.T) {
@@ -44,18 +48,22 @@ func TestCtlCertStatus(t *testing.T) {
 	const (
 		issuedAndUpToDate = `Name: testcrt-1
 Namespace: testns-1
-Status: Certificate is issued and up to date
+Status: Certificate is up to date and has not expired
 DNS Names:
 - www.example.com
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
 Secret Name: example-tls
-Not After: 2020-09-16T09:26:18Z`)
+Not After: 2020-09-16T09:26:18Z`
+		)
 
 	var (
 		crt1Name = "testcrt-1"
 		ns1      = "testns-1"
+
+		readyAndUpToDateCond = cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
+			Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}
 	)
 
 	certIsValidTime, err := time.Parse(time.RFC3339, "2020-09-16T09:26:18Z")
@@ -66,46 +74,50 @@ Not After: 2020-09-16T09:26:18Z`)
 
 	crt1 := gen.Certificate(crt1Name,
 		gen.SetCertificateNamespace(ns1),
-		gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
-			Message: "Certificate is up to date and has not expired"}),
 		gen.SetCertificateDNSNames("www.example.com"),
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
 		gen.SetCertificateSecretName("example-tls"),
-		gen.SetCertificateNotAfter(metav1.Time{Time: certIsValidTime}),
 	)
 
 	tests := map[string]struct {
-		certificate *cmapi.Certificate
-		inputArgs []string
-		inputNamespace string
+		certificate       *cmapi.Certificate
+		certificateStatus *cmapi.CertificateStatus
+		inputArgs         []string
+		inputNamespace    string
 
-		expErr bool
+		expErr    bool
 		expOutput string
 	}{
 		"certificate name and namespace given": {
 			certificate: crt1,
-			inputArgs:  []string{crt1Name},
+			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{readyAndUpToDateCond},
+				NotAfter: &metav1.Time{Time: certIsValidTime}},
+			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
-			expErr: false,
-			expOutput: issuedAndUpToDate,
+			expErr:         false,
+			expOutput:      issuedAndUpToDate,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Create Certificate resource
-			_, err := cmCl.CertmanagerV1alpha2().Certificates(test.inputNamespace).Create(ctx, test.certificate, metav1.CreateOptions{})
+			crt, err := cmCl.CertmanagerV1alpha2().Certificates(test.inputNamespace).Create(ctx, test.certificate, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			crt, err = setCertificateStatus(cmCl, crt, test.certificateStatus, ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Log(crt.Status)
 			// Options to run status command
 			streams, _, outBuf, _ := genericclioptions.NewTestIOStreams()
-			opts := &status.Options {
-				CMClient:         cmCl,
-				RESTConfig:       config,
-				IOStreams:        streams,
-				Namespace: test.inputNamespace,
+			opts := &status.Options{
+				CMClient:   cmCl,
+				RESTConfig: config,
+				IOStreams:  streams,
+				Namespace:  test.inputNamespace,
 			}
 
 			err = opts.Run(test.inputArgs)
@@ -123,10 +135,20 @@ Not After: 2020-09-16T09:26:18Z`)
 			}
 
 			if strings.TrimSpace(test.expOutput) != strings.TrimSpace(outBuf.String()) {
-				t.Errorf("got unexpected output, exp=\n%s\nbut got=\n%s",
+				t.Errorf("got unexpected output, exp=\n\n%s\nbut got=\n%s",
 					strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
 			}
 		})
 	}
 
+}
+
+func setCertificateStatus(cmCl versioned.Interface, crt *cmapi.Certificate,
+	status *cmapi.CertificateStatus, ctx context.Context) (*cmapi.Certificate, error) {
+	for _, cond := range status.Conditions {
+		apiutil.SetCertificateCondition(crt, cond.Type, cond.Status, cond.Reason, cond.Message)
+	}
+	crt.Status.NotAfter = status.NotAfter
+	crt, err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	return crt, err
 }
