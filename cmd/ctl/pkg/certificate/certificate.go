@@ -20,16 +20,17 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate/status"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
-func NewCmdCertificate(ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdCertificate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	cmds := &cobra.Command{
 		Use:   "certificate",
 		Short: "Operations on cert-manager Certificates",
 		Long:  `Operations on cert-manager Certificates, e.g. status`,
 	}
 
-	cmds.AddCommand(status.NewCmdCertStatus(ioStreams))
+	cmds.AddCommand(status.NewCmdCertStatus(ioStreams, factory))
 
 	return cmds
 }

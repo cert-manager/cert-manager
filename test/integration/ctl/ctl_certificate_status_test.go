@@ -26,12 +26,12 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate/status"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 )
 
 func TestCtlCertStatus(t *testing.T) {
@@ -56,7 +56,7 @@ Issuer:
   Kind: ClusterIssuer
 Secret Name: example-tls
 Not After: 2020-09-16T09:26:18Z`
-		)
+	)
 
 	var (
 		crt1Name = "testcrt-1"

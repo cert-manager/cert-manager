@@ -17,13 +17,21 @@ limitations under the License.
 package status
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/spf13/cobra"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	restclient "k8s.io/client-go/rest"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
 var (
@@ -34,10 +42,28 @@ Get details about the current status of a Certificate, including information on 
 `))
 )
 
+const (
+	readyAndUptoDateFormat = `
+Name: %s
+Namespace: %s
+Status: %s
+DNS Names:
+%s
+Issuer:
+  Name: %s
+  Kind: %s
+Secret Name: %s
+Not After: %s
+`
+)
+
 // Options is a struct to support certificate status command
 type Options struct {
 	CMClient   cmclient.Interface
 	RESTConfig *restclient.Config
+	// The Namespace that the Certificate to be renewed resided in.
+	// This flag registration is handled by cmdutil.Factory
+	Namespace string
 
 	genericclioptions.IOStreams
 }
@@ -50,7 +76,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdCertStatus returns a cobra command for create CertificateRequest
-func NewCmdCertStatus(ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdCertStatus(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "status",
@@ -58,12 +84,76 @@ func NewCmdCertStatus(ioStreams genericclioptions.IOStreams) *cobra.Command {
 		Long:    long,
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
-			o.Run(args)
+			cmdutil.CheckErr(o.Validate(args))
+			cmdutil.CheckErr(o.Complete(factory))
+			cmdutil.CheckErr(o.Run(args))
 		},
 	}
 	return cmd
 }
 
-func (o *Options) Run(args []string) {
-	fmt.Fprintln(o.Out, "Status")
+// Validate validates the provided options
+func (o *Options) Validate(args []string) error {
+	if len(args) < 1 {
+		return errors.New("the name of the Certificate to be created has to be provided as argument")
+	}
+	if len(args) > 1 {
+		return errors.New("only one argument can be passed in: the name of the Certificate")
+	}
+	return nil
+}
+
+// Complete takes the factory and infers any remaining options.
+func (o *Options) Complete(f cmdutil.Factory) error {
+	var err error
+
+	o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
+	if err != nil {
+		return err
+	}
+
+	o.RESTConfig, err = f.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	o.CMClient, err = cmclient.NewForConfig(o.RESTConfig)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *Options) Run(args []string) error {
+	ctx := context.TODO()
+	crtName := args[0]
+
+	crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(o.Namespace).Get(ctx, crtName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("error when getting Certificate resource: %v", err)
+	}
+
+	// Get necessary info from Certificate
+	statusMessage := ""
+	for _, con := range crt.Status.Conditions {
+		// TODO: Can a certificate have both Ready and Issuing condition set?
+		if con.Type == cmapi.CertificateConditionReady {
+			statusMessage = con.Message
+		}
+	}
+
+	dnsNames := formatDnsNamesList(crt)
+
+	fmt.Fprintf(o.Out, readyAndUptoDateFormat, crt.Name, crt.Namespace, statusMessage, dnsNames, crt.Spec.IssuerRef.Name,
+		crt.Spec.IssuerRef.Kind, crt.Spec.SecretName, crt.Status.NotAfter.Time.Format(time.RFC3339))
+	return nil
+}
+
+func formatDnsNamesList(crt *cmapi.Certificate) string {
+	str := ""
+	for _, dnsName := range crt.Spec.DNSNames {
+		str += "- " + dnsName
+	}
+	return str
 }
