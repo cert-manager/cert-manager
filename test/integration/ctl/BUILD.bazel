@@ -3,12 +3,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_test")
 go_test(
     name = "go_default_test",
     srcs = [
+        "ctl_certificate_status_test.go",
         "ctl_convert_test.go",
         "ctl_create_cr_test.go",
         "ctl_renew_test.go",
     ],
     data = glob(["testdata/**"]),
     deps = [
+        "//cmd/ctl/pkg/certificate/status:go_default_library",
         "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create/certificaterequest:go_default_library",
         "//cmd/ctl/pkg/renew:go_default_library",
