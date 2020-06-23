@@ -67,6 +67,9 @@ type Context struct {
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
 
+	// IstioEnabled is true if Istio support is enabled
+	IstioEnabled bool
+
 	// Namespace is the namespace to operate within.
 	// If unset, operates on all namespaces
 	Namespace string

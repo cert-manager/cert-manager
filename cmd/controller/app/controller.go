@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/discovery"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -72,6 +73,19 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	log := logf.FromContext(rootCtx)
 
 	ctx, kubeCfg, err := buildControllerContext(rootCtx, stopCh, opts)
+
+	istioAvailable, err := isIstioAvailable(ctx)
+	if err != nil {
+		log.Error(err, "could not discover if Istio is available; continuing with Istio support disabled")
+		istioAvailable = false
+	}
+
+	ctx.IstioEnabled = istioAvailable
+	if ctx.IstioEnabled {
+		log.Info("Istio support is enabled")
+	} else {
+		log.Info("Istio support is disabled")
+	}
 
 	if err != nil {
 		log.Error(err, "error building controller context", "options", opts)
@@ -147,7 +161,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		log.V(4).Info("starting shared informer factories")
 		ctx.SharedInformerFactory.Start(stopCh)
 		ctx.KubeSharedInformerFactory.Start(stopCh)
-		if ctx.IstioSharedInformerFactory != nil {
+		if ctx.IstioEnabled {
 			ctx.IstioSharedInformerFactory.Start(stopCh)
 		}
 		wg.Wait()
@@ -171,7 +185,24 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	startLeaderElection(rootCtx, opts, leaderElectionClient, ctx.Recorder, run)
 }
 
-const istioEnabled = false
+func isIstioAvailable(ctx *controller.Context) (bool, error) {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(ctx.RESTConfig)
+	if err != nil {
+		return false, err
+	}
+
+	groups, err := discoveryClient.ServerGroups()
+	if err != nil {
+		return false, err
+	}
+
+	for _, group := range groups.Groups {
+		if group.Name == istionetworkingv1beta1.GroupName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
 	log := logf.FromContext(ctx, "build-context")
@@ -196,12 +227,9 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
-	var istioClient *istioclientset.Clientset
-	if istioEnabled {
-		istioClient, err = istioclientset.NewForConfig(kubeCfg)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error creating istio group client: %s", err.Error())
-		}
+	istioClient, err := istioclientset.NewForConfig(kubeCfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating istio client: %s", err.Error())
 	}
 
 	nameservers := opts.DNS01RecursiveNameservers
@@ -244,11 +272,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, time.Second*30, informers.WithNamespace(opts.Namespace))
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, time.Second*30, kubeinformers.WithNamespace(opts.Namespace))
-
-	var istioSharedInformerFactory istioinformers.SharedInformerFactory
-	if istioClient != nil {
-		istioSharedInformerFactory = istioinformers.NewSharedInformerFactoryWithOptions(istioClient, time.Second*30, istioinformers.WithNamespace(opts.Namespace))
-	}
+	istioSharedInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, time.Second*30, istioinformers.WithNamespace(opts.Namespace))
 
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 

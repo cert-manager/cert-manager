@@ -32,10 +32,6 @@ import (
 func (s *Solver) ensureIstio(ctx context.Context, ch *cmacme.Challenge, svcName string) (bool *istioclientnetworking.VirtualService, err error) {
 	log := logf.FromContext(ctx).WithName("ensureIstio")
 
-	if ch.Spec.Solver.HTTP01.Istio == nil {
-		return nil, nil
-	}
-
 	gateway, err := s.getGateway(ch)
 	if err != nil {
 		return nil, err

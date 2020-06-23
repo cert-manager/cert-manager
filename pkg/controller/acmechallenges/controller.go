@@ -106,7 +106,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		ingressInformer.Informer().HasSynced,
 	}
 
-	if ctx.IstioSharedInformerFactory != nil {
+	if ctx.IstioEnabled {
 		gatewayInformer := ctx.IstioSharedInformerFactory.Networking().V1beta1().Gateways()
 		virtualServiceInformer := ctx.IstioSharedInformerFactory.Networking().V1beta1().VirtualServices()
 		mustSync = append(mustSync, gatewayInformer.Informer().HasSynced, virtualServiceInformer.Informer().HasSynced)
