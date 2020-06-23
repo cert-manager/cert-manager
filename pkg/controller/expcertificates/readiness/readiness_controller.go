@@ -217,7 +217,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
-		policies.TriggerPolicyChain,
+		PolicyChain,
 	)
 	c.controller = ctrl
 
