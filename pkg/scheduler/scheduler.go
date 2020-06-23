@@ -19,14 +19,26 @@ package scheduler
 import (
 	"sync"
 	"time"
+
+	"k8s.io/utils/clock"
 )
 
 // For mocking purposes.
 // This little bit of wrapping needs to be done because go doesn't do
 // covariance, but it does coerce *time.Timer into stoppable implicitly if we
 // write it out like so.
-var afterFunc = func(d time.Duration, f func()) stoppable {
-	return time.AfterFunc(d, f)
+var afterFunc = func(c clock.Clock, d time.Duration, f func()) stoppable {
+	t := c.NewTimer(d)
+
+	go func() {
+		defer t.Stop()
+		if ti := <-t.C(); ti == (time.Time{}) {
+			return
+		}
+		f()
+	}()
+
+	return t
 }
 
 // stoppable is the subset of time.Timer which we use, split out for mocking purposes
@@ -51,13 +63,19 @@ type ScheduledWorkQueue interface {
 
 type scheduledWorkQueue struct {
 	processFunc ProcessFunc
+	clock       clock.Clock
 	work        map[interface{}]stoppable
 	workLock    sync.Mutex
 }
 
 // NewScheduledWorkQueue will create a new workqueue with the given processFunc
-func NewScheduledWorkQueue(processFunc ProcessFunc) ScheduledWorkQueue {
-	return &scheduledWorkQueue{processFunc, make(map[interface{}]stoppable), sync.Mutex{}}
+func NewScheduledWorkQueue(clock clock.Clock, processFunc ProcessFunc) ScheduledWorkQueue {
+	return &scheduledWorkQueue{
+		processFunc: processFunc,
+		clock:       clock,
+		work:        make(map[interface{}]stoppable),
+		workLock:    sync.Mutex{},
+	}
 }
 
 // Add will add an item to this queue, executing the ProcessFunc after the
@@ -67,7 +85,7 @@ func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
 	s.forget(obj)
-	s.work[obj] = afterFunc(duration, func() {
+	s.work[obj] = afterFunc(s.clock, duration, func() {
 		defer s.Forget(obj)
 		s.processFunc(obj)
 	})
