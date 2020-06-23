@@ -21,23 +21,20 @@ import (
 
 	"github.com/spf13/cobra"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
-	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/webhook"
+	"github.com/jetstack/cert-manager/pkg/ctl"
 )
 
 var (
@@ -61,22 +58,10 @@ to change to output destination.`))
 )
 
 var (
-	// Use the webhook's scheme as it already has the internal cert-manager types,
+	// Use this scheme as it has the internal cert-manager types
 	// and their conversion functions registered.
-	// In future we may we want to consider creating a dedicated scheme used by
-	// the ctl tool.
-	scheme = webhook.Scheme
+	scheme = ctl.Scheme
 )
-
-func init() {
-	// This is used to add the List object type for outputting multiple input
-	// objects.
-	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
-	scheme.AddKnownTypes(coreGroupVersion, &metainternalversion.List{})
-
-	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
-	utilruntime.Must(kscheme.AddToScheme(scheme))
-}
 
 // Options is a struct to support convert command
 type Options struct {
