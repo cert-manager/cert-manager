@@ -18,6 +18,7 @@ package issuing
 
 import (
 	"context"
+	"crypto"
 	"fmt"
 	"time"
 
@@ -192,7 +193,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		logf.WithResource(log, nextPrivateKeySecret).Info("Next private key secret does not contain any private key data, waiting for keymanager controller")
 		return nil
 	}
-	pk, pkData, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
+	pk, _, err := utilkube.ParseTLSKeyFromSecret(nextPrivateKeySecret, corev1.TLSPrivateKeyKey)
 	if err != nil {
 		// If the private key cannot be parsed here, do nothing as the key manager will handle this.
 		logf.WithResource(log, nextPrivateKeySecret).Error(err, "failed to parse next private key, waiting for keymanager controller")
@@ -270,13 +271,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// If the CertificateRequest is valid and ready, verify its status and issue
 	// accordingly.
 	if cond.Reason == cmapi.CertificateRequestReasonIssued {
-		return c.issueCertificate(ctx, nextRevision, crt, req, pkData)
+		return c.issueCertificate(ctx, nextRevision, crt, req, pk)
 	}
 
 	// Issue temporary certificate if needed. If a certificate was issued, then
 	// return early - we will sync again since the target Secret has been
 	// updated.
-	if issued, err := c.ensureTemporaryCertificate(ctx, crt, pkData); err != nil || issued {
+	if issued, err := c.ensureTemporaryCertificate(ctx, crt, pk); err != nil || issued {
 		return err
 	}
 
@@ -315,14 +316,18 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // issueCertificate will ensure the public key of the CSR matches the signed
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
-func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pkData []byte) error {
+func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
+	pkData, err := utilpki.EncodePrivateKey(pk, crt.Spec.KeyEncoding)
+	if err != nil {
+		return err
+	}
 	secretData := secretsmanager.SecretData{
 		PrivateKey:  pkData,
 		Certificate: req.Status.Certificate,
 		CA:          req.Status.CA,
 	}
 
-	err := c.secretsManager.UpdateData(ctx, crt, secretData)
+	err = c.secretsManager.UpdateData(ctx, crt, secretData)
 	if err != nil {
 		return err
 	}

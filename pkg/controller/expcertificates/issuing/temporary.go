@@ -18,6 +18,7 @@ package issuing
 
 import (
 	"context"
+	"crypto"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -25,6 +26,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/secretsmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
+	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var temporaryCertificatePolicyChain = policies.Chain{
@@ -39,7 +41,7 @@ var temporaryCertificatePolicyChain = policies.Chain{
 // - The target Secret does not exist yet, or the certificate/key data there is not valid
 // - If the Certificate/Key pair does not match the 'NextPrivateKey'
 // Returns true is a temporary certificate was issued
-func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.Certificate, pkData []byte) (bool, error) {
+func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer) (bool, error) {
 	// If certificate does not have temporary certificate annotation, do nothing
 	if !certificateHasTemporaryCertificateAnnotation(crt) {
 		return false, nil
@@ -58,6 +60,10 @@ func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.
 	}
 
 	// Issue temporary certificate
+	pkData, err := utilpki.EncodePrivateKey(pk, crt.Spec.KeyEncoding)
+	if err != nil {
+		return false, err
+	}
 	certData, err := c.localTemporarySigner(crt, pkData)
 	if err != nil {
 		return false, err
