@@ -20,31 +20,21 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	auditreg "k8s.io/api/auditregistration/v1alpha1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
-	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/ctl"
 )
 
 var (
@@ -68,34 +58,10 @@ to change to output destination.`))
 )
 
 var (
-	scheme             = runtime.NewScheme()
-	codecs             = serializer.NewCodecFactory(scheme)
-	parameterCodec     = runtime.NewParameterCodec(scheme)
-	localSchemeBuilder = runtime.SchemeBuilder{
-		cmapi.AddToScheme,
-		cmapiv1alpha3.AddToScheme,
-		cmacme.AddToScheme,
-		cmacmev1alpha3.AddToScheme,
-		cmmeta.AddToScheme,
-		whapi.AddToScheme,
-		kscheme.AddToScheme,
-		apireg.AddToScheme,
-		apiext.AddToScheme,
-		auditreg.AddToScheme,
-	}
-
-	addToScheme = localSchemeBuilder.AddToScheme
+	// Use this scheme as it has the internal cert-manager types
+	// and their conversion functions registered.
+	scheme = ctl.Scheme
 )
-
-func init() {
-	// This is used to add the List object type for outputing multiple input
-	// objects.
-	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
-	scheme.AddKnownTypes(coreGroupVersion, &metainternalversion.List{})
-
-	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
-	utilruntime.Must(addToScheme(scheme))
-}
 
 // Options is a struct to support convert command
 type Options struct {
@@ -159,8 +125,9 @@ func (o *Options) Complete() error {
 func (o *Options) Run() error {
 	builder := new(resource.Builder)
 
-	r := builder.Unstructured().LocalParam(true).ContinueOnError().
-		FilenameParam(false, &o.FilenameOptions).Flatten().Do()
+	r := builder.
+		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
+		LocalParam(true).FilenameParam(false, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {
 		return fmt.Errorf("error here: %s", err)

@@ -26,9 +26,10 @@ import (
 )
 
 const (
-	testdataResource1 = "./testdata/convert_resource1.yaml"
-	testdataResource2 = "./testdata/convert_resource2.yaml"
-	testdataResource3 = "./testdata/convert_resource3.yaml"
+	testdataResource1                        = "./testdata/convert_resource1.yaml"
+	testdataResource2                        = "./testdata/convert_resource2.yaml"
+	testdataResource3                        = "./testdata/convert_resource3.yaml"
+	testdataResourceWithOrganizationV1alpha2 = "./testdata/convert_resource_with_organization_v1alpha2.yaml"
 
 	targetv1alpha2 = "cert-manager.io/v1alpha2"
 	targetv1alpha3 = "cert-manager.io/v1alpha3"
@@ -82,6 +83,29 @@ func TestCtlConvert(t *testing.T) {
 			targetVersion: targetv1alpha3,
 			expErr:        true,
 		},
+		"an object in v1alpha2 that uses a field that has been renamed in v1alpha3 should be converted properly": {
+			input:         testdataResourceWithOrganizationV1alpha2,
+			targetVersion: targetv1alpha3,
+			expOutput: `
+apiVersion: cert-manager.io/v1alpha3
+kind: Certificate
+metadata:
+  creationTimestamp: null
+  name: ca-issuer
+  namespace: sandbox
+spec:
+  commonName: my-csi-app
+  isCA: true
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: ca-key-pair
+  subject:
+    organizations:
+    - hello world
+status: {}`,
+		},
 	}
 
 	for name, test := range tests {
@@ -104,7 +128,7 @@ func TestCtlConvert(t *testing.T) {
 			}
 
 			if strings.TrimSpace(test.expOutput) != strings.TrimSpace(outBuf.String()) {
-				t.Errorf("got unexpected output, exp=%s got=%s",
+				t.Errorf("got unexpected output, exp=%s\n got=%s",
 					strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
 			}
 		})
