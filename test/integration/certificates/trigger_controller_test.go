@@ -23,7 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/clock"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -48,9 +48,10 @@ func TestTriggerController(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
 	defer cancel()
 
+	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
 	_, factory, cmCl, cmFactory := framework.NewClients(t, config)
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, policies.TriggerPolicyChain)
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, policies.NewTriggerPolicyChain(fakeClock))
 	c := controllerpkg.NewController(
 		context.Background(),
 		"trigger_test",

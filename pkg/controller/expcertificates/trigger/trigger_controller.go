@@ -196,7 +196,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
-		policies.TriggerPolicyChain,
+		policies.NewTriggerPolicyChain(ctx.Clock),
 	)
 	c.controller = ctrl
 
