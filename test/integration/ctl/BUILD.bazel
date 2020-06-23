@@ -4,15 +4,18 @@ go_test(
     name = "go_default_test",
     srcs = [
         "ctl_convert_test.go",
+        "ctl_create_cr_test.go",
         "ctl_renew_test.go",
     ],
     data = glob(["testdata/**"]),
     deps = [
         "//cmd/ctl/pkg/convert:go_default_library",
+        "//cmd/ctl/pkg/create/certificaterequest:go_default_library",
         "//cmd/ctl/pkg/renew:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//test/integration/framework:go_default_library",
         "//test/unit/gen:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
