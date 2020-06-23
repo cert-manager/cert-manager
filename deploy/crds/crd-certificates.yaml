@@ -392,6 +392,16 @@ spec:
                   secret named by this resource in spec.secretName.
                 type: string
                 format: date-time
+              notBefore:
+                description: The time after which the certificate stored in the secret
+                  named by this resource in spec.secretName is valid.
+                type: string
+                format: date-time
+              renewalTime:
+                description: RenewalTime is the time at which the certificate will
+                  be next renewed. If not set, no upcoming renewal is scheduled.
+                type: string
+                format: date-time
               revision:
                 description: "The current 'revision' of the certificate as issued.
                   \n When a CertificateRequest resource is created, it will have the
@@ -738,6 +748,16 @@ spec:
               notAfter:
                 description: The expiration time of the certificate stored in the
                   secret named by this resource in spec.secretName.
+                type: string
+                format: date-time
+              notBefore:
+                description: The time after which the certificate stored in the secret
+                  named by this resource in spec.secretName is valid.
+                type: string
+                format: date-time
+              renewalTime:
+                description: RenewalTime is the time at which the certificate will
+                  be next renewed. If not set, no upcoming renewal is scheduled.
                 type: string
                 format: date-time
               revision:

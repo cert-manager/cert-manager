@@ -713,7 +713,9 @@ func Convert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *certman
 func autoConvert_v1alpha3_CertificateStatus_To_certmanager_CertificateStatus(in *v1alpha3.CertificateStatus, out *certmanager.CertificateStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanager.CertificateCondition)(unsafe.Pointer(&in.Conditions))
 	out.LastFailureTime = (*v1.Time)(unsafe.Pointer(in.LastFailureTime))
+	out.NotBefore = (*v1.Time)(unsafe.Pointer(in.NotBefore))
 	out.NotAfter = (*v1.Time)(unsafe.Pointer(in.NotAfter))
+	out.RenewalTime = (*v1.Time)(unsafe.Pointer(in.RenewalTime))
 	out.Revision = (*int)(unsafe.Pointer(in.Revision))
 	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
 	return nil
@@ -727,7 +729,9 @@ func Convert_v1alpha3_CertificateStatus_To_certmanager_CertificateStatus(in *v1a
 func autoConvert_certmanager_CertificateStatus_To_v1alpha3_CertificateStatus(in *certmanager.CertificateStatus, out *v1alpha3.CertificateStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]v1alpha3.CertificateCondition)(unsafe.Pointer(&in.Conditions))
 	out.LastFailureTime = (*v1.Time)(unsafe.Pointer(in.LastFailureTime))
+	out.NotBefore = (*v1.Time)(unsafe.Pointer(in.NotBefore))
 	out.NotAfter = (*v1.Time)(unsafe.Pointer(in.NotAfter))
+	out.RenewalTime = (*v1.Time)(unsafe.Pointer(in.RenewalTime))
 	out.Revision = (*int)(unsafe.Pointer(in.Revision))
 	out.NextPrivateKeySecretName = (*string)(unsafe.Pointer(in.NextPrivateKeySecretName))
 	return nil
