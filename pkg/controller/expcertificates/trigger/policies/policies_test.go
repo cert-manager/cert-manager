@@ -23,6 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -35,6 +36,7 @@ import (
 // to ensure we do not break behaviour when introducing a new policy or
 // modifying existing code.
 func TestDefaultPolicyChain(t *testing.T) {
+	clock := &fakeclock.FakeClock{}
 	staticFixedPrivateKey := generatePEMPrivateKey(t)
 	tests := map[string]struct {
 		// policy inputs
@@ -341,16 +343,21 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 			},
 		},
-		"trigger renewal if existing certificate expires within 'renewBefore'": {
-			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
-				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
-					Name:  "testissuer",
-					Kind:  "IssuerKind",
-					Group: "group.example.com",
+		"trigger renewal if renewalTime is right now": {
+			certificate: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					RenewBefore: &metav1.Duration{Duration: time.Minute * 5},
 				},
-				RenewBefore: &metav1.Duration{Duration: time.Minute * 5},
-			}},
+				Status: cmapi.CertificateStatus{
+					RenewalTime: &metav1.Time{Time: clock.Now()},
+				},
+			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something",
 					Annotations: map[string]string{
@@ -363,26 +370,31 @@ func TestDefaultPolicyChain(t *testing.T) {
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
 					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
-						time.Now().Add(time.Minute*-30),
+						clock.Now().Add(time.Minute*-30),
 						// expires in 1 minute time
-						time.Now().Add(time.Minute*1),
+						clock.Now().Add(time.Minute*1),
 					),
 				},
 			},
 			reason:  "Renewing",
-			message: "Renewing certificate as current certificate is within 5m0s of expiry",
+			message: "Renewing certificate as renewal was scheduled at 0001-01-01 00:00:00 +0000 UTC",
 			reissue: true,
 		},
-		"does not trigger renewal if existing certificate does not expire within 'renewBefore'": {
-			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
-				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
-					Name:  "testissuer",
-					Kind:  "IssuerKind",
-					Group: "group.example.com",
+		"trigger renewal if renewalTime is in the past": {
+			certificate: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					RenewBefore: &metav1.Duration{Duration: time.Minute * 5},
 				},
-				RenewBefore: &metav1.Duration{Duration: time.Minute * 1},
-			}},
+				Status: cmapi.CertificateStatus{
+					RenewalTime: &metav1.Time{Time: clock.Now().Add(-1 * time.Minute)},
+				},
+			},
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "something",
 					Annotations: map[string]string{
@@ -395,78 +407,52 @@ func TestDefaultPolicyChain(t *testing.T) {
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
 					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
-						time.Now().Add(time.Minute*-30),
+						clock.Now().Add(time.Minute*-30),
+						// expires in 1 minute time
+						clock.Now().Add(time.Minute*1),
+					),
+				},
+			},
+			reason:  "Renewing",
+			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
+			reissue: true,
+		},
+		"does not trigger renewal if renewal time is in 1 minute": {
+			certificate: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					RenewBefore: &metav1.Duration{Duration: time.Minute * 1},
+				},
+				Status: cmapi.CertificateStatus{
+					RenewalTime: &metav1.Time{Time: clock.Now().Add(time.Minute)},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something",
+					Annotations: map[string]string{
+						cmapi.IssuerNameAnnotationKey:  "testissuer",
+						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+					},
+				},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+						clock.Now().Add(time.Minute*-30),
 						// expires in 5 minutes time
-						time.Now().Add(time.Minute*5),
+						clock.Now().Add(time.Minute*5),
 					),
 				},
 			},
-		},
-		"does not immediately trigger renewal if renewBefore is greater than certificate length": {
-			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
-				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
-					Name:  "testissuer",
-					Kind:  "IssuerKind",
-					Group: "group.example.com",
-				},
-				// renew 90 minutes before expiry (this is longer than total cert duration)
-				RenewBefore: &metav1.Duration{Duration: time.Minute * 90},
-			}},
-			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "something",
-					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
-					},
-				},
-				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
-						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
-						time.Now().Add(time.Minute*-30),
-						// expires in 30 minutes time
-						time.Now().Add(time.Minute*30),
-					),
-				},
-			},
-		},
-		"does trigger renewal if renewBefore is greater than certificate length, but certificate is past 2/3 of its lifetime": {
-			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{
-				CommonName: "example.com",
-				IssuerRef: cmmeta.ObjectReference{
-					Name:  "testissuer",
-					Kind:  "IssuerKind",
-					Group: "group.example.com",
-				},
-				// renew 90 minutes before expiry (this is longer than total cert duration)
-				RenewBefore: &metav1.Duration{Duration: time.Minute * 90},
-			}},
-			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "something",
-					Annotations: map[string]string{
-						cmapi.IssuerNameAnnotationKey:  "testissuer",
-						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
-						cmapi.IssuerGroupAnnotationKey: "group.example.com",
-					},
-				},
-				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
-						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
-						time.Now().Add(time.Minute*-45),
-						// expires in 15 minutes time
-						time.Now().Add(time.Minute*15),
-					),
-				},
-			},
-			reason:  "Renewing",
-			message: "Renewing certificate as current certificate is within 20m0s of expiry",
-			reissue: true,
 		},
 	}
-	policyChain := TriggerPolicyChain
+	policyChain := NewTriggerPolicyChain(clock)
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			reason, message, reissue := policyChain.Evaluate(Input{
