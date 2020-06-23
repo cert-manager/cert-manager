@@ -46,9 +46,20 @@ func TestCtlCertStatus(t *testing.T) {
 	_, _, cmCl, _ := framework.NewClients(t, config)
 
 	const (
-		issuedAndUpToDate = `Name: testcrt-1
+		issuedAndUpToDateExpOutput = `Name: testcrt-1
 Namespace: testns-1
 Status: Certificate is up to date and has not expired
+DNS Names:
+- www.example.com
+Issuer:
+  Name: letsencrypt-prod
+  Kind: ClusterIssuer
+Secret Name: example-tls
+Not After: 2020-09-16T09:26:18Z`
+
+		issuedAndDuringRenewalExpOutput = `Name: testcrt-2
+Namespace: testns-1
+Status: Certificate is up to date and has not expired; Issuance of a new Certificate is in Progress
 DNS Names:
 - www.example.com
 Issuer:
@@ -60,10 +71,13 @@ Not After: 2020-09-16T09:26:18Z`
 
 	var (
 		crt1Name = "testcrt-1"
+		crt2Name = "testcrt-2"
 		ns1      = "testns-1"
 
 		readyAndUpToDateCond = cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}
+		issuingCond = cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing,
+			Status: cmmeta.ConditionTrue, Message: "Issuance of a new Certificate is in Progress"}
 	)
 
 	certIsValidTime, err := time.Parse(time.RFC3339, "2020-09-16T09:26:18Z")
@@ -79,6 +93,13 @@ Not After: 2020-09-16T09:26:18Z`
 		gen.SetCertificateSecretName("example-tls"),
 	)
 
+	crt2 := gen.Certificate(crt2Name,
+		gen.SetCertificateNamespace(ns1),
+		gen.SetCertificateDNSNames("www.example.com"),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
+		gen.SetCertificateSecretName("example-tls"),
+	)
+
 	tests := map[string]struct {
 		certificate       *cmapi.Certificate
 		certificateStatus *cmapi.CertificateStatus
@@ -88,14 +109,23 @@ Not After: 2020-09-16T09:26:18Z`
 		expErr    bool
 		expOutput string
 	}{
-		"certificate name and namespace given": {
+		"certificate issued and up-to-date": {
 			certificate: crt1,
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{readyAndUpToDateCond},
 				NotAfter: &metav1.Time{Time: certIsValidTime}},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
 			expErr:         false,
-			expOutput:      issuedAndUpToDate,
+			expOutput:      issuedAndUpToDateExpOutput,
+		},
+		"certificate issued and renewal in progress": {
+			certificate: crt2,
+			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{readyAndUpToDateCond, issuingCond},
+				NotAfter: &metav1.Time{Time: certIsValidTime}},
+			inputArgs:      []string{crt2Name},
+			inputNamespace: ns1,
+			expErr:         false,
+			expOutput:      issuedAndDuringRenewalExpOutput,
 		},
 	}
 
@@ -135,7 +165,7 @@ Not After: 2020-09-16T09:26:18Z`
 			}
 
 			if strings.TrimSpace(test.expOutput) != strings.TrimSpace(outBuf.String()) {
-				t.Errorf("got unexpected output, exp=\n\n%s\nbut got=\n%s",
+				t.Errorf("got unexpected output, exp=\n%s\n\nbut got=\n%s",
 					strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
 			}
 		})

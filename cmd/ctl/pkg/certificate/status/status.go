@@ -136,10 +136,12 @@ func (o *Options) Run(args []string) error {
 
 	// Get necessary info from Certificate
 	statusMessage := ""
-	for _, con := range crt.Status.Conditions {
-		// TODO: Can a certificate have both Ready and Issuing condition set?
-		if con.Type == cmapi.CertificateConditionReady {
-			statusMessage = con.Message
+	for i, con := range crt.Status.Conditions {
+		// TODO: Can a certificate have both Ready and Issuin
+		if i < len(crt.Status.Conditions)-1 {
+			statusMessage += con.Message + "; "
+		} else {
+			statusMessage += con.Message
 		}
 	}
 
