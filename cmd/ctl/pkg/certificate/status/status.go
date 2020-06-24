@@ -42,21 +42,6 @@ Get details about the current status of a Certificate, including information on 
 `))
 )
 
-const (
-	readyAndUptoDateFormat = `
-Name: %s
-Namespace: %s
-Status: %s
-DNS Names:
-%s
-Issuer:
-  Name: %s
-  Kind: %s
-Secret Name: %s
-Not After: %s
-`
-)
-
 // Options is a struct to support certificate status command
 type Options struct {
 	CMClient   cmclient.Interface
@@ -134,21 +119,33 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when getting Certificate resource: %v", err)
 	}
 
+	// TODO: ignore Fprintf return values explicitly?
+	fmt.Fprintf(o.Out, fmt.Sprintf("Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace))
+
 	// Get necessary info from Certificate
 	statusMessage := ""
 	for i, con := range crt.Status.Conditions {
-		// TODO: Can a certificate have both Ready and Issuin
 		if i < len(crt.Status.Conditions)-1 {
 			statusMessage += con.Message + "; "
 		} else {
 			statusMessage += con.Message
 		}
 	}
+	fmt.Fprintf(o.Out, fmt.Sprintf("Status: %s\n", statusMessage))
 
 	dnsNames := formatDnsNamesList(crt)
+	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s\n", dnsNames))
 
-	fmt.Fprintf(o.Out, readyAndUptoDateFormat, crt.Name, crt.Namespace, statusMessage, dnsNames, crt.Spec.IssuerRef.Name,
-		crt.Spec.IssuerRef.Kind, crt.Spec.SecretName, crt.Status.NotAfter.Time.Format(time.RFC3339))
+	issuerFormat := `Issuer:
+  Name: %s
+  Kind: %s`
+	fmt.Fprintf(o.Out, fmt.Sprintf(issuerFormat+"\n", crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Kind))
+
+	fmt.Fprintf(o.Out, fmt.Sprintf("Secret Name: %s\n", crt.Spec.SecretName))
+
+	fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", crt.Status.NotAfter.Time.Format(time.RFC3339)))
+
+	// TODO: print information about secret
 	return nil
 }
 
