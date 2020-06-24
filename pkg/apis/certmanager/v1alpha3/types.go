@@ -16,19 +16,39 @@ limitations under the License.
 
 package v1alpha3
 
-// Annotation names for Secrets
+// Common annotation keys added to resources
 const (
-	AltNamesAnnotationKey    = "cert-manager.io/alt-names"
-	IPSANAnnotationKey       = "cert-manager.io/ip-sans"
-	URISANAnnotationKey      = "cert-manager.io/uri-sans"
-	CommonNameAnnotationKey  = "cert-manager.io/common-name"
-	IssuerNameAnnotationKey  = "cert-manager.io/issuer-name"
-	IssuerKindAnnotationKey  = "cert-manager.io/issuer-kind"
+	// Annotation key for DNS subjectAltNames
+	AltNamesAnnotationKey = "cert-manager.io/alt-names"
+
+	// Annotation key for IP subjectAltNames
+	IPSANAnnotationKey = "cert-manager.io/ip-sans"
+
+	// Annotation key for URI subjectAltNames
+	URISANAnnotationKey = "cert-manager.io/uri-sans"
+
+	// Annotation key for certificate common name
+	CommonNameAnnotationKey = "cert-manager.io/common-name"
+
+	// Annotation key the 'name' of the Issuer resource
+	IssuerNameAnnotationKey = "cert-manager.io/issuer-name"
+
+	// Annotation key the 'kind' of the Issuer resource
+	IssuerKindAnnotationKey = "cert-manager.io/issuer-kind"
+
+	// Annotation key the 'group' of the Issuer resource
 	IssuerGroupAnnotationKey = "cert-manager.io/issuer-group"
-	CertificateNameKey       = "cert-manager.io/certificate-name"
+
+	// Annotation key the name of the certificate that a resource is related to
+	CertificateNameKey = "cert-manager.io/certificate-name"
+
+	// Annotation key used to denote whether a Secret is named on a Certificate
+	// as a 'next private key' Secret resource
+	IsNextPrivateKeySecretLabelKey = "cert-manager.io/next-private-key"
 )
 
 // Deprecated annotation names for Secrets
+// These will be removed in a future release.
 const (
 	DeprecatedIssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
 	DeprecatedIssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"

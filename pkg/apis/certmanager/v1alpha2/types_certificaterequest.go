@@ -23,9 +23,16 @@ import (
 )
 
 const (
+	// Pending indicates that a CertificateRequest is still in progress.
 	CertificateRequestReasonPending = "Pending"
-	CertificateRequestReasonFailed  = "Failed"
-	CertificateRequestReasonIssued  = "Issued"
+
+	// Failed indicates that a CertificateRequest has failed, either due to
+	// timing out or some other critical failure.
+	CertificateRequestReasonFailed = "Failed"
+
+	// Issued indicates that a CertificateRequest has been completed, and that
+	// the `status.certificate` field is set.
+	CertificateRequestReasonIssued = "Issued"
 )
 
 // +genclient
@@ -43,7 +50,10 @@ type CertificateRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CertificateRequestSpec   `json:"spec,omitempty"`
+	// Desired state of the CertificateRequest resource.
+	Spec CertificateRequestSpec `json:"spec,omitempty"`
+
+	// Status of the CertificateRequest, set and managed automatically.
 	Status CertificateRequestStatus `json:"status,omitempty"`
 }
 
@@ -59,7 +69,8 @@ type CertificateRequestList struct {
 
 // CertificateRequestSpec defines the desired state of CertificateRequest
 type CertificateRequestSpec struct {
-	// Requested certificate default Duration
+	// The requested 'duration' (i.e. lifetime) of the Certificate.
+	// This option may be ignored/overridden by some issuer types.
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
 
@@ -75,13 +86,13 @@ type CertificateRequestSpec struct {
 	// Byte slice containing the PEM encoded CertificateSigningRequest
 	CSRPEM []byte `json:"csr"`
 
-	// IsCA will mark the resulting certificate as valid for signing. This
-	// implies that the 'cert sign' usage is set
+	// IsCA will mark this Certificate as valid for signing.
+	// This will automatically add the `cert sign` usage to the list of `usages`.
 	// +optional
 	IsCA bool `json:"isCA,omitempty"`
 
-	// Usages is the set of x509 actions that are enabled for a given key.
-	// Defaults are ('digital signature', 'key encipherment') if empty
+	// Usages is the set of x509 usages that are requested for the certificate.
+	// Defaults to `digital signature` and `key encipherment` if not specified.
 	// +optional
 	Usages []KeyUsage `json:"usages,omitempty"`
 }
@@ -89,6 +100,8 @@ type CertificateRequestSpec struct {
 // CertificateStatus defines the observed state of CertificateRequest and
 // resulting signed certificate.
 type CertificateRequestStatus struct {
+	// List of status conditions to indicate the status of a CertificateRequest.
+	// Known condition types are `Ready` and `InvalidRequest`.
 	// +optional
 	Conditions []CertificateRequestCondition `json:"conditions,omitempty"`
 
@@ -99,6 +112,7 @@ type CertificateRequestStatus struct {
 
 	// Byte slice containing the PEM encoded certificate authority of the signed
 	// certificate.
+	// If not specified, the CA is assumed to be unknown/not available.
 	// +optional
 	CA []byte `json:"ca,omitempty"`
 
@@ -110,7 +124,7 @@ type CertificateRequestStatus struct {
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.
 type CertificateRequestCondition struct {
-	// Type of the condition, currently ('Ready', 'InvalidRequest').
+	// Type of the condition, known values are ('Ready', 'InvalidRequest').
 	Type CertificateRequestConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').

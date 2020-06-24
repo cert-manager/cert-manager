@@ -29,7 +29,10 @@ type Certificate struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta
 
-	Spec   CertificateSpec
+	// Desired state of the Certificate resource.
+	Spec CertificateSpec
+
+	// Status of the Certificate, set and managed automatically.
 	Status CertificateStatus
 }
 
@@ -46,56 +49,76 @@ type CertificateList struct {
 type KeyAlgorithm string
 
 const (
-	RSAKeyAlgorithm   KeyAlgorithm = "rsa"
+	// Denotes the RSA private key type
+	RSAKeyAlgorithm KeyAlgorithm = "rsa"
+
+	// Denotes the ECDSA private key type
 	ECDSAKeyAlgorithm KeyAlgorithm = "ecdsa"
 )
 
 type KeyEncoding string
 
 const (
+	// PKCS1 key encoding will produce PEM files that include the type of
+	// private key as part of the PEM header, e.g. "BEGIN RSA PRIVATE KEY".
+	// If the keyAlgorithm is set to 'ECDSA', this will produce private keys
+	// that use the "BEGIN EC PRIVATE KEY" header.
 	PKCS1 KeyEncoding = "pkcs1"
+
+	// PKCS8 key encoding will produce PEM files with the "BEGIN PRIVATE KEY"
+	// header. It encodes the keyAlgorithm of the private key as part of the
+	// DER encoded PEM block.
 	PKCS8 KeyEncoding = "pkcs8"
 )
 
-// CertificateSpec defines the desired state of Certificate
+// CertificateSpec defines the desired state of Certificate.
+// A valid Certificate requires at least one of a CommonName, DNSName, or
+// URISAN to be valid.
 type CertificateSpec struct {
 	// Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
 	Subject *X509Subject
 
-	// A valid Certificate requires at least one of a CommonName, DNSName, or
-	// URISAN to be valid.
-
 	// CommonName is a common name to be used on the Certificate.
 	// The CommonName should have a length of 64 characters or fewer to avoid
 	// generating invalid CSRs.
+	// This value is ignored by TLS clients when any subject alt name is set.
+	// This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4
 	CommonName string
 
-	// Certificate default Duration
+	// The requested 'duration' (i.e. lifetime) of the Certificate.
+	// This option may be ignored/overridden by some issuer types.
+	// If overridden and `renewBefore` is greater than the actual certificate
+	// duration, the certificate will be automatically renewed 2/3rds of the
+	// way through the certificate's duration.
 	Duration *metav1.Duration
 
-	// Certificate renew before expiration duration
+	// The amount of time before the currently issued certificate's `notAfter`
+	// time that cert-manager will begin to attempt to renew the certificate.
+	// If this value is greater than the total duration of the certificate
+	// (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of
+	// the way through the certificate's duration.
 	RenewBefore *metav1.Duration
 
-	// DNSNames is a list of subject alt names to be used on the Certificate.
+	// DNSNames is a list of DNS subjectAltNames to be set on the Certificate.
 	DNSNames []string
 
-	// IPAddresses is a list of IP addresses to be used on the Certificate
+	// IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
 	IPAddresses []string
 
-	// URISANs is a list of URI Subject Alternative Names to be set on this
-	// Certificate.
+	// URISANs is a list of URI subjectAltNames to be set on the Certificate.
 	URISANs []string
 
-	// EmailSANs is a list of Email Subject Alternative Names to be set on this
-	// Certificate.
+	// EmailSANs is a list of email subjectAltNames to be set on the Certificate.
 	EmailSANs []string
 
-	// SecretName is the name of the secret resource to store this secret in
+	// SecretName is the name of the secret resource that will be automatically
+	// created and managed by this Certificate resource.
+	// It will be populated with a private key and certificate, signed by the
+	// denoted issuer.
 	SecretName string
 
 	// Keystores configures additional keystore output formats stored in the
 	// `secretName` Secret resource.
-	// +optional
 	Keystores *CertificateKeystores
 
 	// IssuerRef is a reference to the issuer for this certificate.
@@ -107,21 +130,24 @@ type CertificateSpec struct {
 	IssuerRef cmmeta.ObjectReference
 
 	// IsCA will mark this Certificate as valid for signing.
-	// This implies that the 'cert sign' usage is set
+	// This will automatically add the `cert sign` usage to the list of `usages`.
 	IsCA bool
 
-	// Usages is the set of x509 actions that are enabled for a given key. Defaults are ('digital signature', 'key encipherment') if empty
+	// Usages is the set of x509 usages that are requested for the certificate.
+	// Defaults to `digital signature` and `key encipherment` if not specified.
 	Usages []KeyUsage
 
 	// KeySize is the key bit size of the corresponding private key for this certificate.
-	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
-	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
-	// KeyAlgorithm is set to "ecdsa".
+	// If `keyAlgorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
+	// and will default to `2048` if not specified.
+	// If `keyAlgorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
+	// and will default to `256` if not specified.
+	// No other values are allowed.
 	KeySize int
 
 	// KeyAlgorithm is the private key algorithm of the corresponding private key
 	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
-	// If KeyAlgorithm is specified and KeySize is not provided,
+	// If `keyAlgorithm` is specified and `keySize` is not provided,
 	// key size of 256 will be used for "ecdsa" key algorithm and
 	// key size of 2048 will be used for "rsa" key algorithm.
 	KeyAlgorithm KeyAlgorithm
@@ -133,7 +159,6 @@ type CertificateSpec struct {
 	KeyEncoding KeyEncoding
 
 	// Options to control private keys used for the Certificate.
-	// +optional
 	PrivateKey *CertificatePrivateKey
 }
 
@@ -150,13 +175,24 @@ type CertificatePrivateKey struct {
 	// If set to Always, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
 	// Default is 'Never' for backward compatibility.
-	// +optional
 	RotationPolicy PrivateKeyRotationPolicy
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate
 // is being issued.
 type PrivateKeyRotationPolicy string
+
+var (
+	// RotationPolicyNever means a private key will only be generated if one
+	// does not already exist in the target `spec.secretName`.
+	// If one does exists but it does not have the correct algorithm or size,
+	// a warning will be raised to await user intervention.
+	RotationPolicyNever PrivateKeyRotationPolicy = "Never"
+
+	// RotationPolicyAlways means a private key matching the specified
+	// requirements will be generated whenever a re-issuance occurs.
+	RotationPolicyAlways PrivateKeyRotationPolicy = "Always"
+)
 
 // X509Subject Full X509 name specification
 type X509Subject struct {
@@ -222,8 +258,15 @@ type PKCS12Keystore struct {
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
+	// List of status conditions to indicate the status of certificates.
+	// Known condition types are `Ready` and `Issuing`.
 	Conditions []CertificateCondition
 
+	// LastFailureTime is the time as recorded by the Certificate controller
+	// of the most recently failure to complete a CertificateRequest for this
+	// certificate resource.
+	// If set, cert-manager will not re-request another Certificate until
+	// 1 hour has elapsed from this time.
 	LastFailureTime *metav1.Time
 
 	// The time after which the certificate stored in the secret named
@@ -232,8 +275,7 @@ type CertificateStatus struct {
 	NotBefore *metav1.Time
 
 	// The expiration time of the certificate stored in the secret named
-	// by this resource in spec.secretName.
-	// +optional
+	// by this resource in `spec.secretName`.
 	NotAfter *metav1.Time
 
 	// RenewalTime is the time at which the certificate will be next
@@ -256,7 +298,6 @@ type CertificateStatus struct {
 	// issuance or if it is part of the ongoing revision's issuance by
 	// checking if the revision value in the annotation is greater than this
 	// field.
-	// +optional
 	Revision *int
 
 	// The name of the Secret resource containing the private key to be used
@@ -265,13 +306,12 @@ type CertificateStatus struct {
 	// `Issuing` condition is set to `True`.
 	// It will automatically unset this field when the Issuing condition is
 	// not set or False.
-	// +optional
 	NextPrivateKeySecretName *string
 }
 
 // CertificateCondition contains condition information for an Certificate.
 type CertificateCondition struct {
-	// Type of the condition, currently ('Ready').
+	// Type of the condition, known values are ('Ready', `Issuing`).
 	Type CertificateConditionType
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').

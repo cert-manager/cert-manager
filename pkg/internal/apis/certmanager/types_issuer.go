@@ -25,11 +25,19 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// A ClusterIssuer represents a certificate issuing authority which can be
+// referenced as part of `issuerRef` fields.
+// It is similar to an Issuer, however it is cluster-scoped and therefore can
+// be referenced by resources that exist in *any* namespace, not just the same
+// namespace as the referent.
 type ClusterIssuer struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta
 
-	Spec   IssuerSpec
+	// Desired state of the ClusterIssuer resource.
+	Spec IssuerSpec
+
+	// Status of the ClusterIssuer, set and managed automatically.
 	Status IssuerStatus
 }
 
@@ -45,11 +53,18 @@ type ClusterIssuerList struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// An Issuer represents a certificate issuing authority which can be
+// referenced as part of `issuerRef` fields.
+// It is scoped to a single namespace and can therefore only be referenced by
+// resources within the same namespace.
 type Issuer struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta
 
-	Spec   IssuerSpec
+	// Desired state of the Issuer resource.
+	Spec IssuerSpec
+
+	// Status of the Issuer, set and managed automatically.
 	Status IssuerStatus
 }
 
@@ -70,18 +85,30 @@ type IssuerSpec struct {
 }
 
 type IssuerConfig struct {
+	// ACME configures this issuer to communicate with a RFC8555 (ACME) server
+	// to obtain signed x509 certificates.
 	ACME *cmacme.ACMEIssuer
 
+	// CA configures this issuer to sign certificates using a signing CA keypair
+	// stored in a Secret resource.
+	// This is used to build internal PKIs that are managed by cert-manager.
 	CA *CAIssuer
 
+	// Vault configures this issuer to sign certificates using a HashiCorp Vault
+	// PKI backend.
 	Vault *VaultIssuer
 
+	// SelfSigned configures this issuer to 'self sign' certificates using the
+	// private key used to create the CertificateRequest object.
 	SelfSigned *SelfSignedIssuer
 
+	// Venafi configures this issuer to sign certificates using a Venafi TPP
+	// or Cloud policy zone.
 	Venafi *VenafiIssuer
 }
 
-// VenafiIssuer describes issuer configuration details for Venafi Cloud.
+// Venafi configures this issuer to sign certificates using a Venafi TPP
+// or Cloud policy zone.
 type VenafiIssuer struct {
 	// Zone is the Venafi Policy Zone to use for this issuer.
 	// All requests made to the Venafi platform will be restricted by the named
@@ -100,7 +127,8 @@ type VenafiIssuer struct {
 
 // VenafiTPP defines connection configuration details for a Venafi TPP instance
 type VenafiTPP struct {
-	// URL is the base URL for the Venafi TPP instance
+	// URL is the base URL for the Venafi TPP instance, for example:
+	// "https://tpp.example.com/vedsdk".
 	URL string
 
 	// CredentialsRef is a reference to a Secret containing the username and
@@ -119,72 +147,80 @@ type VenafiTPP struct {
 
 // VenafiCloud defines connection configuration details for Venafi Cloud
 type VenafiCloud struct {
-	// URL is the base URL for Venafi Cloud
+	// URL is the base URL for Venafi Cloud, usually: "https://api.venafi.cloud/v1".
 	URL string
 
 	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
 	APITokenSecretRef cmmeta.SecretKeySelector
 }
 
+// SelfSigned configures this issuer to 'self sign' certificates using the
+// private key used to create the CertificateRequest object.
 type SelfSignedIssuer struct {
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set certificate will be issued without CDP. Values are strings.
-	// +optional
 	CRLDistributionPoints []string
 }
 
+// Vault configures this issuer to sign certificates using a HashiCorp Vault
+// PKI backend.
 type VaultIssuer struct {
-	// Vault authentication
+	// Auth configures how cert-manager authenticates with the Vault server.
 	Auth VaultAuth
 
-	// Server is the vault connection address
+	// Server is the connection address for the Vault server, e.g: "https://vault.example.com:8200".
 	Server string
 
-	// Vault URL path to the certificate role
+	// Path is the mount path of the Vault PKI backend's `sign` endpoint, e.g:
+	// "my_pki_mount/sign/my-role-name".
 	Path string
 
-	// Base64 encoded CA bundle to validate Vault server certificate. Only used
+	// PEM encoded CA bundle used to validate Vault server certificate. Only used
 	// if the Server URL is using HTTPS protocol. This parameter is ignored for
 	// plain HTTP protocol connection. If not set the system root certificates
 	// are used to validate the TLS connection.
 	CABundle []byte
 }
 
-// Vault authentication  can be configured:
-// - With a secret containing a token. Cert-manager is using this token as-is.
-// - With a secret containing a AppRole. This AppRole is used to authenticate to
-//   Vault and retrieve a token.
-// - With a secret containing a Kubernetes ServiceAccount JWT. This JWT is used
-//   to authenticate with Vault and retrieve a token.
+// Configuration used to authenticate with a Vault server.
+// Only one of `tokenSecretRef`, `appRole` or `kubernetes` may be specified.
 type VaultAuth struct {
-	// This Secret contains the Vault token key
+	// TokenSecretRef authenticates with Vault by presenting a token.
 	TokenSecretRef *cmmeta.SecretKeySelector
 
-	// This Secret contains a AppRole and Secret
+	// AppRole authenticates with Vault using the App Role auth mechanism,
+	// with the role and secret stored in a Kubernetes Secret resource.
 	AppRole *VaultAppRole
 
-	// This contains a Role and Secret with a ServiceAccount token to
-	// authenticate with vault.
+	// Kubernetes authenticates with Vault by passing the ServiceAccount
+	// token stored in the named Secret resource to the Vault server.
 	Kubernetes *VaultKubernetesAuth
 }
 
-// Authenticate against Vault using an AppRole that is stored in a Secret.
+// AppRole authenticates with Vault using the App Role auth mechanism,
+// with the role and secret stored in a Kubernetes Secret resource.
 type VaultAppRole struct {
-	// Where the authentication path is mounted in Vault.
+	// Path where the App Role authentication backend is mounted in Vault, e.g:
+	// "approle"
 	Path string
 
-	RoleId    string
+	// RoleID configures in the App Role authentication backend when setting
+	// up the App Role backend.
+	RoleId string
+
+	// Reference to a key in a Secret that contains the App Role secret used
+	// to authenticate with Vault.
 	SecretRef cmmeta.SecretKeySelector
 }
 
 // Authenticate against Vault using a Kubernetes ServiceAccount token stored in
 // a Secret.
 type VaultKubernetesAuth struct {
-	// The value here will be used as part of the path used when authenticating
-	// with vault, for example if you set a value of "foo", the path used will be
-	// `/v1/auth/foo/login`. If unspecified, the default value "kubernetes" will
-	// be used.
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/kubernetes" will be used.
 	Path string
 
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
@@ -204,21 +240,25 @@ type CAIssuer struct {
 
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
 	// the location of the CRL from which the revocation of this certificate can be checked.
-	// If not set certificate will be issued without CDP. Values are strings.
-	// +optional
+	// If not set, certificates will be issued without distribution points set.
 	CRLDistributionPoints []string
 }
 
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
+	// List of status conditions to indicate the status of a CertificateRequest.
+	// Known condition types are `Ready`.
 	Conditions []IssuerCondition
 
+	// ACME specific status options.
+	// This field should only be set if the Issuer is configured to use an ACME
+	// server to issue certificates.
 	ACME *cmacme.ACMEIssuerStatus
 }
 
 // IssuerCondition contains condition information for an Issuer.
 type IssuerCondition struct {
-	// Type of the condition, currently ('Ready').
+	// Type of the condition, known values are ('Ready').
 	Type IssuerConditionType
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
@@ -242,6 +282,8 @@ type IssuerConditionType string
 
 const (
 	// IssuerConditionReady represents the fact that a given Issuer condition
-	// is in ready state.
+	// is in ready state and able to issue certificates.
+	// If the `status` of this condition is `False`, CertificateRequest controllers
+	// should prevent attempts to sign certificates.
 	IssuerConditionReady IssuerConditionType = "Ready"
 )
