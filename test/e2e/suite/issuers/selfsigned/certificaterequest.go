@@ -64,7 +64,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				Kind:  "Issuer",
 			}),
 			gen.AddCertificateRequestAnnotations(map[string]string{
-				v1alpha2.CRPrivateKeyAnnotationKey: certificateRequestSecretName,
+				v1alpha2.CertificateRequestPrivateKeyAnnotationKey: certificateRequestSecretName,
 			}),
 		)
 	})

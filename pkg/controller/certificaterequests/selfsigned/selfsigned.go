@@ -77,10 +77,10 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 
 	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
 
-	secretName, ok := cr.ObjectMeta.Annotations[cmapi.CRPrivateKeyAnnotationKey]
+	secretName, ok := cr.ObjectMeta.Annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey]
 	if !ok || secretName == "" {
 		message := fmt.Sprintf("Annotation %q missing or reference empty",
-			cmapi.CRPrivateKeyAnnotationKey)
+			cmapi.CertificateRequestPrivateKeyAnnotationKey)
 		err := errors.New("secret name missing")
 
 		s.reporter.Failed(cr, err, "MissingAnnotation", message)
@@ -101,7 +101,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 
 	if cmerrors.IsInvalidData(err) {
 		message := fmt.Sprintf("Failed to get key %q referenced in annotation %q",
-			secretName, cmapi.CRPrivateKeyAnnotationKey)
+			secretName, cmapi.CertificateRequestPrivateKeyAnnotationKey)
 
 		s.reporter.Pending(cr, err, "ErrorParsingKey", message)
 		log.Error(err, message)

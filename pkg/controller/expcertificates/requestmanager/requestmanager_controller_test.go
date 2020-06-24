@@ -163,8 +163,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "1",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -183,8 +183,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "",
 					}),
 				),
 			},
@@ -194,8 +194,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "1",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -214,8 +214,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "invalid",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "invalid",
 					}),
 				),
 			},
@@ -225,8 +225,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "1",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -245,8 +245,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "1",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 					}),
 				),
 			},
@@ -265,8 +265,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "1",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 					}),
 					gen.SetCertificateRequestCSR([]byte("invalid")),
 				),
@@ -277,8 +277,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "1",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -297,15 +297,15 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "3",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "3",
 					}),
 				),
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestName("testing-number-2"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "4",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "4",
 					}),
 				),
 			},
@@ -314,8 +314,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "1",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -334,8 +334,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "1",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 					}),
 				),
 				// included here just to ensure it does not get deleted as it is not for the
@@ -343,8 +343,8 @@ func TestProcessItem(t *testing.T) {
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestName("testing-number-2"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "4",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "4",
 					}),
 				),
 			},
@@ -354,8 +354,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "1",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "1",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -375,8 +375,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "6",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 				// included here just to ensure it does not get deleted as it is not for the
@@ -384,8 +384,8 @@ func TestProcessItem(t *testing.T) {
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestName("testing-number-2"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "5",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "5",
 					}),
 				),
 			},
@@ -395,8 +395,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle2.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "6",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -416,8 +416,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "6",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 			},
@@ -427,8 +427,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "6",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -449,8 +449,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "6",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 			},
@@ -460,8 +460,8 @@ func TestProcessItem(t *testing.T) {
 				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
 					gen.CertificateRequestFrom(bundle1.certificateRequest,
 						gen.SetCertificateRequestAnnotations(map[string]string{
-							cmapi.CRPrivateKeyAnnotationKey:               "exists",
-							cmapi.CertificateRequestRevisionAnnotationKey: "6",
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 						}),
 					)), relaxedCertificateRequestMatcher),
 			},
@@ -481,8 +481,8 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "6",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 			},
@@ -502,15 +502,15 @@ func TestProcessItem(t *testing.T) {
 			requests: []runtime.Object{
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "6",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 				gen.CertificateRequestFrom(bundle1.certificateRequest,
 					gen.SetCertificateRequestName("another-name-2"),
 					gen.SetCertificateRequestAnnotations(map[string]string{
-						cmapi.CRPrivateKeyAnnotationKey:               "exists",
-						cmapi.CertificateRequestRevisionAnnotationKey: "6",
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
 				),
 			},

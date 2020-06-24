@@ -104,10 +104,10 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		annotations[cmapi.CertificateRequestRevisionAnnotationKey] = "1"
 	}
 
-	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
+	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = crt.Spec.SecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
 	if crt.Status.NextPrivateKeySecretName != nil {
-		annotations[cmapi.CRPrivateKeyAnnotationKey] = *crt.Status.NextPrivateKeySecretName
+		annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = *crt.Status.NextPrivateKeySecretName
 	}
 	certificateRequest := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{

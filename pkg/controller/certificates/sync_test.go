@@ -113,7 +113,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 	for k, v := range crt.Annotations {
 		annotations[k] = v
 	}
-	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
+	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = crt.Spec.SecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
 	certificateRequest := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
@@ -350,8 +350,8 @@ func TestBuildCertificateRequest(t *testing.T) {
 			expectedErr: false,
 
 			expectedCertificateRequestAnnotations: map[string]string{
-				cmapi.CRPrivateKeyAnnotationKey: baseCert.Spec.SecretName,
-				cmapi.CertificateNameKey:        baseCert.Name,
+				cmapi.CertificateRequestPrivateKeyAnnotationKey: baseCert.Spec.SecretName,
+				cmapi.CertificateNameKey:                        baseCert.Name,
 			},
 		},
 	}
