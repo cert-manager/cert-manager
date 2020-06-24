@@ -90,6 +90,7 @@ func http01LogCtx(ctx context.Context) context.Context {
 }
 
 func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
+	// TODO ingress should not be required anymore, so this is not correct
 	if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
 		return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
 			"Ensure solvers[].http01.ingress is specified on your issuer resource")
@@ -108,7 +109,11 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
+
+	var ingressErr error
+	if ch.Spec.Solver.HTTP01.Ingress != nil {
+		_, ingressErr = s.ensureIngress(ctx, ch, svc.Name)
+	}
 
 	var istioErr error
 	if ch.Spec.Solver.HTTP01.Istio != nil {

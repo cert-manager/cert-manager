@@ -137,7 +137,7 @@ type ACMEChallengeSolverHTTP01 struct {
 	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
 	// provisioned by cert-manager for each Challenge to be completed.
 	// +optional
-	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
+	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress,omitempty"`
 
 	// +optional
 	Istio *ACMEChallengeSolverHTTP01Istio `json:"istio,omitempty"`
