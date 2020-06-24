@@ -48,7 +48,8 @@ func TestCtlStatusCert(t *testing.T) {
 	const (
 		issuedAndUpToDateExpOutput = `Name: testcrt-1
 Namespace: testns-1
-Status: Certificate is up to date and has not expired
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
 DNS Names:
 - www.example.com
 Issuer:
@@ -59,7 +60,9 @@ Not After: 2020-09-16T09:26:18Z`
 
 		issuedAndDuringRenewalExpOutput = `Name: testcrt-2
 Namespace: testns-1
-Status: Certificate is up to date and has not expired; Issuance of a new Certificate is in Progress
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
+  Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
 DNS Names:
 - www.example.com
 Issuer:

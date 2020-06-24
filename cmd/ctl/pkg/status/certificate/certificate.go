@@ -123,15 +123,21 @@ func (o *Options) Run(args []string) error {
 	fmt.Fprintf(o.Out, fmt.Sprintf("Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace))
 
 	// Get necessary info from Certificate
-	statusMessage := ""
+	conditionMsg := ""
 	for i, con := range crt.Status.Conditions {
 		if i < len(crt.Status.Conditions)-1 {
-			statusMessage += con.Message + "; "
+			conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
 		} else {
-			statusMessage += con.Message
+			conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s", con.Type, con.Status, con.Reason, con.Message)
 		}
 	}
-	fmt.Fprintf(o.Out, fmt.Sprintf("Status: %s\n", statusMessage))
+	if conditionMsg == "" {
+		conditionMsg = "  No Conditions set"
+	}
+	fmt.Fprintf(o.Out, fmt.Sprintf("Conditions:\n%s\n", conditionMsg))
+
+	// TODO: Get CR from certificate if exists. I think I can just look for it without caring what condition is
+	// What about timing issues? When I query condition it's not ready yet, but then looking for crn it's finished and deleted
 
 	dnsNames := formatDnsNamesList(crt)
 	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s\n", dnsNames))
