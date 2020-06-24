@@ -2,11 +2,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["certificate.go"],
-    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate",
+    srcs = ["status.go"],
+    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/status",
     visibility = ["//visibility:public"],
     deps = [
-        "//cmd/ctl/pkg/certificate/status:go_default_library",
+        "//cmd/ctl/pkg/status/certificate:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
         "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
@@ -24,7 +24,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//cmd/ctl/pkg/certificate/status:all-srcs",
+        "//cmd/ctl/pkg/status/certificate:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

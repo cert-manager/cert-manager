@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package status
+package certificate
 
 import (
 	"context"
@@ -42,7 +42,7 @@ Get details about the current status of a Certificate, including information on 
 `))
 )
 
-// Options is a struct to support certificate status command
+// Options is a struct to support status certificate command
 type Options struct {
 	CMClient   cmclient.Interface
 	RESTConfig *restclient.Config
@@ -60,11 +60,11 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 	}
 }
 
-// NewCmdCertStatus returns a cobra command for create CertificateRequest
-func NewCmdCertStatus(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+// NewCmdStatusCert returns a cobra command for status certificate
+func NewCmdStatusCert(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
-		Use:     "status",
+		Use:     "certificate",
 		Short:   "Get details about the current status of a Certificate",
 		Long:    long,
 		Example: example,

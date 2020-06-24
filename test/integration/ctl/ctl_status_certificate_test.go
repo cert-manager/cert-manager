@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate/status"
+	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-func TestCtlCertStatus(t *testing.T) {
+func TestCtlStatusCert(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
@@ -143,7 +143,7 @@ Not After: 2020-09-16T09:26:18Z`
 			t.Log(crt.Status)
 			// Options to run status command
 			streams, _, outBuf, _ := genericclioptions.NewTestIOStreams()
-			opts := &status.Options{
+			opts := &statuscertcmd.Options{
 				CMClient:   cmCl,
 				RESTConfig: config,
 				IOStreams:  streams,

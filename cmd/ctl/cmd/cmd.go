@@ -19,7 +19,6 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate"
 	"io"
 	"os"
 
@@ -34,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/version"
 )
 
@@ -63,10 +63,10 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 	cmds.AddCommand(version.NewCmdVersion(ioStreams))
-	cmds.AddCommand(certificate.NewCmdCertificate(ioStreams, factory))
 	cmds.AddCommand(convert.NewCmdConvert(ioStreams))
 	cmds.AddCommand(create.NewCmdCreate(ioStreams, factory))
 	cmds.AddCommand(renew.NewCmdRenew(ioStreams, factory))
+	cmds.AddCommand(status.NewCmdStatus(ioStreams, factory))
 
 	return cmds
 }

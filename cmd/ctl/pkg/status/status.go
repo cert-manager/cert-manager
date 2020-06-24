@@ -14,23 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certificate
+package status
 
 import (
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/certificate/status"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
-func NewCmdCertificate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdStatus(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	cmds := &cobra.Command{
-		Use:   "certificate",
-		Short: "Operations on cert-manager Certificates",
-		Long:  `Operations on cert-manager Certificates, e.g. status`,
+		Use:   "status",
+		Short: "Get details on current status of cert-manager resources",
+		Long:  `Get details on current status of cert-manager resources, e.g. Certificate`,
 	}
 
-	cmds.AddCommand(status.NewCmdCertStatus(ioStreams, factory))
+	cmds.AddCommand(certificate.NewCmdStatusCert(ioStreams, factory))
 
 	return cmds
 }
