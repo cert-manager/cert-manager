@@ -139,10 +139,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 		v.reporter.Pending(cr, err, "IssuancePending", "Venafi certificate is requested")
 
-		if cr.ObjectMeta.Annotations == nil {
-			cr.ObjectMeta.Annotations = map[string]string{}
-		}
-		cr.ObjectMeta.Annotations[VenafiPickupIDAnnotation] = pickupID
+		metav1.SetMetaDataAnnotation(&cr.ObjectMeta, VenafiPickupIDAnnotation, pickupID)
 		_, err = v.cmClient.CertmanagerV1alpha2().CertificateRequests(cr.GetNamespace()).Update(ctx, cr, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, err
@@ -154,7 +151,6 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	certPem, err := client.RetreiveCertificate(pickupID, cr.Spec.CSRPEM, duration, customFields)
 	if err != nil {
 		switch err.(type) {
-
 		case endpoint.ErrCertificatePending:
 			message := "Venafi certificate still in a pending state, the request will be retried"
 

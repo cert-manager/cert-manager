@@ -27,10 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
-
 	"github.com/Venafi/vcert/pkg/endpoint"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +42,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 	internalvenafifake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -853,7 +851,7 @@ func runTest(t *testing.T, test testT) {
 		if test.certificateRequest.ObjectMeta.Annotations == nil {
 			test.certificateRequest.ObjectMeta.Annotations = map[string]string{}
 		}
-		test.certificateRequest.ObjectMeta.Annotations[VenafiPickupIDAnnotation] = "test"
+		metav1.SetMetaDataAnnotation(&test.certificateRequest.ObjectMeta, VenafiPickupIDAnnotation, "test")
 		err = controller.Sync(context.Background(), test.certificateRequest)
 	}
 
