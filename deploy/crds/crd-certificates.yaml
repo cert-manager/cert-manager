@@ -77,9 +77,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: CertificateSpec defines the desired state of Certificate.
-              A valid Certificate requires at least one of a CommonName, DNSName,
-              or URISAN to be valid.
+            description: Desired state of the Certificate resource.
             type: object
             required:
             - issuerRef
@@ -92,29 +90,34 @@ spec:
                   when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
                 type: string
               dnsNames:
-                description: DNSNames is a list of subject alt names to be used on
+                description: DNSNames is a list of DNS subjectAltNames to be set on
                   the Certificate.
                 type: array
                 items:
                   type: string
               duration:
-                description: Certificate default Duration
+                description: The requested 'duration' (i.e. lifetime) of the Certificate.
+                  This option may be ignored/overridden by some issuer types. If overridden
+                  and `renewBefore` is greater than the actual certificate duration,
+                  the certificate will be automatically renewed 2/3rds of the way
+                  through the certificate's duration.
                 type: string
               emailSANs:
-                description: EmailSANs is a list of Email Subject Alternative Names
-                  to be set on this Certificate.
+                description: EmailSANs is a list of email subjectAltNames to be set
+                  on the Certificate.
                 type: array
                 items:
                   type: string
               ipAddresses:
-                description: IPAddresses is a list of IP addresses to be used on the
-                  Certificate
+                description: IPAddresses is a list of IP address subjectAltNames to
+                  be set on the Certificate.
                 type: array
                 items:
                   type: string
               isCA:
                 description: IsCA will mark this Certificate as valid for signing.
-                  This implies that the 'cert sign' usage is set
+                  This will automatically add the `cert sign` usage to the list of
+                  `usages`.
                 type: boolean
               issuerRef:
                 description: IssuerRef is a reference to the issuer for this certificate.
@@ -128,15 +131,18 @@ spec:
                 - name
                 properties:
                   group:
+                    description: Group of the resource being referred to.
                     type: string
                   kind:
+                    description: Kind of the resource being referred to.
                     type: string
                   name:
+                    description: Name of the resource being referred to.
                     type: string
               keyAlgorithm:
                 description: KeyAlgorithm is the private key algorithm of the corresponding
                   private key for this certificate. If provided, allowed values are
-                  either "rsa" or "ecdsa" If KeyAlgorithm is specified and KeySize
+                  either "rsa" or "ecdsa" If `keyAlgorithm` is specified and `keySize`
                   is not provided, key size of 256 will be used for "ecdsa" key algorithm
                   and key size of 2048 will be used for "rsa" key algorithm.
                 type: string
@@ -155,10 +161,11 @@ spec:
                 - pkcs8
               keySize:
                 description: KeySize is the key bit size of the corresponding private
-                  key for this certificate. If provided, value must be between 2048
-                  and 8192 inclusive when KeyAlgorithm is empty or is set to "rsa",
-                  and value must be one of (256, 384, 521) when KeyAlgorithm is set
-                  to "ecdsa".
+                  key for this certificate. If `keyAlgorithm` is set to `RSA`, valid
+                  values are `2048`, `4096` or `8192`, and will default to `2048`
+                  if not specified. If `keyAlgorithm` is set to `ECDSA`, valid values
+                  are `256`, `384` or `521`, and will default to `256` if not specified.
+                  No other values are allowed.
                 type: integer
                 maximum: 8192
                 minimum: 0
@@ -191,12 +198,12 @@ spec:
                         - name
                         properties:
                           key:
-                            description: The key of the secret to select from. Must
-                              be a valid secret key.
+                            description: The key of the entry in the Secret resource's
+                              `data` field to be used.
                             type: string
                           name:
-                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            description: 'Name of the resource being referred to.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                             type: string
                   pkcs12:
                     description: PKCS12 configures options for storing a PKCS12 keystore
@@ -222,15 +229,15 @@ spec:
                         - name
                         properties:
                           key:
-                            description: The key of the secret to select from. Must
-                              be a valid secret key.
+                            description: The key of the entry in the Secret resource's
+                              `data` field to be used.
                             type: string
                           name:
-                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            description: 'Name of the resource being referred to.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                             type: string
               organization:
-                description: Organization is the organization to be used on the Certificate
+                description: Organization is the organization to be used on the Certificate.
                 type: array
                 items:
                   type: string
@@ -250,11 +257,17 @@ spec:
                       compatibility.
                     type: string
               renewBefore:
-                description: Certificate renew before expiration duration
+                description: The amount of time before the currently issued certificate's
+                  `notAfter` time that cert-manager will begin to attempt to renew
+                  the certificate. If this value is greater than the total duration
+                  of the certificate (i.e. notAfter - notBefore), it will be automatically
+                  renewed 2/3rds of the way through the certificate's duration.
                 type: string
               secretName:
-                description: SecretName is the name of the secret resource to store
-                  this secret in
+                description: SecretName is the name of the secret resource that will
+                  be automatically created and managed by this Certificate resource.
+                  It will be populated with a private key and certificate, signed
+                  by the denoted issuer.
                 type: string
               subject:
                 description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
@@ -294,15 +307,15 @@ spec:
                     items:
                       type: string
               uriSANs:
-                description: URISANs is a list of URI Subject Alternative Names to
-                  be set on this Certificate.
+                description: URISANs is a list of URI subjectAltNames to be set on
+                  the Certificate.
                 type: array
                 items:
                   type: string
               usages:
-                description: Usages is the set of x509 actions that are enabled for
-                  a given key. Defaults are ('digital signature', 'key encipherment')
-                  if empty
+                description: Usages is the set of x509 usages that are requested for
+                  the certificate. Defaults to `digital signature` and `key encipherment`
+                  if not specified.
                 type: array
                 items:
                   description: 'KeyUsage specifies valid usage contexts for keys.
@@ -340,10 +353,12 @@ spec:
                   - microsoft sgc
                   - netscape sgc
           status:
-            description: CertificateStatus defines the observed state of Certificate
+            description: Status of the Certificate, set and managed automatically.
             type: object
             properties:
               conditions:
+                description: List of status conditions to indicate the status of certificates.
+                  Known condition types are `Ready` and `Issuing`.
                 type: array
                 items:
                   description: CertificateCondition contains condition information
@@ -375,9 +390,14 @@ spec:
                       - "False"
                       - Unknown
                     type:
-                      description: Type of the condition, currently ('Ready').
+                      description: Type of the condition, known values are ('Ready',
+                        `Issuing`).
                       type: string
               lastFailureTime:
+                description: LastFailureTime is the time as recorded by the Certificate
+                  controller of the most recently failure to complete a CertificateRequest
+                  for this certificate resource. If set, cert-manager will not re-request
+                  another Certificate until 1 hour has elapsed from this time.
                 type: string
                 format: date-time
               nextPrivateKeySecretName:
@@ -389,7 +409,7 @@ spec:
                 type: string
               notAfter:
                 description: The expiration time of the certificate stored in the
-                  secret named by this resource in spec.secretName.
+                  secret named by this resource in `spec.secretName`.
                 type: string
                 format: date-time
               notBefore:
@@ -435,9 +455,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: CertificateSpec defines the desired state of Certificate.
-              A valid Certificate requires at least one of a CommonName, DNSName,
-              or URISAN to be valid.
+            description: Desired state of the Certificate resource.
             type: object
             required:
             - issuerRef
@@ -450,29 +468,34 @@ spec:
                   when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
                 type: string
               dnsNames:
-                description: DNSNames is a list of subject alt names to be used on
+                description: DNSNames is a list of DNS subjectAltNames to be set on
                   the Certificate.
                 type: array
                 items:
                   type: string
               duration:
-                description: Certificate default Duration
+                description: The requested 'duration' (i.e. lifetime) of the Certificate.
+                  This option may be ignored/overridden by some issuer types. If overridden
+                  and `renewBefore` is greater than the actual certificate duration,
+                  the certificate will be automatically renewed 2/3rds of the way
+                  through the certificate's duration.
                 type: string
               emailSANs:
-                description: EmailSANs is a list of Email Subject Alternative Names
-                  to be set on this Certificate.
+                description: EmailSANs is a list of email subjectAltNames to be set
+                  on the Certificate.
                 type: array
                 items:
                   type: string
               ipAddresses:
-                description: IPAddresses is a list of IP addresses to be used on the
-                  Certificate
+                description: IPAddresses is a list of IP address subjectAltNames to
+                  be set on the Certificate.
                 type: array
                 items:
                   type: string
               isCA:
                 description: IsCA will mark this Certificate as valid for signing.
-                  This implies that the 'cert sign' usage is set
+                  This will automatically add the `cert sign` usage to the list of
+                  `usages`.
                 type: boolean
               issuerRef:
                 description: IssuerRef is a reference to the issuer for this certificate.
@@ -486,15 +509,18 @@ spec:
                 - name
                 properties:
                   group:
+                    description: Group of the resource being referred to.
                     type: string
                   kind:
+                    description: Kind of the resource being referred to.
                     type: string
                   name:
+                    description: Name of the resource being referred to.
                     type: string
               keyAlgorithm:
                 description: KeyAlgorithm is the private key algorithm of the corresponding
                   private key for this certificate. If provided, allowed values are
-                  either "rsa" or "ecdsa" If KeyAlgorithm is specified and KeySize
+                  either "rsa" or "ecdsa" If `keyAlgorithm` is specified and `keySize`
                   is not provided, key size of 256 will be used for "ecdsa" key algorithm
                   and key size of 2048 will be used for "rsa" key algorithm.
                 type: string
@@ -513,10 +539,11 @@ spec:
                 - pkcs8
               keySize:
                 description: KeySize is the key bit size of the corresponding private
-                  key for this certificate. If provided, value must be between 2048
-                  and 8192 inclusive when KeyAlgorithm is empty or is set to "rsa",
-                  and value must be one of (256, 384, 521) when KeyAlgorithm is set
-                  to "ecdsa".
+                  key for this certificate. If `keyAlgorithm` is set to `RSA`, valid
+                  values are `2048`, `4096` or `8192`, and will default to `2048`
+                  if not specified. If `keyAlgorithm` is set to `ECDSA`, valid values
+                  are `256`, `384` or `521`, and will default to `256` if not specified.
+                  No other values are allowed.
                 type: integer
                 maximum: 8192
                 minimum: 0
@@ -549,12 +576,12 @@ spec:
                         - name
                         properties:
                           key:
-                            description: The key of the secret to select from. Must
-                              be a valid secret key.
+                            description: The key of the entry in the Secret resource's
+                              `data` field to be used.
                             type: string
                           name:
-                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            description: 'Name of the resource being referred to.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                             type: string
                   pkcs12:
                     description: PKCS12 configures options for storing a PKCS12 keystore
@@ -580,12 +607,12 @@ spec:
                         - name
                         properties:
                           key:
-                            description: The key of the secret to select from. Must
-                              be a valid secret key.
+                            description: The key of the entry in the Secret resource's
+                              `data` field to be used.
                             type: string
                           name:
-                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            description: 'Name of the resource being referred to.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                             type: string
               privateKey:
                 description: Options to control private keys used for the Certificate.
@@ -603,11 +630,17 @@ spec:
                       compatibility.
                     type: string
               renewBefore:
-                description: Certificate renew before expiration duration
+                description: The amount of time before the currently issued certificate's
+                  `notAfter` time that cert-manager will begin to attempt to renew
+                  the certificate. If this value is greater than the total duration
+                  of the certificate (i.e. notAfter - notBefore), it will be automatically
+                  renewed 2/3rds of the way through the certificate's duration.
                 type: string
               secretName:
-                description: SecretName is the name of the secret resource to store
-                  this secret in
+                description: SecretName is the name of the secret resource that will
+                  be automatically created and managed by this Certificate resource.
+                  It will be populated with a private key and certificate, signed
+                  by the denoted issuer.
                 type: string
               subject:
                 description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
@@ -652,15 +685,15 @@ spec:
                     items:
                       type: string
               uriSANs:
-                description: URISANs is a list of URI Subject Alternative Names to
-                  be set on this Certificate.
+                description: URISANs is a list of URI subjectAltNames to be set on
+                  the Certificate.
                 type: array
                 items:
                   type: string
               usages:
-                description: Usages is the set of x509 actions that are enabled for
-                  a given key. Defaults are ('digital signature', 'key encipherment')
-                  if empty
+                description: Usages is the set of x509 usages that are requested for
+                  the certificate. Defaults to `digital signature` and `key encipherment`
+                  if not specified.
                 type: array
                 items:
                   description: 'KeyUsage specifies valid usage contexts for keys.
@@ -698,10 +731,12 @@ spec:
                   - microsoft sgc
                   - netscape sgc
           status:
-            description: CertificateStatus defines the observed state of Certificate
+            description: Status of the Certificate, set and managed automatically.
             type: object
             properties:
               conditions:
+                description: List of status conditions to indicate the status of certificates.
+                  Known condition types are `Ready` and `Issuing`.
                 type: array
                 items:
                   description: CertificateCondition contains condition information
@@ -733,9 +768,14 @@ spec:
                       - "False"
                       - Unknown
                     type:
-                      description: Type of the condition, currently ('Ready').
+                      description: Type of the condition, known values are ('Ready',
+                        `Issuing`).
                       type: string
               lastFailureTime:
+                description: LastFailureTime is the time as recorded by the Certificate
+                  controller of the most recently failure to complete a CertificateRequest
+                  for this certificate resource. If set, cert-manager will not re-request
+                  another Certificate until 1 hour has elapsed from this time.
                 type: string
                 format: date-time
               nextPrivateKeySecretName:
@@ -747,7 +787,7 @@ spec:
                 type: string
               notAfter:
                 description: The expiration time of the certificate stored in the
-                  secret named by this resource in spec.secretName.
+                  secret named by this resource in `spec.secretName`.
                 type: string
                 format: date-time
               notBefore:

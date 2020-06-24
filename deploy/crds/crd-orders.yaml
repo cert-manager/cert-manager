@@ -114,10 +114,13 @@ spec:
               - name
               properties:
                 group:
+                  description: Group of the resource being referred to.
                   type: string
                 kind:
+                  description: Kind of the resource being referred to.
                   type: string
                 name:
+                  description: Name of the resource being referred to.
                   type: string
         status:
           type: object

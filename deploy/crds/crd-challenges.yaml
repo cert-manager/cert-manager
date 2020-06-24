@@ -108,10 +108,13 @@ spec:
               - name
               properties:
                 group:
+                  description: Group of the resource being referred to.
                   type: string
                 kind:
+                  description: Kind of the resource being referred to.
                   type: string
                 name:
+                  description: Name of the resource being referred to.
                   type: string
             key:
               description: 'Key is the ACME challenge key for this challenge For HTTP01
@@ -144,12 +147,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         host:
                           type: string
@@ -170,12 +173,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         clientSecretSecretRef:
                           type: object
@@ -183,12 +186,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         clientTokenSecretRef:
                           type: object
@@ -196,12 +199,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         serviceConsumerDomain:
                           type: string
@@ -225,12 +228,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         environment:
                           type: string
@@ -264,12 +267,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     cloudflare:
                       description: ACMEIssuerDNS01ProviderCloudflare is a structure
@@ -282,12 +285,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         apiTokenSecretRef:
                           type: object
@@ -295,12 +298,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         email:
                           type: string
@@ -324,12 +327,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     rfc2136:
                       description: ACMEIssuerDNS01ProviderRFC2136 is a structure containing
@@ -364,12 +367,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     route53:
                       description: ACMEIssuerDNS01ProviderRoute53 is a structure containing
@@ -407,12 +410,12 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     webhook:
                       description: ACMEIssuerDNS01ProviderWebhook specifies configuration
