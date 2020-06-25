@@ -146,8 +146,8 @@ type VenafiIssuer struct {
 
 // VenafiTPP defines connection configuration details for a Venafi TPP instance
 type VenafiTPP struct {
-	// URL is the base URL for the Venafi TPP instance, for example:
-	// "https://tpp.example.com/vedsdk".
+	// URL is the base URL for the vedsdk endpoint of the Venafi TPP instance,
+	// for example: "https://tpp.example.com/vedsdk".
 	URL string `json:"url"`
 
 	// CredentialsRef is a reference to a Secret containing the username and
@@ -167,7 +167,8 @@ type VenafiTPP struct {
 
 // VenafiCloud defines connection configuration details for Venafi Cloud
 type VenafiCloud struct {
-	// URL is the base URL for Venafi Cloud, usually: "https://api.venafi.cloud/v1".
+	// URL is the base URL for Venafi Cloud.
+	// Defaults to "https://api.venafi.cloud/v1".
 	// +optional
 	URL string `json:"url,omitempty"`
 

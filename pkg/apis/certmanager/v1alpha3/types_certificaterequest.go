@@ -86,7 +86,8 @@ type CertificateRequestSpec struct {
 	// Byte slice containing the PEM encoded CertificateSigningRequest
 	CSRPEM []byte `json:"csr"`
 
-	// IsCA will mark this Certificate as valid for signing.
+	// IsCA will request to mark the certificate as valid for certificate signing
+	// when submitting to the issuer.
 	// This will automatically add the `cert sign` usage to the list of `usages`.
 	// +optional
 	IsCA bool `json:"isCA,omitempty"`
@@ -105,14 +106,18 @@ type CertificateRequestStatus struct {
 	// +optional
 	Conditions []CertificateRequestCondition `json:"conditions,omitempty"`
 
-	// Byte slice containing a PEM encoded signed certificate resulting from the
-	// given certificate signing request.
+	// The PEM encoded x509 certificate resulting from the certificate
+	// signing request.
+	// If not set, the CertificateRequest has either not been completed or has
+	// failed. More information on failure can be found by checking the
+	// `conditions` field.
 	// +optional
 	Certificate []byte `json:"certificate,omitempty"`
 
-	// Byte slice containing the PEM encoded certificate authority of the signed
-	// certificate.
-	// If not specified, the CA is assumed to be unknown/not available.
+	// The PEM encoded x509 certificate of the signer, also known as the CA
+	// (Certificate Authority).
+	// This is set on a best-effort basis by different issuers.
+	// If not set, the CA is assumed to be unknown/not available.
 	// +optional
 	CA []byte `json:"ca,omitempty"`
 

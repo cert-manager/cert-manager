@@ -129,7 +129,7 @@ type CertificateSpec struct {
 	// The 'name' field in this stanza is required at all times.
 	IssuerRef cmmeta.ObjectReference
 
-	// IsCA will mark this Certificate as valid for signing.
+	// IsCA will mark this Certificate as valid for certificate signing.
 	// This will automatically add the `cert sign` usage to the list of `usages`.
 	IsCA bool
 
