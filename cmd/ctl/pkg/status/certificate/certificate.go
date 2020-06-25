@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -29,7 +30,9 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 	"time"
 
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
 var (
@@ -133,8 +136,7 @@ func (o *Options) Run(args []string) error {
 	}
 	fmt.Fprintf(o.Out, fmt.Sprintf("Conditions:\n%s", conditionMsg))
 
-	// TODO: Get CR from certificate if exists. I think I can just look for it without caring what condition is
-	// What about timing issues? When I query condition it's not ready yet, but then looking for crn it's finished and deleted
+	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for crn it's finished and deleted
 
 	dnsNames := formatStringSlice(crt.Spec.DNSNames)
 	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
@@ -149,6 +151,22 @@ func (o *Options) Run(args []string) error {
 	fmt.Fprintf(o.Out, fmt.Sprintf("Not Before: %s\n", formatTimeString(crt.Status.NotBefore)))
 	fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", formatTimeString(crt.Status.NotAfter)))
 	fmt.Fprintf(o.Out, fmt.Sprintf("Renewal Time: %s\n", formatTimeString(crt.Status.RenewalTime)))
+
+	// TODO: Get CR from certificate if exists. I think I can just look for it without caring what condition is
+	// What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
+	reqs, err := o.CMClient.CertmanagerV1alpha2().CertificateRequests(o.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	req, err := findMatchingCR(reqs, crt)
+	if err != nil {
+		return err
+	}
+	if req == nil {
+		fmt.Fprintf(o.Out, fmt.Sprintf("No CertificateRequest found for this Certificate\n"))
+	} else {
+		fmt.Fprintf(o.Out, fmt.Sprintf("CertificateRequest:%s\n", crInfoString(req)))
+	}
 
 	// TODO: print information about secret
 	return nil
@@ -167,4 +185,42 @@ func formatTimeString(t *metav1.Time) string {
 		return "<none>"
 	}
 	return t.Time.Format(time.RFC3339)
+}
+
+func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) (*cmapi.CertificateRequest, error) {
+	possibleMatches := []*cmapi.CertificateRequest{}
+	for _, req := range reqs.Items {
+		if predicate.CertificateRequestRevision(*crt.Status.Revision+1)(&req) &&
+			predicate.ResourceOwnedBy(crt)(&req) {
+			possibleMatches = append(possibleMatches, &req)
+		}
+	}
+
+	if len(possibleMatches) < 1 {
+		return nil, nil
+	} else if len(possibleMatches) == 1 {
+		return possibleMatches[0], nil
+	} else {
+		return nil, errors.New("found multiple certificate requests with expected revision and owner")
+	}
+}
+
+func crInfoString(cr *cmapi.CertificateRequest) string {
+	crFormat := `
+  Name: %s
+  Namespace: %s
+  Conditions:
+  %s`
+	conditionMsg := ""
+	for i, con := range cr.Status.Conditions {
+		if i < len(cr.Status.Conditions)-1 {
+			conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
+		} else {
+			conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s", con.Type, con.Status, con.Reason, con.Message)
+		}
+	}
+	if conditionMsg == "" {
+		conditionMsg = "  No Conditions set"
+	}
+	return fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
 }

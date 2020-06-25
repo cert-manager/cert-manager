@@ -18,6 +18,7 @@ package ctl
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -45,9 +46,12 @@ func TestCtlStatusCert(t *testing.T) {
 	_, _, cmCl, _ := framework.NewClients(t, config)
 
 	var (
-		crt1Name = "testcrt-1"
-		crt2Name = "testcrt-2"
-		ns1      = "testns-1"
+		crt1Name  = "testcrt-1"
+		crt2Name  = "testcrt-2"
+		ns1       = "testns-1"
+		reqName   = "testreq-1"
+		revision1 = 1
+		revision2 = 2
 
 		readyAndUpToDateCond = cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}
@@ -60,11 +64,17 @@ func TestCtlStatusCert(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	req1 := gen.CertificateRequest(reqName,
+		gen.SetCertificateRequestNamespace(ns1),
+		gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
+		gen.SetCertificateRequestCSR([]byte("dummyCSR")))
+
 	tests := map[string]struct {
 		certificate       *cmapi.Certificate
 		certificateStatus *cmapi.CertificateStatus
 		inputArgs         []string
 		inputNamespace    string
+		req               *cmapi.CertificateRequest
 
 		expErr    bool
 		expOutput string
@@ -76,7 +86,7 @@ func TestCtlStatusCert(t *testing.T) {
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
 				gen.SetCertificateSecretName("example-tls")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{readyAndUpToDateCond},
-				NotAfter: &metav1.Time{Time: certIsValidTime}},
+				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
 			expErr:         false,
@@ -101,9 +111,10 @@ Renewal Time: <none>`,
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
 				gen.SetCertificateSecretName("example-tls")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{readyAndUpToDateCond, issuingCond},
-				NotAfter: &metav1.Time{Time: certIsValidTime}},
+				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt2Name},
 			inputNamespace: ns1,
+			req:            req1,
 			expErr:         false,
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
@@ -132,6 +143,13 @@ Renewal Time: <none>`,
 			crt, err = setCertificateStatus(cmCl, crt, test.certificateStatus, ctx)
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			if test.req != nil {
+				err = createCROwnedByCrt(t, cmCl, ctx, crt, test.req)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			// Options to run status command
@@ -172,6 +190,22 @@ func setCertificateStatus(cmCl versioned.Interface, crt *cmapi.Certificate,
 		apiutil.SetCertificateCondition(crt, cond.Type, cond.Status, cond.Reason, cond.Message)
 	}
 	crt.Status.NotAfter = status.NotAfter
+	crt.Status.Revision = status.Revision
 	crt, err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	return crt, err
+}
+
+func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Context, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+	req, err := cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(ctx, req, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	req.OwnerReferences = append(req.OwnerReferences, *metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")))
+	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Update(ctx, req, metav1.UpdateOptions{})
+	if err != nil {
+		t.Logf("GVK: %v", crt.GroupVersionKind())
+		t.Errorf("Update Err: %v", err)
+	}
+	return nil
 }
