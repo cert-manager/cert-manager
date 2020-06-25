@@ -23,27 +23,49 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
-// ACMEIssuer contains the specification for an ACME issuer
+
+// ACMEIssuer contains the specification for an ACME issuer.
+// This uses the RFC8555 specification to obtain certificates by completing
+// 'challenges' to prove ownership of domain identifiers.
+// Earlier draft versions of the ACME specification are not supported.
 type ACMEIssuer struct {
-	// Email is the email for this account
+	// Email is the email address to be associated with the ACME account.
+	// This field is optional, but it is strongly recommended to be set.
+	// It will be used to contact you in case of issues with your account or
+	// certificates, including expiry notification emails.
+	// This field may be updated after the account is initially registered.
 	Email string
 
-	// Server is the ACME server URL
+	// Server is the URL used to access the ACME server's 'directory' endpoint.
+	// For examples, for Let's Encrypt's staging endpoint, you would use:
+	// "https://acme-staging-v02.api.letsencrypt.org/directory".
+	// Only ACME v2 endpoints (i.e. RFC 8555) are supported.
 	Server string
 
-	// If true, skip verifying the ACME server TLS certificate
+	// If true, requests to the ACME server will not have their TLS certificate
+	// validated (i.e. insecure connections will be allowed).
+	// Only enable this option in development environments.
+	// The cert-manager system installed roots will be used to verify connections
+	// to the ACME server if this is false.
+	// Defaults to false.
 	SkipTLSVerify bool
 
 	// ExternalAccountBinding is a reference to a CA external account of the ACME
 	// server.
+	// If set, upon registration cert-manager will attempt to associate the given
+	// external account credentials with the registered ACME account.
 	ExternalAccountBinding *ACMEExternalAccountBinding
 
-	// PrivateKey is the name of a secret containing the private key for this
-	// user account.
+	// PrivateKey is the name of a Secret resource that will be used to store the
+	// automatically generated ACME account private key.
+	// If `key` is not specified, a default of `tls.key` will be used.
 	PrivateKey cmmeta.SecretKeySelector
 
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
+	// Solver configurations must be provided in order to obtain certificates
+	// from an ACME server.
+	// For more information, see: https://cert-manager.io/docs/configuration/acme/
 	Solvers []ACMEChallengeSolver
 }
 
@@ -58,10 +80,12 @@ type ACMEExternalAccountBinding struct {
 	// The `key` is the index string that is paired with the key data in the
 	// Secret and should not be confused with the key data itself, or indeed with
 	// the External Account Binding keyID above.
+	// The secret key stored in the Secret **must** be un-padded, base64 URL
+	// encoded data.
 	Key cmmeta.SecretKeySelector
 
-	// keyAlgorithm is the MAC key algorithm that the key is used for. Valid
-	// values are "HS256", "HS384" and "HS512".
+	// keyAlgorithm is the MAC key algorithm that the key is used for.
+	// Valid values are "HS256", "HS384" and "HS512".
 	KeyAlgorithm HMACKeyAlgorithm
 }
 
@@ -74,13 +98,24 @@ const (
 	HS512 HMACKeyAlgorithm = "HS512"
 )
 
+// Configures an issuer to solve challenges using the specified options.
+// Only one of HTTP01 or DNS01 may be provided.
 type ACMEChallengeSolver struct {
 	// Selector selects a set of DNSNames on the Certificate resource that
 	// should be solved using this challenge solver.
+	// If not specified, the solver will be treated as the 'default' solver
+	// with the lowest priority, i.e. if any other solver has a more specific
+	// match, it will be used instead.
 	Selector *CertificateDNSNameSelector
 
+	// Configures cert-manager to attempt to complete authorizations by
+	// performing the HTTP01 challenge flow.
+	// It is not possible to obtain certificates for wildcard domain names
+	// (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
 	HTTP01 *ACMEChallengeSolverHTTP01
 
+	// Configures cert-manager to attempt to complete authorizations by
+	// performing the DNS01 challenge flow.
 	DNS01 *ACMEChallengeSolverDNS01
 }
 
@@ -202,27 +237,42 @@ type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
 	Labels map[string]string
 }
 
+// Used to configure a DNS01 challenge provider to be used when solving DNS01
+// challenges.
+// Only one DNS provider may be configured per solver.
 type ACMEChallengeSolverDNS01 struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
 	CNAMEStrategy CNAMEStrategy
 
+	// Use the Akamai DNS zone management API to manage DNS01 challenge records.
 	Akamai *ACMEIssuerDNS01ProviderAkamai
 
+	// Use the Google Cloud DNS API to manage DNS01 challenge records.
 	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS
 
+	// Use the Cloudflare API to manage DNS01 challenge records.
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare
 
+	// Use the AWS Route53 API to manage DNS01 challenge records.
 	Route53 *ACMEIssuerDNS01ProviderRoute53
 
+	// Use the Microsoft Azure DNS API to manage DNS01 challenge records.
 	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS
 
+	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean
 
+	// Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage
+	// DNS01 challenge records.
 	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS
 
+	// Use RFC2136 ("Dynamic Updates in the Domain Name System") (https://datatracker.ietf.org/doc/rfc2136/)
+	// to manage DNS01 challenge records.
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136
 
+	// Configure an external webhook based DNS01 challenge solver to manage
+	// DNS01 challenge records.
 	Webhook *ACMEIssuerDNS01ProviderWebhook
 }
 
@@ -261,10 +311,18 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
-// configuration for Cloudflare
+// configuration for Cloudflare.
+// One of `apiKeySecretRef` or `apiTokenSecretRef` must be provided.
 type ACMEIssuerDNS01ProviderCloudflare struct {
-	Email    string
-	APIKey   *cmmeta.SecretKeySelector
+	// Email of the account, only required when using API key based authentication.
+	Email string
+
+	// API key to use to authenticate with Cloudflare.
+	// Note: using an API token to authenticate is now the recommended method
+	// as it allows greater control of permissions.
+	APIKey *cmmeta.SecretKeySelector
+
+	// API token used to authenticate with Cloudflare.
 	APIToken *cmmeta.SecretKeySelector
 }
 
@@ -299,12 +357,15 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
+	// if both this and ClientSecret are left unset MSI will be used
 	ClientID string
 
+	// if both this and ClientID are left unset MSI will be used
 	ClientSecret *cmmeta.SecretKeySelector
 
 	SubscriptionID string
 
+	// when specifying ClientID and ClientSecret then this field is also needed
 	TenantID string
 
 	ResourceGroupName string
@@ -374,7 +435,7 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// This can contain arbitrary JSON data.
 	// Secret values should not be specified in this stanza.
 	// If secret values are needed (e.g. credentials for a DNS service), you
-	// should use a cmmeta.SecretKeySelector to reference a Secret resource.
+	// should use a SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.
 	Config *apiext.JSON
