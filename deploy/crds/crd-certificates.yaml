@@ -115,9 +115,9 @@ spec:
                 items:
                   type: string
               isCA:
-                description: IsCA will mark this Certificate as valid for signing.
-                  This will automatically add the `cert sign` usage to the list of
-                  `usages`.
+                description: IsCA will mark this Certificate as valid for certificate
+                  signing. This will automatically add the `cert sign` usage to the
+                  list of `usages`.
                 type: boolean
               issuerRef:
                 description: IssuerRef is a reference to the issuer for this certificate.
@@ -493,9 +493,9 @@ spec:
                 items:
                   type: string
               isCA:
-                description: IsCA will mark this Certificate as valid for signing.
-                  This will automatically add the `cert sign` usage to the list of
-                  `usages`.
+                description: IsCA will mark this Certificate as valid for certificate
+                  signing. This will automatically add the `cert sign` usage to the
+                  list of `usages`.
                 type: boolean
               issuerRef:
                 description: IssuerRef is a reference to the issuer for this certificate.

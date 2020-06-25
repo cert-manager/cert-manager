@@ -93,8 +93,9 @@ spec:
                 This option may be ignored/overridden by some issuer types.
               type: string
             isCA:
-              description: IsCA will mark this Certificate as valid for signing. This
-                will automatically add the `cert sign` usage to the list of `usages`.
+              description: IsCA will request to mark the certificate as valid for
+                certificate signing when submitting to the issuer. This will automatically
+                add the `cert sign` usage to the list of `usages`.
               type: boolean
             issuerRef:
               description: IssuerRef is a reference to the issuer for this CertificateRequest.  If
@@ -162,14 +163,17 @@ spec:
           type: object
           properties:
             ca:
-              description: Byte slice containing the PEM encoded certificate authority
-                of the signed certificate. If not specified, the CA is assumed to
-                be unknown/not available.
+              description: The PEM encoded x509 certificate of the signer, also known
+                as the CA (Certificate Authority). This is set on a best-effort basis
+                by different issuers. If not set, the CA is assumed to be unknown/not
+                available.
               type: string
               format: byte
             certificate:
-              description: Byte slice containing a PEM encoded signed certificate
-                resulting from the given certificate signing request.
+              description: The PEM encoded x509 certificate resulting from the certificate
+                signing request. If not set, the CertificateRequest has either not
+                been completed or has failed. More information on failure can be found
+                by checking the `conditions` field.
               type: string
               format: byte
             conditions:

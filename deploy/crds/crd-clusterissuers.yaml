@@ -1713,8 +1713,8 @@ spec:
                             info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                           type: string
                     url:
-                      description: 'URL is the base URL for Venafi Cloud, usually:
-                        "https://api.venafi.cloud/v1".'
+                      description: URL is the base URL for Venafi Cloud. Defaults
+                        to "https://api.venafi.cloud/v1".
                       type: string
                 tpp:
                   description: TPP specifies Trust Protection Platform configuration
@@ -1746,8 +1746,8 @@ spec:
                             info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                           type: string
                     url:
-                      description: 'URL is the base URL for the Venafi TPP instance,
-                        for example: "https://tpp.example.com/vedsdk".'
+                      description: 'URL is the base URL for the vedsdk endpoint of
+                        the Venafi TPP instance, for example: "https://tpp.example.com/vedsdk".'
                       type: string
                 zone:
                   description: Zone is the Venafi Policy Zone to use for this issuer.
