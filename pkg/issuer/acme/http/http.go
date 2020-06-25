@@ -27,6 +27,7 @@ import (
 	"time"
 
 	istiov1beta1listers "istio.io/client-go/pkg/listers/networking/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
@@ -96,6 +97,19 @@ func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolve
 			"Ensure solvers[].http01.ingress is specified on your issuer resource")
 	}
 	return ch.Spec.Solver.HTTP01.Ingress, nil
+}
+
+func serviceTypeForChallenge(ch *cmacme.Challenge) (corev1.ServiceType, error) {
+	if ch.Spec.Solver.HTTP01 != nil {
+		if ch.Spec.Solver.HTTP01.Ingress != nil {
+			return ch.Spec.Solver.HTTP01.Ingress.ServiceType, nil
+		}
+		if ch.Spec.Solver.HTTP01.Istio != nil {
+			return corev1.ServiceTypeClusterIP, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not determine service type for challenge")
 }
 
 // Present will realise the resources required to solve the given HTTP01

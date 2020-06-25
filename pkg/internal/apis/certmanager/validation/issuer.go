@@ -155,8 +155,12 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 		numDefined++
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(http01.Ingress, fldPath.Child("ingress"))...)
 	}
-	if numDefined == 0 {
-		el = append(el, field.Required(fldPath, "no HTTP01 solver type configured"))
+	if http01.Istio != nil {
+		numDefined++
+		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IstioConfig(http01.Istio, fldPath.Child("istio"))...)
+	}
+	if numDefined != 1 {
+		el = append(el, field.Required(fldPath, "exactly one HTTP01 solver type needs to be configured"))
 	}
 
 	return el
@@ -172,6 +176,19 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
 	default:
 		el = append(el, field.Invalid(fldPath.Child("serviceType"), ingress.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
+	}
+
+	return el
+}
+
+func ValidateACMEIssuerChallengeSolverHTTP01IstioConfig(istio *cmacme.ACMEChallengeSolverHTTP01Istio, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	if istio.GatewayNamespace == "" {
+		el = append(el, field.Forbidden(fldPath, "GatewayNamespace must be specified"))
+	}
+	if istio.GatewayName == "" {
+		el = append(el, field.Forbidden(fldPath, "GatewayName must be specified"))
 	}
 
 	return el
