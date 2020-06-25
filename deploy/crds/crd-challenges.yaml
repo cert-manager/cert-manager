@@ -131,11 +131,13 @@ spec:
               type: object
               properties:
                 dns01:
+                  description: Configures cert-manager to attempt to complete authorizations
+                    by performing the DNS01 challenge flow.
                   type: object
                   properties:
                     acmedns:
-                      description: ACMEIssuerDNS01ProviderAcmeDNS is a structure containing
-                        the configuration for ACME-DNS servers
+                      description: Use the 'ACME DNS' (https://github.com/joohoi/acme-dns)
+                        API to manage DNS01 challenge records.
                       type: object
                       required:
                       - accountSecretRef
@@ -157,9 +159,8 @@ spec:
                         host:
                           type: string
                     akamai:
-                      description: ACMEIssuerDNS01ProviderAkamai is a structure containing
-                        the DNS configuration for Akamai DNS—Zone Record Management
-                        API
+                      description: Use the Akamai DNS zone management API to manage
+                        DNS01 challenge records.
                       type: object
                       required:
                       - accessTokenSecretRef
@@ -209,8 +210,8 @@ spec:
                         serviceConsumerDomain:
                           type: string
                     azuredns:
-                      description: ACMEIssuerDNS01ProviderAzureDNS is a structure
-                        containing the configuration for Azure DNS
+                      description: Use the Microsoft Azure DNS API to manage DNS01
+                        challenge records.
                       type: object
                       required:
                       - resourceGroupName
@@ -253,8 +254,8 @@ spec:
                             this field is also needed
                           type: string
                     clouddns:
-                      description: ACMEIssuerDNS01ProviderCloudDNS is a structure
-                        containing the DNS configuration for Google Cloud DNS
+                      description: Use the Google Cloud DNS API to manage DNS01 challenge
+                        records.
                       type: object
                       required:
                       - project
@@ -275,11 +276,14 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     cloudflare:
-                      description: ACMEIssuerDNS01ProviderCloudflare is a structure
-                        containing the DNS configuration for Cloudflare
+                      description: Use the Cloudflare API to manage DNS01 challenge
+                        records.
                       type: object
                       properties:
                         apiKeySecretRef:
+                          description: 'API key to use to authenticate with Cloudflare.
+                            Note: using an API token to authenticate is now the recommended
+                            method as it allows greater control of permissions.'
                           type: object
                           required:
                           - name
@@ -293,6 +297,7 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         apiTokenSecretRef:
+                          description: API token used to authenticate with Cloudflare.
                           type: object
                           required:
                           - name
@@ -306,6 +311,8 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         email:
+                          description: Email of the account, only required when using
+                            API key based authentication.
                           type: string
                     cnameStrategy:
                       description: CNAMEStrategy configures how the DNS01 provider
@@ -315,8 +322,8 @@ spec:
                       - None
                       - Follow
                     digitalocean:
-                      description: ACMEIssuerDNS01ProviderDigitalOcean is a structure
-                        containing the DNS configuration for DigitalOcean Domains
+                      description: Use the DigitalOcean DNS API to manage DNS01 challenge
+                        records.
                       type: object
                       required:
                       - tokenSecretRef
@@ -335,8 +342,9 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     rfc2136:
-                      description: ACMEIssuerDNS01ProviderRFC2136 is a structure containing
-                        the configuration for RFC2136 DNS
+                      description: Use RFC2136 ("Dynamic Updates in the Domain Name
+                        System") (https://datatracker.ietf.org/doc/rfc2136/) to manage
+                        DNS01 challenge records.
                       type: object
                       required:
                       - nameserver
@@ -375,8 +383,8 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     route53:
-                      description: ACMEIssuerDNS01ProviderRoute53 is a structure containing
-                        the Route 53 configuration for AWS
+                      description: Use the AWS Route53 API to manage DNS01 challenge
+                        records.
                       type: object
                       required:
                       - region
@@ -418,9 +426,8 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     webhook:
-                      description: ACMEIssuerDNS01ProviderWebhook specifies configuration
-                        for a webhook DNS01 provider, including where to POST ChallengePayload
-                        resources.
+                      description: Configure an external webhook based DNS01 challenge
+                        solver to manage DNS01 challenge records.
                       type: object
                       required:
                       - groupName
@@ -448,12 +455,10 @@ spec:
                             be the name of the provider, e.g. 'cloudflare'.
                           type: string
                 http01:
-                  description: ACMEChallengeSolverHTTP01 contains configuration detailing
-                    how to solve HTTP01 challenges within a Kubernetes cluster. Typically
-                    this is accomplished through creating 'routes' of some description
-                    that configure ingress controllers to direct traffic to 'solver
-                    pods', which are responsible for responding to the ACME server's
-                    HTTP requests.
+                  description: Configures cert-manager to attempt to complete authorizations
+                    by performing the HTTP01 challenge flow. It is not possible to
+                    obtain certificates for wildcard domain names (e.g. `*.example.com`)
+                    using the HTTP01 challenge mechanism.
                   type: object
                   properties:
                     ingress:
@@ -1366,7 +1371,10 @@ spec:
                           type: string
                 selector:
                   description: Selector selects a set of DNSNames on the Certificate
-                    resource that should be solved using this challenge solver.
+                    resource that should be solved using this challenge solver. If
+                    not specified, the solver will be treated as the 'default' solver
+                    with the lowest priority, i.e. if any other solver has a more
+                    specific match, it will be used instead.
                   type: object
                   properties:
                     dnsNames:
