@@ -148,19 +148,14 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, condition.Type, condition.Status, condition.Reason, condition.Message)
 
-	// set Certificate status fields based on the contents of the x509 certificate
-	// if the certificate is not issued, or the data cannot be decoded, the status
-	// field values are cleared.
-	clearCertificateFields := func() {
-		crt.Status.NotAfter = nil
-		crt.Status.NotBefore = nil
-		crt.Status.RenewalTime = nil
-	}
 	switch {
 	case input.Secret != nil && input.Secret.Data != nil:
 		x509cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
 		if err != nil {
-			clearCertificateFields()
+			// clear status fields if we cannot decode the certificate bytes
+			crt.Status.NotAfter = nil
+			crt.Status.NotBefore = nil
+			crt.Status.RenewalTime = nil
 			break
 		}
 
@@ -174,7 +169,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
 		crt.Status.RenewalTime = &renewalTime
 	default:
-		clearCertificateFields()
+		// clear status fields if the secret does not have any data
+		crt.Status.NotAfter = nil
+		crt.Status.NotBefore = nil
+		crt.Status.RenewalTime = nil
 	}
 
 	_, err = c.client.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
