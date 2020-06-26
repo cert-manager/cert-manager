@@ -33,6 +33,7 @@ const (
 
 	targetv1alpha2 = "cert-manager.io/v1alpha2"
 	targetv1alpha3 = "cert-manager.io/v1alpha3"
+	targetv1beta1  = "cert-manager.io/v1beta1"
 )
 
 func TestCtlConvert(t *testing.T) {
@@ -88,6 +89,29 @@ func TestCtlConvert(t *testing.T) {
 			targetVersion: targetv1alpha3,
 			expOutput: `
 apiVersion: cert-manager.io/v1alpha3
+kind: Certificate
+metadata:
+  creationTimestamp: null
+  name: ca-issuer
+  namespace: sandbox
+spec:
+  commonName: my-csi-app
+  isCA: true
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: ca-key-pair
+  subject:
+    organizations:
+    - hello world
+status: {}`,
+		},
+		"an object in v1alpha2 that uses a field that has been renamed in v1beta1 should be converted properly": {
+			input:         testdataResourceWithOrganizationV1alpha2,
+			targetVersion: targetv1beta1,
+			expOutput: `
+apiVersion: cert-manager.io/v1beta1
 kind: Certificate
 metadata:
   creationTimestamp: null

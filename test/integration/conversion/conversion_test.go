@@ -20,21 +20,26 @@ import (
 	"context"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/diff"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/jetstack/cert-manager/pkg/api"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
 
 func TestConversion(t *testing.T) {
 	tests := map[string]struct {
-		input  runtime.Object
-		output runtime.Object
+		input     runtime.Object
+		targetGVK schema.GroupVersionKind
+		output    runtime.Object
 	}{
 		"should convert Certificates from v1alpha2 to v1alpha3": {
 			input: &v1alpha2.Certificate{
@@ -49,7 +54,19 @@ func TestConversion(t *testing.T) {
 					},
 				},
 			},
-			output: &v1alpha3.Certificate{},
+			targetGVK: v1alpha3.SchemeGroupVersion.WithKind("Certificate"),
+			output: &v1alpha3.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1alpha3.CertificateSpec{
+					SecretName: "something",
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
 		},
 		"should convert CertificateRequest from v1alpha2 to v1alpha3": {
 			input: &v1alpha2.CertificateRequest{
@@ -66,7 +83,52 @@ func TestConversion(t *testing.T) {
 					},
 				},
 			},
-			output: &v1alpha3.CertificateRequest{},
+			targetGVK: v1alpha3.SchemeGroupVersion.WithKind("CertificateRequest"),
+			output: &v1alpha3.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1alpha3.CertificateRequestSpec{
+					// validating webhook isn't currently configured in test
+					// environment so this passes validation.
+					CSRPEM: []byte("a"),
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+		},
+		"should convert Certificate from v1alpha2 to v1beta1": {
+			input: &v1alpha2.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1alpha2.CertificateSpec{
+					SecretName:   "abc",
+					Organization: []string{"test"},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+			targetGVK: v1beta1.SchemeGroupVersion.WithKind("Certificate"),
+			output: &v1beta1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1beta1.CertificateSpec{
+					SecretName: "abc",
+					Subject: &v1beta1.X509Subject{
+						Organizations: []string{"test"},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
 		},
 	}
 	for name, test := range tests {
@@ -83,8 +145,25 @@ func TestConversion(t *testing.T) {
 				t.Fatal(err)
 			}
 			meta := test.input.(metav1.ObjectMetaAccessor)
-			if err := cl.Get(context.Background(), client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, test.output); err != nil {
-				t.Errorf("failed to fetch object in expected API version: %v", err)
+
+			convertedObj, err := api.Scheme.New(test.targetGVK)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if err := cl.Get(context.Background(), client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, convertedObj); err != nil {
+				t.Fatalf("failed to fetch object in expected API version: %v", err)
+			}
+
+			convertedObjMeta := convertedObj.(metav1.ObjectMetaAccessor)
+			convertedObjMeta.GetObjectMeta().SetCreationTimestamp(metav1.Time{})
+			convertedObjMeta.GetObjectMeta().SetGeneration(0)
+			convertedObjMeta.GetObjectMeta().SetUID("")
+			convertedObjMeta.GetObjectMeta().SetSelfLink("")
+			convertedObjMeta.GetObjectMeta().SetResourceVersion("")
+
+			if !equality.Semantic.DeepEqual(test.output, convertedObj) {
+				t.Errorf("unexpected output: %s", diff.ObjectReflectDiff(test.output, convertedObj))
 			}
 		})
 	}
