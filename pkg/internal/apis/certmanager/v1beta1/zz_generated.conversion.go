@@ -492,6 +492,9 @@ func Convert_certmanager_CertificateList_To_v1beta1_CertificateList(in *certmana
 
 func autoConvert_v1beta1_CertificatePrivateKey_To_certmanager_CertificatePrivateKey(in *v1beta1.CertificatePrivateKey, out *certmanager.CertificatePrivateKey, s conversion.Scope) error {
 	out.RotationPolicy = certmanager.PrivateKeyRotationPolicy(in.RotationPolicy)
+	out.Encoding = certmanager.PrivateKeyEncoding(in.Encoding)
+	out.Algorithm = certmanager.PrivateKeyAlgorithm(in.Algorithm)
+	out.Size = in.Size
 	return nil
 }
 
@@ -502,6 +505,9 @@ func Convert_v1beta1_CertificatePrivateKey_To_certmanager_CertificatePrivateKey(
 
 func autoConvert_certmanager_CertificatePrivateKey_To_v1beta1_CertificatePrivateKey(in *certmanager.CertificatePrivateKey, out *v1beta1.CertificatePrivateKey, s conversion.Scope) error {
 	out.RotationPolicy = v1beta1.PrivateKeyRotationPolicy(in.RotationPolicy)
+	out.Encoding = v1beta1.PrivateKeyEncoding(in.Encoding)
+	out.Algorithm = v1beta1.PrivateKeyAlgorithm(in.Algorithm)
+	out.Size = in.Size
 	return nil
 }
 
@@ -669,9 +675,6 @@ func autoConvert_v1beta1_CertificateSpec_To_certmanager_CertificateSpec(in *v1be
 	}
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
-	out.KeySize = in.KeySize
-	out.KeyAlgorithm = certmanager.KeyAlgorithm(in.KeyAlgorithm)
-	out.KeyEncoding = certmanager.KeyEncoding(in.KeyEncoding)
 	out.PrivateKey = (*certmanager.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	return nil
 }
@@ -698,9 +701,6 @@ func autoConvert_certmanager_CertificateSpec_To_v1beta1_CertificateSpec(in *cert
 	}
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]v1beta1.KeyUsage)(unsafe.Pointer(&in.Usages))
-	out.KeySize = in.KeySize
-	out.KeyAlgorithm = v1beta1.KeyAlgorithm(in.KeyAlgorithm)
-	out.KeyEncoding = v1beta1.KeyEncoding(in.KeyEncoding)
 	out.PrivateKey = (*v1beta1.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	return nil
 }
