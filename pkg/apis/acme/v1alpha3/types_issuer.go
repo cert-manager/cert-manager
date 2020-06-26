@@ -356,14 +356,16 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 type ACMEIssuerDNS01ProviderCloudflare struct {
 	// Email of the account, only required when using API key based authentication.
 	// +optional
-	Email string `json:"email"`
+	Email string `json:"email,omitempty"`
 
 	// API key to use to authenticate with Cloudflare.
 	// Note: using an API token to authenticate is now the recommended method
 	// as it allows greater control of permissions.
+	// +optional
 	APIKey *cmmeta.SecretKeySelector `json:"apiKeySecretRef,omitempty"`
 
 	// API token used to authenticate with Cloudflare.
+	// +optional
 	APIToken *cmmeta.SecretKeySelector `json:"apiTokenSecretRef,omitempty"`
 }
 
