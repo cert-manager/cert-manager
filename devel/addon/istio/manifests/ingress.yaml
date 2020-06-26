@@ -1,0 +1,23 @@
+apiVersion: istio.banzaicloud.io/v1beta1
+kind: MeshGateway
+metadata:
+  labels:
+    app: ingress
+  name: ingress
+spec:
+  labels:
+    app: ingress
+  maxReplicas: 1
+  minReplicas: 1
+  ports:
+    - name: http2
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 443
+  replicaCount: 1
+  serviceType: ClusterIP
+  type: ingress

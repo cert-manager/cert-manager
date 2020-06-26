@@ -1,0 +1,35 @@
+# Minimal Istio configuration: https://istio.io/docs/setup/kubernetes/additional-setup/config-profiles/
+
+apiVersion: istio.banzaicloud.io/v1beta1
+kind: Istio
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: istio-sample
+spec:
+  version: "1.6.3"
+  meshPolicy:
+    mtlsMode: PERMISSIVE
+  autoInjectionNamespaces:
+  - "default"
+  useMCP: false
+  istiod:
+    enabled: true
+  pilot:
+    enabled: true
+    sidecar: false
+  gateways:
+    enabled: false
+    ingress:
+      enabled: false
+    egress:
+      enabled: false
+  policy:
+    enabled: false
+  telemetry:
+    enabled: false
+  tracing:
+    enabled: false
+  proxy:
+    image: "docker.io/istio/proxyv2:1.6.3"
+  jwtPolicy: "first-party-jwt"

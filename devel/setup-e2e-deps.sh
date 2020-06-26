@@ -49,6 +49,9 @@ echo "Installing pebble into the kind cluster..."
 echo "Installing ingress-nginx into the kind cluster..."
 "${SCRIPT_ROOT}/addon/ingressnginx/install.sh" &
 
+echo "Installing istio into the kind cluster..."
+"${SCRIPT_ROOT}/addon/istio/install.sh" &
+
 echo "Loading vault into the kind cluster..."
 "${SCRIPT_ROOT}/addon/vault/install.sh" &
 
