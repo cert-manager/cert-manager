@@ -584,7 +584,7 @@ func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Contex
 		return err
 	}
 
-	newSecret, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(context.TODO(), newSecret, metav1.UpdateOptions{})
+	_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(context.TODO(), newSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -708,7 +708,7 @@ func findCertificateRequestsForCertificate(log logr.Logger, crt *cmapi.Certifica
 		log := logf.WithRelatedResource(log, req)
 		if metav1.IsControlledBy(req, crt) {
 			log.V(logf.DebugLevel).Info("found CertificateRequest resource for Certificate")
-			candidates = append(candidates, &(*req))
+			candidates = append(candidates, req)
 		}
 	}
 

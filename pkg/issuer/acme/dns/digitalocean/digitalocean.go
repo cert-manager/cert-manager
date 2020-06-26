@@ -70,6 +70,10 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 
 	// check if the record has already been created
 	records, err := c.findTxtRecord(fqdn)
+	if err != nil {
+		return err
+	}
+
 	for _, record := range records {
 		if record.Type == "TXT" && record.Data == value {
 			return nil
@@ -100,6 +104,9 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
 	records, err := c.findTxtRecord(fqdn)
 	if err != nil {

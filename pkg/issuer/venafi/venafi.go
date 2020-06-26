@@ -26,13 +26,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
-const (
-	tppUsernameKey = "username"
-	tppPasswordKey = "password"
-
-	defaultAPIKeyKey = "api-key"
-)
-
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
 type Venafi struct {
 	issuer cmapi.GenericIssuer

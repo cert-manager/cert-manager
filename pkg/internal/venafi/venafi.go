@@ -48,8 +48,6 @@ type Interface interface {
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
 type Venafi struct {
-	issuer cmapi.GenericIssuer
-
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
 	// For ClusterIssuers, this will be the cluster resource namespace.

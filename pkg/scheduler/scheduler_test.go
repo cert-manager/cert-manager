@@ -136,7 +136,6 @@ func (tq *timerQueueItem) Stop() bool {
 
 type mockAfter struct {
 	lock        *sync.Mutex
-	startTime   time.Time
 	currentTime time.Time
 	queue       []*timerQueueItem
 }

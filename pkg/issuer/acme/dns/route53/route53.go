@@ -138,6 +138,10 @@ func defaultSTSProvider(sess *session.Session) stsiface.STSAPI {
 // unset and the 'ambient' option is set, credentials from the environment.
 func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
 	provider, err := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient)
+	if err != nil {
+		return nil, err
+	}
+
 	sess, err := provider.GetSession()
 	if err != nil {
 		return nil, err

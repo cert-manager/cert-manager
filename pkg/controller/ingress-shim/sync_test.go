@@ -1105,20 +1105,6 @@ func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerRefe
 	}
 }
 
-func buildACMEIssuer(name, namespace string) *cmapi.Issuer {
-	return &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: cmapi.IssuerSpec{
-			IssuerConfig: cmapi.IssuerConfig{
-				ACME: &cmacme.ACMEIssuer{},
-			},
-		},
-	}
-}
-
 func buildIngress(name, namespace string, annotations map[string]string) *extv1beta1.Ingress {
 	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{

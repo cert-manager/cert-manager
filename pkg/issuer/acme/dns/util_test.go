@@ -34,10 +34,7 @@ import (
 )
 
 const (
-	defaultTestIssuerName      = "test-issuer"
-	defaultTestIssuerKind      = v1alpha2.IssuerKind
-	defaultTestNamespace       = gen.DefaultTestNamespace
-	defaultTestCertificateName = "test-cert"
+	defaultTestIssuerName = "test-issuer"
 )
 
 type solverFixture struct {
@@ -110,10 +107,6 @@ func buildFakeSolver(b *test.Builder, dnsProviders dnsProviderConstructors) *Sol
 	}
 	b.Start()
 	return s
-}
-
-func strPtr(s string) *string {
-	return &s
 }
 
 type fakeDNSProviderCall struct {

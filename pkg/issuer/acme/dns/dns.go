@@ -46,10 +46,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
-const (
-	cloudDNSServiceAccountKey = "service-account.json"
-)
-
 // solver is the old solver type interface.
 // All new solvers should be implemented using the new webhook.Solver interface.
 type solver interface {
@@ -111,7 +107,6 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 // Check verifies that the DNS records for the ACME challenge have propagated.
 func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
 	log := logs.WithResource(logs.FromContext(ctx, "Check"), ch).WithValues("domain", ch.Spec.DNSName)
-	ctx = logs.NewContext(ctx, log)
 
 	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, false, s.DNS01Nameservers...)
 	if err != nil {
@@ -186,7 +181,6 @@ func extractChallengeSolverConfig(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSo
 func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) (solver, *cmacme.ACMEChallengeSolverDNS01, error) {
 	log := logs.FromContext(ctx, "solverForChallenge")
 	dbg := log.V(logs.DebugLevel)
-	ctx = logs.NewContext(ctx, log)
 
 	resourceNamespace := s.ResourceNamespace(issuer)
 	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)

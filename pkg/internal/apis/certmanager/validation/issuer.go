@@ -40,9 +40,7 @@ func ValidateIssuer(obj runtime.Object) field.ErrorList {
 }
 
 func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-	el = ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
-	return el
+	return ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
 }
 
 func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) field.ErrorList {

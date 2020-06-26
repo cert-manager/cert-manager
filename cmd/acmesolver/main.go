@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 
@@ -39,7 +40,7 @@ func main() {
 	logs.InitLogs(nil)
 	defer logs.FlushLogs()
 	flag.Parse()
-	ctx := logs.NewContext(nil, nil, "acmesolver")
+	ctx := logs.NewContext(context.Background(), nil, "acmesolver")
 
 	s := &solver.HTTP01Solver{
 		ListenPort: *listenPort,

@@ -22,7 +22,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"testing"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -196,101 +195,6 @@ func createCryptoBundle(crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock)
 		LocalTemporaryCertificateBytes:         tempCertBytes,
 		FixedClock:                             fixedClock,
 	}, nil
-}
-
-func (c *CryptoBundle) generateTestCSR(crt *cmapi.Certificate) []byte {
-	csrPEM, err := generateCSRImpl(crt, c.PrivateKeyBytes)
-	if err != nil {
-		panic("failed to generate test fixture: " + err.Error())
-	}
-
-	return csrPEM
-}
-
-func (c *CryptoBundle) generateTestCertificate(crt *cmapi.Certificate, notBefore *time.Time) []byte {
-	csr := c.generateTestCSR(crt)
-	certificateRequest := &cmapi.CertificateRequest{
-		Spec: cmapi.CertificateRequestSpec{
-			CSRPEM:    csr,
-			Duration:  crt.Spec.Duration,
-			IssuerRef: crt.Spec.IssuerRef,
-			IsCA:      crt.Spec.IsCA,
-		},
-	}
-
-	unsignedCert, err := pki.GenerateTemplateFromCertificateRequest(certificateRequest)
-	if err != nil {
-		panic("failed to generate test fixture: " + err.Error())
-	}
-
-	if notBefore != nil {
-		unsignedCert.NotBefore = *notBefore
-	}
-
-	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.PrivateKey.Public(), c.PrivateKey)
-	if err != nil {
-		panic("failed to generate test fixture: " + err.Error())
-	}
-
-	return certBytes
-}
-
-func (c *CryptoBundle) generateCertificateExpiring1H(crt *cmapi.Certificate) []byte {
-	csr := c.generateTestCSR(crt)
-	certificateRequest := &cmapi.CertificateRequest{
-		Spec: cmapi.CertificateRequestSpec{
-			CSRPEM:    csr,
-			Duration:  crt.Spec.Duration,
-			IssuerRef: crt.Spec.IssuerRef,
-			IsCA:      crt.Spec.IsCA,
-		},
-	}
-
-	unsignedCert, err := pki.GenerateTemplateFromCertificateRequest(certificateRequest)
-	if err != nil {
-		panic("failed to generate test fixture: " + err.Error())
-	}
-
-	nowTime := c.FixedClock.Now()
-	duration := unsignedCert.NotAfter.Sub(unsignedCert.NotBefore)
-	unsignedCert.NotBefore = nowTime.Add(time.Hour).Add(-1 * duration)
-	unsignedCert.NotAfter = nowTime.Add(time.Hour)
-
-	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.PrivateKey.Public(), c.PrivateKey)
-	if err != nil {
-		panic("failed to generate test fixture: " + err.Error())
-	}
-
-	return certBytes
-}
-
-func (c *CryptoBundle) generateCertificateExpired(crt *cmapi.Certificate) []byte {
-	csr := c.generateTestCSR(crt)
-	certificateRequest := &cmapi.CertificateRequest{
-		Spec: cmapi.CertificateRequestSpec{
-			CSRPEM:    csr,
-			Duration:  crt.Spec.Duration,
-			IssuerRef: crt.Spec.IssuerRef,
-			IsCA:      crt.Spec.IsCA,
-		},
-	}
-
-	unsignedCert, err := pki.GenerateTemplateFromCertificateRequest(certificateRequest)
-	if err != nil {
-		panic("failed to generate test fixture: " + err.Error())
-	}
-
-	nowTime := c.FixedClock.Now()
-	duration := unsignedCert.NotAfter.Sub(unsignedCert.NotBefore)
-	unsignedCert.NotBefore = nowTime.Add(-1 * time.Hour).Add(-1 * duration)
-	unsignedCert.NotAfter = nowTime.Add(-1 * time.Hour)
-
-	certBytes, _, err := pki.SignCertificate(unsignedCert, unsignedCert, c.PrivateKey.Public(), c.PrivateKey)
-	if err != nil {
-		panic("failed to generate test fixture: " + err.Error())
-	}
-
-	return certBytes
 }
 
 func generateCSRImpl(crt *cmapi.Certificate, pk []byte) ([]byte, error) {

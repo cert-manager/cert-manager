@@ -48,10 +48,6 @@ const (
 	ControllerName = "CertificateReadiness"
 )
 
-var (
-	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
-)
-
 var PolicyChain = policies.Chain{
 	policies.SecretDoesNotExist,
 	policies.SecretHasData,

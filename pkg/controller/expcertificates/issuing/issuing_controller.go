@@ -52,12 +52,6 @@ import (
 
 const (
 	ControllerName = "CertificateIssuing"
-
-	ctxTimeout = time.Second * 10
-)
-
-var (
-	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)

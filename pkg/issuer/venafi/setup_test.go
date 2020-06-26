@@ -17,6 +17,7 @@ limitations under the License.
 package venafi
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -118,7 +119,7 @@ func (s *testSetupT) runTest(t *testing.T) {
 		clientBuilder: s.clientBuilder,
 	}
 
-	err := v.Setup(nil)
+	err := v.Setup(context.TODO())
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
