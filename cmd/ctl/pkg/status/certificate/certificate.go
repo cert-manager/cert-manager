@@ -189,8 +189,15 @@ func formatTimeString(t *metav1.Time) string {
 
 func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) (*cmapi.CertificateRequest, error) {
 	possibleMatches := []*cmapi.CertificateRequest{}
+
+	// CertificateRequest revisions begin from 1. If no revision is set on the
+	// status then assume no revision yet set.
+	nextRevision := 1
+	if crt.Status.Revision != nil {
+		nextRevision = *crt.Status.Revision + 1
+	}
 	for _, req := range reqs.Items {
-		if predicate.CertificateRequestRevision(*crt.Status.Revision+1)(&req) &&
+		if predicate.CertificateRequestRevision(nextRevision)(&req) &&
 			predicate.ResourceOwnedBy(crt)(&req) {
 			possibleMatches = append(possibleMatches, &req)
 		}
