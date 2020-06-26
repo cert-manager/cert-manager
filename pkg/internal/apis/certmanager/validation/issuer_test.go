@@ -177,7 +177,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("solvers").Index(0).Child("http01"), "no HTTP01 solver type configured"),
+				field.Required(fldPath.Child("solvers").Index(0).Child("http01"), "exactly one HTTP01 solver type needs to be configured"),
 			},
 		},
 		"acme solver with valid http01 config": {
