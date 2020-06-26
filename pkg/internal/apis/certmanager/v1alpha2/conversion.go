@@ -36,6 +36,16 @@ func Convert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *v1alpha
 		out.Subject.Organizations = in.Organization
 	}
 
+	if in.KeyAlgorithm != "" || in.KeyEncoding != "" || in.KeySize != 0 {
+		if out.PrivateKey == nil {
+			out.PrivateKey = &certmanager.CertificatePrivateKey{}
+		}
+
+		out.PrivateKey.Algorithm = certmanager.PrivateKeyAlgorithm(in.KeyAlgorithm)
+		out.PrivateKey.Encoding = certmanager.PrivateKeyEncoding(in.KeyEncoding)
+		out.PrivateKey.Size = in.KeySize
+	}
+
 	return nil
 }
 
@@ -50,9 +60,19 @@ func Convert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in *certman
 		out.Organization = nil
 	}
 
+	if in.PrivateKey != nil {
+		out.KeyAlgorithm = v1alpha2.KeyAlgorithm(in.PrivateKey.Algorithm)
+		out.KeyEncoding = v1alpha2.KeyEncoding(in.PrivateKey.Encoding)
+		out.KeySize = in.PrivateKey.Size
+	}
+
 	return nil
 }
 
 func Convert_certmanager_X509Subject_To_v1alpha2_X509Subject(in *certmanager.X509Subject, out *v1alpha2.X509Subject, s conversion.Scope) error {
 	return autoConvert_certmanager_X509Subject_To_v1alpha2_X509Subject(in, out, s)
+}
+
+func Convert_certmanager_CertificatePrivateKey_To_v1alpha2_CertificatePrivateKey(in *certmanager.CertificatePrivateKey, out *v1alpha2.CertificatePrivateKey, s conversion.Scope) error {
+	return autoConvert_certmanager_CertificatePrivateKey_To_v1alpha2_CertificatePrivateKey(in, out, s)
 }
