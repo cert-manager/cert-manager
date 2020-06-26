@@ -649,7 +649,7 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 	for k, v := range crt.Annotations {
 		annotations[k] = v
 	}
-	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
+	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = crt.Spec.SecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
 
 	cr := &cmapi.CertificateRequest{

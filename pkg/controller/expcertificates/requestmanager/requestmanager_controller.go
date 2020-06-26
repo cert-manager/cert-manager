@@ -316,7 +316,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		annotations[k] = v
 	}
 	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = strconv.Itoa(nextRevision)
-	annotations[cmapi.CRPrivateKeyAnnotationKey] = nextPrivateKeySecretName
+	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = nextPrivateKeySecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
 
 	cr := &cmapi.CertificateRequest{

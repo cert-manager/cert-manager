@@ -23,9 +23,16 @@ import (
 )
 
 const (
+	// Pending indicates that a CertificateRequest is still in progress.
 	CertificateRequestReasonPending = "Pending"
-	CertificateRequestReasonFailed  = "Failed"
-	CertificateRequestReasonIssued  = "Issued"
+
+	// Failed indicates that a CertificateRequest has failed, either due to
+	// timing out or some other critical failure.
+	CertificateRequestReasonFailed = "Failed"
+
+	// Issued indicates that a CertificateRequest has been completed, and that
+	// the `status.certificate` field is set.
+	CertificateRequestReasonIssued = "Issued"
 )
 
 // +genclient
@@ -43,7 +50,10 @@ type CertificateRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CertificateRequestSpec   `json:"spec,omitempty"`
+	// Desired state of the CertificateRequest resource.
+	Spec CertificateRequestSpec `json:"spec,omitempty"`
+
+	// Status of the CertificateRequest. This is set and managed automatically.
 	Status CertificateRequestStatus `json:"status,omitempty"`
 }
 
@@ -59,7 +69,8 @@ type CertificateRequestList struct {
 
 // CertificateRequestSpec defines the desired state of CertificateRequest
 type CertificateRequestSpec struct {
-	// Requested certificate default Duration
+	// The requested 'duration' (i.e. lifetime) of the Certificate.
+	// This option may be ignored/overridden by some issuer types.
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
 
@@ -72,33 +83,42 @@ type CertificateRequestSpec struct {
 	// issuer which defaults to 'cert-manager.io' if empty.
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
-	// Byte slice containing the PEM encoded CertificateSigningRequest
+	// The PEM-encoded x509 certificate signing request to be submitted to the
+	// CA for signing.
 	CSRPEM []byte `json:"csr"`
 
-	// IsCA will mark the resulting certificate as valid for signing. This
-	// implies that the 'cert sign' usage is set
+	// IsCA will request to mark the certificate as valid for certificate signing
+	// when submitting to the issuer.
+	// This will automatically add the `cert sign` usage to the list of `usages`.
 	// +optional
 	IsCA bool `json:"isCA,omitempty"`
 
-	// Usages is the set of x509 actions that are enabled for a given key.
-	// Defaults are ('digital signature', 'key encipherment') if empty
+	// Usages is the set of x509 usages that are requested for the certificate.
+	// Defaults to `digital signature` and `key encipherment` if not specified.
 	// +optional
 	Usages []KeyUsage `json:"usages,omitempty"`
 }
 
-// CertificateStatus defines the observed state of CertificateRequest and
+// CertificateRequestStatus defines the observed state of CertificateRequest and
 // resulting signed certificate.
 type CertificateRequestStatus struct {
+	// List of status conditions to indicate the status of a CertificateRequest.
+	// Known condition types are `Ready` and `InvalidRequest`.
 	// +optional
 	Conditions []CertificateRequestCondition `json:"conditions,omitempty"`
 
-	// Byte slice containing a PEM encoded signed certificate resulting from the
-	// given certificate signing request.
+	// The PEM encoded x509 certificate resulting from the certificate
+	// signing request.
+	// If not set, the CertificateRequest has either not been completed or has
+	// failed. More information on failure can be found by checking the
+	// `conditions` field.
 	// +optional
 	Certificate []byte `json:"certificate,omitempty"`
 
-	// Byte slice containing the PEM encoded certificate authority of the signed
-	// certificate.
+	// The PEM encoded x509 certificate of the signer, also known as the CA
+	// (Certificate Authority).
+	// This is set on a best-effort basis by different issuers.
+	// If not set, the CA is assumed to be unknown/not available.
 	// +optional
 	CA []byte `json:"ca,omitempty"`
 
@@ -110,7 +130,7 @@ type CertificateRequestStatus struct {
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.
 type CertificateRequestCondition struct {
-	// Type of the condition, currently ('Ready', 'InvalidRequest').
+	// Type of the condition, known values are ('Ready', 'InvalidRequest').
 	Type CertificateRequestConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').

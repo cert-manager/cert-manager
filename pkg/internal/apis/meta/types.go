@@ -35,27 +35,41 @@ const (
 	ConditionUnknown ConditionStatus = "Unknown"
 )
 
+// A reference to an object in the same namespace as the referent.
+// If the referent is a cluster-scoped resource (e.g. a ClusterIssuer),
+// the reference instead refers to the resource with the given name in the
+// configured 'cluster resource namespace', which is set as a flag on the
+// controller component (and defaults to the namespace that cert-manager
+// runs in).
 type LocalObjectReference struct {
-	// Name of the referent.
+	// Name of the resource being referred to.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	// TODO: Add other useful fields. apiVersion, kind, uid?
 	Name string
 }
 
 // ObjectReference is a reference to an object with a given name, kind and group.
 type ObjectReference struct {
-	Name  string
-	Kind  string
+	// Name of the resource being referred to.
+	Name string
+	// Kind of the resource being referred to.
+	Kind string
+	// Group of the resource being referred to.
 	Group string
 }
 
+// A reference to a specific 'key' within a Secret resource.
+// In some instances, `key` is a required field.
 type SecretKeySelector struct {
-	// The name of the secret in the pod's namespace to select from.
+	// The name of the Secret resource being referred to.
 	LocalObjectReference
-	// The key of the secret to select from. Must be a valid secret key.
+
+	// The key of the entry in the Secret resource's `data` field to be used.
+	// Some instances of this field may be defaulted, in others it may be
+	// required.
 	Key string
 }
 
 const (
+	// Used as a data key in Secret resources to store a CA certificate.
 	TLSCAKey = "ca.crt"
 )

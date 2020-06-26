@@ -78,22 +78,25 @@ spec:
         metadata:
           type: object
         spec:
-          description: CertificateRequestSpec defines the desired state of CertificateRequest
+          description: Desired state of the CertificateRequest resource.
           type: object
           required:
           - csr
           - issuerRef
           properties:
             csr:
-              description: Byte slice containing the PEM encoded CertificateSigningRequest
+              description: The PEM-encoded x509 certificate signing request to be
+                submitted to the CA for signing.
               type: string
               format: byte
             duration:
-              description: Requested certificate default Duration
+              description: The requested 'duration' (i.e. lifetime) of the Certificate.
+                This option may be ignored/overridden by some issuer types.
               type: string
             isCA:
-              description: IsCA will mark the resulting certificate as valid for signing.
-                This implies that the 'cert sign' usage is set
+              description: IsCA will request to mark the certificate as valid for
+                certificate signing when submitting to the issuer. This will automatically
+                add the `cert sign` usage to the list of `usages`.
               type: boolean
             issuerRef:
               description: IssuerRef is a reference to the issuer for this CertificateRequest.  If
@@ -108,15 +111,18 @@ spec:
               - name
               properties:
                 group:
+                  description: Group of the resource being referred to.
                   type: string
                 kind:
+                  description: Kind of the resource being referred to.
                   type: string
                 name:
+                  description: Name of the resource being referred to.
                   type: string
             usages:
-              description: Usages is the set of x509 actions that are enabled for
-                a given key. Defaults are ('digital signature', 'key encipherment')
-                if empty
+              description: Usages is the set of x509 usages that are requested for
+                the certificate. Defaults to `digital signature` and `key encipherment`
+                if not specified.
               type: array
               items:
                 description: 'KeyUsage specifies valid usage contexts for keys. See:
@@ -154,21 +160,26 @@ spec:
                 - microsoft sgc
                 - netscape sgc
         status:
-          description: CertificateStatus defines the observed state of CertificateRequest
-            and resulting signed certificate.
+          description: Status of the CertificateRequest. This is set and managed automatically.
           type: object
           properties:
             ca:
-              description: Byte slice containing the PEM encoded certificate authority
-                of the signed certificate.
+              description: The PEM encoded x509 certificate of the signer, also known
+                as the CA (Certificate Authority). This is set on a best-effort basis
+                by different issuers. If not set, the CA is assumed to be unknown/not
+                available.
               type: string
               format: byte
             certificate:
-              description: Byte slice containing a PEM encoded signed certificate
-                resulting from the given certificate signing request.
+              description: The PEM encoded x509 certificate resulting from the certificate
+                signing request. If not set, the CertificateRequest has either not
+                been completed or has failed. More information on failure can be found
+                by checking the `conditions` field.
               type: string
               format: byte
             conditions:
+              description: List of status conditions to indicate the status of a CertificateRequest.
+                Known condition types are `Ready` and `InvalidRequest`.
               type: array
               items:
                 description: CertificateRequestCondition contains condition information
@@ -200,7 +211,8 @@ spec:
                     - "False"
                     - Unknown
                   type:
-                    description: Type of the condition, currently ('Ready', 'InvalidRequest').
+                    description: Type of the condition, known values are ('Ready',
+                      'InvalidRequest').
                     type: string
             failureTime:
               description: FailureTime stores the time that this CertificateRequest

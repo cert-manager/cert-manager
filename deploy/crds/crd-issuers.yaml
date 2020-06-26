@@ -54,6 +54,9 @@ spec:
     storage: false
   "validation":
     "openAPIV3Schema":
+      description: An Issuer represents a certificate issuing authority which can
+        be referenced as part of `issuerRef` fields. It is scoped to a single namespace
+        and can therefore only be referenced by resources within the same namespace.
       type: object
       properties:
         apiVersion:
@@ -69,23 +72,29 @@ spec:
         metadata:
           type: object
         spec:
-          description: IssuerSpec is the specification of an Issuer. This includes
-            any configuration required for the issuer.
+          description: Desired state of the Issuer resource.
           type: object
           properties:
             acme:
-              description: ACMEIssuer contains the specification for an ACME issuer
+              description: ACME configures this issuer to communicate with a RFC8555
+                (ACME) server to obtain signed x509 certificates.
               type: object
               required:
               - privateKeySecretRef
               - server
               properties:
                 email:
-                  description: Email is the email for this account
+                  description: Email is the email address to be associated with the
+                    ACME account. This field is optional, but it is strongly recommended
+                    to be set. It will be used to contact you in case of issues with
+                    your account or certificates, including expiry notification emails.
+                    This field may be updated after the account is initially registered.
                   type: string
                 externalAccountBinding:
                   description: ExternalAccountBinding is a reference to a CA external
-                    account of the ACME server.
+                    account of the ACME server. If set, upon registration cert-manager
+                    will attempt to associate the given external account credentials
+                    with the registered ACME account.
                   type: object
                   required:
                   - keyAlgorithm
@@ -118,73 +127,94 @@ spec:
                       - name
                       properties:
                         key:
-                          description: The key of the secret to select from. Must
-                            be a valid secret key.
+                          description: The key of the entry in the Secret resource's
+                            `data` field to be used. Some instances of this field
+                            may be defaulted, in others it may be required.
                           type: string
                         name:
-                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          description: 'Name of the resource being referred to. More
+                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                           type: string
                 privateKeySecretRef:
-                  description: PrivateKey is the name of a secret containing the private
-                    key for this user account.
+                  description: PrivateKey is the name of a Kubernetes Secret resource
+                    that will be used to store the automatically generated ACME account
+                    private key. Optionally, a `key` may be specified to select a
+                    specific entry within the named Secret resource. If `key` is not
+                    specified, a default of `tls.key` will be used.
                   type: object
                   required:
                   - name
                   properties:
                     key:
-                      description: The key of the secret to select from. Must be a
-                        valid secret key.
+                      description: The key of the entry in the Secret resource's `data`
+                        field to be used. Some instances of this field may be defaulted,
+                        in others it may be required.
                       type: string
                     name:
-                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        TODO: Add other useful fields. apiVersion, kind, uid?'
+                      description: 'Name of the resource being referred to. More info:
+                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                       type: string
                 server:
-                  description: Server is the ACME server URL
+                  description: 'Server is the URL used to access the ACME server''s
+                    ''directory'' endpoint. For example, for Let''s Encrypt''s staging
+                    endpoint, you would use: "https://acme-staging-v02.api.letsencrypt.org/directory".
+                    Only ACME v2 endpoints (i.e. RFC 8555) are supported.'
                   type: string
                 skipTLSVerify:
-                  description: If true, skip verifying the ACME server TLS certificate
+                  description: Enables or disables validation of the ACME server TLS
+                    certificate. If true, requests to the ACME server will not have
+                    their TLS certificate validated (i.e. insecure connections will
+                    be allowed). Only enable this option in development environments.
+                    The cert-manager system installed roots will be used to verify
+                    connections to the ACME server if this is false. Defaults to false.
                   type: boolean
                 solvers:
-                  description: Solvers is a list of challenge solvers that will be
-                    used to solve ACME challenges for the matching domains.
+                  description: 'Solvers is a list of challenge solvers that will be
+                    used to solve ACME challenges for the matching domains. Solver
+                    configurations must be provided in order to obtain certificates
+                    from an ACME server. For more information, see: https://cert-manager.io/docs/configuration/acme/'
                   type: array
                   items:
+                    description: Configures an issuer to solve challenges using the
+                      specified options. Only one of HTTP01 or DNS01 may be provided.
                     type: object
                     properties:
                       dns01:
+                        description: Configures cert-manager to attempt to complete
+                          authorizations by performing the DNS01 challenge flow.
                         type: object
                         properties:
                           acmedns:
-                            description: ACMEIssuerDNS01ProviderAcmeDNS is a structure
-                              containing the configuration for ACME-DNS servers
+                            description: Use the 'ACME DNS' (https://github.com/joohoi/acme-dns)
+                              API to manage DNS01 challenge records.
                             type: object
                             required:
                             - accountSecretRef
                             - host
                             properties:
                               accountSecretRef:
+                                description: A reference to a specific 'key' within
+                                  a Secret resource. In some instances, `key` is a
+                                  required field.
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                               host:
                                 type: string
                           akamai:
-                            description: ACMEIssuerDNS01ProviderAkamai is a structure
-                              containing the DNS configuration for Akamai DNS—Zone
-                              Record Management API
+                            description: Use the Akamai DNS zone management API to
+                              manage DNS01 challenge records.
                             type: object
                             required:
                             - accessTokenSecretRef
@@ -193,55 +223,64 @@ spec:
                             - serviceConsumerDomain
                             properties:
                               accessTokenSecretRef:
+                                description: A reference to a specific 'key' within
+                                  a Secret resource. In some instances, `key` is a
+                                  required field.
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                               clientSecretSecretRef:
+                                description: A reference to a specific 'key' within
+                                  a Secret resource. In some instances, `key` is a
+                                  required field.
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                               clientTokenSecretRef:
+                                description: A reference to a specific 'key' within
+                                  a Secret resource. In some instances, `key` is a
+                                  required field.
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                               serviceConsumerDomain:
                                 type: string
                           azuredns:
-                            description: ACMEIssuerDNS01ProviderAzureDNS is a structure
-                              containing the configuration for Azure DNS
+                            description: Use the Microsoft Azure DNS API to manage
+                              DNS01 challenge records.
                             type: object
                             required:
                             - resourceGroupName
@@ -259,14 +298,14 @@ spec:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                               environment:
                                 type: string
@@ -286,8 +325,8 @@ spec:
                                   then this field is also needed
                                 type: string
                           clouddns:
-                            description: ACMEIssuerDNS01ProviderCloudDNS is a structure
-                              containing the DNS configuration for Google Cloud DNS
+                            description: Use the Google Cloud DNS API to manage DNS01
+                              challenge records.
                             type: object
                             required:
                             - project
@@ -295,56 +334,66 @@ spec:
                               project:
                                 type: string
                               serviceAccountSecretRef:
+                                description: A reference to a specific 'key' within
+                                  a Secret resource. In some instances, `key` is a
+                                  required field.
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                           cloudflare:
-                            description: ACMEIssuerDNS01ProviderCloudflare is a structure
-                              containing the DNS configuration for Cloudflare
+                            description: Use the Cloudflare API to manage DNS01 challenge
+                              records.
                             type: object
                             properties:
                               apiKeySecretRef:
+                                description: 'API key to use to authenticate with
+                                  Cloudflare. Note: using an API token to authenticate
+                                  is now the recommended method as it allows greater
+                                  control of permissions.'
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                               apiTokenSecretRef:
+                                description: API token used to authenticate with Cloudflare.
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                               email:
+                                description: Email of the account, only required when
+                                  using API key based authentication.
                                 type: string
                           cnameStrategy:
                             description: CNAMEStrategy configures how the DNS01 provider
@@ -354,31 +403,34 @@ spec:
                             - None
                             - Follow
                           digitalocean:
-                            description: ACMEIssuerDNS01ProviderDigitalOcean is a
-                              structure containing the DNS configuration for DigitalOcean
-                              Domains
+                            description: Use the DigitalOcean DNS API to manage DNS01
+                              challenge records.
                             type: object
                             required:
                             - tokenSecretRef
                             properties:
                               tokenSecretRef:
+                                description: A reference to a specific 'key' within
+                                  a Secret resource. In some instances, `key` is a
+                                  required field.
                                 type: object
                                 required:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                           rfc2136:
-                            description: ACMEIssuerDNS01ProviderRFC2136 is a structure
-                              containing the configuration for RFC2136 DNS
+                            description: Use RFC2136 ("Dynamic Updates in the Domain
+                              Name System") (https://datatracker.ietf.org/doc/rfc2136/)
+                              to manage DNS01 challenge records.
                             type: object
                             required:
                             - nameserver
@@ -411,18 +463,18 @@ spec:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                           route53:
-                            description: ACMEIssuerDNS01ProviderRoute53 is a structure
-                              containing the Route 53 configuration for AWS
+                            description: Use the AWS Route53 API to manage DNS01 challenge
+                              records.
                             type: object
                             required:
                             - region
@@ -457,19 +509,18 @@ spec:
                                 - name
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.
-                                      Must be a valid secret key.
+                                    description: The key of the entry in the Secret
+                                      resource's `data` field to be used. Some instances
+                                      of this field may be defaulted, in others it
+                                      may be required.
                                     type: string
                                   name:
-                                    description: 'Name of the referent. More info:
-                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                      TODO: Add other useful fields. apiVersion, kind,
-                                      uid?'
+                                    description: 'Name of the resource being referred
+                                      to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                     type: string
                           webhook:
-                            description: ACMEIssuerDNS01ProviderWebhook specifies
-                              configuration for a webhook DNS01 provider, including
-                              where to POST ChallengePayload resources.
+                            description: Configure an external webhook based DNS01
+                              challenge solver to manage DNS01 challenge records.
                             type: object
                             required:
                             - groupName
@@ -498,12 +549,11 @@ spec:
                                   typically be the name of the provider, e.g. 'cloudflare'.
                                 type: string
                       http01:
-                        description: ACMEChallengeSolverHTTP01 contains configuration
-                          detailing how to solve HTTP01 challenges within a Kubernetes
-                          cluster. Typically this is accomplished through creating
-                          'routes' of some description that configure ingress controllers
-                          to direct traffic to 'solver pods', which are responsible
-                          for responding to the ACME server's HTTP requests.
+                        description: Configures cert-manager to attempt to complete
+                          authorizations by performing the HTTP01 challenge flow.
+                          It is not possible to obtain certificates for wildcard domain
+                          names (e.g. `*.example.com`) using the HTTP01 challenge
+                          mechanism.
                         type: object
                         properties:
                           ingress:
@@ -1520,6 +1570,9 @@ spec:
                       selector:
                         description: Selector selects a set of DNSNames on the Certificate
                           resource that should be solved using this challenge solver.
+                          If not specified, the solver will be treated as the 'default'
+                          solver with the lowest priority, i.e. if any other solver
+                          has a more specific match, it will be used instead.
                         type: object
                         properties:
                           dnsNames:
@@ -1554,6 +1607,9 @@ spec:
                             additionalProperties:
                               type: string
             ca:
+              description: CA configures this issuer to sign certificates using a
+                signing CA keypair stored in a Secret resource. This is used to build
+                internal PKIs that are managed by cert-manager.
               type: object
               required:
               - secretName
@@ -1561,8 +1617,8 @@ spec:
                 crlDistributionPoints:
                   description: The CRL distribution points is an X.509 v3 certificate
                     extension which identifies the location of the CRL from which
-                    the revocation of this certificate can be checked. If not set
-                    certificate will be issued without CDP. Values are strings.
+                    the revocation of this certificate can be checked. If not set,
+                    certificates will be issued without distribution points set.
                   type: array
                   items:
                     type: string
@@ -1571,6 +1627,8 @@ spec:
                     issued by this Issuer.
                   type: string
             selfSigned:
+              description: SelfSigned configures this issuer to 'self sign' certificates
+                using the private key used to create the CertificateRequest object.
               type: object
               properties:
                 crlDistributionPoints:
@@ -1582,6 +1640,8 @@ spec:
                   items:
                     type: string
             vault:
+              description: Vault configures this issuer to sign certificates using
+                a HashiCorp Vault PKI backend.
               type: object
               required:
               - auth
@@ -1589,11 +1649,14 @@ spec:
               - server
               properties:
                 auth:
-                  description: Vault authentication
+                  description: Auth configures how cert-manager authenticates with
+                    the Vault server.
                   type: object
                   properties:
                     appRole:
-                      description: This Secret contains a AppRole and Secret
+                      description: AppRole authenticates with Vault using the App
+                        Role auth mechanism, with the role and secret stored in a
+                        Kubernetes Secret resource.
                       type: object
                       required:
                       - path
@@ -1601,27 +1664,36 @@ spec:
                       - secretRef
                       properties:
                         path:
-                          description: Where the authentication path is mounted in
-                            Vault.
+                          description: 'Path where the App Role authentication backend
+                            is mounted in Vault, e.g: "approle"'
                           type: string
                         roleId:
+                          description: RoleID configured in the App Role authentication
+                            backend when setting up the authentication backend in
+                            Vault.
                           type: string
                         secretRef:
+                          description: Reference to a key in a Secret that contains
+                            the App Role secret used to authenticate with Vault. The
+                            `key` field must be specified and denotes which entry
+                            within the Secret resource is used as the app role secret.
                           type: object
                           required:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     kubernetes:
-                      description: This contains a Role and Secret with a ServiceAccount
-                        token to authenticate with vault.
+                      description: Kubernetes authenticates with Vault by passing
+                        the ServiceAccount token stored in the named Secret resource
+                        to the Vault server.
                       type: object
                       required:
                       - role
@@ -1648,43 +1720,49 @@ spec:
                           - name
                           properties:
                             key:
-                              description: The key of the secret to select from. Must
-                                be a valid secret key.
+                              description: The key of the entry in the Secret resource's
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: 'Name of the resource being referred to.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                     tokenSecretRef:
-                      description: This Secret contains the Vault token key
+                      description: TokenSecretRef authenticates with Vault by presenting
+                        a token.
                       type: object
                       required:
                       - name
                       properties:
                         key:
-                          description: The key of the secret to select from. Must
-                            be a valid secret key.
+                          description: The key of the entry in the Secret resource's
+                            `data` field to be used. Some instances of this field
+                            may be defaulted, in others it may be required.
                           type: string
                         name:
-                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          description: 'Name of the resource being referred to. More
+                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                           type: string
                 caBundle:
-                  description: Base64 encoded CA bundle to validate Vault server certificate.
-                    Only used if the Server URL is using HTTPS protocol. This parameter
-                    is ignored for plain HTTP protocol connection. If not set the
-                    system root certificates are used to validate the TLS connection.
+                  description: PEM encoded CA bundle used to validate Vault server
+                    certificate. Only used if the Server URL is using HTTPS protocol.
+                    This parameter is ignored for plain HTTP protocol connection.
+                    If not set the system root certificates are used to validate the
+                    TLS connection.
                   type: string
                   format: byte
                 path:
-                  description: Vault URL path to the certificate role
+                  description: 'Path is the mount path of the Vault PKI backend''s
+                    `sign` endpoint, e.g: "my_pki_mount/sign/my-role-name".'
                   type: string
                 server:
-                  description: Server is the vault connection address
+                  description: 'Server is the connection address for the Vault server,
+                    e.g: "https://vault.example.com:8200".'
                   type: string
             venafi:
-              description: VenafiIssuer describes issuer configuration details for
-                Venafi Cloud.
+              description: Venafi configures this issuer to sign certificates using
+                a Venafi TPP or Venafi Cloud policy zone.
               type: object
               required:
               - zone
@@ -1704,15 +1782,17 @@ spec:
                       - name
                       properties:
                         key:
-                          description: The key of the secret to select from. Must
-                            be a valid secret key.
+                          description: The key of the entry in the Secret resource's
+                            `data` field to be used. Some instances of this field
+                            may be defaulted, in others it may be required.
                           type: string
                         name:
-                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          description: 'Name of the resource being referred to. More
+                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                           type: string
                     url:
-                      description: URL is the base URL for Venafi Cloud
+                      description: URL is the base URL for Venafi Cloud. Defaults
+                        to "https://api.venafi.cloud/v1".
                       type: string
                 tpp:
                   description: TPP specifies Trust Protection Platform configuration
@@ -1740,11 +1820,12 @@ spec:
                       - name
                       properties:
                         name:
-                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          description: 'Name of the resource being referred to. More
+                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                           type: string
                     url:
-                      description: URL is the base URL for the Venafi TPP instance
+                      description: 'URL is the base URL for the vedsdk endpoint of
+                        the Venafi TPP instance, for example: "https://tpp.example.com/vedsdk".'
                       type: string
                 zone:
                   description: Zone is the Venafi Policy Zone to use for this issuer.
@@ -1752,10 +1833,12 @@ spec:
                     the named zone policy. This field is required.
                   type: string
         status:
-          description: IssuerStatus contains status information about an Issuer
+          description: Status of the Issuer. This is set and managed automatically.
           type: object
           properties:
             acme:
+              description: ACME specific status options. This field should only be
+                set if the Issuer is configured to use an ACME server to issue certificates.
               type: object
               properties:
                 lastRegisteredEmail:
@@ -1768,6 +1851,8 @@ spec:
                     be used to retrieve account details from the CA
                   type: string
             conditions:
+              description: List of status conditions to indicate the status of a CertificateRequest.
+                Known condition types are `Ready`.
               type: array
               items:
                 description: IssuerCondition contains condition information for an
@@ -1799,5 +1884,5 @@ spec:
                     - "False"
                     - Unknown
                   type:
-                    description: Type of the condition, currently ('Ready').
+                    description: Type of the condition, known values are ('Ready').
                     type: string

@@ -57,17 +57,12 @@ type OrderSpec struct {
 	IssuerRef cmmeta.ObjectReference
 
 	// CommonName is the common name as specified on the DER encoded CSR.
-	// If CommonName is not specified, the first DNSName specified will be used
-	// as the CommonName.
-	// At least one of CommonName or a DNSNames must be set.
+	// If specified, this value must also be present in `dnsNames`.
 	// This field must match the corresponding field on the DER encoded CSR.
 	CommonName string
 
 	// DNSNames is a list of DNS names that should be included as part of the Order
 	// validation process.
-	// If CommonName is not specified, the first DNSName specified will be used
-	// as the CommonName.
-	// At least one of CommonName or a DNSNames must be set.
 	// This field must match the corresponding field on the DER encoded CSR.
 	DNSNames []string
 }

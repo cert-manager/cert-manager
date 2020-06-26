@@ -36,8 +36,3 @@ const (
 	// of ingress on the created Certificate resource
 	IngressEditInPlaceAnnotationKey = "acme.cert-manager.io/http01-edit-in-place"
 )
-
-const (
-	OrderKind     = "Order"
-	ChallengeKind = "Challenge"
-)
