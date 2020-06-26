@@ -91,7 +91,7 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	opts.HealthzPort = 0
 
 	stopCh := make(chan struct{})
-	srv, err := app.NewServer(opts, stopCh)
+	srv, err := app.NewServerWithOptions(log, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

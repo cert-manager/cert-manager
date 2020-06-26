@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	"github.com/jetstack/cert-manager/pkg/logs"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/webhook"
@@ -34,15 +34,11 @@ import (
 	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
 )
 
-var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logs.Log, webhook.Scheme, webhook.ValidationRegistry)
-var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, webhook.Scheme)
-var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logs.Log, webhook.Scheme)
+var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logf.Log, webhook.Scheme, webhook.ValidationRegistry)
+var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logf.Log, webhook.Scheme)
+var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, webhook.Scheme)
 
-func NewServer(opts options.WebhookOptions, stopCh <-chan struct{}) (*server.Server, error) {
-	rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
-	rootCtx = logf.NewContext(rootCtx, nil, "webhook")
-	log := logf.FromContext(rootCtx)
-
+func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server.Server, error) {
 	var source tls.CertificateSource
 	switch {
 	case options.FileTLSSourceEnabled(opts):
@@ -94,7 +90,11 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 		Use:   "webhook",
 		Short: fmt.Sprintf("Webhook component providing API validation, mutation and conversion functionality for cert-manager (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			srv, err := NewServer(opts, stopCh)
+			ctx := util.ContextWithStopCh(context.Background(), stopCh)
+			ctx = logf.NewContext(ctx, nil, "webhook")
+			log := logf.FromContext(ctx)
+
+			srv, err := NewServerWithOptions(log, opts)
 			if err != nil {
 				return err
 			}
