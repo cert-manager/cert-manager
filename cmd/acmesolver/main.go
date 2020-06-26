@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -31,16 +30,7 @@ import (
 
 func main() {
 	stopCh := utilcmd.SetupSignalHandler()
-	ctx, cancel := context.WithCancel(context.TODO())
-	cmd := app.NewACMESolverCommand(ctx)
-
-	go func() {
-		select {
-		case <-ctx.Done():
-		case <-stopCh:
-			cancel()
-		}
-	}()
+	cmd := app.NewACMESolverCommand(stopCh)
 
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)

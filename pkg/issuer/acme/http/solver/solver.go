@@ -17,13 +17,12 @@ limitations under the License.
 package solver
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"path"
 	"strings"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/go-logr/logr"
 )
 
 type HTTP01Solver struct {
@@ -32,10 +31,11 @@ type HTTP01Solver struct {
 	Domain string
 	Token  string
 	Key    string
+
+	http.Server
 }
 
-func (h *HTTP01Solver) Listen(ctx context.Context) error {
-	log := logf.FromContext(ctx)
+func (h *HTTP01Solver) Listen(log logr.Logger) error {
 	log.Info("starting listener",
 		"expected_domain", h.Domain,
 		"expected_token", h.Token,
@@ -89,5 +89,11 @@ func (h *HTTP01Solver) Listen(ctx context.Context) error {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, h.Key)
 	})
-	return http.ListenAndServe(fmt.Sprintf(":%d", h.ListenPort), handler)
+
+	h.Server = http.Server{
+		Addr:    fmt.Sprintf(":%d", h.ListenPort),
+		Handler: handler,
+	}
+
+	return h.Server.ListenAndServe()
 }

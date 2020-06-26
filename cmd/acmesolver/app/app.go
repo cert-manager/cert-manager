@@ -19,30 +19,32 @@ package app
 import (
 	"context"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	"github.com/spf13/cobra"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-func NewACMESolverCommand(ctx context.Context) *cobra.Command {
-	var (
-		listenPort int
-		domain     string
-		token      string
-		key        string
-	)
+func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
+	s := new(solver.HTTP01Solver)
 
 	cmd := &cobra.Command{
 		Use:   "acmesolver",
-		Short: "HTTP server used to solver ACME challenges.",
+		Short: "HTTP server used to solve ACME challenges.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s := &solver.HTTP01Solver{
-				ListenPort: listenPort,
-				Domain:     domain,
-				Token:      token,
-				Key:        key,
-			}
+			rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
+			rootCtx = logf.NewContext(rootCtx, nil, "acmesolver")
+			log := logf.FromContext(rootCtx)
 
-			if err := s.Listen(ctx); err != nil {
+			go func() {
+				<-stopCh
+				if err := s.Shutdown(rootCtx); err != nil {
+					log.Error(err, "error shutting down acmesolver server")
+				}
+			}()
+
+			if err := s.Listen(log); err != nil {
 				return err
 			}
 
@@ -50,10 +52,10 @@ func NewACMESolverCommand(ctx context.Context) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&listenPort, "listen-port", 8089, "the port number to listen on for connections")
-	cmd.Flags().StringVar(&domain, "domain", "", "the domain name to verify")
-	cmd.Flags().StringVar(&token, "token", "", "the challenge token to verify against")
-	cmd.Flags().StringVar(&key, "key", "", "the challenge key to respond with")
+	cmd.Flags().IntVar(&s.ListenPort, "listen-port", 8089, "the port number to listen on for connections")
+	cmd.Flags().StringVar(&s.Domain, "domain", "", "the domain name to verify")
+	cmd.Flags().StringVar(&s.Token, "token", "", "the challenge token to verify against")
+	cmd.Flags().StringVar(&s.Key, "key", "", "the challenge key to respond with")
 
 	return cmd
 }
