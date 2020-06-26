@@ -48,7 +48,7 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
 func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string) (*DNSProvider, error) {
-	if email == "" || (key == "" && token == "") {
+	if (email == "" && key != "") || (key == "" && token == "") {
 		return nil, fmt.Errorf("CloudFlare credentials missing")
 	}
 	if key != "" && token != "" {
@@ -221,7 +221,9 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 		return nil, err
 	}
 
-	req.Header.Set("X-Auth-Email", c.authEmail)
+	if c.authEmail != "" {
+		req.Header.Set("X-Auth-Email", c.authEmail)
+	}
 	if c.authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+c.authToken)
 	} else {

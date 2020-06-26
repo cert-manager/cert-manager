@@ -316,7 +316,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			if p.Cloudflare.APIKey == nil && p.Cloudflare.APIToken == nil {
 				el = append(el, field.Required(fldPath.Child("cloudflare"), "apiKeySecretRef or apiTokenSecretRef is required"))
 			}
-			if len(p.Cloudflare.Email) == 0 {
+			if len(p.Cloudflare.Email) == 0 && p.Cloudflare.APIKey != nil {
 				el = append(el, field.Required(fldPath.Child("cloudflare", "email"), ""))
 			}
 		}
