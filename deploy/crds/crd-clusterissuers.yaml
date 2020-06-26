@@ -52,6 +52,9 @@ spec:
   - name: v1alpha3
     served: true
     storage: false
+  - name: v1beta1
+    served: true
+    storage: false
   "validation":
     "openAPIV3Schema":
       description: A ClusterIssuer represents a certificate issuing authority which

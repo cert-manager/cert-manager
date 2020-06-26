@@ -55,6 +55,9 @@ spec:
   - name: v1alpha3
     served: true
     storage: false
+  - name: v1beta1
+    served: true
+    storage: false
   "validation":
     "openAPIV3Schema":
       description: Challenge is a type to represent a Challenge request with an ACME

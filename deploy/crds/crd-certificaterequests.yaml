@@ -59,6 +59,9 @@ spec:
   - name: v1alpha3
     served: true
     storage: false
+  - name: v1beta1
+    served: true
+    storage: false
   "validation":
     "openAPIV3Schema":
       description: CertificateRequest is a type to represent a Certificate Signing
