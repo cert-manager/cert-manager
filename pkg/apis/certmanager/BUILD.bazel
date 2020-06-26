@@ -20,6 +20,7 @@ filegroup(
         ":package-srcs",
         "//pkg/apis/certmanager/v1alpha2:all-srcs",
         "//pkg/apis/certmanager/v1alpha3:all-srcs",
+        "//pkg/apis/certmanager/v1beta1:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

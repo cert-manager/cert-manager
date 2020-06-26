@@ -10,6 +10,7 @@ go_library(
         "//pkg/internal/apis/acme:go_default_library",
         "//pkg/internal/apis/acme/v1alpha2:go_default_library",
         "//pkg/internal/apis/acme/v1alpha3:go_default_library",
+        "//pkg/internal/apis/acme/v1beta1:go_default_library",
         "//pkg/internal/apis/acme/validation:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",

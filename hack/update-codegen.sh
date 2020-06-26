@@ -37,9 +37,11 @@ module_name="github.com/jetstack/cert-manager"
 deepcopy_inputs=(
   pkg/apis/certmanager/v1alpha2 \
   pkg/apis/certmanager/v1alpha3 \
+  pkg/apis/certmanager/v1beta1 \
   pkg/internal/apis/certmanager \
   pkg/apis/acme/v1alpha2 \
   pkg/apis/acme/v1alpha3 \
+  pkg/apis/acme/v1beta1 \
   pkg/internal/apis/acme \
   pkg/apis/meta/v1 \
   pkg/internal/apis/meta \
@@ -55,16 +57,20 @@ client_package="${module_name}/${client_subpackage}"
 client_inputs=(
   pkg/apis/certmanager/v1alpha2 \
   pkg/apis/certmanager/v1alpha3 \
+  pkg/apis/certmanager/v1beta1 \
   pkg/apis/acme/v1alpha2 \
   pkg/apis/acme/v1alpha3 \
+  pkg/apis/acme/v1beta1 \
 )
 
 # Generate defaulting functions to be used by the mutating webhook
 defaulter_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
   pkg/internal/apis/certmanager/v1alpha3 \
+  pkg/internal/apis/certmanager/v1beta1 \
   pkg/internal/apis/acme/v1alpha2 \
   pkg/internal/apis/acme/v1alpha3 \
+  pkg/internal/apis/acme/v1beta1 \
   pkg/internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
@@ -74,8 +80,10 @@ defaulter_inputs=(
 conversion_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
   pkg/internal/apis/certmanager/v1alpha3 \
+  pkg/internal/apis/certmanager/v1beta1 \
   pkg/internal/apis/acme/v1alpha2 \
   pkg/internal/apis/acme/v1alpha3 \
+  pkg/internal/apis/acme/v1beta1 \
   pkg/internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \

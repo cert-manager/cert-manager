@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha3"
+	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1beta1"
 	cmvalidation "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
 )
 
@@ -34,6 +35,7 @@ func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(certmanager.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	utilruntime.Must(v1alpha3.AddToScheme(scheme))
+	utilruntime.Must(v1beta1.AddToScheme(scheme))
 }
 
 // InstallValidation registers validation functions for the API group with a

@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha3"
+	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1beta1"
 	acmevalidation "github.com/jetstack/cert-manager/pkg/internal/apis/acme/validation"
 )
 
@@ -34,6 +35,7 @@ func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(acme.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	utilruntime.Must(v1alpha3.AddToScheme(scheme))
+	utilruntime.Must(v1beta1.AddToScheme(scheme))
 }
 
 // InstallValidation registers validation functions for the API group with a
