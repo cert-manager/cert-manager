@@ -149,7 +149,9 @@ func (o *Options) Run(args []string) error {
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Secret Name: %s\n", crt.Spec.SecretName))
 
-	fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", crt.Status.NotAfter.Time.Format(time.RFC3339)))
+	if crt.Status.NotAfter != nil {
+		fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", crt.Status.NotAfter.Time.Format(time.RFC3339)))
+	}
 
 	// TODO: print information about secret
 	return nil
