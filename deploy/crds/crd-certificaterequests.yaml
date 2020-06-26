@@ -85,7 +85,8 @@ spec:
           - issuerRef
           properties:
             csr:
-              description: Byte slice containing the PEM encoded CertificateSigningRequest
+              description: The PEM-encoded x509 certificate signing request to be
+                submitted to the CA for signing.
               type: string
               format: byte
             duration:
@@ -159,7 +160,7 @@ spec:
                 - microsoft sgc
                 - netscape sgc
         status:
-          description: Status of the CertificateRequest, set and managed automatically.
+          description: Status of the CertificateRequest. This is set and managed automatically.
           type: object
           properties:
             ca:

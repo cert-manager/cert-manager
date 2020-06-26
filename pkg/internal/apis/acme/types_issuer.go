@@ -23,7 +23,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
-
 // ACMEIssuer contains the specification for an ACME issuer.
 // This uses the RFC8555 specification to obtain certificates by completing
 // 'challenges' to prove ownership of domain identifiers.

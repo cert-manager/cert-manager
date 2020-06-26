@@ -144,13 +144,16 @@ spec:
                       - host
                       properties:
                         accountSecretRef:
+                          description: A reference to a specific 'key' within a Secret
+                            resource. In some instances, `key` is a required field.
                           type: object
                           required:
                           - name
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -169,39 +172,48 @@ spec:
                       - serviceConsumerDomain
                       properties:
                         accessTokenSecretRef:
+                          description: A reference to a specific 'key' within a Secret
+                            resource. In some instances, `key` is a required field.
                           type: object
                           required:
                           - name
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         clientSecretSecretRef:
+                          description: A reference to a specific 'key' within a Secret
+                            resource. In some instances, `key` is a required field.
                           type: object
                           required:
                           - name
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
                         clientTokenSecretRef:
+                          description: A reference to a specific 'key' within a Secret
+                            resource. In some instances, `key` is a required field.
                           type: object
                           required:
                           - name
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -230,7 +242,8 @@ spec:
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -263,13 +276,16 @@ spec:
                         project:
                           type: string
                         serviceAccountSecretRef:
+                          description: A reference to a specific 'key' within a Secret
+                            resource. In some instances, `key` is a required field.
                           type: object
                           required:
                           - name
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -290,7 +306,8 @@ spec:
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -304,7 +321,8 @@ spec:
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -329,13 +347,16 @@ spec:
                       - tokenSecretRef
                       properties:
                         tokenSecretRef:
+                          description: A reference to a specific 'key' within a Secret
+                            resource. In some instances, `key` is a required field.
                           type: object
                           required:
                           - name
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -376,7 +397,8 @@ spec:
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
@@ -419,7 +441,8 @@ spec:
                           properties:
                             key:
                               description: The key of the entry in the Secret resource's
-                                `data` field to be used.
+                                `data` field to be used. Some instances of this field
+                                may be defaulted, in others it may be required.
                               type: string
                             name:
                               description: 'Name of the resource being referred to.
