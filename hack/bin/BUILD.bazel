@@ -36,6 +36,17 @@ genrule(
 )
 
 genrule(
+    name = "co_honnef_go_tools_staticcheck",
+    srcs = select({
+        ":darwin": ["@co_honnef_go_tools_staticcheck_osx//:file"],
+        ":k8": ["@co_honnef_go_tools_staticcheck_linux//:file"],
+    }),
+    outs = ["staticcheck"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "io_kubernetes_kube-apiserver",
     srcs = select({
         ":darwin": ["@kube-apiserver_darwin_amd64//file"],

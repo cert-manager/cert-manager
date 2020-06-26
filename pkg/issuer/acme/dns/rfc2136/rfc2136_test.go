@@ -22,6 +22,7 @@ limitations under the License.
 package rfc2136
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -46,7 +47,7 @@ var (
 )
 
 func TestRFC2136CanaryLocalTestServer(t *testing.T) {
-	ctx := logf.NewContext(nil, nil, t.Name())
+	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc(serverHandlerHello),
@@ -70,7 +71,7 @@ func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 }
 
 func TestRFC2136ServerSuccess(t *testing.T) {
-	ctx := logf.NewContext(nil, nil, t.Name())
+	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc(serverHandlerReturnSuccess),
@@ -90,7 +91,7 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 }
 
 func TestRFC2136ServerError(t *testing.T) {
-	ctx := logf.NewContext(nil, nil, t.Name())
+	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:   []string{rfc2136TestZone},
 		Handler: dns.HandlerFunc(serverHandlerReturnErr),
@@ -112,7 +113,7 @@ func TestRFC2136ServerError(t *testing.T) {
 }
 
 func TestRFC2136TsigClient(t *testing.T) {
-	ctx := logf.NewContext(nil, nil, t.Name())
+	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:         []string{rfc2136TestZone},
 		Handler:       dns.HandlerFunc(serverHandlerReturnSuccess),
@@ -296,7 +297,7 @@ func TestRFC2136InvalidTSIGAlgorithm(t *testing.T) {
 }
 
 func TestRFC2136ValidUpdatePacket(t *testing.T) {
-	ctx := logf.NewContext(nil, nil, t.Name())
+	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones: []string{rfc2136TestZone},
 	}

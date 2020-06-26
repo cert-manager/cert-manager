@@ -48,18 +48,6 @@ func mustGenerateRSA(t *testing.T, keySize int) []byte {
 	return d
 }
 
-func mustGenerateECDSA(t *testing.T, keySize int) []byte {
-	pk, err := pki.GenerateECPrivateKey(keySize)
-	if err != nil {
-		t.Fatal(err)
-	}
-	d, err := pki.EncodePKCS8PrivateKey(pk)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return d
-}
-
 func relaxedCertificateRequestMatcher(l coretesting.Action, r coretesting.Action) error {
 	objL := l.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()
 	objR := r.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()

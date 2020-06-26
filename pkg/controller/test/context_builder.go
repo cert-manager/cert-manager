@@ -81,12 +81,6 @@ type Builder struct {
 	*controller.Context
 }
 
-func (b *Builder) logf(format string, args ...interface{}) {
-	if b.T != nil {
-		b.T.Logf(format, args...)
-	}
-}
-
 func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 	obj := action.(coretesting.CreateAction).GetObject().(metav1.Object)
 	genName := obj.GetGenerateName()

@@ -71,12 +71,8 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration, customFields []inte
 		for _, field := range customFields {
 			var fieldType certificate.CustomFieldType
 			switch field.Type {
-			case internalvanafiapi.CustomFieldTypePlain:
+			case internalvanafiapi.CustomFieldTypePlain, "":
 				fieldType = certificate.CustomFieldPlain
-				break
-			case "":
-				fieldType = certificate.CustomFieldPlain
-				break
 			default:
 				return nil, ErrCustomFieldsType{Type: field.Type}
 			}

@@ -402,8 +402,10 @@ O7WnDn8nuLFdW+NzzbIrTw==
 		return func(t *testing.T) {
 			block, _ := pem.Decode(privateKeyBytes)
 			decodedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+			if err != nil {
+				t.Fatal(err)
+			}
 			encodedKey, err := EncodePrivateKey(decodedKey, test.keyEncoding)
-
 			if test.expectErr {
 				if err == nil {
 					t.Error("expected err, but got no error")

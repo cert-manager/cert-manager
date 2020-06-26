@@ -20,6 +20,7 @@ def install():
     install_misc()
     install_integration_test_dependencies()
     install_bazel_tools()
+    install_staticcheck()
     install_helm()
     install_kubectl()
     install_kind()
@@ -33,6 +34,37 @@ def install():
         importpath = "golang.org/x/build",
         sum = "h1:hXVePvSFG7tPGX4Pwk1d10ePFfoTCc0QmISfpKOHsS8=",
         version = "v0.0.0-20190927031335-2835ba2e683f",
+    )
+
+def install_staticcheck():
+    http_archive(
+        name = "co_honnef_go_tools_staticcheck_linux",
+        sha256 = "09d2c2002236296de2c757df111fe3ae858b89f9e183f645ad01f8135c83c519",
+        urls = ["https://github.com/dominikh/go-tools/releases/download/2020.1.4/staticcheck_linux_amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "staticcheck/staticcheck",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+    )
+
+    http_archive(
+        name = "co_honnef_go_tools_staticcheck_osx",
+        sha256 = "5706d101426c025e8f165309e0cb2932e54809eb035ff23ebe19df0f810699d8",
+        urls = ["https://github.com/dominikh/go-tools/releases/download/2020.1.4/staticcheck_darwin_amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "staticcheck/staticcheck",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
     )
 
 def install_misc():

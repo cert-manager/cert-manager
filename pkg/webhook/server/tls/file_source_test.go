@@ -116,8 +116,8 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	// Update the certificate data in-place
 	serial = "serial2"
 	pkBytes, certBytes = generatePrivateKeyAndCertificate(t, serial)
-	pkFile = writeTempFile(t, dir, "pk", pkBytes)
-	certFile = writeTempFile(t, dir, "cert", certBytes)
+	writeTempFile(t, dir, "pk", pkBytes)
+	writeTempFile(t, dir, "cert", certBytes)
 
 	time.Sleep(interval * 2)
 	cert, err = source.GetCertificate(nil)

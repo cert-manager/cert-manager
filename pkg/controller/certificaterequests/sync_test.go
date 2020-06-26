@@ -26,7 +26,6 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
-	"math/big"
 	"testing"
 	"time"
 
@@ -48,9 +47,8 @@ import (
 )
 
 var (
-	fixedClockStart   = time.Now()
-	fixedClock        = fakeclock.NewFakeClock(fixedClockStart)
-	serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
+	fixedClockStart = time.Now()
+	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
 func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm) []byte {

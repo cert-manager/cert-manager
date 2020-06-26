@@ -51,7 +51,6 @@ type BasicServer struct {
 	// TSIGZone is the DNS zone that should be used in TSIG responses
 	TSIGZone string
 
-	ctx        context.Context
 	listenAddr string
 	server     *dns.Server
 }
@@ -76,9 +75,6 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr string) err
 	b.listenAddr = pc.LocalAddr().String()
 	log = log.WithValues("address", b.listenAddr)
 	log.Info("listening on UDP port")
-
-	// update the ctx with the new logger
-	ctx = logf.NewContext(ctx, log)
 
 	b.server = &dns.Server{PacketConn: pc, ReadTimeout: time.Hour, WriteTimeout: time.Hour, MsgAcceptFunc: msgAcceptFunc}
 	if b.EnableTSIG {

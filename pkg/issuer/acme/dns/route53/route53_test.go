@@ -29,7 +29,6 @@ var (
 	route53Secret string
 	route53Key    string
 	route53Region string
-	route53Zone   string
 )
 
 func init() {

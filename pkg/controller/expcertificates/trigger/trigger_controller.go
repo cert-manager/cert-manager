@@ -50,10 +50,6 @@ const (
 	ControllerName = "CertificateTrigger"
 )
 
-var (
-	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
-)
-
 // This controller observes the state of the certificate's currently
 // issued `spec.secretName` and the rest of the `certificate.spec` fields to
 // determine whether a re-issuance is required.

@@ -163,8 +163,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return c.Sync(ctx, crt)
 }
 
-var keyFunc = controllerpkg.KeyFunc
-
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, ControllerName).

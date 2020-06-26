@@ -47,7 +47,6 @@ type DynamicSource struct {
 	Log logr.Logger
 
 	cachedCertificate *tls.Certificate
-	requiresRotation  bool
 	nextRenew         time.Time
 	lock              sync.Mutex
 }
