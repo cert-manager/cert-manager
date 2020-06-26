@@ -199,7 +199,7 @@ type VaultAuth struct {
 	Kubernetes *VaultKubernetesAuth
 }
 
-// AppRole authenticates with Vault using the App Role auth mechanism,
+// VaultAppRole authenticates with Vault using the App Role auth mechanism,
 // with the role and secret stored in a Kubernetes Secret resource.
 type VaultAppRole struct {
 	// Path where the App Role authentication backend is mounted in Vault, e.g:
@@ -212,6 +212,8 @@ type VaultAppRole struct {
 
 	// Reference to a key in a Secret that contains the App Role secret used
 	// to authenticate with Vault.
+	// The `key` field must be specified and denotes which entry within the Secret
+	// resource is used as the app role secret.
 	SecretRef cmmeta.SecretKeySelector
 }
 

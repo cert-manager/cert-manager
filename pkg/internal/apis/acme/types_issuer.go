@@ -36,11 +36,12 @@ type ACMEIssuer struct {
 	Email string
 
 	// Server is the URL used to access the ACME server's 'directory' endpoint.
-	// For examples, for Let's Encrypt's staging endpoint, you would use:
+	// For example, for Let's Encrypt's staging endpoint, you would use:
 	// "https://acme-staging-v02.api.letsencrypt.org/directory".
 	// Only ACME v2 endpoints (i.e. RFC 8555) are supported.
 	Server string
 
+	// Enables or disables validation of the ACME server TLS certificate.
 	// If true, requests to the ACME server will not have their TLS certificate
 	// validated (i.e. insecure connections will be allowed).
 	// Only enable this option in development environments.
@@ -55,8 +56,10 @@ type ACMEIssuer struct {
 	// external account credentials with the registered ACME account.
 	ExternalAccountBinding *ACMEExternalAccountBinding
 
-	// PrivateKey is the name of a Secret resource that will be used to store the
-	// automatically generated ACME account private key.
+	// PrivateKey is the name of a Kubernetes Secret resource that will be used to
+	// store the automatically generated ACME account private key.
+	// Optionally, a `key` may be specified to select a specific entry within
+	// the named Secret resource.
 	// If `key` is not specified, a default of `tls.key` will be used.
 	PrivateKey cmmeta.SecretKeySelector
 
