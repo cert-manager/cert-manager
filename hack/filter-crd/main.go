@@ -28,7 +28,7 @@ import (
 )
 
 var removeKeys = []string{}
-var removeElementForValue = map[string]string{}
+var retainElementForValue = map[string]string{}
 var singleCRDVersion = false
 
 func main() {
@@ -131,7 +131,7 @@ func checkSliceChain(s []interface{}, chain []string) []interface{} {
 						}
 					}
 
-					if value, ok := removeElementForValue[strings.Join(chain, "/")]; ok && value == v.(string) {
+					if value, ok := retainElementForValue[strings.Join(chain, "/")]; ok && value != v.(string) {
 						s = removeFromSlice(s, d)
 					}
 
@@ -182,9 +182,9 @@ func loadVariant() {
 			"spec/validation/openAPIV3Schema/properties/spec/properties/solver/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields",
 		}
 
-		// this removed the whole version slice element if version name is `v1alpha3`
-		removeElementForValue = map[string]string{
-			"spec/versions/[]/name": "v1alpha3",
+		// only retain the `v1alpha2` version in the CRD
+		retainElementForValue = map[string]string{
+			"spec/versions/[]/name": "v1alpha2",
 		}
 
 		singleCRDVersion = true
