@@ -38,6 +38,7 @@ filegroup(
         "//pkg/internal/apis/acme/install:all-srcs",
         "//pkg/internal/apis/acme/v1alpha2:all-srcs",
         "//pkg/internal/apis/acme/v1alpha3:all-srcs",
+        "//pkg/internal/apis/acme/v1beta1:all-srcs",
         "//pkg/internal/apis/acme/validation:all-srcs",
     ],
     tags = ["automanaged"],

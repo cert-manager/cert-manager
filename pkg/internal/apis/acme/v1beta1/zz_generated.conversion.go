@@ -28,7 +28,7 @@ import (
 	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	v1 "k8s.io/api/core/v1"
-	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -959,7 +959,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01Provi
 func autoConvert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(in *v1beta1.ACMEIssuerDNS01ProviderWebhook, out *acme.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
 	out.GroupName = in.GroupName
 	out.SolverName = in.SolverName
-	out.Config = (*v1beta1.JSON)(unsafe.Pointer(in.Config))
+	out.Config = (*apiextensionsv1beta1.JSON)(unsafe.Pointer(in.Config))
 	return nil
 }
 
@@ -971,7 +971,7 @@ func Convert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01Provi
 func autoConvert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(in *acme.ACMEIssuerDNS01ProviderWebhook, out *v1beta1.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
 	out.GroupName = in.GroupName
 	out.SolverName = in.SolverName
-	out.Config = (*v1beta1.JSON)(unsafe.Pointer(in.Config))
+	out.Config = (*apiextensionsv1beta1.JSON)(unsafe.Pointer(in.Config))
 	return nil
 }
 
