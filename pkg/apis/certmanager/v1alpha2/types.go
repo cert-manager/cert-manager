@@ -16,34 +16,34 @@ limitations under the License.
 
 package v1alpha2
 
-// Common annotation keys added to resources
+// Common annotation keys added to resources.
 const (
-	// Annotation key for DNS subjectAltNames
+	// Annotation key for DNS subjectAltNames.
 	AltNamesAnnotationKey = "cert-manager.io/alt-names"
 
-	// Annotation key for IP subjectAltNames
+	// Annotation key for IP subjectAltNames.
 	IPSANAnnotationKey = "cert-manager.io/ip-sans"
 
-	// Annotation key for URI subjectAltNames
+	// Annotation key for URI subjectAltNames.
 	URISANAnnotationKey = "cert-manager.io/uri-sans"
 
-	// Annotation key for certificate common name
+	// Annotation key for certificate common name.
 	CommonNameAnnotationKey = "cert-manager.io/common-name"
 
-	// Annotation key the 'name' of the Issuer resource
+	// Annotation key the 'name' of the Issuer resource.
 	IssuerNameAnnotationKey = "cert-manager.io/issuer-name"
 
-	// Annotation key the 'kind' of the Issuer resource
+	// Annotation key for the 'kind' of the Issuer resource.
 	IssuerKindAnnotationKey = "cert-manager.io/issuer-kind"
 
-	// Annotation key the 'group' of the Issuer resource
+	// Annotation key for the 'group' of the Issuer resource.
 	IssuerGroupAnnotationKey = "cert-manager.io/issuer-group"
 
-	// Annotation key the name of the certificate that a resource is related to
+	// Annotation key for the name of the certificate that a resource is related to.
 	CertificateNameKey = "cert-manager.io/certificate-name"
 
 	// Annotation key used to denote whether a Secret is named on a Certificate
-	// as a 'next private key' Secret resource
+	// as a 'next private key' Secret resource.
 	IsNextPrivateKeySecretLabelKey = "cert-manager.io/next-private-key"
 )
 
@@ -94,7 +94,7 @@ const (
 	IssueTemporaryCertificateAnnotation = "cert-manager.io/issue-temporary-certificate"
 )
 
-// Common/known resource kinds
+// Common/known resource kinds.
 const (
 	ClusterIssuerKind      = "ClusterIssuer"
 	IssuerKind             = "Issuer"

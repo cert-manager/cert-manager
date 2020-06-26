@@ -41,7 +41,7 @@ type Certificate struct {
 	// Desired state of the Certificate resource.
 	Spec CertificateSpec `json:"spec,omitempty"`
 
-	// Status of the Certificate, set and managed automatically.
+	// Status of the Certificate. This is set and managed automatically.
 	Status CertificateStatus `json:"status,omitempty"`
 }
 
@@ -59,10 +59,10 @@ type CertificateList struct {
 type KeyAlgorithm string
 
 const (
-	// Denotes the RSA private key type
+	// Denotes the RSA private key type.
 	RSAKeyAlgorithm KeyAlgorithm = "rsa"
 
-	// Denotes the ECDSA private key type
+	// Denotes the ECDSA private key type.
 	ECDSAKeyAlgorithm KeyAlgorithm = "ecdsa"
 )
 
@@ -96,7 +96,7 @@ type CertificateSpec struct {
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
-	// Organization is the organization to be used on the Certificate.
+	// Organization is a list of organizations to be used on the Certificate.
 	// +optional
 	Organization []string `json:"organization,omitempty"`
 
@@ -301,8 +301,8 @@ type CertificateStatus struct {
 	Conditions []CertificateCondition `json:"conditions,omitempty"`
 
 	// LastFailureTime is the time as recorded by the Certificate controller
-	// of the most recently failure to complete a CertificateRequest for this
-	// certificate resource.
+	// of the most recent failure to complete a CertificateRequest for this
+	// Certificate resource.
 	// If set, cert-manager will not re-request another Certificate until
 	// 1 hour has elapsed from this time.
 	// +optional

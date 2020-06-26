@@ -37,7 +37,7 @@ type ClusterIssuer struct {
 	// Desired state of the ClusterIssuer resource.
 	Spec IssuerSpec
 
-	// Status of the ClusterIssuer, set and managed automatically.
+	// Status of the ClusterIssuer. This is set and managed automatically.
 	Status IssuerStatus
 }
 
@@ -64,7 +64,7 @@ type Issuer struct {
 	// Desired state of the Issuer resource.
 	Spec IssuerSpec
 
-	// Status of the Issuer, set and managed automatically.
+	// Status of the Issuer. This is set and managed automatically.
 	Status IssuerStatus
 }
 
@@ -103,11 +103,11 @@ type IssuerConfig struct {
 	SelfSigned *SelfSignedIssuer
 
 	// Venafi configures this issuer to sign certificates using a Venafi TPP
-	// or Cloud policy zone.
+	// or Venafi Cloud policy zone.
 	Venafi *VenafiIssuer
 }
 
-// Venafi configures this issuer to sign certificates using a Venafi TPP
+// Configures an issuer to sign certificates using a Venafi TPP
 // or Cloud policy zone.
 type VenafiIssuer struct {
 	// Zone is the Venafi Policy Zone to use for this issuer.
@@ -155,7 +155,7 @@ type VenafiCloud struct {
 	APITokenSecretRef cmmeta.SecretKeySelector
 }
 
-// SelfSigned configures this issuer to 'self sign' certificates using the
+// Configures an issuer to 'self sign' certificates using the
 // private key used to create the CertificateRequest object.
 type SelfSignedIssuer struct {
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
@@ -164,7 +164,7 @@ type SelfSignedIssuer struct {
 	CRLDistributionPoints []string
 }
 
-// Vault configures this issuer to sign certificates using a HashiCorp Vault
+// Configures an issuer to sign certificates using a HashiCorp Vault
 // PKI backend.
 type VaultIssuer struct {
 	// Auth configures how cert-manager authenticates with the Vault server.
@@ -206,8 +206,8 @@ type VaultAppRole struct {
 	// "approle"
 	Path string
 
-	// RoleID configures in the App Role authentication backend when setting
-	// up the App Role backend.
+	// RoleID configured in the App Role authentication backend when setting
+	// up the authentication backend in Vault.
 	RoleId string
 
 	// Reference to a key in a Secret that contains the App Role secret used

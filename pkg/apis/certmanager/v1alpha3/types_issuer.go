@@ -42,7 +42,7 @@ type ClusterIssuer struct {
 	// Desired state of the ClusterIssuer resource.
 	Spec IssuerSpec `json:"spec,omitempty"`
 
-	// Status of the ClusterIssuer, set and managed automatically.
+	// Status of the ClusterIssuer. This is set and managed automatically.
 	Status IssuerStatus `json:"status,omitempty"`
 }
 
@@ -76,7 +76,7 @@ type Issuer struct {
 	// Desired state of the Issuer resource.
 	Spec IssuerSpec `json:"spec,omitempty"`
 
-	// Status of the Issuer, set and managed automatically.
+	// Status of the Issuer. This is set and managed automatically.
 	Status IssuerStatus `json:"status,omitempty"`
 }
 
@@ -119,12 +119,12 @@ type IssuerConfig struct {
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
 
 	// Venafi configures this issuer to sign certificates using a Venafi TPP
-	// or Cloud policy zone.
+	// or Venafi Cloud policy zone.
 	// +optional
 	Venafi *VenafiIssuer `json:"venafi,omitempty"`
 }
 
-// Venafi configures this issuer to sign certificates using a Venafi TPP
+// Configures an issuer to sign certificates using a Venafi TPP
 // or Cloud policy zone.
 type VenafiIssuer struct {
 	// Zone is the Venafi Policy Zone to use for this issuer.
@@ -176,7 +176,7 @@ type VenafiCloud struct {
 	APITokenSecretRef cmmeta.SecretKeySelector `json:"apiTokenSecretRef"`
 }
 
-// SelfSigned configures this issuer to 'self sign' certificates using the
+// Configures an issuer to 'self sign' certificates using the
 // private key used to create the CertificateRequest object.
 type SelfSignedIssuer struct {
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
@@ -186,7 +186,7 @@ type SelfSignedIssuer struct {
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 }
 
-// Vault configures this issuer to sign certificates using a HashiCorp Vault
+// Configures an issuer to sign certificates using a HashiCorp Vault
 // PKI backend.
 type VaultIssuer struct {
 	// Auth configures how cert-manager authenticates with the Vault server.
@@ -232,8 +232,8 @@ type VaultAppRole struct {
 	// "approle"
 	Path string `json:"path"`
 
-	// RoleID configures in the App Role authentication backend when setting
-	// up the App Role backend.
+	// RoleID configured in the App Role authentication backend when setting
+	// up the authentication backend in Vault.
 	RoleId string `json:"roleId"`
 
 	// Reference to a key in a Secret that contains the App Role secret used

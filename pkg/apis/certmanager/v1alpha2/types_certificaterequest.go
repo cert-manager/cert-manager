@@ -53,7 +53,7 @@ type CertificateRequest struct {
 	// Desired state of the CertificateRequest resource.
 	Spec CertificateRequestSpec `json:"spec,omitempty"`
 
-	// Status of the CertificateRequest, set and managed automatically.
+	// Status of the CertificateRequest. This is set and managed automatically.
 	Status CertificateRequestStatus `json:"status,omitempty"`
 }
 
@@ -83,7 +83,8 @@ type CertificateRequestSpec struct {
 	// issuer which defaults to 'cert-manager.io' if empty.
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
-	// Byte slice containing the PEM encoded CertificateSigningRequest
+	// The PEM-encoded x509 certificate signing request to be submitted to the
+	// CA for signing.
 	CSRPEM []byte `json:"csr"`
 
 	// IsCA will request to mark the certificate as valid for certificate signing
@@ -98,7 +99,7 @@ type CertificateRequestSpec struct {
 	Usages []KeyUsage `json:"usages,omitempty"`
 }
 
-// CertificateStatus defines the observed state of CertificateRequest and
+// CertificateRequestStatus defines the observed state of CertificateRequest and
 // resulting signed certificate.
 type CertificateRequestStatus struct {
 	// List of status conditions to indicate the status of a CertificateRequest.
