@@ -151,86 +151,102 @@ func TestValidateCertificate(t *testing.T) {
 		"valid certificate with rsa keyAlgorithm specified and no keySize": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.RSAKeyAlgorithm,
+					},
 				},
 			},
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 2048": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
-					KeySize:      2048,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.RSAKeyAlgorithm,
+						Size:      2048,
+					},
 				},
 			},
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 4096": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
-					KeySize:      4096,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.RSAKeyAlgorithm,
+						Size:      4096,
+					},
 				},
 			},
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 8192": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
-					KeySize:      8192,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.RSAKeyAlgorithm,
+						Size:      8192,
+					},
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified and no keySize": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 256": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					KeySize:      256,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Size:      256,
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 384": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					KeySize:      384,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Size:      384,
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 521": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					KeySize:      521,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Size:      521,
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
 				},
 			},
 		},
@@ -240,63 +256,73 @@ func TestValidateCertificate(t *testing.T) {
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
-					KeySize:    2048,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Size: 2048,
+					},
 				},
 			},
 		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 1024": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
-					KeySize:      1024,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.RSAKeyAlgorithm,
+						Size:      1024,
+					},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keySize"), 1024, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+				field.Invalid(fldPath.Child("privateKey", "size"), 1024, "must be between 2048 & 8192 for rsa keyAlgorithm"),
 			},
 		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 8196": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
-					KeySize:      8196,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.RSAKeyAlgorithm,
+						Size:      8196,
+					},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keySize"), 8196, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+				field.Invalid(fldPath.Child("privateKey", "size"), 8196, "must be between 2048 & 8192 for rsa keyAlgorithm"),
 			},
 		},
 		"certificate with ecdsa keyAlgorithm specified and invalid keysize": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					KeySize:      100,
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Size:      100,
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
 				},
 			},
 			errs: []*field.Error{
-				field.NotSupported(fldPath.Child("keySize"), 100, []string{"256", "384", "521"}),
+				field.NotSupported(fldPath.Child("privateKey", "size"), 100, []string{"256", "384", "521"}),
 			},
 		},
 		"certificate with invalid keyAlgorithm": {
 			cfg: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					CommonName:   "testcn",
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: cmapi.KeyAlgorithm("blah"),
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.PrivateKeyAlgorithm("blah"),
+					},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keyAlgorithm"), cmapi.KeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
+				field.Invalid(fldPath.Child("privateKey", "algorithm"), cmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
 			},
 		},
 		"valid certificate with ipAddresses": {

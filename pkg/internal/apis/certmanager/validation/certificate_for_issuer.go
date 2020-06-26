@@ -48,7 +48,7 @@ func ValidateCertificateForACMEIssuer(crt *cmapi.CertificateSpec, issuer *cmapi.
 	el := field.ErrorList{}
 
 	if crt.IsCA {
-		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "ACME does not support CA certificates"))
+		el = append(el, field.Invalid(specPath.Child("isCA"), crt.IsCA, "ACME does not support CA certificates"))
 	}
 
 	if crt.Subject != nil && len(crt.Subject.Organizations) != 0 {
@@ -70,7 +70,7 @@ func ValidateCertificateForVaultIssuer(crt *cmapi.CertificateSpec, issuer *cmapi
 	el := field.ErrorList{}
 
 	if crt.IsCA {
-		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "Vault issuer does not currently support CA certificates"))
+		el = append(el, field.Invalid(specPath.Child("isCA"), crt.IsCA, "Vault issuer does not currently support CA certificates"))
 	}
 
 	if crt.Subject != nil && len(crt.Subject.Organizations) != 0 {

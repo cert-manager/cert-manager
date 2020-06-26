@@ -64,8 +64,10 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 		"certificate with RSA keyAlgorithm for ACME": {
 			crt: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					KeyAlgorithm: cmapi.RSAKeyAlgorithm,
-					IssuerRef:    validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.RSAKeyAlgorithm,
+					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			issuer: acmeIssuer,
@@ -73,8 +75,10 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 		"certificate with ECDSA keyAlgorithm for ACME": {
 			crt: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					IssuerRef:    validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			issuer: acmeIssuer,
@@ -130,8 +134,10 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 		"certificate with unspecified issuer type": {
 			crt: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					IssuerRef:    validIssuerRef,
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
+					IssuerRef: validIssuerRef,
 				},
 			},
 			issuer: &cmapi.Issuer{},
