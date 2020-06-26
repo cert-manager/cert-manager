@@ -36,8 +36,8 @@ import (
 
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 var (
@@ -57,11 +57,9 @@ kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-
 )
 
 var (
-	// Use the webhook's scheme as it already has the internal cert-manager types,
-	// and their conversion functions registered.
-	// In future we may we want to consider creating a dedicated scheme used by
-	// the ctl tool.
-	scheme = webhook.Scheme
+	// Dedicated scheme used by the ctl tool that has the internal cert-manager types,
+	// and their conversion functions registered
+	scheme = ctl.Scheme
 )
 
 // Options is a struct to support create certificaterequest command
