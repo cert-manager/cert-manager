@@ -43,6 +43,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/internal/predicate"
 	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger/policies"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/scheduler"
 )
 
 const (
@@ -67,6 +68,7 @@ type controller struct {
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
 	clock                    clock.Clock
+	scheduledWorkQueue       scheduler.ScheduledWorkQueue
 	gatherer                 *policies.Gatherer
 }
 
@@ -116,6 +118,7 @@ func NewController(
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
+		scheduledWorkQueue:       scheduler.NewScheduledWorkQueue(clock, queue.Add),
 		gatherer: &policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
@@ -148,6 +151,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
+	// ensure a resync is scheduled in the future so that we re-check
+	// Certificate resources and trigger them near expiry time
+	c.scheduleRecheckOfCertificateIfRequired(log, key, crt.Status.RenewalTime)
+
 	input, err := c.gatherer.DataForCertificate(ctx, crt)
 	if err != nil {
 		return err
@@ -155,7 +162,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	reason, message, reissue := c.policyChain.Evaluate(input)
 	if !reissue {
-		// no reissuance required, return early
+		// no re-issuance required, return early
 		return nil
 	}
 
@@ -180,6 +187,29 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
+// scheduleRecheckOfCertificateIfRequired will schedule the resource with the
+// given key to be re-queued for processing at the given time (if not nil).
+func (c *controller) scheduleRecheckOfCertificateIfRequired(log logr.Logger, key string, renewalTime *metav1.Time) {
+	if renewalTime == nil {
+		return
+	}
+
+	durationUntilRenewalTime := renewalTime.Sub(c.clock.Now())
+	// don't schedule a re-queue if the time is in the past.
+	// if it is in the past, the resource will be triggered during the
+	// current call to the ProcessItem method. If we added the item to the
+	// queue with a duration of <=0, we would otherwise continually re-queue
+	// in a tight loop whilst we wait for the caching listers to observe
+	// the 'Triggered' status condition changing to 'True'.
+	if durationUntilRenewalTime < 0 {
+		return
+	}
+
+	log.Info("scheduling renewal", "duration_until_renewal", durationUntilRenewalTime.String())
+
+	c.scheduledWorkQueue.Add(key, durationUntilRenewalTime)
+}
+
 // controllerWrapper wraps the `controller` structure to make it implement
 // the controllerpkg.queueingController interface
 type controllerWrapper struct {
@@ -196,7 +226,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
-		policies.TriggerPolicyChain,
+		policies.NewTriggerPolicyChain(ctx.Clock),
 	)
 	c.controller = ctrl
 

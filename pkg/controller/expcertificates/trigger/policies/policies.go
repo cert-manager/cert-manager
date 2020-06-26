@@ -22,6 +22,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	certificates "github.com/jetstack/cert-manager/pkg/controller/expcertificates"
@@ -55,14 +56,16 @@ func (c Chain) Evaluate(input Input) (string, string, bool) {
 	return "", "", false
 }
 
-var TriggerPolicyChain = Chain{
-	SecretDoesNotExist,
-	SecretHasData,
-	SecretPublicKeysMatch,
-	SecretPrivateKeyMatchesSpec,
-	SecretHasUpToDateIssuerAnnotations,
-	CurrentCertificateRequestValidForSpec,
-	CurrentCertificateNearingExpiry,
+func NewTriggerPolicyChain(c clock.Clock) Chain {
+	return Chain{
+		SecretDoesNotExist,
+		SecretHasData,
+		SecretPublicKeysMatch,
+		SecretPrivateKeyMatchesSpec,
+		SecretHasUpToDateIssuerAnnotations,
+		CurrentCertificateRequestValidForSpec,
+		CurrentCertificateNearingExpiry(c),
+	}
 }
 
 func SecretDoesNotExist(input Input) (string, string, bool) {
@@ -175,30 +178,19 @@ func currentSecretValidForSpec(input Input) (string, string, bool) {
 	return "", "", false
 }
 
-func CurrentCertificateNearingExpiry(input Input) (string, string, bool) {
-	certData := input.Secret.Data[corev1.TLSCertKey]
-	// TODO: replace this with a generic decoder that can handle different
-	//  formats such as JKS, P12 etc (i.e. add proper support for keystores)
-	cert, err := pki.DecodeX509CertificateBytes(certData)
-	if err != nil {
-		// This case should never happen as it should always be caught by the
-		// secretPublicKeysMatch function beforehand, but handle it just in case.
-		return "InvalidCertificate", fmt.Sprintf("Failed to decode stored certificate: %v", err), true
-	}
+func CurrentCertificateNearingExpiry(c clock.Clock) Func {
+	return func(input Input) (string, string, bool) {
+		if input.Certificate.Status.RenewalTime == nil {
+			return "", "", false
+		}
 
-	renewBefore := cmapi.DefaultRenewBefore
-	if input.Certificate.Spec.RenewBefore != nil {
-		renewBefore = input.Certificate.Spec.RenewBefore.Duration
+		renewIn := input.Certificate.Status.RenewalTime.Time.Sub(c.Now())
+		if renewIn > 0 {
+			return "", "", false
+		}
+
+		return "Renewing", fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime), true
 	}
-	actualDuration := cert.NotAfter.Sub(cert.NotBefore)
-	if renewBefore > actualDuration {
-		renewBefore = actualDuration / 3
-	}
-	renewAfter := cert.NotAfter.Add(-1 * renewBefore)
-	if time.Now().After(renewAfter) {
-		return "Renewing", fmt.Sprintf("Renewing certificate as current certificate is within %s of expiry", renewBefore), true
-	}
-	return "", "", false
 }
 
 // CurrentCertificateHasExpired is used exclusively to check if the current

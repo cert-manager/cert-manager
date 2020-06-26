@@ -402,8 +402,16 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 		in, out := &in.LastFailureTime, &out.LastFailureTime
 		*out = (*in).DeepCopy()
 	}
+	if in.NotBefore != nil {
+		in, out := &in.NotBefore, &out.NotBefore
+		*out = (*in).DeepCopy()
+	}
 	if in.NotAfter != nil {
 		in, out := &in.NotAfter, &out.NotAfter
+		*out = (*in).DeepCopy()
+	}
+	if in.RenewalTime != nil {
+		in, out := &in.RenewalTime, &out.RenewalTime
 		*out = (*in).DeepCopy()
 	}
 	if in.Revision != nil {

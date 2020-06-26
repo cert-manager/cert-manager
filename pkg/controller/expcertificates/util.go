@@ -22,8 +22,10 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"reflect"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -251,4 +253,18 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 	}
 
 	return b, nil
+}
+
+// RenewBeforeExpiryDuration will return the amount of time before the given
+// NotAfter time that the certificate should be renewed.
+func RenewBeforeExpiryDuration(notBefore, notAfter time.Time, specRenewBefore *metav1.Duration) time.Duration {
+	renewBefore := cmapi.DefaultRenewBefore
+	if specRenewBefore != nil {
+		renewBefore = specRenewBefore.Duration
+	}
+	actualDuration := notAfter.Sub(notBefore)
+	if renewBefore > actualDuration {
+		renewBefore = actualDuration / 3
+	}
+	return renewBefore
 }

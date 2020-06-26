@@ -20,6 +20,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"k8s.io/utils/clock"
 )
 
 func TestAdd(t *testing.T) {
@@ -42,7 +44,7 @@ func TestAdd(t *testing.T) {
 			waitSubtest := make(chan struct{})
 			return func(t *testing.T) {
 				startTime := after.currentTime
-				queue := NewScheduledWorkQueue(func(obj interface{}) {
+				queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj interface{}) {
 					defer wg.Done()
 					durationEarly := test.duration - after.currentTime.Sub(startTime)
 
@@ -83,7 +85,7 @@ func TestForget(t *testing.T) {
 		t.Run(test.obj, func(test testT) func(*testing.T) {
 			return func(t *testing.T) {
 				defer wg.Done()
-				queue := NewScheduledWorkQueue(func(obj interface{}) {
+				queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj interface{}) {
 					t.Errorf("scheduled function should never be called")
 				})
 				queue.Add(test.obj, test.duration)
@@ -102,7 +104,7 @@ func TestConcurrentAdd(t *testing.T) {
 	after := newMockAfter()
 	afterFunc = after.AfterFunc
 	var wg sync.WaitGroup
-	queue := NewScheduledWorkQueue(func(obj interface{}) {
+	queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj interface{}) {
 		t.Fatalf("should not be called, but was called with %v", obj)
 	})
 
@@ -146,7 +148,7 @@ func newMockAfter() *mockAfter {
 	}
 }
 
-func (m *mockAfter) AfterFunc(d time.Duration, f func()) stoppable {
+func (m *mockAfter) AfterFunc(c clock.Clock, d time.Duration, f func()) stoppable {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

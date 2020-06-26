@@ -58,7 +58,7 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
 	// environment variables
 	env := &envtest.Environment{
-		AttachControlPlaneOutput: true,
+		AttachControlPlaneOutput: false,
 		CRDs:                     crdsToRuntimeObjects(crds),
 	}
 	config, err := env.Start()

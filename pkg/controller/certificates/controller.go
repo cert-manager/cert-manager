@@ -119,13 +119,13 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(log, c.queue, certificateGvk, certificateGetter(c.certificateLister))})
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: secretResourceHandler(log, c.certificateLister, c.queue)})
 
+	// clock is used to determine whether certificates need renewal
+	c.clock = ctx.Clock
+
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
 	// each object in the queue. This is used to schedule re-checks of
 	// Certificate resources when they get near to expiry
-	c.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(c.queue.Add)
-
-	// clock is used to determine whether certificates need renewal
-	c.clock = clock.RealClock{}
+	c.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(c.clock, c.queue.Add)
 
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder

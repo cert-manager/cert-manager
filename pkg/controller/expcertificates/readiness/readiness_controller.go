@@ -148,12 +148,31 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, condition.Type, condition.Status, condition.Reason, condition.Message)
 
-	if input.Secret != nil && input.Secret.Data != nil {
+	switch {
+	case input.Secret != nil && input.Secret.Data != nil:
 		x509cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
-		if err == nil {
-			t := metav1.NewTime(x509cert.NotAfter)
-			crt.Status.NotAfter = &t
+		if err != nil {
+			// clear status fields if we cannot decode the certificate bytes
+			crt.Status.NotAfter = nil
+			crt.Status.NotBefore = nil
+			crt.Status.RenewalTime = nil
+			break
 		}
+
+		notBefore := metav1.NewTime(x509cert.NotBefore)
+		notAfter := metav1.NewTime(x509cert.NotAfter)
+		crt.Status.NotBefore = &notBefore
+		crt.Status.NotAfter = &notAfter
+		// calculate how long before the certificate expiry time the certificate
+		// should be renewed
+		renewBefore := certificates.RenewBeforeExpiryDuration(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, crt.Spec.RenewBefore)
+		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
+		crt.Status.RenewalTime = &renewalTime
+	default:
+		// clear status fields if the secret does not have any data
+		crt.Status.NotAfter = nil
+		crt.Status.NotBefore = nil
+		crt.Status.RenewalTime = nil
 	}
 
 	_, err = c.client.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
@@ -196,7 +215,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
-		policies.TriggerPolicyChain,
+		PolicyChain,
 	)
 	c.controller = ctrl
 
