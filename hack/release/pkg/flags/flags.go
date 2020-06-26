@@ -21,8 +21,9 @@ import (
 	"os"
 	"strings"
 
-	flag "github.com/spf13/pflag"
 	"os/exec"
+
+	flag "github.com/spf13/pflag"
 
 	logf "github.com/jetstack/cert-manager/hack/release/pkg/log"
 	"github.com/jetstack/cert-manager/hack/release/pkg/util"

@@ -31,7 +31,7 @@ else
   exit 0
 fi
 
-gofmt=$(realpath "$1")
+gofmt=$(readlink "$1")
 
 export GO111MODULE=on
 

@@ -37,9 +37,9 @@ tmpfiles=$TEST_TMPDIR/files
   rm -f bazel-*
   cp -aL "." "$tmpfiles"
   export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
-  export HOME=$(realpath "$TEST_TMPDIR/home")
+  export HOME=$(readlink "$TEST_TMPDIR/home")
   unset GOPATH
-  go=$(realpath "$2")
+  go=$(readlink "$2")
   export PATH=$(dirname "$go"):$PATH
   "$@"
 )

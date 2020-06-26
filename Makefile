@@ -41,6 +41,7 @@ help:
 	# verify             - runs all test targets (bazel test //...)
 	# verify_deps        - ensure go module files are up to date (hack/update-deps.sh)
 	# verify_chart       - runs Helm chart linter
+	# verify_generate    - verifies all from generate target
 	#
 	### Generate targets
 	#
@@ -70,6 +71,10 @@ push: docker_push
 
 verify:
 	bazel test //...
+
+
+verify_generate:
+	./hack/verify-all.sh
 
 # TODO: remove this rule in favour of calling hack/verify-deps directly
 verify_deps:
@@ -105,9 +110,11 @@ e2e_test:
 			--kubectl-path="$(KUBECTL)"
 
 # Generate targets
+
 ##################
 generate:
 	./hack/update-all.sh
+
 
 # Docker targets
 ################

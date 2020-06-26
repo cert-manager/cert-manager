@@ -24,7 +24,7 @@ hack=$(dirname "${BASH_SOURCE[0]}")
 "$hack"/update-bazel.sh
 "$hack"/update-codegen.sh
 "$hack"/update-crds.sh
-"$hack"/update-deps.sh
+#"$hack"/update-deps.sh
 # This is already run automatically by update-deps.sh
 #"$hack"/update-deps-licenses.sh
 "$hack"/update-gofmt.sh

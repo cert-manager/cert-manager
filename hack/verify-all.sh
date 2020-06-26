@@ -17,29 +17,16 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
-  echo "Updating bazel rules..." >&2
-elif ! command -v bazel &>/dev/null; then
-  echo "Install bazel at https://bazel.build" >&2
-  exit 1
-else
-  (
-    set -o xtrace
-    bazel run //hack:update-bazel
-  )
-  exit 0
-fi
+# Runs all hack/verify-*.sh scripts
 
-gazelle=$(readlink "$1")
-kazel=$(readlink "$2")
+hack=$(dirname "${BASH_SOURCE[0]}")
 
-cd "$BUILD_WORKSPACE_DIRECTORY"
-
-if [[ ! -f go.mod ]]; then
-    echo "No module defined, see https://github.com/golang/go/wiki/Modules#how-to-define-a-module" >&2
-    exit 1
-fi
-
-set -o xtrace
-"$gazelle" fix --external=external
-"$kazel" --cfg-path=./hack/build/.kazelcfg.json
+"$hack"/verify-bazel.sh
+#"$hack"/verify-codegen.sh
+"$hack"/verify-crds.sh
+#"$hack"/verify-deps.sh
+# This is already run automatically by update-deps.sh
+#"$hack"/verify-deps-licenses.sh
+"hack"/verify-errexit.sh
+"$hack"/verify-gofmt.sh
+"$hack"/verify-boilerplate.py

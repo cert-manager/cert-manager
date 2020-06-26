@@ -39,9 +39,9 @@ tmpfiles=$TEST_TMPDIR/files
   # clean up 'external' directory copied from test runfiles
   rm -rf "$tmpfiles"/external
   export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
-  export HOME=$(realpath "$TEST_TMPDIR/home")
+  export HOME=$(readlink "$TEST_TMPDIR/home")
   unset GOPATH
-  go=$(realpath "$2")
+  go=$(readlink "$2")
   export PATH=$(dirname "$go"):$PATH
   "$@"
 )

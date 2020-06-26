@@ -47,10 +47,9 @@ build_images() {
         "k8s.gcr.io/defaultbackend-amd64:bazel" \
         "sample-webhook:bazel" \
         "vault:bazel" \
-        "gcr.io/kubernetes-helm/tiller:bazel" \
     ; do
         echo "Loading image ${IMG} into kind container"
-        "${KIND}" load docker-image --name "${KIND_CLUSTER_NAME}" "${IMG}" &
+ #       "${KIND}" load docker-image --name "${KIND_CLUSTER_NAME}" "${IMG}" &
     done
     echo "Waiting for all images to be loaded..."
     wait

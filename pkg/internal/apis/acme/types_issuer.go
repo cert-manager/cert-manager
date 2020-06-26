@@ -215,7 +215,13 @@ type ACMEChallengeSolverDNS01 struct {
 	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
 
 	// +optional
+	OCIDNS *ACMEIssuerDNS01ProviderOCIDNS `json:"ocidns,omitempty"`
+
+	// +optional
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
+
+	// +optional
+	DynDNS *ACMEIssuerDNS01ProviderDynDNS `json:"dyndns,omitempty"`
 
 	// +optional
 	Route53 *ACMEIssuerDNS01ProviderRoute53 `json:"route53,omitempty"`
@@ -284,6 +290,25 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
 	Token cmmeta.SecretKeySelector `json:"tokenSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderDynDNS is a structure containing the DNS
+// configuration for DynDNS DNS—Zone Record Management API
+type ACMEIssuerDNS01ProviderDynDNS struct {
+	DynUsername     cmmeta.SecretKeySelector `json:"clientTokenSecretRef"`
+	DynPassword     cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
+	DynCustomerName cmmeta.SecretKeySelector `json:"accessTokenSecretRef"`
+	DynZoneName     string                   `json:"dynzonename"`
+}
+
+// ACMEIssuerDNS01ProviderOCIDNS is a structure containing the DNS
+// configuration for OCIDNS DNS—Zone Record Management API
+type ACMEIssuerDNS01ProviderOCIDNS struct {
+	// +optional
+	UseInstancePrincipals bool                      `json:"useInstancePrincipals"`
+	ServiceAccount        *cmmeta.SecretKeySelector `json:"serviceAccountSecretRef,omitempty"`
+	CompartmentId         string                    `json:"compartmentid,omitempty"`
+	OciZoneName           string                    `json:"ocizonename"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53

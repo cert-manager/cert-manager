@@ -769,6 +769,85 @@ spec:
                               description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                 TODO: Add other useful fields. apiVersion, kind, uid?'
                               type: string
+                    dyndns:
+                      description: ACMEIssuerDNS01ProviderDynDNS is a structure containing
+                        the DNS configuration for DynDNS DNS—Zone Record Management
+                        API
+                      type: object
+                      required:
+                      - accessTokenSecretRef
+                      - clientSecretSecretRef
+                      - clientTokenSecretRef
+                      - dynzonename
+                      properties:
+                        accessTokenSecretRef:
+                          type: object
+                          required:
+                          - name
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                        clientSecretSecretRef:
+                          type: object
+                          required:
+                          - name
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                        clientTokenSecretRef:
+                          type: object
+                          required:
+                          - name
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                        dynzonename:
+                          type: string
+                    ocidns:
+                      description: ACMEIssuerDNS01ProviderOCIDNS is a structure containing
+                        the DNS configuration for OCIDNS DNS—Zone Record Management
+                        API
+                      type: object
+                      required:
+                      - ocizonename
+                      properties:
+                        compartmentid:
+                          type: string
+                        ocizonename:
+                          type: string
+                        serviceAccountSecretRef:
+                          type: object
+                          required:
+                          - name
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                        useInstancePrincipals:
+                          type: boolean
                     rfc2136:
                       description: ACMEIssuerDNS01ProviderRFC2136 is a structure containing
                         the configuration for RFC2136 DNS
@@ -2215,6 +2294,93 @@ spec:
                                       TODO: Add other useful fields. apiVersion, kind,
                                       uid?'
                                     type: string
+                          dyndns:
+                            description: ACMEIssuerDNS01ProviderDynDNS is a structure
+                              containing the DNS configuration for DynDNS DNS—Zone
+                              Record Management API
+                            type: object
+                            required:
+                            - accessTokenSecretRef
+                            - clientSecretSecretRef
+                            - clientTokenSecretRef
+                            - dynzonename
+                            properties:
+                              accessTokenSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              clientSecretSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              clientTokenSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              dynzonename:
+                                type: string
+                          ocidns:
+                            description: ACMEIssuerDNS01ProviderOCIDNS is a structure
+                              containing the DNS configuration for OCIDNS DNS—Zone
+                              Record Management API
+                            type: object
+                            required:
+                            - ocizonename
+                            properties:
+                              compartmentid:
+                                type: string
+                              ocizonename:
+                                type: string
+                              serviceAccountSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              useInstancePrincipals:
+                                type: boolean
                           rfc2136:
                             description: ACMEIssuerDNS01ProviderRFC2136 is a structure
                               containing the configuration for RFC2136 DNS
@@ -3954,6 +4120,93 @@ spec:
                                       TODO: Add other useful fields. apiVersion, kind,
                                       uid?'
                                     type: string
+                          dyndns:
+                            description: ACMEIssuerDNS01ProviderDynDNS is a structure
+                              containing the DNS configuration for DynDNS DNS—Zone
+                              Record Management API
+                            type: object
+                            required:
+                            - accessTokenSecretRef
+                            - clientSecretSecretRef
+                            - clientTokenSecretRef
+                            - dynzonename
+                            properties:
+                              accessTokenSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              clientSecretSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              clientTokenSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              dynzonename:
+                                type: string
+                          ocidns:
+                            description: ACMEIssuerDNS01ProviderOCIDNS is a structure
+                              containing the DNS configuration for OCIDNS DNS—Zone
+                              Record Management API
+                            type: object
+                            required:
+                            - ocizonename
+                            properties:
+                              compartmentid:
+                                type: string
+                              ocizonename:
+                                type: string
+                              serviceAccountSecretRef:
+                                type: object
+                                required:
+                                - name
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.
+                                      Must be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                              useInstancePrincipals:
+                                type: boolean
                           rfc2136:
                             description: ACMEIssuerDNS01ProviderRFC2136 is a structure
                               containing the configuration for RFC2136 DNS

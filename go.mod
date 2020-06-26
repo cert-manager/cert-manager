@@ -30,8 +30,10 @@ require (
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 	github.com/miekg/dns v0.0.0-20170721150254-0f3adef2e220
 	github.com/munnerz/crd-schema-fuzz v0.0.0-20191114184610-fbd148d44a0a
+	github.com/nesv/go-dynect v0.6.0 // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
+	github.com/oracle/oci-go-sdk v21.0.0+incompatible // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
 	github.com/spf13/cobra v0.0.5

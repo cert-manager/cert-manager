@@ -36,18 +36,18 @@ else
   exit 0
 fi
 
-go=$(realpath "$1")
+go=$(readlink "$1")
 export PATH=$(dirname "$go"):$PATH
-gazelle=$(realpath "$2")
-kazel=$(realpath "$3")
-jq=$(realpath "$4")
+gazelle=$(readlink "$2")
+kazel=$(readlink "$3")
+jq=$(readlink "$4")
 update_bazel=(
-  $(realpath "$5")
+  $(readlink "$5")
   "$gazelle"
   "$kazel"
 )
 update_deps_licenses=(
-  $(realpath "$6")
+  $(readlink "$6")
   "$go"
   "$jq"
 )

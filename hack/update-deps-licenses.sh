@@ -49,8 +49,8 @@ else
   exit 0
 fi
 
-go=$(realpath "$1")
-jq=$(realpath "$2")
+go=$(readlink "$1")
+jq=$(readlink "$2")
 export PATH=$(dirname "$go"):$PATH
 
 shift 2

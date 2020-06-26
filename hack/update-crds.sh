@@ -31,8 +31,8 @@ else
   exit 0
 fi
 
-go=$(realpath "$1")
-controllergen="$(realpath "$2")"
+go=$(readlink "$1")
+controllergen="$(readlink "$2")"
 export PATH=$(dirname "$go"):$PATH
 
 # This script should be run via `bazel run //hack:update-crds`

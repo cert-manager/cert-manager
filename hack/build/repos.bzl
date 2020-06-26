@@ -1290,6 +1290,14 @@ def go_repositories():
         version = "v0.0.0-20140419014527-cca7078d478f",
     )
     go_repository(
+        name = "com_github_nesv_go_dynect",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/nesv/go-dynect",
+        sum = "h1:Ow/DiSm4LAISwnFku/FITSQHnU6pBvhQMsUE5Gu6Oq4=",
+        version = "v0.6.0",
+    )
+    go_repository(
         name = "com_github_nvveen_gotty",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -1304,6 +1312,14 @@ def go_repositories():
         importpath = "github.com/NYTimes/gziphandler",
         sum = "h1:lsxEuwrXEAokXB9qhlbKWPpo3KMLZQ5WB5WLQRW1uq0=",
         version = "v0.0.0-20170623195520-56545f4a5d46",
+    )
+    go_repository(
+        name = "com_github_oracle_oci_go_sdk",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/oracle/oci-go-sdk",
+        sum = "h1:4BbhAM6wz7u9vtYrBMCPeQ2oRV9oaaqsHenErPvpQs4=",
+        version = "v16.0.0+incompatible",
     )
     go_repository(
         name = "com_github_oklog_run",
@@ -2450,4 +2466,12 @@ def go_repositories():
         importpath = "gopkg.in/asn1-ber.v1",
         sum = "h1:TxyelI5cVkbREznMhfzycHdkp5cLA7DpE+GKjSslYhM=",
         version = "v1.0.0-20181015200546-f715ec2f112d",
+    )
+    go_repository(
+        name = "com_github_dnaeon_go_vcr",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/dnaeon/go-vcr",
+        sum = "h1:r8L/HqC0Hje5AXMu1ooW8oyQyOFv4GxqpL0nRP7SLLY=",
+        version = "v1.0.1",
     )

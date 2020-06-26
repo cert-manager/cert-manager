@@ -470,6 +470,30 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 		cfg  *cmacme.ACMEChallengeSolverDNS01
 		errs []*field.Error
 	}{
+		"missing dyndns project": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				DynDNS: &cmacme.ACMEIssuerDNS01ProviderDynDNS{
+					ServiceAccount: &validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("dyndns", "project"), ""),
+			},
+		},
+		"missing dyndns service account key": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				DynDNS: &cmacme.ACMEIssuerDNS01ProviderDynDNS{
+					Project: "valid",
+					ServiceAccount: &cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "something"},
+						Key:                  "",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("dyndns", "serviceAccountSecretRef", "key"), "secret key is required"),
+			},
+		},
 		"missing clouddns project": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{

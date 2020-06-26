@@ -239,6 +239,22 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 		}
 	}
 	numProviders := 0
+	if p.DynDNS != nil {
+		numProviders++
+		el = append(el, ValidateSecretKeySelector(&p.DynDNS.DynUsername, fldPath.Child("dyndns", "dynUsername"))...)
+		el = append(el, ValidateSecretKeySelector(&p.DynDNS.DynPassword, fldPath.Child("dyndns", "dynPassword"))...)
+		el = append(el, ValidateSecretKeySelector(&p.DynDNS.DynCustomerName, fldPath.Child("dyndns", "dynCustomerName"))...)
+		if len(p.DynDNS.DynZoneName) == 0 {
+			el = append(el, field.Required(fldPath.Child("dyndns", "dynZoneName"), ""))
+		}
+	}
+	if p.OCIDNS != nil {
+		numProviders++
+
+		if len(p.OCIDNS.OciZoneName) == 0 {
+			el = append(el, field.Required(fldPath.Child("ocidns", "ocizonename"), ""))
+		}
+	}
 	if p.Akamai != nil {
 		numProviders++
 		el = append(el, ValidateSecretKeySelector(&p.Akamai.AccessToken, fldPath.Child("akamai", "accessToken"))...)
