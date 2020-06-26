@@ -271,7 +271,6 @@ type CertificateStatus struct {
 
 	// The time after which the certificate stored in the secret named
 	// by this resource in spec.secretName is valid.
-	// +optional
 	NotBefore *metav1.Time
 
 	// The expiration time of the certificate stored in the secret named
@@ -281,7 +280,6 @@ type CertificateStatus struct {
 	// RenewalTime is the time at which the certificate will be next
 	// renewed.
 	// If not set, no upcoming renewal is scheduled.
-	// +optional
 	RenewalTime *metav1.Time
 
 	// The current 'revision' of the certificate as issued.
