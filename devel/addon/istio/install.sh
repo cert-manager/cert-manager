@@ -22,31 +22,21 @@ set -o pipefail
 # Configure the cluster to target using the KUBECONFIG environment variable.
 # Additional parameters can be configured by overriding the variables below.
 
-# Namespace to deploy into
-NAMESPACE="${NAMESPACE:-istio-system}"
-# Release name to use with Helm
-RELEASE_NAME="${RELEASE_NAME:-istio-operator}"
-
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 check_tool kubectl
-check_tool helm
+check_tool istioctl
 
-helm repo add banzaicloud-stable https://kubernetes-charts.banzaicloud.com/
+# this is not configurable
+NAMESPACE="istio-system"
 
-helm repo update
+istioctl install --set profile=minimal
 
-# Ensure the namespace exists
-kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
+# TODO change imagePullPolicy to Never
+kubectl apply --namespace "${NAMESPACE}" -f "${SCRIPT_ROOT}/manifests/ingress.yaml"
+kubectl apply --namespace "${NAMESPACE}" -f "${SCRIPT_ROOT}/manifests/gateway.yaml"
 
-# TODO set imagePullPolicy to Never
-helm upgrade --install --wait --namespace="${NAMESPACE}" "${RELEASE_NAME}" banzaicloud-stable/istio-operator
-
-kubectl apply --namespace="${NAMESPACE}" -f "$SCRIPT_ROOT/manifests/istio_v1beta1_istio_minimal.yaml"
-
-# Istio CRDs are installed by the operator, so this might not succeed on first run
-while ! kubectl apply --namespace "${NAMESPACE}" -f "$SCRIPT_ROOT/manifests/"; do
-  sleep 1
-done
+# cert-manager needs to be restarted in order to pick up the newly installed Istio CRDs
+kubectl rollout restart deployment -n cert-manager cert-manager
