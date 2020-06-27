@@ -36,6 +36,8 @@ data:
     @	IN	NS	localhost.
     *.ingress-nginx	IN  A 10.0.0.15
     ingress-nginx	IN	A	10.0.0.15
+    *.istio	IN	A	10.0.0.14
+    istio	IN	A	10.0.0.14
 
   db.dns01.example.com: |
     ;
