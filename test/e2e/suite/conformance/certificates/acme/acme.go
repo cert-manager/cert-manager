@@ -33,6 +33,9 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
+const TestGatewayNamespace = "istio-system"
+const TestGatewayName = "ingress"
+
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	runACMEIssuerTests(nil)
 })
@@ -78,6 +81,13 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 Issuer",
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
+		DeleteIssuerFunc:    provisionerHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "ACME HTTP01 Issuer on Istio",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01IssuerOnIstio,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
 	}).Define()
@@ -150,6 +160,27 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	}
 }
 
+func (a *acmeIssuerProvisioner) createHTTP01IssuerOnIstio(f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(f, "")
+
+	By("Creating an ACME HTTP01 Issuer")
+	issuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "acme-issuer-http01-",
+		},
+		Spec: a.createHTTP01IssuerOnIstioSpec(f.Config.Addons.ACMEServer.URL),
+	}
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
 func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
@@ -190,6 +221,37 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec(serverURL string) cmapi.I
 							// new ingress resources that do not specify a class to solve challenges,
 							// which means all Ingress controllers should act on the ingresses.
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (a *acmeIssuerProvisioner) createHTTP01IssuerOnIstioSpec(serverURL string) cmapi.IssuerSpec {
+	return cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			ACME: &cmacme.ACMEIssuer{
+				Server:        serverURL,
+				SkipTLSVerify: true,
+				PrivateKey: cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "acme-private-key-http01",
+					},
+				},
+				ExternalAccountBinding: a.eab,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							// Not setting the Class or Name field will cause cert-manager to create
+							// new ingress resources that do not specify a class to solve challenges,
+							// which means all Ingress controllers should act on the ingresses.
+							Ingress: nil,
+							Istio: &cmacme.ACMEChallengeSolverHTTP01Istio{
+								GatewayNamespace: TestGatewayNamespace,
+								GatewayName:      TestGatewayName,
+							},
 						},
 					},
 				},
