@@ -64,8 +64,9 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-						Class: &f.Config.Addons.IngressController.IngressClass,
+					Istio: &cmacme.ACMEChallengeSolverHTTP01Istio{
+						GatewayNamespace: f.Config.Addons.Istio.GatewayNamespace,
+						GatewayName:      f.Config.Addons.Istio.GatewayName,
 					},
 				},
 			},
@@ -112,7 +113,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	JustBeforeEach(func() {
-		acmeIngressDomain = frameworkutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
+		acmeIngressDomain = frameworkutil.RandomSubdomain(f.Config.Addons.Istio.Domain)
 	})
 
 	AfterEach(func() {

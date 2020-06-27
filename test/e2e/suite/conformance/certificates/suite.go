@@ -80,7 +80,7 @@ func (s *Suite) complete(f *framework.Framework) {
 	//Expect(s.CreateIssuerFunc).NotTo(BeNil(), "CreateIssuerFunc must be set")
 
 	if s.DomainSuffix == "" {
-		s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		s.DomainSuffix = f.Config.Addons.Istio.Domain
 	}
 
 	if s.UnsupportedFeatures == nil {

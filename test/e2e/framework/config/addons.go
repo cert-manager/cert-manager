@@ -36,6 +36,8 @@ type Addons struct {
 	// being used during ACME HTTP01 tests.
 	IngressController IngressController
 
+	Istio Istio
+
 	// Venafi describes global configuration variables for the Venafi tests.
 	// This includes credentials for the Venafi TPP server to use during runs.
 	Venafi Venafi
@@ -52,6 +54,7 @@ func (a *Addons) AddFlags(fs *flag.FlagSet) {
 	a.Helm.AddFlags(fs)
 	a.ACMEServer.AddFlags(fs)
 	a.IngressController.AddFlags(fs)
+	a.Istio.AddFlags(fs)
 	a.Venafi.AddFlags(fs)
 	a.CertManager.AddFlags(fs)
 	a.DNS01Webhook.AddFlags(fs)
@@ -63,6 +66,7 @@ func (c *Addons) Validate() []error {
 	errs = append(errs, c.Helm.Validate()...)
 	errs = append(errs, c.ACMEServer.Validate()...)
 	errs = append(errs, c.IngressController.Validate()...)
+	errs = append(errs, c.Istio.Validate()...)
 	errs = append(errs, c.Venafi.Validate()...)
 	errs = append(errs, c.CertManager.Validate()...)
 	errs = append(errs, c.DNS01Webhook.Validate()...)
