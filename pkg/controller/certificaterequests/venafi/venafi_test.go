@@ -795,9 +795,6 @@ func TestSign(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		if name != "tpp: if sign returns pending error then set pending and return err" {
-			//continue
-		}
 		t.Run(name, func(t *testing.T) {
 			fixedClock.SetTime(fixedClockStart)
 			test.builder.Clock = fixedClock
@@ -847,10 +844,6 @@ func runTest(t *testing.T, test testT) {
 
 	if err == nil && test.fakeClient != nil && test.fakeClient.RetreiveCertificateFn != nil && !test.skipSecondSignCall {
 		// request state is ok! simulating a 2nd sync to fetch the cert
-
-		if test.certificateRequest.ObjectMeta.Annotations == nil {
-			test.certificateRequest.ObjectMeta.Annotations = map[string]string{}
-		}
 		metav1.SetMetaDataAnnotation(&test.certificateRequest.ObjectMeta, VenafiPickupIDAnnotation, "test")
 		err = controller.Sync(context.Background(), test.certificateRequest)
 	}
