@@ -51,17 +51,12 @@ func FetchCertificateFromCR(cmClient cmclient.Interface,
 	}
 
 	// Store certificate to file
-	actualCertFileName := req.Name + ".crt"
-	if certFileName != "" {
-		actualCertFileName = certFileName
-	}
-
-	err = ioutil.WriteFile(actualCertFileName, req.Status.Certificate, 0600)
+	err = ioutil.WriteFile(certFileName, req.Status.Certificate, 0600)
 	if err != nil {
 		return fmt.Errorf("error when writing certificate to file: %v", err)
 	}
 
-	fmt.Fprintf(ioStreams.Out, "Certificate has been stored in file %v\n", actualCertFileName)
+	fmt.Fprintf(ioStreams.Out, "Certificate has been stored in file %v\n", certFileName)
 	return nil
 }
 
