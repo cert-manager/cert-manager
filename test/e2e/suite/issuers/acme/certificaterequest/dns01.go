@@ -54,18 +54,17 @@ func testRFC2136DNSProvider() bool {
 		f := framework.NewDefaultFramework("create-acme-certificate-request-dns01-" + name)
 		h := f.Helper()
 
-		p := &dnsproviders.RFC2136{}
-		f.RequireAddon(p)
-
 		issuerName := "test-acme-issuer"
 		certificateRequestName := "test-acme-certificate-request"
 		dnsDomain := ""
 
 		BeforeEach(func() {
-			p.Nameserver = f.Config.Addons.ACMEServer.DNSServer
-			dnsDomain = p.Details().NewTestDomain()
-
 			By("Creating an Issuer")
+			p := &dnsproviders.RFC2136{
+				Nameserver: f.Config.Addons.ACMEServer.DNSServer,
+			}
+			f.RequireAddon(p)
+			dnsDomain = p.Details().NewTestDomain()
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
