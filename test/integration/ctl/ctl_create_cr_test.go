@@ -27,6 +27,9 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
@@ -51,6 +54,7 @@ func TestCtlCreateCR(t *testing.T) {
 		cr3Name = "testcr-3"
 		cr4Name = "testcr-4"
 		cr5Name = "testcr-5"
+		cr6Name = "testcr-6"
 		ns1     = "testns-1"
 		ns2     = "testns-2"
 
@@ -62,12 +66,15 @@ func TestCtlCreateCR(t *testing.T) {
 		inputArgs      []string
 		inputNamespace string
 		keyFilename    string
+		certFilename   string
+		fetchCert      bool
 
-		expValidateErr bool
-		expRunErr      bool
-		expNamespace   string
-		expName        string
-		expKeyFilename string
+		expValidateErr  bool
+		expRunErr       bool
+		expNamespace    string
+		expName         string
+		expKeyFilename  string
+		expCertFilename string
 	}{
 		"v1alpha2 Certificate given": {
 			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
@@ -134,6 +141,19 @@ func TestCtlCreateCR(t *testing.T) {
 			expNamespace:   ns1,
 			expKeyFilename: "",
 		},
+		"fetch flag set": {
+			inputFile:       testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputArgs:       []string{cr6Name},
+			inputNamespace:  ns1,
+			keyFilename:     "",
+			fetchCert:       true,
+			expValidateErr:  false,
+			expRunErr:       false,
+			expNamespace:    ns1,
+			expName:         cr6Name,
+			expKeyFilename:  cr6Name + ".key",
+			expCertFilename: cr6Name + ".crt",
+		},
 	}
 
 	for name, test := range tests {
@@ -152,6 +172,7 @@ func TestCtlCreateCR(t *testing.T) {
 				CmdNamespace:     test.inputNamespace,
 				EnforceNamespace: test.inputNamespace != "",
 				KeyFilename:      test.keyFilename,
+				FetchCert:        test.fetchCert,
 			}
 
 			opts.InputFilename = test.inputFile
@@ -171,6 +192,10 @@ func TestCtlCreateCR(t *testing.T) {
 				}
 			}
 
+			// Try to set Ready Condition if needed, otherwise the test just times out
+			if test.fetchCert {
+				go setCRReadyCondition(t, cmCl, test.inputArgs[0], test.inputNamespace)
+			}
 			// Create CR
 			err = opts.Run(test.inputArgs)
 			if err != nil {
@@ -204,17 +229,21 @@ func TestCtlCreateCR(t *testing.T) {
 			}
 
 			// Check the file where the private key is stored
-			expKeyFilename := test.expKeyFilename
-			if test.keyFilename == "" && len(test.inputArgs) == 0 {
-				expKeyFilename = gotCr.Name + ".key"
-			}
-			keyData, err := ioutil.ReadFile(expKeyFilename)
+			keyData, err := ioutil.ReadFile(test.expKeyFilename)
 			if err != nil {
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
 			_, err = pki.DecodePrivateKeyBytes(keyData)
 			if err != nil {
 				t.Errorf("invalid private key: %v", err)
+			}
+
+			// Check the file where the certificate is stored if applicable
+			if test.fetchCert {
+				_, err := ioutil.ReadFile(test.expCertFilename)
+				if err != nil {
+					t.Errorf("error when reading file storing private key: %v", err)
+				}
 			}
 		})
 	}
@@ -241,6 +270,32 @@ func setupPathForTest(t *testing.T) func() {
 		}
 		if err := os.RemoveAll(tmpDir); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+// Retry to ensure CR has been created for up to a timeout and then
+// set the Ready Condition of CR to true
+func setCRReadyCondition(t *testing.T, cmCl versioned.Interface, crName, crNamespace string) {
+	timeout := time.After(5 * time.Minute)
+	tick := time.Tick(1 * time.Second)
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("timeout waiting for CertificateRequest to be signed, retry later with fetch command")
+		case <-tick:
+			req, err := cmCl.CertmanagerV1alpha2().CertificateRequests(crNamespace).Get(context.TODO(), crName, metav1.GetOptions{})
+			if err != nil {
+				continue
+			}
+			// CR has been created, try update status
+			readyCond := cmapiv1alpha2.CertificateRequestCondition{Type: cmapiv1alpha2.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue}
+			req.Status.Conditions = []cmapiv1alpha2.CertificateRequestCondition{readyCond}
+			_, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crNamespace).UpdateStatus(context.TODO(), req, metav1.UpdateOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			return
 		}
 	}
 }
