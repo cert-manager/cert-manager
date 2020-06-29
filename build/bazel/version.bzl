@@ -20,7 +20,7 @@ def version_x_defs(variant = None):
     ]
 
     # This should match the list of vars in kube::version::ldflags
-    # It should also match the list of vars set in tools/print-workspace-status.sh.
+    # It should also match the list of vars set in build/bazel/print-workspace-status.sh.
     stamp_vars = {
         "AppVersion": "{STABLE_DOCKER_TAG}",
         "AppGitCommit": "{STABLE_BUILD_GIT_COMMIT}",
