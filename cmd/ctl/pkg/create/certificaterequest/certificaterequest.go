@@ -71,9 +71,14 @@ type Options struct {
 	CmdNamespace string
 	// boolean indicating if there was an Override in determining CmdNamespace
 	EnforceNamespace bool
-	// Name of file that the generated private key will be written to
+	// Name of file that the generated private key will be stored in
 	// If not specified, the private key will be written to <NameOfCR>.key
 	KeyFilename string
+	// If true, will wait for CertificateRequest to be ready to store x509 certificate in a file
+	FetchCert bool
+	// Name of file that the generated x509 certificate will be stored in if --fetch-certificate flag is set
+	// If not specified, the private key will be written to <NameOfCR>.crt
+	CertFileName string
 	// Path to a file containing a Certificate resource used as a template
 	// when generating the CertificateRequest resource
 	// Required
@@ -108,6 +113,10 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 		"Path to a file containing a Certificate resource used as a template when generating the CertificateRequest resource")
 	cmd.Flags().StringVar(&o.KeyFilename, "output-key-file", o.KeyFilename,
 		"Name of file that the generated private key will be written to")
+	cmd.Flags().StringVar(&o.CertFileName, "output-cert-file", o.CertFileName,
+		"Name of the file the certificate is to be stored in")
+	cmd.Flags().BoolVar(&o.FetchCert, "fetch-certificate", o.FetchCert,
+		"If set to true, command will wait for CertificateRequest to be ready to store x509 certificate in a file")
 
 	return cmd
 }
@@ -123,6 +132,14 @@ func (o *Options) Validate(args []string) error {
 
 	if o.KeyFilename != "" && (len(o.KeyFilename) < 4 || o.KeyFilename[len(o.KeyFilename)-4:] != ".key") {
 		return errors.New("file to store private key must end in '.key'")
+	}
+
+	if o.CertFileName != "" && (len(o.CertFileName) < 4 || o.CertFileName[len(o.CertFileName)-4:] != ".crt") {
+		return errors.New("file to store certificate must end in '.crt'")
+	}
+
+	if !o.FetchCert && o.CertFileName != "" {
+		return errors.New("cannot specify file to store certificate if not waiting for and fetching certificate")
 	}
 
 	return nil
