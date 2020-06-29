@@ -48,7 +48,7 @@ helm repo update
 helm upgrade \
     --install \
     --wait \
-    --version 2.4.0 \
+    --version 2.9.0 \
     --namespace "${NAMESPACE}" \
     --set controller.image.tag=0.33.0 \
     --set controller.image.pullPolicy=Never \
@@ -58,5 +58,6 @@ helm upgrade \
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
     --set admissionWebhooks.enabled=false \
+    --set controller.admissionWebhooks.enabled=false \
     "$RELEASE_NAME" \
     ingress-nginx/ingress-nginx
