@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +35,10 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/util"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -245,6 +249,36 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error creating CertificateRequest: %v", err)
 	}
 	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
+
+	if o.FetchCert {
+		if !apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
+			Type:   cmapiv1alpha2.CertificateRequestConditionReady,
+			Status: cmmeta.ConditionTrue,
+		}) {
+			fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
+				req.Name, req.Namespace)
+			timeout := time.After(5 * time.Minute)
+			tick := time.Tick(1 * time.Second)
+			// Wait until CR is ready
+			err = util.PollUntilCRIsReadyOrTimeOut(o.CMClient, req, timeout, tick)
+			if err != nil {
+				return fmt.Errorf("error when waiting for CertificateRequest to be signed: %v", err)
+			}
+		}
+
+		fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has been signed\n", req.Name, req.Namespace)
+
+		// Fetch x509 certificate and store to file
+		actualCertFileName := req.Name + ".crt"
+		if o.CertFileName != "" {
+			actualCertFileName = o.CertFileName
+		}
+		err = util.FetchCertificateFromCR(o.CMClient, req.Name, req.Namespace, actualCertFileName, o.IOStreams)
+		if err != nil {
+			return fmt.Errorf("error when writing certificate to file: %v", err)
+		}
+		fmt.Fprintf(o.Out, "Certificate written to file %s\n", actualCertFileName)
+	}
 
 	return nil
 }
