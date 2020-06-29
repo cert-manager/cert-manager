@@ -18,8 +18,6 @@ package certificate
 
 import (
 	"context"
-	"flag"
-	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -52,14 +50,7 @@ func testRFC2136DNSProvider() bool {
 		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
 		h := f.Helper()
 
-		// TODO: remove this hack for making config flags load
-		fs := flag.NewFlagSet("", flag.ContinueOnError)
-		f.Config.AddFlags(fs)
-		fs.Parse(os.Args)
-
-		p := &dnsproviders.RFC2136{
-			Nameserver: f.Config.Addons.ACMEServer.DNSServer,
-		}
+		p := &dnsproviders.RFC2136{}
 		f.RequireAddon(p)
 
 		issuerName := "test-acme-issuer"
@@ -68,6 +59,7 @@ func testRFC2136DNSProvider() bool {
 		dnsDomain := ""
 
 		BeforeEach(func() {
+			p.Nameserver = f.Config.Addons.ACMEServer.DNSServer
 			dnsDomain = p.Details().NewTestDomain()
 
 			By("Creating an Issuer")
