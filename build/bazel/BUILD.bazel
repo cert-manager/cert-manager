@@ -3,6 +3,59 @@ package(default_visibility = ["//visibility:public"])
 load("@io_k8s_repo_infra//defs:build.bzl", "release_filegroup")
 load(":container.bzl", "multi_arch_container", "multi_arch_container_push")
 load(":platforms.bzl", "SERVER_PLATFORMS", "for_platforms")
+load("@io_bazel_rules_go//go:def.bzl", "nogo")
+
+nogo(
+    name = "nogo_vet",
+    config = "nogo_config.json",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@org_golang_x_tools//go/analysis/passes/unusedresult:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/unsafeptr:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/unreachable:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/unmarshal:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/tests:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/structtag:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/stdmethods:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/shift:go_tool_library",
+        ## Disable checking for variable declarations that shadow others
+        # "@org_golang_x_tools//go/analysis/passes/shadow:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/printf:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/pkgfact:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/nilness:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/nilfunc:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/lostcancel:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/loopclosure:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/httpresponse:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/findcall:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/deepequalerrors:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/ctrlflow:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/copylock:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/composite:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/cgocall:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/buildtag:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/buildssa:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/bools:go_tool_library",
+        ## Disable atomicalign check as it fails when building with linux/arm
+        ## --platforms flag.
+        ## To reproduce, run:
+        ## bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_arm @io_k8s_apiserver//pkg/server:go_default_library
+        ## using ref eb61adf0fc3a38b0767df8d3cde16d4ed9e61d3d (HEAD of master).
+        # "@org_golang_x_tools//go/analysis/passes/atomicalign:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/atomic:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/assign:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/inspect:go_tool_library",
+        "@org_golang_x_tools//go/analysis/passes/asmdecl:go_tool_library",
+    ],
+)
+
+genrule(
+    name = "fetch_kazel",
+    srcs = ["@io_k8s_repo_infra//cmd/kazel"],
+    outs = ["kazel"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
 
 # This list defines the docker images that consist a release
 DOCKERIZED_BINARIES = {
@@ -109,7 +162,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//build/bazel/root:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

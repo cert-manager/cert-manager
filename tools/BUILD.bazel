@@ -2,8 +2,6 @@ package(default_visibility = ["//visibility:public"])
 
 GAZELLE = "@bazel_gazelle//cmd/gazelle"
 
-KAZEL = "@io_k8s_repo_infra//cmd/kazel"
-
 GO = "@go_sdk//:bin/go"
 
 GOROOT = "@go_sdk//:files"
@@ -27,7 +25,6 @@ filegroup(
         ":package-srcs",
         "//tools/api-migration:all-srcs",
         "//tools/bin:all-srcs",
-        "//tools/build:all-srcs",
         "//tools/cobra:all-srcs",
         "//tools/filter-crd:all-srcs",
     ],

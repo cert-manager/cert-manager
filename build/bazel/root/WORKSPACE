@@ -1,4 +1,4 @@
-# gazelle:repository_macro tools/build/repos.bzl%go_repositories
+# gazelle:repository_macro build/bazel/repos.bzl%go_repositories
 workspace(name = "com_github_jetstack_cert_manager")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -31,7 +31,7 @@ go_rules_dependencies()
 
 go_register_toolchains(
     go_version = "1.14.2",
-    nogo = "@//tools/build:nogo_vet",
+    nogo = "@//build/bazel:nogo_vet",
 )
 
 ## Load gazelle and dependencies
@@ -59,7 +59,7 @@ http_archive(
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    commit = "80ea3aae060077e5fe0cdef1a5c570d4b7622100",
+    commit = "f1557ebc5381e2a662314e21585aa8080e9508be",
     shallow_since = "1561646721 -0700",
 )
 
@@ -86,6 +86,6 @@ load("//build/bazel:images.bzl", "define_base_images")
 
 define_base_images()
 
-load("//tools/build:repos.bzl", "go_repositories")
+load("//build/bazel:repos.bzl", "go_repositories")
 
 go_repositories()

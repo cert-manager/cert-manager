@@ -4,7 +4,6 @@
 /controller
 /ingress-shim
 /ctl
-/tools/build/dockerfiles/cert-manager-*_*_*
 .vscode
 .venv
 bazel-*

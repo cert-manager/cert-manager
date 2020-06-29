@@ -42,4 +42,4 @@ fi
 
 set -o xtrace
 "$gazelle" fix --external=external
-"$kazel" --cfg-path=./tools/build/.kazelcfg.json
+"$kazel" --cfg-path=./build/bazel/.kazelcfg.json
