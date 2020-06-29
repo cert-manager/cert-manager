@@ -55,7 +55,8 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//build:all-srcs",
+        "//build/bazel:all-srcs",
+        "//build/release-tars:all-srcs",
         "//cmd/acmesolver:all-srcs",
         "//cmd/cainjector:all-srcs",
         "//cmd/controller:all-srcs",

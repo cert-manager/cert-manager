@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//build:files.bzl", "modify_file")
+load("//build/bazel:files.bzl", "modify_file")
 
 modify_file(
     name = "crds",

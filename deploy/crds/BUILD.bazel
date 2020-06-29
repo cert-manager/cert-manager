@@ -1,5 +1,5 @@
-load("//build:helm.bzl", "helm_pkg", "helm_tmpl")
-load("//build:files.bzl", "concat_files")
+load("//build/bazel:helm.bzl", "helm_pkg", "helm_tmpl")
+load("//build/bazel:files.bzl", "concat_files")
 
 variants = {
     "regular": {},
