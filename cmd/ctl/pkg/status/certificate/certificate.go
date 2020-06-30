@@ -39,6 +39,8 @@ var (
 Get details about the current status of a Certificate, including information on related resources like CertificateRequest or Order.`))
 
 	example = templates.Examples(i18n.T(`
+# Query status of cert-manager Certificate resource with name my-cert in namespace default
+kubectl cert-manager status certificate my-cert --namespace default
 `))
 )
 
@@ -80,7 +82,7 @@ func NewCmdStatusCert(ioStreams genericclioptions.IOStreams, factory cmdutil.Fac
 // Validate validates the provided options
 func (o *Options) Validate(args []string) error {
 	if len(args) < 1 {
-		return errors.New("the name of the Certificate to be created has to be provided as argument")
+		return errors.New("the name of the Certificate has to be provided as argument")
 	}
 	if len(args) > 1 {
 		return errors.New("only one argument can be passed in: the name of the Certificate")
@@ -110,6 +112,7 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 	return nil
 }
 
+// Run executes status certificate command
 func (o *Options) Run(args []string) error {
 	ctx := context.TODO()
 	crtName := args[0]
@@ -119,10 +122,10 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when getting Certificate resource: %v", err)
 	}
 
-	// TODO: ignore Fprintf return values explicitly?
 	fmt.Fprintf(o.Out, fmt.Sprintf("Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace))
 
 	// Get necessary info from Certificate
+	// Output one line about each type of Condition that is set.
 	conditionMsg := ""
 	for i, con := range crt.Status.Conditions {
 		if i < len(crt.Status.Conditions)-1 {
@@ -140,7 +143,7 @@ func (o *Options) Run(args []string) error {
 	// What about timing issues? When I query condition it's not ready yet, but then looking for crn it's finished and deleted
 
 	dnsNames := formatDnsNamesList(crt)
-	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s\n", dnsNames))
+	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
 
 	issuerFormat := `Issuer:
   Name: %s
@@ -160,7 +163,7 @@ func (o *Options) Run(args []string) error {
 func formatDnsNamesList(crt *cmapi.Certificate) string {
 	str := ""
 	for _, dnsName := range crt.Spec.DNSNames {
-		str += "- " + dnsName
+		str += "- " + dnsName + "\n"
 	}
 	return str
 }
