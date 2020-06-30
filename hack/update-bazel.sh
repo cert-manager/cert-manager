@@ -32,6 +32,7 @@ fi
 
 gazelle=$(realpath "$1")
 kazel=$(realpath "$2")
+kazelcfg=$(realpath "$3")
 
 cd "$BUILD_WORKSPACE_DIRECTORY"
 
@@ -42,4 +43,4 @@ fi
 
 set -o xtrace
 "$gazelle" fix --external=external
-"$kazel" --cfg-path=./build/bazel/.kazelcfg.json
+"$kazel" --cfg-path="$kazelcfg"

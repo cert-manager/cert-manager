@@ -4,6 +4,8 @@ GAZELLE = "@bazel_gazelle//cmd/gazelle"
 
 KAZEL = "@io_k8s_repo_infra//cmd/kazel"
 
+KAZELCFG = "//build/bazel:.kazelcfg.json"
+
 GO = "@go_sdk//:bin/go"
 
 GOROOT = "@go_sdk//:files"
@@ -42,8 +44,10 @@ sh_binary(
     args = [
         "$(location %s)" % GAZELLE,
         "$(location %s)" % KAZEL,
+        "$(location %s)" % KAZELCFG,
     ],
     data = [
+        KAZELCFG,
         GAZELLE,
         KAZEL,
     ],
@@ -55,8 +59,10 @@ sh_test(
     args = [
         "$(location %s)" % GAZELLE,
         "$(location %s)" % KAZEL,
+        "$(location %s)" % KAZELCFG,
     ],
     data = [
+        KAZELCFG,
         "@//:all-srcs",
         GAZELLE,
         KAZEL,

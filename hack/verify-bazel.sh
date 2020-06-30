@@ -32,6 +32,7 @@ fi
 
 gazelle=$(realpath "$1")
 kazel=$(realpath "$2")
+kazelcfg=$(realpath "$3")
 
 export GO111MODULE=on
 
@@ -47,7 +48,7 @@ export GO111MODULE=on
 echo "Running gazelle..."
 gazelle_diff=$("$gazelle" fix --mode=diff --external=external || true)
 echo "Running kazel..."
-kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./build/bazel/.kazelcfg.json)
+kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path="$kazelcfg")
 
 if [[ -n "${gazelle_diff}${kazel_diff}" ]]; then
   echo "Current rules (-) do not match expected (+):" >&2
