@@ -38,7 +38,10 @@ export DNS_SERVER="${SERVICE_IP_PREFIX}.16"
 # versions of the tools required for development
 setup_tools() {
   check_bazel
-  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //devel/bin:ginkgo //hack/bin:oc3
+  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //devel/bin:ginkgo
+  if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+    bazel build //hack/bin:oc3
+  fi
   local bindir="$(bazel info bazel-genfiles)"
   export HELM="${bindir}/hack/bin/helm"
   export KIND="${bindir}/hack/bin/kind"
