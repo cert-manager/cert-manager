@@ -78,7 +78,7 @@ type Options struct {
 	// Name of file that the generated private key will be stored in
 	// If not specified, the private key will be written to <NameOfCR>.key
 	KeyFilename string
-	// If true, will wait for CertificateRequest to be ready to store x509 certificate in a file
+	// If true, will wait for CertificateRequest to be ready to store the x509 certificate in a file
 	FetchCert bool
 	// Name of file that the generated x509 certificate will be stored in if --fetch-certificate flag is set
 	// If not specified, the private key will be written to <NameOfCR>.crt
@@ -134,16 +134,12 @@ func (o *Options) Validate(args []string) error {
 		return errors.New("only one argument can be passed in: the name of the CertificateRequest")
 	}
 
-	if o.KeyFilename != "" && (len(o.KeyFilename) < 4 || o.KeyFilename[len(o.KeyFilename)-4:] != ".key") {
-		return errors.New("file to store private key must end in '.key'")
-	}
-
-	if o.CertFileName != "" && (len(o.CertFileName) < 4 || o.CertFileName[len(o.CertFileName)-4:] != ".crt") {
-		return errors.New("file to store certificate must end in '.crt'")
+	if o.KeyFilename != "" && o.CertFileName != "" && o.KeyFilename == o.CertFileName {
+		return errors.New("the file to store private key cannot be the same as the file to store certificate")
 	}
 
 	if !o.FetchCert && o.CertFileName != "" {
-		return errors.New("cannot specify file to store certificate if not waiting for and fetching certificate")
+		return errors.New("cannot specify file to store certificate if not waiting for and fetching certificate, please set --fetch-certificate flag")
 	}
 
 	return nil
@@ -203,7 +199,7 @@ func (o *Options) Run(args []string) error {
 	// Convert to v1alpha2 because that version is needed for functions that follow
 	crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1alpha2.SchemeGroupVersion)
 	if err != nil {
-		return fmt.Errorf("failed to convert object into version v1alpha2: %v", err)
+		return fmt.Errorf("failed to convert object into version v1alpha2: %w", err)
 	}
 
 	// Cast Object into Certificate
@@ -214,12 +210,12 @@ func (o *Options) Run(args []string) error {
 
 	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
-		return fmt.Errorf("error when generating new private key for CertificateRequest: %v", err)
+		return fmt.Errorf("error when generating new private key for CertificateRequest: %w", err)
 	}
 
 	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
 	if err != nil {
-		return fmt.Errorf("failed to encode new private key for CertificateRequest: %v", err)
+		return fmt.Errorf("failed to encode new private key for CertificateRequest: %w", err)
 	}
 
 	crName := args[0]
@@ -230,14 +226,14 @@ func (o *Options) Run(args []string) error {
 		keyFileName = o.KeyFilename
 	}
 	if err := ioutil.WriteFile(keyFileName, keyData, 0600); err != nil {
-		return fmt.Errorf("error when writing private key to file: %v", err)
+		return fmt.Errorf("error when writing private key to file: %w", err)
 	}
 	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
 
 	// Build CertificateRequest with name as specified by argument
 	req, err := buildCertificateRequest(crt, keyData, crName)
 	if err != nil {
-		return fmt.Errorf("error when building CertificateRequest: %v", err)
+		return fmt.Errorf("error when building CertificateRequest: %w", err)
 	}
 
 	ns := crt.Namespace
@@ -246,7 +242,7 @@ func (o *Options) Run(args []string) error {
 	}
 	req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("error creating CertificateRequest: %v", err)
+		return fmt.Errorf("error creating CertificateRequest: %w", err)
 	}
 	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
 
@@ -262,7 +258,7 @@ func (o *Options) Run(args []string) error {
 			// Wait until CR is ready
 			err = util.PollUntilCRIsReadyOrTimeOut(o.CMClient, req, timeout, tick)
 			if err != nil {
-				return fmt.Errorf("error when waiting for CertificateRequest to be signed: %v", err)
+				return fmt.Errorf("error when waiting for CertificateRequest to be signed: %w", err)
 			}
 		}
 
@@ -275,7 +271,7 @@ func (o *Options) Run(args []string) error {
 		}
 		err = util.FetchCertificateFromCR(o.CMClient, req.Name, req.Namespace, actualCertFileName, o.IOStreams)
 		if err != nil {
-			return fmt.Errorf("error when writing certificate to file: %v", err)
+			return fmt.Errorf("error when writing certificate to file: %w", err)
 		}
 		fmt.Fprintf(o.Out, "Certificate written to file %s\n", actualCertFileName)
 	}

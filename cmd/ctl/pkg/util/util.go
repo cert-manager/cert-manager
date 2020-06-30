@@ -32,14 +32,14 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
-// Fetches the x509 certificate from a CR and stores the certificate in file specified by certFilename
-// Assumes CR is ready, otherwise returns error
+// FetchCertificateFromCR fetches the x509 certificate from a CR and stores the certificate in file specified by certFilename.
+// Assumes CR is ready, otherwise returns error.
 func FetchCertificateFromCR(cmClient cmclient.Interface,
 	crName, crNamespace, certFileName string,
 	ioStreams genericclioptions.IOStreams) error {
 	req, err := cmClient.CertmanagerV1alpha2().CertificateRequests(crNamespace).Get(context.TODO(), crName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("error when querying CertificateRequest: %v", err)
+		return fmt.Errorf("error when querying CertificateRequest: %w", err)
 	}
 
 	// If CR not ready yet, error
@@ -53,14 +53,14 @@ func FetchCertificateFromCR(cmClient cmclient.Interface,
 	// Store certificate to file
 	err = ioutil.WriteFile(certFileName, req.Status.Certificate, 0600)
 	if err != nil {
-		return fmt.Errorf("error when writing certificate to file: %v", err)
+		return fmt.Errorf("error when writing certificate to file: %w", err)
 	}
 
-	fmt.Fprintf(ioStreams.Out, "Certificate has been stored in file %v\n", certFileName)
+	fmt.Fprintf(ioStreams.Out, "Certificate has been stored in file %s\n", certFileName)
 	return nil
 }
 
-// Waits until CertificateRequest has the Ready Condition set to true or until timeout occurs
+// PollUntilCRIsReadyOrTimeOut waits until CertificateRequest has the Ready Condition set to true or until timeout occurs.
 func PollUntilCRIsReadyOrTimeOut(client cmclient.Interface, req *cmapiv1alpha2.CertificateRequest, timeout, tick <-chan time.Time) error {
 	for {
 		select {
@@ -69,7 +69,7 @@ func PollUntilCRIsReadyOrTimeOut(client cmclient.Interface, req *cmapiv1alpha2.C
 		case <-tick:
 			req, err := client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
 			if err != nil {
-				return fmt.Errorf("error when querying current status of CertificateRequest: %v", err)
+				return fmt.Errorf("error when querying current status of CertificateRequest: %w", err)
 			}
 			if apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
 				Type:   cmapiv1alpha2.CertificateRequestConditionReady,
