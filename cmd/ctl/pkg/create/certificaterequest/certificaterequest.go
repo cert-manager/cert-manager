@@ -79,6 +79,7 @@ type Options struct {
 	// If not specified, the private key will be written to <NameOfCR>.key
 	KeyFilename string
 	// If true, will wait for CertificateRequest to be ready to store the x509 certificate in a file
+	// Command will block until CertificateRequest is ready or timeout as specified by Timeout happens
 	FetchCert bool
 	// Name of file that the generated x509 certificate will be stored in if --fetch-certificate flag is set
 	// If not specified, the private key will be written to <NameOfCR>.crt
@@ -87,6 +88,9 @@ type Options struct {
 	// when generating the CertificateRequest resource
 	// Required
 	InputFilename string
+	// Length of time the command blocks to wait on CertificateReqeust to be ready if --fetch-certificate flag is set
+	// If not specified, default value is 5 minutes
+	Timeout       time.Duration
 
 	genericclioptions.IOStreams
 }
@@ -121,6 +125,8 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 		"Name of the file the certificate is to be stored in")
 	cmd.Flags().BoolVar(&o.FetchCert, "fetch-certificate", o.FetchCert,
 		"If set to true, command will wait for CertificateRequest to be ready to store x509 certificate in a file")
+	cmd.Flags().DurationVar(&o.Timeout, "timeout", 5*time.Minute,
+		"Duration of timeout when waiting for CertificateRequest to be ready, when specifying must include unit, e.g. 10m or 1h; If not specified, default is 5 minutes")
 
 	return cmd
 }
@@ -253,7 +259,7 @@ func (o *Options) Run(args []string) error {
 		}) {
 			fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
 				req.Name, req.Namespace)
-			timeout := time.After(5 * time.Minute)
+			timeout := time.After(o.Timeout)
 			tick := time.Tick(1 * time.Second)
 			// Wait until CR is ready
 			err = util.PollUntilCRIsReadyOrTimeOut(o.CMClient, req, timeout, tick)

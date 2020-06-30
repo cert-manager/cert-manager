@@ -68,6 +68,7 @@ func TestCtlCreateCR(t *testing.T) {
 		keyFilename    string
 		certFilename   string
 		fetchCert      bool
+		timeout        time.Duration
 
 		expValidateErr  bool
 		expRunErr       bool
@@ -147,6 +148,7 @@ func TestCtlCreateCR(t *testing.T) {
 			inputNamespace:  ns1,
 			keyFilename:     "",
 			fetchCert:       true,
+			timeout:         5 * time.Minute,
 			expValidateErr:  false,
 			expRunErr:       false,
 			expNamespace:    ns1,
@@ -173,6 +175,7 @@ func TestCtlCreateCR(t *testing.T) {
 				EnforceNamespace: test.inputNamespace != "",
 				KeyFilename:      test.keyFilename,
 				FetchCert:        test.fetchCert,
+				Timeout:          test.timeout,
 			}
 
 			opts.InputFilename = test.inputFile
@@ -203,8 +206,9 @@ func TestCtlCreateCR(t *testing.T) {
 				// to know where exactly things should fail and then check the correctness of the parts that shouldn't have failed
 				if !test.expRunErr {
 					t.Errorf("got unexpected error when trying to create CR: %v", err)
+				} else {
+					t.Logf("got an error, which was expected, details: %v", err)
 				}
-				t.Logf("got an error, which was expected, details: %v", err)
 				return
 			} else {
 				// got no error
