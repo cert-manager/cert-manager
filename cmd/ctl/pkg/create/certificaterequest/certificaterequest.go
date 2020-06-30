@@ -57,6 +57,12 @@ kubectl cert-manager create certificaterequest my-cr --namespace default --from-
 
 # Create a CertificateRequest and store private key in file 'new.key'.
 kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --output-key-file new.key
+
+# Create a CertificateRequest, wait for it to be signed for up to 5 minutes (default) and store the x509 certificate in file 'new.crt'.
+kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --output-cert-file new.crt
+
+# Create a CertificateRequest, wait for it to be signed for up to 20 minutes and store the x509 certificate in file 'my-cr.crt'.
+kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
 `))
 )
 
@@ -88,9 +94,9 @@ type Options struct {
 	// when generating the CertificateRequest resource
 	// Required
 	InputFilename string
-	// Length of time the command blocks to wait on CertificateReqeust to be ready if --fetch-certificate flag is set
+	// Length of time the command blocks to wait on CertificateRequest to be ready if --fetch-certificate flag is set
 	// If not specified, default value is 5 minutes
-	Timeout       time.Duration
+	Timeout time.Duration
 
 	genericclioptions.IOStreams
 }
@@ -124,9 +130,9 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 	cmd.Flags().StringVar(&o.CertFileName, "output-cert-file", o.CertFileName,
 		"Name of the file the certificate is to be stored in")
 	cmd.Flags().BoolVar(&o.FetchCert, "fetch-certificate", o.FetchCert,
-		"If set to true, command will wait for CertificateRequest to be ready to store x509 certificate in a file")
+		"If set to true, command will wait for CertificateRequest to be signed to store x509 certificate in a file")
 	cmd.Flags().DurationVar(&o.Timeout, "timeout", 5*time.Minute,
-		"Duration of timeout when waiting for CertificateRequest to be ready, when specifying must include unit, e.g. 10m or 1h; If not specified, default is 5 minutes")
+		"Time before timeout when waiting for CertificateRequest to be signed, must include unit, e.g. 10m or 1h")
 
 	return cmd
 }
