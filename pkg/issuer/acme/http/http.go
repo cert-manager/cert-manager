@@ -35,6 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -175,6 +176,7 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 		Method: http.MethodGet,
 		URL:    url,
 	}
+	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
 	req = req.WithContext(ctx)
 
 	// ACME spec says that a verifier should try
