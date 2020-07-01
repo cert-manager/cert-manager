@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,194 +17,212 @@ limitations under the License.
 package certificates
 
 import (
-	"context"
 	"crypto"
-	"crypto/x509"
-	"encoding/json"
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"fmt"
-	"math/big"
 	"reflect"
 	"time"
 
-	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/util/sets"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-var (
-	certificateGvk = v1alpha2.SchemeGroupVersion.WithKind("Certificate")
-)
-
-type calculateDurationUntilRenewFn func(context.Context, *x509.Certificate, *v1alpha2.Certificate) time.Duration
-
-func getCertificateForKey(ctx context.Context, key string, lister cmlisters.CertificateLister) (*v1alpha2.Certificate, error) {
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		return nil, nil
+func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	switch spec.KeyAlgorithm {
+	case "", cmapi.RSAKeyAlgorithm:
+		return rsaPrivateKeyMatchesSpec(pk, spec)
+	case cmapi.ECDSAKeyAlgorithm:
+		return ecdsaPrivateKeyMatchesSpec(pk, spec)
+	default:
+		return nil, fmt.Errorf("unrecognised key algorithm type %q", spec.KeyAlgorithm)
 	}
+}
 
-	crt, err := lister.Certificates(namespace).Get(name)
-	if k8sErrors.IsNotFound(err) {
-		return nil, nil
+func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	rsaPk, ok := pk.(*rsa.PrivateKey)
+	if !ok {
+		return []string{"spec.keyAlgorithm"}, nil
 	}
+	var violations []string
+	// TODO: we should not use implicit defaulting here, and instead rely on
+	//  defaulting performed within the Kubernetes apiserver here.
+	//  This requires careful handling in order to not interrupt users upgrading
+	//  from older versions.
+	// The default RSA keySize is set to 2048.
+	keySize := pki.MinRSAKeySize
+	if spec.KeySize > 0 {
+		keySize = spec.KeySize
+	}
+	if rsaPk.N.BitLen() != keySize {
+		violations = append(violations, "spec.keySize")
+	}
+	return violations, nil
+}
+
+func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	ecdsaPk, ok := pk.(*ecdsa.PrivateKey)
+	if !ok {
+		return []string{"spec.keyAlgorithm"}, nil
+	}
+	var violations []string
+	// TODO: we should not use implicit defaulting here, and instead rely on
+	//  defaulting performed within the Kubernetes apiserver here.
+	//  This requires careful handling in order to not interrupt users upgrading
+	//  from older versions.
+	// The default EC curve type is EC256
+	expectedKeySize := pki.ECCurve256
+	if spec.KeySize > 0 {
+		expectedKeySize = spec.KeySize
+	}
+	if expectedKeySize != ecdsaPk.Curve.Params().BitSize {
+		violations = append(violations, "spec.keySize")
+	}
+	return violations, nil
+}
+
+// RequestMatchesSpec compares a CertificateRequest with a CertificateSpec
+// and returns a list of field names on the Certificate that do not match their
+// counterpart fields on the CertificateRequest.
+// If decoding the x509 certificate request fails, an error will be returned.
+func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpec) ([]string, error) {
+	x509req, err := pki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
 	if err != nil {
 		return nil, err
 	}
 
-	return crt, nil
-}
-
-func certificateGetter(lister cmlisters.CertificateLister) func(namespace, name string) (interface{}, error) {
-	return func(namespace, name string) (interface{}, error) {
-		return lister.Certificates(namespace).Get(name)
+	// It is safe to mutate top-level fields in `spec` as it is not a pointer
+	// meaning changes will not effect the caller.
+	if spec.Subject == nil {
+		spec.Subject = &cmapi.X509Subject{}
 	}
+
+	var violations []string
+	if x509req.Subject.CommonName != spec.CommonName {
+		violations = append(violations, "spec.commonName")
+	}
+	if !util.EqualUnsorted(x509req.DNSNames, spec.DNSNames) {
+		violations = append(violations, "spec.dnsNames")
+	}
+	if !util.EqualUnsorted(pki.IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
+		violations = append(violations, "spec.ipAddresses")
+	}
+	if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URISANs) {
+		violations = append(violations, "spec.uriSANs")
+	}
+	if x509req.Subject.SerialNumber != spec.Subject.SerialNumber {
+		violations = append(violations, "spec.subject.serialNumber")
+	}
+	if !util.EqualUnsorted(x509req.Subject.Organization, spec.Organization) {
+		violations = append(violations, "spec.subject.organizations")
+	}
+	if !util.EqualUnsorted(x509req.Subject.Country, spec.Subject.Countries) {
+		violations = append(violations, "spec.subject.countries")
+	}
+	if !util.EqualUnsorted(x509req.Subject.Locality, spec.Subject.Localities) {
+		violations = append(violations, "spec.subject.localities")
+	}
+	if !util.EqualUnsorted(x509req.Subject.OrganizationalUnit, spec.Subject.OrganizationalUnits) {
+		violations = append(violations, "spec.subject.organizationalUnits")
+	}
+	if !util.EqualUnsorted(x509req.Subject.PostalCode, spec.Subject.PostalCodes) {
+		violations = append(violations, "spec.subject.postCodes")
+	}
+	if !util.EqualUnsorted(x509req.Subject.Province, spec.Subject.Provinces) {
+		violations = append(violations, "spec.subject.postCodes")
+	}
+	if !util.EqualUnsorted(x509req.Subject.StreetAddress, spec.Subject.StreetAddresses) {
+		violations = append(violations, "spec.subject.streetAddresses")
+	}
+	if req.Spec.IsCA != spec.IsCA {
+		violations = append(violations, "spec.isCA")
+	}
+	if !util.EqualKeyUsagesUnsorted(req.Spec.Usages, spec.Usages) {
+		violations = append(violations, "spec.usages")
+	}
+	if spec.Duration != nil && req.Spec.Duration != nil &&
+		spec.Duration.Duration != req.Spec.Duration.Duration {
+		violations = append(violations, "spec.duration")
+	}
+	if !reflect.DeepEqual(spec.IssuerRef, req.Spec.IssuerRef) {
+		violations = append(violations, "spec.issuerRef")
+	}
+
+	return violations, nil
 }
 
-var keyFunc = controllerpkg.KeyFunc
-
-func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secret *corev1.Secret) (bool, []string) {
-	var errs []string
-
-	// TODO: add checks for KeySize, KeyAlgorithm fields
-	// TODO: add checks for Organization field
-	// TODO: add checks for IsCA field
-
-	// check if the private key is the corresponding pair to the certificate
-
-	matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
+// SecretDataAltNamesMatchSpec will compare a Secret resource containing certificate
+// data to a CertificateSpec and return a list of 'violations' for any fields that
+// do not match their counterparts.
+// This is a purposely less comprehensive check than RequestMatchesSpec as some
+// issuers override/force certain fields.
+func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSpec) ([]string, error) {
+	x509cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
-		errs = append(errs, err.Error())
-	} else if !matches {
-		errs = append(errs, fmt.Sprintf("Certificate private key does not match certificate"))
+		return nil, err
 	}
 
-	// If CN is set on the resource then it should exist on the certificate as
-	// the Common Name or a DNS Name
-	expectedCN := crt.Spec.CommonName
-	gotCN := append(cert.DNSNames, cert.Subject.CommonName)
-	if len(expectedCN) > 0 && !util.Contains(gotCN, expectedCN) {
-		errs = append(errs, fmt.Sprintf("Common Name on TLS certificate not up to date (%q): %s",
-			expectedCN, gotCN))
+	var violations []string
+
+	// Perform a 'loose' check on the x509 certificate to determine if the
+	// commonName and dnsNames fields are up to date.
+	// This check allows names to move between the DNSNames and CommonName
+	// field freely in order to account for CAs behaviour of promoting DNSNames
+	// to be CommonNames or vice-versa.
+	expectedDNSNames := sets.NewString(spec.DNSNames...)
+	if spec.CommonName != "" {
+		expectedDNSNames.Insert(spec.CommonName)
 	}
-
-	// validate the dns names are correct
-	expectedDNSNames := crt.Spec.DNSNames
-	if !util.Subset(cert.DNSNames, expectedDNSNames) {
-		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
+	allDNSNames := sets.NewString(x509cert.DNSNames...)
+	if x509cert.Subject.CommonName != "" {
+		allDNSNames.Insert(x509cert.Subject.CommonName)
 	}
-
-	expectedURIs := crt.Spec.URISANs
-	if !util.EqualUnsorted(pki.URLsToString(cert.URIs), expectedURIs) {
-		errs = append(errs, fmt.Sprintf("URI SANs on TLS certificate not up to date: %q", cert.URIs))
-	}
-
-	// validate the ip addresses are correct
-	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), crt.Spec.IPAddresses) {
-		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
-	}
-
-	if secret.Annotations == nil {
-		secret.Annotations = make(map[string]string)
-	}
-
-	// Validate that the issuer name and kind is correct
-	// If the new annotation exists and doesn't match then error
-	// If the new annotation doesn't exist and the old annotation doesn't match then error
-
-	annotationError := func(k, v string) {
-		errs = append(errs, fmt.Sprintf("Issuer %q of the certificate is not up to date: %q", k, v))
-	}
-
-	name, ok := secret.Annotations[v1alpha2.IssuerNameAnnotationKey]
-	if !ok {
-		if secret.Annotations[v1alpha2.DeprecatedIssuerNameAnnotationKey] != crt.Spec.IssuerRef.Name {
-			annotationError(v1alpha2.DeprecatedIssuerNameAnnotationKey, secret.Annotations[v1alpha2.DeprecatedIssuerNameAnnotationKey])
+	if !allDNSNames.Equal(expectedDNSNames) {
+		// We know a mismatch occurred, so now determine which fields mismatched.
+		if (spec.CommonName != "" && !allDNSNames.Has(spec.CommonName)) || (x509cert.Subject.CommonName != "" && !expectedDNSNames.Has(x509cert.Subject.CommonName)) {
+			violations = append(violations, "spec.commonName")
 		}
-	} else if name != crt.Spec.IssuerRef.Name {
-		annotationError(v1alpha2.IssuerNameAnnotationKey, secret.Annotations[v1alpha2.IssuerNameAnnotationKey])
-	}
 
-	kind, ok := secret.Annotations[v1alpha2.IssuerKindAnnotationKey]
-	if !ok {
-		if secret.Annotations[v1alpha2.DeprecatedIssuerKindAnnotationKey] != apiutil.IssuerKind(crt.Spec.IssuerRef) {
-			annotationError(v1alpha2.DeprecatedIssuerKindAnnotationKey, secret.Annotations[v1alpha2.DeprecatedIssuerKindAnnotationKey])
+		if !allDNSNames.HasAll(spec.DNSNames...) || !expectedDNSNames.HasAll(x509cert.DNSNames...) {
+			violations = append(violations, "spec.dnsNames")
 		}
-	} else if kind != apiutil.IssuerKind(crt.Spec.IssuerRef) {
-		annotationError(v1alpha2.IssuerKindAnnotationKey, secret.Annotations[v1alpha2.IssuerKindAnnotationKey])
 	}
 
-	return len(errs) == 0, errs
+	if !util.EqualUnsorted(pki.IPAddressesToString(x509cert.IPAddresses), spec.IPAddresses) {
+		violations = append(violations, "spec.ipAddresses")
+	}
+	if !util.EqualUnsorted(pki.URLsToString(x509cert.URIs), spec.URISANs) {
+		violations = append(violations, "spec.uriSANs")
+	}
+	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailSANs) {
+		violations = append(violations, "spec.emailSANs")
+	}
+
+	return violations, nil
 }
 
-func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc calculateDurationUntilRenewFn, queueFn func(interface{}, time.Duration), crt *v1alpha2.Certificate) {
-	log := logf.FromContext(ctx)
-	log = log.WithValues(
-		logf.RelatedResourceNameKey, crt.Spec.SecretName,
-		logf.RelatedResourceNamespaceKey, crt.Namespace,
-		logf.RelatedResourceKindKey, "Secret",
-	)
+// staticTemporarySerialNumber is a fixed serial number we use for temporary certificates
+const staticTemporarySerialNumber = "1234567890"
 
-	key, err := keyFunc(crt)
-	if err != nil {
-		log.Error(err, "error getting key for certificate resource")
-		return
-	}
-
-	cert, err := kube.SecretTLSCert(ctx, lister, crt.Namespace, crt.Spec.SecretName)
-	if err != nil {
-		if !errors.IsInvalidData(err) {
-			log.Error(err, "error getting secret for certificate resource")
-		}
-		return
-	}
-
-	renewIn := calc(ctx, cert, crt)
-	queueFn(key, renewIn)
-
-	log.WithValues("duration_until_renewal", renewIn.String()).Info("certificate scheduled for renewal")
-}
-
-// staticTemporarySerialNumber is a fixed serial number we check for when
-// updating the status of a certificate.
-// It is used to identify temporarily generated certificates, so that friendly
-// status messages can be displayed to users.
-const staticTemporarySerialNumber = 0x1234567890
-
-func isTemporaryCertificate(cert *x509.Certificate) bool {
-	if cert == nil {
-		return false
-	}
-	return cert.SerialNumber.Int64() == staticTemporarySerialNumber
-}
-
-// generateLocallySignedTemporaryCertificate signs a temporary certificate for
+// GenerateLocallySignedTemporaryCertificate signs a temporary certificate for
 // the given certificate resource using a one-use temporary CA that is then
 // discarded afterwards.
 // This is to mitigate a potential attack against x509 certificates that use a
 // predictable serial number and weak MD5 hashing algorithms.
 // In practice, this shouldn't really be a concern anyway.
-func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []byte) ([]byte, error) {
+func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []byte) ([]byte, error) {
 	// generate a throwaway self-signed root CA
 	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
 	if err != nil {
 		return nil, err
 	}
-	caCertTemplate, err := pki.GenerateTemplate(&v1alpha2.Certificate{
-		Spec: v1alpha2.CertificateSpec{
+	caCertTemplate, err := pki.GenerateTemplate(&cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{
 			CommonName: "cert-manager.local",
 			IsCA:       true,
 		},
@@ -222,9 +240,9 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []b
 	if err != nil {
 		return nil, err
 	}
-	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
+	template.Subject.SerialNumber = staticTemporarySerialNumber
 
-	signeeKey, err := pki.DecodePrivateKeyBytes(pk)
+	signeeKey, err := pki.DecodePrivateKeyBytes(pkData)
 	if err != nil {
 		return nil, err
 	}
@@ -237,25 +255,16 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []b
 	return b, nil
 }
 
-func updateCertificateStatus(ctx context.Context, cmClient cmclient.Interface, old, new *v1alpha2.Certificate) (*v1alpha2.Certificate, error) {
-	log := logf.FromContext(ctx, "updateStatus")
-	oldBytes, _ := json.Marshal(old.Status)
-	newBytes, _ := json.Marshal(new.Status)
-	if reflect.DeepEqual(oldBytes, newBytes) {
-		return nil, nil
+// RenewBeforeExpiryDuration will return the amount of time before the given
+// NotAfter time that the certificate should be renewed.
+func RenewBeforeExpiryDuration(notBefore, notAfter time.Time, specRenewBefore *metav1.Duration) time.Duration {
+	renewBefore := cmapi.DefaultRenewBefore
+	if specRenewBefore != nil {
+		renewBefore = specRenewBefore.Duration
 	}
-	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
-	return cmClient.CertmanagerV1alpha2().Certificates(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
-}
-
-func certificateHasTemporaryCertificateAnnotation(crt *v1alpha2.Certificate) bool {
-	if crt.Annotations == nil {
-		return false
+	actualDuration := notAfter.Sub(notBefore)
+	if renewBefore > actualDuration {
+		renewBefore = actualDuration / 3
 	}
-
-	if val, ok := crt.Annotations[v1alpha2.IssueTemporaryCertificateAnnotation]; ok && val == "true" {
-		return true
-	}
-
-	return false
+	return renewBefore
 }

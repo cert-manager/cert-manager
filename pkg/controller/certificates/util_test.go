@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,269 +17,256 @@ limitations under the License.
 package certificates
 
 import (
+	"crypto"
+	"reflect"
 	"testing"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-func TestCertificateMatchesSpec(t *testing.T) {
-	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),
-		gen.SetCertificateSecretName("output"),
-		gen.SetCertificateRenewBefore(time.Hour*36),
-	)
+func mustGenerateRSA(t *testing.T, keySize int) crypto.PrivateKey {
+	pk, err := pki.GenerateRSAPrivateKey(keySize)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pk
+}
 
-	exampleBundle := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
-		gen.SetCertificateDNSNames("a.example.com"),
-		gen.SetCertificateCommonName("common.name.example.com"),
-		gen.SetCertificateURIs("spiffe://cluster.local/ns/sandbox/sa/foo"),
-	))
+func mustGenerateECDSA(t *testing.T, keySize int) crypto.PrivateKey {
+	pk, err := pki.GenerateECPrivateKey(keySize)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pk
+}
 
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				cmapi.IssuerNameAnnotationKey: "ca-issuer",
-				cmapi.IssuerKindAnnotationKey: "Issuer",
-			},
+func TestPrivateKeyMatchesSpec(t *testing.T) {
+	tests := map[string]struct {
+		key          crypto.PrivateKey
+		expectedAlgo cmapi.KeyAlgorithm
+		expectedSize int
+		violations   []string
+		err          string
+	}{
+		"should match if keySize and algorithm are correct (RSA)": {
+			key:          mustGenerateRSA(t, 2048),
+			expectedAlgo: cmapi.RSAKeyAlgorithm,
+			expectedSize: 2048,
+		},
+		"should not match if RSA keySize is incorrect": {
+			key:          mustGenerateRSA(t, 2048),
+			expectedAlgo: cmapi.RSAKeyAlgorithm,
+			expectedSize: 4096,
+			violations:   []string{"spec.keySize"},
+		},
+		"should match if keySize and algorithm are correct (ECDSA)": {
+			key:          mustGenerateECDSA(t, pki.ECCurve256),
+			expectedAlgo: cmapi.ECDSAKeyAlgorithm,
+			expectedSize: 256,
+		},
+		"should not match if ECDSA keySize is incorrect": {
+			key:          mustGenerateECDSA(t, pki.ECCurve256),
+			expectedAlgo: cmapi.ECDSAKeyAlgorithm,
+			expectedSize: pki.ECCurve521,
+			violations:   []string{"spec.keySize"},
+		},
+		"should not match if keyAlgorithm is incorrect": {
+			key:          mustGenerateECDSA(t, pki.ECCurve256),
+			expectedAlgo: cmapi.RSAKeyAlgorithm,
+			expectedSize: 2048,
+			violations:   []string{"spec.keyAlgorithm"},
 		},
 	}
-
-	type testT struct {
-		cb          cryptoBundle
-		certificate *cmapi.Certificate
-		secret      *corev1.Secret
-		expMatch    bool
-		expErrors   []string
-	}
-
-	for name, test := range map[string]testT{
-		"if all match then return matched": {
-			cb:          exampleBundle,
-			certificate: exampleBundle.certificate,
-			secret:      gen.SecretFrom(secret),
-			expMatch:    true,
-			expErrors:   nil,
-		},
-
-		"if no common name but DNS and all match then return matched": {
-			cb: mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate,
-				gen.SetCertificateCommonName(""),
-			)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate,
-				gen.SetCertificateCommonName(""),
-			),
-			secret:    gen.SecretFrom(secret),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if common name empty but requested common name in DNS names then match": {
-			cb: mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate,
-				gen.SetCertificateDNSNames("a.example.com", "common.name.example.com"),
-				gen.SetCertificateCommonName(""),
-			)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret:      gen.SecretFrom(secret),
-			expMatch:    true,
-			expErrors:   nil,
-		},
-
-		"if common name random string but requested common name in DNS names then match": {
-			cb: mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate,
-				gen.SetCertificateDNSNames("a.example.com", "common.name.example.com"),
-				gen.SetCertificateCommonName("foobar"),
-			)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret:      gen.SecretFrom(secret),
-			expMatch:    true,
-			expErrors:   nil,
-		},
-
-		"if common name random string and no request DNS names but request common name then error missing common name": {
-			cb: mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate,
-				gen.SetCertificateDNSNames(),
-				gen.SetCertificateCommonName("foobar"),
-			)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret:      gen.SecretFrom(secret),
-			expMatch:    false,
-			expErrors: []string{
-				`Common Name on TLS certificate not up to date ("common.name.example.com"): [foobar]`,
-				"DNS names on TLS certificate not up to date: []",
-			},
-		},
-
-		"if the issuer name and kind uses v1alpha2 annotation then it should still match the spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.IssuerNameAnnotationKey: "ca-issuer",
-					cmapi.IssuerKindAnnotationKey: "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name uses v1alpha2 annotation but kind uses deprecated then it should still match the spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.IssuerNameAnnotationKey:           "ca-issuer",
-					cmapi.DeprecatedIssuerKindAnnotationKey: "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name uses deprecated annotation but kind uses v1alpha2 then it should still match the spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "ca-issuer",
-					cmapi.IssuerKindAnnotationKey:           "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name and kind uses the deprecated annotation then it should still match the spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "ca-issuer",
-					cmapi.DeprecatedIssuerKindAnnotationKey: "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name uses v1alpha2 and kind uses both the deprecated and v1alpha2 annotation then it should still match the spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerKindAnnotationKey: "Issuer",
-					cmapi.IssuerNameAnnotationKey:           "ca-issuer",
-					cmapi.IssuerKindAnnotationKey:           "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name both the deprecated and v1alpha2 annotation and kind uses deprecated then it should still match the spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "Issuer",
-					cmapi.IssuerNameAnnotationKey:           "ca-issuer",
-					cmapi.IssuerKindAnnotationKey:           "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name and kind uses both the deprecated and v1alpha2 annotation then it should still match the spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "ca-issuer",
-					cmapi.DeprecatedIssuerKindAnnotationKey: "Issuer",
-					cmapi.IssuerNameAnnotationKey:           "ca-issuer",
-					cmapi.IssuerKindAnnotationKey:           "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name and kind uses both the deprecated and v1alpha2 annotation but no values in deprecated annotations then should match spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "foo",
-					cmapi.DeprecatedIssuerKindAnnotationKey: "bar",
-					cmapi.IssuerNameAnnotationKey:           "ca-issuer",
-					cmapi.IssuerKindAnnotationKey:           "Issuer",
-				})),
-			expMatch:  true,
-			expErrors: nil,
-		},
-
-		"if the issuer name and kind deprecated annotations are correct but v1alpha2 values are wrong then should not match spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "ca-issuer",
-					cmapi.DeprecatedIssuerKindAnnotationKey: "Issuer",
-					cmapi.IssuerNameAnnotationKey:           "foo",
-					cmapi.IssuerKindAnnotationKey:           "bar",
-				})),
-			expMatch: false,
-			expErrors: []string{
-				`Issuer "cert-manager.io/issuer-name" of the certificate is not up to date: "foo"`,
-				`Issuer "cert-manager.io/issuer-kind" of the certificate is not up to date: "bar"`,
-			},
-		},
-
-		"if the issuer name and kind deprecated annotations are correct but v1alpha2 values are empty but exist then should not match spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "ca-issuer",
-					cmapi.DeprecatedIssuerKindAnnotationKey: "Issuer",
-					cmapi.IssuerNameAnnotationKey:           "",
-					cmapi.IssuerKindAnnotationKey:           "",
-				})),
-			expMatch: false,
-			expErrors: []string{
-				`Issuer "cert-manager.io/issuer-name" of the certificate is not up to date: ""`,
-				`Issuer "cert-manager.io/issuer-kind" of the certificate is not up to date: ""`,
-			},
-		},
-		"if the issuer name and kind deprecated annotations are wrong and no v1alpha2 values then should not match spec": {
-			cb:          mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate)),
-			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			secret: gen.SecretFrom(secret,
-				gen.SetSecretAnnotations(map[string]string{
-					cmapi.DeprecatedIssuerNameAnnotationKey: "foo",
-					cmapi.DeprecatedIssuerKindAnnotationKey: "bar",
-				})),
-			expMatch: false,
-			expErrors: []string{
-				`Issuer "certmanager.k8s.io/issuer-name" of the certificate is not up to date: "foo"`,
-				`Issuer "certmanager.k8s.io/issuer-kind" of the certificate is not up to date: "bar"`,
-			},
-		},
-	} {
+	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			match, errs := certificateMatchesSpec(
-				test.certificate, test.cb.privateKey, test.cb.cert, test.secret)
-
-			if match != test.expMatch {
-				t.Errorf("got unexpected match bool, exp=%t got=%t",
-					test.expMatch, match)
+			violations, err := PrivateKeyMatchesSpec(test.key, cmapi.CertificateSpec{KeyAlgorithm: test.expectedAlgo, KeySize: test.expectedSize})
+			switch {
+			case err != nil:
+				if test.err != err.Error() {
+					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
+				}
+			default:
+				if test.err != "" {
+					t.Errorf("got no error but expected: %s", test.err)
+				}
 			}
-
-			if !util.EqualSorted(test.expErrors, errs) {
-				t.Errorf("got unexpected errors, exp=%s got=%s",
-					test.expErrors, errs)
+			if !reflect.DeepEqual(violations, test.violations) {
+				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
 			}
 		})
 	}
+}
 
+func TestSecretDataAltNamesMatchSpec(t *testing.T) {
+	tests := map[string]struct {
+		data       []byte
+		spec       cmapi.CertificateSpec
+		err        string
+		violations []string
+	}{
+		"should match if common name and dns names exactly equal": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+			}),
+		},
+		"should match if commonName is missing but is present in dnsNames": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				DNSNames: []string{"cn", "at", "least", "one"},
+			}),
+		},
+		"should match if commonName is missing but is present in dnsNames (not first)": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				DNSNames: []string{"at", "least", "one", "cn"},
+			}),
+		},
+		"should match if commonName is one of the requested requested dnsNames": {
+			spec: cmapi.CertificateSpec{
+				DNSNames: []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName: "at",
+				DNSNames:   []string{"least", "one"},
+			}),
+		},
+		"should not match if commonName is not present on certificate": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				DNSNames: []string{"at", "least", "one"},
+			}),
+			violations: []string{"spec.commonName"},
+		},
+		"should report violation for both commonName and dnsNames if both are missing": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one", "other"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				DNSNames: []string{"at", "least", "one"},
+			}),
+			violations: []string{"spec.commonName", "spec.dnsNames"},
+		},
+		"should report violation for both commonName and dnsNames if not requested": {
+			spec: cmapi.CertificateSpec{
+				DNSNames: []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one", "other"},
+			}),
+			violations: []string{"spec.commonName", "spec.dnsNames"},
+		},
+		"should not match if certificate has more dnsNames than spec": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one", "other"},
+			}),
+			violations: []string{"spec.dnsNames"},
+		},
+		"should match if commonName is a duplicated dnsName (but not requested)": {
+			spec: cmapi.CertificateSpec{
+				DNSNames: []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName: "at",
+				DNSNames:   []string{"at", "least", "one"},
+			}),
+		},
+		"should match if commonName is a duplicated dnsName": {
+			spec: cmapi.CertificateSpec{
+				CommonName: "cn",
+				DNSNames:   []string{"at", "least", "one"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName: "at",
+				DNSNames:   []string{"at", "least", "one", "cn"},
+			}),
+		},
+		"should match if ipAddresses are equal": {
+			spec: cmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1"},
+			}),
+		},
+		"should not match if ipAddresses are not equal": {
+			spec: cmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.2.1"},
+			}),
+			violations: []string{"spec.ipAddresses"},
+		},
+		"should not match if ipAddresses has been made the commonName": {
+			spec: cmapi.CertificateSpec{
+				IPAddresses: []string{"127.0.0.1"},
+			},
+			data: selfSignCertificate(t, cmapi.CertificateSpec{
+				CommonName:  "127.0.0.1",
+				IPAddresses: []string{"127.0.0.1"},
+			}),
+			violations: []string{"spec.commonName"},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			violations, err := SecretDataAltNamesMatchSpec(&corev1.Secret{Data: map[string][]byte{corev1.TLSCertKey: test.data}}, test.spec)
+			switch {
+			case err != nil:
+				if test.err != err.Error() {
+					t.Errorf("error text did not match, got=%s, exp=%s", err.Error(), test.err)
+				}
+			default:
+				if test.err != "" {
+					t.Errorf("got no error but expected: %s", test.err)
+				}
+			}
+			if !reflect.DeepEqual(violations, test.violations) {
+				t.Errorf("violations did not match, got=%s, exp=%s", violations, test.violations)
+			}
+		})
+	}
+}
+
+func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
+	pk, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template, err := pki.GenerateTemplate(&cmapi.Certificate{Spec: spec})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pemData, _, err := pki.SignCertificate(template, template, pk.Public(), pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return pemData
 }
