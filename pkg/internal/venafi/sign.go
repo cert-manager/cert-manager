@@ -38,7 +38,7 @@ func (err ErrCustomFieldsType) Error() string {
 	return fmt.Sprintf("certificate request contains an invalid Venafi custom fields type: %q", err.Type)
 }
 
-var ErrorMissingSubject = errors.New("certificate needs a comon name or at least one field in the subject set to be processed by Venafi")
+var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi issuers must have the 'commonName' field or at least one other subject field set.")
 
 // This function sends a request to Venafi to for a signed certificate.
 // The CSR will be decoded to be validated against the zone configuration policy.
