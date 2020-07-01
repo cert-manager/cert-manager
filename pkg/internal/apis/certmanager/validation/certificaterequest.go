@@ -37,12 +37,12 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 
 	el = append(el, validateIssuerRef(crSpec.IssuerRef, fldPath)...)
 
-	if len(crSpec.CSRPEM) == 0 {
-		el = append(el, field.Required(fldPath.Child("csr"), "must be specified"))
+	if len(crSpec.Request) == 0 {
+		el = append(el, field.Required(fldPath.Child("request"), "must be specified"))
 	} else {
-		_, err := pki.DecodeX509CertificateRequestBytes(crSpec.CSRPEM)
+		_, err := pki.DecodeX509CertificateRequestBytes(crSpec.Request)
 		if err != nil {
-			el = append(el, field.Invalid(fldPath.Child("csr"), crSpec.CSRPEM, fmt.Sprintf("failed to decode csr: %s", err)))
+			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
 		}
 	}
 

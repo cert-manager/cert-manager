@@ -76,3 +76,21 @@ func Convert_certmanager_X509Subject_To_v1alpha2_X509Subject(in *certmanager.X50
 func Convert_certmanager_CertificatePrivateKey_To_v1alpha2_CertificatePrivateKey(in *certmanager.CertificatePrivateKey, out *v1alpha2.CertificatePrivateKey, s conversion.Scope) error {
 	return autoConvert_certmanager_CertificatePrivateKey_To_v1alpha2_CertificatePrivateKey(in, out, s)
 }
+
+func Convert_v1alpha2_CertificateRequestSpec_To_certmanager_CertificateRequestSpec(in *v1alpha2.CertificateRequestSpec, out *certmanager.CertificateRequestSpec, s conversion.Scope) error {
+	if err := autoConvert_v1alpha2_CertificateRequestSpec_To_certmanager_CertificateRequestSpec(in, out, s); err != nil {
+		return err
+	}
+
+	out.Request = in.CSRPEM
+	return nil
+}
+
+func Convert_certmanager_CertificateRequestSpec_To_v1alpha2_CertificateRequestSpec(in *certmanager.CertificateRequestSpec, out *v1alpha2.CertificateRequestSpec, s conversion.Scope) error {
+	if err := autoConvert_certmanager_CertificateRequestSpec_To_v1alpha2_CertificateRequestSpec(in, out, s); err != nil {
+		return err
+	}
+
+	out.CSRPEM = in.Request
+	return nil
+}

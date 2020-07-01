@@ -74,7 +74,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.CSRPEM: %s", err)
+		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.Request: %s", err)
 	}
 
 	// validate private key is of the correct type (rsa or ecdsa)
