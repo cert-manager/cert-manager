@@ -25,7 +25,10 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Certificate is a type to represent a Certificate from ACME
+// A Certificate resource should be created to ensure an up to date and signed
+// x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
+//
+// The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`).
 // +k8s:openapi-gen=true
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description=""
 // +kubebuilder:printcolumn:name="Secret",type="string",JSONPath=".spec.secretName",description=""

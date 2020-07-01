@@ -61,7 +61,10 @@ spec:
     storage: true
     "schema":
       "openAPIV3Schema":
-        description: Certificate is a type to represent a Certificate from ACME
+        description: "A Certificate resource should be created to ensure an up to
+          date and signed x509 certificate is stored in the Kubernetes Secret resource
+          named in `spec.secretName`. \n The stored certificate will be renewed before
+          it expires (as configured by `spec.renewBefore`)."
         type: object
         properties:
           apiVersion:
@@ -442,7 +445,10 @@ spec:
     storage: false
     "schema":
       "openAPIV3Schema":
-        description: Certificate is a type to represent a Certificate from ACME
+        description: "A Certificate resource should be created to ensure an up to
+          date and signed x509 certificate is stored in the Kubernetes Secret resource
+          named in `spec.secretName`. \n The stored certificate will be renewed before
+          it expires (as configured by `spec.renewBefore`)."
         type: object
         properties:
           apiVersion:
@@ -822,7 +828,10 @@ spec:
     storage: false
     "schema":
       "openAPIV3Schema":
-        description: Certificate is a type to represent a Certificate from ACME
+        description: "A Certificate resource should be created to ensure an up to
+          date and signed x509 certificate is stored in the Kubernetes Secret resource
+          named in `spec.secretName`. \n The stored certificate will be renewed before
+          it expires (as configured by `spec.renewBefore`)."
         type: object
         properties:
           apiVersion:

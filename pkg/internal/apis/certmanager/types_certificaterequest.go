@@ -37,7 +37,15 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CertificateRequest is a type to represent a Certificate Signing Request
+// A CertificateRequest is used to request a signed certificate from one of the
+// configured issuers.
+//
+// All fields within the CertificateRequest's `spec` are immutable after creation.
+// A CertificateRequest will either succeed or fail, as denoted by its `status.state`
+// field.
+//
+// A CertificateRequest is a 'one-shot' resource, meaning it represents a single
+// point in time request for a certificate and cannot be re-used.
 type CertificateRequest struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta

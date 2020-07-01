@@ -58,8 +58,12 @@ spec:
     storage: true
     "schema":
       "openAPIV3Schema":
-        description: CertificateRequest is a type to represent a Certificate Signing
-          Request
+        description: "A CertificateRequest is used to request a signed certificate
+          from one of the configured issuers. \n All fields within the CertificateRequest's
+          `spec` are immutable after creation. A CertificateRequest will either succeed
+          or fail, as denoted by its `status.state` field. \n A CertificateRequest
+          is a 'one-shot' resource, meaning it represents a single point in time request
+          for a certificate and cannot be re-used."
         type: object
         properties:
           apiVersion:
@@ -223,8 +227,12 @@ spec:
     storage: false
     "schema":
       "openAPIV3Schema":
-        description: CertificateRequest is a type to represent a Certificate Signing
-          Request
+        description: "A CertificateRequest is used to request a signed certificate
+          from one of the configured issuers. \n All fields within the CertificateRequest's
+          `spec` are immutable after creation. A CertificateRequest will either succeed
+          or fail, as denoted by its `status.state` field. \n A CertificateRequest
+          is a 'one-shot' resource, meaning it represents a single point in time request
+          for a certificate and cannot be re-used."
         type: object
         properties:
           apiVersion:
@@ -388,8 +396,12 @@ spec:
     storage: false
     "schema":
       "openAPIV3Schema":
-        description: CertificateRequest is a type to represent a Certificate Signing
-          Request
+        description: "A CertificateRequest is used to request a signed certificate
+          from one of the configured issuers. \n All fields within the CertificateRequest's
+          `spec` are immutable after creation. A CertificateRequest will either succeed
+          or fail, as denoted by its `status.state` field. \n A CertificateRequest
+          is a 'one-shot' resource, meaning it represents a single point in time request
+          for a certificate and cannot be re-used."
         type: object
         properties:
           apiVersion:
