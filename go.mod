@@ -44,18 +44,18 @@ require (
 	google.golang.org/api v0.4.0
 	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.18.0
-	k8s.io/apiextensions-apiserver v0.18.0
-	k8s.io/apimachinery v0.18.0
-	k8s.io/apiserver v0.18.0
-	k8s.io/cli-runtime v0.18.0
-	k8s.io/client-go v0.18.0
-	k8s.io/code-generator v0.18.0
-	k8s.io/component-base v0.18.0
+	k8s.io/api v0.18.5
+	k8s.io/apiextensions-apiserver v0.18.5
+	k8s.io/apimachinery v0.18.5
+	k8s.io/apiserver v0.18.5
+	k8s.io/cli-runtime v0.18.5
+	k8s.io/client-go v0.18.5
+	k8s.io/code-generator v0.18.5
+	k8s.io/component-base v0.18.5
 	k8s.io/klog v1.0.0
-	k8s.io/kube-aggregator v0.18.0
-	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c
-	k8s.io/kubectl v0.18.0
+	k8s.io/kube-aggregator v0.18.5
+	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
+	k8s.io/kubectl v0.18.5
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 	sigs.k8s.io/controller-runtime v0.5.1-0.20200416234307-5377effd4043
 	sigs.k8s.io/controller-tools v0.2.9-0.20200414181213-645d44dca7c0
