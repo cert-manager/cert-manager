@@ -43,7 +43,7 @@ import (
 
 const (
 	CRControllerName         = "certificaterequests-issuer-venafi"
-	VenafiPickupIDAnnotation = "venafi.cert-manager.io/pickupid"
+	VenafiPickupIDAnnotation = "venafi.cert-manager.io/pickup-id"
 )
 
 type Venafi struct {
