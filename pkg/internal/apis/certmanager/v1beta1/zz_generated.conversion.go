@@ -604,7 +604,7 @@ func autoConvert_v1beta1_CertificateRequestSpec_To_certmanager_CertificateReques
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
 	}
-	out.CSRPEM = *(*[]byte)(unsafe.Pointer(&in.CSRPEM))
+	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	return nil
@@ -621,7 +621,7 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1beta1_CertificateReques
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
 	}
-	out.CSRPEM = *(*[]byte)(unsafe.Pointer(&in.CSRPEM))
+	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]v1beta1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	return nil
