@@ -139,6 +139,9 @@ type ACMEChallengeSolverHTTP01 struct {
 	// +optional
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress,omitempty"`
 
+	// TODO there are stuff in the Ingress field which needs to stay configurable even when VirtualServices are used
+	//  instead of Ingress resources. So, either some of those (PodTemplate, and ServiceType maybe?) need to move
+	//  out of Ingress, or Istio needs to be moved into Ingress.
 	// +optional
 	Istio *ACMEChallengeSolverHTTP01Istio `json:"istio,omitempty"`
 }
