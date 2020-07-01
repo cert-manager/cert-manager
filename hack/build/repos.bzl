@@ -318,8 +318,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/cpu/goacmedns",
-        sum = "h1:jgozwE/yDKNdM4QjlS1OOp4QEWKof/9xeWrEVo2iQCg=",
-        version = "v0.0.0-20180701200144-565ecf2a84df",
+        sum = "h1:QOeMpIEsIdm1LSASSswjaTf8CXmzcrgy5OeCfHjppA4=",
+        version = "v0.0.3",
     )
     go_repository(
         name = "com_github_cpuguy83_go_md2man",

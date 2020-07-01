@@ -15,7 +15,7 @@ require (
 	github.com/Venafi/vcert v0.0.0-20200310111556-eba67a23943f
 	github.com/aws/aws-sdk-go v1.31.3
 	github.com/cloudflare/cloudflare-go v0.8.5
-	github.com/cpu/goacmedns v0.0.0-20180701200144-565ecf2a84df
+	github.com/cpu/goacmedns v0.0.3
 	github.com/digitalocean/godo v1.29.0
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1 // indirect
