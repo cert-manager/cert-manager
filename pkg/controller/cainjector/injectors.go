@@ -18,7 +18,6 @@ package cainjector
 
 import (
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
-	"k8s.io/api/auditregistration/v1alpha1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
@@ -137,26 +136,4 @@ func (t *crdConversionTarget) SetCA(data []byte) {
 		t.obj.Spec.Conversion.WebhookClientConfig = &apiext.WebhookClientConfig{}
 	}
 	t.obj.Spec.Conversion.WebhookClientConfig.CABundle = data
-}
-
-// auditSinkTarget knows how to set CA data for the auditSink webhook
-type auditSinkTarget struct {
-	obj v1alpha1.AuditSink
-}
-
-func (i auditSinkTarget) NewTarget() InjectTarget {
-	return &auditSinkTarget{}
-}
-
-func (i auditSinkTarget) IsAlpha() bool {
-	// TODO set this to false when auditregistration goes GA
-	return true
-}
-
-func (t *auditSinkTarget) AsObject() runtime.Object {
-	return &t.obj
-}
-
-func (t *auditSinkTarget) SetCA(data []byte) {
-	t.obj.Spec.Webhook.ClientConfig.CABundle = data
 }

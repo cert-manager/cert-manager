@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
-	"k8s.io/api/auditregistration/v1alpha1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,13 +59,7 @@ var (
 		listType:     &apiext.CustomResourceDefinitionList{},
 	}
 
-	AuditSinkSetup = injectorSetup{
-		resourceName: "auditsink",
-		injector:     auditSinkTarget{},
-		listType:     &v1alpha1.AuditSinkList{},
-	}
-
-	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup, AuditSinkSetup}
+	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 	ControllerNames []string
 )
 
