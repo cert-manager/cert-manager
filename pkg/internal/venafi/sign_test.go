@@ -112,6 +112,9 @@ func TestSign(t *testing.T) {
 	csrPEM := generateCSR(t, sk, "common-name", []string{
 		"foo.example.com", "bar.example.com"})
 
+	csrPEMNoDN := generateCSR(t, sk, "", []string{
+		"foo.example.com", "bar.example.com"})
+
 	csrNonePEM := generateCSR(t, sk, "", []string{})
 
 	tests := map[string]testSignT{
@@ -141,6 +144,11 @@ func TestSign(t *testing.T) {
 		},
 		"a badly formed CSR should error": {
 			csrPEM:      []byte("a badly formed CSR"),
+			checkFn:     checkNoCertificateIssued,
+			expectedErr: true,
+		},
+		"a CSR wiuth empty DN sshould error": {
+			csrPEM:      csrPEMNoDN,
 			checkFn:     checkNoCertificateIssued,
 			expectedErr: true,
 		},
