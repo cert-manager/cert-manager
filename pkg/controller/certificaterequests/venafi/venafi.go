@@ -151,18 +151,12 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	certPem, err := client.RetreiveCertificate(pickupID, cr.Spec.CSRPEM, duration, customFields)
 	if err != nil {
 		switch err.(type) {
-		case endpoint.ErrCertificatePending:
+		case endpoint.ErrCertificatePending, endpoint.ErrRetrieveCertificateTimeout:
 			message := "Venafi certificate still in a pending state, the request will be retried"
 
 			v.reporter.Pending(cr, err, "IssuancePending", message)
 			log.Error(err, message)
 			return nil, err
-
-		case endpoint.ErrRetrieveCertificateTimeout:
-			message := "Timed out waiting for venafi certificate, the retreive request will be retried"
-			v.reporter.Pending(cr, err, "Timeout", message)
-			log.Error(err, message)
-			return nil, nil
 
 		default:
 			message := "Failed to obtain venafi certificate"
