@@ -26,7 +26,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -45,19 +44,11 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/issuing"
-	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/keymanager"
-	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/readiness"
-	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/requestmanager"
-	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger"
-	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 const controllerAgentName = "cert-manager"
@@ -81,29 +72,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	}
 
 	var wg sync.WaitGroup
-	var experimentalCertificateControllers = []string{
-		trigger.ControllerName,
-		issuing.ControllerName,
-		keymanager.ControllerName,
-		requestmanager.ControllerName,
-		readiness.ControllerName,
-	}
-	enabledSet := sets.NewString(opts.EnabledControllers...)
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateControllers) {
-		if enabledSet.Has(certificates.ControllerName) {
-			log.Info("Disabling old certificates controller")
-			enabledSet.Delete(certificates.ControllerName)
-		}
-		log.Info("Enabling all experimental certificates controllers")
-		enabledSet.Insert(experimentalCertificateControllers...)
-		opts.EnabledControllers = enabledSet.List()
-	} else {
-		if enabledSet.HasAny(experimentalCertificateControllers...) {
-			err := fmt.Sprintf("Enable %s feature gate to use these controllers", feature.ExperimentalCertificateControllers)
-			log.Info(err, "controllers", enabledSet.Intersection(sets.NewString(experimentalCertificateControllers...)).List())
-			os.Exit(1)
-		}
-	}
 	run := func(_ context.Context) {
 		for n, fn := range controller.Known() {
 			log := log.WithValues("controller", n)

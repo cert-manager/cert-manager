@@ -32,9 +32,13 @@ import (
 	crselfsignedcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/selfsigned"
 	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
 	crvenaficontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/venafi"
-	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	certificatesmetricscontroller "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/issuing"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/keymanager"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/readiness"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/requestmanager"
+	"github.com/jetstack/cert-manager/pkg/controller/expcertificates/trigger"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -125,7 +129,6 @@ var (
 	defaultEnabledControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
-		certificatescontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
@@ -135,7 +138,12 @@ var (
 		crselfsignedcontroller.CRControllerName,
 		crvaultcontroller.CRControllerName,
 		crvenaficontroller.CRControllerName,
-		certificatescontroller.ControllerName,
+		// certificate controllers
+		trigger.ControllerName,
+		issuing.ControllerName,
+		keymanager.ControllerName,
+		requestmanager.ControllerName,
+		readiness.ControllerName,
 	}
 )
 
