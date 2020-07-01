@@ -50,10 +50,10 @@ type PrivateKeyAlgorithm string
 
 const (
 	// Denotes the RSA private key type.
-	RSAKeyAlgorithm PrivateKeyAlgorithm = "rsa"
+	RSAKeyAlgorithm PrivateKeyAlgorithm = "RSA"
 
 	// Denotes the ECDSA private key type.
-	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ecdsa"
+	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ECDSA"
 )
 
 type PrivateKeyEncoding string
@@ -63,12 +63,12 @@ const (
 	// private key as part of the PEM header, e.g. "BEGIN RSA PRIVATE KEY".
 	// If the keyAlgorithm is set to 'ECDSA', this will produce private keys
 	// that use the "BEGIN EC PRIVATE KEY" header.
-	PKCS1 PrivateKeyEncoding = "pkcs1"
+	PKCS1 PrivateKeyEncoding = "PKCS1"
 
 	// PKCS8 key encoding will produce PEM files with the "BEGIN PRIVATE KEY"
 	// header. It encodes the keyAlgorithm of the private key as part of the
 	// DER encoded PEM block.
-	PKCS8 PrivateKeyEncoding = "pkcs8"
+	PKCS8 PrivateKeyEncoding = "PKCS8"
 )
 
 // CertificateSpec defines the desired state of Certificate.

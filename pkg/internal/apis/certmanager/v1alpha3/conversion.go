@@ -33,8 +33,24 @@ func Convert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *v1alpha
 			out.PrivateKey = &certmanager.CertificatePrivateKey{}
 		}
 
-		out.PrivateKey.Algorithm = certmanager.PrivateKeyAlgorithm(in.KeyAlgorithm)
-		out.PrivateKey.Encoding = certmanager.PrivateKeyEncoding(in.KeyEncoding)
+		switch in.KeyAlgorithm {
+		case v1alpha3.ECDSAKeyAlgorithm:
+			out.PrivateKey.Algorithm = certmanager.ECDSAKeyAlgorithm
+		case v1alpha3.RSAKeyAlgorithm:
+			out.PrivateKey.Algorithm = certmanager.RSAKeyAlgorithm
+		default:
+			out.PrivateKey.Algorithm = certmanager.PrivateKeyAlgorithm(in.KeyAlgorithm)
+		}
+
+		switch in.KeyEncoding {
+		case v1alpha3.PKCS1:
+			out.PrivateKey.Encoding = certmanager.PKCS1
+		case v1alpha3.PKCS8:
+			out.PrivateKey.Encoding = certmanager.PKCS8
+		default:
+			out.PrivateKey.Encoding = certmanager.PrivateKeyEncoding(in.KeyEncoding)
+		}
+
 		out.PrivateKey.Size = in.KeySize
 	}
 
@@ -47,8 +63,24 @@ func Convert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *certman
 	}
 
 	if in.PrivateKey != nil {
-		out.KeyAlgorithm = v1alpha3.KeyAlgorithm(in.PrivateKey.Algorithm)
-		out.KeyEncoding = v1alpha3.KeyEncoding(in.PrivateKey.Encoding)
+		switch in.PrivateKey.Algorithm {
+		case certmanager.ECDSAKeyAlgorithm:
+			out.KeyAlgorithm = v1alpha3.ECDSAKeyAlgorithm
+		case certmanager.RSAKeyAlgorithm:
+			out.KeyAlgorithm = v1alpha3.RSAKeyAlgorithm
+		default:
+			out.KeyAlgorithm = v1alpha3.KeyAlgorithm(in.PrivateKey.Algorithm)
+		}
+
+		switch in.PrivateKey.Encoding {
+		case certmanager.PKCS1:
+			out.KeyEncoding = v1alpha3.PKCS1
+		case certmanager.PKCS8:
+			out.KeyEncoding = v1alpha3.PKCS8
+		default:
+			out.KeyEncoding = v1alpha3.KeyEncoding(in.PrivateKey.Encoding)
+		}
+
 		out.KeySize = in.PrivateKey.Size
 	}
 

@@ -982,8 +982,8 @@ spec:
                       algorithm.
                     type: string
                     enum:
-                    - rsa
-                    - ecdsa
+                    - RSA
+                    - ECDSA
                   encoding:
                     description: The private key cryptography standards (PKCS) encoding
                       for this certificate's private key to be encoded in. If provided,
@@ -991,8 +991,8 @@ spec:
                       PKCS#8, respectively. Defaults to PKCS#1 if not specified.
                     type: string
                     enum:
-                    - pkcs1
-                    - pkcs8
+                    - PKCS1
+                    - PKCS8
                   rotationPolicy:
                     description: RotationPolicy controls how private keys should be
                       regenerated when a re-issuance is being processed. If set to
