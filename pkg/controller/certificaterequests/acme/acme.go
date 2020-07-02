@@ -30,12 +30,11 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmacmeclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
-	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -80,7 +79,7 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 	}
 }
 
-func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuerObj v1alpha2.GenericIssuer) (*issuer.IssuerResponse, error) {
+func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	// If we can't decode the CSR PEM we have to hard fail
@@ -188,7 +187,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 
 		log.Info("certificate issued")
 
-		return &issuer.IssuerResponse{
+		return &cmapi.IssuerResponse{
 			Certificate: order.Status.Certificate,
 		}, nil
 	}
@@ -204,7 +203,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
+func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
 	spec := cmacme.OrderSpec{
 		CSR:        cr.Spec.CSRPEM,
 		IssuerRef:  cr.Spec.IssuerRef,
@@ -226,7 +225,7 @@ func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (
 			Labels:      cr.Labels,
 			Annotations: cr.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateRequestKind)),
+				*metav1.NewControllerRef(cr, cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind)),
 			},
 		},
 		Spec: spec,

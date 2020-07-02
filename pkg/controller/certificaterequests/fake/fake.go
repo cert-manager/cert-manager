@@ -20,15 +20,14 @@ import (
 	"context"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	issuer "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 )
 
 type Issuer struct {
-	FakeSign func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssuerResponse, error)
+	FakeSign func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error)
 }
 
 // Sign attempts to issue a certificate as described by the CertificateRequest
 // resource given
-func (i *Issuer) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssuerResponse, error) {
+func (i *Issuer) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 	return i.FakeSign(ctx, cr, issuerObj)
 }

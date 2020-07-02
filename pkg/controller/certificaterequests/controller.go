@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -42,7 +42,7 @@ const (
 var keyFunc = controllerpkg.KeyFunc
 
 type Issuer interface {
-	Sign(context.Context, *v1alpha2.CertificateRequest, v1alpha2.GenericIssuer) (*issuer.IssuerResponse, error)
+	Sign(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error)
 }
 
 type Controller struct {

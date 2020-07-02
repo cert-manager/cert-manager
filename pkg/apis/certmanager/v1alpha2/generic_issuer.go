@@ -23,6 +23,25 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
+type IssuerResponse struct {
+	// Certificate is the certificate resource that should be stored in the
+	// target secret.
+	// It will only be set if the corresponding private key is also set on the
+	// IssuerResponse structure.
+	Certificate []byte
+
+	// PrivateKey is the private key that should be stored in the target secret.
+	// If set, the certificate and CA field will also be overwritten with the
+	// contents of the field.
+	// If Certificate is not set, the existing Certificate will be overwritten.
+	PrivateKey []byte
+
+	// CA is the CA certificate that should be stored in the target secret.
+	// This field should only be set if the private key field is set, similar
+	// to the Certificate field.
+	CA []byte
+}
+
 type GenericIssuer interface {
 	runtime.Object
 	metav1.Object
