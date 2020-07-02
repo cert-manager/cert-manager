@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -259,21 +260,21 @@ func (o *Options) Run(args []string) error {
 	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
 
 	if o.FetchCert {
-		if !apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
-			Type:   cmapiv1alpha2.CertificateRequestConditionReady,
-			Status: cmmeta.ConditionTrue,
-		}) {
-			fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
-				req.Name, req.Namespace)
-			timeout := time.After(o.Timeout)
-			tick := time.Tick(1 * time.Second)
-			// Wait until CR is ready
-			err = util.PollUntilCRIsReadyOrTimeOut(o.CMClient, req, timeout, tick)
+		fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
+			req.Name, req.Namespace)
+		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
+			req, err := o.CMClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
 			if err != nil {
-				return fmt.Errorf("error when waiting for CertificateRequest to be signed: %w", err)
+				return false, nil
 			}
+			return apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
+				Type:   cmapiv1alpha2.CertificateRequestConditionReady,
+				Status: cmmeta.ConditionTrue,
+			}), nil
+		})
+		if err != nil {
+			return fmt.Errorf("error when waiting for CertificateRequest to be signed: %w", err)
 		}
-
 		fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has been signed\n", req.Name, req.Namespace)
 
 		// Fetch x509 certificate and store to file
