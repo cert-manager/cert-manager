@@ -42,39 +42,7 @@ func TestCtlStatusCert(t *testing.T) {
 	defer cancel()
 
 	// Build clients
-	//kubeClient, _, cmCl, _ := framework.NewClients(t, config)
 	_, _, cmCl, _ := framework.NewClients(t, config)
-
-	const (
-		issuedAndUpToDateExpOutput = `Name: testcrt-1
-Namespace: testns-1
-Conditions:
-  Ready: True, Reason: , Message: Certificate is up to date and has not expired
-DNS Names:
-- www.example.com
-Issuer:
-  Name: letsencrypt-prod
-  Kind: ClusterIssuer
-Secret Name: example-tls
-Not Before: <none>
-Not After: 2020-09-16T09:26:18Z
-Renewal Time: <none>`
-
-		issuedAndDuringRenewalExpOutput = `Name: testcrt-2
-Namespace: testns-1
-Conditions:
-  Ready: True, Reason: , Message: Certificate is up to date and has not expired
-  Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
-DNS Names:
-- www.example.com
-Issuer:
-  Name: letsencrypt-prod
-  Kind: ClusterIssuer
-Secret Name: example-tls
-Not Before: <none>
-Not After: 2020-09-16T09:26:18Z
-Renewal Time: <none>`
-	)
 
 	var (
 		crt1Name = "testcrt-1"
@@ -92,20 +60,6 @@ Renewal Time: <none>`
 		t.Fatal(err)
 	}
 
-	crt1 := gen.Certificate(crt1Name,
-		gen.SetCertificateNamespace(ns1),
-		gen.SetCertificateDNSNames("www.example.com"),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
-		gen.SetCertificateSecretName("example-tls"),
-	)
-
-	crt2 := gen.Certificate(crt2Name,
-		gen.SetCertificateNamespace(ns1),
-		gen.SetCertificateDNSNames("www.example.com"),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
-		gen.SetCertificateSecretName("example-tls"),
-	)
-
 	tests := map[string]struct {
 		certificate       *cmapi.Certificate
 		certificateStatus *cmapi.CertificateStatus
@@ -116,22 +70,55 @@ Renewal Time: <none>`
 		expOutput string
 	}{
 		"certificate issued and up-to-date": {
-			certificate: crt1,
+			certificate: gen.Certificate(crt1Name,
+				gen.SetCertificateNamespace(ns1),
+				gen.SetCertificateDNSNames("www.example.com"),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
+				gen.SetCertificateSecretName("example-tls")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{readyAndUpToDateCond},
 				NotAfter: &metav1.Time{Time: certIsValidTime}},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
 			expErr:         false,
-			expOutput:      issuedAndUpToDateExpOutput,
+			expOutput: `Name: testcrt-1
+Namespace: testns-1
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
+DNS Names:
+- www.example.com
+Issuer:
+  Name: letsencrypt-prod
+  Kind: ClusterIssuer
+Secret Name: example-tls
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>`,
 		},
 		"certificate issued and renewal in progress": {
-			certificate: crt2,
+			certificate: gen.Certificate(crt2Name,
+				gen.SetCertificateNamespace(ns1),
+				gen.SetCertificateDNSNames("www.example.com"),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
+				gen.SetCertificateSecretName("example-tls")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{readyAndUpToDateCond, issuingCond},
 				NotAfter: &metav1.Time{Time: certIsValidTime}},
 			inputArgs:      []string{crt2Name},
 			inputNamespace: ns1,
 			expErr:         false,
-			expOutput:      issuedAndDuringRenewalExpOutput,
+			expOutput: `Name: testcrt-2
+Namespace: testns-1
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
+  Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
+DNS Names:
+- www.example.com
+Issuer:
+  Name: letsencrypt-prod
+  Kind: ClusterIssuer
+Secret Name: example-tls
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>`,
 		},
 	}
 
