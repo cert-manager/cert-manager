@@ -20,9 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"time"
 
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	restclient "k8s.io/client-go/rest"
@@ -30,7 +30,6 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
@@ -48,7 +47,7 @@ kubectl cert-manager status certificate my-cert --namespace default
 type Options struct {
 	CMClient   cmclient.Interface
 	RESTConfig *restclient.Config
-	// The Namespace that the Certificate to be renewed resided in.
+	// The Namespace that the Certificate to be renewed resides in.
 	// This flag registration is handled by cmdutil.Factory
 	Namespace string
 
@@ -127,22 +126,18 @@ func (o *Options) Run(args []string) error {
 	// Get necessary info from Certificate
 	// Output one line about each type of Condition that is set.
 	conditionMsg := ""
-	for i, con := range crt.Status.Conditions {
-		if i < len(crt.Status.Conditions)-1 {
-			conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
-		} else {
-			conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s", con.Type, con.Status, con.Reason, con.Message)
-		}
+	for _, con := range crt.Status.Conditions {
+		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
 	}
 	if conditionMsg == "" {
-		conditionMsg = "  No Conditions set"
+		conditionMsg = "  No Conditions set\n"
 	}
-	fmt.Fprintf(o.Out, fmt.Sprintf("Conditions:\n%s\n", conditionMsg))
+	fmt.Fprintf(o.Out, fmt.Sprintf("Conditions:\n%s", conditionMsg))
 
 	// TODO: Get CR from certificate if exists. I think I can just look for it without caring what condition is
 	// What about timing issues? When I query condition it's not ready yet, but then looking for crn it's finished and deleted
 
-	dnsNames := formatDnsNamesList(crt)
+	dnsNames := formatStringSlice(crt.Spec.DNSNames)
 	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
 
 	issuerFormat := `Issuer:
@@ -160,10 +155,10 @@ func (o *Options) Run(args []string) error {
 	return nil
 }
 
-func formatDnsNamesList(crt *cmapi.Certificate) string {
-	str := ""
-	for _, dnsName := range crt.Spec.DNSNames {
-		str += "- " + dnsName + "\n"
+func formatStringSlice(strings []string) string {
+	result := ""
+	for _, string := range strings {
+		result += "- " + string + "\n"
 	}
-	return str
+	return result
 }

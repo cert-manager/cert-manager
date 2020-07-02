@@ -17,10 +17,11 @@ limitations under the License.
 package status
 
 import (
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 )
 
 func NewCmdStatus(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {

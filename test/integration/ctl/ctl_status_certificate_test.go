@@ -87,7 +87,6 @@ Not After: 2020-09-16T09:26:18Z`
 	if err != nil {
 		t.Fatal(err)
 	}
-	//certIsInvalidTime, err :=
 
 	crt1 := gen.Certificate(crt1Name,
 		gen.SetCertificateNamespace(ns1),
@@ -143,7 +142,7 @@ Not After: 2020-09-16T09:26:18Z`
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Log(crt.Status)
+
 			// Options to run status command
 			streams, _, outBuf, _ := genericclioptions.NewTestIOStreams()
 			opts := &statuscertcmd.Options{
