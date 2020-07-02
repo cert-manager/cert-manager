@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ import (
 	"context"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 )
 
 type Issuer struct {
 	SetupFunc func(context.Context) error
-	IssueFunc func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error)
+	IssueFunc func(context.Context, *cmapi.Certificate) (*issuer.IssuerResponse, error)
 }
 
 var _ issuer.Interface = &Issuer{}
@@ -39,6 +39,6 @@ func (i *Issuer) Setup(ctx context.Context) error {
 
 // Issue attempts to issue a certificate as described by the certificate
 // resource given
-func (i *Issuer) Issue(ctx context.Context, crt *cmapi.Certificate) (*issuer.IssueResponse, error) {
+func (i *Issuer) Issue(ctx context.Context, crt *cmapi.Certificate) (*issuer.IssuerResponse, error) {
 	return i.IssueFunc(ctx, crt)
 }

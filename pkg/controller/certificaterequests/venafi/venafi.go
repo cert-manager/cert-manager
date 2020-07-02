@@ -29,15 +29,15 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	venafiinternal "github.com/jetstack/cert-manager/pkg/internal/venafi"
 	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
-	CRControllerName = "certificaterequests-issuer-venafi"
+	CRControllerName = "CertificateRequestsIssuerVenafi"
 )
 
 type Venafi struct {
@@ -66,7 +66,7 @@ func NewVenafi(ctx *controllerpkg.Context) *Venafi {
 	}
 }
 
-func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
@@ -142,7 +142,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	log.Info("certificate issued")
 
-	return &issuerpkg.IssueResponse{
+	return &issuer.IssuerResponse{
 		Certificate: certPem,
 	}, nil
 }

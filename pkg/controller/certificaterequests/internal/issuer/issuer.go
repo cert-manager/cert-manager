@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ type Interface interface {
 	Setup(ctx context.Context) error
 }
 
-type IssueResponse struct {
+type IssuerResponse struct {
 	// Certificate is the certificate resource that should be stored in the
 	// target secret.
 	// It will only be set if the corresponding private key is also set on the

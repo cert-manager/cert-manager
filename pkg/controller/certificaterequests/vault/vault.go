@@ -26,14 +26,14 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
-	CRControllerName = "certificaterequests-issuer-vault"
+	CRControllerName = "CertificateRequestsIssuerVault"
 )
 
 type Vault struct {
@@ -62,7 +62,7 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 	}
 }
 
-func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuerObj v1alpha2.GenericIssuer) (*issuer.IssueResponse, error) {
+func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuerObj v1alpha2.GenericIssuer) (*issuer.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
@@ -98,7 +98,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 
 	log.Info("certificate issued")
 
-	return &issuer.IssueResponse{
+	return &issuer.IssuerResponse{
 		Certificate: certPem,
 		CA:          caPem,
 	}, nil

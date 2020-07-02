@@ -28,8 +28,8 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	CRControllerName = "certificaterequests-issuer-ca"
+	CRControllerName = "CertificateRequestsIssuerCA"
 )
 
 type templateGenerator func(*cmapi.CertificateRequest) (*x509.Certificate, error)
@@ -70,7 +70,7 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 	}
 }
 
-func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	secretName := issuerObj.GetSpec().CA.SecretName
@@ -123,7 +123,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 
 	log.Info("certificate issued")
 
-	return &issuerpkg.IssueResponse{
+	return &issuer.IssuerResponse{
 		Certificate: certPEM,
 		CA:          caPEM,
 	}, nil

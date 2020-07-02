@@ -30,8 +30,8 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	issuer "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	CRControllerName = "certificaterequests-issuer-selfsigned"
+	CRControllerName = "CertificateRequestsIssuerSelfSigned"
 )
 
 type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
@@ -72,7 +72,7 @@ func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 	}
 }
 
-func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
@@ -162,7 +162,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	log.Info("self signed certificate issued")
 
 	// We set the CA to the returned certificate here since this is self signed.
-	return &issuer.IssueResponse{
+	return &issuer.IssuerResponse{
 		Certificate: certPem,
 		CA:          certPem,
 	}, nil

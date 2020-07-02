@@ -30,19 +30,19 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	issuer "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
-	ControllerName = "certificaterequests"
+	ControllerName = "CertificateRequests"
 )
 
 var keyFunc = controllerpkg.KeyFunc
 
 type Issuer interface {
-	Sign(context.Context, *v1alpha2.CertificateRequest, v1alpha2.GenericIssuer) (*issuer.IssueResponse, error)
+	Sign(context.Context, *v1alpha2.CertificateRequest, v1alpha2.GenericIssuer) (*issuer.IssuerResponse, error)
 }
 
 type Controller struct {

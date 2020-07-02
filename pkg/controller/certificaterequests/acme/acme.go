@@ -35,8 +35,8 @@ import (
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	CRControllerName = "certificaterequests-issuer-acme"
+	CRControllerName = "CertificaterequestsIssuerACME"
 )
 
 type ACME struct {
@@ -80,7 +80,7 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 	}
 }
 
-func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer v1alpha2.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuerObj v1alpha2.GenericIssuer) (*issuer.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	// If we can't decode the CSR PEM we have to hard fail
@@ -188,7 +188,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 
 		log.Info("certificate issued")
 
-		return &issuerpkg.IssueResponse{
+		return &issuer.IssuerResponse{
 			Certificate: order.Status.Certificate,
 		}, nil
 	}
