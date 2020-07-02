@@ -23,7 +23,7 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/predicate"
+	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
 // ListCertificateRequestsMatchingPredicates will list CertificateRequest

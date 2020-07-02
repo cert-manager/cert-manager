@@ -13,9 +13,9 @@ go_library(
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/client/listers/certmanager/v1alpha2:go_default_library",
         "//pkg/controller:go_default_library",
-        "//pkg/controller/certificates/internal/predicate:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",
+        "//pkg/util/predicate:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
@@ -38,7 +38,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/controller/certificates/internal/predicate:all-srcs",
         "//pkg/controller/certificates/internal/secretsmanager:all-srcs",
         "//pkg/controller/certificates/internal/test:all-srcs",
         "//pkg/controller/certificates/issuing:all-srcs",
