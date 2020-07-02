@@ -20,8 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -29,6 +27,7 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
+	"time"
 
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
@@ -147,9 +146,9 @@ func (o *Options) Run(args []string) error {
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Secret Name: %s\n", crt.Spec.SecretName))
 
-	if crt.Status.NotAfter != nil {
-		fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", crt.Status.NotAfter.Time.Format(time.RFC3339)))
-	}
+	fmt.Fprintf(o.Out, fmt.Sprintf("Not Before: %s\n", formatTimeString(crt.Status.NotBefore)))
+	fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", formatTimeString(crt.Status.NotAfter)))
+	fmt.Fprintf(o.Out, fmt.Sprintf("Renewal Time: %s\n", formatTimeString(crt.Status.RenewalTime)))
 
 	// TODO: print information about secret
 	return nil
@@ -161,4 +160,11 @@ func formatStringSlice(strings []string) string {
 		result += "- " + string + "\n"
 	}
 	return result
+}
+
+func formatTimeString(t *metav1.Time) string {
+	if t != nil {
+		return t.Time.Format(time.RFC3339)
+	}
+	return "<none>"
 }

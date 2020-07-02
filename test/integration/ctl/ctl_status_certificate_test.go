@@ -56,7 +56,9 @@ Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
 Secret Name: example-tls
-Not After: 2020-09-16T09:26:18Z`
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>`
 
 		issuedAndDuringRenewalExpOutput = `Name: testcrt-2
 Namespace: testns-1
@@ -69,7 +71,9 @@ Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
 Secret Name: example-tls
-Not After: 2020-09-16T09:26:18Z`
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>`
 	)
 
 	var (
