@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -58,25 +57,4 @@ func FetchCertificateFromCR(cmClient cmclient.Interface,
 
 	fmt.Fprintf(ioStreams.Out, "Certificate has been stored in file %s\n", certFileName)
 	return nil
-}
-
-// PollUntilCRIsReadyOrTimeOut waits until CertificateRequest has the Ready Condition set to true or until timeout occurs.
-func PollUntilCRIsReadyOrTimeOut(client cmclient.Interface, req *cmapiv1alpha2.CertificateRequest, timeout, tick <-chan time.Time) error {
-	for {
-		select {
-		case <-timeout:
-			return fmt.Errorf("timeout waiting for CertificateRequest to be signed, retry later with fetch command")
-		case <-tick:
-			req, err := client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
-			if err != nil {
-				return fmt.Errorf("error when querying current status of CertificateRequest: %w", err)
-			}
-			if apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
-				Type:   cmapiv1alpha2.CertificateRequestConditionReady,
-				Status: cmmeta.ConditionTrue,
-			}) {
-				return nil
-			}
-		}
-	}
 }
