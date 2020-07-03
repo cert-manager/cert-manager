@@ -182,6 +182,7 @@ type CertificateSpec struct {
 	// for this certificate's private key to be encoded in. If provided, allowed
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
+	// +optional
 	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
 
 	// Options to control private keys used for the Certificate.

@@ -122,7 +122,7 @@ type ChallengeStatus struct {
 	// Reason contains human readable information on why the Challenge is in the
 	// current state.
 	// +optional
-	Reason string `json:"reason"`
+	Reason string `json:"reason,omitempty"`
 
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.

@@ -181,6 +181,7 @@ type CertificatePrivateKey struct {
 	// If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1
 	// and PKCS#8, respectively.
 	// Defaults to PKCS#1 if not specified.
+	// +optional
 	Encoding PrivateKeyEncoding `json:"encoding,omitempty"`
 
 	// Algorithm is the private key algorithm of the corresponding private key
