@@ -275,6 +275,10 @@ func (o *Options) Run(args []string) error {
 		if err != nil {
 			return fmt.Errorf("error when waiting for CertificateRequest to be signed: %w", err)
 		}
+		if len(req.Status.Certificate) == 0 {
+			fmt.Fprintf(o.Out, "%s\n", req.Status.Certificate)
+			return errors.New("CertificateRequest in invalid state: Ready Condition is set but status.certificate is empty")
+		}
 		fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has been signed\n", req.Name, req.Namespace)
 
 		// Fetch x509 certificate and store to file
