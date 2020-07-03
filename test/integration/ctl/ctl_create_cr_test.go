@@ -205,12 +205,12 @@ func TestCtlCreateCR(t *testing.T) {
 				IOStreams:        streams,
 				CmdNamespace:     test.inputNamespace,
 				EnforceNamespace: test.inputNamespace != "",
+				InputFilename:    test.inputFile,
 				KeyFilename:      test.keyFilename,
+				CertFileName:     test.certFilename,
 				FetchCert:        test.fetchCert,
 				Timeout:          test.timeout,
 			}
-
-			opts.InputFilename = test.inputFile
 
 			// Validating args and flags
 			err := opts.Validate(test.inputArgs)
@@ -227,12 +227,12 @@ func TestCtlCreateCR(t *testing.T) {
 				}
 			}
 
-			// Start a goroutine that will periodically check whether the CertificateRequest has been created
-			// by the CLI command yet.
-			// Once it has been created, set the `status.certificate` and `Ready` condition so that the `--fetch-certificate`
-			// part of the command is able to proceed.
 			if test.fetchCert {
 				req := &cmapiv1alpha2.CertificateRequest{}
+				// Start a goroutine that will periodically check whether the CertificateRequest has been created
+				// by the CLI command yet.
+				// Once it has been created, set the `status.certificate` and `Ready` condition so that the `--fetch-certificate`
+				// part of the command is able to proceed.
 				go func() {
 					err = wait.Poll(time.Second, 5*time.Minute, func() (done bool, err error) {
 						req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(test.inputNamespace).Get(context.TODO(), test.inputArgs[0], metav1.GetOptions{})
@@ -298,7 +298,7 @@ func TestCtlCreateCR(t *testing.T) {
 				t.Errorf("invalid private key: %v", err)
 			}
 
-			// Check the file where the certificate is stored if applicable
+			// If applicable, check the file where the certificate is stored
 			if test.fetchCert {
 				certData, err := ioutil.ReadFile(test.expCertFilename)
 				if err != nil {
@@ -313,6 +313,9 @@ func TestCtlCreateCR(t *testing.T) {
 	}
 }
 
+// setupPathForTest sets up a tmp directory and cd into it for tests as the command being tested creates files
+// in the local directory.
+// Returns a cleanup function which will change cd back to original working directory and remove the tmp directory.
 func setupPathForTest(t *testing.T) func() {
 	workingDirectoryBeforeTest, err := os.Getwd()
 	if err != nil {
