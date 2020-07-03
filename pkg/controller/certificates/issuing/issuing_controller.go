@@ -43,11 +43,11 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/predicate"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilkube "github.com/jetstack/cert-manager/pkg/util/kube"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
 const (

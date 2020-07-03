@@ -39,6 +39,7 @@ filegroup(
         "//pkg/util/feature:all-srcs",
         "//pkg/util/kube:all-srcs",
         "//pkg/util/pki:all-srcs",
+        "//pkg/util/predicate:all-srcs",
         "//pkg/util/profiling:all-srcs",
     ],
     tags = ["automanaged"],
