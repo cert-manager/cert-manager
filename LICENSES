@@ -2825,7 +2825,7 @@ SOFTWARE.
 
 
 ================================================================================
-= vendor/github.com/cpuguy83/go-md2man licensed under: =
+= vendor/github.com/cpuguy83/go-md2man/v2 licensed under: =
 
 The MIT License (MIT)
 
@@ -2849,7 +2849,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-= vendor/github.com/cpuguy83/go-md2man/LICENSE.md 80794f9009df723bbc6fe19234c9f517
+= vendor/github.com/cpuguy83/go-md2man/v2/LICENSE.md 80794f9009df723bbc6fe19234c9f517
 ================================================================================
 
 
@@ -12547,6 +12547,43 @@ Blackfriday is distributed under the Simplified BSD License:
 
 
 ================================================================================
+= vendor/github.com/russross/blackfriday/v2 licensed under: =
+
+Blackfriday is distributed under the Simplified BSD License:
+
+> Copyright © 2011 Russ Ross
+> All rights reserved.
+>
+> Redistribution and use in source and binary forms, with or without
+> modification, are permitted provided that the following conditions
+> are met:
+>
+> 1.  Redistributions of source code must retain the above copyright
+>     notice, this list of conditions and the following disclaimer.
+>
+> 2.  Redistributions in binary form must reproduce the above
+>     copyright notice, this list of conditions and the following
+>     disclaimer in the documentation and/or other materials provided with
+>     the distribution.
+>
+> THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+> "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+> LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+> FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+> COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+> INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+> BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+> LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+> CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+> LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+> ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+> POSSIBILITY OF SUCH DAMAGE.
+
+= vendor/github.com/russross/blackfriday/LICENSE.txt ecf8a8a60560c35a862a4a545f2db1b3
+================================================================================
+
+
+================================================================================
 = vendor/github.com/ryanuber/go-glob licensed under: =
 
 The MIT License (MIT)
@@ -12572,6 +12609,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 = vendor/github.com/ryanuber/go-glob/LICENSE d2c81b3028eb947731a58fb068c7dff4
+================================================================================
+
+
+================================================================================
+= vendor/github.com/shurcooL/sanitized_anchor_name licensed under: =
+
+MIT License
+
+Copyright (c) 2015 Dmitri Shuralyov
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+= vendor/github.com/shurcooL/sanitized_anchor_name/LICENSE c670c44b8d826e9b7b99077e5c7ba283
 ================================================================================
 
 
