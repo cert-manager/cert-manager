@@ -17,30 +17,21 @@ limitations under the License.
 package util
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
 // FetchCertificateFromCR fetches the x509 certificate from a CR and stores the certificate in file specified by certFilename.
 // Assumes CR is ready, otherwise returns error.
-func FetchCertificateFromCR(cmClient cmclient.Interface,
-	crName, crNamespace, certFileName string,
+func FetchCertificateFromCR(req *cmapiv1alpha2.CertificateRequest, certFileName string,
 	ioStreams genericclioptions.IOStreams) error {
-	req, err := cmClient.CertmanagerV1alpha2().CertificateRequests(crNamespace).Get(context.TODO(), crName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("error when querying CertificateRequest: %w", err)
-	}
-
 	// If CR not ready yet, error
 	if !apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
 		Type:   cmapiv1alpha2.CertificateRequestConditionReady,
@@ -50,7 +41,7 @@ func FetchCertificateFromCR(cmClient cmclient.Interface,
 	}
 
 	// Store certificate to file
-	err = ioutil.WriteFile(certFileName, req.Status.Certificate, 0600)
+	err := ioutil.WriteFile(certFileName, req.Status.Certificate, 0600)
 	if err != nil {
 		return fmt.Errorf("error when writing certificate to file: %w", err)
 	}

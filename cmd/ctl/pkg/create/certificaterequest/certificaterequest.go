@@ -286,7 +286,7 @@ func (o *Options) Run(args []string) error {
 		if o.CertFileName != "" {
 			actualCertFileName = o.CertFileName
 		}
-		err = util.FetchCertificateFromCR(o.CMClient, req.Name, req.Namespace, actualCertFileName, o.IOStreams)
+		err = util.FetchCertificateFromCR(req, actualCertFileName, o.IOStreams)
 		if err != nil {
 			return fmt.Errorf("error when writing certificate to file: %w", err)
 		}
