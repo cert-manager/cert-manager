@@ -263,7 +263,7 @@ func (o *Options) Run(args []string) error {
 		fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
 			req.Name, req.Namespace)
 		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
-			req, err := o.CMClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
+			req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}
