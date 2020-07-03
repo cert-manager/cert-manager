@@ -172,12 +172,11 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	log := logf.FromContext(ctx)
 	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    url,
+	req, err := http.NewRequestWithContext(ctx, url.String(), http.MethodGet, nil)
+	if err != nil {
+		return err
 	}
 	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
-	req = req.WithContext(ctx)
 
 	// ACME spec says that a verifier should try
 	// on http port 80 first, but follow any redirects may be thrown its way
