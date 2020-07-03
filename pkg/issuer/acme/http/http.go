@@ -172,7 +172,7 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	log := logf.FromContext(ctx)
 	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 
-	req, err := http.NewRequestWithContext(ctx, url.String(), http.MethodGet, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
 		return err
 	}
