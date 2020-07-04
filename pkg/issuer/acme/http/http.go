@@ -35,6 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -171,11 +172,11 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	log := logf.FromContext(ctx)
 	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    url,
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+	if err != nil {
+		return err
 	}
-	req = req.WithContext(ctx)
+	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
 
 	// ACME spec says that a verifier should try
 	// on http port 80 first, but follow any redirects may be thrown its way
