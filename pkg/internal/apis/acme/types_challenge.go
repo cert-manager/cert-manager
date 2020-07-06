@@ -44,33 +44,32 @@ type ChallengeList struct {
 }
 
 type ChallengeSpec struct {
-	// URL is the URL of the ACME Challenge resource for this challenge.
+	// The URL of the ACME Challenge resource for this challenge.
 	// This can be used to lookup details about the status of this challenge.
 	URL string
 
-	// AuthzURL is the URL to the ACME Authorization resource that this
+	// The URL to the ACME Authorization resource that this
 	// challenge is a part of.
 	AuthzURL string
 
-	// DNSName is the identifier that this challenge is for, e.g. example.com.
+	// dnsName is the identifier that this challenge is for, e.g. example.com.
 	// If the requested DNSName is a 'wildcard', this field MUST be set to the
 	// non-wildcard domain, e.g. for `*.example.com`, it must be `example.com`.
 	DNSName string
 
-	// Wildcard will be true if this challenge is for a wildcard identifier,
+	// wildcard will be true if this challenge is for a wildcard identifier,
 	// for example '*.example.com'.
-	// +optional
 	Wildcard bool
 
-	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
+	// The type of ACME challenge this resource represents, e.g. "dns01"
 	// or "http01".
 	Type ACMEChallengeType
 
-	// Token is the ACME challenge token for this challenge.
+	// The ACME challenge token for this challenge.
 	// This is the raw value returned from the ACME server.
 	Token string
 
-	// Key is the ACME challenge key for this challenge
+	// The ACME challenge key for this challenge
 	// For HTTP01 challenges, this is the value that must be responded with to
 	// complete the HTTP01 challenge in the format:
 	// `<private key JWK thumbprint>.<key from acme server for challenge>`.
@@ -79,11 +78,11 @@ type ChallengeSpec struct {
 	// text that must be set as the TXT record content.
 	Key string
 
-	// Solver contains the domain solving configuration that should be used to
+	// Contains the domain solving configuration that should be used to
 	// solve this challenge resource.
 	Solver ACMEChallengeSolver
 
-	// IssuerRef references a properly configured ACME-type Issuer which should
+	// References a properly configured ACME-type Issuer which should
 	// be used to create this Challenge.
 	// If the Issuer does not exist, processing will be retried.
 	// If the Issuer is not an 'ACME' Issuer, an error will be returned and the
