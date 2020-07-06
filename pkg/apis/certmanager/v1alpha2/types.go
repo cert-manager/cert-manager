@@ -81,7 +81,7 @@ const (
 	// issuer type to self-sign certificates.
 	CertificateRequestPrivateKeyAnnotationKey = "cert-manager.io/private-key-secret-name"
 
-	// Annotation to declare the CertificateRequest "revision", beloning to a Certificate Resource
+	// Annotation to declare the CertificateRequest "revision", belonging to a Certificate Resource
 	CertificateRequestRevisionAnnotationKey = "cert-manager.io/certificate-revision"
 )
 
