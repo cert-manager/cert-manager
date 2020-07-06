@@ -161,6 +161,9 @@ spec:
                             enum:
                             - http-01
                             - dns-01
+                            - tls-alpn-01
+                            - tls-sni-01
+                            - tls-sni-02
                           url:
                             description: URL is the URL of this challenge. It can
                               be used to retrieve additional metadata about the Challenge
@@ -348,6 +351,9 @@ spec:
                             enum:
                             - http-01
                             - dns-01
+                            - tls-alpn-01
+                            - tls-sni-01
+                            - tls-sni-02
                           url:
                             description: URL is the URL of this challenge. It can
                               be used to retrieve additional metadata about the Challenge
@@ -536,6 +542,9 @@ spec:
                             enum:
                             - HTTP-01
                             - DNS-01
+                            - TLS-ALPN-01
+                            - TLS-SNI-01
+                            - TLS-SNI-02
                           url:
                             description: URL is the URL of this challenge. It can
                               be used to retrieve additional metadata about the Challenge

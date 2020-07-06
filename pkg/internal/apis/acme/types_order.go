@@ -157,11 +157,27 @@ type ACMEChallenge struct {
 type ACMEChallengeType string
 
 const (
-	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type HTTP-01
+	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
 	ACMEChallengeTypeHTTP01 ACMEChallengeType = "HTTP-01"
 
-	// ACMEChallengeTypeDNS01 denotes a Challenge is of type DNS-01
+	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#dns-01-challenge
 	ACMEChallengeTypeDNS01 ACMEChallengeType = "DNS-01"
+
+	// ACMEChallengeTypeTLSALPN01 denotes a Challenge is of type tls-alpn-01.
+	// More info: https://letsencrypt.org/docs/challenge-types/#tls-alpn-01
+	ACMEChallengeTypeTLSALPN01 ACMEChallengeType = "TLS-ALPN-01"
+
+	// ACMEChallengeTypeTLSSNI01 denotes a Challenge is of type tls-sni-01.
+	// This challenge type is not currently available but is reserved as per
+	// RFC8555: https://tools.ietf.org/html/rfc8555#section-9.7.8
+	ACMEChallengeTypeTLSSNI01 ACMEChallengeType = "TLS-SNI-01"
+
+	// ACMEChallengeTypeTLSSNI02 denotes a Challenge is of type tls-sni-02.
+	// This challenge type is not currently available but is reserved as per
+	// RFC8555: https://tools.ietf.org/html/rfc8555#section-9.7.8
+	ACMEChallengeTypeTLSSNI02 ACMEChallengeType = "TLS-SNI-02"
 )
 
 // State represents the state of an ACME resource, such as an Order.

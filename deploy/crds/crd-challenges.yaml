@@ -1470,6 +1470,9 @@ spec:
                 enum:
                 - http-01
                 - dns-01
+                - tls-alpn-01
+                - tls-sni-01
+                - tls-sni-02
               url:
                 description: URL is the URL of the ACME Challenge resource for this
                   challenge. This can be used to lookup details about the status of
@@ -2934,6 +2937,9 @@ spec:
                 enum:
                 - http-01
                 - dns-01
+                - tls-alpn-01
+                - tls-sni-01
+                - tls-sni-02
               url:
                 description: URL is the URL of the ACME Challenge resource for this
                   challenge. This can be used to lookup details about the status of
@@ -4399,6 +4405,9 @@ spec:
                 enum:
                 - HTTP-01
                 - DNS-01
+                - TLS-ALPN-01
+                - TLS-SNI-01
+                - TLS-SNI-02
               url:
                 description: The URL of the ACME Challenge resource for this challenge.
                   This can be used to lookup details about the status of this challenge.

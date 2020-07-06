@@ -168,15 +168,31 @@ type ACMEChallenge struct {
 }
 
 // ACMEChallengeType denotes a type of ACME challenge
-// +kubebuilder:validation:Enum=http-01;dns-01
+// +kubebuilder:validation:Enum=http-01;dns-01;tls-alpn-01;tls-sni-01;tls-sni-02
 type ACMEChallengeType string
 
 const (
 	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
 	ACMEChallengeTypeHTTP01 ACMEChallengeType = "http-01"
 
 	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#dns-01-challenge
 	ACMEChallengeTypeDNS01 ACMEChallengeType = "dns-01"
+
+	// ACMEChallengeTypeTLSALPN01 denotes a Challenge is of type tls-alpn-01.
+	// More info: https://letsencrypt.org/docs/challenge-types/#tls-alpn-01
+	ACMEChallengeTypeTLSALPN01 ACMEChallengeType = "tls-alpn-01"
+
+	// ACMEChallengeTypeTLSSNI01 denotes a Challenge is of type tls-sni-01.
+	// This challenge type is not currently available but is reserved as per
+	// RFC8555: https://tools.ietf.org/html/rfc8555#section-9.7.8
+	ACMEChallengeTypeTLSSNI01 ACMEChallengeType = "tls-sni-01"
+
+	// ACMEChallengeTypeTLSSNI02 denotes a Challenge is of type tls-sni-02.
+	// This challenge type is not currently available but is reserved as per
+	// RFC8555: https://tools.ietf.org/html/rfc8555#section-9.7.8
+	ACMEChallengeTypeTLSSNI02 ACMEChallengeType = "tls-sni-02"
 )
 
 // State represents the state of an ACME resource, such as an Order.
