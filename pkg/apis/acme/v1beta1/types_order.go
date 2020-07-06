@@ -163,19 +163,21 @@ type ACMEChallenge struct {
 	// This is used to compute the 'key' that must also be presented.
 	Token string `json:"token"`
 
-	// Type is the type of challenge being offered, e.g. http-01, dns-01
+	// Type is the type of challenge being offered.
+	// One of "HTTP-01" or "DNS-01".
 	Type ACMEChallengeType `json:"type"`
 }
 
 // ACMEChallengeType denotes a type of ACME challenge
+// +kubebuilder:validation:Enum=HTTP-01;DNS-01
 type ACMEChallengeType string
 
 const (
-	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
-	ACMEChallengeTypeHTTP01 ACMEChallengeType = "http-01"
+	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type HTTP-01
+	ACMEChallengeTypeHTTP01 ACMEChallengeType = "HTTP-01"
 
-	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
-	ACMEChallengeTypeDNS01 ACMEChallengeType = "dns-01"
+	// ACMEChallengeTypeDNS01 denotes a Challenge is of type DNS-01
+	ACMEChallengeTypeDNS01 ACMEChallengeType = "DNS-01"
 )
 
 // State represents the state of an ACME resource, such as an Order.

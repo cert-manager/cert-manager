@@ -157,11 +157,11 @@ type ACMEChallenge struct {
 type ACMEChallengeType string
 
 const (
-	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
-	ACMEChallengeTypeHTTP01 ACMEChallengeType = "http-01"
+	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type HTTP-01
+	ACMEChallengeTypeHTTP01 ACMEChallengeType = "HTTP-01"
 
-	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
-	ACMEChallengeTypeDNS01 ACMEChallengeType = "dns-01"
+	// ACMEChallengeTypeDNS01 denotes a Challenge is of type DNS-01
+	ACMEChallengeTypeDNS01 ACMEChallengeType = "DNS-01"
 )
 
 // State represents the state of an ACME resource, such as an Order.

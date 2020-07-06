@@ -30,6 +30,16 @@ func Convert_v1alpha3_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha3.Challenge
 
 	out.AuthorizationURL = in.AuthzURL
 
+	switch in.Type {
+	case v1alpha3.ACMEChallengeTypeHTTP01:
+		out.Type = acme.ACMEChallengeTypeHTTP01
+	case v1alpha3.ACMEChallengeTypeDNS01:
+		out.Type = acme.ACMEChallengeTypeDNS01
+	default:
+		// this case should never be hit due to validation
+		out.Type = acme.ACMEChallengeType(in.Type)
+	}
+
 	return nil
 }
 
@@ -39,6 +49,16 @@ func Convert_acme_ChallengeSpec_To_v1alpha3_ChallengeSpec(in *acme.ChallengeSpec
 	}
 
 	out.AuthzURL = in.AuthorizationURL
+
+	switch in.Type {
+	case acme.ACMEChallengeTypeHTTP01:
+		out.Type = v1alpha3.ACMEChallengeTypeHTTP01
+	case acme.ACMEChallengeTypeDNS01:
+		out.Type = v1alpha3.ACMEChallengeTypeDNS01
+	default:
+		// this case should never be hit due to validation
+		out.Type = v1alpha3.ACMEChallengeType(in.Type)
+	}
 
 	return nil
 }
