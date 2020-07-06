@@ -163,7 +163,7 @@ func TestValidateCertificateUpdate(t *testing.T) {
 		o.Status.Authorizations = []cmacme.ACMEAuthorization{
 			{
 				Challenges: []cmacme.ACMEChallenge{
-					{Type: cmacme.ACMEChallengeType(s)},
+					{Type: string(s)},
 				},
 			},
 		}
