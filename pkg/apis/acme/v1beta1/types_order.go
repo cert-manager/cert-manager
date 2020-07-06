@@ -31,8 +31,9 @@ type Order struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   OrderSpec   `json:"spec,omitempty"`
-	Status OrderStatus `json:"status,omitempty"`
+	Spec   OrderSpec   `json:"spec"`
+	// +optional
+	Status OrderStatus `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

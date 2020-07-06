@@ -833,6 +833,8 @@ spec:
           named in `spec.secretName`. \n The stored certificate will be renewed before
           it expires (as configured by `spec.renewBefore`)."
         type: object
+        required:
+        - spec
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

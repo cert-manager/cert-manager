@@ -403,6 +403,8 @@ spec:
           is a 'one-shot' resource, meaning it represents a single point in time request
           for a certificate and cannot be re-used."
         type: object
+        required:
+        - spec
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

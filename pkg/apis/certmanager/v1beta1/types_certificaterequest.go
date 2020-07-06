@@ -53,10 +53,11 @@ type CertificateRequest struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Desired state of the CertificateRequest resource.
-	Spec CertificateRequestSpec `json:"spec,omitempty"`
+	Spec CertificateRequestSpec `json:"spec"`
 
 	// Status of the CertificateRequest. This is set and managed automatically.
-	Status CertificateRequestStatus `json:"status,omitempty"`
+	// +optional
+	Status CertificateRequestStatus `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

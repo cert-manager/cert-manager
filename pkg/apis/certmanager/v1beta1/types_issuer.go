@@ -38,10 +38,11 @@ type ClusterIssuer struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Desired state of the ClusterIssuer resource.
-	Spec IssuerSpec `json:"spec,omitempty"`
+	Spec IssuerSpec `json:"spec"`
 
 	// Status of the ClusterIssuer. This is set and managed automatically.
-	Status IssuerStatus `json:"status,omitempty"`
+	// +optional
+	Status IssuerStatus `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -67,10 +68,11 @@ type Issuer struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Desired state of the Issuer resource.
-	Spec IssuerSpec `json:"spec,omitempty"`
+	Spec IssuerSpec `json:"spec"`
 
 	// Status of the Issuer. This is set and managed automatically.
-	Status IssuerStatus `json:"status,omitempty"`
+	// +optional
+	Status IssuerStatus `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
