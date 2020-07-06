@@ -34,7 +34,7 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Get details about the current status of a Certificate, including information on related resources like CertificateRequest or Order.`))
+Get details about the current status of a Certificate.`))
 
 	example = templates.Examples(i18n.T(`
 # Query status of cert-manager Certificate resource with name my-cert in namespace default
@@ -46,7 +46,7 @@ kubectl cert-manager status certificate my-cert --namespace default
 type Options struct {
 	CMClient   cmclient.Interface
 	RESTConfig *restclient.Config
-	// The Namespace that the Certificate to be renewed resides in.
+	// The Namespace that the Certificate to be queried about resides in.
 	// This flag registration is handled by cmdutil.Factory
 	Namespace string
 
@@ -163,8 +163,8 @@ func formatStringSlice(strings []string) string {
 }
 
 func formatTimeString(t *metav1.Time) string {
-	if t != nil {
-		return t.Time.Format(time.RFC3339)
+	if t == nil {
+		return "<none>"
 	}
-	return "<none>"
+	return t.Time.Format(time.RFC3339)
 }
