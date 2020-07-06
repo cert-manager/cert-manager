@@ -301,16 +301,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ChallengeSpec)(nil), (*acme.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(a.(*v1alpha2.ChallengeSpec), b.(*acme.ChallengeSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*acme.ChallengeSpec)(nil), (*v1alpha2.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(a.(*acme.ChallengeSpec), b.(*v1alpha2.ChallengeSpec), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha2.ChallengeStatus)(nil), (*acme.ChallengeStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_ChallengeStatus_To_acme_ChallengeStatus(a.(*v1alpha2.ChallengeStatus), b.(*acme.ChallengeStatus), scope)
 	}); err != nil {
@@ -341,16 +331,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.OrderSpec)(nil), (*acme.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_OrderSpec_To_acme_OrderSpec(a.(*v1alpha2.OrderSpec), b.(*acme.OrderSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*acme.OrderSpec)(nil), (*v1alpha2.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_OrderSpec_To_v1alpha2_OrderSpec(a.(*acme.OrderSpec), b.(*v1alpha2.OrderSpec), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha2.OrderStatus)(nil), (*acme.OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_OrderStatus_To_acme_OrderStatus(a.(*v1alpha2.OrderStatus), b.(*acme.OrderStatus), scope)
 	}); err != nil {
@@ -358,6 +338,26 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*acme.OrderStatus)(nil), (*v1alpha2.OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_acme_OrderStatus_To_v1alpha2_OrderStatus(a.(*acme.OrderStatus), b.(*v1alpha2.OrderStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*acme.ChallengeSpec)(nil), (*v1alpha2.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(a.(*acme.ChallengeSpec), b.(*v1alpha2.ChallengeSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*acme.OrderSpec)(nil), (*v1alpha2.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_OrderSpec_To_v1alpha2_OrderSpec(a.(*acme.OrderSpec), b.(*v1alpha2.OrderSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1alpha2.ChallengeSpec)(nil), (*acme.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(a.(*v1alpha2.ChallengeSpec), b.(*acme.ChallengeSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1alpha2.OrderSpec)(nil), (*acme.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha2_OrderSpec_To_acme_OrderSpec(a.(*v1alpha2.OrderSpec), b.(*acme.OrderSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -1060,7 +1060,17 @@ func Convert_acme_Challenge_To_v1alpha2_Challenge(in *acme.Challenge, out *v1alp
 
 func autoConvert_v1alpha2_ChallengeList_To_acme_ChallengeList(in *v1alpha2.ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]acme.Challenge)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]acme.Challenge, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha2_Challenge_To_acme_Challenge(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1071,7 +1081,17 @@ func Convert_v1alpha2_ChallengeList_To_acme_ChallengeList(in *v1alpha2.Challenge
 
 func autoConvert_acme_ChallengeList_To_v1alpha2_ChallengeList(in *acme.ChallengeList, out *v1alpha2.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha2.Challenge)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1alpha2.Challenge, len(*in))
+		for i := range *in {
+			if err := Convert_acme_Challenge_To_v1alpha2_Challenge(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1082,7 +1102,7 @@ func Convert_acme_ChallengeList_To_v1alpha2_ChallengeList(in *acme.ChallengeList
 
 func autoConvert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
 	out.URL = in.URL
-	out.AuthzURL = in.AuthzURL
+	// WARNING: in.AuthzURL requires manual conversion: does not exist in peer-type
 	out.DNSName = in.DNSName
 	out.Wildcard = in.Wildcard
 	out.Type = acme.ACMEChallengeType(in.Type)
@@ -1098,14 +1118,9 @@ func autoConvert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.Chall
 	return nil
 }
 
-// Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec is an autogenerated conversion function.
-func Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in, out, s)
-}
-
 func autoConvert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.ChallengeSpec, out *v1alpha2.ChallengeSpec, s conversion.Scope) error {
 	out.URL = in.URL
-	out.AuthzURL = in.AuthzURL
+	// WARNING: in.AuthorizationURL requires manual conversion: does not exist in peer-type
 	out.DNSName = in.DNSName
 	out.Wildcard = in.Wildcard
 	out.Type = v1alpha2.ACMEChallengeType(in.Type)
@@ -1119,11 +1134,6 @@ func autoConvert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.Challenge
 		return err
 	}
 	return nil
-}
-
-// Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec is an autogenerated conversion function.
-func Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.ChallengeSpec, out *v1alpha2.ChallengeSpec, s conversion.Scope) error {
-	return autoConvert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in, out, s)
 }
 
 func autoConvert_v1alpha2_ChallengeStatus_To_acme_ChallengeStatus(in *v1alpha2.ChallengeStatus, out *acme.ChallengeStatus, s conversion.Scope) error {
@@ -1227,7 +1237,7 @@ func Convert_acme_OrderList_To_v1alpha2_OrderList(in *acme.OrderList, out *v1alp
 }
 
 func autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
-	out.CSR = *(*[]byte)(unsafe.Pointer(&in.CSR))
+	// WARNING: in.CSR requires manual conversion: does not exist in peer-type
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
@@ -1235,15 +1245,10 @@ func autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, ou
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	return nil
-}
-
-// Convert_v1alpha2_OrderSpec_To_acme_OrderSpec is an autogenerated conversion function.
-func Convert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in, out, s)
 }
 
 func autoConvert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v1alpha2.OrderSpec, s conversion.Scope) error {
-	out.CSR = *(*[]byte)(unsafe.Pointer(&in.CSR))
+	// WARNING: in.Request requires manual conversion: does not exist in peer-type
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
@@ -1251,11 +1256,6 @@ func autoConvert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	return nil
-}
-
-// Convert_acme_OrderSpec_To_v1alpha2_OrderSpec is an autogenerated conversion function.
-func Convert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v1alpha2.OrderSpec, s conversion.Scope) error {
-	return autoConvert_acme_OrderSpec_To_v1alpha2_OrderSpec(in, out, s)
 }
 
 func autoConvert_v1alpha2_OrderStatus_To_acme_OrderStatus(in *v1alpha2.OrderStatus, out *acme.OrderStatus, s conversion.Scope) error {

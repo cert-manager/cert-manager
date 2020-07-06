@@ -1082,7 +1082,7 @@ func Convert_acme_ChallengeList_To_v1beta1_ChallengeList(in *acme.ChallengeList,
 
 func autoConvert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in *v1beta1.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
 	out.URL = in.URL
-	out.AuthzURL = in.AuthzURL
+	out.AuthorizationURL = in.AuthorizationURL
 	out.DNSName = in.DNSName
 	out.Wildcard = in.Wildcard
 	out.Type = acme.ACMEChallengeType(in.Type)
@@ -1105,7 +1105,7 @@ func Convert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in *v1beta1.ChallengeSp
 
 func autoConvert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(in *acme.ChallengeSpec, out *v1beta1.ChallengeSpec, s conversion.Scope) error {
 	out.URL = in.URL
-	out.AuthzURL = in.AuthzURL
+	out.AuthorizationURL = in.AuthorizationURL
 	out.DNSName = in.DNSName
 	out.Wildcard = in.Wildcard
 	out.Type = v1beta1.ACMEChallengeType(in.Type)
@@ -1227,7 +1227,7 @@ func Convert_acme_OrderList_To_v1beta1_OrderList(in *acme.OrderList, out *v1beta
 }
 
 func autoConvert_v1beta1_OrderSpec_To_acme_OrderSpec(in *v1beta1.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
-	out.CSR = *(*[]byte)(unsafe.Pointer(&in.CSR))
+	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
@@ -1243,7 +1243,7 @@ func Convert_v1beta1_OrderSpec_To_acme_OrderSpec(in *v1beta1.OrderSpec, out *acm
 }
 
 func autoConvert_acme_OrderSpec_To_v1beta1_OrderSpec(in *acme.OrderSpec, out *v1beta1.OrderSpec, s conversion.Scope) error {
-	out.CSR = *(*[]byte)(unsafe.Pointer(&in.CSR))
+	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err

@@ -31,7 +31,7 @@ type Order struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   OrderSpec   `json:"spec"`
+	Spec OrderSpec `json:"spec"`
 	// +optional
 	Status OrderStatus `json:"status"`
 }

@@ -37,7 +37,7 @@ type Challenge struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   ChallengeSpec   `json:"spec"`
+	Spec ChallengeSpec `json:"spec"`
 	// +optional
 	Status ChallengeStatus `json:"status"`
 }
