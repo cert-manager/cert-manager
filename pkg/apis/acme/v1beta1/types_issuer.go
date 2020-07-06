@@ -281,7 +281,7 @@ type ACMEChallengeSolverDNS01 struct {
 
 	// Use the Google Cloud DNS API to manage DNS01 challenge records.
 	// +optional
-	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"cloudDNS,omitempty"`
 
 	// Use the Cloudflare API to manage DNS01 challenge records.
 	// +optional
@@ -293,7 +293,7 @@ type ACMEChallengeSolverDNS01 struct {
 
 	// Use the Microsoft Azure DNS API to manage DNS01 challenge records.
 	// +optional
-	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azuredns,omitempty"`
+	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azureDNS,omitempty"`
 
 	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
 	// +optional
@@ -302,7 +302,7 @@ type ACMEChallengeSolverDNS01 struct {
 	// Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage
 	// DNS01 challenge records.
 	// +optional
-	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmedns,omitempty"`
+	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmeDNS,omitempty"`
 
 	// Use RFC2136 ("Dynamic Updates in the Domain Name System") (https://datatracker.ietf.org/doc/rfc2136/)
 	// to manage DNS01 challenge records.

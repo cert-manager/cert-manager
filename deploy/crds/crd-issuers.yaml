@@ -4018,7 +4018,7 @@ spec:
                             authorizations by performing the DNS01 challenge flow.
                           type: object
                           properties:
-                            acmedns:
+                            acmeDNS:
                               description: Use the 'ACME DNS' (https://github.com/joohoi/acme-dns)
                                 API to manage DNS01 challenge records.
                               type: object
@@ -4112,7 +4112,7 @@ spec:
                                       type: string
                                 serviceConsumerDomain:
                                   type: string
-                            azuredns:
+                            azureDNS:
                               description: Use the Microsoft Azure DNS API to manage
                                 DNS01 challenge records.
                               type: object
@@ -4158,7 +4158,7 @@ spec:
                                   description: when specifying ClientID and ClientSecret
                                     then this field is also needed
                                   type: string
-                            clouddns:
+                            cloudDNS:
                               description: Use the Google Cloud DNS API to manage
                                 DNS01 challenge records.
                               type: object
