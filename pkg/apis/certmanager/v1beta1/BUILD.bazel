@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "const.go",
         "doc.go",
-        "generic_issuer.go",
         "register.go",
         "types.go",
         "types_certificate.go",
