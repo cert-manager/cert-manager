@@ -100,6 +100,20 @@ type ChallengeSpec struct {
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 }
 
+// The type of ACME challenge. Only HTTP-01 and DNS-01 are supported.
+// +kubebuilder:validation:Enum=HTTP-01;DNS-01
+type ACMEChallengeType string
+
+const (
+	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
+	ACMEChallengeTypeHTTP01 ACMEChallengeType = "HTTP-01"
+
+	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#dns-01-challenge
+	ACMEChallengeTypeDNS01 ACMEChallengeType = "DNS-01"
+)
+
 type ChallengeStatus struct {
 	// Used to denote whether this challenge should be processed or not.
 	// This field will only be set to true by the 'scheduling' component.

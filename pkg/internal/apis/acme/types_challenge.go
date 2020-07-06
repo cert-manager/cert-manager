@@ -61,8 +61,8 @@ type ChallengeSpec struct {
 	// for example '*.example.com'.
 	Wildcard bool
 
-	// The type of ACME challenge this resource represents, e.g. "dns01"
-	// or "http01".
+	// The type of ACME challenge this resource represents.
+	// One of "HTTP-01" or "DNS-01".
 	Type ACMEChallengeType
 
 	// The ACME challenge token for this challenge.
@@ -89,6 +89,19 @@ type ChallengeSpec struct {
 	// Challenge will be marked as failed.
 	IssuerRef cmmeta.ObjectReference
 }
+
+// The type of ACME challenge. Only HTTP-01 and DNS-01 are supported.
+type ACMEChallengeType string
+
+const (
+	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
+	ACMEChallengeTypeHTTP01 ACMEChallengeType = "HTTP-01"
+
+	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#dns-01-challenge
+	ACMEChallengeTypeDNS01 ACMEChallengeType = "DNS-01"
+)
 
 type ChallengeStatus struct {
 	// Processing is used to denote whether this challenge should be processed

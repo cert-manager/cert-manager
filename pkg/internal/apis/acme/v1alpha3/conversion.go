@@ -35,12 +35,6 @@ func Convert_v1alpha3_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha3.Challenge
 		out.Type = acme.ACMEChallengeTypeHTTP01
 	case v1alpha3.ACMEChallengeTypeDNS01:
 		out.Type = acme.ACMEChallengeTypeDNS01
-	case v1alpha3.ACMEChallengeTypeTLSALPN01:
-		out.Type = acme.ACMEChallengeTypeTLSALPN01
-	case v1alpha3.ACMEChallengeTypeTLSSNI01:
-		out.Type = acme.ACMEChallengeTypeTLSSNI01
-	case v1alpha3.ACMEChallengeTypeTLSSNI02:
-		out.Type = acme.ACMEChallengeTypeTLSSNI02
 	default:
 		// this case should never be hit due to validation
 		out.Type = acme.ACMEChallengeType(in.Type)
@@ -61,12 +55,6 @@ func Convert_acme_ChallengeSpec_To_v1alpha3_ChallengeSpec(in *acme.ChallengeSpec
 		out.Type = v1alpha3.ACMEChallengeTypeHTTP01
 	case acme.ACMEChallengeTypeDNS01:
 		out.Type = v1alpha3.ACMEChallengeTypeDNS01
-	case acme.ACMEChallengeTypeTLSALPN01:
-		out.Type = v1alpha3.ACMEChallengeTypeTLSALPN01
-	case acme.ACMEChallengeTypeTLSSNI01:
-		out.Type = v1alpha3.ACMEChallengeTypeTLSSNI01
-	case acme.ACMEChallengeTypeTLSSNI02:
-		out.Type = v1alpha3.ACMEChallengeTypeTLSSNI02
 	default:
 		// this case should never be hit due to validation
 		out.Type = v1alpha3.ACMEChallengeType(in.Type)
