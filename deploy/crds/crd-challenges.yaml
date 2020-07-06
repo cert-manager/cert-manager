@@ -1464,9 +1464,12 @@ spec:
                   This is the raw value returned from the ACME server.
                 type: string
               type:
-                description: Type is the type of ACME challenge this resource represents,
-                  e.g. "dns01" or "http01".
+                description: Type is the type of ACME challenge this resource represents.
+                  One of "http-01" or "dns-01".
                 type: string
+                enum:
+                - http-01
+                - dns-01
               url:
                 description: URL is the URL of the ACME Challenge resource for this
                   challenge. This can be used to lookup details about the status of
@@ -2925,9 +2928,12 @@ spec:
                   This is the raw value returned from the ACME server.
                 type: string
               type:
-                description: Type is the type of ACME challenge this resource represents,
-                  e.g. "dns01" or "http01".
+                description: Type is the type of ACME challenge this resource represents.
+                  One of "http-01" or "dns-01".
                 type: string
+                enum:
+                - http-01
+                - dns-01
               url:
                 description: URL is the URL of the ACME Challenge resource for this
                   challenge. This can be used to lookup details about the status of
@@ -4387,9 +4393,12 @@ spec:
                   the raw value returned from the ACME server.
                 type: string
               type:
-                description: The type of ACME challenge this resource represents,
-                  e.g. "dns01" or "http01".
+                description: The type of ACME challenge this resource represents.
+                  One of "HTTP-01" or "DNS-01".
                 type: string
+                enum:
+                - HTTP-01
+                - DNS-01
               url:
                 description: The URL of the ACME Challenge resource for this challenge.
                   This can be used to lookup details about the status of this challenge.
