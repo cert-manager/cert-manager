@@ -58,7 +58,7 @@ type ChallengeSpec struct {
 
 	// The URL to the ACME Authorization resource that this
 	// challenge is a part of.
-	AuthzURL string `json:"authzURL"`
+	AuthorizationURL string `json:"authorizationURL"`
 
 	// dnsName is the identifier that this challenge is for, e.g. example.com.
 	// If the requested DNSName is a 'wildcard', this field MUST be set to the
