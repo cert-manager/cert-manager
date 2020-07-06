@@ -199,6 +199,37 @@ dGVzdA==
 				},
 			},
 		},
+		"should refuse to create a challenge if only an unknown challenge type is offered": {
+			order: gen.OrderFrom(testOrderPending, gen.SetOrderStatus(cmacme.OrderStatus{
+				State:       cmacme.Pending,
+				URL:         "http://testurl.com/abcde",
+				FinalizeURL: "http://testurl.com/abcde/finalize",
+				Authorizations: []cmacme.ACMEAuthorization{
+					{
+						URL:        "http://authzurl",
+						Identifier: "test.com",
+						Challenges: []cmacme.ACMEChallenge{
+							{
+								URL:   "http://chalurl",
+								Token: "token",
+								Type:  "unknown-type",
+							},
+						},
+					},
+				},
+			})),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					testIssuerHTTP01TestCom,
+				},
+				ExpectedEvents: []string{
+					// the 'unsupported challenge type' text is not printed here as the code that 'selects'
+					// a solver to use for a challenge filters out unsupported challenge types earlier
+					// in its selection routine.
+					`Warning Solver Failed to determine a valid solver configuration for the set of domains on the Order: no configured challenge solvers can be used for this challenge`,
+				},
+			},
+		},
 		// TODO: we should improve this behaviour as this is the 'stuck order' problem described in:
 		//  https://github.com/jetstack/cert-manager/issues/2868
 		"skip creating a Challenge for an already valid authorization, and do nothing if the order is pending": {

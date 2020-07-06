@@ -276,6 +276,9 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		return nil, fmt.Errorf("no configured challenge solvers can be used for this challenge")
 	}
 
+	// It should never be possible for this case to be hit as earlier in this
+	// method we already assert that the challenge type is one of 'http-01'
+	// or 'dns-01'.
 	chType, err := challengeType(selectedChallenge.Type)
 	if err != nil {
 		return nil, err
