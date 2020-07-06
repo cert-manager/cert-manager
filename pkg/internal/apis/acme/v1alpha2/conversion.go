@@ -42,3 +42,23 @@ func Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.ChallengeSpec
 
 	return nil
 }
+
+func Convert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
+	if err := autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in, out, s); err != nil {
+		return err
+	}
+
+	out.Request = in.CSR
+
+	return nil
+}
+
+func Convert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v1alpha2.OrderSpec, s conversion.Scope) error {
+	if err := autoConvert_acme_OrderSpec_To_v1alpha2_OrderSpec(in, out, s); err != nil {
+		return err
+	}
+
+	out.CSR = in.Request
+
+	return nil
+}

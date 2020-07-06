@@ -49,7 +49,7 @@ type OrderSpec struct {
 	// Certificate signing request bytes in DER encoding.
 	// This will be used when finalizing the order.
 	// This field must be set on the order.
-	CSR []byte `json:"csr"`
+	Request []byte `json:"request"`
 
 	// IssuerRef references a properly configured ACME-type Issuer which should
 	// be used to create this Order.
