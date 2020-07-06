@@ -256,10 +256,12 @@ type X509Subject struct {
 type CertificateKeystores struct {
 	// JKS configures options for storing a JKS keystore in the
 	// `spec.secretName` Secret resource.
+	// +optional
 	JKS *JKSKeystore `json:"jks,omitempty"`
 
 	// PKCS12 configures options for storing a PKCS12 keystore in the
 	// `spec.secretName` Secret resource.
+	// +optional
 	PKCS12 *PKCS12Keystore `json:"pkcs12,omitempty"`
 }
 
