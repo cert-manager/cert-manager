@@ -71,7 +71,7 @@ func TestSyncHappyPath(t *testing.T) {
 					{
 						URL:   "http://chalurl",
 						Token: "token",
-						Type:  cmacme.ACMEChallengeTypeHTTP01,
+						Type:  "http-01",
 					},
 				},
 			},
@@ -216,7 +216,7 @@ dGVzdA==
 								{
 									URL:   "http://chalurl",
 									Token: "token",
-									Type:  cmacme.ACMEChallengeTypeHTTP01,
+									Type:  "http-01",
 								},
 							},
 						},
@@ -254,7 +254,7 @@ dGVzdA==
 								{
 									URL:   "http://chalurl",
 									Token: "token",
-									Type:  cmacme.ACMEChallengeTypeHTTP01,
+									Type:  "http-01",
 								},
 							},
 						},
@@ -282,7 +282,7 @@ dGVzdA==
 											{
 												URL:   "http://chalurl",
 												Token: "token",
-												Type:  cmacme.ACMEChallengeTypeHTTP01,
+												Type:  "http-01",
 											},
 										},
 									},
