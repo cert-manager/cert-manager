@@ -395,7 +395,7 @@ func Convert_acme_ACMEAuthorization_To_v1alpha3_ACMEAuthorization(in *acme.ACMEA
 func autoConvert_v1alpha3_ACMEChallenge_To_acme_ACMEChallenge(in *v1alpha3.ACMEChallenge, out *acme.ACMEChallenge, s conversion.Scope) error {
 	out.URL = in.URL
 	out.Token = in.Token
-	out.Type = acme.ACMEChallengeType(in.Type)
+	out.Type = in.Type
 	return nil
 }
 
@@ -407,7 +407,7 @@ func Convert_v1alpha3_ACMEChallenge_To_acme_ACMEChallenge(in *v1alpha3.ACMEChall
 func autoConvert_acme_ACMEChallenge_To_v1alpha3_ACMEChallenge(in *acme.ACMEChallenge, out *v1alpha3.ACMEChallenge, s conversion.Scope) error {
 	out.URL = in.URL
 	out.Token = in.Token
-	out.Type = v1alpha3.ACMEChallengeType(in.Type)
+	out.Type = in.Type
 	return nil
 }
 

@@ -155,15 +155,12 @@ spec:
                               that must also be presented.
                             type: string
                           type:
-                            description: Type is the type of challenge being offered.
-                              One of "http-01" or "dns-01".
+                            description: Type is the type of challenge being offered,
+                              e.g. 'http-01', 'dns-01', 'tls-sni-01', etc. This is
+                              the raw value retrieved from the ACME server. Only 'http-01'
+                              and 'dns-01' are supported by cert-manager, other values
+                              will be ignored.
                             type: string
-                            enum:
-                            - http-01
-                            - dns-01
-                            - tls-alpn-01
-                            - tls-sni-01
-                            - tls-sni-02
                           url:
                             description: URL is the URL of this challenge. It can
                               be used to retrieve additional metadata about the Challenge
@@ -345,15 +342,12 @@ spec:
                               that must also be presented.
                             type: string
                           type:
-                            description: Type is the type of challenge being offered.
-                              One of "http-01" or "dns-01".
+                            description: Type is the type of challenge being offered,
+                              e.g. 'http-01', 'dns-01', 'tls-sni-01', etc. This is
+                              the raw value retrieved from the ACME server. Only 'http-01'
+                              and 'dns-01' are supported by cert-manager, other values
+                              will be ignored.
                             type: string
-                            enum:
-                            - http-01
-                            - dns-01
-                            - tls-alpn-01
-                            - tls-sni-01
-                            - tls-sni-02
                           url:
                             description: URL is the URL of this challenge. It can
                               be used to retrieve additional metadata about the Challenge
@@ -536,15 +530,12 @@ spec:
                               that must also be presented.
                             type: string
                           type:
-                            description: Type is the type of challenge being offered.
-                              One of "HTTP-01" or "DNS-01".
+                            description: Type is the type of challenge being offered,
+                              e.g. 'http-01', 'dns-01', 'tls-sni-01', etc. This is
+                              the raw value retrieved from the ACME server. Only 'http-01'
+                              and 'dns-01' are supported by cert-manager, other values
+                              will be ignored.
                             type: string
-                            enum:
-                            - HTTP-01
-                            - DNS-01
-                            - TLS-ALPN-01
-                            - TLS-SNI-01
-                            - TLS-SNI-02
                           url:
                             description: URL is the URL of this challenge. It can
                               be used to retrieve additional metadata about the Challenge
