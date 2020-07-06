@@ -41,8 +41,8 @@ func ValidateOrderUpdate(oldObj, newObj runtime.Object) field.ErrorList {
 
 func ValidateOrderSpecUpdate(old, new cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
-	if len(old.CSR) > 0 && bytes.Compare(old.CSR, new.CSR) != 0 {
-		el = append(el, field.Forbidden(fldPath.Child("csr"), "field is immutable once set"))
+	if len(old.Request) > 0 && bytes.Compare(old.Request, new.Request) != 0 {
+		el = append(el, field.Forbidden(fldPath.Child("request"), "field is immutable once set"))
 	}
 	return el
 }
