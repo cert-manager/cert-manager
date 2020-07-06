@@ -148,10 +148,10 @@ func TestSign(t *testing.T) {
 			checkFn:            checkNoCertificateIssued,
 			expectedRequestErr: true,
 		},
-		"a CSR wiuth empty DN sshould error": {
-			csrPEM:      csrPEMNoDN,
-			checkFn:     checkNoCertificateIssued,
-			expectedErr: true,
+		"a CSR with empty DN should error": {
+			csrPEM:             csrPEMNoDN,
+			checkFn:            checkNoCertificateIssued,
+			expectedRequestErr: true,
 		},
 		"if requesting the certificate fails, sign should error": {
 			csrPEM: csrPEM,
