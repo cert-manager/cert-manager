@@ -289,8 +289,8 @@ func TestProcessItem(t *testing.T) {
 					LastFailureTime: func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(-59 * time.Minute))),
 				},
 			},
-			chainShouldEvaluate:        true,
-			chainShouldTriggerIssuance: true,
+			chainShouldEvaluate:        false,
+			chainShouldTriggerIssuance: false,
 		},
 		"should set the 'Issuing' status condition if the chain indicates an issuance is required if the last failure time is older than the last hour": {
 			certificate: &cmapi.Certificate{
