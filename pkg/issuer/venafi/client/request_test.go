@@ -77,12 +77,6 @@ func checkCertificateIssued(t *testing.T, csrPEM []byte, resp []byte) {
 	}
 }
 
-func checkNoCertificateIssued(t *testing.T, csrPEM []byte, resp []byte) {
-	if len(resp) > 0 {
-		t.Errorf("expected no response with error but got=%s", resp)
-	}
-}
-
 func generateCSR(t *testing.T, sk crypto.Signer, commonName string, dnsNames []string) []byte {
 	template := x509.CertificateRequest{
 		Subject: pkix.Name{
@@ -102,37 +96,38 @@ func generateCSR(t *testing.T, sk crypto.Signer, commonName string, dnsNames []s
 	return csr
 }
 
-func TestSign(t *testing.T) {
-	sk, err := pki.GenerateRSAPrivateKey(2048)
+func TestVenafi_RequestCertificate(t *testing.T) {
+	privateKey, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
 
-	csrPEM := generateCSR(t, sk, "common-name", []string{
-		"foo.example.com", "bar.example.com"})
-
-	csrPEMNoDN := generateCSR(t, sk, "", []string{
-		"foo.example.com", "bar.example.com"})
-
-	csrNonePEM := generateCSR(t, sk, "", []string{})
-
-	tests := map[string]testSignT{
-		"if reading the zone configuration fails then error": {
-			csrPEM:             csrPEM,
-			checkFn:            checkNoCertificateIssued,
-			expectedRequestErr: true,
-			client: internalfake.Connector{
+	type args struct {
+		csrPEM       []byte
+		customFields []api.CustomField
+	}
+	tests := []struct {
+		name         string
+		vcertClient  connector
+		args         args
+		wantPickupID bool
+		wantErr      bool
+	}{
+		{
+			name: "error if reading the zone configuration fails",
+			args: args{},
+			vcertClient: internalfake.Connector{
 				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
 					return nil, errors.New("zone configuration error")
 				},
 			}.Default(),
+			wantErr: true,
 		},
-		"if validating the certificate fails then error": {
-			csrPEM:             csrPEM,
-			checkFn:            checkNoCertificateIssued,
-			expectedRequestErr: true,
-			client: internalfake.Connector{
+		{
+			name: "error if validating the certificate fails",
+			args: args{},
+			vcertClient: internalfake.Connector{
 				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
 					return &endpoint.ZoneConfiguration{
 						Policy: endpoint.Policy{
@@ -141,51 +136,60 @@ func TestSign(t *testing.T) {
 					}, nil
 				},
 			}.Default(),
+			wantErr: true,
 		},
-		"a badly formed CSR should error": {
-			csrPEM:             []byte("a badly formed CSR"),
-			checkFn:            checkNoCertificateIssued,
-			expectedRequestErr: true,
-		},
-		"a CSR with empty DN should error": {
-			csrPEM:             csrPEMNoDN,
-			checkFn:            checkNoCertificateIssued,
-			expectedRequestErr: true,
-		},
-		"if requesting the certificate fails, sign should error": {
-			csrPEM: csrPEM,
-			client: internalfake.Connector{
+		{
+			name: "error if requesting the certificate fails",
+			args: args{},
+			vcertClient: internalfake.Connector{
 				RequestCertificateFunc: func(*certificate.Request) (string, error) {
 					return "", errors.New("request error")
 				},
 			}.Default(),
-			checkFn:            checkNoCertificateIssued,
-			expectedRequestErr: true,
+			wantErr: true,
 		},
-		"if retrieve certificate fails, sign should error": {
-			csrPEM: csrPEM,
-			client: internalfake.Connector{
-				RetrieveCertificateFunc: func(*certificate.Request) (*certificate.PEMCollection, error) {
-					return nil, errors.New("request error")
-				},
-			}.Default(),
-			checkFn:     checkNoCertificateIssued,
-			expectedErr: true,
+		{
+			name: "error if a CSR with empty DN",
+			args: args{
+				csrPEM: generateCSR(t, privateKey, "", []string{"foo.example.com", "bar.example.com"}),
+			},
+			wantErr: true,
 		},
-		"if no Common Name, DNS Name, or URI SANs in CSR then error": {
-			csrPEM:             csrNonePEM,
-			checkFn:            checkNoCertificateIssued,
-			expectedRequestErr: true,
+		{
+			name: "error if a badly formed CSR",
+			args: args{
+				csrPEM: []byte("a badly formed CSR"),
+			},
+			wantErr: true,
 		},
-		"obtain a certificate with DNS names specified": {
-			csrPEM:      csrPEM,
-			checkFn:     checkCertificateIssued,
-			expectedErr: false,
+		{
+			name: "error if no Common Name, DNS Name, or URI SANs in CSR",
+			args: args{
+				csrPEM: generateCSR(t, privateKey, "", []string{}),
+			},
+			wantErr: true,
 		},
-		"obtain a certificate with custom fields specified": {
-			csrPEM:       csrPEM,
-			customFields: []api.CustomField{{Name: "test", Value: "ok"}},
-			client: internalfake.Connector{
+		{
+			name: "error if invalid custom field type found the error",
+			args: args{
+				customFields: []api.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "get a success for a certificate with DNS names and CN specified",
+			args: args{
+				csrPEM: generateCSR(t, privateKey, "common-name", []string{"foo.example.com", "bar.example.com"}),
+			},
+			wantPickupID: true,
+			wantErr:      false,
+		},
+		{
+			name: "get a success for a certificate with custom fields specified",
+			args: args{
+				customFields: []api.CustomField{{Name: "test", Value: "ok"}},
+			},
+			vcertClient: internalfake.Connector{
 				RetrieveCertificateFunc: func(r *certificate.Request) (*certificate.PEMCollection, error) {
 					// we set 1 field by default
 					if len(r.CustomFields) <= 1 {
@@ -203,68 +207,101 @@ func TestSign(t *testing.T) {
 					return internalfake.Connector{}.Default().RetrieveCertificate(r) // hack to return to normal
 				},
 			}.Default(),
-			checkFn:     checkCertificateIssued,
-			expectedErr: false,
-		},
-		"If invalid custom field type found the error": {
-			csrPEM:             csrPEM,
-			customFields:       []api.CustomField{{Name: "test", Value: "ok", Type: "Bool"}},
-			checkFn:            checkNoCertificateIssued,
-			expectedRequestErr: true,
+			wantPickupID: true,
+			wantErr:      false,
 		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.vcertClient == nil {
+				tt.vcertClient = fake.NewConnector(true, nil)
+			}
+			v := &Venafi{
+				vcertClient: tt.vcertClient,
+			}
 
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			test.runTest(t)
+			if tt.args.csrPEM == nil {
+				tt.args.csrPEM = generateCSR(t, privateKey, "common-name", []string{
+					"foo.example.com", "bar.example.com"})
+			}
+
+			got, err := v.RequestCertificate(tt.args.csrPEM, time.Minute, tt.args.customFields)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RequestCertificate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if (got != "") != tt.wantPickupID {
+				t.Errorf("RequestCertificate() got = %v, want empty string", got)
+			}
 		})
 	}
 }
 
-type testSignT struct {
-	csrPEM []byte
-	client connector
-
-	expectedErr        bool
-	expectedRequestErr bool
-
-	customFields []api.CustomField
-
-	checkFn func(*testing.T, []byte, []byte)
-}
-
-func (s *testSignT) runTest(t *testing.T) {
-	client := s.client
-	if client == nil {
-		client = fake.NewConnector(true, nil)
-	}
-
-	v := &Venafi{
-		vcertClient: client,
-	}
-
-	pickupID, err := v.RequestCertificate(s.csrPEM, time.Minute, s.customFields)
-	if err != nil && !s.expectedRequestErr {
-		t.Errorf("expected to not get an error, but got: %v", err)
-	}
-	if err == nil && s.expectedRequestErr {
-		t.Errorf("expected to get an error but did not get one")
-	}
-
+func TestVenafi_RetrieveCertificate(t *testing.T) {
+	privateKey, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
-		// do not call RetrieveCertificate if RequestCertificate failed
-		return
+		t.Error(err)
+		t.FailNow()
 	}
 
-	resp, err := v.RetrieveCertificate(pickupID, s.csrPEM, time.Minute, s.customFields)
-	if err != nil && !s.expectedErr {
-		t.Errorf("expected to not get an error, but got: %v", err)
+	type args struct {
+		csrPEM       []byte
+		duration     time.Duration
+		customFields []api.CustomField
 	}
-	if err == nil && s.expectedErr {
-		t.Errorf("expected to get an error but did not get one")
+	tests := []struct {
+		name        string
+		vcertClient connector
+		args        args
+		wantErr     bool
+		checkFn     func(*testing.T, []byte, []byte)
+	}{
+		{
+			name: "error if retrieve certificate fails",
+			vcertClient: internalfake.Connector{
+				RetrieveCertificateFunc: func(*certificate.Request) (*certificate.PEMCollection, error) {
+					return nil, errors.New("request error")
+				},
+			}.Default(),
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name:    "successfully retrieve certificate",
+			args:    args{},
+			wantErr: false,
+			checkFn: checkCertificateIssued,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.vcertClient == nil {
+				tt.vcertClient = fake.NewConnector(true, nil)
+			}
+			v := &Venafi{
+				vcertClient: tt.vcertClient,
+			}
 
-	if s.checkFn != nil {
-		s.checkFn(t, s.csrPEM, resp)
+			if tt.args.csrPEM == nil {
+				tt.args.csrPEM = generateCSR(t, privateKey, "common-name", []string{
+					"foo.example.com", "bar.example.com"})
+			}
+
+			// this is needed to provide the fake venafi client with a "valid" pickup id
+			// testing errors in this should be done in TestVenafi_RequestCertificate
+			// any error returned in these tests is a hard fail
+			pickupID, err := v.RequestCertificate(tt.args.csrPEM, tt.args.duration, tt.args.customFields)
+			if err != nil {
+				t.Errorf("RequestCertificate() should but error but got error = %v", err)
+			}
+			got, err := v.RetrieveCertificate(pickupID, tt.args.csrPEM, tt.args.duration, tt.args.customFields)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RetrieveCertificate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.checkFn != nil {
+				tt.checkFn(t, tt.args.csrPEM, got)
+			}
+		})
 	}
 }
