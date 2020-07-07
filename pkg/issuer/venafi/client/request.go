@@ -44,7 +44,7 @@ var ErrorMissingSubject = errors.New("Certificate requests submitted to Venafi i
 // This function sends a request to Venafi to for a signed certificate.
 // The CSR will be decoded to be validated against the zone configuration policy.
 // Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
-// It will return a pickup ID which can be used with RetreiveCertificate to get the certificate
+// It will return a pickup ID which can be used with RetrieveCertificate to get the certificate
 func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
 	vreq, err := v.buildVReq(csrPEM, duration, customFields)
 	if err != nil {
@@ -55,7 +55,7 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 	return requestID, err
 }
 
-func (v *Venafi) RetreiveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
+func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
 	vreq, err := v.buildVReq(csrPEM, duration, customFields)
 	if err != nil {
 		return nil, err
@@ -182,6 +182,10 @@ func getVcertFriendlyName(crt *x509.Certificate) (string, error) {
 		return crt.DNSNames[0], nil
 	case len(crt.URIs) > 0:
 		return crt.URIs[0].String(), nil
+	case len(crt.EmailAddresses) > 0:
+		return crt.EmailAddresses[0], nil
+	case len(crt.IPAddresses) > 0:
+		return crt.IPAddresses[0].String(), nil
 	default:
 		return "", errors.New("certificate request contains no Common Name, DNS Name, nor URI SAN, at least one must be supplied to be used as the Venafi certificate objects name")
 	}

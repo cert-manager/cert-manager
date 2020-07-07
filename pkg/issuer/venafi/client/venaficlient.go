@@ -43,7 +43,7 @@ type VenafiClientBuilder func(namespace string, secretsLister corelisters.Secret
 // Interface implements a Venafi client
 type Interface interface {
 	RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
-	RetreiveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
+	RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
@@ -92,7 +92,8 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLister, namespace string) (*vcert.Config, error) {
 	venCfg := iss.GetSpec().Venafi
-	if venCfg.TPP != nil {
+	switch {
+	case venCfg.TPP != nil:
 		tpp := venCfg.TPP
 		tppSecret, err := secretsLister.Secrets(namespace).Get(tpp.CredentialsRef.Name)
 		if err != nil {
@@ -115,9 +116,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 				Password: password,
 			},
 		}, nil
-	}
-
-	if venCfg.Cloud != nil {
+	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {

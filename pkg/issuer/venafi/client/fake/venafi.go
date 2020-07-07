@@ -19,15 +19,15 @@ package fake
 import (
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-
 	"github.com/Venafi/vcert/pkg/endpoint"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 )
 
 type Venafi struct {
 	PingFn                  func() error
 	RequestCertificateFn    func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
-	RetreiveCertificateFn   func(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
+	RetrieveCertificateFn   func(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	ReadZoneConfigurationFn func() (*endpoint.ZoneConfiguration, error)
 }
 
@@ -39,8 +39,8 @@ func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, custo
 	return v.RequestCertificateFn(csrPEM, duration, customFields)
 }
 
-func (v *Venafi) RetreiveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
-	return v.RetreiveCertificateFn(pickupID, csrPEM, duration, customFields)
+func (v *Venafi) RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error) {
+	return v.RetrieveCertificateFn(pickupID, csrPEM, duration, customFields)
 }
 
 func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package client
+package venafi
 
 import (
 	"context"
@@ -187,7 +187,7 @@ func TestSign(t *testing.T) {
 		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
 			return "test", nil
 		},
-		RetreiveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
+		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
 			return nil, endpoint.ErrCertificatePending{
 				CertificateID: "test-cert-id",
 				Status:        "test-status-pending",
@@ -203,7 +203,7 @@ func TestSign(t *testing.T) {
 		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {
 			return "test", nil
 		},
-		RetreiveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
+		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
 			return certPEM, nil
 		},
 	}
@@ -215,7 +215,7 @@ func TestSign(t *testing.T) {
 			}
 			return "", errors.New("Custom field not set")
 		},
-		RetreiveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
+		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
 			return certPEM, nil
 		},
 	}
@@ -842,7 +842,7 @@ func runTest(t *testing.T, test testT) {
 	// Deep copy the certificate request to prevent pulling condition state across tests
 	err := controller.Sync(context.Background(), test.certificateRequest)
 
-	if err == nil && test.fakeClient != nil && test.fakeClient.RetreiveCertificateFn != nil && !test.skipSecondSignCall {
+	if err == nil && test.fakeClient != nil && test.fakeClient.RetrieveCertificateFn != nil && !test.skipSecondSignCall {
 		// request state is ok! simulating a 2nd sync to fetch the cert
 		metav1.SetMetaDataAnnotation(&test.certificateRequest.ObjectMeta, VenafiPickupIDAnnotation, "test")
 		err = controller.Sync(context.Background(), test.certificateRequest)

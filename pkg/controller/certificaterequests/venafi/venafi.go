@@ -14,30 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package client
+package venafi
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
+	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
+	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -97,8 +95,6 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		return nil, err
 	}
 
-	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-
 	var customFields []api.CustomField
 	if annotation, exists := cr.GetAnnotations()[cmapi.VenafiCustomFieldsAnnotationKey]; exists && annotation != "" {
 		err := json.Unmarshal([]byte(annotation), &customFields)
@@ -112,10 +108,11 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		}
 	}
 
-	pickupID, exists := cr.ObjectMeta.Annotations[VenafiPickupIDAnnotation]
+	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
+	pickupID := cr.ObjectMeta.Annotations[VenafiPickupIDAnnotation]
 
 	// check if the pickup ID annotation is there, if not set it up.
-	if !exists || pickupID == "" {
+	if pickupID == "" {
 		pickupID, err = client.RequestCertificate(cr.Spec.CSRPEM, duration, customFields)
 		// Check some known error types
 		if err != nil {
@@ -148,7 +145,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		return nil, nil
 	}
 
-	certPem, err := client.RetreiveCertificate(pickupID, cr.Spec.CSRPEM, duration, customFields)
+	certPem, err := client.RetrieveCertificate(pickupID, cr.Spec.CSRPEM, duration, customFields)
 	if err != nil {
 		switch err.(type) {
 		case endpoint.ErrCertificatePending, endpoint.ErrRetrieveCertificateTimeout:

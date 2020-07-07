@@ -26,12 +26,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-
 	"github.com/Venafi/vcert/pkg/certificate"
 	"github.com/Venafi/vcert/pkg/endpoint"
 	"github.com/Venafi/vcert/pkg/venafi/fake"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 	internalfake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -253,11 +252,11 @@ func (s *testSignT) runTest(t *testing.T) {
 	}
 
 	if err != nil {
-		// do not call RetreiveCertificate if RequestCertificate failed
+		// do not call RetrieveCertificate if RequestCertificate failed
 		return
 	}
 
-	resp, err := v.RetreiveCertificate(pickupID, s.csrPEM, time.Minute, s.customFields)
+	resp, err := v.RetrieveCertificate(pickupID, s.csrPEM, time.Minute, s.customFields)
 	if err != nil && !s.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

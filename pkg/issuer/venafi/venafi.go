@@ -17,13 +17,13 @@ limitations under the License.
 package venafi
 
 import (
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 )
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
