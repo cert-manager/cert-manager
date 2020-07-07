@@ -113,6 +113,7 @@ type ACMEChallengeSolver struct {
 	// If not specified, the solver will be treated as the 'default' solver
 	// with the lowest priority, i.e. if any other solver has a more specific
 	// match, it will be used instead.
+	// +optional
 	Selector *CertificateDNSNameSelector `json:"selector,omitempty"`
 
 	// Configures cert-manager to attempt to complete authorizations by
@@ -172,7 +173,7 @@ type ACMEChallengeSolverHTTP01 struct {
 	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
 	// provisioned by cert-manager for each Challenge to be completed.
 	// +optional
-	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
+	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
@@ -381,7 +382,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// The AccessKeyID is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	// +optional
-	AccessKeyID string `json:"accessKeyID"`
+	AccessKeyID string `json:"accessKeyID,omitempty"`
 
 	// The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
@@ -391,7 +392,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey
 	// or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata
 	// +optional
-	Role string `json:"role"`
+	Role string `json:"role,omitempty"`
 
 	// If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.
 	// +optional

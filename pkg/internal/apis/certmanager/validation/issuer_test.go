@@ -477,7 +477,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("clouddns", "project"), ""),
+				field.Required(fldPath.Child("cloudDNS", "project"), ""),
 			},
 		},
 		"missing clouddns service account key": {
@@ -491,7 +491,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("clouddns", "serviceAccountSecretRef", "key"), "secret key is required"),
+				field.Required(fldPath.Child("cloudDNS", "serviceAccountSecretRef", "key"), "secret key is required"),
 			},
 		},
 		"missing clouddns service account name": {
@@ -505,7 +505,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("clouddns", "serviceAccountSecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("cloudDNS", "serviceAccountSecretRef", "name"), "secret name is required"),
 			},
 		},
 		"clouddns serviceAccount field not set should be allowed for ambient auth": {
@@ -590,8 +590,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns environment": {
@@ -601,9 +601,9 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
-				field.Invalid(fldPath.Child("azuredns", "environment"), cmacme.AzureDNSEnvironment("an env"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
+				field.Invalid(fldPath.Child("azureDNS", "environment"), cmacme.AzureDNSEnvironment("an env"),
 					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
 			},
 		},
@@ -614,10 +614,10 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), ""),
-				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
+				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns missing clientID and tenantID": {
@@ -632,10 +632,10 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientID"), ""),
-				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
+				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns missing clientID and clientSecret": {
@@ -645,10 +645,10 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientID"), ""),
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), ""),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns missing clientID": {
@@ -664,9 +664,9 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientID"), ""),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns missing clientSecret": {
@@ -677,9 +677,9 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), ""),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns clientSecret missing key": {
@@ -695,9 +695,9 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef", "key"), "secret key is required"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns clientSecret missing secret name": {
@@ -711,9 +711,9 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"invalid azuredns missing tenantID": {
@@ -729,9 +729,9 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
-				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
-				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
 		"missing akamai config": {

@@ -24,7 +24,10 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Certificate is a type to represent a Certificate from ACME
+// A Certificate resource should be created to ensure an up to date and signed
+// x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
+//
+// The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`).
 type Certificate struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta
@@ -46,29 +49,29 @@ type CertificateList struct {
 	Items []Certificate
 }
 
-type KeyAlgorithm string
+type PrivateKeyAlgorithm string
 
 const (
 	// Denotes the RSA private key type.
-	RSAKeyAlgorithm KeyAlgorithm = "rsa"
+	RSAKeyAlgorithm PrivateKeyAlgorithm = "RSA"
 
 	// Denotes the ECDSA private key type.
-	ECDSAKeyAlgorithm KeyAlgorithm = "ecdsa"
+	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ECDSA"
 )
 
-type KeyEncoding string
+type PrivateKeyEncoding string
 
 const (
 	// PKCS1 key encoding will produce PEM files that include the type of
 	// private key as part of the PEM header, e.g. "BEGIN RSA PRIVATE KEY".
 	// If the keyAlgorithm is set to 'ECDSA', this will produce private keys
 	// that use the "BEGIN EC PRIVATE KEY" header.
-	PKCS1 KeyEncoding = "pkcs1"
+	PKCS1 PrivateKeyEncoding = "PKCS1"
 
 	// PKCS8 key encoding will produce PEM files with the "BEGIN PRIVATE KEY"
 	// header. It encodes the keyAlgorithm of the private key as part of the
 	// DER encoded PEM block.
-	PKCS8 KeyEncoding = "pkcs8"
+	PKCS8 PrivateKeyEncoding = "PKCS8"
 )
 
 // CertificateSpec defines the desired state of Certificate.
@@ -137,27 +140,6 @@ type CertificateSpec struct {
 	// Defaults to `digital signature` and `key encipherment` if not specified.
 	Usages []KeyUsage
 
-	// KeySize is the key bit size of the corresponding private key for this certificate.
-	// If `keyAlgorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
-	// and will default to `2048` if not specified.
-	// If `keyAlgorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
-	// and will default to `256` if not specified.
-	// No other values are allowed.
-	KeySize int
-
-	// KeyAlgorithm is the private key algorithm of the corresponding private key
-	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
-	// If `keyAlgorithm` is specified and `keySize` is not provided,
-	// key size of 256 will be used for "ecdsa" key algorithm and
-	// key size of 2048 will be used for "rsa" key algorithm.
-	KeyAlgorithm KeyAlgorithm
-
-	// KeyEncoding is the private key cryptography standards (PKCS)
-	// for this certificate's private key to be encoded in. If provided, allowed
-	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
-	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
-	KeyEncoding KeyEncoding
-
 	// Options to control private keys used for the Certificate.
 	PrivateKey *CertificatePrivateKey
 }
@@ -176,6 +158,28 @@ type CertificatePrivateKey struct {
 	// will be generated whenever a re-issuance occurs.
 	// Default is 'Never' for backward compatibility.
 	RotationPolicy PrivateKeyRotationPolicy
+
+	// The private key cryptography standards (PKCS) encoding for this
+	// certificate's private key to be encoded in.
+	// If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1
+	// and PKCS#8, respectively.
+	// Defaults to PKCS#1 if not specified.
+	Encoding PrivateKeyEncoding
+
+	// Algorithm is the private key algorithm of the corresponding private key
+	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
+	// If `algorithm` is specified and `size` is not provided,
+	// key size of 256 will be used for "ecdsa" key algorithm and
+	// key size of 2048 will be used for "rsa" key algorithm.
+	Algorithm PrivateKeyAlgorithm
+
+	// Size is the key bit size of the corresponding private key for this certificate.
+	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
+	// and will default to `2048` if not specified.
+	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
+	// and will default to `256` if not specified.
+	// No other values are allowed.
+	Size int
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate
@@ -271,7 +275,6 @@ type CertificateStatus struct {
 
 	// The time after which the certificate stored in the secret named
 	// by this resource in spec.secretName is valid.
-	// +optional
 	NotBefore *metav1.Time
 
 	// The expiration time of the certificate stored in the secret named
@@ -281,7 +284,6 @@ type CertificateStatus struct {
 	// RenewalTime is the time at which the certificate will be next
 	// renewed.
 	// If not set, no upcoming renewal is scheduled.
-	// +optional
 	RenewalTime *metav1.Time
 
 	// The current 'revision' of the certificate as issued.

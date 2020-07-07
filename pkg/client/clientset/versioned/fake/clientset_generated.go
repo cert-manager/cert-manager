@@ -24,10 +24,14 @@ import (
 	fakeacmev1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2/fake"
 	acmev1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha3"
 	fakeacmev1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha3/fake"
+	acmev1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1beta1"
+	fakeacmev1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1beta1/fake"
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
 	fakecertmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2/fake"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3"
 	fakecertmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3/fake"
+	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1"
+	fakecertmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -92,6 +96,11 @@ func (c *Clientset) AcmeV1alpha3() acmev1alpha3.AcmeV1alpha3Interface {
 	return &fakeacmev1alpha3.FakeAcmeV1alpha3{Fake: &c.Fake}
 }
 
+// AcmeV1beta1 retrieves the AcmeV1beta1Client
+func (c *Clientset) AcmeV1beta1() acmev1beta1.AcmeV1beta1Interface {
+	return &fakeacmev1beta1.FakeAcmeV1beta1{Fake: &c.Fake}
+}
+
 // CertmanagerV1alpha2 retrieves the CertmanagerV1alpha2Client
 func (c *Clientset) CertmanagerV1alpha2() certmanagerv1alpha2.CertmanagerV1alpha2Interface {
 	return &fakecertmanagerv1alpha2.FakeCertmanagerV1alpha2{Fake: &c.Fake}
@@ -100,4 +109,9 @@ func (c *Clientset) CertmanagerV1alpha2() certmanagerv1alpha2.CertmanagerV1alpha
 // CertmanagerV1alpha3 retrieves the CertmanagerV1alpha3Client
 func (c *Clientset) CertmanagerV1alpha3() certmanagerv1alpha3.CertmanagerV1alpha3Interface {
 	return &fakecertmanagerv1alpha3.FakeCertmanagerV1alpha3{Fake: &c.Fake}
+}
+
+// CertmanagerV1beta1 retrieves the CertmanagerV1beta1Client
+func (c *Clientset) CertmanagerV1beta1() certmanagerv1beta1.CertmanagerV1beta1Interface {
+	return &fakecertmanagerv1beta1.FakeCertmanagerV1beta1{Fake: &c.Fake}
 }

@@ -248,52 +248,52 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 	}
 	if p.AzureDNS != nil {
 		if numProviders > 0 {
-			el = append(el, field.Forbidden(fldPath.Child("azuredns"), "may not specify more than one provider type"))
+			el = append(el, field.Forbidden(fldPath.Child("azureDNS"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
 			// if ClientID or ClientSecret or TenantID are defined then all of ClientID, ClientSecret and tenantID must be defined
 			// We check things separately because
 			if len(p.AzureDNS.ClientID) > 0 || len(p.AzureDNS.TenantID) > 0 || p.AzureDNS.ClientSecret != nil {
 				if len(p.AzureDNS.ClientID) == 0 {
-					el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
+					el = append(el, field.Required(fldPath.Child("azureDNS", "clientID"), ""))
 				}
 				if p.AzureDNS.ClientSecret == nil {
-					el = append(el, field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), ""))
+					el = append(el, field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""))
 				} else {
-					el = append(el, ValidateSecretKeySelector(p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
+					el = append(el, ValidateSecretKeySelector(p.AzureDNS.ClientSecret, fldPath.Child("azureDNS", "clientSecretSecretRef"))...)
 				}
 				if len(p.AzureDNS.TenantID) == 0 {
-					el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
+					el = append(el, field.Required(fldPath.Child("azureDNS", "tenantID"), ""))
 				}
 			}
 			// SubscriptionID must always be defined
 			if len(p.AzureDNS.SubscriptionID) == 0 {
-				el = append(el, field.Required(fldPath.Child("azuredns", "subscriptionID"), ""))
+				el = append(el, field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""))
 			}
 			// ResourceGroupName must always be defined
 			if len(p.AzureDNS.ResourceGroupName) == 0 {
-				el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
+				el = append(el, field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""))
 			}
 			switch p.AzureDNS.Environment {
 			case "", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud:
 			default:
-				el = append(el, field.Invalid(fldPath.Child("azuredns", "environment"), p.AzureDNS.Environment,
+				el = append(el, field.Invalid(fldPath.Child("azureDNS", "environment"), p.AzureDNS.Environment,
 					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud)))
 			}
 		}
 	}
 	if p.CloudDNS != nil {
 		if numProviders > 0 {
-			el = append(el, field.Forbidden(fldPath.Child("clouddns"), "may not specify more than one provider type"))
+			el = append(el, field.Forbidden(fldPath.Child("cloudDNS"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
 			// if service account is not nil we validate the entire secret key
 			// selector
 			if p.CloudDNS.ServiceAccount != nil {
-				el = append(el, ValidateSecretKeySelector(p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
+				el = append(el, ValidateSecretKeySelector(p.CloudDNS.ServiceAccount, fldPath.Child("cloudDNS", "serviceAccountSecretRef"))...)
 			}
 			if len(p.CloudDNS.Project) == 0 {
-				el = append(el, field.Required(fldPath.Child("clouddns", "project"), ""))
+				el = append(el, field.Required(fldPath.Child("cloudDNS", "project"), ""))
 			}
 		}
 	}
@@ -332,9 +332,9 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 	}
 	if p.AcmeDNS != nil {
 		numProviders++
-		el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmedns", "accountSecretRef"))...)
+		el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmeDNS", "accountSecretRef"))...)
 		if len(p.AcmeDNS.Host) == 0 {
-			el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
+			el = append(el, field.Required(fldPath.Child("acmeDNS", "host"), ""))
 		}
 	}
 

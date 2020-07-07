@@ -23,8 +23,10 @@ import (
 
 	acmev1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2"
 	acmev1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha3"
+	acmev1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1beta1"
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3"
+	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -34,8 +36,10 @@ type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	AcmeV1alpha2() acmev1alpha2.AcmeV1alpha2Interface
 	AcmeV1alpha3() acmev1alpha3.AcmeV1alpha3Interface
+	AcmeV1beta1() acmev1beta1.AcmeV1beta1Interface
 	CertmanagerV1alpha2() certmanagerv1alpha2.CertmanagerV1alpha2Interface
 	CertmanagerV1alpha3() certmanagerv1alpha3.CertmanagerV1alpha3Interface
+	CertmanagerV1beta1() certmanagerv1beta1.CertmanagerV1beta1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -44,8 +48,10 @@ type Clientset struct {
 	*discovery.DiscoveryClient
 	acmeV1alpha2        *acmev1alpha2.AcmeV1alpha2Client
 	acmeV1alpha3        *acmev1alpha3.AcmeV1alpha3Client
+	acmeV1beta1         *acmev1beta1.AcmeV1beta1Client
 	certmanagerV1alpha2 *certmanagerv1alpha2.CertmanagerV1alpha2Client
 	certmanagerV1alpha3 *certmanagerv1alpha3.CertmanagerV1alpha3Client
+	certmanagerV1beta1  *certmanagerv1beta1.CertmanagerV1beta1Client
 }
 
 // AcmeV1alpha2 retrieves the AcmeV1alpha2Client
@@ -58,6 +64,11 @@ func (c *Clientset) AcmeV1alpha3() acmev1alpha3.AcmeV1alpha3Interface {
 	return c.acmeV1alpha3
 }
 
+// AcmeV1beta1 retrieves the AcmeV1beta1Client
+func (c *Clientset) AcmeV1beta1() acmev1beta1.AcmeV1beta1Interface {
+	return c.acmeV1beta1
+}
+
 // CertmanagerV1alpha2 retrieves the CertmanagerV1alpha2Client
 func (c *Clientset) CertmanagerV1alpha2() certmanagerv1alpha2.CertmanagerV1alpha2Interface {
 	return c.certmanagerV1alpha2
@@ -66,6 +77,11 @@ func (c *Clientset) CertmanagerV1alpha2() certmanagerv1alpha2.CertmanagerV1alpha
 // CertmanagerV1alpha3 retrieves the CertmanagerV1alpha3Client
 func (c *Clientset) CertmanagerV1alpha3() certmanagerv1alpha3.CertmanagerV1alpha3Interface {
 	return c.certmanagerV1alpha3
+}
+
+// CertmanagerV1beta1 retrieves the CertmanagerV1beta1Client
+func (c *Clientset) CertmanagerV1beta1() certmanagerv1beta1.CertmanagerV1beta1Interface {
+	return c.certmanagerV1beta1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -97,11 +113,19 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.acmeV1beta1, err = acmev1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.certmanagerV1alpha2, err = certmanagerv1alpha2.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
 	cs.certmanagerV1alpha3, err = certmanagerv1alpha3.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.certmanagerV1beta1, err = certmanagerv1beta1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +143,10 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.acmeV1alpha2 = acmev1alpha2.NewForConfigOrDie(c)
 	cs.acmeV1alpha3 = acmev1alpha3.NewForConfigOrDie(c)
+	cs.acmeV1beta1 = acmev1beta1.NewForConfigOrDie(c)
 	cs.certmanagerV1alpha2 = certmanagerv1alpha2.NewForConfigOrDie(c)
 	cs.certmanagerV1alpha3 = certmanagerv1alpha3.NewForConfigOrDie(c)
+	cs.certmanagerV1beta1 = certmanagerv1beta1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -131,8 +157,10 @@ func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.acmeV1alpha2 = acmev1alpha2.New(c)
 	cs.acmeV1alpha3 = acmev1alpha3.New(c)
+	cs.acmeV1beta1 = acmev1beta1.New(c)
 	cs.certmanagerV1alpha2 = certmanagerv1alpha2.New(c)
 	cs.certmanagerV1alpha3 = certmanagerv1alpha3.New(c)
+	cs.certmanagerV1beta1 = certmanagerv1beta1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

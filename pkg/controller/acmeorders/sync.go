@@ -308,7 +308,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 		for i, acmech := range acmeAuthz.Challenges {
 			authz.Challenges[i].URL = acmech.URI
 			authz.Challenges[i].Token = acmech.Token
-			authz.Challenges[i].Type = cmacme.ACMEChallengeType(acmech.Type)
+			authz.Challenges[i].Type = acmech.Type
 		}
 		o.Status.Authorizations[i] = authz
 	}

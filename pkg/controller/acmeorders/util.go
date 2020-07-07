@@ -276,7 +276,15 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		return nil, fmt.Errorf("no configured challenge solvers can be used for this challenge")
 	}
 
-	key, err := keyForChallenge(cl, selectedChallenge)
+	// It should never be possible for this case to be hit as earlier in this
+	// method we already assert that the challenge type is one of 'http-01'
+	// or 'dns-01'.
+	chType, err := challengeType(selectedChallenge.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := keyForChallenge(cl, selectedChallenge.Token, chType)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +298,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	// 5. construct Challenge resource with spec.solver field set
 	return &cmacme.ChallengeSpec{
 		AuthzURL: authz.URL,
-		Type:     selectedChallenge.Type,
+		Type:     chType,
 		URL:      selectedChallenge.URL,
 		DNSName:  authz.Identifier,
 		Token:    selectedChallenge.Token,
@@ -300,6 +308,17 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		Wildcard:  wc,
 		IssuerRef: o.Spec.IssuerRef,
 	}, nil
+}
+
+func challengeType(t string) (cmacme.ACMEChallengeType, error) {
+	switch t {
+	case "http-01":
+		return cmacme.ACMEChallengeTypeHTTP01, nil
+	case "dns-01":
+		return cmacme.ACMEChallengeTypeDNS01, nil
+	default:
+		return "", fmt.Errorf("unsupported challenge type: %v", t)
+	}
 }
 
 func applyIngressParameterAnnotationOverrides(o *cmacme.Order, s *cmacme.ACMEChallengeSolver) error {
@@ -328,17 +347,15 @@ func applyIngressParameterAnnotationOverrides(o *cmacme.Order, s *cmacme.ACMECha
 	return nil
 }
 
-func keyForChallenge(cl acmecl.Interface, challenge *cmacme.ACMEChallenge) (string, error) {
-	var err error
-	switch challenge.Type {
+func keyForChallenge(cl acmecl.Interface, token string, chType cmacme.ACMEChallengeType) (string, error) {
+	switch chType {
 	case cmacme.ACMEChallengeTypeHTTP01:
-		return cl.HTTP01ChallengeResponse(challenge.Token)
+		return cl.HTTP01ChallengeResponse(token)
 	case cmacme.ACMEChallengeTypeDNS01:
-		return cl.DNS01ChallengeRecord(challenge.Token)
+		return cl.DNS01ChallengeRecord(token)
 	default:
-		err = fmt.Errorf("unsupported challenge type %s", challenge.Type)
+		return "", fmt.Errorf("unsupported challenge type: %v", chType)
 	}
-	return "", err
 }
 
 func anyChallengesFailed(chs []*cmacme.Challenge) bool {

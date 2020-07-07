@@ -25,15 +25,11 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Certificate is a type to represent a Certificate from ACME
+// A Certificate resource should be created to ensure an up to date and signed
+// x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.
+//
+// The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`).
 // +k8s:openapi-gen=true
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description=""
-// +kubebuilder:printcolumn:name="Secret",type="string",JSONPath=".spec.secretName",description=""
-// +kubebuilder:printcolumn:name="Issuer",type="string",JSONPath=".spec.issuerRef.name",description="",priority=1
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",priority=1
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
-// +kubebuilder:subresource:status
-// +kubebuilder:resource:path=certificates,shortName=cert;certs
 type Certificate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -186,6 +182,7 @@ type CertificateSpec struct {
 	// for this certificate's private key to be encoded in. If provided, allowed
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
+	// +optional
 	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
 
 	// Options to control private keys used for the Certificate.

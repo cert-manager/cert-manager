@@ -47,7 +47,7 @@ type OrderSpec struct {
 	// Certificate signing request bytes in DER encoding.
 	// This will be used when finalizing the order.
 	// This field must be set on the order.
-	CSR []byte
+	Request []byte
 
 	// IssuerRef references a properly configured ACME-type Issuer which should
 	// be used to create this Order.
@@ -149,20 +149,13 @@ type ACMEChallenge struct {
 	// This is used to compute the 'key' that must also be presented.
 	Token string
 
-	// Type is the type of challenge being offered, e.g. http-01, dns-01
-	Type ACMEChallengeType
+	// Type is the type of challenge being offered, e.g. 'http-01', 'dns-01',
+	// 'tls-sni-01', etc.
+	// This is the raw value retrieved from the ACME server.
+	// Only 'http-01' and 'dns-01' are supported by cert-manager, other values
+	// will be ignored.
+	Type string
 }
-
-// ACMEChallengeType denotes a type of ACME challenge
-type ACMEChallengeType string
-
-const (
-	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
-	ACMEChallengeTypeHTTP01 ACMEChallengeType = "http-01"
-
-	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
-	ACMEChallengeTypeDNS01 ACMEChallengeType = "dns-01"
-)
 
 // State represents the state of an ACME resource, such as an Order.
 // The possible options here map to the corresponding values in the

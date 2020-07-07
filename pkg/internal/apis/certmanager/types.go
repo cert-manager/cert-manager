@@ -74,8 +74,14 @@ const (
 
 // Annotation names for CertificateRequests
 const (
-	CRPrivateKeyAnnotationKey = "cert-manager.io/private-key-secret-name"
-	// Annotation to declare the CertificateRequest "revision", beloning to a Certificate Resource
+	// Annotation added to CertificateRequest resources to denote the name of
+	// a Secret resource containing the private key used to sign the CSR stored
+	// on the resource.
+	// This annotation *may* not be present, and is used by the 'self signing'
+	// issuer type to self-sign certificates.
+	CertificateRequestPrivateKeyAnnotationKey = "cert-manager.io/private-key-secret-name"
+
+	// Annotation to declare the CertificateRequest "revision", belonging to a Certificate Resource
 	CertificateRequestRevisionAnnotationKey = "cert-manager.io/certificate-revision"
 )
 

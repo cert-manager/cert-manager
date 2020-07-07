@@ -70,8 +70,8 @@ type ChallengeSpec struct {
 	// +optional
 	Wildcard bool `json:"wildcard"`
 
-	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
-	// or "http01".
+	// Type is the type of ACME challenge this resource represents.
+	// One of "http-01" or "dns-01".
 	Type ACMEChallengeType `json:"type"`
 
 	// Token is the ACME challenge token for this challenge.
@@ -99,6 +99,20 @@ type ChallengeSpec struct {
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 }
 
+// The type of ACME challenge. Only http-01 and dns-01 are supported.
+// +kubebuilder:validation:Enum=http-01;dns-01
+type ACMEChallengeType string
+
+const (
+	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
+	ACMEChallengeTypeHTTP01 ACMEChallengeType = "http-01"
+
+	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
+	// More info: https://letsencrypt.org/docs/challenge-types/#dns-01-challenge
+	ACMEChallengeTypeDNS01 ACMEChallengeType = "dns-01"
+)
+
 type ChallengeStatus struct {
 	// Processing is used to denote whether this challenge should be processed
 	// or not.
@@ -122,7 +136,7 @@ type ChallengeStatus struct {
 	// Reason contains human readable information on why the Challenge is in the
 	// current state.
 	// +optional
-	Reason string `json:"reason"`
+	Reason string `json:"reason,omitempty"`
 
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.

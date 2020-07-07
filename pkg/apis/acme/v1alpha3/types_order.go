@@ -27,12 +27,6 @@ import (
 
 // Order is a type to represent an Order with an ACME server
 // +k8s:openapi-gen=true
-// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.state"
-// +kubebuilder:printcolumn:name="Issuer",type="string",JSONPath=".spec.issuerRef.name",description="",priority=1
-// +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.reason",description="",priority=1
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
-// +kubebuilder:subresource:status
-// +kubebuilder:resource:path=orders
 type Order struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -168,20 +162,13 @@ type ACMEChallenge struct {
 	// This is used to compute the 'key' that must also be presented.
 	Token string `json:"token"`
 
-	// Type is the type of challenge being offered, e.g. http-01, dns-01
-	Type ACMEChallengeType `json:"type"`
+	// Type is the type of challenge being offered, e.g. 'http-01', 'dns-01',
+	// 'tls-sni-01', etc.
+	// This is the raw value retrieved from the ACME server.
+	// Only 'http-01' and 'dns-01' are supported by cert-manager, other values
+	// will be ignored.
+	Type string `json:"type"`
 }
-
-// ACMEChallengeType denotes a type of ACME challenge
-type ACMEChallengeType string
-
-const (
-	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
-	ACMEChallengeTypeHTTP01 ACMEChallengeType = "http-01"
-
-	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
-	ACMEChallengeTypeDNS01 ACMEChallengeType = "dns-01"
-)
 
 // State represents the state of an ACME resource, such as an Order.
 // The possible options here map to the corresponding values in the

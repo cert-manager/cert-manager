@@ -134,7 +134,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning BadConfig Resource validation failed: spec.csr: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
+					"Warning BadConfig Resource validation failed: spec.request: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -147,7 +147,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
+								Message:            "Resource validation failed: spec.request: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
