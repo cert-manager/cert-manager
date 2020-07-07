@@ -8,8 +8,8 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/cmd/acmesolver",
     visibility = ["//visibility:private"],
     deps = [
-        "//pkg/issuer/acme/http/solver:go_default_library",
-        "//pkg/logs:go_default_library",
+        "//cmd/acmesolver/app:go_default_library",
+        "//pkg/util/cmd:go_default_library",
     ],
 )
 
@@ -29,7 +29,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//cmd/acmesolver/app:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

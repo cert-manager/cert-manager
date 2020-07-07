@@ -1,0 +1,61 @@
+/*
+Copyright 2020 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package app
+
+import (
+	"context"
+
+	"github.com/spf13/cobra"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
+)
+
+func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
+	s := new(solver.HTTP01Solver)
+
+	cmd := &cobra.Command{
+		Use:   "acmesolver",
+		Short: "HTTP server used to solve ACME challenges.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
+			rootCtx = logf.NewContext(rootCtx, nil, "acmesolver")
+			log := logf.FromContext(rootCtx)
+
+			go func() {
+				<-stopCh
+				if err := s.Shutdown(rootCtx); err != nil {
+					log.Error(err, "error shutting down acmesolver server")
+				}
+			}()
+
+			if err := s.Listen(log); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().IntVar(&s.ListenPort, "listen-port", 8089, "the port number to listen on for connections")
+	cmd.Flags().StringVar(&s.Domain, "domain", "", "the domain name to verify")
+	cmd.Flags().StringVar(&s.Token, "token", "", "the challenge token to verify against")
+	cmd.Flags().StringVar(&s.Key, "key", "", "the challenge key to respond with")
+
+	return cmd
+}

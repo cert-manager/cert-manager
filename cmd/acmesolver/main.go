@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,39 +17,22 @@ limitations under the License.
 package main
 
 import (
-	"context"
-	"flag"
-	"log"
+	"fmt"
+	"os"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
-	"github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/cmd/acmesolver/app"
+	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 // acmesolver solves ACME http-01 challenges. This is intended to run as a pod
 // in the target kubernetes cluster in order to solve challenges for
 // cert-manager.
 
-var (
-	listenPort = flag.Int("listen-port", 8089, "the port number to listen on for connections")
-	domain     = flag.String("domain", "", "the domain name to verify")
-	token      = flag.String("token", "", "the challenge token to verify against")
-	key        = flag.String("key", "", "the challenge key to respond with")
-)
-
 func main() {
-	logs.InitLogs(nil)
-	defer logs.FlushLogs()
-	flag.Parse()
-	ctx := logs.NewContext(context.Background(), nil, "acmesolver")
+	stopCh := utilcmd.SetupSignalHandler()
+	cmd := app.NewACMESolverCommand(stopCh)
 
-	s := &solver.HTTP01Solver{
-		ListenPort: *listenPort,
-		Domain:     *domain,
-		Token:      *token,
-		Key:        *key,
-	}
-
-	if err := s.Listen(ctx); err != nil {
-		log.Fatalf("error listening for connections: %s", err.Error())
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 	}
 }
