@@ -161,12 +161,9 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 
 	// If the acme order has failed then so too does the CertificateRequest meet the same fate.
 	if acme.IsFailureState(order.Status.State) {
-		message := fmt.Sprintf("Failed to wait for order resource %s/%s to become ready",
-			expectedOrder.Namespace, expectedOrder.Name)
-		err := fmt.Errorf("order is in %q state", order.Status.State)
-
+		message := fmt.Sprintf("Failed to wait for order resource %q to become ready", expectedOrder.Name)
+		err := fmt.Errorf("order is in %q state: %s", order.Status.State, order.Status.Reason)
 		a.reporter.Failed(cr, err, "OrderFailed", message)
-
 		return nil, nil
 	}
 

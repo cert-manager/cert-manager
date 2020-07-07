@@ -289,11 +289,12 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-cr-3921610499 to become ready: order is in "invalid" state`,
+					`Warning OrderFailed Failed to wait for order resource "test-cr-3921610499" to become ready: order is in "invalid" state: simulated failure`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
 						gen.SetOrderState(cmacme.Invalid),
+						gen.SetOrderReason("simulated failure"),
 					),
 				},
 				ExpectedActions: []testpkg.Action{
@@ -306,7 +307,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Failed to wait for order resource default-unit-test-ns/test-cr-3921610499 to become ready: order is in "invalid" state`,
+								Message:            `Failed to wait for order resource "test-cr-3921610499" to become ready: order is in "invalid" state: simulated failure`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
