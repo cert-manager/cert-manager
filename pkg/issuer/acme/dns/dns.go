@@ -39,6 +39,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dyndns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/ocidns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -67,6 +69,8 @@ type dnsProviderConstructors struct {
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	dynDNS       func(dynCustomerName, dynUsername, dynPassword, dynZoneName string, dns01Nameservers []string) (*dyndns.DNSProvider, error)
+	ociDNS       func(useInstancePrincipals bool, zoneName, compartmentId string, keyData []byte, dns01Nameservers []string) (*ocidns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -199,6 +203,77 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 
 	var impl solver
 	switch {
+	case providerConfig.DynDNS != nil:
+		dynPassword, err := s.loadSecretData(&providerConfig.DynDNS.DynPassword, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting dyn password")
+		}
+		dynUsername, err := s.loadSecretData(&providerConfig.DynDNS.DynUsername, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting dyn username")
+		}
+
+		dynCustomerName, err := s.loadSecretData(&providerConfig.DynDNS.DynCustomerName, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting dyn customer name")
+		}
+
+		impl, err = s.dnsProviderConstructors.dynDNS(
+			string(dynCustomerName),
+			string(dynUsername),
+			string(dynPassword),
+			providerConfig.DynDNS.DynZoneName,
+			s.DNS01Nameservers)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error instantiating Dyn challenge solver")
+		}
+	case providerConfig.OCIDNS != nil:
+		var keyData []byte
+		dbg.Info("preparing to create OCI DNS provider")
+		//	ociDNS       func(useInstancePrincipals bool, zoneName,compartmentId string, keyData []byte, dns01Nameservers []string)
+
+		if providerConfig.OCIDNS.UseInstancePrincipals == true {
+			// using oci instance principals
+			dbg.Info("using instance principals")
+			fmt.Printf("UseInstancePrincipals: %v\n", providerConfig.OCIDNS.UseInstancePrincipals)
+			fmt.Printf("ZoneName:%v\n", providerConfig.OCIDNS.OciZoneName)
+			fmt.Printf("CompartmentId: %v\n", providerConfig.OCIDNS.CompartmentId)
+			impl, err = s.dnsProviderConstructors.ociDNS(
+				providerConfig.OCIDNS.UseInstancePrincipals,
+				providerConfig.OCIDNS.OciZoneName,
+				providerConfig.OCIDNS.CompartmentId,
+				nil,
+				s.DNS01Nameservers)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "error instantiating OCI challenge solver")
+			}
+
+		} else {
+			// using oci key credentials
+			dbg.Info("using oci key credentials")
+
+			saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.OCIDNS.ServiceAccount.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting ocidns secret name: %s", err)
+			}
+
+			saKey := providerConfig.OCIDNS.ServiceAccount.Key
+			keyData = saSecret.Data[saKey]
+			if len(keyData) == 0 {
+				return nil, nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
+			}
+
+			// the cluster issuer will have the DynZoneName or ZoneName
+			impl, err = s.dnsProviderConstructors.ociDNS(
+				providerConfig.OCIDNS.UseInstancePrincipals,
+				providerConfig.OCIDNS.OciZoneName,
+				"",
+				keyData,
+				s.DNS01Nameservers)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "error instantiating OCI challenge solver")
+			}
+		}
 	case providerConfig.Akamai != nil:
 		dbg.Info("preparing to create Akamai provider")
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken, resourceNamespace)
@@ -482,6 +557,8 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			digitalocean.NewDNSProviderCredentials,
+			dyndns.NewDNSProvider,
+			ocidns.NewDNSProvider,
 		},
 		webhookSolvers: initialized,
 	}, nil
