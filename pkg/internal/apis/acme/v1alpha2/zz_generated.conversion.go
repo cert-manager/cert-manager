@@ -1062,7 +1062,17 @@ func Convert_acme_Challenge_To_v1alpha2_Challenge(in *acme.Challenge, out *v1alp
 
 func autoConvert_v1alpha2_ChallengeList_To_acme_ChallengeList(in *v1alpha2.ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]acme.Challenge)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]acme.Challenge, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha2_Challenge_To_acme_Challenge(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1073,7 +1083,17 @@ func Convert_v1alpha2_ChallengeList_To_acme_ChallengeList(in *v1alpha2.Challenge
 
 func autoConvert_acme_ChallengeList_To_v1alpha2_ChallengeList(in *acme.ChallengeList, out *v1alpha2.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha2.Challenge)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1alpha2.Challenge, len(*in))
+		for i := range *in {
+			if err := Convert_acme_Challenge_To_v1alpha2_Challenge(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
