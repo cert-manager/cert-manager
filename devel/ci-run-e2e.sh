@@ -52,6 +52,15 @@ if [[ "$IS_OPENSHIFT" == "true" ]] ; then
   export SERVICE_IP_PREFIX="172.30.0"
 fi
 
+# When running in our CI environment the Docker network's subnet choice will cause issues with routing
+# This works this around till we have a way to properly patch this.
+docker network create --driver=bridge --subnet=192.168.0.0/16 --gateway 192.168.0.1 kind
+# Wait a second for the network to be created so kind does not overwrite it
+sleep 5
+
+echo "Ensuring a kind cluster exists..."
+"${SCRIPT_ROOT}/cluster/create.sh"
+
 echo "Ensuring all e2e test dependencies are installed..."
 "${SCRIPT_ROOT}/setup-e2e-deps.sh"
 
