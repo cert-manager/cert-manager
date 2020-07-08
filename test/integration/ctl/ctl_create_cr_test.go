@@ -36,6 +36,26 @@ import (
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
 
+type Test struct {
+	inputFile      string
+	inputArgs      []string
+	inputNamespace string
+	keyFilename    string
+	certFilename   string
+	fetchCert      bool
+	timeout        time.Duration
+	crStatus       cmapiv1alpha2.CertificateRequestStatus
+
+	expValidateErr     bool
+	expRunErr          bool
+	expErrMsg          string
+	expNamespace       string
+	expName            string
+	expKeyFilename     string
+	expCertFilename    string
+	expCertFileContent []byte
+}
+
 var (
 	cr1Name            = "testcr-1"
 	cr2Name            = "testcr-2"
@@ -65,17 +85,7 @@ func TestCtlCreateCRBehaviourBeforeAnythingIsCreated(t *testing.T) {
 
 	testdataPath := getTestDataDir(t)
 
-	tests := map[string]struct {
-		inputFile      string
-		inputArgs      []string
-		inputNamespace string
-		keyFilename    string
-		certFilename   string
-
-		expValidateErr bool
-		expRunErr      bool
-		expErrMsg      string
-	}{
+	tests := map[string]Test{
 		"conflicting namespaces defined in flag and file": {
 			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr3Name},
@@ -171,18 +181,7 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 
 	testdataPath := getTestDataDir(t)
 
-	tests := map[string]struct {
-		inputFile      string
-		inputArgs      []string
-		inputNamespace string
-		keyFilename    string
-		certFilename   string
-
-		expValidateErr bool
-		expRunErr      bool
-		expErrMsg      string
-		expKeyFilename string
-	}{
+	tests := map[string]Test{
 		"path to file to store private key provided": {
 			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr5Name},
@@ -281,25 +280,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 
 	testdataPath := getTestDataDir(t)
 
-	tests := map[string]struct {
-		inputFile      string
-		inputArgs      []string
-		inputNamespace string
-		keyFilename    string
-		certFilename   string
-		fetchCert      bool
-		timeout        time.Duration
-		crStatus       cmapiv1alpha2.CertificateRequestStatus
-
-		expValidateErr     bool
-		expRunErr          bool
-		expErrMsg          string
-		expNamespace       string
-		expName            string
-		expKeyFilename     string
-		expCertFilename    string
-		expCertFileContent []byte
-	}{
+	tests := map[string]Test{
 		"v1alpha2 Certificate given": {
 			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
 			inputArgs:      []string{cr1Name},
@@ -484,7 +465,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			}
 
 			// If applicable, check the file where the certificate is stored
-			// If the expected error message is the on below, we skip checking
+			// If the expected error message is the one below, we skip checking
 			// because no certificate will have been written to file
 			if test.fetchCert && test.expErrMsg != "CertificateRequest in invalid state: Ready Condition is set but status.certificate is empty" {
 				certData, err := ioutil.ReadFile(test.expCertFilename)
