@@ -34,7 +34,7 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Get details about the current status of a Certificate.`))
+Get details about the current status of a Certificate, such as whether it has been successfully issued and when it will expire.`))
 
 	example = templates.Examples(i18n.T(`
 # Query status of cert-manager Certificate resource with name my-cert in namespace default
