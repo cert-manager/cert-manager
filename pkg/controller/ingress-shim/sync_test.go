@@ -101,6 +101,164 @@ func TestSync(t *testing.T) {
 	}
 	tests := []testT{
 		{
+			Name:   "return a single Certificate for an ingress with a single valid TLS entry and common-name annotation",
+			Issuer: acmeClusterIssuer,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "return a single Certificate for an ingress with multiple hosts over the CM length limit",
+			Issuer: acmeClusterIssuer,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts: []string{
+								"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.com",
+								"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.org",
+								"example.com",
+							},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames: []string{
+							"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.com",
+							"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.org",
+							"example.com",
+						},
+						CommonName: "example.com",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "return a single Certificate for an ingress with all hosts over the CM length limit",
+			Issuer: acmeClusterIssuer,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts: []string{
+								"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.com",
+								"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.org",
+							},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames: []string{
+							"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.com",
+							"awaytoolongdomainnameforthecommonnamefielstoballowedinsoithastopicktheotherone.example.org",
+						},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+					},
+				},
+			},
+		},
+		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
 			Issuer: acmeClusterIssuer,
 			Ingress: &extv1beta1.Ingress{
@@ -143,6 +301,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -195,6 +354,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -236,6 +396,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -278,6 +439,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -324,6 +486,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -367,6 +530,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -409,6 +573,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -453,6 +618,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "example.com",
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
 							Name:  "issuer-name",
@@ -558,6 +724,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
+						CommonName: "example.com",
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
 							Name:  "issuer-name",
@@ -716,6 +883,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
+						CommonName: "example.com",
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -757,6 +925,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
+						CommonName: "example.com",
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -789,6 +958,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
+						CommonName: "example.com",
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
@@ -807,6 +977,7 @@ func TestSync(t *testing.T) {
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
+						CommonName: "example.com",
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",

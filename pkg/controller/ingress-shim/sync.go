@@ -160,6 +160,8 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			return nil, nil, err
 		}
 
+		c.setCommonName(crt, ing, tls)
+
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
@@ -303,6 +305,31 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1b
 	}
 
 	return nil
+}
+
+func (c *controller) setCommonName(crt *cmapi.Certificate, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) {
+	ingAnnotations := ing.Annotations
+	if ingAnnotations == nil {
+		ingAnnotations = map[string]string{}
+	}
+
+	// if annotation is set use that as CN
+	if ingAnnotations[cmapi.CommonNameAnnotationKey] != "" {
+		crt.Spec.CommonName = ingAnnotations[cmapi.CommonNameAnnotationKey]
+		return
+	}
+
+	// if not set pick the first DNS name that is less than 64 characters
+	// this is the length limit of the CN
+	// if none if found we leave the CN empty
+	for _, host := range tls.Hosts {
+		if len(host) < 64 {
+			crt.Spec.CommonName = host
+			return
+		}
+	}
+
+	return
 }
 
 // shouldSync returns true if this ingress should have a Certificate resource
