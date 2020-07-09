@@ -66,6 +66,12 @@ func SetOrderState(s cmacme.State) OrderModifier {
 	}
 }
 
+func SetOrderReason(reason string) OrderModifier {
+	return func(crt *cmacme.Order) {
+		crt.Status.Reason = reason
+	}
+}
+
 func SetOrderStatus(s cmacme.OrderStatus) OrderModifier {
 	return func(o *cmacme.Order) {
 		o.Status = s
