@@ -174,7 +174,7 @@ func TestCtlCreateCR(t *testing.T) {
 			inputNamespace: ns1,
 			keyFilename:    "",
 			fetchCert:      true,
-			timeout:        5 * time.Minute,
+			timeout:        5 * time.Second,
 			crStatus: cmapiv1alpha2.CertificateRequestStatus{
 				Conditions: []cmapiv1alpha2.CertificateRequestCondition{
 					{Type: cmapiv1alpha2.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue},

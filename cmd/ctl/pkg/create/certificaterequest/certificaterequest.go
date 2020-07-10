@@ -241,7 +241,7 @@ func (o *Options) Run(args []string) error {
 	if err := ioutil.WriteFile(keyFileName, keyData, 0600); err != nil {
 		return fmt.Errorf("error when writing private key to file: %w", err)
 	}
-	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
+	fmt.Fprintf(o.ErrOut, "Private key written to file %s\n", keyFileName)
 
 	// Build CertificateRequest with name as specified by argument
 	req, err := buildCertificateRequest(crt, keyData, crName)
@@ -257,10 +257,10 @@ func (o *Options) Run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("error creating CertificateRequest: %w", err)
 	}
-	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
+	fmt.Fprintf(o.ErrOut, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
 
 	if o.FetchCert {
-		fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
+		fmt.Fprintf(o.ErrOut, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
 			req.Name, req.Namespace)
 		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
 			req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
@@ -270,27 +270,23 @@ func (o *Options) Run(args []string) error {
 			return apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
 				Type:   cmapiv1alpha2.CertificateRequestConditionReady,
 				Status: cmmeta.ConditionTrue,
-			}), nil
+			}) && len(req.Status.Certificate) > 0, nil
 		})
 		if err != nil {
 			return fmt.Errorf("error when waiting for CertificateRequest to be signed: %w", err)
 		}
-		if len(req.Status.Certificate) == 0 {
-			fmt.Fprintf(o.Out, "%s\n", req.Status.Certificate)
-			return errors.New("CertificateRequest in invalid state: Ready Condition is set but status.certificate is empty")
-		}
-		fmt.Fprintf(o.Out, "CertificateRequest %v in namespace %v has been signed\n", req.Name, req.Namespace)
+		fmt.Fprintf(o.ErrOut, "CertificateRequest %v in namespace %v has been signed\n", req.Name, req.Namespace)
 
 		// Fetch x509 certificate and store to file
 		actualCertFileName := req.Name + ".crt"
 		if o.CertFileName != "" {
 			actualCertFileName = o.CertFileName
 		}
-		err = util.FetchCertificateFromCR(req, actualCertFileName, o.IOStreams)
+		err = util.FetchCertificateFromCR(req, actualCertFileName)
 		if err != nil {
 			return fmt.Errorf("error when writing certificate to file: %w", err)
 		}
-		fmt.Fprintf(o.Out, "Certificate written to file %s\n", actualCertFileName)
+		fmt.Fprintf(o.ErrOut, "Certificate written to file %s\n", actualCertFileName)
 	}
 
 	return nil
