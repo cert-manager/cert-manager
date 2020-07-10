@@ -215,7 +215,7 @@ func ValidateVenafiIssuerConfig(iss *certmanager.VenafiIssuer, fldPath *field.Pa
 	return nil
 }
 
-// This list must be kept in sync with pkg/issuer/acme/dns/rfc2136/rfc2136.go
+// This list must be kept in sync with pkg/controller/acmechallenges/dns/rfc2136/rfc2136.go
 var supportedTSIGAlgorithms = []string{
 	"HMACMD5",
 	"HMACSHA1",
