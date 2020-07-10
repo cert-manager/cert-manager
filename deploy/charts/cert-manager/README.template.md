@@ -114,6 +114,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `tolerations` | Node tolerations for pod assignment | `[]` |
 | `ingressShim.defaultIssuerName` | Optional default issuer to use for ingress resources |  |
 | `ingressShim.defaultIssuerKind` | Optional default issuer kind to use for ingress resources |  |
+| `ingressShim.defaultIssuerGroup` | Optional default issuer group to use for ingress resources |  |
 | `prometheus.enabled` | Enable Prometheus monitoring | `true` |
 | `prometheus.servicemonitor.enabled` | Enable Prometheus Operator ServiceMonitor monitoring | `false` |
 | `prometheus.servicemonitor.namespace` | Define namespace where to deploy the ServiceMonitor resource | (namespace where you are deploying) |
