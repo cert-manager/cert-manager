@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"k8s.io/cli-runtime/pkg/genericclioptions"
-
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -30,13 +28,12 @@ import (
 
 // FetchCertificateFromCR fetches the x509 certificate from a CR and stores the certificate in file specified by certFilename.
 // Assumes CR is ready, otherwise returns error.
-func FetchCertificateFromCR(req *cmapiv1alpha2.CertificateRequest, certFileName string,
-	ioStreams genericclioptions.IOStreams) error {
+func FetchCertificateFromCR(req *cmapiv1alpha2.CertificateRequest, certFileName string) error {
 	// If CR not ready yet, error
 	if !apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
 		Type:   cmapiv1alpha2.CertificateRequestConditionReady,
 		Status: cmmeta.ConditionTrue,
-	}) {
+	}) || len(req.Status.Certificate) == 0 {
 		return errors.New("CertificateRequest is not ready yet, unable to fetch certificate")
 	}
 
@@ -46,6 +43,5 @@ func FetchCertificateFromCR(req *cmapiv1alpha2.CertificateRequest, certFileName 
 		return fmt.Errorf("error when writing certificate to file: %w", err)
 	}
 
-	fmt.Fprintf(ioStreams.Out, "Certificate has been stored in file %s\n", certFileName)
 	return nil
 }
