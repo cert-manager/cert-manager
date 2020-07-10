@@ -23,6 +23,7 @@ go_test(
         "//test/unit/gen:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
     ],
 )

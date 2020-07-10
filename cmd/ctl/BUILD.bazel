@@ -36,6 +36,7 @@ filegroup(
         "//cmd/ctl/pkg/create:all-srcs",
         "//cmd/ctl/pkg/renew:all-srcs",
         "//cmd/ctl/pkg/status:all-srcs",
+        "//cmd/ctl/pkg/util:all-srcs",
         "//cmd/ctl/pkg/version:all-srcs",
     ],
     tags = ["automanaged"],

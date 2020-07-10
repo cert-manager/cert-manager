@@ -22,6 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"time"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +36,10 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/util"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -53,6 +58,12 @@ kubectl cert-manager create certificaterequest my-cr --namespace default --from-
 
 # Create a CertificateRequest and store private key in file 'new.key'.
 kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --output-key-file new.key
+
+# Create a CertificateRequest, wait for it to be signed for up to 5 minutes (default) and store the x509 certificate in file 'new.crt'.
+kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --output-cert-file new.crt
+
+# Create a CertificateRequest, wait for it to be signed for up to 20 minutes and store the x509 certificate in file 'my-cr.crt'.
+kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
 `))
 )
 
@@ -71,13 +82,22 @@ type Options struct {
 	CmdNamespace string
 	// boolean indicating if there was an Override in determining CmdNamespace
 	EnforceNamespace bool
-	// Name of file that the generated private key will be written to
+	// Name of file that the generated private key will be stored in
 	// If not specified, the private key will be written to <NameOfCR>.key
 	KeyFilename string
+	// If true, will wait for CertificateRequest to be ready to store the x509 certificate in a file
+	// Command will block until CertificateRequest is ready or timeout as specified by Timeout happens
+	FetchCert bool
+	// Name of file that the generated x509 certificate will be stored in if --fetch-certificate flag is set
+	// If not specified, the private key will be written to <NameOfCR>.crt
+	CertFileName string
 	// Path to a file containing a Certificate resource used as a template
 	// when generating the CertificateRequest resource
 	// Required
 	InputFilename string
+	// Length of time the command blocks to wait on CertificateRequest to be ready if --fetch-certificate flag is set
+	// If not specified, default value is 5 minutes
+	Timeout time.Duration
 
 	genericclioptions.IOStreams
 }
@@ -108,6 +128,12 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 		"Path to a file containing a Certificate resource used as a template when generating the CertificateRequest resource")
 	cmd.Flags().StringVar(&o.KeyFilename, "output-key-file", o.KeyFilename,
 		"Name of file that the generated private key will be written to")
+	cmd.Flags().StringVar(&o.CertFileName, "output-certificate-file", o.CertFileName,
+		"Name of the file the certificate is to be stored in")
+	cmd.Flags().BoolVar(&o.FetchCert, "fetch-certificate", o.FetchCert,
+		"If set to true, command will wait for CertificateRequest to be signed to store x509 certificate in a file")
+	cmd.Flags().DurationVar(&o.Timeout, "timeout", 5*time.Minute,
+		"Time before timeout when waiting for CertificateRequest to be signed, must include unit, e.g. 10m or 1h")
 
 	return cmd
 }
@@ -121,8 +147,12 @@ func (o *Options) Validate(args []string) error {
 		return errors.New("only one argument can be passed in: the name of the CertificateRequest")
 	}
 
-	if o.KeyFilename != "" && (len(o.KeyFilename) < 4 || o.KeyFilename[len(o.KeyFilename)-4:] != ".key") {
-		return errors.New("file to store private key must end in '.key'")
+	if o.KeyFilename != "" && o.CertFileName != "" && o.KeyFilename == o.CertFileName {
+		return errors.New("the file to store private key cannot be the same as the file to store certificate")
+	}
+
+	if !o.FetchCert && o.CertFileName != "" {
+		return errors.New("cannot specify file to store certificate if not waiting for and fetching certificate, please set --fetch-certificate flag")
 	}
 
 	return nil
@@ -182,7 +212,7 @@ func (o *Options) Run(args []string) error {
 	// Convert to v1alpha2 because that version is needed for functions that follow
 	crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1alpha2.SchemeGroupVersion)
 	if err != nil {
-		return fmt.Errorf("failed to convert object into version v1alpha2: %v", err)
+		return fmt.Errorf("failed to convert object into version v1alpha2: %w", err)
 	}
 
 	// Cast Object into Certificate
@@ -193,12 +223,12 @@ func (o *Options) Run(args []string) error {
 
 	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
-		return fmt.Errorf("error when generating new private key for CertificateRequest: %v", err)
+		return fmt.Errorf("error when generating new private key for CertificateRequest: %w", err)
 	}
 
 	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
 	if err != nil {
-		return fmt.Errorf("failed to encode new private key for CertificateRequest: %v", err)
+		return fmt.Errorf("failed to encode new private key for CertificateRequest: %w", err)
 	}
 
 	crName := args[0]
@@ -209,14 +239,14 @@ func (o *Options) Run(args []string) error {
 		keyFileName = o.KeyFilename
 	}
 	if err := ioutil.WriteFile(keyFileName, keyData, 0600); err != nil {
-		return fmt.Errorf("error when writing private key to file: %v", err)
+		return fmt.Errorf("error when writing private key to file: %w", err)
 	}
-	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
+	fmt.Fprintf(o.ErrOut, "Private key written to file %s\n", keyFileName)
 
 	// Build CertificateRequest with name as specified by argument
 	req, err := buildCertificateRequest(crt, keyData, crName)
 	if err != nil {
-		return fmt.Errorf("error when building CertificateRequest: %v", err)
+		return fmt.Errorf("error when building CertificateRequest: %w", err)
 	}
 
 	ns := crt.Namespace
@@ -225,9 +255,39 @@ func (o *Options) Run(args []string) error {
 	}
 	req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("error creating CertificateRequest: %v", err)
+		return fmt.Errorf("error creating CertificateRequest: %w", err)
 	}
-	fmt.Fprintf(o.Out, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
+	fmt.Fprintf(o.ErrOut, "CertificateRequest %s has been created in namespace %s\n", req.Name, req.Namespace)
+
+	if o.FetchCert {
+		fmt.Fprintf(o.ErrOut, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
+			req.Name, req.Namespace)
+		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
+			req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
+			if err != nil {
+				return false, nil
+			}
+			return apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
+				Type:   cmapiv1alpha2.CertificateRequestConditionReady,
+				Status: cmmeta.ConditionTrue,
+			}) && len(req.Status.Certificate) > 0, nil
+		})
+		if err != nil {
+			return fmt.Errorf("error when waiting for CertificateRequest to be signed: %w", err)
+		}
+		fmt.Fprintf(o.ErrOut, "CertificateRequest %v in namespace %v has been signed\n", req.Name, req.Namespace)
+
+		// Fetch x509 certificate and store to file
+		actualCertFileName := req.Name + ".crt"
+		if o.CertFileName != "" {
+			actualCertFileName = o.CertFileName
+		}
+		err = util.FetchCertificateFromCR(req, actualCertFileName)
+		if err != nil {
+			return fmt.Errorf("error when writing certificate to file: %w", err)
+		}
+		fmt.Fprintf(o.ErrOut, "Certificate written to file %s\n", actualCertFileName)
+	}
 
 	return nil
 }
