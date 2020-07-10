@@ -105,7 +105,8 @@ Issuer:
 Secret Name: example-tls
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
-Renewal Time: <none>`,
+Renewal Time: <none>
+No CertificateRequest found for this Certificate`,
 		},
 		"certificate issued and renewal in progress": {
 			certificate: gen.Certificate(crt2Name,
@@ -133,7 +134,12 @@ Issuer:
 Secret Name: example-tls
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
-Renewal Time: <none>`,
+Renewal Time: <none>
+CertificateRequest:
+  Name: testreq-1
+  Namespace: testns-1
+  Conditions:
+    Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"`,
 		},
 	}
 
