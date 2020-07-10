@@ -21,7 +21,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/http/solver"
 	"github.com/jetstack/cert-manager/pkg/logs"
 )
 

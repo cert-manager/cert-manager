@@ -38,9 +38,14 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/readiness"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
-	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
-	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
+
+	issuersacme "github.com/jetstack/cert-manager/pkg/controller/issuers/acme"
+	issuersca "github.com/jetstack/cert-manager/pkg/controller/issuers/ca"
+	issuersselfsigned "github.com/jetstack/cert-manager/pkg/controller/issuers/selfsigned"
+	issuersvault "github.com/jetstack/cert-manager/pkg/controller/issuers/vault"
+	issuersvenafi "github.com/jetstack/cert-manager/pkg/controller/issuers/venafi"
+
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -126,25 +131,44 @@ var (
 
 	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
 
-	defaultEnabledControllers = []string{
-		issuerscontroller.ControllerName,
-		clusterissuerscontroller.ControllerName,
+	ClusterIssuerControllers = []string{
+		issuersselfsigned.ClusterIssuerControllerName,
+		issuersca.ClusterIssuerControllerName,
+		issuersvault.ClusterIssuerControllerName,
+		issuersvenafi.ClusterIssuerControllerName,
+		issuersacme.ClusterIssuerControllerName,
+	}
+
+	defaultEnabledControllers = append([]string{
 		certificatesmetricscontroller.ControllerName,
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
+
+		// CertificateRequest controllers
 		cracmecontroller.CRControllerName,
 		crcacontroller.CRControllerName,
 		crselfsignedcontroller.CRControllerName,
 		crvaultcontroller.CRControllerName,
 		crvenaficontroller.CRControllerName,
-		// certificate controllers
+
+		// Issuer controllers
+		issuersselfsigned.IssuerControllerName,
+		issuersca.IssuerControllerName,
+		issuersvault.IssuerControllerName,
+		issuersvenafi.IssuerControllerName,
+		issuersacme.IssuerControllerName,
+
+		// Certificate controllers
 		trigger.ControllerName,
 		issuing.ControllerName,
 		keymanager.ControllerName,
 		requestmanager.ControllerName,
 		readiness.ControllerName,
-	}
+	},
+		// ClusterIssuer controllers
+		ClusterIssuerControllers...,
+	)
 )
 
 func NewControllerOptions() *ControllerOptions {
