@@ -375,24 +375,9 @@ func TestSign(t *testing.T) {
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(tppCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
-						),
-					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(tppCR,
+						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
@@ -407,7 +392,7 @@ func TestSign(t *testing.T) {
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(tppCR,
+						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
@@ -434,21 +419,6 @@ func TestSign(t *testing.T) {
 					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(cloudCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
-						),
-					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
@@ -559,21 +529,6 @@ func TestSign(t *testing.T) {
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(tppCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
-						),
-					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(tppCR,
@@ -620,21 +575,6 @@ func TestSign(t *testing.T) {
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(cloudCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
-						),
-					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(cloudCR,
@@ -679,21 +619,6 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(tppCRWithCustomFields,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Venafi certificate is requested",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
-						),
-					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
