@@ -33,12 +33,12 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	internalissuer "github.com/jetstack/cert-manager/pkg/controller/internal/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
-	ControllerName = "ingress-shim"
+	ControllerName = "IngressShim"
 )
 
 type defaults struct {
@@ -63,8 +63,8 @@ type controller struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 
-	helper   issuer.Helper
-	defaults defaults
+	issuerGetter internalissuer.Getter
+	defaults     defaults
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -107,7 +107,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 	certificatesInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.certificateDeleted})
 
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	c.issuerGetter = internalissuer.NewGetter(c.issuerLister, c.clusterIssuerLister)
 	c.kClient = ctx.Client
 	c.cmClient = ctx.CMClient
 	c.recorder = ctx.Recorder

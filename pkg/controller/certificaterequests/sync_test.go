@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+	"math/big"
 	"testing"
 	"time"
 
@@ -38,15 +39,17 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/fake"
-	issuerfake "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer/fake"
+	internalissuer "github.com/jetstack/cert-manager/pkg/controller/internal/issuer"
+	fakeinternalissuer "github.com/jetstack/cert-manager/pkg/controller/internal/issuer/fake"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 var (
-	fixedClockStart = time.Now()
-	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
+	fixedClockStart   = time.Now()
+	fixedClock        = fakeclock.NewFakeClock(fixedClockStart)
+	serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 )
 
 func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm) []byte {
@@ -117,6 +120,7 @@ func TestSync(t *testing.T) {
 		gen.AddIssuerCondition(cmapi.IssuerCondition{
 			Type:   cmapi.IssuerConditionReady,
 			Status: cmmeta.ConditionTrue,
+			Reason: "Ready",
 		}),
 	)
 
@@ -136,10 +140,10 @@ func TestSync(t *testing.T) {
 	certECPEMExpired := generateSelfSignedCert(t, baseCR, skEC, fixedClockStart.Add(-time.Hour*13), fixedClockStart.Add(-time.Hour*12))
 
 	tests := map[string]testT{
-		"should return nil (no action) if group name if not 'cert-manager.io' or ''": {
+		"should return nil (no action) if group name if not 'certmanager.k8s.io' or ''": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
-					Group: "not-cert-manager.io",
+					Group: "not-certmanager.k8s.io",
 				}),
 			),
 			builder: &testpkg.Builder{
@@ -207,8 +211,8 @@ func TestSync(t *testing.T) {
 		},
 		"should return error to try again if there was a error getting issuer wasn't a not found error": {
 			certificateRequest: baseCR.DeepCopy(),
-			helper: &issuerfake.Helper{
-				GetGenericIssuerFunc: func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
+			issuerGetter: &fakeinternalissuer.Getter{
+				IssuerFunc: func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
 					return nil, errors.New("this is a network error")
 				},
 			},
@@ -223,8 +227,13 @@ func TestSync(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR,
-					// no type set
-					gen.Issuer(baseIssuer.Name),
+					gen.Issuer(baseIssuer.Name,
+						gen.AddIssuerCondition(cmapi.IssuerCondition{
+							Type:   cmapi.IssuerConditionReady,
+							Status: cmmeta.ConditionTrue,
+						}),
+						// no type set
+					),
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -247,37 +256,8 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
-		"should exit nil and set status pending if referenced issuer is not ready": {
-			certificateRequest: baseCR.DeepCopy(),
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{baseCR,
-					gen.Issuer(baseIssuer.Name,
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             "Pending",
-								Message:            "Referenced issuer does not have a Ready status condition",
-								LastTransitionTime: &nowMetaTime,
-							}),
-						),
-					)),
-				},
-				ExpectedEvents: []string{
-					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
-				},
-			},
-		},
 		"exit nil and no action if the issuer type does not match ours (its not meant for us)": {
-			certificateRequest: baseCR.DeepCopy(),
+			certificateRequest: gen.CertificateRequestFrom(baseCR),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR,
 					gen.Issuer(baseIssuer.Name,
@@ -321,7 +301,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
-		"if the Certificate is already set in the status then return nil and no-op, regardless of condition": {
+		"if the certificate is already set in the status then return nil and no-op, regardless of condition": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestCertificate([]byte("a cert")),
 			),
@@ -542,7 +522,7 @@ type testT struct {
 	builder            *testpkg.Builder
 	issuerImpl         Issuer
 	certificateRequest *cmapi.CertificateRequest
-	helper             *issuerfake.Helper
+	issuerGetter       internalissuer.Getter
 	expectedErr        bool
 }
 
@@ -564,8 +544,8 @@ func runTest(t *testing.T, test testT) {
 	c := New(util.IssuerSelfSigned, test.issuerImpl)
 	c.Register(test.builder.Context)
 
-	if test.helper != nil {
-		c.helper = test.helper
+	if test.issuerGetter != nil {
+		c.issuerGetter = test.issuerGetter
 	}
 
 	test.builder.Start()
@@ -574,6 +554,7 @@ func runTest(t *testing.T, test testT) {
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
+
 	if err == nil && test.expectedErr {
 		t.Errorf("expected to get an error but did not get one")
 	}

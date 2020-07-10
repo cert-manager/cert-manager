@@ -30,8 +30,8 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	internalissuer "github.com/jetstack/cert-manager/pkg/controller/internal/issuer"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -418,7 +418,7 @@ func runTest(t *testing.T, test testT) {
 
 	c := &controller{}
 	c.Register(test.builder.Context)
-	c.helper = issuer.NewHelper(
+	c.issuerGetter = internalissuer.NewGetter(
 		test.builder.SharedInformerFactory.Certmanager().V1alpha2().Issuers().Lister(),
 		test.builder.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers().Lister(),
 	)

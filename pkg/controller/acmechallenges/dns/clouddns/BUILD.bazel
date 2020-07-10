@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["clouddns.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/clouddns",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/controller/acmechallenges/dns/util:go_default_library",
+        "@io_k8s_klog//:go_default_library",
+        "@org_golang_google_api//dns/v1:go_default_library",
+        "@org_golang_google_api//option:go_default_library",
+        "@org_golang_x_net//context:go_default_library",
+        "@org_golang_x_oauth2//google:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["clouddns_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/controller/acmechallenges/dns/util:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@org_golang_google_api//dns/v1:go_default_library",
+        "@org_golang_x_net//context:go_default_library",
+        "@org_golang_x_oauth2//google:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

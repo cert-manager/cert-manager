@@ -966,7 +966,7 @@ func TestSync(t *testing.T) {
 					issuerGroup:                test.DefaultIssuerGroup,
 					autoCertificateAnnotations: []string{testAcmeTLSAnnotation},
 				},
-				helper: &fakeHelper{issuer: test.Issuer},
+				issuerGetter: &fakeGetter{issuer: test.Issuer},
 			}
 			b.Start()
 
@@ -991,11 +991,11 @@ func TestSync(t *testing.T) {
 	}
 }
 
-type fakeHelper struct {
+type fakeGetter struct {
 	issuer cmapi.GenericIssuer
 }
 
-func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
+func (f *fakeGetter) Issuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
 	if f.issuer == nil {
 		return nil, fmt.Errorf("no issuer specified on fake helper")
 	}

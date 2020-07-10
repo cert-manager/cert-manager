@@ -70,7 +70,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 
 	dbg.Info("fetching issuer object referenced by CertificateRequest")
 
-	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
+	issuerObj, err := c.issuerGetter.Issuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		c.reporter.Pending(crCopy, err, "IssuerNotFound",
 			fmt.Sprintf("Referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))

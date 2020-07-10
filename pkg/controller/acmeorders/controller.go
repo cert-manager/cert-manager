@@ -33,13 +33,13 @@ import (
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	issuerinternal "github.com/jetstack/cert-manager/pkg/controller/internal/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type controller struct {
-	// issuer helper is used to obtain references to issuers, used by Sync()
-	helper issuer.Helper
+	// issuerGetter is used to obtain references to issuers, used by Sync()
+	issuerGetter issuerinternal.Getter
 
 	// used to fetch ACME clients used in the controller
 	accountRegistry accounts.Getter
@@ -114,7 +114,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	})
 
 	// instantiate additional helpers used by this controller
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	c.issuerGetter = issuerinternal.NewGetter(c.issuerLister, c.clusterIssuerLister)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
 	// clock is used when setting the failureTime on an Order's status
@@ -153,7 +153,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 var keyFunc = controllerpkg.KeyFunc
 
 const (
-	ControllerName = "orders"
+	ControllerName = "Orders"
 )
 
 func init() {

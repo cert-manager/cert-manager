@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "akamai.go",
+        "edgegridauth.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/akamai",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/controller/acmechallenges/dns/util:go_default_library",
+        "//pkg/util:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@io_k8s_klog//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "akamai_test.go",
+        "edgegridauth_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/controller/acmechallenges/dns/util:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

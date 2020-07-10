@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,17 +22,36 @@ import (
 	"runtime/debug"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
-func newFakeIssuerWithStatus(name string, status v1alpha2.IssuerStatus) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+type fakeIssuer struct{}
+
+func (f *fakeIssuer) Setup(context.Context, cmapi.GenericIssuer) error {
+	return nil
+}
+
+func (f *fakeIssuer) SecretChecker(cmapi.GenericIssuer, *corev1.Secret) bool {
+	return false
+}
+
+func (f *fakeIssuer) TypeChecker(cmapi.GenericIssuer) bool {
+	return true
+}
+
+func newFakeIssuerWithStatus(name string, status cmapi.IssuerStatus) *cmapi.Issuer {
+	return &cmapi.Issuer{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "Issuer",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -51,24 +70,26 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	b.Init()
 	defer b.Stop()
 
-	c := &controller{}
-	c.Register(b.Context)
+	c := &GenericController{
+		issuerContructor: func(*controllerpkg.Context) IssuerBackend { return new(fakeIssuer) },
+	}
+	c.Register(b.Context, "issuer", "clusterissuer")
 	b.Start()
 
 	cmClient := b.FakeCMClient()
 	assertNumberOfActions(t, fatalf, filter(cmClient.Actions()), 0)
 
-	originalIssuer := newFakeIssuerWithStatus("test", v1alpha2.IssuerStatus{})
+	originalIssuer := newFakeIssuerWithStatus("test", cmapi.IssuerStatus{})
 
 	issuer, err := cmClient.CertmanagerV1alpha2().Issuers("testns").Create(context.TODO(), originalIssuer, metav1.CreateOptions{})
 	assertErrIsNil(t, fatalf, err)
 
 	assertNumberOfActions(t, fatalf, filter(cmClient.Actions()), 1)
 
-	newStatus := v1alpha2.IssuerStatus{
-		Conditions: []v1alpha2.IssuerCondition{
+	newStatus := cmapi.IssuerStatus{
+		Conditions: []cmapi.IssuerCondition{
 			{
-				Type:   v1alpha2.IssuerConditionReady,
+				Type:   cmapi.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
 			},
 		},
@@ -76,7 +97,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 
 	issuerCopy := issuer.DeepCopy()
 	issuerCopy.Status = newStatus
-	_, err = c.updateIssuerStatus(issuer, issuerCopy)
+	_, err = c.issuerController.updateIssuerStatus(issuer, issuerCopy)
 	assertErrIsNil(t, fatalf, err)
 
 	actions := filter(cmClient.Actions())
@@ -111,10 +132,10 @@ func assertErrIsNil(t *testing.T, f failfFunc, err error) {
 	}
 }
 
-func assertIsIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1alpha2.Issuer {
-	issuer, ok := obj.(*v1alpha2.Issuer)
+func assertIsIssuer(t *testing.T, f failfFunc, obj runtime.Object) *cmapi.Issuer {
+	issuer, ok := obj.(*cmapi.Issuer)
 	if !ok {
-		f(t, "expected runtime.Object to be of type *v1alpha2.Issuer, but it was %#v", obj)
+		f(t, "expected runtime.Object to be of type *cmapi.Issuer, but it was %#v", obj)
 	}
 	return issuer
 }

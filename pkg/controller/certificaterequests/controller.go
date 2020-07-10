@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	issuer "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/internal/issuer"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
+	internalissuer "github.com/jetstack/cert-manager/pkg/controller/internal/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -46,7 +46,7 @@ type Issuer interface {
 }
 
 type Controller struct {
-	helper issuer.Helper
+	issuerGetter internalissuer.Getter
 
 	// clientset used to update cert-manager API resources
 	cmClient cmclient.Interface
@@ -155,7 +155,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	}
 
 	// create an issuer helper for reading generic issuers
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	c.issuerGetter = internalissuer.NewGetter(c.issuerLister, c.clusterIssuerLister)
 
 	// clock is used to set the FailureTime of failed CertificateRequests
 	c.clock = ctx.Clock
