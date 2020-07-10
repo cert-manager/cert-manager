@@ -7,7 +7,7 @@ go_library(
         "venafi.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/venafi/client/api:go_default_library",
         "@com_github_venafi_vcert//pkg/certificate:go_default_library",
