@@ -63,7 +63,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 	crCopy := cr.DeepCopy()
 
 	defer func() {
-		if _, saveErr := c.updateCertificateRequestStatus(ctx, cr, crCopy); saveErr != nil {
+		if _, saveErr := c.updateCertificateRequestStatusAndAnnotations(ctx, cr, crCopy); saveErr != nil {
 			err = utilerrors.NewAggregate([]error{saveErr, err})
 		}
 	}()
@@ -157,8 +157,15 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 	return nil
 }
 
-func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, new *v1alpha2.CertificateRequest) (*v1alpha2.CertificateRequest, error) {
+func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *v1alpha2.CertificateRequest) (*v1alpha2.CertificateRequest, error) {
 	log := logf.FromContext(ctx, "updateStatus")
+
+	// if annotations changed we have to call .Update() and not .UpdateStatus()
+	if !reflect.DeepEqual(old.Annotations, new.Annotations) {
+		log.V(logf.DebugLevel).Info("updating resource due to change in annotations", "diff", pretty.Diff(old.Annotations, new.Annotations))
+		return c.cmClient.CertmanagerV1alpha2().CertificateRequests(new.Namespace).Update(context.TODO(), new, metav1.UpdateOptions{})
+	}
+
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)
 	if reflect.DeepEqual(oldBytes, newBytes) {

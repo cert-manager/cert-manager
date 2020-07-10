@@ -137,10 +137,6 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		v.reporter.Pending(cr, err, "IssuancePending", "Venafi certificate is requested")
 
 		metav1.SetMetaDataAnnotation(&cr.ObjectMeta, VenafiPickupIDAnnotation, pickupID)
-		_, err = v.cmClient.CertmanagerV1alpha2().CertificateRequests(cr.GetNamespace()).Update(ctx, cr, metav1.UpdateOptions{})
-		if err != nil {
-			return nil, err
-		}
 
 		return nil, nil
 	}
