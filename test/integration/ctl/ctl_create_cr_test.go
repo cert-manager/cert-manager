@@ -349,7 +349,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			},
 			expValidateErr:     false,
 			expRunErr:          true,
-			expErrMsg:          "CertificateRequest in invalid state: Ready Condition is set but status.certificate is empty",
+			expErrMsg:          "error when waiting for CertificateRequest to be signed: timed out waiting for the condition",
 			expNamespace:       ns1,
 			expName:            cr7Name,
 			expKeyFilename:     cr7Name + ".key",
@@ -467,7 +467,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			// If applicable, check the file where the certificate is stored
 			// If the expected error message is the one below, we skip checking
 			// because no certificate will have been written to file
-			if test.fetchCert && test.expErrMsg != "CertificateRequest in invalid state: Ready Condition is set but status.certificate is empty" {
+			if test.fetchCert && test.expErrMsg != "error when waiting for CertificateRequest to be signed: timed out waiting for the condition" {
 				certData, err := ioutil.ReadFile(test.expCertFilename)
 				if err != nil {
 					t.Errorf("error when reading file storing private key: %v", err)
