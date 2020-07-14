@@ -161,11 +161,7 @@ func (o *Options) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	if req == nil {
-		fmt.Fprintf(o.Out, fmt.Sprintf("No CertificateRequest found for this Certificate\n"))
-	} else {
-		fmt.Fprintf(o.Out, fmt.Sprintf("CertificateRequest:%s\n", crInfoString(req)))
-	}
+	fmt.Fprintf(o.Out, crInfoString(req))
 
 	// TODO: print information about secret
 	return nil
@@ -222,6 +218,10 @@ func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) 
 
 // crInfoString returns the information of a CR as a string to be printed as output
 func crInfoString(cr *cmapi.CertificateRequest) string {
+	if cr == nil {
+		return "No CertificateRequest found for this Certificate\n"
+	}
+
 	crFormat := `
   Name: %s
   Namespace: %s
@@ -234,5 +234,6 @@ func crInfoString(cr *cmapi.CertificateRequest) string {
 	if conditionMsg == "" {
 		conditionMsg = "  No Conditions set\n"
 	}
-	return fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
+	infos := fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
+	return fmt.Sprintf("CertificateRequest:%s\n", infos)
 }
