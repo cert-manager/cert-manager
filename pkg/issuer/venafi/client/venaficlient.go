@@ -14,11 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package venafi
+package client
 
 import (
 	"fmt"
 	"time"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 
 	"github.com/Venafi/vcert"
 	"github.com/Venafi/vcert/pkg/certificate"
@@ -26,7 +28,6 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	internalvanafiapi "github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 )
 
 const (
@@ -39,14 +40,16 @@ const (
 type VenafiClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
 	issuer cmapi.GenericIssuer) (Interface, error)
 
+// Interface implements a Venafi client
 type Interface interface {
-	Sign(csrPEM []byte, duration time.Duration, customFields []internalvanafiapi.CustomField) (cert []byte, err error)
+	RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
+	RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 	SetClient(endpoint.Connector)
 }
 
-// Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
+// Venafi is a implementation of vcert library to manager certificates from TPP or Venafi Cloud
 type Venafi struct {
 	// Namespace in which to read resources related to this Issuer from.
 	// For Issuers, this will be the namespace of the Issuer.
@@ -54,7 +57,7 @@ type Venafi struct {
 	namespace     string
 	secretsLister corelisters.SecretLister
 
-	client connector
+	vcertClient connector
 }
 
 // connector exposes a subset of the vcert Connector interface to make stubbing
@@ -67,15 +70,13 @@ type connector interface {
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
-func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer cmapi.GenericIssuer) (Interface, error) {
-
+func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := vcert.NewClient(cfg)
+	vcertClient, err := vcert.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
@@ -83,7 +84,7 @@ func New(namespace string, secretsLister corelisters.SecretLister,
 	return &Venafi{
 		namespace:     namespace,
 		secretsLister: secretsLister,
-		client:        client,
+		vcertClient:   vcertClient,
 	}, nil
 }
 
@@ -99,13 +100,9 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 			return nil, err
 		}
 
-		username := tppSecret.Data[tppUsernameKey]
-		password := tppSecret.Data[tppPasswordKey]
-
-		caBundle := ""
-		if len(tpp.CABundle) > 0 {
-			caBundle = string(tpp.CABundle)
-		}
+		username := string(tppSecret.Data[tppUsernameKey])
+		password := string(tppSecret.Data[tppPasswordKey])
+		caBundle := string(tpp.CABundle)
 
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeTPP,
@@ -115,11 +112,10 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 			LogVerbose:      true,
 			ConnectionTrust: caBundle,
 			Credentials: &endpoint.Authentication{
-				User:     string(username),
-				Password: string(password),
+				User:     username,
+				Password: password,
 			},
 		}, nil
-
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
@@ -131,7 +127,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 		if cloud.APITokenSecretRef.Key != "" {
 			k = cloud.APITokenSecretRef.Key
 		}
-		apiKey := cloudSecret.Data[k]
+		apiKey := string(cloudSecret.Data[k])
 
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeCloud,
@@ -140,23 +136,22 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 			// always enable verbose logging for now
 			LogVerbose: true,
 			Credentials: &endpoint.Authentication{
-				APIKey: string(apiKey),
+				APIKey: apiKey,
 			},
 		}, nil
-
-	default:
-		return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
 	}
+
+	return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
 }
 
 func (v *Venafi) Ping() error {
-	return v.client.Ping()
+	return v.vcertClient.Ping()
 }
 
 func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
-	return v.client.ReadZoneConfiguration()
+	return v.vcertClient.ReadZoneConfiguration()
 }
 
 func (v *Venafi) SetClient(client endpoint.Connector) {
-	v.client = client
+	v.vcertClient = client
 }
