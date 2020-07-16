@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
@@ -149,14 +150,14 @@ func (o *Options) Run(args []string) error {
 	dnsNames := formatStringSlice(crt.Spec.DNSNames)
 	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
 
-	ref, err := reference.GetReference(ctl.Scheme, crt)
+	crtRef, err := reference.GetReference(ctl.Scheme, crt)
 	if err != nil {
 		return err
 	}
 	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
-	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, ref)
-	writer := describe.NewPrefixWriter(o.Out)
-	describe.DescribeEvents(crtEvents, writer)
+	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
+	prefixWriter := util.NewPrefixWriter(o.Out)
+	describe.DescribeEvents(crtEvents, prefixWriter)
 
 	issuerFormat := `Issuer:
   Name: %s
@@ -180,6 +181,17 @@ func (o *Options) Run(args []string) error {
 		return err
 	}
 	fmt.Fprintf(o.Out, crInfoString(req))
+	if req != nil {
+		reqRef, err := reference.GetReference(ctl.Scheme, req)
+		if err != nil {
+			return err
+		}
+		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
+		reqEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
+
+		prefixWriter.SetBaseLevel(1)
+		describe.DescribeEvents(reqEvents, prefixWriter)
+	}
 
 	// TODO: print information about secret
 	return nil
@@ -237,7 +249,7 @@ func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) 
 // crInfoString returns the information of a CR as a string to be printed as output
 func crInfoString(cr *cmapi.CertificateRequest) string {
 	if cr == nil {
-		return "No CertificateRequest found for this Certificate\n"
+		return "No CertificateRequest found for this Certificate"
 	}
 
 	crFormat := `
@@ -253,5 +265,5 @@ func crInfoString(cr *cmapi.CertificateRequest) string {
 		conditionMsg = "  No Conditions set\n"
 	}
 	infos := fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
-	return fmt.Sprintf("CertificateRequest:%s\n", infos)
+	return fmt.Sprintf("CertificateRequest:%s", infos)
 }

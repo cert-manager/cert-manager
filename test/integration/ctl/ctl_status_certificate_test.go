@@ -123,7 +123,7 @@ No CertificateRequest found for this Certificate`,
 			req:            req1,
 			reqStatus:      &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			expErr:         false,
-			// Note: "space" after `Event:` is actually a tab
+			// Note: after `Event:` there is actually a tab, which sometimes shows as a single space, sometimes multiple
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
 Conditions:
@@ -143,7 +143,8 @@ CertificateRequest:
   Name: testreq-1
   Namespace: testns-1
   Conditions:
-    Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"`,
+    Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
+  Events:	<none>`,
 		},
 	}
 
