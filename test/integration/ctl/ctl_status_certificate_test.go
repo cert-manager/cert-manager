@@ -93,12 +93,14 @@ func TestCtlStatusCert(t *testing.T) {
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
 			expErr:         false,
+			// Note: "space" after `Event:` is actually a tab
 			expOutput: `Name: testcrt-1
 Namespace: testns-1
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
 DNS Names:
 - www.example.com
+Events:	<none>
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
@@ -121,6 +123,7 @@ No CertificateRequest found for this Certificate`,
 			req:            req1,
 			reqStatus:      &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			expErr:         false,
+			// Note: "space" after `Event:` is actually a tab
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
 Conditions:
@@ -128,6 +131,7 @@ Conditions:
   Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
 DNS Names:
 - www.example.com
+Events:	<none>
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer

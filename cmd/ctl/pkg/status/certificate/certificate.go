@@ -25,13 +25,17 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/reference"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/describe"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
@@ -118,6 +122,11 @@ func (o *Options) Run(args []string) error {
 	ctx := context.TODO()
 	crtName := args[0]
 
+	clientSet, err := kubernetes.NewForConfig(o.RESTConfig)
+	if err != nil {
+		return err
+	}
+
 	crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(o.Namespace).Get(ctx, crtName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error when getting Certificate resource: %v", err)
@@ -139,6 +148,15 @@ func (o *Options) Run(args []string) error {
 
 	dnsNames := formatStringSlice(crt.Spec.DNSNames)
 	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
+
+	ref, err := reference.GetReference(ctl.Scheme, crt)
+	if err != nil {
+		return err
+	}
+	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
+	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, ref)
+	writer := describe.NewPrefixWriter(o.Out)
+	describe.DescribeEvents(crtEvents, writer)
 
 	issuerFormat := `Issuer:
   Name: %s
