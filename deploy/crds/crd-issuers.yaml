@@ -331,6 +331,13 @@ spec:
                               required:
                               - project
                               properties:
+                                hostedZoneName:
+                                  description: HostedZoneName is an optional field
+                                    that tells cert-manager in which Cloud DNS zone
+                                    the challenge record has to be created. If left
+                                    empty cert-manager will automatically choose a
+                                    zone.
+                                  type: string
                                 project:
                                   type: string
                                 serviceAccountSecretRef:
@@ -2247,6 +2254,13 @@ spec:
                               required:
                               - project
                               properties:
+                                hostedZoneName:
+                                  description: HostedZoneName is an optional field
+                                    that tells cert-manager in which Cloud DNS zone
+                                    the challenge record has to be created. If left
+                                    empty cert-manager will automatically choose a
+                                    zone.
+                                  type: string
                                 project:
                                   type: string
                                 serviceAccountSecretRef:
@@ -4165,6 +4179,13 @@ spec:
                               required:
                               - project
                               properties:
+                                hostedZoneName:
+                                  description: HostedZoneName is an optional field
+                                    that tells cert-manager in which Cloud DNS zone
+                                    the challenge record has to be created. If left
+                                    empty cert-manager will automatically choose a
+                                    zone.
+                                  type: string
                                 project:
                                   type: string
                                 serviceAccountSecretRef:

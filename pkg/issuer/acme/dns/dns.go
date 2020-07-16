@@ -57,7 +57,7 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
+	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool) (*azuredns.DNSProvider, error)
@@ -239,7 +239,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 		}
 
 		// attempt to construct the cloud dns provider
-		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentials(issuer))
+		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentials(issuer), providerConfig.CloudDNS.HostedZoneName)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}

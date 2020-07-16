@@ -349,6 +349,12 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 	// +optional
 	ServiceAccount *cmmeta.SecretKeySelector `json:"serviceAccountSecretRef,omitempty"`
 	Project        string                    `json:"project"`
+
+	// HostedZoneName is an optional field that tells cert-manager in which
+	// Cloud DNS zone the challenge record has to be created.
+	// If left empty cert-manager will automatically choose a zone.
+	// +optional
+	HostedZoneName string `json:"hostedZoneName,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS

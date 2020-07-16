@@ -45,7 +45,7 @@ func TestNewDNSProviderValid(t *testing.T) {
 		t.Skip("skipping live test (requires credentials)")
 	}
 	os.Setenv("GCE_PROJECT", "")
-	_, err := NewDNSProviderCredentials("my-project", util.RecursiveNameservers)
+	_, err := NewDNSProviderCredentials("my-project", util.RecursiveNameservers, "")
 	assert.NoError(t, err)
 	restoreGCloudEnv()
 }
@@ -55,14 +55,14 @@ func TestNewDNSProviderValidEnv(t *testing.T) {
 		t.Skip("skipping live test (requires credentials)")
 	}
 	os.Setenv("GCE_PROJECT", "my-project")
-	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers)
+	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers, "")
 	assert.NoError(t, err)
 	restoreGCloudEnv()
 }
 
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	os.Setenv("GCE_PROJECT", "")
-	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers)
+	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers, "")
 	assert.EqualError(t, err, "Google Cloud project name missing")
 	restoreGCloudEnv()
 }
@@ -72,7 +72,7 @@ func TestLiveGoogleCloudPresent(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers, "")
 	assert.NoError(t, err)
 
 	err = provider.Present(gcloudDomain, "_acme-challenge."+gcloudDomain+".", "123d==")
@@ -84,7 +84,7 @@ func TestLiveGoogleCloudPresentMultiple(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers, "")
 	assert.NoError(t, err)
 
 	// Check that we're able to create multiple entries
@@ -101,9 +101,46 @@ func TestLiveGoogleCloudCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 1)
 
-	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers, "")
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(gcloudDomain, "_acme-challenge."+gcloudDomain+".", "123d==")
 	assert.NoError(t, err)
+}
+
+func TestDNSProvider_getHostedZone(t *testing.T) {
+	testProvider, err := NewDNSProviderCredentials("my-project", util.RecursiveNameservers, "test-zone")
+	assert.NoError(t, err)
+
+	type args struct {
+		domain string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		want     string
+		wantErr  bool
+		provider *DNSProvider
+	}{
+		{
+			name:     "test given hosted zone name",
+			provider: testProvider,
+			want:     "test-zone",
+			wantErr:  false,
+			args:     args{domain: "example.com"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := tt.provider
+			got, err := c.getHostedZone(tt.args.domain)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getHostedZone() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getHostedZone() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

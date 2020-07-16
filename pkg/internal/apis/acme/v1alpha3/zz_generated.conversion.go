@@ -821,6 +821,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha3_ACMEIssuerDNS01Pro
 func autoConvert_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *v1alpha3.ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	out.ServiceAccount = (*meta.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
 	out.Project = in.Project
+	out.HostedZoneName = in.HostedZoneName
 	return nil
 }
 
@@ -832,6 +833,7 @@ func Convert_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01Pro
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha3_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *v1alpha3.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	out.ServiceAccount = (*metav1.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
 	out.Project = in.Project
+	out.HostedZoneName = in.HostedZoneName
 	return nil
 }
 

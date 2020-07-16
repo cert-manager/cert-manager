@@ -310,6 +310,7 @@ type ACMEIssuerDNS01ProviderAkamai struct {
 type ACMEIssuerDNS01ProviderCloudDNS struct {
 	ServiceAccount *cmmeta.SecretKeySelector
 	Project        string
+	HostedZoneName string
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
