@@ -24,6 +24,10 @@ set -o pipefail
 
 # Namespace to deploy into
 NAMESPACE="${NAMESPACE:-ingress-nginx}"
+if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+  # OpenShift needs bind to be in kube-system due to file ownership restrictions
+  NAMESPACE="kube-system"
+fi
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 
@@ -37,7 +41,7 @@ check_tool helm
 require_image "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.33.0" "//devel/addon/ingressnginx:bundle"
 require_image "k8s.gcr.io/defaultbackend-amd64:bazel" "//devel/addon/ingressnginx:bundle"
 
-# Ensure the pebble namespace exists
+# Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
@@ -54,10 +58,12 @@ helm upgrade \
     --set controller.image.pullPolicy=Never \
     --set defaultBackend.image.tag=bazel \
     --set defaultBackend.image.pullPolicy=Never \
-    --set controller.service.clusterIP=10.0.0.15 \
+    --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
     --set admissionWebhooks.enabled=false \
     --set controller.admissionWebhooks.enabled=false \
+    --set controller.image.runAsUser="" \
+    --set controller.defaultBackend.runAsUser="" \
     "$RELEASE_NAME" \
     ingress-nginx/ingress-nginx

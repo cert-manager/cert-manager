@@ -70,6 +70,17 @@ genrule(
 )
 
 genrule(
+    name = "fetch_oc3",
+    srcs = select({
+        ":k8": ["@oc_3_11_linux//:file"],
+    }),
+    outs = ["oc3"],
+    cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "fetch_buildozer",
     srcs = select({
         ":darwin": ["@buildozer_darwin//file"],

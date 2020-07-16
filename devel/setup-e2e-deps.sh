@@ -31,25 +31,25 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
-echo "Installing cert-manager into the kind cluster..."
+echo "Installing cert-manager into the cluster..."
 "${SCRIPT_ROOT}/addon/certmanager/install.sh"
 
 check_bazel
 bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //devel/addon/...
 
-echo "Installing sample-webhook into the kind cluster..."
+echo "Installing sample-webhook into the cluster..."
 "${SCRIPT_ROOT}/addon/samplewebhook/install.sh" &
 
-echo "Installing bind into the kind cluster..."
+echo "Installing bind into the cluster..."
 "${SCRIPT_ROOT}/addon/bind/install.sh" &
 
-echo "Installing pebble into the kind cluster..."
+echo "Installing pebble into the cluster..."
 "${SCRIPT_ROOT}/addon/pebble/install.sh" &
 
-echo "Installing ingress-nginx into the kind cluster..."
+echo "Installing ingress-nginx into the cluster..."
 "${SCRIPT_ROOT}/addon/ingressnginx/install.sh" &
 
-echo "Loading vault into the kind cluster..."
+echo "Loading vault into the cluster..."
 "${SCRIPT_ROOT}/addon/vault/install.sh" &
 
 wait

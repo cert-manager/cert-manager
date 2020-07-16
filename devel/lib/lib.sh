@@ -26,15 +26,26 @@ export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
 export KIND_IMAGE_REPO="kindest/node"
 # Default Kubernetes version to use to 1.17
 export K8S_VERSION=${K8S_VERSION:-1.17}
+# Default OpenShift version to use to 3.11
+export OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"}
+export SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
+export IS_OPENSHIFT="${IS_OPENSHIFT:-"false"}"
+export OPENSHIFT_VERSION="${OPENSHIFT_VERSION:-"3.11"}"
+export SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
+export DNS_SERVER="${SERVICE_IP_PREFIX}.16"
 
 # setup_tools will build and set up the environment to use bazel-provided
 # versions of the tools required for development
 setup_tools() {
   check_bazel
   bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //devel/bin:ginkgo
+  if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+    bazel build //hack/bin:oc3
+  fi
   local bindir="$(bazel info bazel-genfiles)"
   export HELM="${bindir}/hack/bin/helm"
   export KIND="${bindir}/hack/bin/kind"
+  export OC3="${bindir}/hack/bin/oc3"
   export KUBECTL="${bindir}/hack/bin/kubectl"
   export GINKGO="${bindir}/devel/bin/ginkgo"
   # Configure PATH to use bazel provided e2e tools
@@ -81,5 +92,19 @@ require_image() {
   bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 "${BAZEL_TARGET}"
 
   # Load the image into the kind cluster
+  load_image "$IMAGE_NAME"
+}
+
+# load_image will lod an image into the local cluster
+# for a kind cluster it will load it into the cluster
+# with name $KIND_CLUSTER_NAME
+load_image() {
+  IMAGE_NAME="$1"
+  if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+    # No loading into a cluster for OpenShift is needed
+    # as OpenShift shares the Docker daemon the image was
+    # built with
+    return
+  fi
   kind load docker-image --name "$KIND_CLUSTER_NAME" "$IMAGE_NAME"
 }

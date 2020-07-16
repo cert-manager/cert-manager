@@ -1,0 +1,17 @@
+package(default_visibility = ["//visibility:public"])
+
+OC3 = "//hack/bin:oc3"
+KUBECTL = "//hack/bin:kubectl"
+
+sh_binary(
+    name = "create-openshift3",
+    srcs = ["create-openshift3.sh"],
+    args = [
+        "$(location %s)" % OC3,
+        "$(location %s)" % KUBECTL,
+    ],
+    data = [
+        OC3,
+        KUBECTL,
+    ],
+)

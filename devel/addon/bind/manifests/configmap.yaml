@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -34,8 +35,8 @@ data:
     			2419200		; Expire
     			 604800 )	; Negative Cache TTL
     @	IN	NS	localhost.
-    *.ingress-nginx	IN  A 10.0.0.15
-    ingress-nginx	IN	A	10.0.0.15
+    *.ingress-nginx	IN  A {SERVICE_IP_PREFIX}.15
+    ingress-nginx	IN	A	{SERVICE_IP_PREFIX}.15
 
   db.dns01.example.com: |
     ;
@@ -49,4 +50,4 @@ data:
     			2419200		; Expire
     			 604800 )	; Negative Cache TTL
     @	IN	NS	localhost.
-    dummy	IN	A	10.0.0.15
+    dummy	IN	A	{SERVICE_IP_PREFIX}.15

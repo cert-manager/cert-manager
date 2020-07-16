@@ -23,6 +23,7 @@ def install():
     install_staticcheck()
     install_helm()
     install_kubectl()
+    install_oc3()
     install_kind()
 
     # Install golang.org/x/build as kubernetes/repo-infra requires it for the
@@ -152,8 +153,8 @@ def install_helm():
     ## the version numbers in these rules.
     http_archive(
         name = "helm_darwin",
-        sha256 = "05c7748da0ea8d5f85576491cd3c615f94063f20986fd82a0f5658ddc286cdb1",
-        urls = ["https://get.helm.sh/helm-v3.0.2-darwin-amd64.tar.gz"],
+        sha256 = "92b10652b05a150e76995e08910a662c200a8179cfdb16bd51766d0d5ecc981a",
+        urls = ["https://get.helm.sh/helm-v3.1.2-darwin-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -168,8 +169,8 @@ filegroup(
 
     http_archive(
         name = "helm_linux",
-        sha256 = "c6b7aa7e4ffc66e8abb4be328f71d48c643cb8f398d95c74d075cfb348710e1d",
-        urls = ["https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz"],
+        sha256 = "e6be589df85076108c33e12e60cfb85dcd82c5d756a6f6ebc8de0ee505c9fd4c",
+        urls = ["https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -198,6 +199,24 @@ def install_kubectl():
         urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl"],
     )
 
+
+# Define rules for different oc versions
+def install_oc3():
+    http_archive(
+        name = "oc_3_11_linux",
+        sha256 = "4b0f07428ba854174c58d2e38287e5402964c9a9355f6c359d1242efd0990da3",
+        urls = ["https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz"],
+        build_file_content =
+         """
+filegroup(
+     name = "file",
+     srcs = [
+        "openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc",
+     ],
+     visibility = ["//visibility:public"],
+)
+    """,
+    )
 ## Fetch kind images used during e2e tests
 def install_kind():
     # install kind binary

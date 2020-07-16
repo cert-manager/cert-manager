@@ -40,27 +40,28 @@ type dns01Provider interface {
 }
 
 var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
-	rfc := &dnsproviders.RFC2136{}
-
-	testDNSProvider("rfc2136", rfc)
+	// TODO: add better logic to handle other DNS providers
+	testRFC2136DNSProvider()
 })
 
-func testDNSProvider(name string, p dns01Provider) bool {
+func testRFC2136DNSProvider() bool {
+	name := "rfc2136"
 	return Context("With "+name+" credentials configured", func() {
 		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
 		h := f.Helper()
 
-		f.RequireAddon(p)
-
 		issuerName := "test-acme-issuer"
 		certificateName := "test-acme-certificate"
 		certificateSecretName := "test-acme-certificate"
+
+		p := &dnsproviders.RFC2136{}
+		f.RequireAddon(p)
+
 		dnsDomain := ""
 
 		BeforeEach(func() {
-			dnsDomain = p.Details().NewTestDomain()
-
 			By("Creating an Issuer")
+			dnsDomain = p.Details().NewTestDomain()
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
