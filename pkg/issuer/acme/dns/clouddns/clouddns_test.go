@@ -109,7 +109,7 @@ func TestLiveGoogleCloudCleanUp(t *testing.T) {
 }
 
 func TestDNSProvider_getHostedZone(t *testing.T) {
-	testProvicer, err := NewDNSProviderCredentials("my-project", util.RecursiveNameservers, "test-zone")
+	testProvider, err := NewDNSProviderCredentials("my-project", util.RecursiveNameservers, "test-zone")
 	assert.NoError(t, err)
 
 	type args struct {
@@ -124,7 +124,7 @@ func TestDNSProvider_getHostedZone(t *testing.T) {
 	}{
 		{
 			name:     "test given hosted zone name",
-			provider: testProvicer,
+			provider: testProvider,
 			want:     "test-zone",
 			wantErr:  false,
 			args:     args{domain: "example.com"},

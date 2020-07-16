@@ -351,8 +351,8 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 	Project        string                    `json:"project"`
 
 	// HostedZoneName is an optional field that tells cert-manager in which
-	// Cloud DNS zone the challenge record has te be create.
-	// If left empty cert-manager will automatically chose this zone.
+	// Cloud DNS zone the challenge record has to be created.
+	// If left empty cert-manager will automatically choose a zone.
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
 }

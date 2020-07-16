@@ -60,7 +60,7 @@ func NewDNSProvider(project string, saBytes []byte, dns01Nameservers []string, a
 func NewDNSProviderEnvironment(dns01Nameservers []string, hostedZoneName string) (*DNSProvider, error) {
 	project := os.Getenv("GCE_PROJECT")
 	if saFile, ok := os.LookupEnv("GCE_SERVICE_ACCOUNT_FILE"); ok {
-		return NewDNSProviderServiceAccount(project, saFile, dns01Nameservers, "")
+		return NewDNSProviderServiceAccount(project, saFile, dns01Nameservers, hostedZoneName)
 	}
 	return NewDNSProviderCredentials(project, dns01Nameservers, hostedZoneName)
 }
