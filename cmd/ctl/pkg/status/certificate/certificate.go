@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -27,18 +29,19 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
-	"time"
 
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Get details about the current status of a Certificate, such as whether it has been successfully issued and when it will expire.`))
+Get details about the current status of a cert-manager Certificate resource, including information on related resources like CertificateRequest.`))
 
 	example = templates.Examples(i18n.T(`
-# Query status of cert-manager Certificate resource with name my-cert in namespace default
-kubectl cert-manager status certificate my-cert --namespace default
+# Query status of Certificate with name 'my-crt' in namespace 'my-namespace'
+kubectl cert-manager status certificate my-crt --namespace my-namespace
 `))
 )
 
@@ -65,7 +68,7 @@ func NewCmdStatusCert(ioStreams genericclioptions.IOStreams, factory cmdutil.Fac
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "certificate",
-		Short:   "Get details about the current status of a Certificate",
+		Short:   "Get details about the current status of a cert-manager Certificate resource",
 		Long:    long,
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -124,6 +127,7 @@ func (o *Options) Run(args []string) error {
 
 	// Get necessary info from Certificate
 	// Output one line about each type of Condition that is set.
+	// Certificate can have multiple Conditions of different types set, e.g. "Ready" or "Issuing"
 	conditionMsg := ""
 	for _, con := range crt.Status.Conditions {
 		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
@@ -132,9 +136,6 @@ func (o *Options) Run(args []string) error {
 		conditionMsg = "  No Conditions set\n"
 	}
 	fmt.Fprintf(o.Out, fmt.Sprintf("Conditions:\n%s", conditionMsg))
-
-	// TODO: Get CR from certificate if exists. I think I can just look for it without caring what condition is
-	// What about timing issues? When I query condition it's not ready yet, but then looking for crn it's finished and deleted
 
 	dnsNames := formatStringSlice(crt.Spec.DNSNames)
 	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
@@ -150,21 +151,89 @@ func (o *Options) Run(args []string) error {
 	fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", formatTimeString(crt.Status.NotAfter)))
 	fmt.Fprintf(o.Out, fmt.Sprintf("Renewal Time: %s\n", formatTimeString(crt.Status.RenewalTime)))
 
+	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
+	// Try find the CertificateRequest that is owned by crt and has the correct revision
+	reqs, err := o.CMClient.CertmanagerV1alpha2().CertificateRequests(o.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	req, err := findMatchingCR(reqs, crt)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(o.Out, crInfoString(req))
+
 	// TODO: print information about secret
 	return nil
 }
 
+// formatStringSlice takes in a string slice and formats the contents of the slice
+// into a single string where each element of the slice is prefixed with "- " and on a new line
 func formatStringSlice(strings []string) string {
 	result := ""
-	for _, string := range strings {
-		result += "- " + string + "\n"
+	for _, str := range strings {
+		result += "- " + str + "\n"
 	}
 	return result
 }
 
+// formatTimeString returns the time as a string
+// If nil, return "<none>"
 func formatTimeString(t *metav1.Time) string {
 	if t == nil {
 		return "<none>"
 	}
 	return t.Time.Format(time.RFC3339)
+}
+
+// findMatchingCR tries to find a CertificateRequest that is owned by crt and has the correct revision annotated from reqs.
+// If none found returns nil
+// If one found returns the CR
+// If multiple found returns error
+func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) (*cmapi.CertificateRequest, error) {
+	possibleMatches := []*cmapi.CertificateRequest{}
+
+	// CertificateRequest revisions begin from 1.
+	// If no revision is set on the Certificate then assume the revision on the CertificateRequest should be 1.
+	// If revision is set on the Certificate then revision on the CertificateRequest should be crt.Status.Revision + 1.
+	nextRevision := 1
+	if crt.Status.Revision != nil {
+		nextRevision = *crt.Status.Revision + 1
+	}
+	for _, req := range reqs.Items {
+		if predicate.CertificateRequestRevision(nextRevision)(&req) &&
+			predicate.ResourceOwnedBy(crt)(&req) {
+			possibleMatches = append(possibleMatches, &req)
+		}
+	}
+
+	if len(possibleMatches) < 1 {
+		return nil, nil
+	} else if len(possibleMatches) == 1 {
+		return possibleMatches[0], nil
+	} else {
+		return nil, errors.New("found multiple certificate requests with expected revision and owner")
+	}
+}
+
+// crInfoString returns the information of a CR as a string to be printed as output
+func crInfoString(cr *cmapi.CertificateRequest) string {
+	if cr == nil {
+		return "No CertificateRequest found for this Certificate\n"
+	}
+
+	crFormat := `
+  Name: %s
+  Namespace: %s
+  Conditions:
+  %s`
+	conditionMsg := ""
+	for _, con := range cr.Status.Conditions {
+		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
+	}
+	if conditionMsg == "" {
+		conditionMsg = "  No Conditions set\n"
+	}
+	infos := fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
+	return fmt.Sprintf("CertificateRequest:%s\n", infos)
 }
