@@ -46,7 +46,6 @@ type CreateCRTest struct {
 	timeout        time.Duration
 	crStatus       cmapiv1alpha2.CertificateRequestStatus
 
-	expValidateErr     bool
 	expRunErr          bool
 	expErrMsg          string
 	expNamespace       string
@@ -85,7 +84,6 @@ func TestCtlCreateCRBehaviourBeforeAnythingIsCreated(t *testing.T) {
 			inputArgs:      []string{cr3Name},
 			inputNamespace: ns2,
 			keyFilename:    "",
-			expValidateErr: false,
 			expRunErr:      true,
 			expErrMsg:      "the namespace from the provided object \"testns-1\" does not match the namespace \"testns-2\". You must pass '--namespace=testns-1' to perform this operation.",
 		},
@@ -94,23 +92,12 @@ func TestCtlCreateCRBehaviourBeforeAnythingIsCreated(t *testing.T) {
 			inputArgs:      []string{cr4Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
-			expValidateErr: false,
 			expRunErr:      true,
 			expErrMsg:      "decoded object is not a v1alpha2 Certificate",
-		},
-		"CR name not passed as arg": {
-			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
-			inputArgs:      []string{},
-			inputNamespace: ns1,
-			keyFilename:    "",
-			expValidateErr: true,
-			expRunErr:      false,
-			expErrMsg:      "the name of the CertificateRequest to be created has to be provided as argument",
 		},
 	}
 
 	for name, test := range tests {
-		// Run ctl create cr command with input options
 		t.Run(name, func(t *testing.T) {
 			streams, _, _, _ := genericclioptions.NewTestIOStreams()
 
@@ -132,17 +119,7 @@ func TestCtlCreateCRBehaviourBeforeAnythingIsCreated(t *testing.T) {
 			// Validating args and flags
 			err := opts.Validate(test.inputArgs)
 			if err != nil {
-				if !test.expValidateErr {
-					t.Errorf("got unexpected error when validating args and flags: %v", err)
-				} else if err.Error() != test.expErrMsg {
-					t.Errorf("got unexpected error when validating args and flags, expected: %v; actual: %v", test.expErrMsg, err)
-				}
-				return
-			} else {
-				// got no error
-				if test.expValidateErr {
-					t.Errorf("expected but got no error validating args and flags")
-				}
+				t.Fatal(err)
 			}
 
 			// Create CR
@@ -186,7 +163,6 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 			inputArgs:      []string{cr5Name},
 			inputNamespace: ns1,
 			keyFilename:    "test.key",
-			expValidateErr: false,
 			expRunErr:      true,
 			expErrMsg:      fmt.Sprintf("error creating CertificateRequest: certificaterequests.cert-manager.io %q already exists", cr5Name),
 			expKeyFilename: "test.key",
@@ -194,7 +170,6 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		// Run ctl create cr command with input options
 		t.Run(name, func(t *testing.T) {
 			streams, _, _, _ := genericclioptions.NewTestIOStreams()
 
@@ -223,20 +198,10 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 			// Validating args and flags
 			err = opts.Validate(test.inputArgs)
 			if err != nil {
-				if !test.expValidateErr {
-					t.Errorf("got unexpected error when validating args and flags: %v", err)
-				} else if err.Error() != test.expErrMsg {
-					t.Errorf("got unexpected error when validating args and flags, expected: %v; actual: %v", test.expErrMsg, err)
-				}
-				return
-			} else {
-				// got no error
-				if test.expValidateErr {
-					t.Errorf("expected but got no error validating args and flags")
-				}
+				t.Fatal(err)
 			}
 
-			// Create CR
+			// Run ctl create cr command with input options
 			err = opts.Run(test.inputArgs)
 			if err != nil {
 				if !test.expRunErr {
@@ -295,7 +260,6 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			inputArgs:      []string{cr1Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
-			expValidateErr: false,
 			expRunErr:      false,
 			expNamespace:   ns1,
 			expName:        cr1Name,
@@ -306,7 +270,6 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			inputArgs:      []string{cr2Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
-			expValidateErr: false,
 			expRunErr:      false,
 			expNamespace:   ns1,
 			expName:        cr2Name,
@@ -317,7 +280,6 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			inputArgs:      []string{cr5Name},
 			inputNamespace: ns1,
 			keyFilename:    "test.key",
-			expValidateErr: false,
 			expRunErr:      false,
 			expNamespace:   ns1,
 			expName:        cr5Name,
@@ -336,7 +298,6 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 				},
 				Certificate: exampleCertificate,
 			},
-			expValidateErr:     false,
 			expRunErr:          false,
 			expNamespace:       ns1,
 			expName:            cr6Name,
@@ -356,7 +317,6 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 					{Type: cmapiv1alpha2.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue},
 				},
 			},
-			expValidateErr:     false,
 			expRunErr:          true,
 			expErrMsg:          "error when waiting for CertificateRequest to be signed: timed out waiting for the condition",
 			expNamespace:       ns1,
@@ -368,7 +328,6 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		// Run ctl create cr command with input options
 		t.Run(name, func(t *testing.T) {
 			streams, _, _, _ := genericclioptions.NewTestIOStreams()
 
@@ -392,17 +351,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			// Validating args and flags
 			err := opts.Validate(test.inputArgs)
 			if err != nil {
-				if !test.expValidateErr {
-					t.Errorf("got unexpected error when validating args and flags: %v", err)
-				} else if err.Error() != test.expErrMsg {
-					t.Errorf("got unexpected error when validating args and flags, expected: %v; actual: %v", test.expErrMsg, err)
-				}
-				return
-			} else {
-				// got no error
-				if test.expValidateErr {
-					t.Errorf("expected but got no error validating args and flags")
-				}
+				t.Fatal(err)
 			}
 
 			if test.fetchCert {
@@ -433,7 +382,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 				}()
 			}
 
-			// Create CR
+			// Run ctl create cr command with input options
 			err = opts.Run(test.inputArgs)
 			if err != nil {
 				if !test.expRunErr {
