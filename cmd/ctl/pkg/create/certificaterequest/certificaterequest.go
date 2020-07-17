@@ -147,6 +147,10 @@ func (o *Options) Validate(args []string) error {
 		return errors.New("only one argument can be passed in: the name of the CertificateRequest")
 	}
 
+	if o.InputFilename == "" {
+		return errors.New("the path to a YAML manifest of a Certificate resource cannot be empty, please specify by using --from-certificate-file flag")
+	}
+
 	if o.KeyFilename != "" && o.CertFileName != "" && o.KeyFilename == o.CertFileName {
 		return errors.New("the file to store private key cannot be the same as the file to store certificate")
 	}
