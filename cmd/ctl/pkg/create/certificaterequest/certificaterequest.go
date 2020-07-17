@@ -192,13 +192,13 @@ func (o *Options) Run(args []string) error {
 		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: []string{o.InputFilename}}).Flatten().Do()
 
 	if err := r.Err(); err != nil {
-		return fmt.Errorf("error when getting Result from Builder: %s", err)
+		return err
 	}
 
 	singleItemImplied := false
 	infos, err := r.IntoSingleItemImplied(&singleItemImplied).Infos()
 	if err != nil {
-		return fmt.Errorf("error when getting infos out of Result: %s", err)
+		return err
 	}
 
 	// Ensure only one object per command
