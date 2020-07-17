@@ -249,5 +249,9 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Spec.PriorityClassName = podTempl.Spec.PriorityClassName
 	}
 
+	if podTempl.Spec.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = podTempl.Spec.ServiceAccountName
+	}
+
 	return pod
 }

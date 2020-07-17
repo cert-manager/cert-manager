@@ -296,6 +296,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 												Effect:   "NoSchedule",
 											},
 										},
+										ServiceAccountName: "cert-manager",
 									},
 								},
 							},
@@ -326,6 +327,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					},
 				}
 				resultingPod.Spec.PriorityClassName = "high"
+				resultingPod.Spec.ServiceAccountName = "cert-manager"
 				s.testResources[createdPodKey] = resultingPod
 
 				s.Builder.Sync()
