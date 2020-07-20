@@ -48,6 +48,12 @@ import (
 
 const (
 	ControllerName = "CertificateTrigger"
+
+	// the amount of time after the LastFailureTime of a Certificate
+	// before the request should be retried.
+	// In future this should be replaced with a more dynamic exponential
+	// back-off algorithm.
+	retryAfterLastFailure = time.Hour
 )
 
 // This controller observes the state of the certificate's currently
@@ -147,9 +153,23 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// ensure a resync is scheduled in the future so that we re-check
-	// Certificate resources and trigger them near expiry time
-	c.scheduleRecheckOfCertificateIfRequired(log, key, crt.Status.RenewalTime)
+	// check if we have had a recent failure, and if so do not trigger a
+	// re-issuance immediately
+	if crt.Status.LastFailureTime != nil {
+		now := c.clock.Now()
+		retryAfter := crt.Status.LastFailureTime.Add(retryAfterLastFailure)
+		if now.Before(retryAfter) {
+			log.Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_after", retryAfter)
+			c.scheduleRecheckOfCertificateIfRequired(log, key, retryAfter.Sub(now))
+			return nil
+		}
+	}
+
+	if crt.Status.RenewalTime != nil {
+		// ensure a resync is scheduled in the future so that we re-check
+		// Certificate resources and trigger them near expiry time
+		c.scheduleRecheckOfCertificateIfRequired(log, key, crt.Status.RenewalTime.Time.Sub(c.clock.Now()))
+	}
 
 	input, err := c.gatherer.DataForCertificate(ctx, crt)
 	if err != nil {
@@ -160,16 +180,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	if !reissue {
 		// no re-issuance required, return early
 		return nil
-	}
-
-	// check if we have had a recent failure, and if so do not trigger a
-	// reissue immediately
-	if crt.Status.LastFailureTime != nil {
-		if crt.Status.LastFailureTime.Add(time.Hour).After(c.clock.Now()) {
-			durationUntilRetry := c.clock.Now().Sub(crt.Status.LastFailureTime.Time)
-			log.Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_in", durationUntilRetry.String())
-			return nil
-		}
 	}
 
 	crt = crt.DeepCopy()
@@ -184,13 +194,11 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 }
 
 // scheduleRecheckOfCertificateIfRequired will schedule the resource with the
-// given key to be re-queued for processing at the given time (if not nil).
-func (c *controller) scheduleRecheckOfCertificateIfRequired(log logr.Logger, key string, renewalTime *metav1.Time) {
-	if renewalTime == nil {
-		return
-	}
-
-	durationUntilRenewalTime := renewalTime.Sub(c.clock.Now())
+// given key to be re-queued for processing after the given amount of time
+// has elapsed.
+// If the 'durationUntilRenewalTime' is less than zero, it will not be
+// queued again.
+func (c *controller) scheduleRecheckOfCertificateIfRequired(log logr.Logger, key string, durationUntilRenewalTime time.Duration) {
 	// don't schedule a re-queue if the time is in the past.
 	// if it is in the past, the resource will be triggered during the
 	// current call to the ProcessItem method. If we added the item to the
