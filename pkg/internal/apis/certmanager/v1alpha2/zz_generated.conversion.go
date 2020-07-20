@@ -824,7 +824,17 @@ func Convert_certmanager_ClusterIssuer_To_v1alpha2_ClusterIssuer(in *certmanager
 
 func autoConvert_v1alpha2_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1alpha2.ClusterIssuerList, out *certmanager.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.ClusterIssuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.ClusterIssuer, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha2_ClusterIssuer_To_certmanager_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -835,7 +845,17 @@ func Convert_v1alpha2_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1a
 
 func autoConvert_certmanager_ClusterIssuerList_To_v1alpha2_ClusterIssuerList(in *certmanager.ClusterIssuerList, out *v1alpha2.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha2.ClusterIssuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1alpha2.ClusterIssuer, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_ClusterIssuer_To_v1alpha2_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -905,7 +925,16 @@ func Convert_certmanager_IssuerCondition_To_v1alpha2_IssuerCondition(in *certman
 }
 
 func autoConvert_v1alpha2_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha2.IssuerConfig, out *certmanager.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*acme.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(acme.ACMEIssuer)
+		// TODO: Inefficient conversion - can we improve it?
+		if err := s.Convert(*in, *out, 0); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	out.CA = (*certmanager.CAIssuer)(unsafe.Pointer(in.CA))
 	out.Vault = (*certmanager.VaultIssuer)(unsafe.Pointer(in.Vault))
 	out.SelfSigned = (*certmanager.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
@@ -919,7 +948,16 @@ func Convert_v1alpha2_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha2.Issu
 }
 
 func autoConvert_certmanager_IssuerConfig_To_v1alpha2_IssuerConfig(in *certmanager.IssuerConfig, out *v1alpha2.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*acmev1alpha2.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(acmev1alpha2.ACMEIssuer)
+		// TODO: Inefficient conversion - can we improve it?
+		if err := s.Convert(*in, *out, 0); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	out.CA = (*v1alpha2.CAIssuer)(unsafe.Pointer(in.CA))
 	out.Vault = (*v1alpha2.VaultIssuer)(unsafe.Pointer(in.Vault))
 	out.SelfSigned = (*v1alpha2.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
@@ -934,7 +972,17 @@ func Convert_certmanager_IssuerConfig_To_v1alpha2_IssuerConfig(in *certmanager.I
 
 func autoConvert_v1alpha2_IssuerList_To_certmanager_IssuerList(in *v1alpha2.IssuerList, out *certmanager.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.Issuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.Issuer, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha2_Issuer_To_certmanager_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -945,7 +993,17 @@ func Convert_v1alpha2_IssuerList_To_certmanager_IssuerList(in *v1alpha2.IssuerLi
 
 func autoConvert_certmanager_IssuerList_To_v1alpha2_IssuerList(in *certmanager.IssuerList, out *v1alpha2.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha2.Issuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1alpha2.Issuer, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_Issuer_To_v1alpha2_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 

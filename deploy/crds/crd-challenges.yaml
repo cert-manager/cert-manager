@@ -347,6 +347,51 @@ spec:
                         enum:
                         - None
                         - Follow
+                      designate:
+                        description: Use the OpenStack Designate API to manage DNS01
+                          challenge records.
+                        type: object
+                        required:
+                        - authPasswordSecretRef
+                        - authURL
+                        - projectDomainName
+                        - projectName
+                        - regionName
+                        - userDomainName
+                        - userName
+                        - zoneName
+                        properties:
+                          authPasswordSecretRef:
+                            description: A reference to a specific 'key' within a
+                              Secret resource. In some instances, `key` is a required
+                              field.
+                            type: object
+                            required:
+                            - name
+                            properties:
+                              key:
+                                description: The key of the entry in the Secret resource's
+                                  `data` field to be used. Some instances of this
+                                  field may be defaulted, in others it may be required.
+                                type: string
+                              name:
+                                description: 'Name of the resource being referred
+                                  to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                type: string
+                          authURL:
+                            type: string
+                          projectDomainName:
+                            type: string
+                          projectName:
+                            type: string
+                          regionName:
+                            type: string
+                          userDomainName:
+                            type: string
+                          userName:
+                            type: string
+                          zoneName:
+                            type: string
                       digitalocean:
                         description: Use the DigitalOcean DNS API to manage DNS01
                           challenge records.

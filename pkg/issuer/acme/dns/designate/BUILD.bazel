@@ -11,14 +11,14 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
-        "//vendor/github.com/gophercloud/gophercloud:go_default_library",
-        "//vendor/github.com/gophercloud/gophercloud/openstack:go_default_library",
-        "//vendor/github.com/gophercloud/gophercloud/openstack/identity/v3/tokens:go_default_library",
-        "//vendor/github.com/gophercloud/gophercloud/pagination:go_default_library",
-        "//vendor/github.com/pkg/errors:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
+        "@com_github_gophercloud_gophercloud//:go_default_library",
+        "@com_github_gophercloud_gophercloud//openstack:go_default_library",
         "@com_github_gophercloud_gophercloud//openstack/dns/v2/recordsets:go_default_library",
         "@com_github_gophercloud_gophercloud//openstack/dns/v2/zones:go_default_library",
+        "@com_github_gophercloud_gophercloud//openstack/identity/v3/tokens:go_default_library",
+        "@com_github_gophercloud_gophercloud//pagination:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
     ],
 )
 
@@ -26,7 +26,7 @@ go_test(
     name = "go_default_test",
     srcs = ["designate_test.go"],
     embed = [":go_default_library"],
-    deps = ["//vendor/github.com/stretchr/testify/assert:go_default_library"],
+    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
 )
 
 filegroup(
