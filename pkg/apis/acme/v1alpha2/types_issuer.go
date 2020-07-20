@@ -299,6 +299,10 @@ type ACMEChallengeSolverDNS01 struct {
 	// +optional
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
 
+	// Use the OpenStack Designate API to manage DNS01 challenge records.
+	// +optional
+	Designate *ACMEIssuerDNS01ProviderDesignate `json:"designate,omitempty"`
+
 	// Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage
 	// DNS01 challenge records.
 	// +optional
@@ -380,6 +384,19 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
 	Token cmmeta.SecretKeySelector `json:"tokenSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderDesignate is a structure containing the DNS
+// configuration for OpenStack Designate domains.
+type ACMEIssuerDNS01ProviderDesignate struct {
+	AuthURL           string                   `json:"authURL"`
+	RegionName        string                   `json:"regionName"`
+	UserName          string                   `json:"userName"`
+	UserDomainName    string                   `json:"userDomainName"`
+	ProjectName       string                   `json:"projectName"`
+	ProjectDomainName string                   `json:"projectDomainName"`
+	ZoneName          string                   `json:"zoneName"`
+	Password          cmmeta.SecretKeySelector `json:"authPasswordSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53

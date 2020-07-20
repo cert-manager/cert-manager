@@ -20,6 +20,7 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/google/gofuzz v1.1.0
+	github.com/gophercloud/gophercloud v0.1.0
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
 	github.com/hashicorp/vault/api v1.0.4

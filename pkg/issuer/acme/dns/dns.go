@@ -38,6 +38,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/designate"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
@@ -63,6 +64,7 @@ type dnsProviderConstructors struct {
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	designate    func(authURL, regionName, userName, userDomainName, password, projectName, projectDomainName, zoneName string) (*designate.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -372,6 +374,30 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 		if err != nil {
 			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
+	case providerConfig.Designate != nil:
+		clientSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Designate.Password.Name)
+		if err != nil {
+			return nil, providerConfig, fmt.Errorf("error getting designate client secret: %s", err.Error())
+		}
+		passwordBytes, ok := clientSecret.Data[providerConfig.Designate.Password.Key]
+		if !ok {
+			return nil, providerConfig, fmt.Errorf("error getting password for openstack authentication. key '%s' not found in secret %s",
+				providerConfig.Designate.Password.Key, providerConfig.Designate.Password.Name)
+		}
+
+		impl, err = s.dnsProviderConstructors.designate(
+			providerConfig.Designate.AuthURL,
+			providerConfig.Designate.RegionName,
+			providerConfig.Designate.UserName,
+			providerConfig.Designate.UserDomainName,
+			string(passwordBytes),
+			providerConfig.Designate.ProjectName,
+			providerConfig.Designate.ProjectDomainName,
+			providerConfig.Designate.ZoneName,
+		)
+		if err != nil {
+			return nil, providerConfig, fmt.Errorf("error instantiating openstack designate challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, providerConfig, fmt.Errorf("no dns provider config specified for challenge")
 	}
@@ -481,6 +507,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			digitalocean.NewDNSProviderCredentials,
+			designate.NewDNSProviderCredentials,
 		},
 		webhookSolvers: initialized,
 	}, nil
