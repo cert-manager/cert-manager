@@ -156,6 +156,20 @@ func TestSign(t *testing.T) {
 			expectedCert: testCertBundle,
 			expectedCA:   testCertBundle,
 		},
+
+		"vault issuer with namespace specified": {
+			csrPEM: csrPEM,
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{Namespace: "test"}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: ioutil.NopCloser(bytes.NewReader(bundleData))},
+			}, nil),
+			expectedErr:  nil,
+			expectedCert: testCertBundle,
+			expectedCA:   testCertBundle,
+		},
 	}
 
 	for name, test := range tests {

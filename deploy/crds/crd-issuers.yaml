@@ -1834,6 +1834,12 @@ spec:
                       the TLS connection.
                     type: string
                     format: byte
+                  namespace:
+                    description: 'Name of the vault namespace. Namespaces is a set
+                      of features within Vault Enterprise that allows Vault environments
+                      to support Secure Multi-tenancy. e.g: "ns1" More about namespaces
+                      can be found here https://www.vaultproject.io/docs/enterprise/namespaces'
+                    type: string
                   path:
                     description: 'Path is the mount path of the Vault PKI backend''s
                       `sign` endpoint, e.g: "my_pki_mount/sign/my-role-name".'
@@ -3757,6 +3763,12 @@ spec:
                       the TLS connection.
                     type: string
                     format: byte
+                  namespace:
+                    description: 'Name of the vault namespace. Namespaces is a set
+                      of features within Vault Enterprise that allows Vault environments
+                      to support Secure Multi-tenancy. e.g: "ns1" More about namespaces
+                      can be found here https://www.vaultproject.io/docs/enterprise/namespaces'
+                    type: string
                   path:
                     description: 'Path is the mount path of the Vault PKI backend''s
                       `sign` endpoint, e.g: "my_pki_mount/sign/my-role-name".'
@@ -5682,6 +5694,12 @@ spec:
                       the TLS connection.
                     type: string
                     format: byte
+                  namespace:
+                    description: 'Name of the vault namespace. Namespaces is a set
+                      of features within Vault Enterprise that allows Vault environments
+                      to support Secure Multi-tenancy. e.g: "ns1" More about namespaces
+                      can be found here https://www.vaultproject.io/docs/enterprise/namespaces'
+                    type: string
                   path:
                     description: 'Path is the mount path of the Vault PKI backend''s
                       `sign` endpoint, e.g: "my_pki_mount/sign/my-role-name".'

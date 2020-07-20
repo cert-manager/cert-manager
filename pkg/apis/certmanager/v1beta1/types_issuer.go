@@ -194,6 +194,11 @@ type VaultIssuer struct {
 	// "my_pki_mount/sign/my-role-name".
 	Path string `json:"path"`
 
+	// Name of the vault namespace. Namespaces is a set of features within Vault Enterprise that allows Vault environments to support Secure Multi-tenancy. e.g: "ns1"
+	// More about namespaces can be found here https://www.vaultproject.io/docs/enterprise/namespaces
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
 	// PEM encoded CA bundle used to validate Vault server certificate. Only used
 	// if the Server URL is using HTTPS protocol. This parameter is ignored for
 	// plain HTTP protocol connection. If not set the system root certificates
