@@ -34,19 +34,6 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
-echo "Ensuring a cluster exists..."
-if [[ "$IS_OPENSHIFT" == "true" ]] ; then
-  if [[ "$OPENSHIFT_VERSION" =~  3\..* ]] ; then
-    "${SCRIPT_ROOT}/cluster/create-openshift3.sh"
-  else
-    echo "Unsupported OpenShift version: ${OPENSHIFT_VERSION}"
-    exit 1
-  fi
-else
-  trap "export_logs" ERR
-  "${SCRIPT_ROOT}/cluster/create-kind.sh"
-fi
-
 export SERVICE_IP_PREFIX="10.0.0"
 if [[ "$IS_OPENSHIFT" == "true" ]] ; then
   export SERVICE_IP_PREFIX="172.30.0"
@@ -63,8 +50,18 @@ while ! docker network inspect kind ; do
   sleep 100ms
 done
 
-echo "Ensuring a kind cluster exists..."
-"${SCRIPT_ROOT}/cluster/create.sh"
+echo "Ensuring a cluster exists..."
+if [[ "$IS_OPENSHIFT" == "true" ]] ; then
+  if [[ "$OPENSHIFT_VERSION" =~  3\..* ]] ; then
+    "${SCRIPT_ROOT}/cluster/create-openshift3.sh"
+  else
+    echo "Unsupported OpenShift version: ${OPENSHIFT_VERSION}"
+    exit 1
+  fi
+else
+  trap "export_logs" ERR
+  "${SCRIPT_ROOT}/cluster/create-kind.sh"
+fi
 
 echo "Ensuring all e2e test dependencies are installed..."
 "${SCRIPT_ROOT}/setup-e2e-deps.sh"
