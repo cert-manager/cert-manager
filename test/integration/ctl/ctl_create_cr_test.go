@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -80,7 +81,7 @@ func TestCtlCreateCRBehaviourBeforeAnythingIsCreated(t *testing.T) {
 
 	tests := map[string]CreateCRTest{
 		"conflicting namespaces defined in flag and file": {
-			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr3Name},
 			inputNamespace: ns2,
 			keyFilename:    "",
@@ -88,7 +89,7 @@ func TestCtlCreateCRBehaviourBeforeAnythingIsCreated(t *testing.T) {
 			expErrMsg:      "the namespace from the provided object \"testns-1\" does not match the namespace \"testns-2\". You must pass '--namespace=testns-1' to perform this operation.",
 		},
 		"file passed in defines resource other than certificate": {
-			inputFile:      testdataPath + "create_cr_issuer.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_issuer.yaml"),
 			inputArgs:      []string{cr4Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -130,11 +131,9 @@ func TestCtlCreateCRBehaviourBeforeAnythingIsCreated(t *testing.T) {
 				} else if err.Error() != test.expErrMsg {
 					t.Errorf("got unexpected error when trying to create CR, expected: %v; actual: %v", test.expErrMsg, err)
 				}
-			} else {
+			} else if test.expRunErr {
 				// got no error
-				if test.expRunErr {
-					t.Errorf("expected but got no error when creating CR")
-				}
+				t.Errorf("expected but got no error when creating CR")
 			}
 		})
 	}
@@ -159,7 +158,7 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 
 	tests := map[string]CreateCRTest{
 		"path to file to store private key provided": {
-			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr5Name},
 			inputNamespace: ns1,
 			keyFilename:    "test.key",
@@ -256,7 +255,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 
 	tests := map[string]CreateCRTest{
 		"v1alpha2 Certificate given": {
-			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr1Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -266,7 +265,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			expKeyFilename: cr1Name + ".key",
 		},
 		"v1alpha3 Certificate given": {
-			inputFile:      testdataPath + "create_cr_v1alpha3_cert_with_ns1.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_v1alpha3_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr2Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -276,7 +275,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			expKeyFilename: cr2Name + ".key",
 		},
 		"path to file to store private key provided": {
-			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr5Name},
 			inputNamespace: ns1,
 			keyFilename:    "test.key",
@@ -286,7 +285,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			expKeyFilename: "test.key",
 		},
 		"fetch flag set and CR will be ready and status.certificate set": {
-			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr6Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -306,7 +305,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			expCertFileContent: exampleCertificate,
 		},
 		"fetch flag set and CR will be ready but status.certificate empty": {
-			inputFile:      testdataPath + "create_cr_cert_with_ns1.yaml",
+			inputFile:      path.Join(testdataPath, "create_cr_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr7Name},
 			inputNamespace: ns1,
 			keyFilename:    "",
@@ -444,7 +443,7 @@ func getTestDataDir(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return testWorkingDirectory + "/testdata/"
+	return path.Join(testWorkingDirectory, "testdata")
 }
 
 // setupPathForTest sets up a tmp directory and cd into it for tests as the command being tested creates files

@@ -80,22 +80,21 @@ func TestValidate(t *testing.T) {
 				InputFilename: test.inputFile,
 				KeyFilename:   test.keyFilename,
 				CertFileName:  test.certFilename,
+				FetchCert:     test.fetchCert,
 			}
 
 			// Validating args and flags
 			err := opts.Validate(test.inputArgs)
 			if err != nil {
 				if !test.expErr {
-					t.Errorf("got unexpected error when validating args and flags: %v", err)
-				} else if err.Error() != test.expErrMsg {
-					t.Errorf("got unexpected error when validating args and flags, expected: %v; actual: %v", test.expErrMsg, err)
+					t.Fatalf("got unexpected error when validating args and flags: %v", err)
 				}
-				return
-			} else {
+				if err.Error() != test.expErrMsg {
+					t.Fatalf("got unexpected error when validating args and flags, expected: %v; actual: %v", test.expErrMsg, err)
+				}
+			} else if test.expErr {
 				// got no error
-				if test.expErr {
-					t.Errorf("expected but got no error validating args and flags")
-				}
+				t.Errorf("expected but got no error validating args and flags")
 			}
 		})
 	}
