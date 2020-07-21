@@ -162,7 +162,11 @@ func (o *Options) Run(args []string) error {
 	issuerFormat := `Issuer:
   Name: %s
   Kind: %s`
-	fmt.Fprintf(o.Out, fmt.Sprintf(issuerFormat+"\n", crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Kind))
+	issuerKind := crt.Spec.IssuerRef.Kind
+	if issuerKind == "" {
+		issuerKind = "Issuer"
+	}
+	fmt.Fprintf(o.Out, fmt.Sprintf(issuerFormat+"\n", crt.Spec.IssuerRef.Name, issuerKind))
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Secret Name: %s\n", crt.Spec.SecretName))
 
@@ -249,7 +253,7 @@ func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) 
 // crInfoString returns the information of a CR as a string to be printed as output
 func crInfoString(cr *cmapi.CertificateRequest) string {
 	if cr == nil {
-		return "No CertificateRequest found for this Certificate"
+		return "No CertificateRequest found for this Certificate\n"
 	}
 
 	crFormat := `
