@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 version='v0.16.0-alpha.1'
 platforms='darwin-amd64 linux-amd64 linux-arm linux-arm64 windows-amd64'
 for platform in $platforms
