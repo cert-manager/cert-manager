@@ -106,10 +106,9 @@ func TestValidate(t *testing.T) {
 // other components, e.g. writing private key to file.
 func TestRun(t *testing.T) {
 	const (
-		cr3Name = "testcr-3"
-		cr4Name = "testcr-4"
-		ns1     = "testns-1"
-		ns2     = "testns-2"
+		crName = "testcr-3"
+		ns1    = "testns-1"
+		ns2    = "testns-2"
 	)
 
 	tests := map[string]struct {
@@ -140,7 +139,7 @@ spec:
     kind: Issuer
     group: cert-manager.io
 `,
-			inputArgs:      []string{cr3Name},
+			inputArgs:      []string{crName},
 			inputNamespace: ns2,
 			keyFilename:    "",
 			expErr:         true,
@@ -157,11 +156,49 @@ spec:
   ca:
     secretName: ca-key-pair
 `,
-			inputArgs:      []string{cr4Name},
+			inputArgs:      []string{crName},
 			inputNamespace: ns1,
 			keyFilename:    "",
 			expErr:         true,
 			expErrMsg:      "decoded object is not a v1alpha2 Certificate",
+		},
+		"empty manifest file throws error": {
+			inputFileContent: ``,
+			inputArgs:        []string{crName},
+			inputNamespace:   ns1,
+			keyFilename:      "",
+			expErr:           true,
+			expErrMsg:        "no objects found in manifest file \"testfile.yaml\". Expected one Certificate object",
+		},
+		"manifest file with multiple objects throws error": {
+			inputFileContent: `---
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: ca-issuer
+  namespace: testns-1
+spec:
+  ca:
+    secretName: ca-key-pair
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: testcert-1
+  namespace: testns-1
+spec:
+  isCA: true
+  secretName: ca-key-pair
+  commonName: my-csi-app
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io`,
+			inputArgs:      []string{crName},
+			inputNamespace: ns1,
+			keyFilename:    "",
+			expErr:         true,
+			expErrMsg:      "multiple objects found in manifest file \"testfile.yaml\". Expected only one Certificate object",
 		},
 	}
 
