@@ -17,6 +17,8 @@ limitations under the License.
 package certificaterequest
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -95,6 +97,108 @@ func TestValidate(t *testing.T) {
 			} else if test.expErr {
 				// got no error
 				t.Errorf("expected but got no error validating args and flags")
+			}
+		})
+	}
+}
+
+// Test Run tests the Run function's error behaviour up where it fails before interacting with
+// other components, e.g. writing private key to file.
+func TestRun(t *testing.T) {
+	const (
+		cr3Name = "testcr-3"
+		cr4Name = "testcr-4"
+		ns1     = "testns-1"
+		ns2     = "testns-2"
+	)
+
+	tests := map[string]struct {
+		inputFileContent string
+		inputArgs        []string
+		inputNamespace   string
+		keyFilename      string
+		certFilename     string
+		fetchCert        bool
+
+		expErr    bool
+		expErrMsg string
+	}{
+		// Build clients
+		"conflicting namespaces defined in flag and file": {
+			inputFileContent: `---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: testcert-1
+  namespace: testns-1
+spec:
+  isCA: true
+  secretName: ca-key-pair
+  commonName: my-csi-app
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
+`,
+			inputArgs:      []string{cr3Name},
+			inputNamespace: ns2,
+			keyFilename:    "",
+			expErr:         true,
+			expErrMsg:      "the namespace from the provided object \"testns-1\" does not match the namespace \"testns-2\". You must pass '--namespace=testns-1' to perform this operation.",
+		},
+		"file passed in defines resource other than certificate": {
+			inputFileContent: `---
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: ca-issuer
+  namespace: testns-1
+spec:
+  ca:
+    secretName: ca-key-pair
+`,
+			inputArgs:      []string{cr4Name},
+			inputNamespace: ns1,
+			keyFilename:    "",
+			expErr:         true,
+			expErrMsg:      "decoded object is not a v1alpha2 Certificate",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if err := ioutil.WriteFile("testfile.yaml", []byte(test.inputFileContent), 0644); err != nil {
+				t.Fatalf("error creating test file %#v", err)
+			}
+			defer os.Remove("testfile.yaml")
+
+			// Options to run create CR command
+			opts := &Options{
+				CmdNamespace:     test.inputNamespace,
+				EnforceNamespace: test.inputNamespace != "",
+				InputFilename:    "testfile.yaml",
+				KeyFilename:      test.keyFilename,
+				CertFileName:     test.certFilename,
+			}
+
+			// Validating args and flags
+			err := opts.Validate(test.inputArgs)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Create CR
+			err = opts.Run(test.inputArgs)
+			if err != nil {
+				if !test.expErr {
+					t.Fatalf("got unexpected error when trying to create CR: %v", err)
+				}
+				if err.Error() != test.expErrMsg {
+					t.Fatalf("got unexpected error when trying to create CR, expected: %v; actual: %v", test.expErrMsg, err)
+				}
+			} else if test.expErr {
+				// got no error
+				t.Errorf("expected but got no error when creating CR")
 			}
 		})
 	}
