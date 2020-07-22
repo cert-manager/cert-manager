@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -29,7 +30,6 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/reference"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-	"k8s.io/kubectl/pkg/describe"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
@@ -156,8 +156,8 @@ func (o *Options) Run(args []string) error {
 	}
 	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
 	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
-	prefixWriter := util.NewPrefixWriter(o.Out)
-	describe.DescribeEvents(crtEvents, prefixWriter)
+	prefixWriter := util.NewPrefixWriter(tabwriter.NewWriter(o.Out, 0, 8, 2, ' ', 0))
+	util.DescribeEvents(crtEvents, prefixWriter, 0)
 
 	issuerFormat := `Issuer:
   Name: %s
@@ -193,8 +193,7 @@ func (o *Options) Run(args []string) error {
 		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
 		reqEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
 
-		prefixWriter.SetBaseLevel(1)
-		describe.DescribeEvents(reqEvents, prefixWriter)
+		util.DescribeEvents(reqEvents, prefixWriter, 1)
 	}
 
 	// TODO: print information about secret

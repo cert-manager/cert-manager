@@ -100,7 +100,7 @@ Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
 DNS Names:
 - www.example.com
-Events:	<none>
+Events:  <none>
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
@@ -131,7 +131,7 @@ Conditions:
   Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
 DNS Names:
 - www.example.com
-Events:	<none>
+Events:  <none>
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
@@ -144,7 +144,7 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:	<none>`,
+  Events:  <none>`,
 		},
 	}
 
