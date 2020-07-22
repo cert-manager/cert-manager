@@ -17,11 +17,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-version='v0.16.0-alpha.1'
+version="$1"
 platforms='darwin-amd64 linux-amd64 linux-arm linux-arm64 windows-amd64'
 for platform in $platforms
 do
-  curl -sSL -O $"https://github.com/jetstack/cert-manager/releases/download//${version}/kubectl-cert_manager-${platform}.tar.gz"
+  curl -sSL -O $"https://github.com/jetstack/cert-manager/releases/download/${version}/kubectl-cert_manager-${platform}.tar.gz"
   sha256sum "kubectl-cert_manager-${platform}.tar.gz"
   rm "kubectl-cert_manager-${platform}.tar.gz"
 done
