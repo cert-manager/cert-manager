@@ -648,9 +648,10 @@ spec:
                                             type: string
                                     spec:
                                       description: PodSpec defines overrides for the
-                                        HTTP01 challenge solver pod. Only the 'nodeSelector',
-                                        'affinity' and 'tolerations' fields are supported
-                                        currently. All other fields will be ignored.
+                                        HTTP01 challenge solver pod. Only the 'priorityClassName',
+                                        'nodeSelector', 'affinity' and 'tolerations'
+                                        fields are supported currently. All other
+                                        fields will be ignored.
                                       type: object
                                       properties:
                                         affinity:
@@ -1587,6 +1588,9 @@ spec:
                                           type: object
                                           additionalProperties:
                                             type: string
+                                        priorityClassName:
+                                          description: If specified, the pod's priorityClassName.
+                                          type: string
                                         tolerations:
                                           description: If specified, the pod's tolerations.
                                           type: array
@@ -2571,9 +2575,10 @@ spec:
                                             type: string
                                     spec:
                                       description: PodSpec defines overrides for the
-                                        HTTP01 challenge solver pod. Only the 'nodeSelector',
-                                        'affinity' and 'tolerations' fields are supported
-                                        currently. All other fields will be ignored.
+                                        HTTP01 challenge solver pod. Only the 'priorityClassName',
+                                        'nodeSelector', 'affinity' and 'tolerations'
+                                        fields are supported currently. All other
+                                        fields will be ignored.
                                       type: object
                                       properties:
                                         affinity:
@@ -3510,6 +3515,9 @@ spec:
                                           type: object
                                           additionalProperties:
                                             type: string
+                                        priorityClassName:
+                                          description: If specified, the pod's priorityClassName.
+                                          type: string
                                         tolerations:
                                           description: If specified, the pod's tolerations.
                                           type: array
@@ -4496,9 +4504,10 @@ spec:
                                             type: string
                                     spec:
                                       description: PodSpec defines overrides for the
-                                        HTTP01 challenge solver pod. Only the 'nodeSelector',
-                                        'affinity' and 'tolerations' fields are supported
-                                        currently. All other fields will be ignored.
+                                        HTTP01 challenge solver pod. Only the 'priorityClassName',
+                                        'nodeSelector', 'affinity' and 'tolerations'
+                                        fields are supported currently. All other
+                                        fields will be ignored.
                                       type: object
                                       properties:
                                         affinity:
@@ -5435,6 +5444,9 @@ spec:
                                           type: object
                                           additionalProperties:
                                             type: string
+                                        priorityClassName:
+                                          description: If specified, the pod's priorityClassName.
+                                          type: string
                                         tolerations:
                                           description: If specified, the pod's tolerations.
                                           type: array

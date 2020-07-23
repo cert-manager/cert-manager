@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
@@ -285,6 +285,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 										},
 									},
 									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
+										PriorityClassName: "high",
 										NodeSelector: map[string]string{
 											"node": "selector",
 										},
@@ -324,6 +325,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 						Effect:   "NoSchedule",
 					},
 				}
+				resultingPod.Spec.PriorityClassName = "high"
 				s.testResources[createdPodKey] = resultingPod
 
 				s.Builder.Sync()
