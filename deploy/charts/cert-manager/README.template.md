@@ -149,6 +149,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
 | `webhook.containerSecurityContext` | Security context to be set on the webhook component container | `{}` |
+| `webhook.hostNetwork` | If `true`, run the Webhook on the host network. | `false` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
