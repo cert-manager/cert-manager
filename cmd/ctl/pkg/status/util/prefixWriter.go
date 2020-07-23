@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -30,43 +29,14 @@ import (
 	"k8s.io/kubectl/pkg/util/event"
 )
 
-// This file defines implementation of the PrefixWriter interface defined in "k8s.io/kubectl/pkg/describe"
-// This implementation is based on the one in the describe package, with a slight modification of having a baseLevel
-// on top of which any other indentations are added.
-// The purpose is be able to reuse functions in the describe package where the Level of the output is fixed,
-// e.g. DescribeEvents() only prints out at Level 0.
+// This file contains functions that are copied from "k8s.io/kubectl/pkg/describe".
+// DescribeEvents was slightly modified. The other functions are copied over.
+// The purpose of this is to be able to reuse the PrefixWriter interface defined in the describe package,
+// and because we need to indent certain lines differently than the original function.
 
-// prefixWriter implements describe.PrefixWriter
-type prefixWriter struct {
-	out       *tabwriter.Writer
-	baseLevel int
-}
-
-var _ describe.PrefixWriter = &prefixWriter{}
-
-// NewPrefixWriter creates a new PrefixWriter.
-func NewPrefixWriter(out *tabwriter.Writer) *prefixWriter {
-	return &prefixWriter{out: out, baseLevel: 0}
-}
-
-func (pw *prefixWriter) Write(level int, format string, a ...interface{}) {
-	level += pw.baseLevel
-	levelSpace := "  "
-	prefix := ""
-	for i := 0; i < level; i++ {
-		prefix += levelSpace
-	}
-	fmt.Fprintf(pw.out, prefix+format, a...)
-}
-
-func (pw *prefixWriter) WriteLine(a ...interface{}) {
-	fmt.Fprintln(pw.out, a...)
-}
-
-func (pw *prefixWriter) Flush() {
-	pw.out.Flush()
-}
-
+// DescribeEvents writes a formatted string of the Events in el with PrefixWriter.
+// The intended use is for w to be created with a *tabWriter.Writer underneath, and the caller
+// of DescribeEvents would need to call Flush() on that *tabWriter.Writer to actually print the output.
 func DescribeEvents(el *corev1.EventList, w describe.PrefixWriter, baseLevel int) {
 	if len(el.Items) == 0 {
 		w.Write(baseLevel, "Events:\t<none>\n")

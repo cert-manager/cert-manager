@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/kubectl/pkg/describe"
 	"text/tabwriter"
 	"time"
 
@@ -156,8 +157,10 @@ func (o *Options) Run(args []string) error {
 	}
 	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
 	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
-	prefixWriter := util.NewPrefixWriter(tabwriter.NewWriter(o.Out, 0, 8, 2, ' ', 0))
+	tabWriter := tabwriter.NewWriter(o.Out, 0, 8, 2, ' ', 0)
+	prefixWriter := describe.NewPrefixWriter(tabWriter)
 	util.DescribeEvents(crtEvents, prefixWriter, 0)
+	tabWriter.Flush()
 
 	issuerFormat := `Issuer:
   Name: %s
@@ -194,6 +197,7 @@ func (o *Options) Run(args []string) error {
 		reqEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
 
 		util.DescribeEvents(reqEvents, prefixWriter, 1)
+		tabWriter.Flush()
 	}
 
 	// TODO: print information about secret
