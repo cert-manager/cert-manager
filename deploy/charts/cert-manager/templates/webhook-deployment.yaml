@@ -47,7 +47,7 @@ spec:
       securityContext:
 {{ toYaml .Values.webhook.securityContext | indent 8 }}
       {{- end }}
-      {{- if .Values.webhook.hostNetwork.enabled }}
+      {{- if .Values.webhook.hostNetwork }}
       hostNetwork: true
       {{- end }}
       containers:
