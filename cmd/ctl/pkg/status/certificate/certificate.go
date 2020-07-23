@@ -20,18 +20,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/kubectl/pkg/describe"
+	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/reference"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
@@ -118,6 +124,11 @@ func (o *Options) Run(args []string) error {
 	ctx := context.TODO()
 	crtName := args[0]
 
+	clientSet, err := kubernetes.NewForConfig(o.RESTConfig)
+	if err != nil {
+		return err
+	}
+
 	crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(o.Namespace).Get(ctx, crtName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error when getting Certificate resource: %v", err)
@@ -140,10 +151,25 @@ func (o *Options) Run(args []string) error {
 	dnsNames := formatStringSlice(crt.Spec.DNSNames)
 	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
 
+	crtRef, err := reference.GetReference(ctl.Scheme, crt)
+	if err != nil {
+		return err
+	}
+	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
+	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
+	tabWriter := tabwriter.NewWriter(o.Out, 0, 8, 2, ' ', 0)
+	prefixWriter := describe.NewPrefixWriter(tabWriter)
+	util.DescribeEvents(crtEvents, prefixWriter, 0)
+	tabWriter.Flush()
+
 	issuerFormat := `Issuer:
   Name: %s
   Kind: %s`
-	fmt.Fprintf(o.Out, fmt.Sprintf(issuerFormat+"\n", crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Kind))
+	issuerKind := crt.Spec.IssuerRef.Kind
+	if issuerKind == "" {
+		issuerKind = "Issuer"
+	}
+	fmt.Fprintf(o.Out, fmt.Sprintf(issuerFormat+"\n", crt.Spec.IssuerRef.Name, issuerKind))
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Secret Name: %s\n", crt.Spec.SecretName))
 
@@ -162,6 +188,17 @@ func (o *Options) Run(args []string) error {
 		return err
 	}
 	fmt.Fprintf(o.Out, crInfoString(req))
+	if req != nil {
+		reqRef, err := reference.GetReference(ctl.Scheme, req)
+		if err != nil {
+			return err
+		}
+		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
+		reqEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
+
+		util.DescribeEvents(reqEvents, prefixWriter, 1)
+		tabWriter.Flush()
+	}
 
 	// TODO: print information about secret
 	return nil
@@ -235,5 +272,5 @@ func crInfoString(cr *cmapi.CertificateRequest) string {
 		conditionMsg = "  No Conditions set\n"
 	}
 	infos := fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
-	return fmt.Sprintf("CertificateRequest:%s\n", infos)
+	return fmt.Sprintf("CertificateRequest:%s", infos)
 }

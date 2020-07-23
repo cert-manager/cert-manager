@@ -25,6 +25,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//cmd/ctl/pkg/status/certificate:all-srcs",
+        "//cmd/ctl/pkg/status/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
