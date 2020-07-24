@@ -237,6 +237,10 @@ webhook:
   # Required for use in managed kubernetes clusters (such as AWS EKS) with custom
   # CNI (such as calico), because control-plane managed by AWS cannot communicate
   # with pods' IP CIDR and admission webhooks are not working
+  #
+  # Since the default port for the webhook conflicts with kubelet on the host
+  # network, `webhook.securePort` should be changed to an available port if
+  # running in hostNetwork mode.
   hostNetwork: false
 
 cainjector:
