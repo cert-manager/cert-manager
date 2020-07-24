@@ -240,7 +240,7 @@ func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) 
 	for _, req := range reqs.Items {
 		if predicate.CertificateRequestRevision(nextRevision)(&req) &&
 			predicate.ResourceOwnedBy(crt)(&req) {
-			possibleMatches = append(possibleMatches, &req)
+			possibleMatches = append(possibleMatches, req.DeepCopy())
 		}
 	}
 
