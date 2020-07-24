@@ -136,6 +136,8 @@ func (o *Options) Run(args []string) error {
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace))
 
+	fmt.Fprintf(o.Out, fmt.Sprintf("Created at: %s\n", crt.CreationTimestamp.Time.Format(time.RFC3339)))
+
 	// Get necessary info from Certificate
 	// Output one line about each type of Condition that is set.
 	// Certificate can have multiple Conditions of different types set, e.g. "Ready" or "Issuing"

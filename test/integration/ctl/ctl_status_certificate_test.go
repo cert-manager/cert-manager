@@ -19,6 +19,7 @@ package ctl
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -79,7 +80,7 @@ func TestCtlStatusCert(t *testing.T) {
 		req               *cmapi.CertificateRequest
 		reqStatus         *cmapi.CertificateRequestStatus
 		// At most one of issuer and clusterIssuer is not nil
-		issuer *cmapi.Issuer
+		issuer        *cmapi.Issuer
 		clusterIssuer *cmapi.ClusterIssuer
 
 		expErr    bool
@@ -95,10 +96,11 @@ func TestCtlStatusCert(t *testing.T) {
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
-			clusterIssuer: gen.ClusterIssuer("letsencrypt-prod"),
+			clusterIssuer:  gen.ClusterIssuer("letsencrypt-prod"),
 			expErr:         false,
 			expOutput: `Name: testcrt-1
 Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
 DNS Names:
@@ -129,9 +131,10 @@ No CertificateRequest found for this Certificate`,
 			reqStatus:      &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer: gen.Issuer("letsencrypt-prod",
 				gen.SetIssuerNamespace(ns1)),
-			expErr:         false,
+			expErr: false,
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
   Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
@@ -174,7 +177,7 @@ CertificateRequest:
 					t.Fatal(err)
 				}
 			}
-			
+
 			if test.issuer != nil {
 				_, err := cmCl.CertmanagerV1alpha2().Issuers(crt.Namespace).Create(ctx, test.issuer, metav1.CreateOptions{})
 				if err != nil {
@@ -211,8 +214,12 @@ CertificateRequest:
 				}
 			}
 
-			if strings.TrimSpace(test.expOutput) != strings.TrimSpace(outBuf.String()) {
-				t.Errorf("got unexpected output, exp=\n%s\n\nbut got=\n%s",
+			match, err := regexp.MatchString(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
+			if err != nil {
+				t.Error(err)
+			}
+			if !match {
+				t.Errorf("got unexpected output, exp(replacing regex with a time)=\n%s\n\nbut got=\n%s",
 					strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
 			}
 		})
