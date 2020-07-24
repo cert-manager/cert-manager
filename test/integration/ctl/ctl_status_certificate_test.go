@@ -78,11 +78,14 @@ func TestCtlStatusCert(t *testing.T) {
 		inputNamespace    string
 		req               *cmapi.CertificateRequest
 		reqStatus         *cmapi.CertificateRequestStatus
+		// At most one of issuer and clusterIssuer is not nil
+		issuer *cmapi.Issuer
+		clusterIssuer *cmapi.ClusterIssuer
 
 		expErr    bool
 		expOutput string
 	}{
-		"certificate issued and up-to-date": {
+		"certificate issued and up-to-date with clusterIssuer": {
 			certificate: gen.Certificate(crt1Name,
 				gen.SetCertificateNamespace(ns1),
 				gen.SetCertificateDNSNames("www.example.com"),
@@ -92,8 +95,8 @@ func TestCtlStatusCert(t *testing.T) {
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
+			clusterIssuer: gen.ClusterIssuer("letsencrypt-prod"),
 			expErr:         false,
-			// Note: "space" after `Event:` is actually a tab
 			expOutput: `Name: testcrt-1
 Namespace: testns-1
 Conditions:
@@ -104,6 +107,8 @@ Events:  <none>
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
+  Conditions:
+    No Conditions set
 Secret Name: example-tls
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
@@ -114,7 +119,7 @@ No CertificateRequest found for this Certificate`,
 			certificate: gen.Certificate(crt2Name,
 				gen.SetCertificateNamespace(ns1),
 				gen.SetCertificateDNSNames("www.example.com"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "Issuer"}),
 				gen.SetCertificateSecretName("example-tls")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond, crtIssuingCond},
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
@@ -122,8 +127,9 @@ No CertificateRequest found for this Certificate`,
 			inputNamespace: ns1,
 			req:            req1,
 			reqStatus:      &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
+			issuer: gen.Issuer("letsencrypt-prod",
+				gen.SetIssuerNamespace(ns1)),
 			expErr:         false,
-			// Note: after `Event:` there is actually a tab, which sometimes shows as a single space, sometimes multiple
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
 Conditions:
@@ -134,7 +140,9 @@ DNS Names:
 Events:  <none>
 Issuer:
   Name: letsencrypt-prod
-  Kind: ClusterIssuer
+  Kind: Issuer
+  Conditions:
+    No Conditions set
 Secret Name: example-tls
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
@@ -162,6 +170,19 @@ CertificateRequest:
 
 			if test.req != nil {
 				err = createCROwnedByCrt(t, cmCl, ctx, crt, test.req, test.reqStatus)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			
+			if test.issuer != nil {
+				_, err := cmCl.CertmanagerV1alpha2().Issuers(crt.Namespace).Create(ctx, test.issuer, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			if test.clusterIssuer != nil {
+				_, err := cmCl.CertmanagerV1alpha2().ClusterIssuers().Create(ctx, test.clusterIssuer, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
