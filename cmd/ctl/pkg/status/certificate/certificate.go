@@ -180,7 +180,7 @@ func (o *Options) Run(args []string) error {
 		// ClusterIssuer
 		clusterIssuer, err := o.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
 		if err != nil {
-			fmt.Fprintf(o.Out, "error when getting Issuer: %v\n", err)
+			fmt.Fprintf(o.Out, "error when getting ClusterIssuer: %v\n", err)
 		} else {
 			fmt.Fprintf(o.Out, issuerInfoString(crt.Spec.IssuerRef.Name, issuerKind, clusterIssuer.Status.Conditions))
 		}

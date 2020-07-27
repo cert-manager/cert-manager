@@ -49,8 +49,12 @@ func TestCtlStatusCert(t *testing.T) {
 	var (
 		crt1Name  = "testcrt-1"
 		crt2Name  = "testcrt-2"
+		crt3Name  = "testcrt-3"
+		crt4Name  = "testcrt-4"
 		ns1       = "testns-1"
-		reqName   = "testreq-1"
+		req1Name  = "testreq-1"
+		req2Name  = "testreq-2"
+		req3Name  = "testreq-3"
 		revision1 = 1
 		revision2 = 2
 
@@ -66,11 +70,6 @@ func TestCtlStatusCert(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	req1 := gen.CertificateRequest(reqName,
-		gen.SetCertificateRequestNamespace(ns1),
-		gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
-		gen.SetCertificateRequestCSR([]byte("dummyCSR")))
 
 	tests := map[string]struct {
 		certificate       *cmapi.Certificate
@@ -117,7 +116,7 @@ Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
 No CertificateRequest found for this Certificate`,
 		},
-		"certificate issued and renewal in progress": {
+		"certificate issued and renewal in progress with Issuer": {
 			certificate: gen.Certificate(crt2Name,
 				gen.SetCertificateNamespace(ns1),
 				gen.SetCertificateDNSNames("www.example.com"),
@@ -127,8 +126,11 @@ No CertificateRequest found for this Certificate`,
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt2Name},
 			inputNamespace: ns1,
-			req:            req1,
-			reqStatus:      &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
+			req: gen.CertificateRequest(req1Name,
+				gen.SetCertificateRequestNamespace(ns1),
+				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
+				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer: gen.Issuer("letsencrypt-prod",
 				gen.SetIssuerNamespace(ns1)),
 			expErr: false,
@@ -152,6 +154,82 @@ Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
 CertificateRequest:
   Name: testreq-1
+  Namespace: testns-1
+  Conditions:
+    Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
+  Events:  <none>`,
+		},
+		"certificate issued and renewal in progress without Issuer": {
+			certificate: gen.Certificate(crt3Name,
+				gen.SetCertificateNamespace(ns1),
+				gen.SetCertificateDNSNames("www.example.com"),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "non-existing-issuer", Kind: "Issuer"}),
+				gen.SetCertificateSecretName("example-tls")),
+			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond, crtIssuingCond},
+				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
+			inputArgs:      []string{crt3Name},
+			inputNamespace: ns1,
+			req: gen.CertificateRequest(req2Name,
+				gen.SetCertificateRequestNamespace(ns1),
+				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
+				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
+			issuer:    nil,
+			expErr:    false,
+			expOutput: `Name: testcrt-3
+Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
+  Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
+DNS Names:
+- www.example.com
+Events:  <none>
+error when getting Issuer: issuers.cert-manager.io "non-existing-issuer" not found
+Secret Name: example-tls
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>
+CertificateRequest:
+  Name: testreq-2
+  Namespace: testns-1
+  Conditions:
+    Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
+  Events:  <none>`,
+		},
+		"certificate issued and renewal in progress without ClusterIssuer": {
+			certificate: gen.Certificate(crt4Name,
+				gen.SetCertificateNamespace(ns1),
+				gen.SetCertificateDNSNames("www.example.com"),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "non-existing-clusterissuer", Kind: "ClusterIssuer"}),
+				gen.SetCertificateSecretName("example-tls")),
+			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond, crtIssuingCond},
+				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
+			inputArgs:      []string{crt4Name},
+			inputNamespace: ns1,
+			req: gen.CertificateRequest(req3Name,
+				gen.SetCertificateRequestNamespace(ns1),
+				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
+				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
+			issuer:    nil,
+			expErr:    false,
+			expOutput: `Name: testcrt-4
+Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
+  Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
+DNS Names:
+- www.example.com
+Events:  <none>
+error when getting ClusterIssuer: clusterissuers.cert-manager.io "non-existing-clusterissuer" not found
+Secret Name: example-tls
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>
+CertificateRequest:
+  Name: testreq-3
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
