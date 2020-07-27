@@ -134,7 +134,7 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when getting Certificate resource: %v", err)
 	}
 
-	fmt.Fprintf(o.Out, fmt.Sprintf("Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace))
+	fmt.Fprintf(o.Out, "Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace)
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Created at: %s\n", crt.CreationTimestamp.Time.Format(time.RFC3339)))
 
@@ -148,10 +148,10 @@ func (o *Options) Run(args []string) error {
 	if conditionMsg == "" {
 		conditionMsg = "  No Conditions set\n"
 	}
-	fmt.Fprintf(o.Out, fmt.Sprintf("Conditions:\n%s", conditionMsg))
+	fmt.Fprintf(o.Out, "Conditions:\n%s", conditionMsg)
 
 	dnsNames := formatStringSlice(crt.Spec.DNSNames)
-	fmt.Fprintf(o.Out, fmt.Sprintf("DNS Names:\n%s", dnsNames))
+	fmt.Fprintf(o.Out, "DNS Names:\n%s", dnsNames)
 
 	crtRef, err := reference.GetReference(ctl.Scheme, crt)
 	if err != nil {
@@ -168,6 +168,7 @@ func (o *Options) Run(args []string) error {
 	if issuerKind == "" {
 		issuerKind = "Issuer"
 	}
+
 	// Get info on Issuer/ClusterIssuer
 	if crt.Spec.IssuerRef.Group != "cert-manager.io" && crt.Spec.IssuerRef.Group != "" {
 		// TODO: Support Issuers/ClusterIssuers from other groups as well
@@ -190,11 +191,9 @@ func (o *Options) Run(args []string) error {
 		}
 	}
 
-	fmt.Fprintf(o.Out, fmt.Sprintf("Secret Name: %s\n", crt.Spec.SecretName))
-
-	fmt.Fprintf(o.Out, fmt.Sprintf("Not Before: %s\n", formatTimeString(crt.Status.NotBefore)))
-	fmt.Fprintf(o.Out, fmt.Sprintf("Not After: %s\n", formatTimeString(crt.Status.NotAfter)))
-	fmt.Fprintf(o.Out, fmt.Sprintf("Renewal Time: %s\n", formatTimeString(crt.Status.RenewalTime)))
+	fmt.Fprintf(o.Out, "Not Before: %s\n", formatTimeString(crt.Status.NotBefore))
+	fmt.Fprintf(o.Out, "Not After: %s\n", formatTimeString(crt.Status.NotAfter))
+	fmt.Fprintf(o.Out, "Renewal Time: %s\n", formatTimeString(crt.Status.RenewalTime))
 
 	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
 	// Try find the CertificateRequest that is owned by crt and has the correct revision
@@ -219,7 +218,6 @@ func (o *Options) Run(args []string) error {
 		tabWriter.Flush()
 	}
 
-	// TODO: print information about secret
 	return nil
 }
 
