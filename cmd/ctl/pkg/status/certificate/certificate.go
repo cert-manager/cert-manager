@@ -169,7 +169,11 @@ func (o *Options) Run(args []string) error {
 		issuerKind = "Issuer"
 	}
 	// Get info on Issuer/ClusterIssuer
-	if issuerKind == "Issuer" {
+	if crt.Spec.IssuerRef.Group != "cert-manager.io" && crt.Spec.IssuerRef.Group != "" {
+		// TODO: Support Issuers/ClusterIssuers from other groups as well
+		fmt.Fprintf(o.Out, "The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
+			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name)
+	} else if issuerKind == "Issuer" {
 		issuer, err := o.CMClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(o.Out, "error when getting Issuer: %v\n", err)
