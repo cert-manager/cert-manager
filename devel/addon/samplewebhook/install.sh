@@ -18,6 +18,10 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+source "${SCRIPT_ROOT}/../../lib/lib.sh"
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+
 # Installs an instance of the sample-webhook using the Helm chart located in
 # chart/.
 # Configure the cluster to target using the KUBECONFIG environment variable.
@@ -27,10 +31,6 @@ set -o pipefail
 NAMESPACE="${NAMESPACE:-sample-webhook}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-sample-webhook}"
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-source "${SCRIPT_ROOT}/../../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Require helm available on PATH
 check_tool kubectl
