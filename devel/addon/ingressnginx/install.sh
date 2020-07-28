@@ -22,7 +22,6 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
-
 # Installs an instance of ingress-nginx using the 'stable' Helm chart.
 # Configure the cluster to target using the KUBECONFIG environment variable.
 # Additional parameters can be configured by overriding the variables below.
