@@ -308,28 +308,10 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1b
 }
 
 func (c *controller) setCommonName(crt *cmapi.Certificate, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) {
-	ingAnnotations := ing.Annotations
-	if ingAnnotations == nil {
-		ingAnnotations = map[string]string{}
-	}
-
 	// if annotation is set use that as CN
-	if ingAnnotations[cmapi.CommonNameAnnotationKey] != "" {
-		crt.Spec.CommonName = ingAnnotations[cmapi.CommonNameAnnotationKey]
-		return
+	if ing.Annotations != nil && ing.Annotations[cmapi.CommonNameAnnotationKey] != "" {
+		crt.Spec.CommonName = ing.Annotations[cmapi.CommonNameAnnotationKey]
 	}
-
-	// if not set pick the first DNS name that is less than 64 characters
-	// this is the length limit of the CN
-	// if none if found we leave the CN empty
-	for _, host := range tls.Hosts {
-		if len(host) < 64 {
-			crt.Spec.CommonName = host
-			return
-		}
-	}
-
-	return
 }
 
 // shouldSync returns true if this ingress should have a Certificate resource
