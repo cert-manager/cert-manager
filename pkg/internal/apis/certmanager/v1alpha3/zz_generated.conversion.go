@@ -1135,6 +1135,7 @@ func autoConvert_v1alpha3_VaultIssuer_To_certmanager_VaultIssuer(in *v1alpha3.Va
 	}
 	out.Server = in.Server
 	out.Path = in.Path
+	out.Namespace = in.Namespace
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	return nil
 }
@@ -1150,6 +1151,7 @@ func autoConvert_certmanager_VaultIssuer_To_v1alpha3_VaultIssuer(in *certmanager
 	}
 	out.Server = in.Server
 	out.Path = in.Path
+	out.Namespace = in.Namespace
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	return nil
 }

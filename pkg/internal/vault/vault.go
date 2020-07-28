@@ -104,9 +104,16 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		"exclude_cn_from_sans": "true",
 	}
 
-	url := path.Join("/v1", v.issuer.GetSpec().Vault.Path)
+	vaultIssuer := v.issuer.GetSpec().Vault
+	url := path.Join("/v1", vaultIssuer.Path)
 
 	request := v.client.NewRequest("POST", url)
+
+	if vaultIssuer.Namespace != "" {
+		vaultReqHeaders := http.Header{}
+		vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+		request.Headers = vaultReqHeaders
+	}
 
 	if err := request.SetJSONBody(parameters); err != nil {
 		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
