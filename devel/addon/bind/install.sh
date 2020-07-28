@@ -18,6 +18,11 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+source "${SCRIPT_ROOT}/../../lib/lib.sh"
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+
+
 # Installs an instance of bind using the manifests located in manifests/
 # Configure the cluster to target using the KUBECONFIG environment variable.
 # Additional parameters can be configured by overriding the variables below.
@@ -28,10 +33,6 @@ if [[ "$IS_OPENSHIFT" == "true" ]] ; then
   # OpenShift needs bind to be in kube-system due to file ownership restrictions
   NAMESPACE="kube-system"
 fi
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-source "${SCRIPT_ROOT}/../../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
 

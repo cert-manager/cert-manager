@@ -18,6 +18,11 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+source "${SCRIPT_ROOT}/../../lib/lib.sh"
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+
+
 # Installs an instance of ingress-nginx using the 'stable' Helm chart.
 # Configure the cluster to target using the KUBECONFIG environment variable.
 # Additional parameters can be configured by overriding the variables below.
@@ -30,10 +35,6 @@ if [[ "$IS_OPENSHIFT" == "true" ]] ; then
 fi
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-source "${SCRIPT_ROOT}/../../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Require helm available on PATH
 check_tool kubectl

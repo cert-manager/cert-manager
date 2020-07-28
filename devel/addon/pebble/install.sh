@@ -18,6 +18,10 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+source "${SCRIPT_ROOT}/../../lib/lib.sh"
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+
 # Installs an instance of pebble using the Helm chart located in chart/
 # Configure the cluster to target using the KUBECONFIG environment variable.
 # Additional parameters can be configured by overriding the variables below.
@@ -28,10 +32,6 @@ NAMESPACE="${NAMESPACE:-pebble}"
 RELEASE_NAME="${RELEASE_NAME:-pebble}"
 # Image to use - by default uses a Bazel built image
 IMAGE="${IMAGE:-pebble:bazel}"
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-source "${SCRIPT_ROOT}/../../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Require helm available on PATH
 check_tool kubectl
