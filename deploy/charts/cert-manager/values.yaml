@@ -232,6 +232,17 @@ webhook:
   # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000
   securePort: 10250
 
+  # Specifies if the webhook should be started in hostNetwork mode.
+  #
+  # Required for use in some managed kubernetes clusters (such as AWS EKS) with custom
+  # CNI (such as calico), because control-plane managed by AWS cannot communicate
+  # with pods' IP CIDR and admission webhooks are not working
+  #
+  # Since the default port for the webhook conflicts with kubelet on the host
+  # network, `webhook.securePort` should be changed to an available port if
+  # running in hostNetwork mode.
+  hostNetwork: false
+
 cainjector:
   enabled: true
   replicaCount: 1
