@@ -18,9 +18,14 @@ package certificate
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/kubectl/pkg/describe"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -191,6 +196,13 @@ func (o *Options) Run(args []string) error {
 		}
 	}
 
+	secret, err := clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
+	if err != nil {
+		fmt.Fprintf(o.Out, "error when finding secret %q: %s\n", crt.Spec.SecretName, err)
+	} else {
+		fmt.Fprintf(o.Out, secretInfoString(secret))
+	}
+
 	fmt.Fprintf(o.Out, "Not Before: %s\n", formatTimeString(crt.Status.NotBefore))
 	fmt.Fprintf(o.Out, "Not After: %s\n", formatTimeString(crt.Status.NotAfter))
 	fmt.Fprintf(o.Out, "Renewal Time: %s\n", formatTimeString(crt.Status.RenewalTime))
@@ -307,4 +319,82 @@ func issuerInfoString(name, kind string, conditions []cmapi.IssuerCondition) str
 		conditionMsg = "  No Conditions set\n"
 	}
 	return fmt.Sprintf(issuerFormat, name, kind, conditionMsg)
+}
+
+func secretInfoString(secret *corev1.Secret) string {
+	certData := secret.Data["tls.crt"]
+
+	if len(certData) == 0 {
+		return fmt.Sprintf("error: 'tls.crt' of Secret %q is not set\n", secret.Name)
+	}
+
+	x509Cert, err := pki.DecodeX509CertificateBytes(certData)
+	if err != nil {
+		return fmt.Sprintf("error when parsing 'tls.crt' of Secret %q: %s\n", secret.Name, err)
+	}
+	secretFormat := `Secret:
+  Name: %s
+  Issuer Country: %s
+  Issuer Organisation: %s
+  Issuer Common Name: %s
+  Key Usage: %s
+  Extended key Usages: %s
+  Public Key Algorithm: %s
+  Signature Algorithm: %s
+  Subject Key ID: %s
+  Authority Key ID: %s
+  Serial Number: %s
+`
+	return fmt.Sprintf(secretFormat, secret.Name, x509Cert.Issuer.Country,
+		x509Cert.Issuer.Organization, x509Cert.Issuer.CommonName, keyUsageToString(x509Cert.KeyUsage),
+		extKeyUsageToString(x509Cert.ExtKeyUsage), x509Cert.PublicKeyAlgorithm, x509Cert.SignatureAlgorithm,
+		hex.EncodeToString(x509Cert.SubjectKeyId), hex.EncodeToString(x509Cert.AuthorityKeyId),
+		hex.EncodeToString(x509Cert.SerialNumber.Bytes()))
+}
+
+var (
+	keyUsage = map[int]string{
+		1:   "Digital Signature",
+		2:   "Content Commitment",
+		4:   "Key Encipherment",
+		8:   "Data Encipherment",
+		16:  "Key Agreement",
+		32:  "Cert Sign",
+		64:  "CRL Sign",
+		128: "Encipher Only",
+		256: "Decipher Only",
+	}
+	keyUsagePossibleValues = []int{256, 128, 64, 32, 16, 8, 4, 2, 1}
+	extKeyUsage            = []string{"Any", "Server Authentication", "Client Authentication", "Code Signing", "Email Protection",
+		"IPSEC End System", "IPSEC Tunnel", "IPSEC User", "Time Stamping", "OCSP Signing", "Microsoft Server Gated Crypto",
+		"Netscape Server Gated Crypto", "Microsoft Commercial Code Signing", "Microsoft Kernel Code Signing",
+	}
+)
+
+func keyUsageToString(usage x509.KeyUsage) string {
+	usageInt := int(usage)
+	var usageStrings []string
+	for _, val := range keyUsagePossibleValues {
+		if usageInt >= val {
+			usageInt -= val
+			usageStrings = append(usageStrings, keyUsage[val])
+		}
+		if usageInt == 0 {
+			break
+		}
+	}
+	// Reversing because that's usually the order the usages are printed
+	for i := 0; i < len(usageStrings)/2; i++ {
+		opp := len(usageStrings)-1-i
+		usageStrings[i], usageStrings[opp] = usageStrings[opp], usageStrings[i]
+	}
+	return strings.Join(usageStrings, ", ")
+}
+
+func extKeyUsageToString(extUsages []x509.ExtKeyUsage) string {
+	var extUsageStrings []string
+	for _, extUsage := range extUsages {
+		extUsageStrings = append(extUsageStrings, extKeyUsage[extUsage])
+	}
+	return strings.Join(extUsageStrings, ", ")
 }
