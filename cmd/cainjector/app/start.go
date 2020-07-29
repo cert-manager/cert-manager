@@ -17,17 +17,20 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"os"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/jetstack/cert-manager/pkg/api"
 	"github.com/jetstack/cert-manager/pkg/controller/cainjector"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -38,6 +41,9 @@ type InjectorControllerOptions struct {
 
 	StdOut io.Writer
 	StdErr io.Writer
+
+	// logger to be used by this controller
+	log logr.Logger
 }
 
 func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
@@ -79,7 +85,11 @@ servers and webhook servers.`,
 
 		// TODO: Refactor this function from this package
 		Run: func(cmd *cobra.Command, args []string) {
-			klog.Infof("starting ca-injector %s (revision %s)", util.AppVersion, util.AppGitCommit)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			o.log = logf.FromContext(ctx).WithValues("ca-injector")
+
+			o.log.V(logf.InfoLevel).Info("starting ca-injector %s (revision %s)", util.AppVersion, util.AppGitCommit)
 			o.RunInjectorController(stopCh)
 		},
 	}
@@ -115,16 +125,19 @@ func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan str
 	})
 
 	if err != nil {
-		klog.Fatalf("error creating manager: %v", err)
+		o.log.V(logf.ErrorLevel).Error(err, "error creating manager")
+		os.Exit(1)
 	}
 
 	// TODO(directxman12): enabled controllers for separate injectors?
 	if err := cainjector.RegisterCertificateBased(mgr); err != nil {
-		klog.Fatalf("error registering controllers: %v", err)
+		o.log.V(logf.ErrorLevel).Error(err, "error registering controllers")
+		os.Exit(1)
 	}
 
 	if err := mgr.Start(stopCh); err != nil {
-		klog.Fatalf("error running manager: %v", err)
+		o.log.V(logf.ErrorLevel).Error(err, "error running manager")
+		os.Exit(1)
 	}
 }
 
@@ -139,15 +152,18 @@ func (o InjectorControllerOptions) runSecretBasedInjector(stopCh <-chan struct{}
 	})
 
 	if err != nil {
-		klog.Fatalf("error creating core-only manager: %v", err)
+		o.log.V(logf.ErrorLevel).Error(err, "error creating core-only manager")
+		os.Exit(1)
 	}
 
 	// TODO(directxman12): enabled controllers for separate injectors?
 	if err := cainjector.RegisterSecretBased(mgr); err != nil {
-		klog.Fatalf("error registering core-only controllers: %v", err)
+		o.log.V(logf.ErrorLevel).Error(err, "error registering core-only controllers")
+		os.Exit(1)
 	}
 
 	if err := mgr.Start(stopCh); err != nil {
-		klog.Fatalf("error running core-only manager: %v", err)
+		o.log.V(logf.ErrorLevel).Error(err, "error running core-only manager")
+		os.Exit(1)
 	}
 }

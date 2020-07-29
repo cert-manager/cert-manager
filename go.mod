@@ -17,8 +17,9 @@ require (
 	github.com/cloudflare/cloudflare-go v0.8.5
 	github.com/cpu/goacmedns v0.0.3
 	github.com/digitalocean/godo v1.29.0
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v0.2.1-0.20200730175230-ee2de8da5be6
 	github.com/go-logr/zapr v0.1.1 // indirect
+	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/google/gofuzz v1.1.0
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
@@ -29,8 +30,8 @@ require (
 	github.com/miekg/dns v1.1.29
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/munnerz/crd-schema-fuzz v1.0.0
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.8.1
+	github.com/onsi/ginkgo v1.12.1
+	github.com/onsi/gomega v1.10.1
 	github.com/pavel-v-chernykh/keystore-go v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
@@ -39,12 +40,12 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
-	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
+	golang.org/x/net v0.0.0-20200520004742-59133d7f0dd7
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
 	google.golang.org/api v0.4.0
 	gopkg.in/ini.v1 v1.52.0 // indirect
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.5
 	k8s.io/apiextensions-apiserver v0.18.5
 	k8s.io/apimachinery v0.18.5
@@ -54,11 +55,12 @@ require (
 	k8s.io/code-generator v0.18.5
 	k8s.io/component-base v0.18.5
 	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.3.0
 	k8s.io/kube-aggregator v0.18.5
-	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
+	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
 	k8s.io/kubectl v0.18.5
-	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
-	sigs.k8s.io/controller-runtime v0.5.1-0.20200416234307-5377effd4043
+	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19
+	sigs.k8s.io/controller-runtime v0.6.1-0.20200728202347-cea989b02ed0
 	sigs.k8s.io/controller-tools v0.2.9-0.20200414181213-645d44dca7c0
 	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0

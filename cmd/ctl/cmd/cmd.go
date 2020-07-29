@@ -27,7 +27,7 @@ import (
 
 	// Load all auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"

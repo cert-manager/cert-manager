@@ -27,8 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog"
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
 
 	"github.com/jetstack/cert-manager/pkg/api"
 )
@@ -40,6 +40,7 @@ var (
 	WarnLevel  = 1
 	InfoLevel  = 2
 	DebugLevel = 3
+	// and the mysterious 4
 )
 
 var logFlushFreq = flag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
@@ -77,10 +78,12 @@ const (
 	ResourceNameKey      = "resource_name"
 	ResourceNamespaceKey = "resource_namespace"
 	ResourceKindKey      = "resource_kind"
+	ResourceVersionKey   = "resource_version"
 
 	RelatedResourceNameKey      = "related_resource_name"
 	RelatedResourceNamespaceKey = "related_resource_namespace"
 	RelatedResourceKindKey      = "related_resource_kind"
+	RelatedResourceVersionKey   = "related_resource_version"
 )
 
 func WithResource(l logr.Logger, obj metav1.Object) logr.Logger {
@@ -93,11 +96,11 @@ func WithResource(l logr.Logger, obj metav1.Object) logr.Logger {
 		}
 	}
 
-	// TODO: add resource apiVersion
 	return l.WithValues(
 		ResourceNameKey, obj.GetName(),
 		ResourceNamespaceKey, obj.GetNamespace(),
 		ResourceKindKey, gvk.Kind,
+		ResourceVersionKey, gvk.Version,
 	)
 }
 
@@ -111,11 +114,11 @@ func WithRelatedResource(l logr.Logger, obj metav1.Object) logr.Logger {
 		}
 	}
 
-	// TODO: add resource apiVersion
 	return l.WithValues(
 		RelatedResourceNameKey, obj.GetName(),
 		RelatedResourceNamespaceKey, obj.GetNamespace(),
 		RelatedResourceKindKey, gvk.Kind,
+		RelatedResourceVersionKey, gvk.Version,
 	)
 }
 

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/acme"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 )

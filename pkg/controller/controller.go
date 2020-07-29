@@ -97,7 +97,7 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 	defer cancel()
 	log := logf.FromContext(ctx)
 
-	log.Info("starting control loop")
+	log.V(logf.DebugLevel).Info("starting control loop")
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh, c.mustSync...) {
 		return fmt.Errorf("error waiting for informer caches to sync")

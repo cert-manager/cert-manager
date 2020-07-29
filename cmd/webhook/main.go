@@ -19,7 +19,7 @@ package main
 import (
 	"flag"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	logf "github.com/jetstack/cert-manager/pkg/logs"

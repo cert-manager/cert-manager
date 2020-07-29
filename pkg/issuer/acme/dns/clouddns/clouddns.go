@@ -22,7 +22,7 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // DNSProvider is an implementation of the DNSProvider interface.

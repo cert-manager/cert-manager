@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,

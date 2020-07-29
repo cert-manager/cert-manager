@@ -25,7 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (

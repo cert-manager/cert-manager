@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )

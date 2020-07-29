@@ -12,7 +12,7 @@ go_library(
         "@com_github_azure_go_autorest_autorest//azure:go_default_library",
         "@com_github_azure_go_autorest_autorest_adal//:go_default_library",
         "@com_github_azure_go_autorest_autorest_to//:go_default_library",
-        "@io_k8s_klog//:go_default_library",
+        "@io_k8s_klog_v2//:go_default_library",
     ],
 )
 

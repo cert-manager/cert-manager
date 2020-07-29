@@ -46,7 +46,7 @@ go_library(
         "@io_k8s_client_go//tools/leaderelection:go_default_library",
         "@io_k8s_client_go//tools/leaderelection/resourcelock:go_default_library",
         "@io_k8s_client_go//tools/record:go_default_library",
-        "@io_k8s_klog//:go_default_library",
+        "@io_k8s_klog_v2//:go_default_library",
         "@io_k8s_utils//clock:go_default_library",
     ],
 )

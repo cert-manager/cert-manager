@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
-        "@io_k8s_klog//:go_default_library",
+        "@io_k8s_klog_v2//:go_default_library",
         "@org_golang_google_api//dns/v1:go_default_library",
         "@org_golang_google_api//option:go_default_library",
         "@org_golang_x_net//context:go_default_library",

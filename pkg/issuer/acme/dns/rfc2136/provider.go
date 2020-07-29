@@ -19,8 +19,9 @@ package rfc2136
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/klog"
 	"time"
+
+	"k8s.io/klog/v2"
 
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/client-go/informers"

@@ -19,7 +19,7 @@ go_library(
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
         "@io_k8s_client_go//rest:go_default_library",
-        "@io_k8s_klog//:go_default_library",
+        "@io_k8s_klog_v2//:go_default_library",
     ],
 )
 
