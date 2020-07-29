@@ -136,6 +136,8 @@ func (o *Options) Run(args []string) error {
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace))
 
+	fmt.Fprintf(o.Out, fmt.Sprintf("Created at: %s\n", crt.CreationTimestamp.Time.Format(time.RFC3339)))
+
 	// Get necessary info from Certificate
 	// Output one line about each type of Condition that is set.
 	// Certificate can have multiple Conditions of different types set, e.g. "Ready" or "Issuing"
@@ -162,14 +164,31 @@ func (o *Options) Run(args []string) error {
 	util.DescribeEvents(crtEvents, prefixWriter, 0)
 	tabWriter.Flush()
 
-	issuerFormat := `Issuer:
-  Name: %s
-  Kind: %s`
 	issuerKind := crt.Spec.IssuerRef.Kind
 	if issuerKind == "" {
 		issuerKind = "Issuer"
 	}
-	fmt.Fprintf(o.Out, fmt.Sprintf(issuerFormat+"\n", crt.Spec.IssuerRef.Name, issuerKind))
+	// Get info on Issuer/ClusterIssuer
+	if crt.Spec.IssuerRef.Group != "cert-manager.io" && crt.Spec.IssuerRef.Group != "" {
+		// TODO: Support Issuers/ClusterIssuers from other groups as well
+		fmt.Fprintf(o.Out, "The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
+			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name)
+	} else if issuerKind == "Issuer" {
+		issuer, err := o.CMClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			fmt.Fprintf(o.Out, "error when getting Issuer: %v\n", err)
+		} else {
+			fmt.Fprintf(o.Out, issuerInfoString(crt.Spec.IssuerRef.Name, issuerKind, issuer.Status.Conditions))
+		}
+	} else {
+		// ClusterIssuer
+		clusterIssuer, err := o.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if err != nil {
+			fmt.Fprintf(o.Out, "error when getting ClusterIssuer: %v\n", err)
+		} else {
+			fmt.Fprintf(o.Out, issuerInfoString(crt.Spec.IssuerRef.Name, issuerKind, clusterIssuer.Status.Conditions))
+		}
+	}
 
 	fmt.Fprintf(o.Out, fmt.Sprintf("Secret Name: %s\n", crt.Spec.SecretName))
 
@@ -273,4 +292,21 @@ func crInfoString(cr *cmapi.CertificateRequest) string {
 	}
 	infos := fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
 	return fmt.Sprintf("CertificateRequest:%s", infos)
+}
+
+// issuerInfoString returns the information of a issuer as a string to be printed as output
+func issuerInfoString(name, kind string, conditions []cmapi.IssuerCondition) string {
+	issuerFormat := `Issuer:
+  Name: %s
+  Kind: %s
+  Conditions:
+  %s`
+	conditionMsg := ""
+	for _, con := range conditions {
+		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
+	}
+	if conditionMsg == "" {
+		conditionMsg = "  No Conditions set\n"
+	}
+	return fmt.Sprintf(issuerFormat, name, kind, conditionMsg)
 }

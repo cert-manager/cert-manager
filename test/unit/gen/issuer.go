@@ -94,3 +94,9 @@ func AddIssuerCondition(c v1alpha2.IssuerCondition) IssuerModifier {
 		iss.GetStatus().Conditions = append(iss.GetStatus().Conditions, c)
 	}
 }
+
+func SetIssuerNamespace(namespace string) IssuerModifier {
+	return func(iss v1alpha2.GenericIssuer) {
+		iss.GetObjectMeta().Namespace = namespace
+	}
+}

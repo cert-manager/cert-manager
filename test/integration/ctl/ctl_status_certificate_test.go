@@ -19,6 +19,7 @@ package ctl
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -48,8 +49,12 @@ func TestCtlStatusCert(t *testing.T) {
 	var (
 		crt1Name  = "testcrt-1"
 		crt2Name  = "testcrt-2"
+		crt3Name  = "testcrt-3"
+		crt4Name  = "testcrt-4"
 		ns1       = "testns-1"
-		reqName   = "testreq-1"
+		req1Name  = "testreq-1"
+		req2Name  = "testreq-2"
+		req3Name  = "testreq-3"
 		revision1 = 1
 		revision2 = 2
 
@@ -66,11 +71,6 @@ func TestCtlStatusCert(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req1 := gen.CertificateRequest(reqName,
-		gen.SetCertificateRequestNamespace(ns1),
-		gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
-		gen.SetCertificateRequestCSR([]byte("dummyCSR")))
-
 	tests := map[string]struct {
 		certificate       *cmapi.Certificate
 		certificateStatus *cmapi.CertificateStatus
@@ -78,11 +78,14 @@ func TestCtlStatusCert(t *testing.T) {
 		inputNamespace    string
 		req               *cmapi.CertificateRequest
 		reqStatus         *cmapi.CertificateRequestStatus
+		// At most one of issuer and clusterIssuer is not nil
+		issuer        *cmapi.Issuer
+		clusterIssuer *cmapi.ClusterIssuer
 
 		expErr    bool
 		expOutput string
 	}{
-		"certificate issued and up-to-date": {
+		"certificate issued and up-to-date with clusterIssuer": {
 			certificate: gen.Certificate(crt1Name,
 				gen.SetCertificateNamespace(ns1),
 				gen.SetCertificateDNSNames("www.example.com"),
@@ -92,10 +95,11 @@ func TestCtlStatusCert(t *testing.T) {
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
+			clusterIssuer:  gen.ClusterIssuer("letsencrypt-prod"),
 			expErr:         false,
-			// Note: "space" after `Event:` is actually a tab
 			expOutput: `Name: testcrt-1
 Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
 DNS Names:
@@ -104,28 +108,35 @@ Events:  <none>
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
+  Conditions:
+    No Conditions set
 Secret Name: example-tls
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
 No CertificateRequest found for this Certificate`,
 		},
-		"certificate issued and renewal in progress": {
+		"certificate issued and renewal in progress with Issuer": {
 			certificate: gen.Certificate(crt2Name,
 				gen.SetCertificateNamespace(ns1),
 				gen.SetCertificateDNSNames("www.example.com"),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "ClusterIssuer"}),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "Issuer"}),
 				gen.SetCertificateSecretName("example-tls")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond, crtIssuingCond},
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt2Name},
 			inputNamespace: ns1,
-			req:            req1,
-			reqStatus:      &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
-			expErr:         false,
-			// Note: after `Event:` there is actually a tab, which sometimes shows as a single space, sometimes multiple
+			req: gen.CertificateRequest(req1Name,
+				gen.SetCertificateRequestNamespace(ns1),
+				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
+				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
+			issuer: gen.Issuer("letsencrypt-prod",
+				gen.SetIssuerNamespace(ns1)),
+			expErr: false,
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
   Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
@@ -134,13 +145,91 @@ DNS Names:
 Events:  <none>
 Issuer:
   Name: letsencrypt-prod
-  Kind: ClusterIssuer
+  Kind: Issuer
+  Conditions:
+    No Conditions set
 Secret Name: example-tls
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
 CertificateRequest:
   Name: testreq-1
+  Namespace: testns-1
+  Conditions:
+    Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
+  Events:  <none>`,
+		},
+		"certificate issued and renewal in progress without Issuer": {
+			certificate: gen.Certificate(crt3Name,
+				gen.SetCertificateNamespace(ns1),
+				gen.SetCertificateDNSNames("www.example.com"),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "non-existing-issuer", Kind: "Issuer"}),
+				gen.SetCertificateSecretName("example-tls")),
+			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond, crtIssuingCond},
+				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
+			inputArgs:      []string{crt3Name},
+			inputNamespace: ns1,
+			req: gen.CertificateRequest(req2Name,
+				gen.SetCertificateRequestNamespace(ns1),
+				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
+				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
+			issuer:    nil,
+			expErr:    false,
+			expOutput: `Name: testcrt-3
+Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
+  Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
+DNS Names:
+- www.example.com
+Events:  <none>
+error when getting Issuer: issuers.cert-manager.io "non-existing-issuer" not found
+Secret Name: example-tls
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>
+CertificateRequest:
+  Name: testreq-2
+  Namespace: testns-1
+  Conditions:
+    Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
+  Events:  <none>`,
+		},
+		"certificate issued and renewal in progress without ClusterIssuer": {
+			certificate: gen.Certificate(crt4Name,
+				gen.SetCertificateNamespace(ns1),
+				gen.SetCertificateDNSNames("www.example.com"),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "non-existing-clusterissuer", Kind: "ClusterIssuer"}),
+				gen.SetCertificateSecretName("example-tls")),
+			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond, crtIssuingCond},
+				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
+			inputArgs:      []string{crt4Name},
+			inputNamespace: ns1,
+			req: gen.CertificateRequest(req3Name,
+				gen.SetCertificateRequestNamespace(ns1),
+				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision2)}),
+				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
+			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
+			issuer:    nil,
+			expErr:    false,
+			expOutput: `Name: testcrt-4
+Namespace: testns-1
+Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
+Conditions:
+  Ready: True, Reason: , Message: Certificate is up to date and has not expired
+  Issuing: True, Reason: , Message: Issuance of a new Certificate is in Progress
+DNS Names:
+- www.example.com
+Events:  <none>
+error when getting ClusterIssuer: clusterissuers.cert-manager.io "non-existing-clusterissuer" not found
+Secret Name: example-tls
+Not Before: <none>
+Not After: 2020-09-16T09:26:18Z
+Renewal Time: <none>
+CertificateRequest:
+  Name: testreq-3
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
@@ -162,6 +251,19 @@ CertificateRequest:
 
 			if test.req != nil {
 				err = createCROwnedByCrt(t, cmCl, ctx, crt, test.req, test.reqStatus)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if test.issuer != nil {
+				_, err := cmCl.CertmanagerV1alpha2().Issuers(crt.Namespace).Create(ctx, test.issuer, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			if test.clusterIssuer != nil {
+				_, err := cmCl.CertmanagerV1alpha2().ClusterIssuers().Create(ctx, test.clusterIssuer, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -190,8 +292,12 @@ CertificateRequest:
 				}
 			}
 
-			if strings.TrimSpace(test.expOutput) != strings.TrimSpace(outBuf.String()) {
-				t.Errorf("got unexpected output, exp=\n%s\n\nbut got=\n%s",
+			match, err := regexp.MatchString(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
+			if err != nil {
+				t.Error(err)
+			}
+			if !match {
+				t.Errorf("got unexpected output, exp(replacing regex with a time)=\n%s\n\nbut got=\n%s",
 					strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
 			}
 		})
