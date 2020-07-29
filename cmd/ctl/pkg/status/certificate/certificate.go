@@ -338,7 +338,7 @@ func secretInfoString(secret *corev1.Secret) string {
   Issuer Organisation: %s
   Issuer Common Name: %s
   Key Usage: %s
-  Extended key Usages: %s
+  Extended Key Usages: %s
   Public Key Algorithm: %s
   Signature Algorithm: %s
   Subject Key ID: %s
