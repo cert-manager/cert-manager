@@ -234,7 +234,7 @@ webhook:
 
   # Specifies if the webhook should be started in hostNetwork mode.
   #
-  # Required for use in managed kubernetes clusters (such as AWS EKS) with custom
+  # Required for use in some managed kubernetes clusters (such as AWS EKS) with custom
   # CNI (such as calico), because control-plane managed by AWS cannot communicate
   # with pods' IP CIDR and admission webhooks are not working
   #
