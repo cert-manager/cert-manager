@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sergi/go-diff/diffmatchpatch"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -337,8 +338,9 @@ CertificateRequest:
 				t.Error(err)
 			}
 			if !match {
-				t.Errorf("got unexpected output, exp(replacing regex with a time)=\n%s\n\nbut got=\n%s",
-					strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()), false)
+				t.Errorf("got unexpected ouput, diff (ignoring the regex for creation time): %s\n", dmp.DiffPrettyText(diffs))
 			}
 		})
 	}
