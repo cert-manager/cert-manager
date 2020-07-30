@@ -345,8 +345,9 @@ func secretInfoString(secret *corev1.Secret) string {
   Authority Key ID: %s
   Serial Number: %s
 `
-	return fmt.Sprintf(secretFormat, secret.Name, x509Cert.Issuer.Country,
-		x509Cert.Issuer.Organization, x509Cert.Issuer.CommonName, keyUsageToString(x509Cert.KeyUsage),
+	return fmt.Sprintf(secretFormat, secret.Name, strings.Join(x509Cert.Issuer.Country, ", "),
+		strings.Join(x509Cert.Issuer.Organization, ", "),
+		x509Cert.Issuer.CommonName, keyUsageToString(x509Cert.KeyUsage),
 		extKeyUsageToString(x509Cert.ExtKeyUsage), x509Cert.PublicKeyAlgorithm, x509Cert.SignatureAlgorithm,
 		hex.EncodeToString(x509Cert.SubjectKeyId), hex.EncodeToString(x509Cert.AuthorityKeyId),
 		hex.EncodeToString(x509Cert.SerialNumber.Bytes()))
@@ -385,7 +386,7 @@ func keyUsageToString(usage x509.KeyUsage) string {
 	}
 	// Reversing because that's usually the order the usages are printed
 	for i := 0; i < len(usageStrings)/2; i++ {
-		opp := len(usageStrings)-1-i
+		opp := len(usageStrings) - 1 - i
 		usageStrings[i], usageStrings[opp] = usageStrings[opp], usageStrings[i]
 	}
 	return strings.Join(usageStrings, ", ")
