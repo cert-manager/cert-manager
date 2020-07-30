@@ -245,5 +245,9 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Spec.Affinity = podTempl.Spec.Affinity
 	}
 
+	if podTempl.Spec.PriorityClassName != "" {
+		pod.Spec.PriorityClassName = podTempl.Spec.PriorityClassName
+	}
+
 	return pod
 }

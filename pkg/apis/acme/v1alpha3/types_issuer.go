@@ -215,8 +215,9 @@ type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	ACMEChallengeSolverHTTP01IngressPodObjectMeta `json:"metadata"`
 
 	// PodSpec defines overrides for the HTTP01 challenge solver pod.
-	// Only the 'nodeSelector', 'affinity' and 'tolerations' fields are
-	// supported currently. All other fields will be ignored.
+	// Only the 'priorityClassName', 'nodeSelector', 'affinity'
+	// and 'tolerations' fields are supported currently.
+	// All other fields will be ignored.
 	// +optional
 	Spec ACMEChallengeSolverHTTP01IngressPodSpec `json:"spec"`
 }
@@ -245,6 +246,10 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// If specified, the pod's tolerations.
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// If specified, the pod's priorityClassName.
+	// +optional
+	PriorityClassName string `json:"priorityClassName,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {
