@@ -15,3 +15,4 @@ The list of individual users that have publicly shared the usage of cert-manager
 | user | Usage | Links |
 | :--- | :--- | :--- |
 | [Maartje Eyskens](https://github.com/meyskens) | Securing ingresses |  | 
+| [Noah Kantrowitz](https://github.com/coderanger) | Many things | [Lessons Learned From Two Years Of Kubernetes](https://coderanger.net/lessons-learned/) |
