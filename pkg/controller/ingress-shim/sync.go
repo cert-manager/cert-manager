@@ -186,6 +186,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			updateCrt := existingCrt.DeepCopy()
 
 			updateCrt.Spec = crt.Spec
+			updateCrt.Labels = crt.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
 			if err != nil {
 				return nil, nil, err
