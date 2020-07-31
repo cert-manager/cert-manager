@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sergi/go-diff/diffmatchpatch"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -44,7 +46,7 @@ func TestCtlStatusCert(t *testing.T) {
 	defer cancel()
 
 	// Build clients
-	_, _, cmCl, _ := framework.NewClients(t, config)
+	kubernetesCl, _, cmCl, _ := framework.NewClients(t, config)
 
 	var (
 		crt1Name  = "testcrt-1"
@@ -64,8 +66,25 @@ func TestCtlStatusCert(t *testing.T) {
 			Status: cmmeta.ConditionTrue, Message: "Issuance of a new Certificate is in Progress"}
 
 		reqNotReadyCond = cmapi.CertificateRequestCondition{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "Pending", Message: "Waiting on certificate issuance from order default/example-order: \"pending\""}
-	)
 
+		tlsCrt = []byte(`-----BEGIN CERTIFICATE-----
+MIICyTCCAbGgAwIBAgIRAOL4jtyULBSEYyGdqQn9YzowDQYJKoZIhvcNAQELBQAw
+DzENMAsGA1UEAxMEdGVzdDAeFw0yMDA3MzAxNjExNDNaFw0yMDEwMjgxNjExNDNa
+MA8xDTALBgNVBAMTBHRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDdfNmjh5ag7f6U1hj1OAx/dEN9kQzPsSlBMXGb/Ho4k5iegrFd6w8JkYdCthFv
+lfg3bIhw5tCKaw1o57HnWKBKKGt7XpeIu1mEcv8pveMIPO7TZ4+oElgX880NfJmL
+DkjEcctEo/+FurudO1aEbNfbNWpzudYKj7gGtYshBytqaYt4/APqWARJBFCYVVys
+wexZ0fLi5cBD8H1bQ1Ec3OCr5Mrq9thAGkj+rVlgYR0AZVGa9+SCOj27t6YCmyzR
+AJSEQ35v58Zfxp5tNyYd6wcAswJ9YipnUXvwahF95PNlRmMhp3Eo15m9FxehcVXU
+BOfxykMwZN7onMhuHiiwiB+NAgMBAAGjIDAeMA4GA1UdDwEB/wQEAwIFoDAMBgNV
+HRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQALrnldWjTBTvV5WKapUHUG0rhA
+vp2Cf+5FsPw8vKScXp4L+wKGdPOjhHz6NOiw5wu8A0HxlVUFawRpagkjFkeTL78O
+9ghBHLiqn9xNPIKC6ID3WpnN5terwQxQeO/M54sVMslUWCcZm9Pu4Eb//2e6wEdu
+eMmpfeISQmCsBC1CTmpxUjeUg5DEQ0X1TQykXq+bG2iso6RYPxZTFTHJFzXiDYEc
+/X7H+bOmpo/dMrXapwfvp2gD+BEq96iVpf/DBzGYNs/657LAHJ4YtxtAZCa1CK9G
+MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
+-----END CERTIFICATE-----`)
+	)
 	certIsValidTime, err := time.Parse(time.RFC3339, "2020-09-16T09:26:18Z")
 	if err != nil {
 		t.Fatal(err)
@@ -81,6 +100,7 @@ func TestCtlStatusCert(t *testing.T) {
 		// At most one of issuer and clusterIssuer is not nil
 		issuer        *cmapi.Issuer
 		clusterIssuer *cmapi.ClusterIssuer
+		secret        *v1.Secret
 
 		expErr    bool
 		expOutput string
@@ -110,7 +130,7 @@ Issuer:
   Kind: ClusterIssuer
   Conditions:
     No Conditions set
-Secret Name: example-tls
+error when finding secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -121,7 +141,7 @@ No CertificateRequest found for this Certificate`,
 				gen.SetCertificateNamespace(ns1),
 				gen.SetCertificateDNSNames("www.example.com"),
 				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "Issuer"}),
-				gen.SetCertificateSecretName("example-tls")),
+				gen.SetCertificateSecretName("existing-tls-secret")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond, crtIssuingCond},
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
 			inputArgs:      []string{crt2Name},
@@ -133,6 +153,9 @@ No CertificateRequest found for this Certificate`,
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer: gen.Issuer("letsencrypt-prod",
 				gen.SetIssuerNamespace(ns1)),
+			secret: gen.Secret("existing-tls-secret",
+				gen.SetSecretNamespace(ns1),
+				gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
 			expErr: false,
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
@@ -148,7 +171,18 @@ Issuer:
   Kind: Issuer
   Conditions:
     No Conditions set
-Secret Name: example-tls
+Secret:
+  Name: existing-tls-secret
+  Issuer Country: 
+  Issuer Organisation: 
+  Issuer Common Name: test
+  Key Usage: Digital Signature, Key Encipherment
+  Extended Key Usages: 
+  Public Key Algorithm: RSA
+  Signature Algorithm: SHA256-RSA
+  Subject Key ID: 
+  Authority Key ID: 
+  Serial Number: e2f88edc942c148463219da909fd633a
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -186,7 +220,7 @@ DNS Names:
 - www.example.com
 Events:  <none>
 error when getting Issuer: issuers.cert-manager.io "non-existing-issuer" not found
-Secret Name: example-tls
+error when finding secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -224,7 +258,7 @@ DNS Names:
 - www.example.com
 Events:  <none>
 error when getting ClusterIssuer: clusterissuers.cert-manager.io "non-existing-clusterissuer" not found
-Secret Name: example-tls
+error when finding secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -269,6 +303,13 @@ CertificateRequest:
 				}
 			}
 
+			if test.secret != nil {
+				_, err = kubernetesCl.CoreV1().Secrets(test.inputNamespace).Create(ctx, test.secret, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
 			// Options to run status command
 			streams, _, outBuf, _ := genericclioptions.NewTestIOStreams()
 			opts := &statuscertcmd.Options{
@@ -297,8 +338,9 @@ CertificateRequest:
 				t.Error(err)
 			}
 			if !match {
-				t.Errorf("got unexpected output, exp(replacing regex with a time)=\n%s\n\nbut got=\n%s",
-					strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()), false)
+				t.Errorf("got unexpected ouput, diff (ignoring the regex for creation time): %s\n", dmp.DiffPrettyText(diffs))
 			}
 		})
 	}

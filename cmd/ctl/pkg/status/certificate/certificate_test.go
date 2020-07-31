@@ -17,6 +17,7 @@ limitations under the License.
 package certificate
 
 import (
+	"crypto/x509"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"strings"
@@ -47,11 +48,12 @@ func TestFormatStringSlice(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		actualOutput := formatStringSlice(test.slice)
-		if actualOutput != test.expOutput {
-			t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
-		}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if actualOutput := formatStringSlice(test.slice); actualOutput != test.expOutput {
+				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
+			}
+		})
 	}
 }
 
@@ -90,10 +92,87 @@ func TestCRInfoString(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		actualOutput := crInfoString(test.cr)
-		if strings.TrimSpace(actualOutput) != strings.TrimSpace(test.expOutput) {
-			t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
-		}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			actualOutput := crInfoString(test.cr)
+			if strings.TrimSpace(actualOutput) != strings.TrimSpace(test.expOutput) {
+				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
+			}
+		})
+	}
+}
+
+func TestKeyUsageToString(t *testing.T) {
+	tests := map[string]struct {
+		usage     x509.KeyUsage
+		expOutput string
+	}{
+		"no key usage set": {
+			usage:     x509.KeyUsage(0),
+			expOutput: "",
+		},
+		"key usage Digital Signature": {
+			usage:     x509.KeyUsageDigitalSignature,
+			expOutput: "Digital Signature",
+		},
+		"key usage Digital Signature and Data Encipherment": {
+			usage:     x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment,
+			expOutput: "Digital Signature, Data Encipherment",
+		},
+		"key usage with three usages is ordered": {
+			usage:     x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment | x509.KeyUsageContentCommitment,
+			expOutput: "Digital Signature, Content Commitment, Data Encipherment",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if actualOutput := keyUsageToString(test.usage); actualOutput != test.expOutput {
+				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
+			}
+		})
+	}
+}
+
+func TestExtKeyUsageToString(t *testing.T) {
+	tests := map[string]struct {
+		extUsage       []x509.ExtKeyUsage
+		expOutput      string
+		expError       bool
+		expErrorOutput string
+	}{
+		"no extended key usage": {
+			extUsage:  []x509.ExtKeyUsage{},
+			expOutput: "",
+		},
+		"extended key usage Any": {
+			extUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+			expOutput: "Any",
+		},
+		"multiple extended key usages": {
+			extUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageEmailProtection},
+			expOutput: "Client Authentication, Email Protection",
+		},
+		"undefined extended key usage": {
+			extUsage:       []x509.ExtKeyUsage{x509.ExtKeyUsage(42)},
+			expOutput:      "",
+			expError:       true,
+			expErrorOutput: "error when converting Extended Usages to string: encountered unknown Extended Usage with code 42",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			actualOutput, err := extKeyUsageToString(test.extUsage)
+			if err != nil {
+				if !test.expError || test.expErrorOutput != err.Error() {
+					t.Errorf("got unexpected error. This test expects an error: %t. expected error: %q, actual error: %q",
+						test.expError, test.expErrorOutput, err.Error())
+				}
+			} else if test.expError {
+				t.Errorf("expects error: %q, but did not get any", test.expErrorOutput)
+			}
+			if actualOutput != test.expOutput {
+				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
+			}
+		})
 	}
 }
