@@ -345,16 +345,21 @@ func secretInfoString(secret *corev1.Secret) string {
   Authority Key ID: %s
   Serial Number: %s
 `
+
+	extKeyUsageString, err := extKeyUsageToString(x509Cert.ExtKeyUsage)
+	if err != nil {
+		extKeyUsageString = err.Error()
+	}
 	return fmt.Sprintf(secretFormat, secret.Name, strings.Join(x509Cert.Issuer.Country, ", "),
 		strings.Join(x509Cert.Issuer.Organization, ", "),
 		x509Cert.Issuer.CommonName, keyUsageToString(x509Cert.KeyUsage),
-		extKeyUsageToString(x509Cert.ExtKeyUsage), x509Cert.PublicKeyAlgorithm, x509Cert.SignatureAlgorithm,
+		extKeyUsageString, x509Cert.PublicKeyAlgorithm, x509Cert.SignatureAlgorithm,
 		hex.EncodeToString(x509Cert.SubjectKeyId), hex.EncodeToString(x509Cert.AuthorityKeyId),
 		hex.EncodeToString(x509Cert.SerialNumber.Bytes()))
 }
 
 var (
-	keyUsage = map[int]string{
+	keyUsageToStringMap = map[int]string{
 		1:   "Digital Signature",
 		2:   "Content Commitment",
 		4:   "Key Encipherment",
@@ -365,8 +370,8 @@ var (
 		128: "Encipher Only",
 		256: "Decipher Only",
 	}
-	keyUsagePossibleValues = []int{256, 128, 64, 32, 16, 8, 4, 2, 1}
-	extKeyUsage            = []string{"Any", "Server Authentication", "Client Authentication", "Code Signing", "Email Protection",
+	keyUsagePossibleValues  = []int{256, 128, 64, 32, 16, 8, 4, 2, 1}
+	extKeyUsageStringValues = []string{"Any", "Server Authentication", "Client Authentication", "Code Signing", "Email Protection",
 		"IPSEC End System", "IPSEC Tunnel", "IPSEC User", "Time Stamping", "OCSP Signing", "Microsoft Server Gated Crypto",
 		"Netscape Server Gated Crypto", "Microsoft Commercial Code Signing", "Microsoft Kernel Code Signing",
 	}
@@ -378,7 +383,7 @@ func keyUsageToString(usage x509.KeyUsage) string {
 	for _, val := range keyUsagePossibleValues {
 		if usageInt >= val {
 			usageInt -= val
-			usageStrings = append(usageStrings, keyUsage[val])
+			usageStrings = append(usageStrings, keyUsageToStringMap[val])
 		}
 		if usageInt == 0 {
 			break
@@ -392,10 +397,13 @@ func keyUsageToString(usage x509.KeyUsage) string {
 	return strings.Join(usageStrings, ", ")
 }
 
-func extKeyUsageToString(extUsages []x509.ExtKeyUsage) string {
+func extKeyUsageToString(extUsages []x509.ExtKeyUsage) (string, error) {
 	var extUsageStrings []string
 	for _, extUsage := range extUsages {
-		extUsageStrings = append(extUsageStrings, extKeyUsage[extUsage])
+		if extUsage < 0 || int(extUsage) >= len(extKeyUsageStringValues) {
+			return "", fmt.Errorf("error when converting Extended Usages to string: encountered unknown Extended Usage with code %d", extUsage)
+		}
+		extUsageStrings = append(extUsageStrings, extKeyUsageStringValues[extUsage])
 	}
-	return strings.Join(extUsageStrings, ", ")
+	return strings.Join(extUsageStrings, ", "), nil
 }

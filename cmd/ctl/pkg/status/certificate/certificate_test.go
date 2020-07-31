@@ -135,8 +135,10 @@ func TestKeyUsageToString(t *testing.T) {
 
 func TestExtKeyUsageToString(t *testing.T) {
 	tests := map[string]struct {
-		extUsage  []x509.ExtKeyUsage
-		expOutput string
+		extUsage       []x509.ExtKeyUsage
+		expOutput      string
+		expError       bool
+		expErrorOutput string
 	}{
 		"no extended key usage": {
 			extUsage:  []x509.ExtKeyUsage{},
@@ -150,10 +152,25 @@ func TestExtKeyUsageToString(t *testing.T) {
 			extUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageEmailProtection},
 			expOutput: "Client Authentication, Email Protection",
 		},
+		"undefined extended key usage": {
+			extUsage:       []x509.ExtKeyUsage{x509.ExtKeyUsage(42)},
+			expOutput:      "",
+			expError:       true,
+			expErrorOutput: "error when converting Extended Usages to string: encountered unknown Extended Usage with code 42",
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if actualOutput := extKeyUsageToString(test.extUsage); actualOutput != test.expOutput {
+			actualOutput, err := extKeyUsageToString(test.extUsage)
+			if err != nil {
+				if !test.expError || test.expErrorOutput != err.Error() {
+					t.Errorf("got unexpected error. This test expects an error: %t. expected error: %q, actual error: %q",
+						test.expError, test.expErrorOutput, err.Error())
+				}
+			} else if test.expError {
+				t.Errorf("expects error: %q, but did not get any", test.expErrorOutput)
+			}
+			if actualOutput != test.expOutput {
 				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
 			}
 		})
