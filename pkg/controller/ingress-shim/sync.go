@@ -160,6 +160,8 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			return nil, nil, err
 		}
 
+		c.setCommonName(crt, ing)
+
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
@@ -183,13 +185,8 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 
 			updateCrt := existingCrt.DeepCopy()
 
-			updateCrt.Spec.DNSNames = tls.Hosts
-			updateCrt.Spec.SecretName = tls.SecretName
-			updateCrt.Spec.IssuerRef.Name = issuerName
-			updateCrt.Spec.IssuerRef.Kind = issuerKind
-			updateCrt.Spec.IssuerRef.Group = issuerGroup
-			updateCrt.Spec.CommonName = ""
-			updateCrt.Labels = ing.Labels
+			updateCrt.Spec = crt.Spec
+			updateCrt.Labels = crt.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
 			if err != nil {
 				return nil, nil, err
@@ -303,6 +300,13 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1b
 	}
 
 	return nil
+}
+
+func (c *controller) setCommonName(crt *cmapi.Certificate, ing *extv1beta1.Ingress) {
+	// if annotation is set use that as CN
+	if ing.Annotations != nil && ing.Annotations[cmapi.CommonNameAnnotationKey] != "" {
+		crt.Spec.CommonName = ing.Annotations[cmapi.CommonNameAnnotationKey]
+	}
 }
 
 // shouldSync returns true if this ingress should have a Certificate resource
