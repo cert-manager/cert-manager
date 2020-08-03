@@ -575,6 +575,7 @@ func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMECha
 	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
 	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
 	out.PriorityClassName = in.PriorityClassName
+	out.ServiceAccountName = in.ServiceAccountName
 	return nil
 }
 
@@ -588,6 +589,7 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMECha
 	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
 	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
 	out.PriorityClassName = in.PriorityClassName
+	out.ServiceAccountName = in.ServiceAccountName
 	return nil
 }
 
