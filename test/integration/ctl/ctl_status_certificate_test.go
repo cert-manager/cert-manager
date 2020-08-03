@@ -130,7 +130,7 @@ Issuer:
   Kind: ClusterIssuer
   Conditions:
     No Conditions set
-error when finding secret "example-tls": secrets "example-tls" not found
+error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -220,7 +220,7 @@ DNS Names:
 - www.example.com
 Events:  <none>
 error when getting Issuer: issuers.cert-manager.io "non-existing-issuer" not found
-error when finding secret "example-tls": secrets "example-tls" not found
+error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -258,7 +258,7 @@ DNS Names:
 - www.example.com
 Events:  <none>
 error when getting ClusterIssuer: clusterissuers.cert-manager.io "non-existing-clusterissuer" not found
-error when finding secret "example-tls": secrets "example-tls" not found
+error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -340,7 +340,7 @@ CertificateRequest:
 			if !match {
 				dmp := diffmatchpatch.New()
 				diffs := dmp.DiffMain(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()), false)
-				t.Errorf("got unexpected ouput, diff (ignoring the regex for creation time): %s\n", dmp.DiffPrettyText(diffs))
+				t.Errorf("got unexpected ouput, diff (ignoring the regex for creation time):\n%s\n\n expected: %s\n\n got: %s", dmp.DiffPrettyText(diffs), test.expOutput, outBuf.String())
 			}
 		})
 	}

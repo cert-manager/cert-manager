@@ -53,8 +53,6 @@ type CertificateStatus struct {
 	// Renewal Time of Certificate resource
 	RenewalTime *metav1.Time
 
-	// Type of Issuer, can be Issuer or ClusterIssuer
-	IssuerKind   string
 	IssuerStatus *IssuerStatus
 
 	SecretStatus *SecretStatus
@@ -82,7 +80,6 @@ type CertificateStatusBuilder struct {
 	// Renewal Time of Certificate resource
 	RenewalTime *metav1.Time
 
-	IssuerKind   string
 	IssuerStatus *IssuerStatus
 
 	SecretStatus *SecretStatus
@@ -159,11 +156,6 @@ func (builder *CertificateStatusBuilder) withEvents(events *v1.EventList) *Certi
 	return builder
 }
 
-func (builder *CertificateStatusBuilder) withIssuerKind(kind string) *CertificateStatusBuilder {
-	builder.IssuerKind = kind
-	return builder
-}
-
 func (builder *CertificateStatusBuilder) withIssuer(issuer *cmapiv1alpha2.Issuer, err error) *CertificateStatusBuilder {
 	if err != nil {
 		builder.IssuerStatus = &IssuerStatus{Error: err}
@@ -235,10 +227,51 @@ func (builder *CertificateStatusBuilder) withCR(req *cmapiv1alpha2.CertificateRe
 func (builder *CertificateStatusBuilder) build() *CertificateStatus {
 	return &CertificateStatus{
 		Name: builder.Name, Namespace: builder.Namespace, CreationTime: builder.CreationTime,
-		Conditions: builder.Conditions, DNSNames: builder.DNSNames, Events: builder.Events, IssuerKind: builder.IssuerKind,
+		Conditions: builder.Conditions, DNSNames: builder.DNSNames, Events: builder.Events,
 		NotBefore: builder.NotBefore, NotAfter: builder.NotAfter, RenewalTime: builder.RenewalTime,
 		IssuerStatus: builder.IssuerStatus, SecretStatus: builder.SecretStatus, CRStatus: builder.CRStatus,
 	}
+}
+
+func (status *CertificateStatus) String() string {
+	output := ""
+	output += fmt.Sprintf("Name: %s\n", status.Name)
+	output += fmt.Sprintf("Namespace: %s\n", status.Namespace)
+	output += fmt.Sprintf("Created at: %s\n", formatTimeString(&status.CreationTime))
+
+	// Output one line about each type of Condition that is set.
+	// Certificate can have multiple Conditions of different types set, e.g. "Ready" or "Issuing"
+	conditionMsg := ""
+	for _, con := range status.Conditions {
+		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
+	}
+	if conditionMsg == "" {
+		conditionMsg = "  No Conditions set\n"
+	}
+	output += fmt.Sprintf("Conditions:\n%s", conditionMsg)
+
+	output += fmt.Sprintf("DNS Names:\n%s", formatStringSlice(status.DNSNames))
+
+	var buf bytes.Buffer
+	tabWriter := util.NewTabWriter(&buf)
+	prefixWriter := describe.NewPrefixWriter(tabWriter)
+	util.DescribeEvents(status.Events, prefixWriter, 0)
+	tabWriter.Flush()
+	output += buf.String()
+	buf.Reset()
+
+	if status.IssuerStatus == nil {
+	}
+	output += status.IssuerStatus.String()
+	output += status.SecretStatus.String()
+
+	output += fmt.Sprintf("Not Before: %s\n", formatTimeString(status.NotBefore))
+	output += fmt.Sprintf("Not After: %s\n", formatTimeString(status.NotAfter))
+	output += fmt.Sprintf("Renewal Time: %s\n", formatTimeString(status.RenewalTime))
+
+	output += status.CRStatus.String()
+
+	return output
 }
 
 // String returns the information about the status of a Issuer/ClusterIssuer as a string to be printed as output
