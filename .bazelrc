@@ -1,5 +1,2 @@
 # Include git version info
 build --workspace_status_command hack/build/print-workspace-status.sh
-
-# bazel including rules_docker 0.12.0 may not need the following flag
-build --host_force_python=PY2
