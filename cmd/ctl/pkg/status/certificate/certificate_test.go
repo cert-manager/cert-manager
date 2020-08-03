@@ -18,10 +18,12 @@ package certificate
 
 import (
 	"crypto/x509"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"errors"
 	"strings"
 	"testing"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 func TestFormatStringSlice(t *testing.T) {
@@ -60,11 +62,13 @@ func TestFormatStringSlice(t *testing.T) {
 func TestCRInfoString(t *testing.T) {
 	tests := map[string]struct {
 		cr        *cmapi.CertificateRequest
+		err       error
 		expOutput string
 	}{
 		// Newlines are part of the expected output
 		"Nil pointer output correct": {
-			cr: nil,
+			cr:  nil,
+			err: errors.New("No CertificateRequest found for this Certificate\n"),
 			expOutput: `No CertificateRequest found for this Certificate
 `,
 		},
@@ -75,6 +79,7 @@ func TestCRInfoString(t *testing.T) {
   Namespace: 
   Conditions:
     No Conditions set
+  Events:  <none>
 `,
 		},
 		"CR with conditions output correct": {
@@ -88,13 +93,14 @@ func TestCRInfoString(t *testing.T) {
   Namespace: 
   Conditions:
     Ready: True, Reason: , Message: example
+  Events:  <none>
 `,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualOutput := crInfoString(test.cr)
+			actualOutput := (&CertificateStatusBuilder{}).withCR(test.cr, nil, test.err).build().CRStatus.String()
 			if strings.TrimSpace(actualOutput) != strings.TrimSpace(test.expOutput) {
 				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
 			}
