@@ -18,8 +18,10 @@ package util
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +40,7 @@ import (
 // The intended use is for w to be created with a *tabWriter.Writer underneath, and the caller
 // of DescribeEvents would need to call Flush() on that *tabWriter.Writer to actually print the output.
 func DescribeEvents(el *corev1.EventList, w describe.PrefixWriter, baseLevel int) {
-	if len(el.Items) == 0 {
+	if el == nil || len(el.Items) == 0 {
 		w.Write(baseLevel, "Events:\t<none>\n")
 		w.Flush()
 		return
@@ -64,6 +66,10 @@ func DescribeEvents(el *corev1.EventList, w describe.PrefixWriter, baseLevel int
 		)
 	}
 	w.Flush()
+}
+
+func NewTabWriter(writer io.Writer) *tabwriter.Writer {
+	return tabwriter.NewWriter(writer, 0, 8, 2, ' ', 0)
 }
 
 // formatEventSource formats EventSource as a comma separated string excluding Host when empty
