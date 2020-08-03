@@ -19,6 +19,8 @@ package cainjector
 import (
 	"context"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,7 +93,7 @@ func (c *certificateDataSource) Configured(log logr.Logger, metaObj metav1.Objec
 	if !ok {
 		return false
 	}
-	log.Info("Extracting CA from Certificate resource", "certificate", certNameRaw)
+	log.V(logf.DebugLevel).Info("Extracting CA from Certificate resource", "certificate", certNameRaw)
 	return true
 }
 
@@ -123,7 +125,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	}
 	owner := OwningCertForSecret(&secret)
 	if owner == nil || *owner != certName {
-		log.Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
+		log.V(logf.WarnLevel).Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
 		return nil, nil
 	}
 
@@ -173,7 +175,7 @@ func (c *secretDataSource) Configured(log logr.Logger, metaObj metav1.Object) bo
 	if !ok {
 		return false
 	}
-	log.Info("Extracting CA from Secret resource", "secret", secretNameRaw)
+	log.V(logf.DebugLevel).Info("Extracting CA from Secret resource", "secret", secretNameRaw)
 	return true
 }
 
@@ -196,7 +198,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	}
 
 	if secret.Annotations == nil || secret.Annotations[cmapi.AllowsInjectionFromSecretAnnotation] != "true" {
-		log.Info("Secret resource does not allow direct injection - refusing to inject CA")
+		log.V(logf.WarnLevel).Info("Secret resource does not allow direct injection - refusing to inject CA")
 		return nil, nil
 	}
 

@@ -26,8 +26,9 @@ import (
 	"strings"
 	"time"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/miekg/dns"
-	"k8s.io/klog/v2"
 
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
@@ -56,7 +57,7 @@ type DNSProvider struct {
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
 func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*DNSProvider, error) {
-	klog.V(5).Infof("Creating RFC2136 Provider")
+	logf.Log.V(logf.DebugLevel).Info("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
 
@@ -83,16 +84,16 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	}
 	d.tsigAlgorithm = tsigAlgorithm
 
-	klog.V(5).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
-	klog.V(5).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
-	klog.V(5).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
+	logf.Log.V(logf.DebugLevel).Info("DNSProvider nameserver:       %s\n", d.nameserver)
+	logf.Log.V(logf.DebugLevel).Info("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
+	logf.Log.V(logf.DebugLevel).Info("            tsigKeyName:      %s\n", d.tsigKeyName)
 	keyLen := len(d.tsigSecret)
 	mask := make([]rune, keyLen/2)
 	for i := range mask {
 		mask[i] = '*'
 	}
 	masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
-	klog.V(5).Infof("            tsigSecret:       %s\n", masked)
+	logf.Log.V(logf.DebugLevel).Info("            tsigSecret:       %s\n", masked)
 
 	return d, nil
 }

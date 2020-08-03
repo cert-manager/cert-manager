@@ -26,6 +26,8 @@ import (
 	"net/http"
 	"time"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/go-logr/logr"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -136,7 +138,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/healthz", s.handleHealthz)
 		mux.HandleFunc("/livez", s.handleLivez)
-		s.Log.Info("listening for insecure healthz connections", "address", s.HealthzAddr)
+		s.Log.V(logf.InfoLevel).Info("listening for insecure healthz connections", "address", s.HealthzAddr)
 		healthzChan = s.startServer(l, internalStopCh, mux)
 	}
 
@@ -149,7 +151,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 
 	// wrap the listener with TLS if a CertificateSource is provided
 	if s.CertificateSource != nil {
-		s.Log.Info("listening for secure connections", "address", s.ListenAddr)
+		s.Log.V(logf.InfoLevel).Info("listening for secure connections", "address", s.ListenAddr)
 		certSourceChan = s.startCertificateSource(internalStopCh)
 		cipherSuites, err := ciphers.TLSCipherSuites(s.CipherSuites)
 		if err != nil {
@@ -166,7 +168,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 			PreferServerCipherSuites: true,
 		})
 	} else {
-		s.Log.Info("listening for insecure connections", "address", s.ListenAddr)
+		s.Log.V(logf.InfoLevel).Info("listening for insecure connections", "address", s.ListenAddr)
 	}
 
 	mux := http.NewServeMux()
@@ -175,7 +177,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	mux.HandleFunc("/convert", s.handle(s.convert))
 	if s.EnablePprof {
 		profiling.Install(mux)
-		s.Log.Info("registered pprof handlers")
+		s.Log.V(logf.InfoLevel).Info("registered pprof handlers")
 	}
 	listenerChan := s.startServer(l, internalStopCh, mux)
 
@@ -196,9 +198,9 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	close(internalStopCh)
 	shutdown = true
 
-	s.Log.Info("waiting for server to shutdown")
+	s.Log.V(logf.DebugLevel).Info("waiting for server to shutdown")
 	waitForAll(healthzChan, certSourceChan, listenerChan)
-	s.Log.Info("server shutdown successfully")
+	s.Log.V(logf.InfoLevel).Info("server shutdown successfully")
 
 	return err
 }
@@ -234,7 +236,7 @@ func (s *Server) startServer(l net.Listener, stopCh <-chan struct{}, handle http
 				s.Log.Error(err, "failed to gracefully shutdown http server")
 				ch <- err
 			}
-			s.Log.Info("shutdown HTTP server gracefully")
+			s.Log.V(logf.DebugLevel).Info("shutdown HTTP server gracefully")
 		}
 	}()
 	return ch
@@ -339,7 +341,7 @@ func (s *Server) handleHealthz(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	if s.CertificateSource != nil && !s.CertificateSource.Healthy() {
-		s.Log.Info("Health check failed as CertificateSource is unhealthy")
+		s.Log.V(logf.WarnLevel).Info("Health check failed as CertificateSource is unhealthy")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

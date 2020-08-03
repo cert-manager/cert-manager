@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="cert-manager e2e suite" tests="10" failures="0" errors="0" time="254.005">
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned ClusterIssuer should issue a certificate that includes arbitrary key usages" classname="cert-manager e2e suite" time="23.38503738"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type VaultAppRole ClusterIssuer should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name" classname="cert-manager e2e suite" time="25.211245069"></testcase>
+      <testcase name="[Conformance] Certificates with External Account Binding with issuer type ACME HTTP01 ClusterIssuer should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations" classname="cert-manager e2e suite" time="43.546828056"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type CA Issuer should issue a basic, defaulted certificate for a single Common Name" classname="cert-manager e2e suite" time="20.037462271"></testcase>
+      <testcase name="[cert-manager] ACME CertificateRequest (HTTP01) should obtain a signed certificate with a single CN from the ACME server" classname="cert-manager e2e suite" time="31.749620887"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned ClusterIssuer should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name" classname="cert-manager e2e suite" time="20.046750718"></testcase>
+      <testcase name="[Conformance] [RBAC] Issuers with namespace edit access should be able to get issuers" classname="cert-manager e2e suite" time="1.025563553"></testcase>
+      <testcase name="[cert-manager] CA Injector for validating webhooks should inject the CA data into all CA fields" classname="cert-manager e2e suite" time="17.537273622"></testcase>
+      <testcase name="[cert-manager] ACME Certificate (HTTP01) should obtain a signed certificate for a long domain using http01 validation" classname="cert-manager e2e suite" time="46.552782024"></testcase>
+  </testsuite>

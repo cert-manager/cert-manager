@@ -96,7 +96,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 	if issuerType != c.issuerType {
 		c.log.WithValues(
 			logf.RelatedResourceKindKey, issuerType,
-		).V(5).Info("issuer reference type does not match controller resource kind, ignoring")
+		).V(logf.DebugLevel).Info("issuer reference type does not match controller resource kind, ignoring")
 		return nil
 	}
 

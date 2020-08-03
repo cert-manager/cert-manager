@@ -42,7 +42,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 	var source tls.CertificateSource
 	switch {
 	case options.FileTLSSourceEnabled(opts):
-		log.Info("using TLS certificate from local filesystem", "private_key_path", opts.TLSKeyFile, "certificate", opts.TLSCertFile)
+		log.V(logf.InfoLevel).Info("using TLS certificate from local filesystem", "private_key_path", opts.TLSKeyFile, "certificate", opts.TLSCertFile)
 		source = &tls.FileCertificateSource{
 			CertPath: opts.TLSCertFile,
 			KeyPath:  opts.TLSKeyFile,
@@ -54,7 +54,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 			return nil, err
 		}
 
-		log.Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", opts.DynamicServingCASecretNamespace, "secret_name", opts.DynamicServingCASecretName)
+		log.V(logf.InfoLevel).Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", opts.DynamicServingCASecretNamespace, "secret_name", opts.DynamicServingCASecretName)
 		source = &tls.DynamicSource{
 			DNSNames: opts.DynamicServingDNSNames,
 			Authority: &authority.DynamicAuthority{
@@ -66,7 +66,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 			Log: log,
 		}
 	default:
-		log.Info("warning: serving insecurely as tls certificate data not provided")
+		log.V(logf.WarnLevel).Info("warning: serving insecurely as tls certificate data not provided")
 	}
 
 	return &server.Server{

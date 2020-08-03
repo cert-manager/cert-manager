@@ -34,18 +34,19 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
-	log := logs.WithResource(logs.FromContext(ctx), ing)
-	ctx = logs.NewContext(ctx, log)
+	log := logf.WithResource(logf.FromContext(ctx), ing)
+	ctx = logf.NewContext(ctx, log)
 
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
-		log.Info(fmt.Sprintf("not syncing ingress resource as it does not contain a %q or %q annotation",
-			cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey))
+		log.V(logf.DebugLevel).Info("not syncing ingress resource as it does not contain a %q or %q annotation",
+			cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey)
 		return nil
 	}
 
@@ -166,20 +167,20 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 		// does then skip this entry
 		if existingCrt != nil {
 			log := logs.WithRelatedResource(log, existingCrt)
-			log.Info("certificate already exists for ingress resource, ensuring it is up to date")
+			log.V(logf.DebugLevel).Info("certificate already exists for ingress resource, ensuring it is up to date")
 
 			if metav1.GetControllerOf(existingCrt) == nil {
-				log.Info("certificate resource has no owner. refusing to update non-owned certificate resource for ingress")
+				log.V(logf.InfoLevel).Info("certificate resource has no owner. refusing to update non-owned certificate resource for ingress")
 				continue
 			}
 
 			if !metav1.IsControlledBy(existingCrt, ing) {
-				log.Info("certificate resource is not owned by this ingress. refusing to update non-owned certificate resource for ingress")
+				log.V(logf.InfoLevel).Info("certificate resource is not owned by this ingress. refusing to update non-owned certificate resource for ingress")
 				continue
 			}
 
 			if !certNeedsUpdate(existingCrt, crt) {
-				log.Info("certificate resource is already up to date for ingress")
+				log.V(logf.DebugLevel).Info("certificate resource is already up to date for ingress")
 				continue
 			}
 

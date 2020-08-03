@@ -15,7 +15,8 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/go-logr/logr"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns"
 	"github.com/Azure/go-autorest/autorest"
@@ -32,6 +33,7 @@ type DNSProvider struct {
 	zoneClient        dns.ZonesClient
 	resourceGroupName string
 	zoneName          string
+	log               logr.Logger
 }
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
@@ -63,12 +65,13 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		zoneClient:        zc,
 		resourceGroupName: resourceGroupName,
 		zoneName:          zoneName,
+		log:               logf.Log.WithName("azure-dns"),
 	}, nil
 }
 
 func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool) (*adal.ServicePrincipalToken, error) {
 	if clientID != "" {
-		klog.Info("azuredns authenticating with clientID and secret key")
+		logf.Log.V(logf.InfoLevel).Info("azuredns authenticating with clientID and secret key")
 		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
 		if err != nil {
 			return nil, err
@@ -79,7 +82,7 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		}
 		return spt, nil
 	}
-	klog.Info("No ClientID found:  authenticating azuredns with managed identity (MSI)")
+	logf.Log.V(logf.InfoLevel).Info("No ClientID found:  authenticating azuredns with managed identity (MSI)")
 	if !ambient {
 		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
 	}
@@ -104,7 +107,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		klog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
+		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
@@ -133,7 +136,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		klog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
+		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
@@ -146,7 +149,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		*rparams, "", "")
 
 	if err != nil {
-		klog.Infof("Error creating TXT: %s, %v", z, err)
+		c.log.V(logf.WarnLevel).Info("Error creating TXT: %s, %v", z, err)
 		return err
 	}
 	return nil

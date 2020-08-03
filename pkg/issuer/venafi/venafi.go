@@ -17,6 +17,8 @@ limitations under the License.
 package venafi
 
 import (
+	"github.com/go-logr/logr"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -39,6 +41,8 @@ type Venafi struct {
 	resourceNamespace string
 
 	clientBuilder client.VenafiClientBuilder
+
+	log logr.Logger
 }
 
 func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Interface, error) {
@@ -48,6 +52,7 @@ func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Inte
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
 		clientBuilder:     client.New,
 		Context:           ctx,
+		log:               logf.Log.WithName("venafi"),
 	}, nil
 }
 

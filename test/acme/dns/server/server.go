@@ -74,11 +74,11 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr string) err
 	}
 	b.listenAddr = pc.LocalAddr().String()
 	log = log.WithValues("address", b.listenAddr)
-	log.Info("listening on UDP port")
+	log.V(logf.InfoLevel).Info("listening on UDP port")
 
 	b.server = &dns.Server{PacketConn: pc, ReadTimeout: time.Hour, WriteTimeout: time.Hour, MsgAcceptFunc: msgAcceptFunc}
 	if b.EnableTSIG {
-		log.Info("enabling TSIG support")
+		log.V(logf.DebugLevel).Info("enabling TSIG support")
 		b.server.TsigSecret = map[string]string{b.TSIGKeyName: b.TSIGKeySecret}
 	}
 
@@ -97,9 +97,9 @@ func (b *BasicServer) RunWithAddress(ctx context.Context, listenAddr string) err
 	waitLock.Lock()
 	b.server.NotifyStartedFunc = waitLock.Unlock
 	go func() {
-		log.Info("starting DNS server")
+		log.V(logf.DebugLevel).Info("starting DNS server")
 		b.server.ActivateAndServe()
-		log.Info("DNS server exited")
+		log.V(logf.DebugLevel).Info("DNS server exited")
 		pc.Close()
 	}()
 	waitLock.Lock()

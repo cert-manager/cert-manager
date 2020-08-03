@@ -96,7 +96,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 		return nil, nil
 	}
 
-	log.Info("certificate issued")
+	log.V(logf.DebugLevel).Info("certificate issued")
 
 	return &issuer.IssueResponse{
 		Certificate: certPem,

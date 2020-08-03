@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"github.com/go-logr/logr"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,7 +41,7 @@ func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqu
 	return func(obj interface{}) {
 		s, ok := obj.(metav1.Object)
 		if !ok {
-			log.Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")
+			log.V(logf.DebugLevel).Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")
 			return
 		}
 

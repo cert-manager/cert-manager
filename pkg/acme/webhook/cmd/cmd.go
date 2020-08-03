@@ -21,13 +21,12 @@ import (
 	"os"
 	"runtime"
 
-	"k8s.io/klog/v2"
-
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/cmd/server"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
@@ -43,6 +42,7 @@ func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
 	cmd := server.NewCommandStartWebhookServer(os.Stdout, os.Stderr, stopCh, groupName, hooks...)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 	if err := cmd.Execute(); err != nil {
-		klog.Fatal(err)
+		logf.Log.V(logf.ErrorLevel).Error(err, "")
+		os.Exit(1)
 	}
 }

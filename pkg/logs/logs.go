@@ -40,7 +40,6 @@ var (
 	WarnLevel  = 1
 	InfoLevel  = 2
 	DebugLevel = 3
-	// and the mysterious 4
 )
 
 var logFlushFreq = flag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")

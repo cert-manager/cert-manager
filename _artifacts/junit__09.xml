@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="cert-manager e2e suite" tests="12" failures="0" errors="0" time="253.95">
+      <testcase name="[Conformance] Certificates with issuer type CA Issuer should issue a certificate that includes arbitrary key usages" classname="cert-manager e2e suite" time="21.344250038"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type VaultAppRole Issuer should issue an ECDSA, defaulted certificate for a single Common Name" classname="cert-manager e2e suite" time="28.846103221"></testcase>
+      <testcase name="[cert-manager] ACME Issuer should handle updates to the email field" classname="cert-manager e2e suite" time="5.051676891"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned Issuer should issue a certificate that defines a DNS Name and sets a duration" classname="cert-manager e2e suite" time="15.037814362"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned ClusterIssuer should issue an ECDSA, defaulted certificate for a single Common Name" classname="cert-manager e2e suite" time="15.037769945"></testcase>
+      <testcase name="[Conformance] [RBAC] CertificateRequests with namespace admin access should be able to delete certificaterequests" classname="cert-manager e2e suite" time="1.037282078"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned ClusterIssuer should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations" classname="cert-manager e2e suite" time="24.553148254"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type VaultAppRole ClusterIssuer should issue a certificate that defines a DNS Name and sets a duration" classname="cert-manager e2e suite" time="23.957640384"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type ACME HTTP01 Issuer should issue a basic, defaulted certificate for a single distinct DNS Name" classname="cert-manager e2e suite" time="46.050483852"></testcase>
+      <testcase name="[Conformance] [RBAC] Issuers with namespace admin access should be able to update issuers" classname="cert-manager e2e suite" time="1.037534777"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned Issuer should issue an ECDSA, defaulted certificate for a single Common Name" classname="cert-manager e2e suite" time="21.039708841"></testcase>
+  </testsuite>

@@ -27,11 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/rest"
-	"k8s.io/klog/v2"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type Webhook struct {
@@ -60,7 +60,7 @@ func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	if respPayload.Response.Success && resErr == nil {
-		klog.Infof("Present call succeeded")
+		logf.Log.V(logf.InfoLevel).Info("Present call succeeded")
 		return nil
 	}
 
@@ -96,7 +96,7 @@ func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	if respPayload.Response.Success && resErr == nil {
-		klog.Infof("CleanUp call succeeded")
+		logf.Log.V(logf.InfoLevel).Info("CleanUp call succeeded")
 		return nil
 	}
 

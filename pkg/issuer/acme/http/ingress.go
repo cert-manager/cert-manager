@@ -80,7 +80,7 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 	if httpDomainCfg.Name != "" {
 		log := logf.WithRelatedResourceName(log, httpDomainCfg.Name, ch.Namespace, "Ingress")
 		ctx := logf.NewContext(ctx, log)
-		log.Info("adding solver paths to existing ingress resource")
+		log.V(logf.DebugLevel).Info("adding solver paths to existing ingress resource")
 		return s.addChallengePathToIngress(ctx, ch, svcName)
 	}
 	existingIngresses, err := s.getIngressesForChallenge(ctx, ch)
@@ -92,7 +92,7 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 		return existingIngresses[0], nil
 	}
 	if len(existingIngresses) == 1 && ingressServiceName(existingIngresses[0]) != svcName {
-		log.Info("service name changed. cleaning up all existing ingresses.")
+		log.V(logf.DebugLevel).Info("service name changed. cleaning up all existing ingresses.")
 		err := s.cleanupIngresses(ctx, ch)
 		if err != nil {
 			return nil, err
@@ -100,7 +100,7 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 		return nil, fmt.Errorf("service name changed, existing challenge solver ingresses found and cleaned up. retrying challenge sync")
 	}
 	if len(existingIngresses) > 1 {
-		log.Info("multiple challenge solver ingresses found for challenge. cleaning up all existing ingresses.")
+		log.V(logf.InfoLevel).Info("multiple challenge solver ingresses found for challenge. cleaning up all existing ingresses.")
 		err := s.cleanupIngresses(ctx, ch)
 		if err != nil {
 			return nil, err
@@ -108,7 +108,7 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 		return nil, fmt.Errorf("multiple existing challenge solver ingresses found and cleaned up. retrying challenge sync")
 	}
 
-	log.Info("creating HTTP01 challenge solver ingress")
+	log.V(logf.DebugLevel).Info("creating HTTP01 challenge solver ingress")
 	return s.createIngress(ch, svcName)
 }
 
@@ -276,14 +276,14 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 		for _, ingress := range ingresses {
 			log := logf.WithRelatedResource(log, ingress).V(logf.DebugLevel)
 
-			log.Info("deleting ingress resource")
+			log.V(logf.DebugLevel).Info("deleting ingress resource")
 			err := s.Client.ExtensionsV1beta1().Ingresses(ingress.Namespace).Delete(context.TODO(), ingress.Name, metav1.DeleteOptions{})
 			if err != nil {
-				log.Info("failed to delete ingress resource", "error", err)
+				log.V(logf.WarnLevel).Info("failed to delete ingress resource", "error", err)
 				errs = append(errs, err)
 				continue
 			}
-			log.Info("successfully deleted ingress resource")
+			log.V(logf.DebugLevel).Info("successfully deleted ingress resource")
 		}
 		return utilerrors.NewAggregate(errs)
 	}
@@ -299,7 +299,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 	}
 	log = logf.WithRelatedResource(log, ing)
 
-	log.Info("attempting to clean up automatically added solver paths on ingress resource")
+	log.V(logf.DebugLevel).Info("attempting to clean up automatically added solver paths on ingress resource")
 	ingPathToDel := solverPathFn(ch.Spec.Token)
 	var ingRules []extv1beta1.IngressRule
 	for _, rule := range ing.Spec.Rules {
@@ -319,7 +319,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 		// delete here, delete it
 		for i, path := range rule.HTTP.Paths {
 			if path.Path == ingPathToDel {
-				log.Info("deleting challenge solver path on ingress resource", "host", rule.Host, "path", path.Path)
+				log.V(logf.DebugLevel).Info("deleting challenge solver path on ingress resource", "host", rule.Host, "path", path.Path)
 				rule.HTTP.Paths = append(rule.HTTP.Paths[:i], rule.HTTP.Paths[i+1:]...)
 			}
 		}
@@ -337,7 +337,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 		return err
 	}
 
-	log.Info("cleaned up all challenge solver paths on ingress resource")
+	log.V(logf.DebugLevel).Info("cleaned up all challenge solver paths on ingress resource")
 
 	return nil
 }

@@ -19,6 +19,8 @@ package cainjector
 import (
 	"io/ioutil"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -71,7 +73,7 @@ func registerAllInjectors(mgr ctrl.Manager, sources ...caDataSource) error {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
 			}
-			ctrl.Log.Info("unable to register injector which is still in an alpha phase."+
+			ctrl.Log.V(logf.WarnLevel).Info("unable to register injector which is still in an alpha phase."+
 				" Enable the feature on the API server in order to use this injector",
 				"injector", setup.resourceName)
 		}

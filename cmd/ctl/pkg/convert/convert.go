@@ -19,6 +19,8 @@ package convert
 import (
 	"fmt"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/spf13/cobra"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +30,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/klog/v2"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -201,7 +202,7 @@ func asVersionedObject(infos []*resource.Info, forceList bool, specifiedOutputVe
 		if len(actualVersion.Version) > 0 {
 			defaultVersionInfo = fmt.Sprintf("Defaulting to %q", actualVersion.Version)
 		}
-		klog.V(1).Infof("info: the output version specified is invalid. %s\n", defaultVersionInfo)
+		logf.Log.V(logf.WarnLevel).Info("info: the output version specified is invalid. %s\n", defaultVersionInfo)
 	}
 
 	return object, nil

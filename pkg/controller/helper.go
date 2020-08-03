@@ -22,7 +22,7 @@ import (
 	"time"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {
@@ -53,13 +53,13 @@ var now = time.Now
 // CalculateDurationUntilRenew calculates how long cert-manager should wait to
 // until attempting to renew this certificate resource.
 func (o IssuerOptions) CalculateDurationUntilRenew(ctx context.Context, cert *x509.Certificate, crt *cmapi.Certificate) time.Duration {
-	log := logs.FromContext(ctx, "CalculateDurationUntilRenew")
+	log := logf.FromContext(ctx, "CalculateDurationUntilRenew")
 
 	// validate if the certificate received was with the issuer configured
 	// duration. If not we generate an event to warn the user of that fact.
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
 	if crt.Spec.Duration != nil && certDuration < crt.Spec.Duration.Duration {
-		log.Info("requested certificate validity period differs from period given on returned certificate", "requested_duration", crt.Spec.Duration.Duration, "actual_duration", certDuration)
+		log.V(logf.InfoLevel).Info("requested certificate validity period differs from period given on returned certificate", "requested_duration", crt.Spec.Duration.Duration, "actual_duration", certDuration)
 		// TODO Use the message as the reason in a 'renewal status' condition
 	}
 
@@ -74,7 +74,7 @@ func (o IssuerOptions) CalculateDurationUntilRenew(ctx context.Context, cert *x5
 	// If not we notify with an event that we will renew the certificate
 	// before (certificate duration / 3) of its expiration duration.
 	if renewBefore > certDuration {
-		log.Info("certificate renewal duration was changed to fit inside the received certificate validity duration from issuer.")
+		log.V(logf.InfoLevel).Info("certificate renewal duration was changed to fit inside the received certificate validity duration from issuer.")
 		// TODO Use the message as the reason in a 'renewal status' condition
 		// We will renew 1/3 before the expiration date.
 		renewBefore = certDuration / 3

@@ -20,10 +20,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	"golang.org/x/crypto/acme"
-	"k8s.io/klog/v2"
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
@@ -31,18 +32,22 @@ const (
 )
 
 func NewLogger(baseCl client.Interface) client.Interface {
-	return &Logger{baseCl: baseCl}
+	return &Logger{
+		baseCl: baseCl,
+		log:    logf.Log.WithName("acme-middleware"),
+	}
 }
 
 // Logger is a glog based logging middleware for an ACME client
 type Logger struct {
 	baseCl client.Interface
+	log    logr.Logger
 }
 
 var _ client.Interface = &Logger{}
 
 func (l *Logger) AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error) {
-	klog.Infof("Calling CreateOrder")
+	l.log.V(logf.InfoLevel).Info("Calling CreateOrder")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -51,7 +56,7 @@ func (l *Logger) AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...a
 }
 
 func (l *Logger) GetOrder(ctx context.Context, url string) (*acme.Order, error) {
-	klog.Infof("Calling GetOrder")
+	l.log.V(logf.InfoLevel).Info("Calling GetOrder")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -60,7 +65,7 @@ func (l *Logger) GetOrder(ctx context.Context, url string) (*acme.Order, error) 
 }
 
 func (l *Logger) FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error) {
-	klog.Infof("Calling GetCertificate")
+	l.log.V(logf.InfoLevel).Info("Calling GetCertificate")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -69,7 +74,7 @@ func (l *Logger) FetchCert(ctx context.Context, url string, bundle bool) ([][]by
 }
 
 func (l *Logger) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
-	klog.Infof("Calling WaitOrder")
+	l.log.V(logf.InfoLevel).Info("Calling WaitOrder")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -78,7 +83,7 @@ func (l *Logger) WaitOrder(ctx context.Context, url string) (*acme.Order, error)
 }
 
 func (l *Logger) CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error) {
-	klog.Infof("Calling FinalizeOrder")
+	l.log.V(logf.InfoLevel).Info("Calling FinalizeOrder")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -87,7 +92,7 @@ func (l *Logger) CreateOrderCert(ctx context.Context, finalizeURL string, csr []
 }
 
 func (l *Logger) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error) {
-	klog.Infof("Calling AcceptChallenge")
+	l.log.V(logf.InfoLevel).Info("Calling AcceptChallenge")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -96,7 +101,7 @@ func (l *Logger) Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challe
 }
 
 func (l *Logger) GetChallenge(ctx context.Context, url string) (*acme.Challenge, error) {
-	klog.Infof("Calling GetChallenge")
+	l.log.V(logf.InfoLevel).Info("Calling GetChallenge")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -105,7 +110,7 @@ func (l *Logger) GetChallenge(ctx context.Context, url string) (*acme.Challenge,
 }
 
 func (l *Logger) GetAuthorization(ctx context.Context, url string) (*acme.Authorization, error) {
-	klog.Infof("Calling GetAuthorization")
+	l.log.V(logf.InfoLevel).Info("Calling GetAuthorization")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -114,7 +119,7 @@ func (l *Logger) GetAuthorization(ctx context.Context, url string) (*acme.Author
 }
 
 func (l *Logger) WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error) {
-	klog.Infof("Calling WaitAuthorization")
+	l.log.V(logf.InfoLevel).Info("Calling WaitAuthorization")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -123,7 +128,7 @@ func (l *Logger) WaitAuthorization(ctx context.Context, url string) (*acme.Autho
 }
 
 func (l *Logger) Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error) {
-	klog.Infof("Calling CreateAccount")
+	l.log.V(logf.InfoLevel).Info("Calling CreateAccount")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -132,7 +137,7 @@ func (l *Logger) Register(ctx context.Context, a *acme.Account, prompt func(tosU
 }
 
 func (l *Logger) GetReg(ctx context.Context, url string) (*acme.Account, error) {
-	klog.Infof("Calling GetAccount")
+	l.log.V(logf.InfoLevel).Info("Calling GetAccount")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -141,17 +146,17 @@ func (l *Logger) GetReg(ctx context.Context, url string) (*acme.Account, error) 
 }
 
 func (l *Logger) HTTP01ChallengeResponse(token string) (string, error) {
-	klog.Infof("Calling HTTP01ChallengeResponse")
+	l.log.V(logf.InfoLevel).Info("Calling HTTP01ChallengeResponse")
 	return l.baseCl.HTTP01ChallengeResponse(token)
 }
 
 func (l *Logger) DNS01ChallengeRecord(token string) (string, error) {
-	klog.Infof("Calling DNS01ChallengeRecord")
+	l.log.V(logf.InfoLevel).Info("Calling DNS01ChallengeRecord")
 	return l.baseCl.DNS01ChallengeRecord(token)
 }
 
 func (l *Logger) Discover(ctx context.Context) (acme.Directory, error) {
-	klog.Infof("Calling Discover")
+	l.log.V(logf.InfoLevel).Info("Calling Discover")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -160,7 +165,7 @@ func (l *Logger) Discover(ctx context.Context) (acme.Directory, error) {
 }
 
 func (l *Logger) UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error) {
-	klog.Infof("Calling UpdateAccount")
+	l.log.V(logf.InfoLevel).Info("Calling UpdateAccount")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()

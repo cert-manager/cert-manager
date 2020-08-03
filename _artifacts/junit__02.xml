@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="cert-manager e2e suite" tests="7" failures="0" errors="0" time="253.981">
+      <testcase name="[cert-manager] CA Certificate when the CA is the root should generate a signed keypair valid for the default duration (90 days)" classname="cert-manager e2e suite" time="21.795020576"></testcase>
+      <testcase name="[cert-manager] ACME Certificate (DNS01) With rfc2136 credentials configured should obtain a signed certificate for a wildcard and apex domain" classname="cert-manager e2e suite" time="152.545242316"></testcase>
+      <testcase name="[Conformance] [RBAC] Certificates with namespace view access should be able to get certificates" classname="cert-manager e2e suite" time="1.050215047"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type CA ClusterIssuer should issue a certificate that defines a CommonName and URI SAN" classname="cert-manager e2e suite" time="19.041010386"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type CA ClusterIssuer should issue a certificate that defines a Common Name and IP Address" classname="cert-manager e2e suite" time="17.044077633"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type VaultAppRole ClusterIssuer should issue a certificate that defines an Email Address" classname="cert-manager e2e suite" time="29.43399184"></testcase>
+  </testsuite>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="cert-manager e2e suite" tests="16" failures="0" errors="0" time="254.026">
+      <testcase name="[cert-manager] Self Signed Certificate should correctly encode a certificate&#39;s private key based on the key encoding" classname="cert-manager e2e suite" time="25.254576045"></testcase>
+      <testcase name="[cert-manager] Vault ClusterIssuer CertificateRequest (AppRole) should generate a new certificate with a warning event when renewBefore is bigger than the duration" classname="cert-manager e2e suite" time="20.919952637"></testcase>
+      <testcase name="[cert-manager] ACME Certificate (HTTP01) should obtain a signed certificate with a single CN from the ACME server" classname="cert-manager e2e suite" time="45.565189352"></testcase>
+      <testcase name="[cert-manager] CA CertificateRequest when the CA is the root should be able to obtain an ECDSA key from a RSA backed issuer" classname="cert-manager e2e suite" time="5.570778818"></testcase>
+      <testcase name="[Conformance] [RBAC] Certificates with namespace edit access should be able to delete certificates" classname="cert-manager e2e suite" time="1.024680154"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type CA ClusterIssuer should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted" classname="cert-manager e2e suite" time="15.057095025"></testcase>
+      <testcase name="[Conformance] [RBAC] Issuers with namespace view access shouldn&#39;t be able to create issuers" classname="cert-manager e2e suite" time="1.023784333"></testcase>
+      <testcase name="[Conformance] [RBAC] Issuers with namespace admin access should be able to list issuers" classname="cert-manager e2e suite" time="1.028816948"></testcase>
+      <testcase name="[Conformance] [RBAC] Certificates with namespace view access shouldn&#39;t be able to update certificates" classname="cert-manager e2e suite" time="1.031242502"></testcase>
+      <testcase name="[cert-manager] CA Certificate when the CA is a second level issuer should generate a signed keypair" classname="cert-manager e2e suite" time="17.06173827"></testcase>
+      <testcase name="[cert-manager] CA Certificate when the CA is the root should generate a signed keypair" classname="cert-manager e2e suite" time="16.551020738"></testcase>
+      <testcase name="[Conformance] [RBAC] CertificateRequests with namespace admin access should be able to list certificaterequests" classname="cert-manager e2e suite" time="1.025703863"></testcase>
+      <testcase name="[cert-manager] SelfSigned CertificateRequest Self Signed and private key should be able to obtain an ECDSA Certificate backed by a ECSDA key" classname="cert-manager e2e suite" time="5.053577331"></testcase>
+      <testcase name="[Conformance] [RBAC] Certificates with namespace edit access should be able to update certificates" classname="cert-manager e2e suite" time="1.038477848"></testcase>
+      <testcase name="[cert-manager] ACME CertificateRequest (HTTP01) should obtain a signed ecdsa certificate with a single CN from the ACME server" classname="cert-manager e2e suite" time="35.552266796"></testcase>
+  </testsuite>

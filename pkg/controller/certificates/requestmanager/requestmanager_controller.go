@@ -193,7 +193,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		// TODO: we should handle this case better, but for now do nothing to
 		//  avoid getting into loops where we keep creating multiple requests
 		//  and deleting them again.
-		log.Info("Multiple matching CertificateRequest resources exist, delete one of them. This is likely an error and should be reported on the issue tracker!")
+		log.V(logf.ErrorLevel).Info("Multiple matching CertificateRequest resources exist, delete one of them. This is likely an error and should be reported on the issue tracker!")
 		return nil
 	}
 

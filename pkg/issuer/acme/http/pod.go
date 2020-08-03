@@ -59,7 +59,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) (*corev1.P
 		return existingPods[0], nil
 	}
 	if len(existingPods) > 1 {
-		log.Info("multiple challenge solver pods found for challenge. cleaning up all existing pods.")
+		log.V(logf.InfoLevel).Info("multiple challenge solver pods found for challenge. cleaning up all existing pods.")
 		err := s.cleanupPods(ctx, ch)
 		if err != nil {
 			return nil, err
@@ -67,7 +67,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) (*corev1.P
 		return nil, fmt.Errorf("multiple existing challenge solver pods found and cleaned up. retrying challenge sync")
 	}
 
-	log.Info("creating HTTP01 challenge solver pod")
+	log.V(logf.InfoLevel).Info("creating HTTP01 challenge solver pod")
 
 	return s.createPod(ch)
 }
@@ -115,15 +115,15 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 	var errs []error
 	for _, pod := range pods {
 		log := logf.WithRelatedResource(log, pod).V(logf.DebugLevel)
-		log.Info("deleting pod resource")
+		log.V(logf.InfoLevel).Info("deleting pod resource")
 
 		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 		if err != nil {
-			log.Info("failed to delete pod resource", "error", err)
+			log.V(logf.WarnLevel).Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)
 			continue
 		}
-		log.Info("successfully deleted pod resource")
+		log.V(logf.InfoLevel).Info("successfully deleted pod resource")
 	}
 
 	return utilerrors.NewAggregate(errs)

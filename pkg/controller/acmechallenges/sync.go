@@ -333,7 +333,7 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmacme.Challenge) error {
 	log := logf.FromContext(ctx, "acceptChallenge")
 
-	log.Info("accepting challenge with ACME server")
+	log.V(logf.DebugLevel).Info("accepting challenge with ACME server")
 	// We manually construct an ACME challenge here from our own internal type
 	// to save additional round trips to the ACME server.
 	acmeChal := &acmeapi.Challenge{
@@ -350,7 +350,7 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 		return handleError(ch, err)
 	}
 
-	log.Info("waiting for authorization for domain")
+	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
 	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthzURL)
 	if err != nil {
 		log.Error(err, "error waiting for authorization")

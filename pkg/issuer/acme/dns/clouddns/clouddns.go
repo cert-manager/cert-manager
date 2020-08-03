@@ -16,13 +16,16 @@ import (
 	"os"
 	"time"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
+	"github.com/go-logr/logr"
+
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 	"google.golang.org/api/option"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	"k8s.io/klog/v2"
 )
 
 // DNSProvider is an implementation of the DNSProvider interface.
@@ -31,6 +34,7 @@ type DNSProvider struct {
 	dns01Nameservers []string
 	project          string
 	client           *dns.Service
+	log              logr.Logger
 }
 
 func NewDNSProvider(project string, saBytes []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*DNSProvider, error) {
@@ -86,6 +90,7 @@ func NewDNSProviderCredentials(project string, dns01Nameservers []string, hosted
 		client:           svc,
 		dns01Nameservers: dns01Nameservers,
 		hostedZoneName:   hostedZoneName,
+		log:              logf.Log.WithName("clouddns"),
 	}, nil
 }
 
@@ -235,7 +240,7 @@ func (c *DNSProvider) getHostedZone(domain string) (string, error) {
 		}
 	}
 
-	klog.V(5).Infof("No matching public GoogleCloud managed-zone for domain %s, falling back to a private managed-zone", authZone)
+	c.log.V(logf.DebugLevel).Info("No matching public GoogleCloud managed-zone for domain %s, falling back to a private managed-zone", authZone)
 	// fall back to first available zone, if none public
 	return zones.ManagedZones[0].Name, nil
 }

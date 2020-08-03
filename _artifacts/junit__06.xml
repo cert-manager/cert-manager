@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="cert-manager e2e suite" tests="12" failures="0" errors="0" time="253.979">
+      <testcase name="[Conformance] [RBAC] CertificateRequests with namespace edit access should be able to get certificaterequests" classname="cert-manager e2e suite" time="1.11075999"></testcase>
+      <testcase name="[cert-manager] Vault Issuer Certificate (AppRole) should generate a new valid certificate" classname="cert-manager e2e suite" time="33.564226134"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned Issuer should issue a basic, defaulted certificate for a single distinct DNS Name" classname="cert-manager e2e suite" time="17.034705573"></testcase>
+      <testcase name="[cert-manager] Vault Issuer CertificateRequest (AppRole) should generate a new certificate with a warning event when renewBefore is bigger than the duration" classname="cert-manager e2e suite" time="18.227588556"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type SelfSigned Issuer should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name" classname="cert-manager e2e suite" time="14.036787387"></testcase>
+      <testcase name="[cert-manager] Vault Issuer Certificate (AppRole with a custom mount path) should generate a new valid certificate" classname="cert-manager e2e suite" time="26.769436737"></testcase>
+      <testcase name="[Conformance] [RBAC] CertificateRequests with namespace admin access should be able to update certificaterequests" classname="cert-manager e2e suite" time="1.030965994"></testcase>
+      <testcase name="[cert-manager] CA Injector for conversion webhooks should refuse to inject a CA directly from a secret if the allow-direct-injection annotation is not &#39;true&#39;" classname="cert-manager e2e suite" time="2.528700523">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="[Conformance] Certificates with issuer type VaultAppRole Issuer should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations" classname="cert-manager e2e suite" time="29.739428033"></testcase>
+      <testcase name="[Conformance] Certificates with issuer type ACME DNS01 ClusterIssuer should issue a certificate which has a wildcard DNS name defined" classname="cert-manager e2e suite" time="84.034286247"></testcase>
+      <testcase name="[Conformance] [RBAC] CertificateRequests with namespace view access shouldn&#39;t be able to delete collections of certificaterequests" classname="cert-manager e2e suite" time="1.023707372"></testcase>
+      <testcase name="[Conformance] [RBAC] Issuers with namespace edit access should be able to patch issuers" classname="cert-manager e2e suite" time="1.030021437"></testcase>
+  </testsuite>

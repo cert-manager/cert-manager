@@ -122,7 +122,7 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 	}
 
 	<-stopCh
-	log.Info("shutting down queue as workqueue signaled shutdown")
+	log.V(logf.WarnLevel).Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
 	log.V(logf.DebugLevel).Info("waiting for workers to exit...")
 	wg.Wait()
@@ -149,7 +149,7 @@ func (b *controller) worker(ctx context.Context) {
 				return
 			}
 			log := log.WithValues("key", key)
-			log.Info("syncing item")
+			log.V(logf.DebugLevel).Info("syncing item")
 
 			// Increase sync count for this controller
 			b.metrics.IncrementSyncCallCount(b.name)
@@ -159,7 +159,7 @@ func (b *controller) worker(ctx context.Context) {
 				b.queue.AddRateLimited(obj)
 				return
 			}
-			log.Info("finished processing work item")
+			log.V(logf.DebugLevel).Info("finished processing work item")
 			b.queue.Forget(obj)
 		}()
 	}

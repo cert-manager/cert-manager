@@ -29,6 +29,8 @@ import (
 	"sync"
 	"time"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -245,7 +247,7 @@ func (d *DynamicAuthority) notifyWatches(newCertData, newPrivateKeyData []byte) 
 		return
 	}
 
-	d.Log.Info("Detected change in CA secret data, notifying watchers...")
+	d.Log.V(logf.DebugLevel).Info("Detected change in CA secret data, notifying watchers...")
 
 	d.watchMutex.Lock()
 	defer d.watchMutex.Unlock()
@@ -274,7 +276,7 @@ func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
 	pkData := s.Data[corev1.TLSPrivateKeyKey]
 	certData := s.Data[corev1.TLSCertKey]
 	if len(caData) == 0 || len(pkData) == 0 || len(certData) == 0 {
-		d.Log.Info("Missing data in CA secret. Regenerating...")
+		d.Log.V(logf.InfoLevel).Info("Missing data in CA secret. Regenerating...")
 		return true
 	}
 	// ensure that the ca.crt and tls.crt keys are equal
@@ -293,12 +295,12 @@ func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
 		return true
 	}
 	if !x509Cert.IsCA {
-		d.Log.Info("Stored certificate is not marked as a CA. Regenerating...")
+		d.Log.V(logf.InfoLevel).Info("Stored certificate is not marked as a CA. Regenerating...")
 		return true
 	}
 	// renew the root CA when the current one is 2/3 of the way through its life
 	if x509Cert.NotAfter.Sub(time.Now()) < (d.CADuration / 3) {
-		d.Log.Info("Root CA certificate is nearing expiry. Regenerating...")
+		d.Log.V(logf.InfoLevel).Info("Root CA certificate is nearing expiry. Regenerating...")
 		return true
 	}
 	return false
@@ -310,7 +312,7 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 // If the provided Secret is nil, a new secret resource will be Created.
 // Otherwise, the provided resource will be modified and Updated.
 func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) error {
-	d.Log.Info("Generating new root CA")
+	d.Log.V(logf.DebugLevel).Info("Generating new root CA")
 	pk, err := pki.GenerateECPrivateKey(384)
 	if err != nil {
 		return err
@@ -374,27 +376,27 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 	if _, err := d.client.Update(ctx, s, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
-	d.Log.Info("Generated new root CA")
+	d.Log.V(logf.DebugLevel).Info("Generated new root CA")
 	return nil
 }
 
 func (d *DynamicAuthority) handleAdd(obj interface{}) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
-		d.Log.Error(err, "error ensuring CA")
+		d.Log.V(logf.ErrorLevel).Error(err, "error ensuring CA")
 	}
 }
 
 func (d *DynamicAuthority) handleUpdate(_, obj interface{}) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
-		d.Log.Error(err, "error ensuring CA")
+		d.Log.V(logf.ErrorLevel).Error(err, "error ensuring CA")
 	}
 }
 
 func (d *DynamicAuthority) handleDelete(obj interface{}) {
 	ctx := context.Background()
 	if err := d.ensureCA(ctx); err != nil {
-		d.Log.Error(err, "error ensuring CA")
+		d.Log.V(logf.ErrorLevel).Error(err, "error ensuring CA")
 	}
 }

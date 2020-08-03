@@ -19,7 +19,7 @@ package ca
 import (
 	"context"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -71,7 +71,7 @@ func (c *CA) Setup(ctx context.Context) error {
 		return nil
 	}
 
-	log.Info("signing CA verified")
+	log.V(logf.DebugLevel).Info("signing CA verified")
 	c.Recorder.Event(c.issuer, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
 	apiutil.SetIssuerCondition(c.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 
