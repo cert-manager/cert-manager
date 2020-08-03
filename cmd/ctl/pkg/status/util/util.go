@@ -68,6 +68,7 @@ func DescribeEvents(el *corev1.EventList, w describe.PrefixWriter, baseLevel int
 	w.Flush()
 }
 
+// NewTabWriter returns a *tabwriter.Writer with fixed parameters to be used in the status command
 func NewTabWriter(writer io.Writer) *tabwriter.Writer {
 	return tabwriter.NewWriter(writer, 0, 8, 2, ' ', 0)
 }
