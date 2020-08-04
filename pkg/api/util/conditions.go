@@ -78,7 +78,7 @@ func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditi
 		if cond.Status == status {
 			newCondition.LastTransitionTime = cond.LastTransitionTime
 		} else {
-			logf.Log.V(logf.InfoLevel).Info("Found status change for Issuer %q condition %q: %q -> %q; setting lastTransitionTime to %v", i.GetObjectMeta().Name, conditionType, cond.Status, status, nowTime.Time)
+			logf.V(logf.InfoLevel).Infof("Found status change for Issuer %q condition %q: %q -> %q; setting lastTransitionTime to %v", i.GetObjectMeta().Name, conditionType, cond.Status, status, nowTime.Time)
 		}
 
 		// Overwrite the existing condition
@@ -89,7 +89,7 @@ func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditi
 	// If we've not found an existing condition of this type, we simply insert
 	// the new condition into the slice.
 	i.GetStatus().Conditions = append(i.GetStatus().Conditions, newCondition)
-	logf.Log.V(logf.InfoLevel).Info("Setting lastTransitionTime for Issuer %q condition %q to %v", i.GetObjectMeta().Name, conditionType, nowTime.Time)
+	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for Issuer %q condition %q to %v", i.GetObjectMeta().Name, conditionType, nowTime.Time)
 }
 
 // CertificateHasCondition will return true if the given Certificate has a
@@ -159,7 +159,7 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 		if cond.Status == status {
 			newCondition.LastTransitionTime = cond.LastTransitionTime
 		} else {
-			logf.Log.V(logf.InfoLevel).Info("Found status change for Certificate %q condition %q: %q -> %q; setting lastTransitionTime to %v", crt.Name, conditionType, cond.Status, status, nowTime.Time)
+			logf.V(logf.InfoLevel).Infof("Found status change for Certificate %q condition %q: %q -> %q; setting lastTransitionTime to %v", crt.Name, conditionType, cond.Status, status, nowTime.Time)
 		}
 
 		// Overwrite the existing condition
@@ -170,7 +170,7 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	// If we've not found an existing condition of this type, we simply insert
 	// the new condition into the slice.
 	crt.Status.Conditions = append(crt.Status.Conditions, newCondition)
-	logf.Log.V(logf.InfoLevel).Info("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
+	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
 }
 
 // RemoteCertificateCondition will remove any condition with this condition type
@@ -219,7 +219,7 @@ func SetCertificateRequestCondition(cr *cmapi.CertificateRequest, conditionType 
 		if cond.Status == status {
 			newCondition.LastTransitionTime = cond.LastTransitionTime
 		} else {
-			logf.Log.V(logf.InfoLevel).Info("Found status change for CertificateRequest %q condition %q: %q -> %q; setting lastTransitionTime to %v", cr.Name, conditionType, cond.Status, status, nowTime.Time)
+			logf.V(logf.InfoLevel).Infof("Found status change for CertificateRequest %q condition %q: %q -> %q; setting lastTransitionTime to %v", cr.Name, conditionType, cond.Status, status, nowTime.Time)
 		}
 
 		// Overwrite the existing condition
@@ -230,7 +230,7 @@ func SetCertificateRequestCondition(cr *cmapi.CertificateRequest, conditionType 
 	// If we've not found an existing condition of this type, we simply insert
 	// the new condition into the slice.
 	cr.Status.Conditions = append(cr.Status.Conditions, newCondition)
-	logf.Log.V(logf.InfoLevel).Info("Setting lastTransitionTime for CertificateRequest %q condition %q to %v", cr.Name, conditionType, nowTime.Time)
+	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for CertificateRequest %q condition %q to %v", cr.Name, conditionType, nowTime.Time)
 }
 
 // CertificateRequestHasCondition will return true if the given

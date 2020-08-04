@@ -155,3 +155,7 @@ func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Con
 	}
 	return context.WithValue(ctx, contextKey, l)
 }
+
+func V(level int) klog.Verbose {
+	return klog.V(klog.Level(level))
+}

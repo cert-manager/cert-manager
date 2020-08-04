@@ -202,7 +202,7 @@ func asVersionedObject(infos []*resource.Info, forceList bool, specifiedOutputVe
 		if len(actualVersion.Version) > 0 {
 			defaultVersionInfo = fmt.Sprintf("Defaulting to %q", actualVersion.Version)
 		}
-		logf.Log.V(logf.WarnLevel).Info("info: the output version specified is invalid. %s\n", defaultVersionInfo)
+		logf.V(logf.WarnLevel).Infof("info: the output version specified is invalid. %s\n", defaultVersionInfo)
 	}
 
 	return object, nil

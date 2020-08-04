@@ -71,7 +71,7 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 	for _, rr := range r.Answer {
 		if cn, ok := rr.(*dns.CNAME); ok {
 			if cn.Hdr.Name == fqdn {
-				logf.Log.V(logf.DebugLevel).Info("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
+				logf.V(logf.DebugLevel).Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
 				fqdn = cn.Target
 				break
 			}
@@ -121,7 +121,7 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
 		}
 
-		logf.Log.V(logf.DebugLevel).Info("Looking up TXT records for %q", fqdn)
+		logf.V(logf.DebugLevel).Infof("Looking up TXT records for %q", fqdn)
 		var found bool
 		for _, rr := range r.Answer {
 			if txt, ok := rr.(*dns.TXT); ok {
@@ -159,7 +159,7 @@ func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 
 		if (in != nil && in.Truncated) ||
 			(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
-			logf.Log.V(logf.DebugLevel).Info("UDP dns lookup failed, retrying with TCP: %v", err)
+			logf.V(logf.DebugLevel).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
 			tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
 			// If the TCP request succeeds, the err will reset to nil
 			in, _, err = tcp.Exchange(m, ns)
@@ -275,7 +275,7 @@ func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool 
 func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
-	logf.Log.V(logf.DebugLevel).Info("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
+	logf.V(logf.DebugLevel).Infof("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
 	zone, err := FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
 		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
@@ -293,7 +293,7 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	}
 
 	if len(authoritativeNss) > 0 {
-		logf.Log.V(logf.DebugLevel).Info("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
+		logf.V(logf.DebugLevel).Infof("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
 		return authoritativeNss, nil
 	}
 	return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
@@ -306,7 +306,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	// Do we have it cached?
 	if zone, ok := fqdnToZone[fqdn]; ok {
 		fqdnToZoneLock.RUnlock()
-		logf.Log.V(logf.DebugLevel).Info("Returning cached zone record %q for fqdn %q", zone, fqdn)
+		logf.V(logf.DebugLevel).Infof("Returning cached zone record %q for fqdn %q", zone, fqdn)
 		return zone, nil
 	}
 	fqdnToZoneLock.RUnlock()
@@ -342,7 +342,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 
 					zone := soa.Hdr.Name
 					fqdnToZone[fqdn] = zone
-					logf.Log.V(logf.DebugLevel).Info("Returning discovered zone record %q for fqdn %q", zone, fqdn)
+					logf.V(logf.DebugLevel).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
 					return zone, nil
 				}
 			}

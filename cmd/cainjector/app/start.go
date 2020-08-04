@@ -89,7 +89,7 @@ servers and webhook servers.`,
 			defer cancel()
 			o.log = logf.FromContext(ctx).WithValues("ca-injector")
 
-			o.log.V(logf.InfoLevel).Info("starting ca-injector %s (revision %s)", util.AppVersion, util.AppGitCommit)
+			logf.V(logf.InfoLevel).Infof("starting ca-injector %s (revision %s)", util.AppVersion, util.AppGitCommit)
 			o.RunInjectorController(stopCh)
 		},
 	}

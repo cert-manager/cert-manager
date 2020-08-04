@@ -107,7 +107,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for: %s, %v", fqdn, err)
+		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for:", fqdn, err)
 		return err
 	}
 
@@ -136,7 +136,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for: %s, %v", fqdn, err)
+		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for:", fqdn, err)
 		return err
 	}
 
@@ -149,7 +149,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		*rparams, "", "")
 
 	if err != nil {
-		c.log.V(logf.WarnLevel).Info("Error creating TXT: %s, %v", z, err)
+		c.log.V(logf.WarnLevel).Info("Error creating TXT:", z, err)
 		return err
 	}
 	return nil

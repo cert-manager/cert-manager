@@ -119,7 +119,7 @@ func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error 
 		return errors.Wrapf(err, "failed to save zone data for %q", hostedDomain)
 	}
 
-	a.log.V(logf.DebugLevel).Info("Updated Akamai TXT record for %q on %q using SOA serial of %d", recordName, hostedDomain, newSerial)
+	logf.V(logf.DebugLevel).Infof("Updated Akamai TXT record for %q on %q using SOA serial of %d", recordName, hostedDomain, newSerial)
 
 	return nil
 }

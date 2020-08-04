@@ -240,7 +240,7 @@ func (c *DNSProvider) getHostedZone(domain string) (string, error) {
 		}
 	}
 
-	c.log.V(logf.DebugLevel).Info("No matching public GoogleCloud managed-zone for domain %s, falling back to a private managed-zone", authZone)
+	c.log.V(logf.DebugLevel).Info("No matching public GoogleCloud managed-zone for domain, falling back to a private managed-zone", authZone)
 	// fall back to first available zone, if none public
 	return zones.ManagedZones[0].Name, nil
 }

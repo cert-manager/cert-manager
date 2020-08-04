@@ -84,16 +84,16 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	}
 	d.tsigAlgorithm = tsigAlgorithm
 
-	logf.Log.V(logf.DebugLevel).Info("DNSProvider nameserver:       %s\n", d.nameserver)
-	logf.Log.V(logf.DebugLevel).Info("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
-	logf.Log.V(logf.DebugLevel).Info("            tsigKeyName:      %s\n", d.tsigKeyName)
+	logf.V(logf.DebugLevel).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
+	logf.V(logf.DebugLevel).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
+	logf.V(logf.DebugLevel).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
 	keyLen := len(d.tsigSecret)
 	mask := make([]rune, keyLen/2)
 	for i := range mask {
 		mask[i] = '*'
 	}
 	masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
-	logf.Log.V(logf.DebugLevel).Info("            tsigSecret:       %s\n", masked)
+	logf.V(logf.DebugLevel).Infof("            tsigSecret:       %s\n", masked)
 
 	return d, nil
 }

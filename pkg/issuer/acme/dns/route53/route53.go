@@ -89,7 +89,7 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 	}
 
 	if d.Role != "" {
-		d.log.V(logf.DebugLevel).Info("assuming role: %s", d.Role)
+		d.log.V(logf.DebugLevel).Info("assuming role:", d.Role)
 		stsSvc := d.StsProvider(sess)
 		result, err := stsSvc.AssumeRole(&sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
@@ -199,7 +199,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			if action == route53.ChangeActionDelete && awserr.Code() == route53.ErrCodeInvalidChangeBatch {
-				r.log.V(logf.DebugLevel).Info("ignoring InvalidChangeBatch error: %v", err)
+				r.log.V(logf.DebugLevel).Info("ignoring InvalidChangeBatch error:", err)
 				// If we try to delete something and get a 'InvalidChangeBatch' that
 				// means it's already deleted, no need to consider it an error.
 				return nil

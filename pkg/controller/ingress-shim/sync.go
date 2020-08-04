@@ -45,7 +45,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	ctx = logf.NewContext(ctx, log)
 
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
-		log.V(logf.DebugLevel).Info("not syncing ingress resource as it does not contain a %q or %q annotation",
+		logf.V(logf.DebugLevel).Infof("not syncing ingress resource as it does not contain a %q or %q annotation",
 			cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey)
 		return nil
 	}
