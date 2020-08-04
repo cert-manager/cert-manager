@@ -40,7 +40,7 @@ func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
 			go func() {
 				<-stopCh
 				if err := s.Shutdown(rootCtx); err != nil {
-					log.V(logf.WarnLevel).Error(err, "error shutting down acmesolver server")
+					log.Error(err, "error shutting down acmesolver server")
 				}
 			}()
 

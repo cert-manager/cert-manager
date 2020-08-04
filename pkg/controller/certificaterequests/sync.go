@@ -78,7 +78,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 	}
 
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "failed to get issuer")
+		log.Error(err, "failed to get issuer")
 		return err
 	}
 
@@ -129,7 +129,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 	// Attempt to call the Sign function on our issuer
 	resp, err := c.issuer.Sign(ctx, crCopy, issuerObj)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "error issuing certificate request")
+		log.Error(err, "error issuing certificate request")
 		return err
 	}
 

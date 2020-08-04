@@ -132,14 +132,14 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "invalid resource key")
+		log.Error(err, "invalid resource key")
 		return nil
 	}
 
 	order, err := c.orderLister.Orders(namespace).Get(name)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			log.V(logf.ErrorLevel).Error(err, "order in work queue no longer exists")
+			log.Error(err, "order in work queue no longer exists")
 			return nil
 		}
 

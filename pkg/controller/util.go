@@ -44,7 +44,7 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 
 		metaobj, ok := obj.(metav1.Object)
 		if !ok {
-			log.V(logf.ErrorLevel).Error(nil, "item passed to handleOwnedResource does not implement metav1.Object")
+			log.Error(nil, "item passed to handleOwnedResource does not implement metav1.Object")
 			return
 		}
 		log = logf.WithResource(log, metaobj)
@@ -60,7 +60,7 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 			// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
 			refGV, err := schema.ParseGroupVersion(ref.APIVersion)
 			if err != nil {
-				log.V(logf.ErrorLevel).Error(err, "could not parse OwnerReference GroupVersion")
+				log.Error(err, "could not parse OwnerReference GroupVersion")
 				continue
 			}
 
@@ -68,12 +68,12 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 				// TODO: how to handle namespace of owner references?
 				order, err := get(metaobj.GetNamespace(), ref.Name)
 				if err != nil {
-					log.V(logf.ErrorLevel).Error(err, "error getting referenced owning resource")
+					log.Error(err, "error getting referenced owning resource")
 					continue
 				}
 				objKey, err := KeyFunc(order)
 				if err != nil {
-					log.V(logf.ErrorLevel).Error(err, "error computing key for resource")
+					log.Error(err, "error computing key for resource")
 					continue
 				}
 				queue.Add(objKey)

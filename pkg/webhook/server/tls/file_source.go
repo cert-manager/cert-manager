@@ -85,7 +85,7 @@ func (f *FileCertificateSource) Run(stopCh <-chan struct{}) error {
 	// read the certificate data for the first time immediately, but allow
 	// retrying if the first attempt fails
 	if err := f.updateCertificateFromDisk(); err != nil {
-		f.Log.V(logf.ErrorLevel).Error(err, "failed to read certificate from disk")
+		f.Log.Error(err, "failed to read certificate from disk")
 	}
 
 	failures := 0
@@ -98,7 +98,7 @@ func (f *FileCertificateSource) Run(stopCh <-chan struct{}) error {
 		case <-ticker.C:
 			if err := f.updateCertificateFromDisk(); err != nil {
 				failures++
-				f.Log.V(logf.ErrorLevel).Error(err, "failed to update certificate from disk", "failures", failures)
+				f.Log.Error(err, "failed to update certificate from disk", "failures", failures)
 				if failures >= maxFailures {
 					return fmt.Errorf("failed to update certificate from disk %d times: %v", failures, err)
 				}

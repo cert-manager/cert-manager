@@ -133,14 +133,14 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 			// don't requeue on deletions, which yield a non-found object
 			return ctrl.Result{}, nil
 		}
-		log.V(logf.ErrorLevel).Error(err, "unable to fetch target object to inject into")
+		log.Error(err, "unable to fetch target object to inject into")
 		return ctrl.Result{}, err
 	}
 
 	// ensure that it wants injection
 	metaObj, err := meta.Accessor(target.AsObject())
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "unable to get metadata for object")
+		log.Error(err, "unable to get metadata for object")
 		return ctrl.Result{}, err
 	}
 	log = logf.WithResource(r.log, metaObj)
@@ -153,7 +153,7 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 
 	caData, err := dataSource.ReadCA(ctx, log, metaObj)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "failed to read CA from data source")
+		log.Error(err, "failed to read CA from data source")
 		return ctrl.Result{}, err
 	}
 	if caData == nil {
@@ -166,7 +166,7 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 
 	// actually update with injected CA data
 	if err := r.Client.Update(ctx, target.AsObject()); err != nil {
-		log.V(logf.ErrorLevel).Error(err, "unable to update target object with new CA data")
+		log.Error(err, "unable to update target object with new CA data")
 		return ctrl.Result{}, err
 	}
 	log.V(logf.InfoLevel).Info("updated object")

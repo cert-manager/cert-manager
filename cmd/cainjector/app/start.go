@@ -125,18 +125,18 @@ func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan str
 	})
 
 	if err != nil {
-		o.log.V(logf.ErrorLevel).Error(err, "error creating manager")
+		o.log.Error(err, "error creating manager")
 		os.Exit(1)
 	}
 
 	// TODO(directxman12): enabled controllers for separate injectors?
 	if err := cainjector.RegisterCertificateBased(mgr); err != nil {
-		o.log.V(logf.ErrorLevel).Error(err, "error registering controllers")
+		o.log.Error(err, "error registering controllers")
 		os.Exit(1)
 	}
 
 	if err := mgr.Start(stopCh); err != nil {
-		o.log.V(logf.ErrorLevel).Error(err, "error running manager")
+		o.log.Error(err, "error running manager")
 		os.Exit(1)
 	}
 }
@@ -152,18 +152,18 @@ func (o InjectorControllerOptions) runSecretBasedInjector(stopCh <-chan struct{}
 	})
 
 	if err != nil {
-		o.log.V(logf.ErrorLevel).Error(err, "error creating core-only manager")
+		o.log.Error(err, "error creating core-only manager")
 		os.Exit(1)
 	}
 
 	// TODO(directxman12): enabled controllers for separate injectors?
 	if err := cainjector.RegisterSecretBased(mgr); err != nil {
-		o.log.V(logf.ErrorLevel).Error(err, "error registering core-only controllers")
+		o.log.Error(err, "error registering core-only controllers")
 		os.Exit(1)
 	}
 
 	if err := mgr.Start(stopCh); err != nil {
-		o.log.V(logf.ErrorLevel).Error(err, "error running core-only manager")
+		o.log.Error(err, "error running core-only manager")
 		os.Exit(1)
 	}
 }

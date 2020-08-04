@@ -102,14 +102,14 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	certName := splitNamespacedName(certNameRaw)
 	log = log.WithValues("certificate", certName)
 	if certName.Namespace == "" {
-		log.V(logf.ErrorLevel).Error(nil, "invalid certificate name")
+		log.Error(nil, "invalid certificate name")
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
 	}
 
 	var cert cmapi.Certificate
 	if err := c.client.Get(ctx, certName, &cert); err != nil {
-		log.V(logf.ErrorLevel).Error(err, "unable to fetch associated certificate")
+		log.Error(err, "unable to fetch associated certificate")
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return nil, dropNotFound(err)
 	}
@@ -119,7 +119,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	log = log.WithValues("secret", secretName)
 	var secret corev1.Secret
 	if err := c.client.Get(ctx, *secretName, &secret); err != nil {
-		log.V(logf.ErrorLevel).Error(err, "unable to fetch associated secret")
+		log.Error(err, "unable to fetch associated secret")
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return nil, dropNotFound(err)
 	}
@@ -132,7 +132,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	// inject the CA data
 	caData, hasCAData := secret.Data[cmmeta.TLSCAKey]
 	if !hasCAData {
-		log.V(logf.ErrorLevel).Error(nil, "certificate has no CA data")
+		log.Error(nil, "certificate has no CA data")
 		// don't requeue, we'll get called when the secret gets updated
 		return nil, nil
 	}
@@ -184,7 +184,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	secretName := splitNamespacedName(secretNameRaw)
 	log = log.WithValues("secret", secretName)
 	if secretName.Namespace == "" {
-		log.V(logf.ErrorLevel).Error(nil, "invalid certificate name")
+		log.Error(nil, "invalid certificate name")
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
 	}
@@ -192,7 +192,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	// grab the associated secret
 	var secret corev1.Secret
 	if err := c.client.Get(ctx, secretName, &secret); err != nil {
-		log.V(logf.ErrorLevel).Error(err, "unable to fetch associated secret")
+		log.Error(err, "unable to fetch associated secret")
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return nil, dropNotFound(err)
 	}
@@ -205,7 +205,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	// inject the CA data
 	caData, hasCAData := secret.Data[cmmeta.TLSCAKey]
 	if !hasCAData {
-		log.V(logf.ErrorLevel).Error(nil, "certificate has no CA data")
+		log.Error(nil, "certificate has no CA data")
 		// don't requeue, we'll get called when the secret gets updated
 		return nil, nil
 	}

@@ -162,7 +162,7 @@ func (m *Metrics) Start(listenAddress string) (*http.Server, error) {
 		log.V(logf.InfoLevel).Info("listening for connections on")
 
 		if err := server.Serve(ln); err != nil {
-			log.V(logf.ErrorLevel).Error(err, "error running prometheus metrics server")
+			log.Error(err, "error running prometheus metrics server")
 			return
 		}
 	}()
@@ -182,7 +182,7 @@ func (m *Metrics) Shutdown(server *http.Server) {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		m.log.V(logf.ErrorLevel).Error(err, "prometheus metrics server shutdown failed", err)
+		m.log.Error(err, "prometheus metrics server shutdown failed", err)
 		return
 	}
 

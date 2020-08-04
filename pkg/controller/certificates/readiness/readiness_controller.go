@@ -121,13 +121,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	ctx = logf.NewContext(ctx, log)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "invalid resource key passed to ProcessItem")
+		log.Error(err, "invalid resource key passed to ProcessItem")
 		return nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
-		log.V(logf.ErrorLevel).Error(err, "certificate not found for key")
+		log.Error(err, "certificate not found for key")
 		return nil
 	}
 	if err != nil {

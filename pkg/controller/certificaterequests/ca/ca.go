@@ -82,7 +82,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
 
 		c.reporter.Pending(cr, err, "SecretMissing", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 
 		return nil, nil
 	}
@@ -91,7 +91,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
 
 		c.reporter.Pending(cr, err, "SecretInvalidData", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 		return nil, nil
 	}
 
@@ -99,7 +99,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
 		c.reporter.Pending(cr, err, "SecretGetError", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 		return nil, err
 	}
 
@@ -107,7 +107,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	if err != nil {
 		message := "Error generating certificate template"
 		c.reporter.Failed(cr, err, "SigningError", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 		return nil, nil
 	}
 
@@ -117,7 +117,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	if err != nil {
 		message := "Error signing certificate"
 		c.reporter.Failed(cr, err, "SigningError", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 		return nil, err
 	}
 

@@ -24,7 +24,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/jetstack/cert-manager/cmd/cainjector/app"
-	"github.com/jetstack/cert-manager/pkg/logs"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
@@ -40,7 +39,7 @@ func main() {
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		logf.Log.V(logs.ErrorLevel).Error(err, "")
+		logf.Log.Error(err, "")
 		os.Exit(1)
 	}
 }

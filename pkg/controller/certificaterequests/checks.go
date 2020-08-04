@@ -30,21 +30,21 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 
 	iss, ok := obj.(cmapi.GenericIssuer)
 	if !ok {
-		log.V(logf.ErrorLevel).Error(nil, "object does not implement GenericIssuer")
+		log.Error(nil, "object does not implement GenericIssuer")
 		return
 	}
 
 	log = logf.WithResource(log, iss)
 	crs, err := c.certificatesRequestsForGenericIssuer(iss)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "error looking up certificates observing issuer or clusterissuer")
+		log.Error(err, "error looking up certificates observing issuer or clusterissuer")
 		return
 	}
 	for _, cr := range crs {
 		log := logf.WithRelatedResource(log, cr)
 		key, err := keyFunc(cr)
 		if err != nil {
-			log.V(logf.ErrorLevel).Error(err, "error computing key for resource")
+			log.Error(err, "error computing key for resource")
 			continue
 		}
 		c.queue.Add(key)

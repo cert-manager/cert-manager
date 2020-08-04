@@ -60,13 +60,13 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	ctx, kubeCfg, err := buildControllerContext(rootCtx, stopCh, opts)
 
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "error building controller context", "options", opts)
+		log.Error(err, "error building controller context", "options", opts)
 		os.Exit(1)
 	}
 
 	metricsServer, err := ctx.Metrics.Start(opts.MetricsListenAddress)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "failed to listen on prometheus address", "address", opts.MetricsListenAddress)
+		log.Error(err, "failed to listen on prometheus address", "address", opts.MetricsListenAddress)
 		os.Exit(1)
 	}
 
@@ -90,7 +90,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			wg.Add(1)
 			iface, err := fn(ctx)
 			if err != nil {
-				log.V(logf.ErrorLevel).Error(err, "error starting controller")
+				log.Error(err, "error starting controller")
 				os.Exit(1)
 			}
 			go func(n string, fn controller.Interface) {
@@ -101,7 +101,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				err := fn.Run(workers, stopCh)
 
 				if err != nil {
-					log.V(logf.WarnLevel).Error(err, "error starting controller")
+					log.Error(err, "error starting controller")
 					os.Exit(1)
 				}
 			}(n, iface)
@@ -124,7 +124,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	log.V(logf.InfoLevel).Info("starting leader election")
 	leaderElectionClient, err := kubernetes.NewForConfig(rest.AddUserAgent(kubeCfg, "leader-election"))
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "error creating leader election client")
+		log.Error(err, "error creating leader election client")
 		os.Exit(1)
 	}
 
@@ -244,7 +244,7 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "error getting hostname")
+		log.Error(err, "error getting hostname")
 		os.Exit(1)
 	}
 

@@ -53,7 +53,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("updating Order resource status")
 		_, updateErr := c.cmClient.AcmeV1alpha2().Orders(o.Namespace).UpdateStatus(context.TODO(), o, metav1.UpdateOptions{})
 		if updateErr != nil {
-			log.V(logf.ErrorLevel).Error(err, "failed to update status")
+			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return
 		}
@@ -78,7 +78,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-				log.V(logf.ErrorLevel).Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
+				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 				return nil
@@ -105,7 +105,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	dbg.Info("Computing list of Challenge resources that need to exist to complete this Order")
 	requiredChallenges, err := buildRequiredChallenges(ctx, cl, genericIssuer, o)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "Failed to determine the list of Challenge resources needed for the Order")
+		log.Error(err, "Failed to determine the list of Challenge resources needed for the Order")
 		c.recorder.Eventf(o, corev1.EventTypeWarning, "Solver", "Failed to determine a valid solver configuration for the set of domains on the Order: %v", err)
 		return nil
 	}
@@ -150,7 +150,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-				log.V(logf.ErrorLevel).Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
+				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 				return nil
@@ -164,7 +164,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-				log.V(logf.ErrorLevel).Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
+				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 				return nil
@@ -196,7 +196,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.V(logf.ErrorLevel).Error(err, "failed to create Order resource due to bad request, marking Order as failed")
+			log.Error(err, "failed to create Order resource due to bad request, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to create Order: %v", err)
 			return nil
@@ -291,7 +291,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmac
 		acmeAuthz, err := cl.GetAuthorization(ctx, authz.URL)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-				log.V(logf.ErrorLevel).Error(err, "failed to fetch authorization metadata from acme server")
+				log.Error(err, "failed to fetch authorization metadata from acme server")
 				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to fetch authorization: %v", err)
 				return nil
@@ -443,7 +443,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// failed and do not retry it until after applying the global backoff.
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.V(logf.ErrorLevel).Error(err, "failed to finalize Order resource due to bad request, marking Order as failed")
+			log.Error(err, "failed to finalize Order resource due to bad request, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to finalize Order: %v", err)
 			return nil
@@ -459,7 +459,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.V(logf.ErrorLevel).Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
+			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 			return nil
@@ -483,7 +483,7 @@ func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmacme.Ord
 	for _, cert := range certs {
 		err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 		if err != nil {
-			log.V(logf.ErrorLevel).Error(err, "invalid certificate data returned by ACME server")
+			log.Error(err, "invalid certificate data returned by ACME server")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Invalid certificate retrieved from ACME server: %v", err)
 			return nil
@@ -501,7 +501,7 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 	acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.V(logf.ErrorLevel).Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
+			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 			return nil
@@ -525,7 +525,7 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 	certs, err := cl.FetchCert(ctx, acmeOrder.CertURL, true)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.V(logf.ErrorLevel).Error(err, "failed to retrieve issued certificate from ACME server")
+			log.Error(err, "failed to retrieve issued certificate from ACME server")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve signed certificate: %v", err)
 			return nil

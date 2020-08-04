@@ -89,7 +89,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		message := "Failed to decode CSR in spec"
 
 		a.reporter.Failed(cr, err, "CSRParsingError", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 
 		return nil, nil
 	}
@@ -112,7 +112,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		message := "Failed to build order"
 
 		a.reporter.Failed(cr, err, "OrderBuildingError", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 
 		return nil, nil
 	}
@@ -126,7 +126,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 			message := fmt.Sprintf("Failed create new order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
 
 			a.reporter.Pending(cr, err, "OrderCreatingError", message)
-			log.V(logf.ErrorLevel).Error(err, message)
+			log.Error(err, message)
 
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		message := fmt.Sprintf("Failed to get order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
 
 		a.reporter.Pending(cr, err, "OrderGetError", message)
-		log.V(logf.ErrorLevel).Error(err, message)
+		log.Error(err, message)
 
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 	if order.Status.State == cmacme.Valid {
 		x509Cert, err := pki.DecodeX509CertificateBytes(order.Status.Certificate)
 		if errors.IsInvalidData(err) {
-			log.V(logf.ErrorLevel).Error(err, "failed to decode x509 certificate data on Order resource")
+			log.Error(err, "failed to decode x509 certificate data on Order resource")
 			return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
 		}
 		ok, err := pki.PublicKeyMatchesCertificate(csr.PublicKey, x509Cert)
@@ -179,7 +179,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 			return nil, err
 		}
 		if !ok {
-			log.V(logf.WarnLevel).Error(err, "failed to decode x509 certificate data on Order resource, recreating...")
+			log.Error(err, "failed to decode x509 certificate data on Order resource, recreating...")
 			return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
 		}
 

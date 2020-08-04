@@ -118,13 +118,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	ctx = logf.NewContext(ctx, log)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "invalid resource key passed to ProcessItem")
+		log.Error(err, "invalid resource key passed to ProcessItem")
 		return nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
-		log.V(logf.ErrorLevel).Error(err, "certificate not found for key")
+		log.Error(err, "certificate not found for key")
 		return nil
 	}
 	if err != nil {
@@ -157,7 +157,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 	pk, err := pki.DecodePrivateKeyBytes(nextPrivateKeySecret.Data[corev1.TLSPrivateKeyKey])
 	if err != nil {
-		log.V(logf.WarnLevel).Error(err, "Failed to decode next private key secret data, waiting for keymanager before processing certificate")
+		log.Error(err, "Failed to decode next private key secret data, waiting for keymanager before processing certificate")
 		return nil
 	}
 
@@ -259,7 +259,7 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 		log := logf.WithRelatedResource(log, req)
 		violations, err := certificates.RequestMatchesSpec(req, crt.Spec)
 		if err != nil {
-			log.V(logf.WarnLevel).Error(err, "Failed to check if CertificateRequest matches spec, deleting CertificateRequest")
+			log.Error(err, "Failed to check if CertificateRequest matches spec, deleting CertificateRequest")
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}
@@ -297,7 +297,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	log := logf.FromContext(ctx)
 	x509CSR, err := pki.GenerateCSR(crt)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "Failed to generate CSR - will not retry")
+		log.Error(err, "Failed to generate CSR - will not retry")
 		return nil
 	}
 	csrDER, err := pki.EncodeCSR(x509CSR, pk)

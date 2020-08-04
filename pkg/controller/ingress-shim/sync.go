@@ -52,7 +52,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 
 	issuerName, issuerKind, issuerGroup, err := c.issuerForIngress(ing)
 	if err != nil {
-		log.V(logf.ErrorLevel).Error(err, "failed to determine issuer to be used for ingress resource")
+		log.Error(err, "failed to determine issuer to be used for ingress resource")
 		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Could not determine issuer for ingress due to bad annotations: %s",
 			err)
 		return nil

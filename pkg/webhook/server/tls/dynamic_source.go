@@ -85,7 +85,7 @@ func (f *DynamicSource) Run(stopCh <-chan struct{}) error {
 		}
 
 		if err := f.regenerateCertificate(); err != nil {
-			f.Log.V(logf.WarnLevel).Error(err, "Failed to generate initial serving certificate, retrying...", "interval", interval)
+			f.Log.Error(err, "Failed to generate initial serving certificate, retrying...", "interval", interval)
 			return false, nil
 		}
 		return true, nil
@@ -134,7 +134,7 @@ func (f *DynamicSource) Run(stopCh <-chan struct{}) error {
 			}
 			f.Log.V(logf.InfoLevel).Info("Detected root CA rotation - regenerating serving certificates")
 			if err := f.regenerateCertificate(); err != nil {
-				f.Log.V(logf.ErrorLevel).Error(err, "Failed to regenerate serving certificate")
+				f.Log.Error(err, "Failed to regenerate serving certificate")
 				// Return an error here and stop the source running - this case should never
 				// occur, and if it does, indicates some form of internal error.
 				return false, err
@@ -143,7 +143,7 @@ func (f *DynamicSource) Run(stopCh <-chan struct{}) error {
 		case <-renewalChan:
 			f.Log.V(logf.InfoLevel).Info("Serving certificate requires renewal, regenerating")
 			if err := f.regenerateCertificate(); err != nil {
-				f.Log.V(logf.ErrorLevel).Error(err, "Failed to regenerate serving certificate")
+				f.Log.Error(err, "Failed to regenerate serving certificate")
 				// Return an error here and stop the source running - this case should never
 				// occur, and if it does, indicates some form of internal error.
 				return false, err

@@ -35,7 +35,7 @@ func main() {
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		logf.Log.V(logf.ErrorLevel).Error(err, "")
+		logf.Log.Error(err, "")
 		os.Exit(1)
 	}
 }

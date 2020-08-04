@@ -53,14 +53,14 @@ func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqu
 
 		certs, err := ListCertificatesMatchingPredicates(lister.Certificates(s.GetNamespace()), selector, predicates...)
 		if err != nil {
-			log.V(logf.ErrorLevel).Error(err, "Failed listing Certificate resources")
+			log.Error(err, "Failed listing Certificate resources")
 			return
 		}
 
 		for _, cert := range certs {
 			key, err := controllerpkg.KeyFunc(cert)
 			if err != nil {
-				log.V(logf.WarnLevel).Error(err, "Error determining 'key' for resource")
+				log.Error(err, "Error determining 'key' for resource")
 				continue
 			}
 			queue.Add(key)

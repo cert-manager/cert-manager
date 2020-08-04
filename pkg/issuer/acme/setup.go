@@ -182,7 +182,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		// Do not re-try if we fail to get the MAC key as it does not exist at the reference.
 		case apierrors.IsNotFound(err), errors.IsInvalidData(err):
 
-			log.V(logf.ErrorLevel).Error(err, "failed to verify ACME account")
+			log.Error(err, "failed to verify ACME account")
 			s := messageAccountRegistrationFailed + err.Error()
 
 			a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountRegistrationFailed, s)
@@ -210,7 +210,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	account, err := a.registerAccount(ctx, cl, eabAccount)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
-		log.V(logf.ErrorLevel).Error(err, "failed to verify ACME account")
+		log.Error(err, "failed to verify ACME account")
 		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountVerificationFailed, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
 
@@ -224,7 +224,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		// as it implies that something about the request (i.e. email address or private key)
 		// is invalid.
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.V(logf.ErrorLevel).Error(acmeErr, "skipping retrying account registration as a "+
+			log.Error(acmeErr, "skipping retrying account registration as a "+
 				"BadRequest response was returned from the ACME server")
 			return nil
 		}
@@ -239,7 +239,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	account, registeredEmail, err := ensureEmailUpToDate(ctx, cl, account, specEmail)
 	if err != nil {
 		s := messageAccountUpdateFailed + err.Error()
-		log.V(logf.ErrorLevel).Error(err, "failed to update ACME account")
+		log.Error(err, "failed to update ACME account")
 		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountUpdateFailed, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountUpdateFailed, s)
 
@@ -253,7 +253,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		// as it implies that something about the request (i.e. email address or private key)
 		// is invalid.
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.V(logf.ErrorLevel).Error(acmeErr, "skipping updating account email as a "+
+			log.Error(acmeErr, "skipping updating account email as a "+
 				"BadRequest response was returned from the ACME server")
 			return nil
 		}
