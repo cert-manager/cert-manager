@@ -174,14 +174,14 @@ func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.Error(err, "invalid resource key")
+		log.V(logf.ErrorLevel).Error(err, "invalid resource key")
 		return nil
 	}
 
 	cr, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "certificate request in work queue no longer exists")
+			log.V(logf.ErrorLevel).Error(err, "certificate request in work queue no longer exists")
 			return nil
 		}
 

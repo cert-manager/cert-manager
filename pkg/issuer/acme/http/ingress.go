@@ -291,7 +291,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 	// otherwise, we need to remove any cert-manager added rules from the ingress resource
 	ing, err := s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Get(context.TODO(), existingIngressName, metav1.GetOptions{})
 	if k8sErrors.IsNotFound(err) {
-		log.Error(err, "named ingress resource not found, skipping cleanup")
+		log.V(logf.WarnLevel).Error(err, "named ingress resource not found, skipping cleanup")
 		return nil
 	}
 	if err != nil {

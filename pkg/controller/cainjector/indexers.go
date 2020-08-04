@@ -19,6 +19,8 @@ package cainjector
 import (
 	"context"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -43,7 +45,7 @@ func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) cert
 		log = log.WithValues("type", resourceName)
 		objs := listTyp.DeepCopyObject()
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromPath: certName.String()}); err != nil {
-			log.Error(err, "unable to fetch injectables associated with certificate")
+			log.V(logf.ErrorLevel).Error(err, "unable to fetch injectables associated with certificate")
 			return nil
 		}
 
@@ -51,7 +53,7 @@ func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) cert
 		if err := meta.EachListItem(objs, func(obj runtime.Object) error {
 			metaInfo, err := meta.Accessor(obj)
 			if err != nil {
-				log.Error(err, "unable to get metadata from list item")
+				log.V(logf.WarnLevel).Error(err, "unable to get metadata from list item")
 				// continue on error
 				return nil
 			}
@@ -61,7 +63,7 @@ func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) cert
 			}})
 			return nil
 		}); err != nil {
-			log.Error(err, "unable get items from list")
+			log.V(logf.ErrorLevel).Error(err, "unable get items from list")
 			return nil
 		}
 
@@ -90,7 +92,7 @@ func (m *secretForCertificateMapper) Map(obj handler.MapObject) []ctrl.Request {
 	// confirm that a service owns this cert
 	if err := m.Client.Get(context.Background(), *certName, &cert); err != nil {
 		// TODO(directxman12): check for not found error?
-		log.Error(err, "unable to fetch certificate that owns the secret")
+		log.V(logf.ErrorLevel).Error(err, "unable to fetch certificate that owns the secret")
 		return nil
 	}
 
@@ -146,7 +148,7 @@ func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) se
 		log = log.WithValues("type", resourceName)
 		objs := listTyp.DeepCopyObject()
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromSecretPath: secretName.String()}); err != nil {
-			log.Error(err, "unable to fetch injectables associated with secret")
+			log.V(logf.ErrorLevel).Error(err, "unable to fetch injectables associated with secret")
 			return nil
 		}
 
@@ -154,7 +156,7 @@ func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) se
 		if err := meta.EachListItem(objs, func(obj runtime.Object) error {
 			metaInfo, err := meta.Accessor(obj)
 			if err != nil {
-				log.Error(err, "unable to get metadata from list item")
+				log.V(logf.ErrorLevel).Error(err, "unable to get metadata from list item")
 				// continue on error
 				return nil
 			}
@@ -164,7 +166,7 @@ func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) se
 			}})
 			return nil
 		}); err != nil {
-			log.Error(err, "unable get items from list")
+			log.V(logf.ErrorLevel).Error(err, "unable get items from list")
 			return nil
 		}
 

@@ -84,7 +84,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		err := errors.New("secret name missing")
 
 		s.reporter.Failed(cr, err, "MissingAnnotation", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 
 		return nil, nil
 	}
@@ -94,7 +94,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		message := fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, secretName)
 
 		s.reporter.Pending(cr, err, "MissingSecret", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 
 		return nil, nil
 	}
@@ -104,7 +104,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 			secretName, cmapi.CertificateRequestPrivateKeyAnnotationKey)
 
 		s.reporter.Pending(cr, err, "ErrorParsingKey", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 
 		return nil, nil
 	}
@@ -113,7 +113,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
 		s.reporter.Pending(cr, err, "ErrorGettingSecret", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 		return nil, err
 	}
 
@@ -121,7 +121,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	if err != nil {
 		message := "Error generating certificate template"
 		s.reporter.Failed(cr, err, "ErrorGenerating", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 		return nil, nil
 	}
 
@@ -132,7 +132,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	if err != nil {
 		message := "Failed to get public key from private key"
 		s.reporter.Failed(cr, err, "ErrorPublicKey", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 		return nil, nil
 	}
 
@@ -145,7 +145,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 
 		message := "Error generating certificate template"
 		s.reporter.Failed(cr, err, "ErrorKeyMatch", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 
 		return nil, nil
 	}
@@ -155,7 +155,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	if err != nil {
 		message := "Error signing certificate"
 		s.reporter.Failed(cr, err, "ErrorSigning", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 		return nil, nil
 	}
 

@@ -158,7 +158,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 
 	toSchedule, err := c.scheduler.ScheduleN(MaxChallengesPerSchedule)
 	if err != nil {
-		log.Error(err, "error determining set of challenges that should be scheduled for processing")
+		log.V(logf.ErrorLevel).Error(err, "error determining set of challenges that should be scheduled for processing")
 		return
 	}
 
@@ -169,7 +169,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 
 		_, err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
 		if err != nil {
-			log.Error(err, "error scheduling challenge for processing")
+			log.V(logf.ErrorLevel).Error(err, "error scheduling challenge for processing")
 			return
 		}
 
@@ -185,7 +185,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.Error(err, "invalid resource key")
+		log.V(logf.ErrorLevel).Error(err, "invalid resource key")
 		return nil
 	}
 
@@ -193,7 +193,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "challenge in work queue no longer exists")
+			log.V(logf.ErrorLevel).Error(err, "challenge in work queue no longer exists")
 			return nil
 		}
 

@@ -105,21 +105,21 @@ func (c *controller) secretDeleted(obj interface{}) {
 	var ok bool
 	secret, ok = obj.(*corev1.Secret)
 	if !ok {
-		log.Error(nil, "object was not a Secret object")
+		log.V(logf.ErrorLevel).Error(nil, "object was not a Secret object")
 		return
 	}
 	log = logf.WithResource(log, secret)
 
 	issuers, err := c.issuersForSecret(secret)
 	if err != nil {
-		log.Error(err, "error looking up issuers observing secret")
+		log.V(logf.ErrorLevel).Error(err, "error looking up issuers observing secret")
 		return
 	}
 	for _, iss := range issuers {
 		log := logf.WithRelatedResource(log, iss)
 		key, err := keyFunc(iss)
 		if err != nil {
-			log.Error(err, "error computing key for resource")
+			log.V(logf.ErrorLevel).Error(err, "error computing key for resource")
 			continue
 		}
 		c.queue.AddRateLimited(key)
@@ -131,14 +131,14 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.Error(nil, "invalid resource key")
+		log.V(logf.ErrorLevel).Error(nil, "invalid resource key")
 		return nil
 	}
 
 	issuer, err := c.clusterIssuerLister.Get(name)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "clusterissuer in work queue no longer exists")
+			log.V(logf.ErrorLevel).Error(err, "clusterissuer in work queue no longer exists")
 			return nil
 		}
 

@@ -40,7 +40,7 @@ func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate)
 	key, err := cache.MetaNamespaceKeyFunc(crt)
 	if err != nil {
 		log := logf.WithRelatedResource(m.log, crt)
-		log.Error(err, "failed to get key from certificate object")
+		log.V(logf.ErrorLevel).Error(err, "failed to get key from certificate object")
 		return
 	}
 
@@ -95,7 +95,7 @@ func (m *Metrics) updateCertificateReadyStatus(crt *cmapi.Certificate, current c
 func (m *Metrics) RemoveCertificate(key string) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		m.log.Error(err, "failed to get namespace and name from key")
+		m.log.V(logf.ErrorLevel).Error(err, "failed to get namespace and name from key")
 		return
 	}
 

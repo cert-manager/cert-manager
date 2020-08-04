@@ -149,7 +149,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
-		log.Error(err, "certificate not found for key")
+		log.V(logf.WarnLevel).Error(err, "certificate not found for key")
 		return nil
 	}
 	if err != nil {

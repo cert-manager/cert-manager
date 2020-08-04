@@ -81,7 +81,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		message := "Required secret resource not found"
 
 		v.reporter.Pending(cr, err, "SecretMissing", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 
 		return nil, nil
 	}
@@ -90,7 +90,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		message := "Failed to initialise venafi client for signing"
 
 		v.reporter.Pending(cr, err, "VenafiInitError", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 			message := fmt.Sprintf("Failed to parse %q annotation", cmapi.VenafiCustomFieldsAnnotationKey)
 
 			v.reporter.Failed(cr, err, "CustomFieldsError", message)
-			log.Error(err, message)
+			log.V(logf.ErrorLevel).Error(err, message)
 
 			return nil, nil
 		}
@@ -120,7 +120,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 			case venaficlient.ErrCustomFieldsType:
 				v.reporter.Failed(cr, err, "CustomFieldsError", err.Error())
-				log.Error(err, err.Error())
+				log.V(logf.ErrorLevel).Error(err, err.Error())
 
 				return nil, nil
 
@@ -128,7 +128,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 				message := "Failed to request venafi certificate"
 
 				v.reporter.Failed(cr, err, "RequestError", message)
-				log.Error(err, message)
+				log.V(logf.ErrorLevel).Error(err, message)
 
 				return nil, err
 			}
@@ -148,14 +148,14 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 			message := "Venafi certificate still in a pending state, the request will be retried"
 
 			v.reporter.Pending(cr, err, "IssuancePending", message)
-			log.Error(err, message)
+			log.V(logf.WarnLevel).Error(err, message)
 			return nil, err
 
 		default:
 			message := "Failed to obtain venafi certificate"
 
 			v.reporter.Failed(cr, err, "RetrieveError", message)
-			log.Error(err, message)
+			log.V(logf.ErrorLevel).Error(err, message)
 
 			return nil, err
 		}

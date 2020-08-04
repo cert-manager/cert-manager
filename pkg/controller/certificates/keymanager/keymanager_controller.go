@@ -128,13 +128,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.Error(err, "invalid resource key passed to ProcessItem")
+		log.V(logf.ErrorLevel).Error(err, "invalid resource key passed to ProcessItem")
 		return nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
 	if apierrors.IsNotFound(err) {
-		log.Error(err, "certificate not found for key")
+		log.V(logf.ErrorLevel).Error(err, "certificate not found for key")
 		return nil
 	}
 	if err != nil {
@@ -203,13 +203,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	pkData := secret.Data[corev1.TLSPrivateKeyKey]
 	pk, err := pki.DecodePrivateKeyBytes(pkData)
 	if err != nil {
-		log.Error(err, "Deleting existing private key secret due to error decoding data")
+		log.V(logf.WarnLevel).Error(err, "Deleting existing private key secret due to error decoding data")
 		return c.deleteSecretResources(ctx, secrets)
 	}
 
 	violations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if err != nil {
-		log.Error(err, "Internal error verifying if private key matches spec - please open an issue.")
+		log.V(logf.ErrorLevel).Error(err, "Internal error verifying if private key matches spec - please open an issue.")
 		return nil
 	}
 	if len(violations) > 0 {

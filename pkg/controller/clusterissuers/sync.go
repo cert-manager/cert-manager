@@ -80,7 +80,7 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha2.ClusterIssuer) (err
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
-		log.Error(err, "error setting up issuer")
+		log.V(logf.ErrorLevel).Error(err, "error setting up issuer")
 		c.recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}

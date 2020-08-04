@@ -141,7 +141,7 @@ func (d *DynamicAuthority) Run(stopCh <-chan struct{}) error {
 	return wait.PollImmediateUntil(time.Second*10, func() (done bool, err error) {
 		ctx := context.Background()
 		if err := d.ensureCA(ctx); err != nil {
-			d.Log.Error(err, "error ensuring CA")
+			d.Log.V(logf.ErrorLevel).Error(err, "error ensuring CA")
 		}
 		// never return 'done'.
 		// this poll only ends when stopCh is closed.
@@ -285,13 +285,13 @@ func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
 	}
 	cert, err := tls.X509KeyPair(certData, pkData)
 	if err != nil {
-		d.Log.Error(err, "Failed to parse data in CA secret. Regenerating...")
+		d.Log.V(logf.WarnLevel).Error(err, "Failed to parse data in CA secret. Regenerating...")
 		return true
 	}
 
 	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		d.Log.Error(err, "internal error parsing x509 certificate")
+		d.Log.V(logf.ErrorLevel).Error(err, "internal error parsing x509 certificate")
 		return true
 	}
 	if !x509Cert.IsCA {

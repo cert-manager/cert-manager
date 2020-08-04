@@ -45,7 +45,7 @@ func (c *CA) Setup(ctx context.Context) error {
 
 	cert, err := kube.SecretTLSCert(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
-		log.Error(err, "error getting signing CA TLS certificate")
+		log.V(logf.ErrorLevel).Error(err, "error getting signing CA TLS certificate")
 		s := messageErrorGetKeyPair + err.Error()
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
 		apiutil.SetIssuerCondition(c.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorGetKeyPair, s)
@@ -54,7 +54,7 @@ func (c *CA) Setup(ctx context.Context) error {
 
 	_, err = kube.SecretTLSKey(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
-		log.Error(err, "error getting signing CA private key")
+		log.V(logf.ErrorLevel).Error(err, "error getting signing CA private key")
 		s := messageErrorGetKeyPair + err.Error()
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
 		apiutil.SetIssuerCondition(c.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorGetKeyPair, s)
@@ -64,7 +64,7 @@ func (c *CA) Setup(ctx context.Context) error {
 	log = logf.WithRelatedResourceName(log, c.issuer.GetSpec().CA.SecretName, c.resourceNamespace, "Secret")
 	if !cert.IsCA {
 		s := messageErrorGetKeyPair + "certificate is not a CA"
-		log.Error(nil, "signing certificate is not a CA")
+		log.V(logf.ErrorLevel).Error(nil, "signing certificate is not a CA")
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorInvalidKeyPair, s)
 		apiutil.SetIssuerCondition(c.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorInvalidKeyPair, s)
 		// Don't return an error here as there is nothing more we can do

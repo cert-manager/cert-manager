@@ -73,7 +73,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 		message := "Required secret resource not found"
 
 		v.reporter.Pending(cr, err, "SecretMissing", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 		return nil, nil
 	}
 
@@ -81,7 +81,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 	if err != nil {
 		message := "Failed to initialise vault client for signing"
 		v.reporter.Pending(cr, err, "VaultInitError", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 		return nil, nil
 	}
 
@@ -91,7 +91,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 		message := "Vault failed to sign certificate"
 
 		v.reporter.Failed(cr, err, "SigningError", message)
-		log.Error(err, message)
+		log.V(logf.ErrorLevel).Error(err, message)
 
 		return nil, nil
 	}

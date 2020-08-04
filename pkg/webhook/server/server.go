@@ -233,7 +233,7 @@ func (s *Server) startServer(l net.Listener, stopCh <-chan struct{}, handle http
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()
 			if err := srv.Shutdown(ctx); err != nil {
-				s.Log.Error(err, "failed to gracefully shutdown http server")
+				s.Log.V(logf.WarnLevel).Error(err, "failed to gracefully shutdown http server")
 				ch <- err
 			}
 			s.Log.V(logf.DebugLevel).Info("shutdown HTTP server gracefully")
@@ -312,7 +312,7 @@ func (s *Server) handle(inner func(runtime.Object) runtime.Object) func(w http.R
 
 		data, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			s.Log.Error(err, "failed to read request body")
+			s.Log.V(logf.ErrorLevel).Error(err, "failed to read request body")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -323,14 +323,14 @@ func (s *Server) handle(inner func(runtime.Object) runtime.Object) func(w http.R
 		codec.Decode(data, nil, nil)
 		obj, _, err := codec.Decode(data, nil, nil)
 		if err != nil {
-			s.Log.Error(err, "failed to decode request body")
+			s.Log.V(logf.ErrorLevel).Error(err, "failed to decode request body")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		result := inner(obj)
 		if err := codec.Encode(result, w); err != nil {
-			s.Log.Error(err, "failed to encode response body")
+			s.Log.V(logf.ErrorLevel).Error(err, "failed to encode response body")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

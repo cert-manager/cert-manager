@@ -96,7 +96,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		if ch.Status.Presented {
 			solver, err := c.solverFor(ch.Spec.Type)
 			if err != nil {
-				log.Error(err, "error getting solver for challenge")
+				log.V(logf.ErrorLevel).Error(err, "error getting solver for challenge")
 				return err
 			}
 
@@ -104,7 +104,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 			if err != nil {
 				c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
 				ch.Status.Reason = err.Error()
-				log.Error(err, "error cleaning up challenge")
+				log.V(logf.ErrorLevel).Error(err, "error cleaning up challenge")
 				return err
 			}
 
@@ -180,7 +180,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 
 	err = solver.Check(ctx, genericIssuer, ch)
 	if err != nil {
-		log.Error(err, "propagation check failed")
+		log.V(logf.ErrorLevel).Error(err, "propagation check failed")
 		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
 		key, err := controllerpkg.KeyFunc(ch)
@@ -276,7 +276,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
-		log.Error(err, "error getting solver for challenge")
+		log.V(logf.ErrorLevel).Error(err, "error getting solver for challenge")
 		return nil
 	}
 
@@ -284,7 +284,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 	if err != nil {
 		c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
 		ch.Status.Reason = err.Error()
-		log.Error(err, "error cleaning up challenge")
+		log.V(logf.ErrorLevel).Error(err, "error cleaning up challenge")
 		return nil
 	}
 
@@ -345,7 +345,7 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 		ch.Status.State = cmacme.State(acmeChal.Status)
 	}
 	if err != nil {
-		log.Error(err, "error accepting challenge")
+		log.V(logf.ErrorLevel).Error(err, "error accepting challenge")
 		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
 		return handleError(ch, err)
 	}
@@ -353,7 +353,7 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
 	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthzURL)
 	if err != nil {
-		log.Error(err, "error waiting for authorization")
+		log.V(logf.ErrorLevel).Error(err, "error waiting for authorization")
 		return c.handleAuthorizationError(ch, err)
 	}
 

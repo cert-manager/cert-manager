@@ -18,7 +18,6 @@ package certificates
 
 import (
 	"github.com/go-logr/logr"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +25,7 @@ import (
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
@@ -53,14 +53,14 @@ func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqu
 
 		certs, err := ListCertificatesMatchingPredicates(lister.Certificates(s.GetNamespace()), selector, predicates...)
 		if err != nil {
-			log.Error(err, "Failed listing Certificate resources")
+			log.V(logf.ErrorLevel).Error(err, "Failed listing Certificate resources")
 			return
 		}
 
 		for _, cert := range certs {
 			key, err := controllerpkg.KeyFunc(cert)
 			if err != nil {
-				log.Error(err, "Error determining 'key' for resource")
+				log.V(logf.WarnLevel).Error(err, "Error determining 'key' for resource")
 				continue
 			}
 			queue.Add(key)
