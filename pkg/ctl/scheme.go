@@ -24,8 +24,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	kscheme "k8s.io/client-go/kubernetes/scheme"
 
 	acmeinstall "github.com/jetstack/cert-manager/pkg/internal/apis/acme/install"
 	cminstall "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/install"
@@ -51,6 +49,9 @@ func init() {
 	listGroupVersion := schema.GroupVersionKind{Group: "", Version: runtime.APIVersionInternal, Kind: "List"}
 	Scheme.AddKnownTypeWithName(listGroupVersion, &metainternalversion.List{})
 
-	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
-	utilruntime.Must(kscheme.AddToScheme(Scheme))
+	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
+	Scheme.AddKnownTypes(coreGroupVersion, &metav1.List{})
+
+	metaGroupVersion := schema.GroupVersion{Group: "", Version: "v1"}
+	Scheme.AddKnownTypes(metaGroupVersion, &metainternalversion.List{})
 }

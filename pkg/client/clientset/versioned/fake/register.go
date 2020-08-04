@@ -36,7 +36,7 @@ import (
 
 var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
-var parameterCodec = runtime.NewParameterCodec(scheme)
+
 var localSchemeBuilder = runtime.SchemeBuilder{
 	acmev1alpha2.AddToScheme,
 	acmev1alpha3.AddToScheme,

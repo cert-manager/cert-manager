@@ -158,3 +158,148 @@ func TestCtlConvert(t *testing.T) {
 		})
 	}
 }
+
+const (
+	resource1v1alpha2 = `
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  creationTimestamp: null
+  name: ca-issuer
+  namespace: sandbox
+spec:
+  commonName: my-csi-app
+  isCA: true
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: ca-key-pair
+status: {}`
+	resource1v1alpha3 = `
+apiVersion: cert-manager.io/v1alpha3
+kind: Certificate
+metadata:
+  creationTimestamp: null
+  name: ca-issuer
+  namespace: sandbox
+spec:
+  commonName: my-csi-app
+  isCA: true
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: ca-key-pair
+status: {}`
+
+	resource2v1alpha2 = `
+Items:
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    creationTimestamp: null
+    name: ca-issuer
+    namespace: sandbox
+  spec:
+    commonName: my-csi-app
+    isCA: true
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: selfsigned-issuer
+    secretName: ca-key-pair
+  status: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    creationTimestamp: null
+    name: ca-issuer
+    namespace: sandbox
+  spec:
+    ca:
+      secretName: ca-key-pair
+  status: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    creationTimestamp: null
+    name: ca-issuer-2
+    namespace: sandbox
+  spec:
+    commonName: my-csi-app
+    isCA: true
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: ca-issuer
+    secretName: ca-key-pair
+  status: {}
+apiVersion: v1
+kind: List`
+	resource2v1alpha3 = `
+Items:
+- apiVersion: cert-manager.io/v1alpha3
+  kind: Certificate
+  metadata:
+    creationTimestamp: null
+    name: ca-issuer
+    namespace: sandbox
+  spec:
+    commonName: my-csi-app
+    isCA: true
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: selfsigned-issuer
+    secretName: ca-key-pair
+  status: {}
+- apiVersion: cert-manager.io/v1alpha3
+  kind: Issuer
+  metadata:
+    creationTimestamp: null
+    name: ca-issuer
+    namespace: sandbox
+  spec:
+    ca:
+      secretName: ca-key-pair
+  status: {}
+- apiVersion: cert-manager.io/v1alpha3
+  kind: Certificate
+  metadata:
+    creationTimestamp: null
+    name: ca-issuer-2
+    namespace: sandbox
+  spec:
+    commonName: my-csi-app
+    isCA: true
+    issuerRef:
+      group: cert-manager.io
+      kind: Issuer
+      name: ca-issuer
+    secretName: ca-key-pair
+  status: {}
+apiVersion: v1
+kind: List`
+
+	resource3v1alpha2 = `
+Items:
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    creationTimestamp: null
+    name: sandbox
+  spec: {}
+  status: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    creationTimestamp: null
+    name: selfsigned-issuer
+    namespace: sandbox
+  spec:
+    selfSigned: {}
+  status: {}
+apiVersion: v1
+kind: List`
+)

@@ -18,9 +18,10 @@ package server
 
 import (
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	"io"
 	"net"
+
+	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 
 	"github.com/spf13/cobra"
 
@@ -49,7 +50,6 @@ func NewWebhookServerOptions(out, errOut io.Writer, groupName string, solvers ..
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
 			defaultEtcdPathPrefix,
 			apiserver.Codecs.LegacyCodec(whapi.SchemeGroupVersion),
-			nil,
 		),
 
 		SolverGroup: groupName,

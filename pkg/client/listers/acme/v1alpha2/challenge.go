@@ -26,8 +26,10 @@ import (
 )
 
 // ChallengeLister helps list Challenges.
+// All objects returned here must be treated as read-only.
 type ChallengeLister interface {
 	// List lists all Challenges in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha2.Challenge, err error)
 	// Challenges returns an object that can list and get Challenges.
 	Challenges(namespace string) ChallengeNamespaceLister
@@ -58,10 +60,13 @@ func (s *challengeLister) Challenges(namespace string) ChallengeNamespaceLister 
 }
 
 // ChallengeNamespaceLister helps list and get Challenges.
+// All objects returned here must be treated as read-only.
 type ChallengeNamespaceLister interface {
 	// List lists all Challenges in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha2.Challenge, err error)
 	// Get retrieves the Challenge from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha2.Challenge, error)
 	ChallengeNamespaceListerExpansion
 }
