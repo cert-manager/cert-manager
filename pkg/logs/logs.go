@@ -36,10 +36,13 @@ import (
 var (
 	Log = klogr.New().WithName("cert-manager")
 
-	ErrorLevel = 0
-	WarnLevel  = 1
-	InfoLevel  = 2
-	DebugLevel = 3
+	// following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
+	ErrorLevel        = 0
+	WarnLevel         = 1
+	InfoLevel         = 2
+	ExtendedInfoLevel = 3
+	DebugLevel        = 4
+	TraceLevel        = 5
 )
 
 var logFlushFreq = flag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
