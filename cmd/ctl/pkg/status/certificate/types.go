@@ -60,33 +60,6 @@ type CertificateStatus struct {
 	CRStatus *CRStatus
 }
 
-type CertificateStatusBuilder struct {
-	// Name of the Certificate resource
-	Name string
-	// Namespace of the Certificate resource
-	Namespace string
-	// Creation Time of Certificate resource
-	CreationTime metav1.Time
-	// Conditions of Certificate resource
-	Conditions []cmapiv1alpha2.CertificateCondition
-	// DNS Names of Certificate resource
-	DNSNames []string
-	// Events of Certificate resource
-	Events *v1.EventList
-	// Not Before of Certificate resource
-	NotBefore *metav1.Time
-	// Not After of Certificate resource
-	NotAfter *metav1.Time
-	// Renewal Time of Certificate resource
-	RenewalTime *metav1.Time
-
-	IssuerStatus *IssuerStatus
-
-	SecretStatus *SecretStatus
-
-	CRStatus *CRStatus
-}
-
 type IssuerStatus struct {
 	// If Error is not nil, there was a problem getting the status of the Issuer/ClusterIssuer resource,
 	// so the rest of the fields is unusable
@@ -141,96 +114,87 @@ type CRStatus struct {
 	Events *v1.EventList
 }
 
-func newCertificateStatusBuilderFromCert(crt *cmapiv1alpha2.Certificate) *CertificateStatusBuilder {
+func newCertificateStatusFromCert(crt *cmapiv1alpha2.Certificate) *CertificateStatus {
 	if crt == nil {
 		return nil
 	}
-	return &CertificateStatusBuilder{
+	return &CertificateStatus{
 		Name: crt.Name, Namespace: crt.Namespace, CreationTime: crt.CreationTimestamp,
 		Conditions: crt.Status.Conditions, DNSNames: crt.Spec.DNSNames,
 		NotBefore: crt.Status.NotBefore, NotAfter: crt.Status.NotAfter, RenewalTime: crt.Status.RenewalTime}
 }
 
-func (builder *CertificateStatusBuilder) withEvents(events *v1.EventList) *CertificateStatusBuilder {
-	builder.Events = events
-	return builder
+func (status *CertificateStatus) withEvents(events *v1.EventList) *CertificateStatus {
+	status.Events = events
+	return status
 }
 
-func (builder *CertificateStatusBuilder) withIssuer(issuer *cmapiv1alpha2.Issuer, err error) *CertificateStatusBuilder {
+func (status *CertificateStatus) withIssuer(issuer *cmapiv1alpha2.Issuer, err error) *CertificateStatus {
 	if err != nil {
-		builder.IssuerStatus = &IssuerStatus{Error: err}
-		return builder
+		status.IssuerStatus = &IssuerStatus{Error: err}
+		return status
 	}
 	if issuer == nil {
-		return builder
+		return status
 	}
-	builder.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer", Conditions: issuer.Status.Conditions}
-	return builder
+	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer", Conditions: issuer.Status.Conditions}
+	return status
 }
 
-func (builder *CertificateStatusBuilder) withClusterIssuer(clusterIssuer *cmapiv1alpha2.ClusterIssuer, err error) *CertificateStatusBuilder {
+func (status *CertificateStatus) withClusterIssuer(clusterIssuer *cmapiv1alpha2.ClusterIssuer, err error) *CertificateStatus {
 	if err != nil {
-		builder.IssuerStatus = &IssuerStatus{Error: err}
-		return builder
+		status.IssuerStatus = &IssuerStatus{Error: err}
+		return status
 	}
 	if clusterIssuer == nil {
-		return builder
+		return status
 	}
-	builder.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer", Conditions: clusterIssuer.Status.Conditions}
-	return builder
+	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer", Conditions: clusterIssuer.Status.Conditions}
+	return status
 }
 
-func (builder *CertificateStatusBuilder) withSecret(secret *v1.Secret, err error) *CertificateStatusBuilder {
+func (status *CertificateStatus) withSecret(secret *v1.Secret, err error) *CertificateStatus {
 	if err != nil {
-		builder.SecretStatus = &SecretStatus{Error: err}
-		return builder
+		status.SecretStatus = &SecretStatus{Error: err}
+		return status
 	}
 	if secret == nil {
-		return builder
+		return status
 	}
 	certData := secret.Data["tls.crt"]
 
 	if len(certData) == 0 {
-		builder.SecretStatus = &SecretStatus{Error: fmt.Errorf("error: 'tls.crt' of Secret %q is not set\n", secret.Name)}
-		return builder
+		status.SecretStatus = &SecretStatus{Error: fmt.Errorf("error: 'tls.crt' of Secret %q is not set\n", secret.Name)}
+		return status
 	}
 
 	x509Cert, err := pki.DecodeX509CertificateBytes(certData)
 	if err != nil {
-		builder.SecretStatus = &SecretStatus{Error: fmt.Errorf("error when parsing 'tls.crt' of Secret %q: %s\n", secret.Name, err)}
-		return builder
+		status.SecretStatus = &SecretStatus{Error: fmt.Errorf("error when parsing 'tls.crt' of Secret %q: %s\n", secret.Name, err)}
+		return status
 	}
 
-	builder.SecretStatus = &SecretStatus{Error: nil, Name: secret.Name, IssuerCountry: x509Cert.Issuer.Country,
+	status.SecretStatus = &SecretStatus{Error: nil, Name: secret.Name, IssuerCountry: x509Cert.Issuer.Country,
 		IssuerOrganisation: x509Cert.Issuer.Organization,
 		IssuerCommonName:   x509Cert.Issuer.CommonName, KeyUsage: x509Cert.KeyUsage,
 		ExtKeyUsage: x509Cert.ExtKeyUsage, PublicKeyAlgorithm: x509Cert.PublicKeyAlgorithm,
 		SignatureAlgorithm: x509Cert.SignatureAlgorithm,
 		SubjectKeyId:       x509Cert.SubjectKeyId, AuthorityKeyId: x509Cert.AuthorityKeyId,
 		SerialNumber: x509Cert.SerialNumber}
-	return builder
+	return status
 }
 
-func (builder *CertificateStatusBuilder) withCR(req *cmapiv1alpha2.CertificateRequest, events *v1.EventList, err error) *CertificateStatusBuilder {
+func (status *CertificateStatus) withCR(req *cmapiv1alpha2.CertificateRequest, events *v1.EventList, err error) *CertificateStatus {
 	if err != nil {
-		builder.CRStatus = &CRStatus{Error: err}
-		return builder
+		status.CRStatus = &CRStatus{Error: err}
+		return status
 	}
 	if req == nil {
-		return builder
+		return status
 	}
-	builder.Events = events
-	builder.CRStatus = &CRStatus{Name: req.Name, Namespace: req.Namespace, Conditions: req.Status.Conditions}
-	return builder
-}
-
-func (builder *CertificateStatusBuilder) build() *CertificateStatus {
-	return &CertificateStatus{
-		Name: builder.Name, Namespace: builder.Namespace, CreationTime: builder.CreationTime,
-		Conditions: builder.Conditions, DNSNames: builder.DNSNames, Events: builder.Events,
-		NotBefore: builder.NotBefore, NotAfter: builder.NotAfter, RenewalTime: builder.RenewalTime,
-		IssuerStatus: builder.IssuerStatus, SecretStatus: builder.SecretStatus, CRStatus: builder.CRStatus,
-	}
+	status.Events = events
+	status.CRStatus = &CRStatus{Name: req.Name, Namespace: req.Namespace, Conditions: req.Status.Conditions}
+	return status
 }
 
 func (status *CertificateStatus) String() string {

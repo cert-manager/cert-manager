@@ -100,7 +100,7 @@ func TestCRInfoString(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			actualOutput := (&CertificateStatusBuilder{}).withCR(test.cr, nil, test.err).build().CRStatus.String()
+			actualOutput := (&CertificateStatus{}).withCR(test.cr, nil, test.err).CRStatus.String()
 			if strings.TrimSpace(actualOutput) != strings.TrimSpace(test.expOutput) {
 				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
 			}

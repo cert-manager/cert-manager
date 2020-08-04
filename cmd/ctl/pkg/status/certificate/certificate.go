@@ -165,7 +165,7 @@ func (o *Options) Run(args []string) error {
 	}
 
 	// Build status of Certificate with data gathered
-	statusBuilder := newCertificateStatusBuilderFromCert(crt).
+	status := newCertificateStatusFromCert(crt).
 		withEvents(crtEvents).
 		withSecret(secret, secretErr).
 		withCR(req, reqEvents, reqErr)
@@ -178,24 +178,23 @@ func (o *Options) Run(args []string) error {
 	// Get info on Issuer/ClusterIssuer
 	if crt.Spec.IssuerRef.Group != "cert-manager.io" && crt.Spec.IssuerRef.Group != "" {
 		// TODO: Support Issuers/ClusterIssuers from other groups as well
-		statusBuilder = statusBuilder.withIssuer(nil, fmt.Errorf("The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
+		status = status.withIssuer(nil, fmt.Errorf("The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
 			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name))
 	} else if issuerKind == "Issuer" {
 		issuer, issuerErr := o.CMClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
 		if issuerErr != nil {
 			issuerErr = fmt.Errorf("error when getting Issuer: %v\n", issuerErr)
 		}
-		statusBuilder = statusBuilder.withIssuer(issuer, issuerErr)
+		status = status.withIssuer(issuer, issuerErr)
 	} else {
 		// ClusterIssuer
 		clusterIssuer, issuerErr := o.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
 		if issuerErr != nil {
 			issuerErr = fmt.Errorf("error when getting ClusterIssuer: %v\n", issuerErr)
 		}
-		statusBuilder = statusBuilder.withClusterIssuer(clusterIssuer, issuerErr)
+		status = status.withClusterIssuer(clusterIssuer, issuerErr)
 	}
 
-	status := statusBuilder.build()
 	fmt.Fprintf(o.Out, status.String())
 
 	return nil
