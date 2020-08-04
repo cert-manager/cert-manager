@@ -158,7 +158,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
 	}
-	log.WithValues("nameservers", nameservers).Info("configured acme dns01 nameservers")
+	log.V(logf.InfoLevel).WithValues("nameservers", nameservers).Info("configured acme dns01 nameservers")
 
 	HTTP01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
 	if err != nil {
