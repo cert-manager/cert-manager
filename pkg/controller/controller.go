@@ -122,7 +122,7 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 	}
 
 	<-stopCh
-	log.V(logf.WarnLevel).Info("shutting down queue as workqueue signaled shutdown")
+	log.V(logf.InfoLevel).Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
 	log.V(logf.DebugLevel).Info("waiting for workers to exit...")
 	wg.Wait()
