@@ -18,18 +18,12 @@ package certificate
 
 import (
 	"context"
-	"crypto/x509"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/kubectl/pkg/describe"
-	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
@@ -39,7 +33,6 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
@@ -139,35 +132,43 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when getting Certificate resource: %v", err)
 	}
 
-	fmt.Fprintf(o.Out, "Name: %s\nNamespace: %s\n", crt.Name, crt.Namespace)
-
-	fmt.Fprintf(o.Out, fmt.Sprintf("Created at: %s\n", crt.CreationTimestamp.Time.Format(time.RFC3339)))
-
-	// Get necessary info from Certificate
-	// Output one line about each type of Condition that is set.
-	// Certificate can have multiple Conditions of different types set, e.g. "Ready" or "Issuing"
-	conditionMsg := ""
-	for _, con := range crt.Status.Conditions {
-		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
-	}
-	if conditionMsg == "" {
-		conditionMsg = "  No Conditions set\n"
-	}
-	fmt.Fprintf(o.Out, "Conditions:\n%s", conditionMsg)
-
-	dnsNames := formatStringSlice(crt.Spec.DNSNames)
-	fmt.Fprintf(o.Out, "DNS Names:\n%s", dnsNames)
-
 	crtRef, err := reference.GetReference(ctl.Scheme, crt)
 	if err != nil {
 		return err
 	}
 	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
 	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
-	tabWriter := tabwriter.NewWriter(o.Out, 0, 8, 2, ' ', 0)
-	prefixWriter := describe.NewPrefixWriter(tabWriter)
-	util.DescribeEvents(crtEvents, prefixWriter, 0)
-	tabWriter.Flush()
+
+	secret, secretErr := clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
+	if secretErr != nil {
+		secretErr = fmt.Errorf("error when finding Secret %q: %w\n", crt.Spec.SecretName, secretErr)
+	}
+
+	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
+	// Try find the CertificateRequest that is owned by crt and has the correct revision
+	req, reqErr := findMatchingCR(o.CMClient, ctx, crt)
+	if reqErr != nil {
+		reqErr = fmt.Errorf("error when finding CertificateRequest: %w\n", reqErr)
+	}
+	if req == nil {
+		reqErr = errors.New("No CertificateRequest found for this Certificate\n")
+	}
+
+	var reqEvents *corev1.EventList
+	if req != nil {
+		reqRef, err := reference.GetReference(ctl.Scheme, req)
+		if err != nil {
+			return err
+		}
+		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
+		reqEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
+	}
+
+	// Build status of Certificate with data gathered
+	status := newCertificateStatusFromCert(crt).
+		withEvents(crtEvents).
+		withSecret(secret, secretErr).
+		withCR(req, reqEvents, reqErr)
 
 	issuerKind := crt.Spec.IssuerRef.Kind
 	if issuerKind == "" {
@@ -177,58 +178,24 @@ func (o *Options) Run(args []string) error {
 	// Get info on Issuer/ClusterIssuer
 	if crt.Spec.IssuerRef.Group != "cert-manager.io" && crt.Spec.IssuerRef.Group != "" {
 		// TODO: Support Issuers/ClusterIssuers from other groups as well
-		fmt.Fprintf(o.Out, "The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
-			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name)
+		status = status.withIssuer(nil, fmt.Errorf("The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
+			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name))
 	} else if issuerKind == "Issuer" {
-		issuer, err := o.CMClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
-		if err != nil {
-			fmt.Fprintf(o.Out, "error when getting Issuer: %v\n", err)
-		} else {
-			fmt.Fprintf(o.Out, issuerInfoString(crt.Spec.IssuerRef.Name, issuerKind, issuer.Status.Conditions))
+		issuer, issuerErr := o.CMClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if issuerErr != nil {
+			issuerErr = fmt.Errorf("error when getting Issuer: %v\n", issuerErr)
 		}
+		status = status.withIssuer(issuer, issuerErr)
 	} else {
 		// ClusterIssuer
-		clusterIssuer, err := o.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
-		if err != nil {
-			fmt.Fprintf(o.Out, "error when getting ClusterIssuer: %v\n", err)
-		} else {
-			fmt.Fprintf(o.Out, issuerInfoString(crt.Spec.IssuerRef.Name, issuerKind, clusterIssuer.Status.Conditions))
+		clusterIssuer, issuerErr := o.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if issuerErr != nil {
+			issuerErr = fmt.Errorf("error when getting ClusterIssuer: %v\n", issuerErr)
 		}
+		status = status.withClusterIssuer(clusterIssuer, issuerErr)
 	}
 
-	secret, err := clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
-	if err != nil {
-		fmt.Fprintf(o.Out, "error when finding secret %q: %s\n", crt.Spec.SecretName, err)
-	} else {
-		fmt.Fprintf(o.Out, secretInfoString(secret))
-	}
-
-	fmt.Fprintf(o.Out, "Not Before: %s\n", formatTimeString(crt.Status.NotBefore))
-	fmt.Fprintf(o.Out, "Not After: %s\n", formatTimeString(crt.Status.NotAfter))
-	fmt.Fprintf(o.Out, "Renewal Time: %s\n", formatTimeString(crt.Status.RenewalTime))
-
-	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
-	// Try find the CertificateRequest that is owned by crt and has the correct revision
-	reqs, err := o.CMClient.CertmanagerV1alpha2().CertificateRequests(o.Namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	req, err := findMatchingCR(reqs, crt)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(o.Out, crInfoString(req))
-	if req != nil {
-		reqRef, err := reference.GetReference(ctl.Scheme, req)
-		if err != nil {
-			return err
-		}
-		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
-		reqEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
-
-		util.DescribeEvents(reqEvents, prefixWriter, 1)
-		tabWriter.Flush()
-	}
+	fmt.Fprintf(o.Out, status.String())
 
 	return nil
 }
@@ -255,8 +222,13 @@ func formatTimeString(t *metav1.Time) string {
 // findMatchingCR tries to find a CertificateRequest that is owned by crt and has the correct revision annotated from reqs.
 // If none found returns nil
 // If one found returns the CR
-// If multiple found returns error
-func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) (*cmapi.CertificateRequest, error) {
+// If multiple found or error occurs when listing CRs, returns error
+func findMatchingCR(cmClient cmclient.Interface, ctx context.Context, crt *cmapi.Certificate) (*cmapi.CertificateRequest, error) {
+	reqs, err := cmClient.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error when listing CertificateRequest resources: %w", err)
+	}
+
 	possibleMatches := []*cmapi.CertificateRequest{}
 
 	// CertificateRequest revisions begin from 1.
@@ -280,130 +252,4 @@ func findMatchingCR(reqs *cmapi.CertificateRequestList, crt *cmapi.Certificate) 
 	} else {
 		return nil, errors.New("found multiple certificate requests with expected revision and owner")
 	}
-}
-
-// crInfoString returns the information of a CR as a string to be printed as output
-func crInfoString(cr *cmapi.CertificateRequest) string {
-	if cr == nil {
-		return "No CertificateRequest found for this Certificate\n"
-	}
-
-	crFormat := `
-  Name: %s
-  Namespace: %s
-  Conditions:
-  %s`
-	conditionMsg := ""
-	for _, con := range cr.Status.Conditions {
-		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
-	}
-	if conditionMsg == "" {
-		conditionMsg = "  No Conditions set\n"
-	}
-	infos := fmt.Sprintf(crFormat, cr.Name, cr.Namespace, conditionMsg)
-	return fmt.Sprintf("CertificateRequest:%s", infos)
-}
-
-// issuerInfoString returns the information of a issuer as a string to be printed as output
-func issuerInfoString(name, kind string, conditions []cmapi.IssuerCondition) string {
-	issuerFormat := `Issuer:
-  Name: %s
-  Kind: %s
-  Conditions:
-  %s`
-	conditionMsg := ""
-	for _, con := range conditions {
-		conditionMsg += fmt.Sprintf("  %s: %s, Reason: %s, Message: %s\n", con.Type, con.Status, con.Reason, con.Message)
-	}
-	if conditionMsg == "" {
-		conditionMsg = "  No Conditions set\n"
-	}
-	return fmt.Sprintf(issuerFormat, name, kind, conditionMsg)
-}
-
-func secretInfoString(secret *corev1.Secret) string {
-	certData := secret.Data["tls.crt"]
-
-	if len(certData) == 0 {
-		return fmt.Sprintf("error: 'tls.crt' of Secret %q is not set\n", secret.Name)
-	}
-
-	x509Cert, err := pki.DecodeX509CertificateBytes(certData)
-	if err != nil {
-		return fmt.Sprintf("error when parsing 'tls.crt' of Secret %q: %s\n", secret.Name, err)
-	}
-	secretFormat := `Secret:
-  Name: %s
-  Issuer Country: %s
-  Issuer Organisation: %s
-  Issuer Common Name: %s
-  Key Usage: %s
-  Extended Key Usages: %s
-  Public Key Algorithm: %s
-  Signature Algorithm: %s
-  Subject Key ID: %s
-  Authority Key ID: %s
-  Serial Number: %s
-`
-
-	extKeyUsageString, err := extKeyUsageToString(x509Cert.ExtKeyUsage)
-	if err != nil {
-		extKeyUsageString = err.Error()
-	}
-	return fmt.Sprintf(secretFormat, secret.Name, strings.Join(x509Cert.Issuer.Country, ", "),
-		strings.Join(x509Cert.Issuer.Organization, ", "),
-		x509Cert.Issuer.CommonName, keyUsageToString(x509Cert.KeyUsage),
-		extKeyUsageString, x509Cert.PublicKeyAlgorithm, x509Cert.SignatureAlgorithm,
-		hex.EncodeToString(x509Cert.SubjectKeyId), hex.EncodeToString(x509Cert.AuthorityKeyId),
-		hex.EncodeToString(x509Cert.SerialNumber.Bytes()))
-}
-
-var (
-	keyUsageToStringMap = map[int]string{
-		1:   "Digital Signature",
-		2:   "Content Commitment",
-		4:   "Key Encipherment",
-		8:   "Data Encipherment",
-		16:  "Key Agreement",
-		32:  "Cert Sign",
-		64:  "CRL Sign",
-		128: "Encipher Only",
-		256: "Decipher Only",
-	}
-	keyUsagePossibleValues  = []int{256, 128, 64, 32, 16, 8, 4, 2, 1}
-	extKeyUsageStringValues = []string{"Any", "Server Authentication", "Client Authentication", "Code Signing", "Email Protection",
-		"IPSEC End System", "IPSEC Tunnel", "IPSEC User", "Time Stamping", "OCSP Signing", "Microsoft Server Gated Crypto",
-		"Netscape Server Gated Crypto", "Microsoft Commercial Code Signing", "Microsoft Kernel Code Signing",
-	}
-)
-
-func keyUsageToString(usage x509.KeyUsage) string {
-	usageInt := int(usage)
-	var usageStrings []string
-	for _, val := range keyUsagePossibleValues {
-		if usageInt >= val {
-			usageInt -= val
-			usageStrings = append(usageStrings, keyUsageToStringMap[val])
-		}
-		if usageInt == 0 {
-			break
-		}
-	}
-	// Reversing because that's usually the order the usages are printed
-	for i := 0; i < len(usageStrings)/2; i++ {
-		opp := len(usageStrings) - 1 - i
-		usageStrings[i], usageStrings[opp] = usageStrings[opp], usageStrings[i]
-	}
-	return strings.Join(usageStrings, ", ")
-}
-
-func extKeyUsageToString(extUsages []x509.ExtKeyUsage) (string, error) {
-	var extUsageStrings []string
-	for _, extUsage := range extUsages {
-		if extUsage < 0 || int(extUsage) >= len(extKeyUsageStringValues) {
-			return "", fmt.Errorf("error when converting Extended Usages to string: encountered unknown Extended Usage with code %d", extUsage)
-		}
-		extUsageStrings = append(extUsageStrings, extKeyUsageStringValues[extUsage])
-	}
-	return strings.Join(extUsageStrings, ", "), nil
 }
