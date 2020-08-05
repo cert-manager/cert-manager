@@ -195,6 +195,12 @@ webhook:
   # Optional additional annotations to add to the webhook Pods
   # podAnnotations: {}
 
+  # Optional additional annotations to add to the webhook MutatingWebhookConfiguration
+  # mutatingWebhookConfigurationAnnotations: {}
+
+  # Optional additional annotations to add to the webhook ValidatingWebhookConfiguration
+  # validatingWebhookConfigurationAnnotations: {}
+
   # Optional additional arguments for webhook
   extraArgs: []
 

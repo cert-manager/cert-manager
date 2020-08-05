@@ -11,6 +11,9 @@ metadata:
     helm.sh/chart: {{ include "webhook.chart" . }}
   annotations:
     cert-manager.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ template "webhook.fullname" . }}-ca"
+  {{- if .Values.webhook.validatingWebhookConfigurationAnnotations }}
+{{ toYaml .Values.webhook.validatingWebhookConfigurationAnnotations | indent 4 }}
+  {{- end }}
 webhooks:
   - name: webhook.cert-manager.io
     namespaceSelector:
