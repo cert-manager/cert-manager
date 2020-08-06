@@ -199,23 +199,40 @@ func TestIssuingController(t *testing.T) {
 			return false, nil
 		}
 
+		// If the condition is set, but the rest of the values are not there,
+		// error. This is to assert that all Secret data and metadata is pushed in
+		// a single resource update.
+
 		if crt.Status.Revision == nil ||
 			*crt.Status.Revision != 2 {
-			t.Logf("Certificate does not have a revision of 2: %v", crt.Status.Revision)
-			return false, nil
+			return false, fmt.Errorf("Certificate does not have a revision of 2: %v", crt.Status.Revision)
 		}
 
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
 		if err != nil {
-			t.Logf("Failed to fetch Secret %s/%s: %s", namespace, crt.Spec.SecretName, err)
-			return false, nil
+			return false, fmt.Errorf("Failed to fetch Secret %s/%s: %s", namespace, crt.Spec.SecretName, err)
 		}
 
 		if !bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], skBytes) ||
 			!bytes.Equal(secret.Data[corev1.TLSCertKey], certPem) ||
 			!bytes.Equal(secret.Data[cmmeta.TLSCAKey], certPem) {
-			t.Logf("Contents of secret did not match expected: %+v", secret.Data)
-			return false, nil
+			return false, fmt.Errorf("Contents of secret did not match expected: %+v", secret.Data)
+		}
+
+		for expKey, expV := range map[string]string{
+			cmapi.AltNamesAnnotationKey:    "example.com,foo.example.com",
+			cmapi.IPSANAnnotationKey:       "1.2.3.4,5.6.7.8",
+			cmapi.URISANAnnotationKey:      "spiffe://hello.world",
+			cmapi.CommonNameAnnotationKey:  "my-common-name",
+			cmapi.IssuerNameAnnotationKey:  "testissuer",
+			cmapi.IssuerKindAnnotationKey:  "Issuer",
+			cmapi.IssuerGroupAnnotationKey: "foo.io",
+			cmapi.CertificateNameKey:       "testcrt",
+		} {
+			if v, ok := secret.Annotations[expKey]; !ok || expV != v {
+				return false, fmt.Errorf("expected Secret to have the annotation %s:%s, got %s:%s",
+					expKey, expV, expKey, v)
+			}
 		}
 
 		return true, nil
@@ -223,27 +240,6 @@ func TestIssuingController(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
-	}
-
-	storedSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for expKey, expV := range map[string]string{
-		cmapi.AltNamesAnnotationKey:    "example.com,foo.example.com",
-		cmapi.IPSANAnnotationKey:       "1.2.3.4,5.6.7.8",
-		cmapi.URISANAnnotationKey:      "spiffe://hello.world",
-		cmapi.CommonNameAnnotationKey:  "my-common-name",
-		cmapi.IssuerNameAnnotationKey:  "testissuer",
-		cmapi.IssuerKindAnnotationKey:  "Issuer",
-		cmapi.IssuerGroupAnnotationKey: "foo.io",
-		cmapi.CertificateNameKey:       "testcrt",
-	} {
-		if v, ok := storedSecret.Annotations[expKey]; !ok || expV != v {
-			t.Errorf("expected Secret to have the annotation %s:%s, got %s:%s",
-				expKey, expV, expKey, v)
-		}
 	}
 }
 
@@ -407,49 +403,45 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 			return false, nil
 		}
 
+		// If the condition is set, but the rest of the values are not there,
+		// error. This is to assert that all Secret data and metadata is pushed in
+		// a single resource update.
+
 		if crt.Status.Revision == nil ||
 			*crt.Status.Revision != 2 {
-			t.Logf("Certificate does not have a revision of 2: %v", crt.Status.Revision)
-			return false, nil
+			return false, fmt.Errorf("Certificate does not have a revision of 2: %v", crt.Status.Revision)
 		}
 
 		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
 		if err != nil {
-			t.Logf("Failed to fetch Secret %s/%s: %s", namespace, crt.Spec.SecretName, err)
-			return false, nil
+			return false, fmt.Errorf("Failed to fetch Secret %s/%s: %s", namespace, crt.Spec.SecretName, err)
 		}
 
 		if !bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], skBytesPKCS8) ||
 			!bytes.Equal(secret.Data[corev1.TLSCertKey], certPem) ||
 			!bytes.Equal(secret.Data[cmmeta.TLSCAKey], certPem) {
-			t.Logf("Contents of secret did not match expected: %+v", secret.Data)
-			return false, nil
+			return false, fmt.Errorf("Contents of secret did not match expected: %+v", secret.Data)
+		}
+
+		for expKey, expV := range map[string]string{
+			cmapi.AltNamesAnnotationKey:    "example.com,foo.example.com",
+			cmapi.IPSANAnnotationKey:       "1.2.3.4,5.6.7.8",
+			cmapi.URISANAnnotationKey:      "spiffe://hello.world",
+			cmapi.CommonNameAnnotationKey:  "my-common-name",
+			cmapi.IssuerNameAnnotationKey:  "testissuer",
+			cmapi.IssuerKindAnnotationKey:  "Issuer",
+			cmapi.IssuerGroupAnnotationKey: "foo.io",
+			cmapi.CertificateNameKey:       "testcrt",
+		} {
+			if v, ok := secret.Annotations[expKey]; !ok || expV != v {
+				return false, fmt.Errorf("expected Secret to have the annotation %s:%s, got %s:%s",
+					expKey, expV, expKey, v)
+			}
 		}
 
 		return true, nil
 	})
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
-	}
-
-	storedSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for expKey, expV := range map[string]string{
-		cmapi.AltNamesAnnotationKey:    "example.com,foo.example.com",
-		cmapi.IPSANAnnotationKey:       "1.2.3.4,5.6.7.8",
-		cmapi.URISANAnnotationKey:      "spiffe://hello.world",
-		cmapi.CommonNameAnnotationKey:  "my-common-name",
-		cmapi.IssuerNameAnnotationKey:  "testissuer",
-		cmapi.IssuerKindAnnotationKey:  "Issuer",
-		cmapi.IssuerGroupAnnotationKey: "foo.io",
-		cmapi.CertificateNameKey:       "testcrt",
-	} {
-		if v, ok := storedSecret.Annotations[expKey]; !ok || expV != v {
-			t.Errorf("expected Secret to have the annotation %s:%s, got %s:%s",
-				expKey, expV, expKey, v)
-		}
 	}
 }
