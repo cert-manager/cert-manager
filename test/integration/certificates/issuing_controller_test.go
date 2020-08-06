@@ -106,11 +106,14 @@ func TestIssuingController(t *testing.T) {
 	// Create Certificate
 	crt := gen.Certificate(crtName,
 		gen.SetCertificateNamespace(namespace),
-		gen.SetCertificateDNSNames("example.com"),
+		gen.SetCertificateCommonName("my-common-name"),
+		gen.SetCertificateDNSNames("example.com", "foo.example.com"),
+		gen.SetCertificateIPs("1.2.3.4", "5.6.7.8"),
+		gen.SetCertificateURIs("spiffe://hello.world"),
 		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
 		gen.SetCertificateKeySize(2048),
 		gen.SetCertificateSecretName(secretName),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer"}),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
@@ -221,6 +224,27 @@ func TestIssuingController(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
 	}
+
+	storedSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for expKey, expV := range map[string]string{
+		cmapi.AltNamesAnnotationKey:    "example.com,foo.example.com",
+		cmapi.IPSANAnnotationKey:       "1.2.3.4,5.6.7.8",
+		cmapi.URISANAnnotationKey:      "spiffe://hello.world",
+		cmapi.CommonNameAnnotationKey:  "my-common-name",
+		cmapi.IssuerNameAnnotationKey:  "testissuer",
+		cmapi.IssuerKindAnnotationKey:  "Issuer",
+		cmapi.IssuerGroupAnnotationKey: "foo.io",
+		cmapi.CertificateNameKey:       "testcrt",
+	} {
+		if v, ok := storedSecret.Annotations[expKey]; !ok || expV != v {
+			t.Errorf("expected Secret to have the annotation %s:%s, got %s:%s",
+				expKey, expV, expKey, v)
+		}
+	}
 }
 
 func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
@@ -289,12 +313,15 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	// Create Certificate
 	crt := gen.Certificate(crtName,
 		gen.SetCertificateNamespace(namespace),
-		gen.SetCertificateDNSNames("example.com"),
+		gen.SetCertificateCommonName("my-common-name"),
+		gen.SetCertificateDNSNames("example.com", "foo.example.com"),
+		gen.SetCertificateIPs("1.2.3.4", "5.6.7.8"),
+		gen.SetCertificateURIs("spiffe://hello.world"),
 		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
 		gen.SetCertificateKeyEncoding(cmapi.PKCS8),
 		gen.SetCertificateKeySize(2048),
 		gen.SetCertificateSecretName(secretName),
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer"}),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
 	crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
@@ -401,8 +428,28 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 		return true, nil
 	})
-
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
+	}
+
+	storedSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for expKey, expV := range map[string]string{
+		cmapi.AltNamesAnnotationKey:    "example.com,foo.example.com",
+		cmapi.IPSANAnnotationKey:       "1.2.3.4,5.6.7.8",
+		cmapi.URISANAnnotationKey:      "spiffe://hello.world",
+		cmapi.CommonNameAnnotationKey:  "my-common-name",
+		cmapi.IssuerNameAnnotationKey:  "testissuer",
+		cmapi.IssuerKindAnnotationKey:  "Issuer",
+		cmapi.IssuerGroupAnnotationKey: "foo.io",
+		cmapi.CertificateNameKey:       "testcrt",
+	} {
+		if v, ok := storedSecret.Annotations[expKey]; !ok || expV != v {
+			t.Errorf("expected Secret to have the annotation %s:%s, got %s:%s",
+				expKey, expV, expKey, v)
+		}
 	}
 }
