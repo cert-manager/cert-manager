@@ -154,7 +154,8 @@ No CertificateRequest found for this Certificate`,
 				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer: gen.Issuer("letsencrypt-prod",
-				gen.SetIssuerNamespace(ns1)),
+				gen.SetIssuerNamespace(ns1),
+				gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 			secret: gen.Secret("existing-tls-secret",
 				gen.SetSecretNamespace(ns1),
 				gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
@@ -239,8 +240,7 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>
-No Order found for this Certificate`,
+  Events:  <none>`,
 		},
 		"certificate issued and renewal in progress without ClusterIssuer": {
 			certificate: gen.Certificate(crt4Name,
@@ -278,8 +278,7 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>
-No Order found for this Certificate`,
+  Events:  <none>`,
 		},
 	}
 

@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	"math/big"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	"k8s.io/kubectl/pkg/describe"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -73,6 +73,9 @@ type IssuerStatus struct {
 	Kind string
 	// Conditions of Issuer/ClusterIssuer resource
 	Conditions []cmapiv1alpha2.IssuerCondition
+	// boolean indicating if Issuer/ClusterIssuer is a ACME Issuer/ClusterIssuer
+	// Defaults to false even Error is not nil
+	IsACME bool
 }
 
 type SecretStatus struct {
@@ -156,7 +159,8 @@ func (status *CertificateStatus) withIssuer(issuer *cmapiv1alpha2.Issuer, err er
 	if issuer == nil {
 		return status
 	}
-	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer", Conditions: issuer.Status.Conditions}
+	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer",
+		Conditions: issuer.Status.Conditions, IsACME: issuer.Spec.ACME != nil}
 	return status
 }
 
@@ -168,7 +172,8 @@ func (status *CertificateStatus) withClusterIssuer(clusterIssuer *cmapiv1alpha2.
 	if clusterIssuer == nil {
 		return status
 	}
-	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer", Conditions: clusterIssuer.Status.Conditions}
+	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer",
+		Conditions: clusterIssuer.Status.Conditions, IsACME: clusterIssuer.Spec.ACME != nil}
 	return status
 }
 
@@ -266,7 +271,8 @@ func (status *CertificateStatus) String() string {
 
 	output += status.CRStatus.String()
 
-	if status.OrderStatus != nil {
+	// Do not print anything about Order if not ACME Issuer to avoid confusion
+	if status.OrderStatus != nil && status.IssuerStatus.IsACME {
 		output += status.OrderStatus.String()
 	}
 
