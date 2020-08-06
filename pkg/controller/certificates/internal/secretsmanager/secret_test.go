@@ -54,7 +54,7 @@ func TestSecretsManager(t *testing.T) {
 	}
 
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 		gen.SetCertificateDNSNames("example.com"),
@@ -91,9 +91,10 @@ func TestSecretsManager(t *testing.T) {
 								Namespace: gen.DefaultTestNamespace,
 								Name:      "output",
 								Annotations: map[string]string{
-									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
 
 									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
 									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
@@ -150,9 +151,10 @@ func TestSecretsManager(t *testing.T) {
 								Annotations: map[string]string{
 									"my-custom": "annotation",
 
-									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
 
 									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
 									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
@@ -191,9 +193,10 @@ func TestSecretsManager(t *testing.T) {
 								Namespace: gen.DefaultTestNamespace,
 								Name:      "output",
 								Annotations: map[string]string{
-									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
 
 									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
 									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
@@ -249,9 +252,10 @@ func TestSecretsManager(t *testing.T) {
 								Annotations: map[string]string{
 									"my-custom": "annotation",
 
-									cmapi.CertificateNameKey:      "test",
-									cmapi.IssuerKindAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Kind,
-									cmapi.IssuerNameAnnotationKey: exampleBundle.Certificate.Spec.IssuerRef.Name,
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
 
 									cmapi.CommonNameAnnotationKey: exampleBundle.Cert.Subject.CommonName,
 									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
