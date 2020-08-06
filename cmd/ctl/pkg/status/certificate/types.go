@@ -408,7 +408,6 @@ func (crStatus *CRStatus) String() string {
 	prefixWriter := describe.NewPrefixWriter(tabWriter)
 	util.DescribeEvents(crStatus.Events, prefixWriter, 1)
 	tabWriter.Flush()
-	fmt.Println(buf.Bytes())
 	infos += buf.String()
 	buf.Reset()
 	return infos

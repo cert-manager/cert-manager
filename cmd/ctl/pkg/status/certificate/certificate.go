@@ -42,7 +42,7 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Get details about the current status of a cert-manager Certificate resource, including information on related resources like CertificateRequest.`))
+Get details about the current status of a cert-manager Certificate resource, including information on related resources like CertificateRequest or Order.`))
 
 	example = templates.Examples(i18n.T(`
 # Query status of Certificate with name 'my-crt' in namespace 'my-namespace'
@@ -195,21 +195,18 @@ func (o *Options) Run(args []string) error {
 		status = status.withClusterIssuer(clusterIssuer, issuerErr)
 	}
 
-	// Nothing to output about Order and Challenge if no CR, stop early
-	if req == nil {
-		fmt.Fprintf(o.Out, status.String())
-		return nil
-	}
+	// Nothing to output about Order and Challenge if no CR
+	if req != nil {
+		// Get Order
+		order, orderErr := findMatchingOrder(o.CMClient, ctx, req)
+		if orderErr != nil {
+			orderErr = fmt.Errorf("error when finding Order: %w\n", orderErr)
+		} else if order == nil {
+			orderErr = errors.New("No Order found for this Certificate\n")
+		}
 
-	// Get Order
-	order, orderErr := findMatchingOrder(o.CMClient, ctx, req)
-	if orderErr != nil {
-		orderErr = fmt.Errorf("error when finding Order: %w\n", orderErr)
-	} else if order == nil {
-		orderErr = errors.New("No Order found for this Certificate\n")
+		status.withOrder(order, orderErr)
 	}
-
-	status.withOrder(order, orderErr)
 
 	fmt.Fprintf(o.Out, status.String())
 
