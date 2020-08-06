@@ -74,7 +74,7 @@ type IssuerStatus struct {
 	// Conditions of Issuer/ClusterIssuer resource
 	Conditions []cmapiv1alpha2.IssuerCondition
 	// boolean indicating if Issuer/ClusterIssuer is a ACME Issuer/ClusterIssuer
-	// Defaults to false even Error is not nil
+	// Defaults to false even when Error is not nil
 	IsACME bool
 }
 
