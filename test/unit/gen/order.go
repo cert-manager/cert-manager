@@ -95,3 +95,9 @@ func SetOrderNamespace(namespace string) OrderModifier {
 		order.ObjectMeta.Namespace = namespace
 	}
 }
+
+func SetOrderCsr(csr []byte) OrderModifier {
+	return func(order *cmacme.Order) {
+		order.Spec.CSR = csr
+	}
+}

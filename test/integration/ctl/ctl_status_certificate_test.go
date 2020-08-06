@@ -31,6 +31,7 @@ import (
 
 	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -101,6 +102,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 		issuer        *cmapi.Issuer
 		clusterIssuer *cmapi.ClusterIssuer
 		secret        *v1.Secret
+		order         *cmacme.Order
 
 		expErr    bool
 		expOutput string
@@ -156,6 +158,10 @@ No CertificateRequest found for this Certificate`,
 			secret: gen.Secret("existing-tls-secret",
 				gen.SetSecretNamespace(ns1),
 				gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
+			order: gen.Order("example-order",
+				gen.SetOrderNamespace(ns1),
+				gen.SetOrderCsr([]byte("dummyCSR")),
+				gen.SetOrderDNSNames("www.example.com")),
 			expErr: false,
 			expOutput: `Name: testcrt-2
 Namespace: testns-1
@@ -191,7 +197,11 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>`,
+  Events:  <none>
+Order:
+  Name: example-order
+  State: , Reason: 
+  No Authorizations for this Order`,
 		},
 		"certificate issued and renewal in progress without Issuer": {
 			certificate: gen.Certificate(crt3Name,
@@ -229,7 +239,8 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>`,
+  Events:  <none>
+No Order found for this Certificate`,
 		},
 		"certificate issued and renewal in progress without ClusterIssuer": {
 			certificate: gen.Certificate(crt4Name,
@@ -267,7 +278,8 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>`,
+  Events:  <none>
+No Order found for this Certificate`,
 		},
 	}
 
@@ -283,6 +295,7 @@ CertificateRequest:
 				t.Fatal(err)
 			}
 
+			// Set up related resources
 			if test.req != nil {
 				err = createCROwnedByCrt(t, cmCl, ctx, crt, test.req, test.reqStatus)
 				if err != nil {
@@ -305,6 +318,17 @@ CertificateRequest:
 
 			if test.secret != nil {
 				_, err = kubernetesCl.CoreV1().Secrets(test.inputNamespace).Create(ctx, test.secret, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if test.order != nil {
+				createdReq, err := cmCl.CertmanagerV1alpha2().CertificateRequests(test.req.Namespace).Get(ctx, test.req.Name, metav1.GetOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = createOrderOwnedByCR(t, cmCl, ctx, createdReq, test.order)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -337,10 +361,27 @@ CertificateRequest:
 			if err != nil {
 				t.Error(err)
 			}
+			dmp := diffmatchpatch.New()
 			if !match {
-				dmp := diffmatchpatch.New()
 				diffs := dmp.DiffMain(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()), false)
-				t.Errorf("got unexpected ouput, diff (ignoring the regex for creation time):\n%s\n\n expected: %s\n\n got: %s", dmp.DiffPrettyText(diffs), test.expOutput, outBuf.String())
+				t.Errorf("got unexpected output, diff (ignoring the regex for creation time):\n%s\n\n expected: \n%s\n\n got: \n%s", dmp.DiffPrettyText(diffs), test.expOutput, outBuf.String())
+			} else {
+				// Regex matches, so the Creation time is set, but double check string
+				// as any extraneous output before and after the expected output as defined get ignored
+
+				// Replace the regex for time with actual Creation time output and compare strings
+				output := outBuf.String()
+				s := strings.Index(output, "Created at: ")
+				s += len("Created at: ")
+				e := strings.Index(output[s:], "\n") + s
+				createTime := output[s:e]
+				timeRegex := "([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\\.[0-9]+)?(([Zz])|([\\+|\\-]([01][0-9]|2[0-3]):[0-5][0-9]))"
+				newExpOutput := strings.Replace(test.expOutput, timeRegex, createTime, 1)
+
+				if strings.TrimSpace(newExpOutput) != strings.TrimSpace(outBuf.String()) {
+					diffs := dmp.DiffMain(strings.TrimSpace(newExpOutput), strings.TrimSpace(outBuf.String()), false)
+					t.Errorf("the regex matching passed, but after replacing time regex with the actual creation time, got unexpected output, diff:\n%s\n\n expected: \n%s\n\n got: \n%s", dmp.DiffPrettyText(diffs), newExpOutput, outBuf.String())
+				}
 			}
 		})
 	}
@@ -360,6 +401,7 @@ func setCertificateStatus(cmCl versioned.Interface, crt *cmapi.Certificate,
 
 func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Context, crt *cmapi.Certificate,
 	req *cmapi.CertificateRequest, reqStatus *cmapi.CertificateRequestStatus) error {
+
 	req, err := cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
 		return err
@@ -373,10 +415,27 @@ func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Cont
 
 	if reqStatus != nil {
 		req.Status.Conditions = reqStatus.Conditions
+		req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+		if err != nil {
+			t.Errorf("Update Err: %v", err)
+		}
 	}
-	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	return nil
+}
+
+func createOrderOwnedByCR(t *testing.T, cmCl versioned.Interface, ctx context.Context,
+	req *cmapi.CertificateRequest, order *cmacme.Order) error {
+
+	order, err := cmCl.AcmeV1alpha2().Orders(req.Namespace).Create(ctx, order, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	order.OwnerReferences = append(order.OwnerReferences, *metav1.NewControllerRef(req, cmapi.SchemeGroupVersion.WithKind("CertificateRequest")))
+	order, err = cmCl.AcmeV1alpha2().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
 	if err != nil {
 		t.Errorf("Update Err: %v", err)
 	}
+
 	return nil
 }
