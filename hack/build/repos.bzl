@@ -1695,8 +1695,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "software.sslmate.com/src/go-pkcs12",
-        sum = "h1:iAEkCBPbRaflBgZ7o9gjVUuWuvWeV4sytFWg9o+Pj2k=",
-        version = "v0.0.0-20180114231543-2291e8f0f237",
+        sum = "h1:EsxyX6d5CU9zIK74f0y5OeDRFoQalEMHz1Jdvo4K16g=",
+        version = "v0.0.0-20200619203921-c9ed90bd32dc",
     )
     go_repository(
         name = "in_gopkg_alecthomas_kingpin_v2",

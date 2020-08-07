@@ -19928,7 +19928,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ================================================================================
 = vendor/software.sslmate.com/src/go-pkcs12 licensed under: =
 
-Copyright (c) 2015, 2018 Opsmate, Inc.
+Copyright (c) 2015, 2018, 2019 Opsmate, Inc. All rights reserved.
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -19957,6 +19957,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-= vendor/software.sslmate.com/src/go-pkcs12/LICENSE 59ab963efbc183656060b23893ea5745
+= vendor/software.sslmate.com/src/go-pkcs12/LICENSE 259f3802525423b1a33efb1b85f64e18
 ================================================================================
 
