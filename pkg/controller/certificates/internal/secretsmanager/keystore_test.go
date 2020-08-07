@@ -202,16 +202,19 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)
 				}
-				// The pkcs12 package does not expose a way to decode the CA
-				// data that has been written.
-				// It will return an error when attempting to decode a file
-				// with more than one 'certbag', so we just ensure the error
-				// returned is the expected error and don't inspect the keystore
-				// contents.
-				_, _, err = pkcs12.Decode(out, "password")
-				if err == nil || err.Error() != "pkcs12: expected exactly two safe bags in the PFX PDU" {
-					t.Errorf("unexpected error string, exp=%q, got=%v", "pkcs12: expected exactly two safe bags in the PFX PDU", err)
+				pk, cert, caCerts, err := pkcs12.DecodeChain(out, "password")
+				if err != nil {
+					t.Errorf("error decoding keystore: %v", err)
 					return
+				}
+				if cert == nil {
+					t.Errorf("no certificate data found in keystore")
+				}
+				if pk == nil {
+					t.Errorf("no private key data found in keystore")
+				}
+				if caCerts == nil {
+					t.Errorf("no ca data found in keystore")
 				}
 			},
 		},
