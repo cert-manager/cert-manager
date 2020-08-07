@@ -48,7 +48,7 @@ go_test(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",
-        "@io_k8s_klog//klogr:go_default_library",
+        "@io_k8s_klog_v2//klogr:go_default_library",
         "@io_k8s_utils//diff:go_default_library",
     ],
 )
