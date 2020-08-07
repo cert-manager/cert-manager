@@ -227,12 +227,16 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 	subject := SubjectForCertificate(crt)
+	uris, err := URLsFromStrings(crt.Spec.URISANs)
+	if err != nil {
+		return nil, err
+	}
 	keyUsages, extKeyUsages, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(commonName) == 0 && len(dnsNames) == 0 && len(ipAddresses) == 0 && len(crt.Spec.URISANs) == 0 && len(crt.Spec.EmailSANs) == 0 {
+	if len(commonName) == 0 && len(dnsNames) == 0 && len(ipAddresses) == 0 && len(uris) == 0 && len(crt.Spec.EmailSANs) == 0 {
 		return nil, fmt.Errorf("no common name or subject alt names requested on certificate")
 	}
 
@@ -272,6 +276,7 @@ func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 		ExtKeyUsage:    extKeyUsages,
 		DNSNames:       dnsNames,
 		IPAddresses:    ipAddresses,
+		URIs:           uris,
 		EmailAddresses: crt.Spec.EmailSANs,
 	}, nil
 }
