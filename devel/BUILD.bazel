@@ -16,6 +16,7 @@ filegroup(
         "//devel/addon/samplewebhook:all-srcs",
         "//devel/addon/vault:all-srcs",
         "//devel/bin:all-srcs",
+        "//devel/cluster:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

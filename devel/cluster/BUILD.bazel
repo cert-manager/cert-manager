@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 OC3 = "//hack/bin:oc3"
+
 KUBECTL = "//hack/bin:kubectl"
 
 sh_binary(
@@ -14,4 +15,18 @@ sh_binary(
         OC3,
         KUBECTL,
     ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
 )

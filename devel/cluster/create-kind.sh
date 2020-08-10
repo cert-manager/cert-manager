@@ -22,14 +22,19 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../lib/lib.sh"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
+setup_tools
+
 # Require kind & kubectl available on PATH
-check_tool kind
 check_tool kubectl
+
+# Specifies which Kind binary to use, allows to override for older version
+KIND_BIN="${KIND}"
 
 # Compute the details of the kind image to use
 export KIND_IMAGE_SHA=""
 export KIND_IMAGE_CONFIG=""
 if [[ "$K8S_VERSION" =~ 1\.11 ]]; then
+  KIND_BIN="${KIND_LEGACY}"
   # v1.11.10 @ sha256:e6f3dade95b7cb74081c5b9f3291aaaa6026a90a977e0b990778b6adc9ea6248
   KIND_IMAGE_SHA="sha256:e6f3dade95b7cb74081c5b9f3291aaaa6026a90a977e0b990778b6adc9ea6248"
   KIND_IMAGE_CONFIG="v1alpha2"
@@ -77,13 +82,13 @@ echo "  sha256:  ${KIND_IMAGE_SHA}"
 echo "  version: ${K8S_VERSION}"
 echo "  config:  ${KIND_IMAGE_CONFIG}"
 
-if kind get clusters | grep "^$KIND_CLUSTER_NAME\$" &>/dev/null; then
+if $KIND_BIN get clusters | grep "^$KIND_CLUSTER_NAME\$" &>/dev/null; then
   echo "Existing cluster '$KIND_CLUSTER_NAME' found, skipping creating cluster..."
   exit 0
 fi
 
 # Create the kind cluster
-kind create cluster \
+$KIND_BIN create cluster \
   --config "${SCRIPT_ROOT}/config/${KIND_IMAGE_CONFIG}.yaml" \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
