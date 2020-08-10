@@ -31,6 +31,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
+        "//pkg/logs:go_default_library",
         "@com_github_aws_aws_sdk_go//aws:go_default_library",
         "@com_github_aws_aws_sdk_go//aws/credentials:go_default_library",
         "@com_github_aws_aws_sdk_go//aws/session:go_default_library",
