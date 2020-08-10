@@ -14,6 +14,8 @@ import (
 	"os"
 	"testing"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -252,5 +254,6 @@ func makeMockSessionProvider(defaultSTSProvider func(sess *session.Session) stsi
 		Region:          region,
 		Role:            role,
 		StsProvider:     defaultSTSProvider,
+		log:             logf.Log.WithName("route53-session"),
 	}, nil
 }
