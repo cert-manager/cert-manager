@@ -121,6 +121,12 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 		t.Fatal(err)
 	}
 
+	// Create Namespace
+	_, err = kubernetesCl.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns1}}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := map[string]struct {
 		certificate       *cmapi.Certificate
 		certificateStatus *cmapi.CertificateStatus

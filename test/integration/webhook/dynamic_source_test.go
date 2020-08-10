@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -39,11 +41,20 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 	config, stop := framework.RunControlPlane(t)
 	defer stop()
 
+	kubeClient, _, _, _ := framework.NewClients(t, config)
+
+	namespace := "testns"
+
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	log := logtesting.TestLogger{T: t}
 	source := tls.DynamicSource{
 		DNSNames: []string{"example.com"},
 		Authority: &authority.DynamicAuthority{
-			SecretNamespace: "testns",
+			SecretNamespace: namespace,
 			SecretName:      "testsecret",
 			RESTConfig:      config,
 			Log:             log,
@@ -86,11 +97,20 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	config, stop := framework.RunControlPlane(t)
 	defer stop()
 
+	kubeClient, _, _, _ := framework.NewClients(t, config)
+
+	namespace := "testns"
+
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	log := logtesting.TestLogger{T: t}
 	source := tls.DynamicSource{
 		DNSNames: []string{"example.com"},
 		Authority: &authority.DynamicAuthority{
-			SecretNamespace: "testns",
+			SecretNamespace: namespace,
 			SecretName:      "testsecret",
 			RESTConfig:      config,
 			Log:             log,

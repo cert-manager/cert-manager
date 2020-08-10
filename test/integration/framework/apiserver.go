@@ -17,7 +17,6 @@ limitations under the License.
 package framework
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -74,6 +73,7 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Fatalf("failed to start control plane: %v", err)
 	}
 
+<<<<<<< HEAD
 	// set up test namespace
 	cl, err := client.New(config, client.Options{Scheme: api.Scheme})
 	if err != nil {
@@ -104,6 +104,8 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		}
 	}
 
+=======
+>>>>>>> 88dcb326f... Move NS creation to individual tests
 	// TODO: configure Validating and Mutating webhook
 	return config, func() {
 		defer stopWebhook()
