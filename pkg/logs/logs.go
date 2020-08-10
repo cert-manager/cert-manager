@@ -35,7 +35,9 @@ import (
 
 var (
 	Log = klogr.New().WithName("cert-manager")
+)
 
+const (
 	// following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
 	ErrorLevel        = 0
 	WarnLevel         = 1

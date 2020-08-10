@@ -101,7 +101,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 	client, err := vaultinternal.New(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
 		s := messageVaultClientInitFailed + err.Error()
-		logf.V(logf.DebugLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, s)
 		return err
 	}
@@ -109,13 +109,13 @@ func (v *Vault) Setup(ctx context.Context) error {
 	health, err := client.Sys().Health()
 	if err != nil {
 		s := messageVaultHealthCheckFailed + err.Error()
-		logf.V(logf.DebugLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, s)
 		return err
 	}
 
 	if !health.Initialized || health.Sealed {
-		logf.V(logf.DebugLevel).Infof("%s: %s: health: %v", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, health)
+		logf.V(logf.WarnLevel).Infof("%s: %s: health: %v", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, health)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageVaultStatusVerificationFailed)
 		return fmt.Errorf(messageVaultStatusVerificationFailed)
 	}

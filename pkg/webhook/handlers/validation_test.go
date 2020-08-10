@@ -39,8 +39,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 	install.Install(scheme)
 	install.InstallValidations(registry)
 
-	log := logf.Log
-	c := NewRegistryBackedValidator(log, scheme, registry)
+	c := NewRegistryBackedValidator(logf.Log, scheme, registry)
 	testTypeGVK := &metav1.GroupVersionKind{
 		Group:   v1.SchemeGroupVersion.Group,
 		Version: v1.SchemeGroupVersion.Version,

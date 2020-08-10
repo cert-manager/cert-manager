@@ -141,7 +141,7 @@ func (f *FileCertificateSource) updateCertificateFromDisk() error {
 		f.Log.V(logf.DebugLevel).Info("key and certificate on disk have not changed")
 		return nil
 	}
-	f.Log.V(logf.DebugLevel).Info("detected private key or certificate data on disk has changed. reloading certificate")
+	f.Log.V(logf.InfoLevel).Info("detected private key or certificate data on disk has changed. reloading certificate")
 
 	cert, err := tls.X509KeyPair(certData, keyData)
 	if err != nil {

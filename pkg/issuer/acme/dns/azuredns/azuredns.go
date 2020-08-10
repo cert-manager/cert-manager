@@ -16,14 +16,15 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
+
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 // DNSProvider implements the util.ChallengeProvider interface
@@ -107,7 +108,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for:", fqdn, err)
+		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
 		return err
 	}
 
@@ -136,7 +137,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		c.log.V(logf.WarnLevel).Info("Error getting hosted zone name for:", fqdn, err)
+		c.log.Error(err, "Error getting hosted zone name for:", fqdn)
 		return err
 	}
 
@@ -149,7 +150,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		*rparams, "", "")
 
 	if err != nil {
-		c.log.V(logf.WarnLevel).Info("Error creating TXT:", z, err)
+		c.log.Error(err, "Error creating TXT:", z)
 		return err
 	}
 	return nil

@@ -17,7 +17,6 @@ limitations under the License.
 package app
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -85,11 +84,9 @@ servers and webhook servers.`,
 
 		// TODO: Refactor this function from this package
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			o.log = logf.FromContext(ctx).WithValues("ca-injector")
+			o.log = logf.Log.WithName("ca-injector")
 
-			logf.V(logf.InfoLevel).Infof("starting ca-injector %s (revision %s)", util.AppVersion, util.AppGitCommit)
+			logf.V(logf.InfoLevel).InfoS("starting", "version", util.AppVersion, "revision", util.AppGitCommit)
 			o.RunInjectorController(stopCh)
 		},
 	}

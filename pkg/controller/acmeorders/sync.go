@@ -146,7 +146,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		// TODO (@munnerz): instead of waiting for the ACME server to mark this
 		//  Order as failed, we could just mark the Order as failed as there is
 		//  no way that we will attempt and continue the order anyway.
-		log.V(logf.InfoLevel).Info("Update Order status as at least one Challenge has failed")
+		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
@@ -432,7 +432,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	var derBytes []byte
 	block, _ := pem.Decode(o.Spec.CSR)
 	if block == nil {
-		log.V(logf.DebugLevel).Info("failed to parse CSR as PEM data, attempting to treat CSR as DER encoded for compatibility reasons")
+		log.V(logf.WarnLevel).Info("failed to parse CSR as PEM data, attempting to treat CSR as DER encoded for compatibility reasons")
 		derBytes = o.Spec.CSR
 	} else {
 		derBytes = block.Bytes

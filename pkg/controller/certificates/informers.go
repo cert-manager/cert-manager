@@ -41,7 +41,7 @@ func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqu
 	return func(obj interface{}) {
 		s, ok := obj.(metav1.Object)
 		if !ok {
-			log.V(logf.DebugLevel).Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")
+			log.V(logf.ErrorLevel).Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")
 			return
 		}
 

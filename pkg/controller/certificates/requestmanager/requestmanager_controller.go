@@ -266,7 +266,7 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 			continue
 		}
 		if len(violations) > 0 {
-			log.V(logf.DebugLevel).Info("CertificateRequest does not match requirements on certificate.spec, deleting CertificateRequest", "violations", violations)
+			log.V(logf.InfoLevel).WithValues("violations", violations).Info("CertificateRequest does not match requirements on certificate.spec, deleting CertificateRequest", "violations", violations)
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}

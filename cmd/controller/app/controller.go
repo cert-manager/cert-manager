@@ -95,7 +95,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
-				log.V(logf.DebugLevel).Info("starting controller")
+				log.V(logf.InfoLevel).Info("starting controller")
 
 				workers := 5
 				err := fn.Run(workers, stopCh)

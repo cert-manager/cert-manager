@@ -147,7 +147,7 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 
 	dataSource, err := r.caDataSourceFor(log, metaObj)
 	if err != nil {
-		log.V(logf.WarnLevel).Info("failed to determine ca data source for injectable")
+		log.V(logf.DebugLevel).Info("failed to determine ca data source for injectable")
 		return ctrl.Result{}, nil
 	}
 
@@ -157,7 +157,7 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		return ctrl.Result{}, err
 	}
 	if caData == nil {
-		log.V(logf.WarnLevel).Info("could not find any ca data in data source for target")
+		log.V(logf.InfoLevel).Info("could not find any ca data in data source for target")
 		return ctrl.Result{}, nil
 	}
 

@@ -18,7 +18,7 @@ package venafi
 
 import (
 	"github.com/go-logr/logr"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud

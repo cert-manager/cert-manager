@@ -276,7 +276,7 @@ func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
 	pkData := s.Data[corev1.TLSPrivateKeyKey]
 	certData := s.Data[corev1.TLSCertKey]
 	if len(caData) == 0 || len(pkData) == 0 || len(certData) == 0 {
-		d.Log.V(logf.InfoLevel).Info("Missing data in CA secret. Regenerating...")
+		d.Log.V(logf.InfoLevel).Info("Missing data in CA secret. Regenerating")
 		return true
 	}
 	// ensure that the ca.crt and tls.crt keys are equal
@@ -285,7 +285,7 @@ func (d *DynamicAuthority) caRequiresRegeneration(s *corev1.Secret) bool {
 	}
 	cert, err := tls.X509KeyPair(certData, pkData)
 	if err != nil {
-		d.Log.Error(err, "Failed to parse data in CA secret. Regenerating...")
+		d.Log.Error(err, "Failed to parse data in CA secret. Regenerating")
 		return true
 	}
 

@@ -60,7 +60,7 @@ func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	if respPayload.Response.Success && resErr == nil {
-		logf.Log.V(logf.InfoLevel).Info("Present call succeeded")
+		logf.Log.V(logf.DebugLevel).Info("Present call succeeded")
 		return nil
 	}
 
@@ -96,7 +96,7 @@ func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	if respPayload.Response.Success && resErr == nil {
-		logf.Log.V(logf.InfoLevel).Info("CleanUp call succeeded")
+		logf.Log.V(logf.DebugLevel).Info("CleanUp call succeeded")
 		return nil
 	}
 

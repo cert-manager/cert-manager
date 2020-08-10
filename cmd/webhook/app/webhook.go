@@ -66,7 +66,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 			Log: log,
 		}
 	default:
-		log.V(logf.WarnLevel).Info("warning: serving insecurely as tls certificate data not provided")
+		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
 	}
 
 	return &server.Server{

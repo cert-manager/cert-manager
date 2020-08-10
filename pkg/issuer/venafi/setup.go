@@ -35,7 +35,7 @@ func (v *Venafi) Setup(ctx context.Context) error {
 
 	err = client.Ping()
 	if err != nil {
-		v.log.V(logf.WarnLevel).Info("Issuer could not connect to endpoint with provided credentials. Issuer failed to connect to endpoint")
+		v.log.Error(err, "Issuer could not connect to endpoint with provided credentials. Issuer failed to connect to endpoint")
 		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse,
 			"ErrorPing", fmt.Sprintf("Failed to connect to Venafi endpoint"))
 		return fmt.Errorf("error verifying Venafi client: %s", err.Error())
