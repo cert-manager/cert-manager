@@ -67,9 +67,9 @@ elif [[ "$K8S_VERSION" =~ 1\.18 ]] ; then
   KIND_IMAGE_SHA="sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f"
   KIND_IMAGE_CONFIG="v1beta2"
 elif [[ "$K8S_VERSION" =~ 1\.19 ]] ; then
-  # munnerz/kind-nodev1.19.0-beta.2 @ sha256:6f7f88063041c7d005ce11ca663dee8320dfe87259c100b5152130481461033f
-  KIND_IMAGE_SHA="sha256:6f7f88063041c7d005ce11ca663dee8320dfe87259c100b5152130481461033f"
-  KIND_IMAGE_REPO="munnerz/kind-node"
+  # maartje/kindest-node:v1.19.0-rc.4 @ sha256:25af7a09c5b134b9c2a7ac2b193b16a8f5bfedf100d793c2db95d596d4bc2ff2
+  KIND_IMAGE_SHA="sha256:25af7a09c5b134b9c2a7ac2b193b16a8f5bfedf100d793c2db95d596d4bc2ff2"
+  KIND_IMAGE_REPO="maartje/kindest-node"
   KIND_IMAGE_CONFIG="v1beta2"
 else
   echo "Unrecognised Kubernetes version '${K8S_VERSION}'! Aborting..."
