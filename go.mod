@@ -62,5 +62,5 @@ require (
 	sigs.k8s.io/controller-tools v0.2.9-0.20200414181213-645d44dca7c0
 	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0
-	software.sslmate.com/src/go-pkcs12 v0.0.0-20180114231543-2291e8f0f237
+	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
 )

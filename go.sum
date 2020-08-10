@@ -707,4 +707,6 @@ sigs.k8s.io/yaml v1.2.0 h1:kr/MCeFWJWTwyaHoR9c8EjH9OumOmoF9YGiZd7lFm/Q=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
 software.sslmate.com/src/go-pkcs12 v0.0.0-20180114231543-2291e8f0f237 h1:iAEkCBPbRaflBgZ7o9gjVUuWuvWeV4sytFWg9o+Pj2k=
 software.sslmate.com/src/go-pkcs12 v0.0.0-20180114231543-2291e8f0f237/go.mod h1:/xvNRWUqm0+/ZMiF4EX00vrSCMsE4/NHb+Pt3freEeQ=
+software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc h1:EsxyX6d5CU9zIK74f0y5OeDRFoQalEMHz1Jdvo4K16g=
+software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc/go.mod h1:/xvNRWUqm0+/ZMiF4EX00vrSCMsE4/NHb+Pt3freEeQ=
 vbom.ml/util v0.0.0-20160121211510-db5cfe13f5cc/go.mod h1:so/NYdZXCz+E3ZpW0uAoCj6uzU2+8OWDFv/HxUSs7kI=
