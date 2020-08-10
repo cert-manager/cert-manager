@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"testing"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -29,8 +29,8 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
+	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	v2 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 )
 
 func TestRegistryBackedValidator(t *testing.T) {
@@ -53,7 +53,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 	}
 	tests := map[string]admissionTestT{
 		"should not allow invalid value for 'testField' field": {
-			inputRequest: admissionv1beta1.AdmissionRequest{
+			inputRequest: admissionv1.AdmissionRequest{
 				UID:         types.UID("abc"),
 				RequestKind: testTypeGVK,
 				Object: runtime.RawExtension{
@@ -71,7 +71,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 `, v1.TestFieldValueNotAllowed)),
 				},
 			},
-			expectedResponse: admissionv1beta1.AdmissionResponse{
+			expectedResponse: admissionv1.AdmissionResponse{
 				UID:     types.UID("abc"),
 				Allowed: false,
 				Result: &metav1.Status{
@@ -81,7 +81,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 			},
 		},
 		"should allow setting immutable field if it is not already set": {
-			inputRequest: admissionv1beta1.AdmissionRequest{
+			inputRequest: admissionv1.AdmissionRequest{
 				RequestKind: testTypeGVK,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
@@ -111,12 +111,12 @@ func TestRegistryBackedValidator(t *testing.T) {
 `)),
 				},
 			},
-			expectedResponse: admissionv1beta1.AdmissionResponse{
+			expectedResponse: admissionv1.AdmissionResponse{
 				Allowed: true,
 			},
 		},
 		"should not allow setting immutable field if it is already set": {
-			inputRequest: admissionv1beta1.AdmissionRequest{
+			inputRequest: admissionv1.AdmissionRequest{
 				RequestKind: testTypeGVK,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
@@ -147,7 +147,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 `)),
 				},
 			},
-			expectedResponse: admissionv1beta1.AdmissionResponse{
+			expectedResponse: admissionv1.AdmissionResponse{
 				Allowed: false,
 				Result: &metav1.Status{
 					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
@@ -156,7 +156,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 			},
 		},
 		"should not allow setting immutable field if it is already set (v2)": {
-			inputRequest: admissionv1beta1.AdmissionRequest{
+			inputRequest: admissionv1.AdmissionRequest{
 				RequestKind: testTypeGVKV2,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
@@ -187,7 +187,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 `)),
 				},
 			},
-			expectedResponse: admissionv1beta1.AdmissionResponse{
+			expectedResponse: admissionv1.AdmissionResponse{
 				Allowed: false,
 				Result: &metav1.Status{
 					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
@@ -196,7 +196,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 			},
 		},
 		"should not allow invalid value for 'testField' field in v2": {
-			inputRequest: admissionv1beta1.AdmissionRequest{
+			inputRequest: admissionv1.AdmissionRequest{
 				UID:         types.UID("abc"),
 				RequestKind: testTypeGVKV2,
 				Object: runtime.RawExtension{
@@ -214,7 +214,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 `, v2.DisallowedTestFieldValue)),
 				},
 			},
-			expectedResponse: admissionv1beta1.AdmissionResponse{
+			expectedResponse: admissionv1.AdmissionResponse{
 				UID:     types.UID("abc"),
 				Allowed: false,
 				Result: &metav1.Status{
@@ -224,7 +224,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 			},
 		},
 		"should allow value for 'testField' field in v2 if requestKind is v1": {
-			inputRequest: admissionv1beta1.AdmissionRequest{
+			inputRequest: admissionv1.AdmissionRequest{
 				UID:         types.UID("abc"),
 				RequestKind: testTypeGVK,
 				Object: runtime.RawExtension{
@@ -242,13 +242,13 @@ func TestRegistryBackedValidator(t *testing.T) {
 `, v2.DisallowedTestFieldValue)),
 				},
 			},
-			expectedResponse: admissionv1beta1.AdmissionResponse{
+			expectedResponse: admissionv1.AdmissionResponse{
 				UID:     types.UID("abc"),
 				Allowed: true,
 			},
 		},
 		"should validate in the current APIVersion if RequestKind is not set (for Kubernetes <1.15 support)": {
-			inputRequest: admissionv1beta1.AdmissionRequest{
+			inputRequest: admissionv1.AdmissionRequest{
 				UID:  types.UID("abc"),
 				Kind: *testTypeGVKV2,
 				Object: runtime.RawExtension{
@@ -266,7 +266,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 `, v2.DisallowedTestFieldValue)),
 				},
 			},
-			expectedResponse: admissionv1beta1.AdmissionResponse{
+			expectedResponse: admissionv1.AdmissionResponse{
 				UID:     types.UID("abc"),
 				Allowed: false,
 				Result: &metav1.Status{

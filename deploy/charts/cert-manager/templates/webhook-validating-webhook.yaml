@@ -1,4 +1,10 @@
+{{- $isV1AdmissionRegistration := false -}}
+{{- if (or (not (.Capabilities.APIVersions.Has "admissionregistration.k8s.io/v1")) (.Capabilities.APIVersions.Has "hacking-helm.i-wish-this-wasnt-required.cert-manager.io/use-v1beta1-webhooks") ) }}
 apiVersion: admissionregistration.k8s.io/v1beta1
+{{- else }}
+{{- $isV1AdmissionRegistration = true -}}
+apiVersion: admissionregistration.k8s.io/v1
+{{- end }}
 kind: ValidatingWebhookConfiguration
 metadata:
   name: {{ include "webhook.fullname" . }}
@@ -37,6 +43,9 @@ webhooks:
           - UPDATE
         resources:
           - "*/*"
+    {{- if $isV1AdmissionRegistration }}
+    admissionReviewVersions: ["v1", "v1beta1"]
+    {{- end }}
     failurePolicy: Fail
 {{- if (semverCompare ">=1.12-0" .Capabilities.KubeVersion.GitVersion) }}
     # Only include 'sideEffects' field in Kubernetes 1.12+

@@ -25,7 +25,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/mattbaird/jsonpatch"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -52,8 +52,8 @@ func NewSchemeBackedDefaulter(log logr.Logger, scheme *runtime.Scheme) *SchemeBa
 	}
 }
 
-func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
-	status := &admissionv1beta1.AdmissionResponse{}
+func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+	status := &admissionv1.AdmissionResponse{}
 	status.UID = admissionSpec.UID
 
 	// decode the raw object data
@@ -101,7 +101,7 @@ func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1beta1.Admission
 	}
 
 	// set the AdmissionReview status
-	jsonPatchType := admissionv1beta1.PatchTypeJSONPatch
+	jsonPatchType := admissionv1.PatchTypeJSONPatch
 	status.Patch = patch
 	status.PatchType = &jsonPatchType
 	status.Allowed = true
