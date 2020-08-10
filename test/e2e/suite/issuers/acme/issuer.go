@@ -217,6 +217,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 
 		By("Changing the email field")
 		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Get(context.TODO(), acmeIssuer.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
 		acmeIssuer.Spec.ACME.Email = testingACMEEmailAlternative
 		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Update(context.TODO(), acmeIssuer, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
