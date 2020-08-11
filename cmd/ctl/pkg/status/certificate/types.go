@@ -148,32 +148,6 @@ func (status *CertificateStatus) withEvents(events *v1.EventList) *CertificateSt
 	return status
 }
 
-func (status *CertificateStatus) withIssuer(issuer *cmapiv1alpha2.Issuer, err error) *CertificateStatus {
-	if err != nil {
-		status.IssuerStatus = &IssuerStatus{Error: err}
-		return status
-	}
-	if issuer == nil {
-		return status
-	}
-	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer",
-		Conditions: issuer.Status.Conditions}
-	return status
-}
-
-func (status *CertificateStatus) withClusterIssuer(clusterIssuer *cmapiv1alpha2.ClusterIssuer, err error) *CertificateStatus {
-	if err != nil {
-		status.IssuerStatus = &IssuerStatus{Error: err}
-		return status
-	}
-	if clusterIssuer == nil {
-		return status
-	}
-	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer",
-		Conditions: clusterIssuer.Status.Conditions}
-	return status
-}
-
 func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapiv1alpha2.GenericIssuer, issuerKind string, err error) *CertificateStatus {
 	if err != nil {
 		status.IssuerStatus = &IssuerStatus{Error: err}
@@ -183,9 +157,13 @@ func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapiv1alpha2.G
 		return status
 	}
 	if issuerKind == "ClusterIssuer" {
-		return status.withClusterIssuer(genericIssuer.(*cmapiv1alpha2.ClusterIssuer), err)
+		status.IssuerStatus = &IssuerStatus{Name: genericIssuer.GetName(), Kind: "ClusterIssuer",
+			Conditions: genericIssuer.GetStatus().Conditions}
+		return status
 	}
-	return status.withIssuer(genericIssuer.(*cmapiv1alpha2.Issuer), err)
+	status.IssuerStatus = &IssuerStatus{Name: genericIssuer.GetName(), Kind: "Issuer",
+		Conditions: genericIssuer.GetStatus().Conditions}
+	return status
 }
 
 func (status *CertificateStatus) withSecret(secret *v1.Secret, err error) *CertificateStatus {
