@@ -173,8 +173,8 @@ func (o *Options) Run(args []string) error {
 		withSecret(secret, secretErr).
 		withCR(req, reqEvents, reqErr)
 
-	// Nothing to output about Order and Challenge if no CR
-	if req != nil {
+	// Nothing to output about Order and Challenge if no CR or not ACME Issuer
+	if req != nil && issuer != nil && issuer.GetSpec().ACME != nil {
 		// Get Order
 		order, orderErr := findMatchingOrder(o.CMClient, ctx, req)
 		if orderErr != nil {
@@ -271,7 +271,7 @@ func findMatchingOrder(cmClient cmclient.Interface, ctx context.Context, req *cm
 	}
 }
 
-func getGenericIssuer(cmClient cmclient.Interface, ctx context.Context, crt *cmapi.Certificate) (cmapi.GenericIssuer, string, error){
+func getGenericIssuer(cmClient cmclient.Interface, ctx context.Context, crt *cmapi.Certificate) (cmapi.GenericIssuer, string, error) {
 	issuerKind := crt.Spec.IssuerRef.Kind
 	if issuerKind == "" {
 		issuerKind = "Issuer"

@@ -73,9 +73,6 @@ type IssuerStatus struct {
 	Kind string
 	// Conditions of Issuer/ClusterIssuer resource
 	Conditions []cmapiv1alpha2.IssuerCondition
-	// boolean indicating if Issuer/ClusterIssuer is a ACME Issuer/ClusterIssuer
-	// Defaults to false even when Error is not nil
-	IsACME bool
 }
 
 type SecretStatus struct {
@@ -160,7 +157,7 @@ func (status *CertificateStatus) withIssuer(issuer *cmapiv1alpha2.Issuer, err er
 		return status
 	}
 	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer",
-		Conditions: issuer.Status.Conditions, IsACME: issuer.Spec.ACME != nil}
+		Conditions: issuer.Status.Conditions}
 	return status
 }
 
@@ -173,7 +170,7 @@ func (status *CertificateStatus) withClusterIssuer(clusterIssuer *cmapiv1alpha2.
 		return status
 	}
 	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer",
-		Conditions: clusterIssuer.Status.Conditions, IsACME: clusterIssuer.Spec.ACME != nil}
+		Conditions: clusterIssuer.Status.Conditions}
 	return status
 }
 
@@ -285,8 +282,8 @@ func (status *CertificateStatus) String() string {
 
 	output += status.CRStatus.String()
 
-	// Do not print anything about Order if not ACME Issuer to avoid confusion
-	if status.OrderStatus != nil && status.IssuerStatus.IsACME {
+	// OrderStatus is nil is not found or Issuer/ClusterIssuer is not ACME Issuer
+	if status.OrderStatus != nil {
 		output += status.OrderStatus.String()
 	}
 
