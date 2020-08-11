@@ -61,6 +61,22 @@ type Options struct {
 	genericclioptions.IOStreams
 }
 
+// Data is a struct containing the information to build a CertificateStatus
+type Data struct {
+	Certificate *cmapi.Certificate
+	CrtEvents   *corev1.EventList
+	Issuer      cmapi.GenericIssuer
+	IssuerKind  string
+	IssuerError error
+	Secret      *corev1.Secret
+	SecretError error
+	Req         *cmapi.CertificateRequest
+	ReqError    error
+	ReqEvent    *corev1.EventList
+	Order       *cmacme.Order
+	OrderError  error
+}
+
 // NewOptions returns initialized Options
 func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 	return &Options{
@@ -120,22 +136,39 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 
 // Run executes status certificate command
 func (o *Options) Run(args []string) error {
+	data, err := o.GetResources(args[0])
+	if err != nil {
+		return err
+	}
+
+	// Build status of Certificate with data gathered
+	status := StatusFromResources(data)
+
+	fmt.Fprintf(o.Out, status.String())
+
+	return nil
+}
+
+// GetResources collects all related resources of the Certificate and any errors while doing so
+// in a Data struct and returns it.
+// Returns error if error occurs when finding Certificate resource or while preparing to find other resources,
+// e.g. when creating clientSet
+func (o *Options) GetResources(crtName string) (*Data, error) {
 	ctx := context.TODO()
-	crtName := args[0]
 
 	clientSet, err := kubernetes.NewForConfig(o.RESTConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(o.Namespace).Get(ctx, crtName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("error when getting Certificate resource: %v", err)
+		return nil, fmt.Errorf("error when getting Certificate resource: %v", err)
 	}
 
 	crtRef, err := reference.GetReference(ctl.Scheme, crt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
 	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
@@ -160,35 +193,50 @@ func (o *Options) Run(args []string) error {
 	if req != nil {
 		reqRef, err := reference.GetReference(ctl.Scheme, req)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
 		reqEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
 	}
 
-	// Build status of Certificate with data gathered
-	status := newCertificateStatusFromCert(crt).
-		withEvents(crtEvents).
-		withGenericIssuer(issuer, issuerKind, issuerError).
-		withSecret(secret, secretErr).
-		withCR(req, reqEvents, reqErr)
-
+	var order *cmacme.Order
+	var orderErr error
 	// Nothing to output about Order and Challenge if no CR or not ACME Issuer
 	if req != nil && issuer != nil && issuer.GetSpec().ACME != nil {
 		// Get Order
-		order, orderErr := findMatchingOrder(o.CMClient, ctx, req)
+		order, orderErr = findMatchingOrder(o.CMClient, ctx, req)
 		if orderErr != nil {
 			orderErr = fmt.Errorf("error when finding Order: %w\n", orderErr)
 		} else if order == nil {
 			orderErr = errors.New("No Order found for this Certificate\n")
 		}
-
-		status.withOrder(order, orderErr)
 	}
 
-	fmt.Fprintf(o.Out, status.String())
+	return &Data{
+		Certificate: crt,
+		CrtEvents:   crtEvents,
+		Issuer:      issuer,
+		IssuerKind:  issuerKind,
+		IssuerError: issuerError,
+		Secret:      secret,
+		SecretError: secretErr,
+		Req:         req,
+		ReqError:    reqErr,
+		ReqEvent:    reqEvents,
+		Order:       order,
+		OrderError:  orderErr,
+	}, nil
+}
 
-	return nil
+// StatusFromResources takes in a Data struct and returns a CertificateStatus built using
+// the information in data.
+func StatusFromResources(data *Data) *CertificateStatus {
+	return newCertificateStatusFromCert(data.Certificate).
+		withEvents(data.CrtEvents).
+		withGenericIssuer(data.Issuer, data.IssuerKind, data.IssuerError).
+		withSecret(data.Secret, data.SecretError).
+		withCR(data.Req, data.ReqEvent, data.ReqError).
+		withOrder(data.Order, data.OrderError)
 }
 
 // formatStringSlice takes in a string slice and formats the contents of the slice
