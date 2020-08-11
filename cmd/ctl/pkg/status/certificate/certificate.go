@@ -140,6 +140,8 @@ func (o *Options) Run(args []string) error {
 	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
 	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
 
+	issuer, issuerKind, issuerError := getGenericIssuer(o.CMClient, ctx, crt)
+
 	secret, secretErr := clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
 	if secretErr != nil {
 		secretErr = fmt.Errorf("error when finding Secret %q: %w\n", crt.Spec.SecretName, secretErr)
@@ -167,33 +169,9 @@ func (o *Options) Run(args []string) error {
 	// Build status of Certificate with data gathered
 	status := newCertificateStatusFromCert(crt).
 		withEvents(crtEvents).
+		withGenericIssuer(issuer, issuerKind, issuerError).
 		withSecret(secret, secretErr).
 		withCR(req, reqEvents, reqErr)
-
-	issuerKind := crt.Spec.IssuerRef.Kind
-	if issuerKind == "" {
-		issuerKind = "Issuer"
-	}
-
-	// Get info on Issuer/ClusterIssuer
-	if crt.Spec.IssuerRef.Group != "cert-manager.io" && crt.Spec.IssuerRef.Group != "" {
-		// TODO: Support Issuers/ClusterIssuers from other groups as well
-		status = status.withIssuer(nil, fmt.Errorf("The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
-			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name))
-	} else if issuerKind == "Issuer" {
-		issuer, issuerErr := o.CMClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
-		if issuerErr != nil {
-			issuerErr = fmt.Errorf("error when getting Issuer: %v\n", issuerErr)
-		}
-		status = status.withIssuer(issuer, issuerErr)
-	} else {
-		// ClusterIssuer
-		clusterIssuer, issuerErr := o.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
-		if issuerErr != nil {
-			issuerErr = fmt.Errorf("error when getting ClusterIssuer: %v\n", issuerErr)
-		}
-		status = status.withClusterIssuer(clusterIssuer, issuerErr)
-	}
 
 	// Nothing to output about Order and Challenge if no CR
 	if req != nil {
@@ -290,5 +268,31 @@ func findMatchingOrder(cmClient cmclient.Interface, ctx context.Context, req *cm
 		return possibleMatches[0], nil
 	} else {
 		return nil, fmt.Errorf("found multiple orders owned by CertificateRequest %s", req.Name)
+	}
+}
+
+func getGenericIssuer(cmClient cmclient.Interface, ctx context.Context, crt *cmapi.Certificate) (cmapi.GenericIssuer, string, error){
+	issuerKind := crt.Spec.IssuerRef.Kind
+	if issuerKind == "" {
+		issuerKind = "Issuer"
+	}
+
+	if crt.Spec.IssuerRef.Group != "cert-manager.io" && crt.Spec.IssuerRef.Group != "" {
+		// TODO: Support Issuers/ClusterIssuers from other groups as well
+		return nil, "", fmt.Errorf("The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
+			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name)
+	} else if issuerKind == "Issuer" {
+		issuer, issuerErr := cmClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if issuerErr != nil {
+			issuerErr = fmt.Errorf("error when getting Issuer: %v\n", issuerErr)
+		}
+		return issuer, issuerKind, issuerErr
+	} else {
+		// ClusterIssuer
+		clusterIssuer, issuerErr := cmClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		if issuerErr != nil {
+			issuerErr = fmt.Errorf("error when getting ClusterIssuer: %v\n", issuerErr)
+		}
+		return clusterIssuer, issuerKind, issuerErr
 	}
 }

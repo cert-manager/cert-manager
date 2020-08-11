@@ -177,6 +177,20 @@ func (status *CertificateStatus) withClusterIssuer(clusterIssuer *cmapiv1alpha2.
 	return status
 }
 
+func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapiv1alpha2.GenericIssuer, issuerKind string, err error) *CertificateStatus {
+	if err != nil {
+		status.IssuerStatus = &IssuerStatus{Error: err}
+		return status
+	}
+	if genericIssuer == nil {
+		return status
+	}
+	if issuerKind == "ClusterIssuer" {
+		return status.withClusterIssuer(genericIssuer.(*cmapiv1alpha2.ClusterIssuer), err)
+	}
+	return status.withIssuer(genericIssuer.(*cmapiv1alpha2.Issuer), err)
+}
+
 func (status *CertificateStatus) withSecret(secret *v1.Secret, err error) *CertificateStatus {
 	if err != nil {
 		status.SecretStatus = &SecretStatus{Error: err}
