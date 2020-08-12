@@ -1,5 +1,5 @@
 {{- $isV1AdmissionRegistration := false -}}
-{{- if (or (not (.Capabilities.APIVersions.Has "admissionregistration.k8s.io/v1")) (.Capabilities.APIVersions.Has "hacking-helm.i-wish-this-wasnt-required.cert-manager.io/use-v1beta1-webhooks") ) }}
+{{- if (or (not (.Capabilities.APIVersions.Has "admissionregistration.k8s.io/v1")) (.Capabilities.APIVersions.Has "hacking-helm.i-wish-this-wasnt-required.cert-manager.io/force-v1beta1-webhooks") ) }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 {{- else }}
 {{- $isV1AdmissionRegistration = true -}}

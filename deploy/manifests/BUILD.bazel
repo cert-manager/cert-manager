@@ -20,7 +20,12 @@ VARIANTS = {
     },
     "cert-manager-legacy": {
         "crd_variant": "legacy",
-        "additional_api_versions": "hacking-helm.i-wish-this-wasnt-required.cert-manager.io/use-v1beta1-webhooks",
+        # This following line tells Helm that we need to use v1beta1 webhooks
+        # When using helm template the API versions are determined for the version
+        # helm was compiled with, there is no way to remove any from this list
+        # the following hack adds an API version which we then can use to force
+        # the template engine to use v1beta1 webhooks.
+        "additional_api_versions": "hacking-helm.i-wish-this-wasnt-required.cert-manager.io/force-v1beta1-webhooks",
         "values": {
             "installCRDs": "false",
         },
