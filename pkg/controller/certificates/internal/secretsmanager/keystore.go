@@ -65,11 +65,11 @@ func encodePKCS12Keystore(password string, rawKey []byte, certPem []byte, caPem 
 		if err != nil {
 			return nil, err
 		}
-		// prepend the certificate chain to the list of certificates as the PKCS12
-		// library only allows setting a single certificate.
-		if len(certs) > 1 {
-			cas = append(certs[1:], cas...)
-		}
+	}
+	// prepend the certificate chain to the list of certificates as the PKCS12
+	// library only allows setting a single certificate.
+	if len(certs) > 1 {
+		cas = append(certs[1:], cas...)
 	}
 	keystoreData, err := pkcs12.Encode(rand.Reader, key, certs[0], cas, password)
 	if err != nil {
