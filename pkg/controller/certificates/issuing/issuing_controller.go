@@ -227,7 +227,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	cond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
 	if cond == nil {
-		log.V(4).Info("CertificateRequest does not have Ready condition, waiting...")
+		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
 		return nil
 	}
 
@@ -244,7 +244,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 	if len(requestViolations) > 0 {
-		log.Info("CertificateRequest does not match Certificate, waiting for keymanager controller")
+		log.V(logf.DebugLevel).Info("CertificateRequest does not match Certificate, waiting for keymanager controller")
 		return nil
 	}
 
@@ -276,7 +276,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 
 	// CertificateRequest is not in a final state so do nothing.
-	log.V(4).Info("CertificateRequest not in final state, waiting...", "reason", cond.Reason)
+	log.V(logf.DebugLevel).Info("CertificateRequest not in final state, waiting...", "reason", cond.Reason)
 	return nil
 }
 
@@ -285,7 +285,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	nowTime := metav1.NewTime(c.clock.Now())
 	crt.Status.LastFailureTime = &nowTime
 
-	log.Info("CertificateRequest in failed state so retrying issuance later")
+	log.V(logf.DebugLevel).Info("CertificateRequest in failed state so retrying issuance later")
 
 	var reason, message string
 	condition := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)

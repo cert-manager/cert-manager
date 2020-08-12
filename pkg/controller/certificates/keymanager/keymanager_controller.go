@@ -171,7 +171,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 			log.V(logf.DebugLevel).Info("Creating new nextPrivateKeySecretName Secret because no existing Secret found")
 			return c.createAndSetNextPrivateKey(ctx, crt)
 		default:
-			log.Info("Certificate with unknown certificate.spec.privateKey.rotationPolicy value", "rotation_policy", rotationPolicy)
+			log.V(logf.WarnLevel).Info("Certificate with unknown certificate.spec.privateKey.rotationPolicy value", "rotation_policy", rotationPolicy)
 			return nil
 		}
 	}

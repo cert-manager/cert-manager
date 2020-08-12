@@ -37,6 +37,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/internal/api/validation:go_default_library",
+        "//pkg/logs:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
@@ -47,7 +48,7 @@ go_test(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",
-        "@io_k8s_klog//klogr:go_default_library",
+        "@io_k8s_klog_v2//klogr:go_default_library",
         "@io_k8s_utils//diff:go_default_library",
     ],
 )

@@ -101,7 +101,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 
 		a.reporter.Failed(cr, err, "InvalidOrder", message)
 
-		log.V(4).Info(fmt.Sprintf("%s: %s", message, err))
+		log.V(logf.DebugLevel).Info(fmt.Sprintf("%s: %s", message, err))
 
 		return nil, nil
 	}
@@ -134,7 +134,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		message := fmt.Sprintf("Created Order resource %s/%s",
 			expectedOrder.Namespace, expectedOrder.Name)
 		a.reporter.Pending(cr, nil, "OrderCreated", message)
-		log.V(4).Info(message)
+		log.V(logf.DebugLevel).Info(message)
 
 		return nil, nil
 	}
@@ -183,7 +183,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 			return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
 		}
 
-		log.Info("certificate issued")
+		log.V(logf.InfoLevel).Info("certificate issued")
 
 		return &issuerpkg.IssueResponse{
 			Certificate: order.Status.Certificate,
@@ -195,7 +195,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		fmt.Sprintf("Waiting on certificate issuance from order %s/%s: %q",
 			expectedOrder.Namespace, order.Name, order.Status.State))
 
-	log.Info("acme Order resource is not in a ready state, waiting...")
+	log.V(logf.DebugLevel).Info("acme Order resource is not in a ready state, waiting...")
 
 	return nil, nil
 }

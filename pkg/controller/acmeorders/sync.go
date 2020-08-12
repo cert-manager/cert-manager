@@ -50,7 +50,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			dbg.Info("skipping updating resource as new status == existing status")
 			return
 		}
-		log.Info("updating Order resource status")
+		log.V(logf.DebugLevel).Info("updating Order resource status")
 		_, updateErr := c.cmClient.AcmeV1alpha2().Orders(o.Namespace).UpdateStatus(context.TODO(), o, metav1.UpdateOptions{})
 		if updateErr != nil {
 			log.Error(err, "failed to update status")
@@ -71,10 +71,10 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 	switch {
 	case o.Status.URL == "":
-		log.Info("Creating new ACME order as status.url is not set")
+		log.V(logf.DebugLevel).Info("Creating new ACME order as status.url is not set")
 		return c.createOrder(ctx, cl, o)
 	case o.Status.FinalizeURL == "":
-		log.Info("Updating Order status as status.finalizeURL is not set")
+		log.V(logf.DebugLevel).Info("Updating Order status as status.finalizeURL is not set")
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
@@ -86,17 +86,17 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		}
 		return err
 	case anyAuthorizationsMissingMetadata(o):
-		log.Info("Fetching Authorizations from ACME server as status.authorizations contains unpopulated authorizations")
+		log.V(logf.DebugLevel).Info("Fetching Authorizations from ACME server as status.authorizations contains unpopulated authorizations")
 		return c.fetchMetadataForAuthorizations(ctx, o, cl)
 	case acme.IsFailureState(o.Status.State):
-		log.Info("Doing nothing as Order is in a failed state")
+		log.V(logf.DebugLevel).Info("Doing nothing as Order is in a failed state")
 		// if the Order is failed there's nothing left for us to do, return nil
 		return nil
 	case o.Status.State == cmacme.Valid && o.Status.Certificate == nil:
-		log.Info("Order is in a Valid state but the Certificate data is empty, fetching existing Certificate")
+		log.V(logf.DebugLevel).Info("Order is in a Valid state but the Certificate data is empty, fetching existing Certificate")
 		return c.fetchCertificateData(ctx, cl, o)
 	case o.Status.State == cmacme.Valid && len(o.Status.Certificate) > 0:
-		log.Info("Order has already been completed, cleaning up any owned Challenge resources")
+		log.V(logf.DebugLevel).Info("Order has already been completed, cleaning up any owned Challenge resources")
 		// if the Order is valid and the certificate data has been set, clean
 		// up any owned Challenge resources and do nothing
 		return c.deleteAllChallenges(o)
@@ -123,10 +123,10 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 	switch {
 	case needToCreateChallenges:
-		log.Info("Creating additional Challenge resources to complete Order")
+		log.V(logf.DebugLevel).Info("Creating additional Challenge resources to complete Order")
 		return c.createRequiredChallenges(o, requiredChallenges)
 	case needToDeleteChallenges:
-		log.Info("Deleting leftover Challenge resources no longer required by Order")
+		log.V(logf.DebugLevel).Info("Deleting leftover Challenge resources no longer required by Order")
 		return c.deleteLeftoverChallenges(o, requiredChallenges)
 	}
 
@@ -140,13 +140,13 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 	switch {
 	case o.Status.State == cmacme.Ready:
-		log.Info("Finalizing Order as order state is 'Ready'")
+		log.V(logf.DebugLevel).Info("Finalizing Order as order state is 'Ready'")
 		return c.finalizeOrder(ctx, cl, o)
 	case anyChallengesFailed(challenges):
 		// TODO (@munnerz): instead of waiting for the ACME server to mark this
 		//  Order as failed, we could just mark the Order as failed as there is
 		//  no way that we will attempt and continue the order anyway.
-		log.Info("Update Order status as at least one Challenge has failed")
+		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
@@ -160,7 +160,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	// anyChallengesFailed(challenges) == false is already implied by the above
 	// case, but explicitly check it here in case anything changes in future.
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
-		log.Info("All challenges are in a final state, updating order state")
+		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
 		_, err := c.updateOrderStatus(ctx, cl, o)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
@@ -173,7 +173,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return err
 	}
 
-	log.Info("No action taken")
+	log.V(logf.DebugLevel).Info("No action taken")
 
 	return nil
 }
@@ -184,13 +184,13 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	if o.Status.URL != "" {
 		return fmt.Errorf("refusing to recreate a new order for Order %q. Please create a new Order resource to initiate a new order", o.Name)
 	}
-	log.Info("order URL not set, submitting Order to ACME server")
+	log.V(logf.DebugLevel).Info("order URL not set, submitting Order to ACME server")
 
 	identifierSet := sets.NewString(o.Spec.DNSNames...)
 	if o.Spec.CommonName != "" {
 		identifierSet.Insert(o.Spec.CommonName)
 	}
-	log.Info("build set of domains for Order", "domains", identifierSet.List())
+	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", identifierSet.List())
 	authzIDs := acmeapi.DomainIDs(identifierSet.List()...)
 	// create a new order with the acme server
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs)
@@ -205,7 +205,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	if err != nil {
 		return fmt.Errorf("error creating new order: %v", err)
 	}
-	log.Info("submitted Order to ACME server")
+	log.V(logf.DebugLevel).Info("submitted Order to ACME server")
 
 	o.Status.URL = acmeOrder.URI
 	o.Status.FinalizeURL = acmeOrder.FinalizeURL
@@ -221,7 +221,7 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 		return nil, fmt.Errorf("internal error: order URL not set")
 	}
 
-	log.Info("Fetching Order metadata from ACME server")
+	log.V(logf.DebugLevel).Info("Fetching Order metadata from ACME server")
 	acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
 	if err != nil {
 		return nil, err
@@ -432,7 +432,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	var derBytes []byte
 	block, _ := pem.Decode(o.Spec.CSR)
 	if block == nil {
-		log.Info("failed to parse CSR as PEM data, attempting to treat CSR as DER encoded for compatibility reasons")
+		log.V(logf.WarnLevel).Info("failed to parse CSR as PEM data, attempting to treat CSR as DER encoded for compatibility reasons")
 		derBytes = o.Spec.CSR
 	} else {
 		derBytes = block.Bytes
@@ -511,7 +511,7 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 		return err
 	}
 	if acmeOrder == nil {
-		log.Info("Failed to fetch Order from ACME server as it no longer exists. Not retrying.")
+		log.V(logf.WarnLevel).Info("Failed to fetch Order from ACME server as it no longer exists. Not retrying.")
 		return nil
 	}
 

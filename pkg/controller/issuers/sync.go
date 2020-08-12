@@ -80,7 +80,7 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha2.Issuer) (err error)
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
-		log.Info(s)
+		log.V(logf.WarnLevel).Info(s)
 		c.recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}

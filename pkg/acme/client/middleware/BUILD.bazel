@@ -7,7 +7,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/client:go_default_library",
-        "@io_k8s_klog//:go_default_library",
+        "//pkg/logs:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
         "@org_golang_x_crypto//acme:go_default_library",
     ],
 )

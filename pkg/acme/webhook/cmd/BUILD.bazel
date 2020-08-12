@@ -8,9 +8,9 @@ go_library(
     deps = [
         "//pkg/acme/webhook:go_default_library",
         "//pkg/acme/webhook/cmd/server:go_default_library",
+        "//pkg/logs:go_default_library",
         "@io_k8s_apiserver//pkg/server:go_default_library",
         "@io_k8s_component_base//logs:go_default_library",
-        "@io_k8s_klog//:go_default_library",
     ],
 )
 

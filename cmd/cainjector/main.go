@@ -18,20 +18,20 @@ package main
 
 import (
 	"flag"
+
 	"os"
 
-	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/jetstack/cert-manager/cmd/cainjector/app"
-	"github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 func main() {
-	logs.InitLogs(flag.CommandLine)
-	defer logs.FlushLogs()
-	ctrl.SetLogger(logs.Log)
+	logf.InitLogs(flag.CommandLine)
+	defer logf.FlushLogs()
+	ctrl.SetLogger(logf.Log)
 
 	stopCh := utilcmd.SetupSignalHandler()
 	cmd := app.NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
@@ -39,6 +39,7 @@ func main() {
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		klog.Fatal(err)
+		logf.Log.Error(err, "error executing command")
+		os.Exit(1)
 	}
 }

@@ -28,11 +28,12 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/klog"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
-	"github.com/pkg/errors"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
@@ -46,6 +47,7 @@ type DNSProvider struct {
 
 	transport              http.RoundTripper
 	findHostedDomainByFqdn func(string, []string) (string, error)
+	log                    logr.Logger
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
@@ -56,6 +58,7 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 		NewEdgeGridAuth(clientToken, clientSecret, accessToken),
 		http.DefaultTransport,
 		findHostedDomainByFqdn,
+		logf.Log.WithName("akamai-dns"),
 	}, nil
 }
 
@@ -116,7 +119,7 @@ func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error 
 		return errors.Wrapf(err, "failed to save zone data for %q", hostedDomain)
 	}
 
-	klog.V(4).Infof("Updated Akamai TXT record for %q on %q using SOA serial of %d", recordName, hostedDomain, newSerial)
+	logf.V(logf.DebugLevel).Infof("Updated Akamai TXT record for %q on %q using SOA serial of %d", recordName, hostedDomain, newSerial)
 
 	return nil
 }

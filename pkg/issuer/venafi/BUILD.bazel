@@ -15,9 +15,10 @@ go_library(
         "//pkg/controller:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/issuer/venafi/client:go_default_library",
+        "//pkg/logs:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
-        "@io_k8s_klog//:go_default_library",
     ],
 )
 
@@ -48,6 +49,7 @@ go_test(
         "//pkg/controller/test:go_default_library",
         "//pkg/issuer/venafi/client:go_default_library",
         "//pkg/issuer/venafi/client/fake:go_default_library",
+        "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//test/unit/gen:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",

@@ -121,7 +121,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 		return nil, err
 	}
 
-	log.Info("certificate issued")
+	log.V(logf.DebugLevel).Info("certificate issued")
 
 	return &issuerpkg.IssueResponse{
 		Certificate: certPEM,

@@ -15,6 +15,10 @@ import (
 	"strings"
 	"time"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
+	"github.com/go-logr/logr"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -25,7 +29,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
-	"k8s.io/klog"
 )
 
 const (
@@ -38,6 +41,7 @@ type DNSProvider struct {
 	dns01Nameservers []string
 	client           *route53.Route53
 	hostedZoneID     string
+	log              logr.Logger
 }
 
 type sessionProvider struct {
@@ -47,6 +51,7 @@ type sessionProvider struct {
 	Region          string
 	Role            string
 	StsProvider     func(*session.Session) stsiface.STSAPI
+	log             logr.Logger
 }
 
 func (d *sessionProvider) GetSession() (*session.Session, error) {
@@ -67,12 +72,12 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 	}
 
 	if useAmbientCredentials {
-		klog.V(5).Infof("using ambient credentials")
+		d.log.V(logf.DebugLevel).Info("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
 		// used; this chain is a reasonable default for getting ambient creds.
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	} else {
-		klog.V(5).Infof("not using ambient credentials")
+		d.log.V(logf.DebugLevel).Info("not using ambient credentials")
 		sessionOpts.Config.Credentials = credentials.NewStaticCredentials(d.AccessKeyID, d.SecretAccessKey, "")
 		// also disable 'ambient' region sources
 		sessionOpts.SharedConfigState = session.SharedConfigDisable
@@ -84,7 +89,7 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 	}
 
 	if d.Role != "" {
-		klog.V(5).Infof("assuming role: %s", d.Role)
+		d.log.V(logf.DebugLevel).WithValues("role", d.Role).Info("assuming role")
 		stsSvc := d.StsProvider(sess)
 		result, err := stsSvc.AssumeRole(&sts.AssumeRoleInput{
 			RoleArn:         aws.String(d.Role),
@@ -126,6 +131,7 @@ func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambie
 		Region:          region,
 		Role:            role,
 		StsProvider:     defaultSTSProvider,
+		log:             logf.Log.WithName("route53-session-provider"),
 	}, nil
 }
 
@@ -153,6 +159,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role str
 		client:           client,
 		hostedZoneID:     hostedZoneID,
 		dns01Nameservers: dns01Nameservers,
+		log:              logf.Log.WithName("route53"),
 	}, nil
 }
 
@@ -192,7 +199,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			if action == route53.ChangeActionDelete && awserr.Code() == route53.ErrCodeInvalidChangeBatch {
-				klog.V(5).Infof("ignoring InvalidChangeBatch error: %v", err)
+				r.log.V(logf.DebugLevel).WithValues("error", err).Info("ignoring InvalidChangeBatch error")
 				// If we try to delete something and get a 'InvalidChangeBatch' that
 				// means it's already deleted, no need to consider it an error.
 				return nil

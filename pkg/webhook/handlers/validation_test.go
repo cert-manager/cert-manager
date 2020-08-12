@@ -25,12 +25,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/klogr"
 
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
+	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	v2 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 )
 
 func TestRegistryBackedValidator(t *testing.T) {
@@ -39,8 +39,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 	install.Install(scheme)
 	install.InstallValidations(registry)
 
-	log := klogr.New()
-	c := NewRegistryBackedValidator(log, scheme, registry)
+	c := NewRegistryBackedValidator(logf.Log, scheme, registry)
 	testTypeGVK := &metav1.GroupVersionKind{
 		Group:   v1.SchemeGroupVersion.Group,
 		Version: v1.SchemeGroupVersion.Version,

@@ -71,7 +71,7 @@ to renew certificates at an appropriate time before expiry.`,
 				return fmt.Errorf("error validating options: %s", err)
 			}
 
-			logf.Log.Info("starting controller", "version", util.AppVersion, "git-commit", util.AppGitCommit)
+			logf.Log.V(logf.InfoLevel).Info("starting controller", "version", util.AppVersion, "git-commit", util.AppGitCommit)
 			o.RunCertManagerController(stopCh)
 			return nil
 		},

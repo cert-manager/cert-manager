@@ -193,7 +193,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		// TODO: we should handle this case better, but for now do nothing to
 		//  avoid getting into loops where we keep creating multiple requests
 		//  and deleting them again.
-		log.Info("Multiple matching CertificateRequest resources exist, delete one of them. This is likely an error and should be reported on the issue tracker!")
+		log.V(logf.ErrorLevel).Info("Multiple matching CertificateRequest resources exist, delete one of them. This is likely an error and should be reported on the issue tracker!")
 		return nil
 	}
 
@@ -266,7 +266,7 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 			continue
 		}
 		if len(violations) > 0 {
-			log.V(logf.DebugLevel).Info("CertificateRequest does not match requirements on certificate.spec, deleting CertificateRequest", "violations", violations)
+			log.V(logf.InfoLevel).WithValues("violations", violations).Info("CertificateRequest does not match requirements on certificate.spec, deleting CertificateRequest", "violations", violations)
 			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}

@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/go-logr/logr"
 	"github.com/miekg/dns"
 )
@@ -50,7 +52,7 @@ func (b *rfc2136Handler) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 		log = log.WithValues("question", question, "opcode", dns.OpcodeToString[req.Opcode])
 		zone = b.zoneForFQDN(question)
 		if zone == "" {
-			log.Info("failed to lookup zone for fqdn")
+			log.V(logf.WarnLevel).Info("failed to lookup zone for fqdn")
 			m.Rcode = dns.RcodeServerFailure
 			return
 		}
@@ -58,9 +60,9 @@ func (b *rfc2136Handler) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 	}
 
 	if t := req.IsTsig(); t != nil {
-		log.Info("TSIG requested on DNS request")
+		log.V(logf.DebugLevel).Info("TSIG requested on DNS request")
 		if w.TsigStatus() == nil {
-			log.Info("setting TSIG values on response")
+			log.V(logf.DebugLevel).Info("setting TSIG values on response")
 			// Validated
 			m.SetTsig(b.tsigZone, dns.HmacMD5, 300, time.Now().Unix())
 		}
@@ -72,12 +74,12 @@ func (b *rfc2136Handler) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 			txt := rr.(*dns.TXT)
 			log := log.WithValues("value", txt.Hdr.Name, "class", dns.ClassToString[rr.Header().Class], "txt", txt.Txt)
 			if rr.Header().Class == dns.ClassNONE {
-				log.Info("deleting txt record value due to NONE class")
+				log.V(logf.DebugLevel).Info("deleting txt record value due to NONE class")
 				// TODO: can we only delete the named record here somehow?
 				delete(b.txtRecords, txt.Hdr.Name)
 				continue
 			}
-			log.Info("setting TXT record value")
+			log.V(logf.DebugLevel).Info("setting TXT record value")
 			b.txtRecords[txt.Hdr.Name] = txt.Txt
 		}
 	}
@@ -95,7 +97,7 @@ func (b *rfc2136Handler) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 	}
 
 	for _, rr := range m.Answer {
-		log.Info("responding", "response", rr.String())
+		log.V(logf.DebugLevel).Info("responding", "response", rr.String())
 	}
 }
 

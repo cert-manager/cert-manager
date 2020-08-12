@@ -159,7 +159,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		now := c.clock.Now()
 		retryAfter := crt.Status.LastFailureTime.Add(retryAfterLastFailure)
 		if now.Before(retryAfter) {
-			log.Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_after", retryAfter)
+			log.V(logf.InfoLevel).Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_after", retryAfter)
 			c.scheduleRecheckOfCertificateIfRequired(log, key, retryAfter.Sub(now))
 			return nil
 		}
@@ -209,7 +209,7 @@ func (c *controller) scheduleRecheckOfCertificateIfRequired(log logr.Logger, key
 		return
 	}
 
-	log.Info("scheduling renewal", "duration_until_renewal", durationUntilRenewalTime.String())
+	log.V(logf.DebugLevel).Info("scheduling renewal", "duration_until_renewal", durationUntilRenewalTime.String())
 
 	c.scheduledWorkQueue.Add(key, durationUntilRenewalTime)
 }

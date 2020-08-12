@@ -18,8 +18,7 @@ package main
 
 import (
 	"flag"
-
-	"k8s.io/klog"
+	"os"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -36,6 +35,7 @@ func main() {
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		klog.Error(err)
+		logf.Log.Error(err, "error executing command")
+		os.Exit(1)
 	}
 }

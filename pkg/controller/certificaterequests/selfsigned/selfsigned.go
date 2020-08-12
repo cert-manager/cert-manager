@@ -159,7 +159,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		return nil, nil
 	}
 
-	log.Info("self signed certificate issued")
+	log.V(logf.DebugLevel).Info("self signed certificate issued")
 
 	// We set the CA to the returned certificate here since this is self signed.
 	return &issuer.IssueResponse{

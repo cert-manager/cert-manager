@@ -10,9 +10,10 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
+        "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
-        "@io_k8s_klog//:go_default_library",
     ],
 )
 

@@ -44,7 +44,7 @@ func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (*core
 		return existingServices[0], nil
 	}
 	if len(existingServices) > 1 {
-		log.Info("multiple challenge solver services found for challenge. cleaning up all existing services.")
+		log.V(logf.DebugLevel).Info("multiple challenge solver services found for challenge. cleaning up all existing services.")
 		err := s.cleanupServices(ctx, ch)
 		if err != nil {
 			return nil, err
@@ -52,7 +52,7 @@ func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (*core
 		return nil, fmt.Errorf("multiple existing challenge solver services found and cleaned up. retrying challenge sync")
 	}
 
-	log.Info("creating HTTP01 challenge solver service")
+	log.V(logf.DebugLevel).Info("creating HTTP01 challenge solver service")
 	return s.createService(ch)
 }
 
@@ -146,15 +146,15 @@ func (s *Solver) cleanupServices(ctx context.Context, ch *cmacme.Challenge) erro
 	var errs []error
 	for _, service := range services {
 		log := logf.WithRelatedResource(log, service).V(logf.DebugLevel)
-		log.Info("deleting service resource")
+		log.V(logf.DebugLevel).Info("deleting service resource")
 
 		err := s.Client.CoreV1().Services(service.Namespace).Delete(context.TODO(), service.Name, metav1.DeleteOptions{})
 		if err != nil {
-			log.Info("failed to delete pod resource", "error", err)
+			log.V(logf.WarnLevel).Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)
 			continue
 		}
-		log.Info("successfully deleted pod resource")
+		log.V(logf.DebugLevel).Info("successfully deleted pod resource")
 	}
 	return utilerrors.NewAggregate(errs)
 }

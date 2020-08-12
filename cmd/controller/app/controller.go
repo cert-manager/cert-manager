@@ -35,7 +35,6 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog"
 	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
@@ -78,13 +77,13 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 			// only run a controller if it's been enabled
 			if !util.Contains(opts.EnabledControllers, n) {
-				log.Info("not starting controller as it's disabled")
+				log.V(logf.InfoLevel).Info("not starting controller as it's disabled")
 				continue
 			}
 
 			// don't run clusterissuers controller if scoped to a single namespace
 			if ctx.Namespace != "" && n == clusterissuers.ControllerName {
-				log.Info("not starting controller as cert-manager has been scoped to a single namespace")
+				log.V(logf.InfoLevel).Info("not starting controller as cert-manager has been scoped to a single namespace")
 				continue
 			}
 
@@ -96,7 +95,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
-				log.Info("starting controller")
+				log.V(logf.InfoLevel).Info("starting controller")
 
 				workers := 5
 				err := fn.Run(workers, stopCh)
@@ -108,11 +107,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}(n, iface)
 		}
 
-		log.V(4).Info("starting shared informer factories")
+		log.V(logf.DebugLevel).Info("starting shared informer factories")
 		ctx.SharedInformerFactory.Start(stopCh)
 		ctx.KubeSharedInformerFactory.Start(stopCh)
 		wg.Wait()
-		log.Info("control loops exited")
+		log.V(logf.InfoLevel).Info("control loops exited")
 		ctx.Metrics.Shutdown(metricsServer)
 		os.Exit(0)
 	}
@@ -122,7 +121,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		return
 	}
 
-	log.Info("starting leader election")
+	log.V(logf.InfoLevel).Info("starting leader election")
 	leaderElectionClient, err := kubernetes.NewForConfig(rest.AddUserAgent(kubeCfg, "leader-election"))
 	if err != nil {
 		log.Error(err, "error creating leader election client")
@@ -159,7 +158,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
 	}
-	log.WithValues("nameservers", nameservers).Info("configured acme dns01 nameservers")
+	log.V(logf.InfoLevel).WithValues("nameservers", nameservers).Info("configured acme dns01 nameservers")
 
 	HTTP01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
 	if err != nil {
@@ -185,9 +184,9 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly
 	intscheme.AddToScheme(scheme.Scheme)
-	log.V(4).Info("creating event broadcaster")
+	log.V(logf.DebugLevel).Info("creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(klog.V(4).Infof)
+	eventBroadcaster.StartLogging(log.V(logf.DebugLevel).Info)
 	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
 
@@ -271,7 +270,7 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: run,
 			OnStoppedLeading: func() {
-				log.Info("leader election lost")
+				log.V(logf.ErrorLevel).Info("leader election lost")
 				os.Exit(1)
 			},
 		},

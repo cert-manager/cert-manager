@@ -87,7 +87,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	pk, err := kube.SecretTLSKeyRef(ctx, a.secretsLister, ns, privateKeySelector.Name, privateKeySelector.Key)
 	switch {
 	case apierrors.IsNotFound(err):
-		log.Info("generating acme account private key")
+		log.V(logf.InfoLevel).Info("generating acme account private key")
 		pk, err = a.createAccountPrivateKey(privateKeySelector, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
@@ -162,7 +162,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		a.issuer.GetStatus().ACMEStatus().URI != "" &&
 		parsedAccountURL.Host == parsedServerURL.Host &&
 		a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail == a.issuer.GetSpec().ACME.Email {
-		log.Info("skipping re-verifying ACME account as cached registration " +
+		log.V(logf.InfoLevel).Info("skipping re-verifying ACME account as cached registration " +
 			"details look sufficient")
 		// ensure the cached client in the account registry is up to date
 		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
@@ -170,7 +170,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	}
 
 	if parsedAccountURL.Host != parsedServerURL.Host {
-		log.Info("ACME server URL host and ACME private key registration " +
+		log.V(logf.InfoLevel).Info("ACME server URL host and ACME private key registration " +
 			"host differ. Re-checking ACME account registration")
 		a.issuer.GetStatus().ACMEStatus().URI = ""
 	}
@@ -262,7 +262,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return err
 	}
 
-	log.Info("verified existing registration with ACME server")
+	log.V(logf.InfoLevel).Info("verified existing registration with ACME server")
 	apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
@@ -283,7 +283,7 @@ func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.
 
 	// if they are different, we update the account
 	if registeredEmail != specEmail {
-		log.Info("updating ACME account email address", "email", specEmail)
+		log.V(logf.DebugLevel).Info("updating ACME account email address", "email", specEmail)
 		emailurl := []string(nil)
 		if specEmail != "" {
 			emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(specEmail))}

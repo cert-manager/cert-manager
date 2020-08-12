@@ -164,7 +164,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.reporter = util.NewReporter(c.clock, c.recorder)
 	c.cmClient = ctx.CMClient
 
-	c.log.Info("new certificate request controller registered",
+	c.log.V(logf.DebugLevel).Info("new certificate request controller registered",
 		"type", c.issuerType)
 
 	return c.queue, mustSync, nil

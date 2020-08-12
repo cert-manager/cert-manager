@@ -25,6 +25,7 @@ import (
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
@@ -40,7 +41,7 @@ func EnqueueCertificatesForResourceUsingPredicates(log logr.Logger, queue workqu
 	return func(obj interface{}) {
 		s, ok := obj.(metav1.Object)
 		if !ok {
-			log.Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")
+			log.V(logf.ErrorLevel).Info("Non-Object type resource passed to EnqueueCertificatesForSecretUsingPredicates")
 			return
 		}
 

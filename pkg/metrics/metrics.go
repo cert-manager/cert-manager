@@ -29,6 +29,8 @@ import (
 	"net/http"
 	"time"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
@@ -157,7 +159,7 @@ func (m *Metrics) Start(listenAddress string) (*http.Server, error) {
 
 	go func() {
 		log := m.log.WithValues("address", ln.Addr())
-		log.Info("listening for connections on")
+		log.V(logf.InfoLevel).Info("listening for connections on")
 
 		if err := server.Serve(ln); err != nil {
 			log.Error(err, "error running prometheus metrics server")
@@ -174,7 +176,7 @@ func (m *Metrics) IncrementSyncCallCount(controllerName string) {
 }
 
 func (m *Metrics) Shutdown(server *http.Server) {
-	m.log.Info("stopping Prometheus metrics server...")
+	m.log.V(logf.InfoLevel).Info("stopping Prometheus metrics server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), prometheusMetricsServerShutdownTimeout)
 	defer cancel()
@@ -184,5 +186,5 @@ func (m *Metrics) Shutdown(server *http.Server) {
 		return
 	}
 
-	m.log.Info("prometheus metrics server gracefully stopped")
+	m.log.V(logf.InfoLevel).Info("prometheus metrics server gracefully stopped")
 }
