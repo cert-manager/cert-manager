@@ -31,6 +31,7 @@ import (
 
 	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -101,6 +102,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 		issuer        *cmapi.Issuer
 		clusterIssuer *cmapi.ClusterIssuer
 		secret        *v1.Secret
+		order         *cmacme.Order
 
 		expErr    bool
 		expOutput string
@@ -117,7 +119,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 			inputNamespace: ns1,
 			clusterIssuer:  gen.ClusterIssuer("letsencrypt-prod"),
 			expErr:         false,
-			expOutput: `Name: testcrt-1
+			expOutput: `^Name: testcrt-1
 Namespace: testns-1
 Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
@@ -134,7 +136,7 @@ error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
-No CertificateRequest found for this Certificate`,
+No CertificateRequest found for this Certificate$`,
 		},
 		"certificate issued and renewal in progress with Issuer": {
 			certificate: gen.Certificate(crt2Name,
@@ -152,12 +154,17 @@ No CertificateRequest found for this Certificate`,
 				gen.SetCertificateRequestCSR([]byte("dummyCSR"))),
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer: gen.Issuer("letsencrypt-prod",
-				gen.SetIssuerNamespace(ns1)),
+				gen.SetIssuerNamespace(ns1),
+				gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 			secret: gen.Secret("existing-tls-secret",
 				gen.SetSecretNamespace(ns1),
 				gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
+			order: gen.Order("example-order",
+				gen.SetOrderNamespace(ns1),
+				gen.SetOrderCsr([]byte("dummyCSR")),
+				gen.SetOrderDNSNames("www.example.com")),
 			expErr: false,
-			expOutput: `Name: testcrt-2
+			expOutput: `^Name: testcrt-2
 Namespace: testns-1
 Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
@@ -191,7 +198,11 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>`,
+  Events:  <none>
+Order:
+  Name: example-order
+  State: , Reason: 
+  No Authorizations for this Order$`,
 		},
 		"certificate issued and renewal in progress without Issuer": {
 			certificate: gen.Certificate(crt3Name,
@@ -210,7 +221,7 @@ CertificateRequest:
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer:    nil,
 			expErr:    false,
-			expOutput: `Name: testcrt-3
+			expOutput: `^Name: testcrt-3
 Namespace: testns-1
 Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
@@ -229,7 +240,7 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>`,
+  Events:  <none>$`,
 		},
 		"certificate issued and renewal in progress without ClusterIssuer": {
 			certificate: gen.Certificate(crt4Name,
@@ -248,7 +259,7 @@ CertificateRequest:
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
 			issuer:    nil,
 			expErr:    false,
-			expOutput: `Name: testcrt-4
+			expOutput: `^Name: testcrt-4
 Namespace: testns-1
 Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
 Conditions:
@@ -267,7 +278,7 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>`,
+  Events:  <none>$`,
 		},
 	}
 
@@ -283,6 +294,7 @@ CertificateRequest:
 				t.Fatal(err)
 			}
 
+			// Set up related resources
 			if test.req != nil {
 				err = createCROwnedByCrt(t, cmCl, ctx, crt, test.req, test.reqStatus)
 				if err != nil {
@@ -305,6 +317,17 @@ CertificateRequest:
 
 			if test.secret != nil {
 				_, err = kubernetesCl.CoreV1().Secrets(test.inputNamespace).Create(ctx, test.secret, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if test.order != nil {
+				createdReq, err := cmCl.CertmanagerV1alpha2().CertificateRequests(test.req.Namespace).Get(ctx, test.req.Name, metav1.GetOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = createOrderOwnedByCR(t, cmCl, ctx, createdReq, test.order)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -337,10 +360,10 @@ CertificateRequest:
 			if err != nil {
 				t.Error(err)
 			}
+			dmp := diffmatchpatch.New()
 			if !match {
-				dmp := diffmatchpatch.New()
 				diffs := dmp.DiffMain(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()), false)
-				t.Errorf("got unexpected ouput, diff (ignoring the regex for creation time):\n%s\n\n expected: %s\n\n got: %s", dmp.DiffPrettyText(diffs), test.expOutput, outBuf.String())
+				t.Errorf("got unexpected output, diff (ignoring line anchors ^ and $ and regex for creation time):\n%s\n\n expected: \n%s\n\n got: \n%s", dmp.DiffPrettyText(diffs), test.expOutput, outBuf.String())
 			}
 		})
 	}
@@ -360,6 +383,7 @@ func setCertificateStatus(cmCl versioned.Interface, crt *cmapi.Certificate,
 
 func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Context, crt *cmapi.Certificate,
 	req *cmapi.CertificateRequest, reqStatus *cmapi.CertificateRequestStatus) error {
+
 	req, err := cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
 		return err
@@ -373,10 +397,27 @@ func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Cont
 
 	if reqStatus != nil {
 		req.Status.Conditions = reqStatus.Conditions
+		req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+		if err != nil {
+			t.Errorf("Update Err: %v", err)
+		}
 	}
-	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	return nil
+}
+
+func createOrderOwnedByCR(t *testing.T, cmCl versioned.Interface, ctx context.Context,
+	req *cmapi.CertificateRequest, order *cmacme.Order) error {
+
+	order, err := cmCl.AcmeV1alpha2().Orders(req.Namespace).Create(ctx, order, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	order.OwnerReferences = append(order.OwnerReferences, *metav1.NewControllerRef(req, cmapi.SchemeGroupVersion.WithKind("CertificateRequest")))
+	order, err = cmCl.AcmeV1alpha2().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
 	if err != nil {
 		t.Errorf("Update Err: %v", err)
 	}
+
 	return nil
 }

@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
@@ -41,7 +42,7 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Get details about the current status of a cert-manager Certificate resource, including information on related resources like CertificateRequest.`))
+Get details about the current status of a cert-manager Certificate resource, including information on related resources like CertificateRequest or Order.`))
 
 	example = templates.Examples(i18n.T(`
 # Query status of Certificate with name 'my-crt' in namespace 'my-namespace'
@@ -149,8 +150,7 @@ func (o *Options) Run(args []string) error {
 	req, reqErr := findMatchingCR(o.CMClient, ctx, crt)
 	if reqErr != nil {
 		reqErr = fmt.Errorf("error when finding CertificateRequest: %w\n", reqErr)
-	}
-	if req == nil {
+	} else if req == nil {
 		reqErr = errors.New("No CertificateRequest found for this Certificate\n")
 	}
 
@@ -193,6 +193,19 @@ func (o *Options) Run(args []string) error {
 			issuerErr = fmt.Errorf("error when getting ClusterIssuer: %v\n", issuerErr)
 		}
 		status = status.withClusterIssuer(clusterIssuer, issuerErr)
+	}
+
+	// Nothing to output about Order and Challenge if no CR
+	if req != nil {
+		// Get Order
+		order, orderErr := findMatchingOrder(o.CMClient, ctx, req)
+		if orderErr != nil {
+			orderErr = fmt.Errorf("error when finding Order: %w\n", orderErr)
+		} else if order == nil {
+			orderErr = errors.New("No Order found for this Certificate\n")
+		}
+
+		status.withOrder(order, orderErr)
 	}
 
 	fmt.Fprintf(o.Out, status.String())
@@ -251,5 +264,31 @@ func findMatchingCR(cmClient cmclient.Interface, ctx context.Context, crt *cmapi
 		return possibleMatches[0], nil
 	} else {
 		return nil, errors.New("found multiple certificate requests with expected revision and owner")
+	}
+}
+
+// findMatchingOrder tries to find an Order that is owned by req.
+// If none found returns nil
+// If one found returns the Order
+// If multiple found or error occurs when listing Orders, returns error
+func findMatchingOrder(cmClient cmclient.Interface, ctx context.Context, req *cmapi.CertificateRequest) (*cmacme.Order, error) {
+	orders, err := cmClient.AcmeV1beta1().Orders(req.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	possibleMatches := []*cmacme.Order{}
+	for _, order := range orders.Items {
+		if predicate.ResourceOwnedBy(req)(&order) {
+			possibleMatches = append(possibleMatches, order.DeepCopy())
+		}
+	}
+
+	if len(possibleMatches) < 1 {
+		return nil, nil
+	} else if len(possibleMatches) == 1 {
+		return possibleMatches[0], nil
+	} else {
+		return nil, fmt.Errorf("found multiple orders owned by CertificateRequest %s", req.Name)
 	}
 }

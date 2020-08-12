@@ -29,6 +29,7 @@ import (
 	"k8s.io/kubectl/pkg/describe"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -58,6 +59,8 @@ type CertificateStatus struct {
 	SecretStatus *SecretStatus
 
 	CRStatus *CRStatus
+
+	OrderStatus *OrderStatus
 }
 
 type IssuerStatus struct {
@@ -70,6 +73,9 @@ type IssuerStatus struct {
 	Kind string
 	// Conditions of Issuer/ClusterIssuer resource
 	Conditions []cmapiv1alpha2.IssuerCondition
+	// boolean indicating if Issuer/ClusterIssuer is a ACME Issuer/ClusterIssuer
+	// Defaults to false even when Error is not nil
+	IsACME bool
 }
 
 type SecretStatus struct {
@@ -114,6 +120,22 @@ type CRStatus struct {
 	Events *v1.EventList
 }
 
+type OrderStatus struct {
+	// If Error is not nil, there was a problem getting the status of the Order resource,
+	// so the rest of the fields is unusable
+	Error error
+	// Name of the Order resource
+	Name string
+	// State of Order resource
+	State cmacme.State
+	// Reason why the Order resource is in its State
+	Reason string
+	// What authorizations must be completed to validate the DNS names specified on the Order
+	Authorizations []cmacme.ACMEAuthorization
+	// Time the Order failed
+	FailureTime *metav1.Time
+}
+
 func newCertificateStatusFromCert(crt *cmapiv1alpha2.Certificate) *CertificateStatus {
 	if crt == nil {
 		return nil
@@ -137,7 +159,8 @@ func (status *CertificateStatus) withIssuer(issuer *cmapiv1alpha2.Issuer, err er
 	if issuer == nil {
 		return status
 	}
-	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer", Conditions: issuer.Status.Conditions}
+	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer",
+		Conditions: issuer.Status.Conditions, IsACME: issuer.Spec.ACME != nil}
 	return status
 }
 
@@ -149,7 +172,8 @@ func (status *CertificateStatus) withClusterIssuer(clusterIssuer *cmapiv1alpha2.
 	if clusterIssuer == nil {
 		return status
 	}
-	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer", Conditions: clusterIssuer.Status.Conditions}
+	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer",
+		Conditions: clusterIssuer.Status.Conditions, IsACME: clusterIssuer.Spec.ACME != nil}
 	return status
 }
 
@@ -192,8 +216,22 @@ func (status *CertificateStatus) withCR(req *cmapiv1alpha2.CertificateRequest, e
 	if req == nil {
 		return status
 	}
-	status.Events = events
-	status.CRStatus = &CRStatus{Name: req.Name, Namespace: req.Namespace, Conditions: req.Status.Conditions}
+	status.CRStatus = &CRStatus{Name: req.Name, Namespace: req.Namespace, Conditions: req.Status.Conditions, Events: events}
+	return status
+}
+
+func (status *CertificateStatus) withOrder(order *cmacme.Order, err error) *CertificateStatus {
+	if err != nil {
+		status.OrderStatus = &OrderStatus{Error: err}
+		return status
+	}
+	if order == nil {
+		return status
+	}
+
+	status.OrderStatus = &OrderStatus{Name: order.Name, State: order.Status.State,
+		Reason: order.Status.Reason, Authorizations: order.Status.Authorizations,
+		FailureTime: order.Status.FailureTime}
 	return status
 }
 
@@ -224,8 +262,6 @@ func (status *CertificateStatus) String() string {
 	output += buf.String()
 	buf.Reset()
 
-	if status.IssuerStatus == nil {
-	}
 	output += status.IssuerStatus.String()
 	output += status.SecretStatus.String()
 
@@ -234,6 +270,11 @@ func (status *CertificateStatus) String() string {
 	output += fmt.Sprintf("Renewal Time: %s\n", formatTimeString(status.RenewalTime))
 
 	output += status.CRStatus.String()
+
+	// Do not print anything about Order if not ACME Issuer to avoid confusion
+	if status.OrderStatus != nil && status.IssuerStatus.IsACME {
+		output += status.OrderStatus.String()
+	}
 
 	return output
 }
@@ -367,8 +408,37 @@ func (crStatus *CRStatus) String() string {
 	prefixWriter := describe.NewPrefixWriter(tabWriter)
 	util.DescribeEvents(crStatus.Events, prefixWriter, 1)
 	tabWriter.Flush()
-	fmt.Println(buf.Bytes())
 	infos += buf.String()
 	buf.Reset()
 	return infos
+}
+
+// String returns the information about the status of a CR as a string to be printed as output
+func (orderStatus *OrderStatus) String() string {
+	if orderStatus.Error != nil {
+		return orderStatus.Error.Error()
+	}
+
+	output := "Order:\n"
+	output += fmt.Sprintf("  Name: %s\n", orderStatus.Name)
+	output += fmt.Sprintf("  State: %s, Reason: %s\n", orderStatus.State, orderStatus.Reason)
+	authString := ""
+	for _, auth := range orderStatus.Authorizations {
+		wildcardString := "nil (bool pointer not set)"
+		if auth.Wildcard != nil {
+			wildcardString = fmt.Sprintf("%t", *auth.Wildcard)
+		}
+		authString += fmt.Sprintf("    URL: %s, Identifier: %s, Initial State: %s, Wildcard: %s\n", auth.URL, auth.Identifier, auth.InitialState, wildcardString)
+	}
+	if authString == "" {
+		output += "  No Authorizations for this Order\n"
+	} else {
+		output += "  Authorizations:\n"
+		output += authString
+	}
+	if orderStatus.FailureTime != nil {
+		output += fmt.Sprintf("  FailureTime: %s\n", formatTimeString(orderStatus.FailureTime))
+	}
+
+	return output
 }
