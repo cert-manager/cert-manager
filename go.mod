@@ -58,10 +58,10 @@ require (
 	k8s.io/component-base v0.18.5
 	k8s.io/klog/v2 v2.3.0
 	k8s.io/kube-aggregator v0.18.5
-	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
+	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	k8s.io/kubectl v0.18.5
-	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19
-	sigs.k8s.io/controller-runtime v0.6.1-0.20200728202347-cea989b02ed0
+	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
+	sigs.k8s.io/controller-runtime v0.5.1-0.20200416234307-5377effd4043
 	sigs.k8s.io/controller-tools v0.2.9-0.20200414181213-645d44dca7c0
 	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0
