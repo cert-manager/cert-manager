@@ -11,7 +11,7 @@ metadata:
 # Grant the webhook permission to read the ConfigMap containing the Kubernetes
 # apiserver's requestheader-ca-certificate.
 # This ConfigMap is automatically created by the Kubernetes apiserver.
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "example-webhook.fullname" . }}:webhook-authentication-reader
@@ -35,7 +35,7 @@ subjects:
 # can remove this custom defined Role in favour of the system-provisioned
 # extension-apiserver-authentication-reader Role resource in kube-system.
 # See https://github.com/kubernetes/kubernetes/issues/86359 for more details.
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ include "example-webhook.fullname" . }}:webhook-authentication-reader
@@ -54,7 +54,7 @@ rules:
 ---
 # apiserver gets the auth-delegator role to delegate auth decisions to
 # the core apiserver
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: {{ include "example-webhook.fullname" . }}:auth-delegator
@@ -74,7 +74,7 @@ subjects:
     namespace: {{ .Release.Namespace }}
 ---
 # Grant cert-manager permission to validate using our apiserver
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ include "example-webhook.fullname" . }}:domain-solver
@@ -91,7 +91,7 @@ rules:
     verbs:
       - 'create'
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: {{ include "example-webhook.fullname" . }}:domain-solver
