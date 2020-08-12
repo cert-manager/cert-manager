@@ -184,7 +184,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// The ingress class to use when creating Ingress resources to solve ACME
 	// challenges that use this challenge solver.
 	// Only one of 'class' or 'name' may be specified.
-        // A reference by name to a Kubernetes IngressClass object (see docs at https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class)
+	// A reference by name to a Kubernetes IngressClass object (see docs at https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class)
 	// +optional
 	Class *string `json:"class,omitempty"`
 
@@ -193,7 +193,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// This is typically used in conjunction with ingress controllers like
 	// ingress-gce, which maintains a 1:1 mapping between external IPs and
 	// ingress resources.
-        // A reference by name to a Kubernetes Ingress object (see doct at https://kubernetes.io/docs/concepts/services-networking/ingress/#the-ingress-resource)
+	// A reference by name to a Kubernetes Ingress object (see doct at https://kubernetes.io/docs/concepts/services-networking/ingress/#the-ingress-resource)
 	// +optional
 	Name string `json:"name,omitempty"`
 
