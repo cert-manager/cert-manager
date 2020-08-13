@@ -28,7 +28,7 @@ import (
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -105,36 +105,39 @@ func init() {
 	apiextensionsinstall.Install(internalScheme)
 }
 
-func patchCRDConversion(crds []*v1beta1.CustomResourceDefinition, url string, caPEM []byte) {
+func patchCRDConversion(crds []*v1.CustomResourceDefinition, url string, caPEM []byte) {
 	for _, crd := range crds {
 		if crd.Spec.Conversion == nil {
 			continue
 		}
-		if crd.Spec.Conversion.WebhookClientConfig == nil {
+		if crd.Spec.Conversion.Webhook == nil {
 			continue
 		}
-		if crd.Spec.Conversion.WebhookClientConfig.Service == nil {
+		if crd.Spec.Conversion.Webhook.ClientConfig == nil {
+			continue
+		}
+		if crd.Spec.Conversion.Webhook.ClientConfig.Service == nil {
 			continue
 		}
 		path := ""
-		if crd.Spec.Conversion.WebhookClientConfig.Service.Path != nil {
-			path = *crd.Spec.Conversion.WebhookClientConfig.Service.Path
+		if crd.Spec.Conversion.Webhook.ClientConfig.Service.Path != nil {
+			path = *crd.Spec.Conversion.Webhook.ClientConfig.Service.Path
 		}
 		url := fmt.Sprintf("%s%s", url, path)
-		crd.Spec.Conversion.WebhookClientConfig.URL = &url
-		crd.Spec.Conversion.WebhookClientConfig.CABundle = caPEM
-		crd.Spec.Conversion.WebhookClientConfig.Service = nil
+		crd.Spec.Conversion.Webhook.ClientConfig.URL = &url
+		crd.Spec.Conversion.Webhook.ClientConfig.CABundle = caPEM
+		crd.Spec.Conversion.Webhook.ClientConfig.Service = nil
 	}
 }
 
-func readCustomResourcesAtPath(t *testing.T, path string) []*v1beta1.CustomResourceDefinition {
+func readCustomResourcesAtPath(t *testing.T, path string) []*v1.CustomResourceDefinition {
 	serializer := jsonserializer.NewSerializerWithOptions(jsonserializer.DefaultMetaFactory, internalScheme, internalScheme, jsonserializer.SerializerOptions{
 		Yaml: true,
 	})
 	converter := runtime.UnsafeObjectConvertor(internalScheme)
 	codec := versioning.NewCodec(serializer, serializer, converter, internalScheme, internalScheme, internalScheme, runtime.InternalGroupVersioner, runtime.InternalGroupVersioner, internalScheme.Name())
 
-	var crds []*v1beta1.CustomResourceDefinition
+	var crds []*v1.CustomResourceDefinition
 	if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -154,7 +157,7 @@ func readCustomResourcesAtPath(t *testing.T, path string) []*v1beta1.CustomResou
 	return crds
 }
 
-func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]*v1beta1.CustomResourceDefinition, error) {
+func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]*v1.CustomResourceDefinition, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -162,7 +165,7 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 
 	dataStr := string(data)
 	datas := strings.Split(dataStr, "\n---\n")
-	var crds []*v1beta1.CustomResourceDefinition
+	var crds []*v1.CustomResourceDefinition
 	for _, d := range datas {
 		// skip empty YAML documents
 		if strings.TrimSpace(d) == "" {
@@ -174,7 +177,7 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 			return nil, err
 		}
 
-		out := &v1beta1.CustomResourceDefinition{}
+		out := &v1.CustomResourceDefinition{}
 		if err := converter.Convert(internalCRD, out, nil); err != nil {
 			return nil, err
 		}
@@ -185,7 +188,7 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 	return crds, nil
 }
 
-func crdsToRuntimeObjects(in []*v1beta1.CustomResourceDefinition) []runtime.Object {
+func crdsToRuntimeObjects(in []*v1.CustomResourceDefinition) []runtime.Object {
 	out := make([]runtime.Object, len(in))
 
 	for i, crd := range in {
