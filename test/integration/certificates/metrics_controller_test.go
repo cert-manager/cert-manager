@@ -117,6 +117,9 @@ func TestMetricsController(t *testing.T) {
 
 	// Create Certificate
 	crt := gen.Certificate(crtName,
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Kind: "Issuer", Name: "test-issuer"}),
+		gen.SetCertificateSecretName(crtName),
+		gen.SetCertificateCommonName(crtName),
 		gen.SetCertificateNamespace(namespace),
 		gen.SetCertificateUID("uid-1"),
 	)

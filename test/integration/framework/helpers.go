@@ -18,13 +18,18 @@ package framework
 
 import (
 	"testing"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/kubectl/pkg/util/openapi"
 
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
@@ -62,5 +67,31 @@ func StartInformersAndController(t *testing.T, factory informers.SharedInformerF
 	}()
 	return func() {
 		close(stopCh)
+	}
+}
+
+func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, config *rest.Config, gvk schema.GroupVersionKind) {
+	dc, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = wait.PollImmediate(time.Second, 2*time.Minute,
+		func() (bool, error) {
+			og := openapi.NewOpenAPIGetter(dc)
+			oapiResource, err := og.Get()
+			if err != nil {
+				return false, err
+			}
+
+			if oapiResource.LookupResource(gvk) != nil {
+				return true, nil
+			}
+			return false, nil
+		},
+	)
+
+	if err != nil {
+		t.Fatal("Our GVK isn't loaded into the OpenAPI resources API after waiting for 2 minutes", err)
 	}
 }
