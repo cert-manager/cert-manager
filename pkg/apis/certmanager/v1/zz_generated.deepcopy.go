@@ -21,9 +21,9 @@ limitations under the License.
 package v1
 
 import (
-	acmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	acmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	apismetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -257,7 +257,7 @@ func (in *CertificateRequestSpec) DeepCopyInto(out *CertificateRequestSpec) {
 	*out = *in
 	if in.Duration != nil {
 		in, out := &in.Duration, &out.Duration
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	out.IssuerRef = in.IssuerRef
@@ -331,12 +331,12 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 	}
 	if in.Duration != nil {
 		in, out := &in.Duration, &out.Duration
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.RenewBefore != nil {
 		in, out := &in.RenewBefore, &out.RenewBefore
-		*out = new(v1.Duration)
+		*out = new(metav1.Duration)
 		**out = **in
 	}
 	if in.DNSNames != nil {
@@ -551,7 +551,7 @@ func (in *IssuerConfig) DeepCopyInto(out *IssuerConfig) {
 	*out = *in
 	if in.ACME != nil {
 		in, out := &in.ACME, &out.ACME
-		*out = new(acmev1beta1.ACMEIssuer)
+		*out = new(acmev1.ACMEIssuer)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.CA != nil {
@@ -649,7 +649,7 @@ func (in *IssuerStatus) DeepCopyInto(out *IssuerStatus) {
 	}
 	if in.ACME != nil {
 		in, out := &in.ACME, &out.ACME
-		*out = new(acmev1beta1.ACMEIssuerStatus)
+		*out = new(acmev1.ACMEIssuerStatus)
 		**out = **in
 	}
 	return
@@ -742,7 +742,7 @@ func (in *VaultAuth) DeepCopyInto(out *VaultAuth) {
 	*out = *in
 	if in.TokenSecretRef != nil {
 		in, out := &in.TokenSecretRef, &out.TokenSecretRef
-		*out = new(metav1.SecretKeySelector)
+		*out = new(apismetav1.SecretKeySelector)
 		**out = **in
 	}
 	if in.AppRole != nil {

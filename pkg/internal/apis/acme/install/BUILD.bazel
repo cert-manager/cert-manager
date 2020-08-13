@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//pkg/internal/api/validation:go_default_library",
         "//pkg/internal/apis/acme:go_default_library",
+        "//pkg/internal/apis/acme/v1:go_default_library",
         "//pkg/internal/apis/acme/v1alpha2:go_default_library",
         "//pkg/internal/apis/acme/v1alpha3:go_default_library",
         "//pkg/internal/apis/acme/v1beta1:go_default_library",

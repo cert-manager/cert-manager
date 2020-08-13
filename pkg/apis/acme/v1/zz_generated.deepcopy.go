@@ -22,8 +22,8 @@ package v1
 
 import (
 	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	v1 "k8s.io/api/core/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -285,12 +285,12 @@ func (in *ACMEChallengeSolverHTTP01IngressPodSpec) DeepCopyInto(out *ACMEChallen
 	}
 	if in.Affinity != nil {
 		in, out := &in.Affinity, &out.Affinity
-		*out = new(v1.Affinity)
+		*out = new(corev1.Affinity)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Tolerations != nil {
 		in, out := &in.Tolerations, &out.Tolerations
-		*out = make([]v1.Toleration, len(*in))
+		*out = make([]corev1.Toleration, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -549,7 +549,7 @@ func (in *ACMEIssuerDNS01ProviderWebhook) DeepCopyInto(out *ACMEIssuerDNS01Provi
 	*out = *in
 	if in.Config != nil {
 		in, out := &in.Config, &out.Config
-		*out = new(apiextensionsv1beta1.JSON)
+		*out = new(v1beta1.JSON)
 		(*in).DeepCopyInto(*out)
 	}
 	return

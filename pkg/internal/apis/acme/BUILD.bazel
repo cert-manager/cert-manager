@@ -36,6 +36,7 @@ filegroup(
         ":package-srcs",
         "//pkg/internal/apis/acme/fuzzer:all-srcs",
         "//pkg/internal/apis/acme/install:all-srcs",
+        "//pkg/internal/apis/acme/v1:all-srcs",
         "//pkg/internal/apis/acme/v1alpha2:all-srcs",
         "//pkg/internal/apis/acme/v1alpha3:all-srcs",
         "//pkg/internal/apis/acme/v1beta1:all-srcs",

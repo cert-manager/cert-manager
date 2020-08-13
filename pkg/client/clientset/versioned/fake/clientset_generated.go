@@ -20,12 +20,16 @@ package fake
 
 import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	acmev1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
+	fakeacmev1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1/fake"
 	acmev1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2"
 	fakeacmev1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2/fake"
 	acmev1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha3"
 	fakeacmev1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha3/fake"
 	acmev1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1beta1"
 	fakeacmev1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1beta1/fake"
+	certmanagerv1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	fakecertmanagerv1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1/fake"
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
 	fakecertmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2/fake"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3"
@@ -101,6 +105,11 @@ func (c *Clientset) AcmeV1beta1() acmev1beta1.AcmeV1beta1Interface {
 	return &fakeacmev1beta1.FakeAcmeV1beta1{Fake: &c.Fake}
 }
 
+// AcmeV1 retrieves the AcmeV1Client
+func (c *Clientset) AcmeV1() acmev1.AcmeV1Interface {
+	return &fakeacmev1.FakeAcmeV1{Fake: &c.Fake}
+}
+
 // CertmanagerV1alpha2 retrieves the CertmanagerV1alpha2Client
 func (c *Clientset) CertmanagerV1alpha2() certmanagerv1alpha2.CertmanagerV1alpha2Interface {
 	return &fakecertmanagerv1alpha2.FakeCertmanagerV1alpha2{Fake: &c.Fake}
@@ -114,4 +123,9 @@ func (c *Clientset) CertmanagerV1alpha3() certmanagerv1alpha3.CertmanagerV1alpha
 // CertmanagerV1beta1 retrieves the CertmanagerV1beta1Client
 func (c *Clientset) CertmanagerV1beta1() certmanagerv1beta1.CertmanagerV1beta1Interface {
 	return &fakecertmanagerv1beta1.FakeCertmanagerV1beta1{Fake: &c.Fake}
+}
+
+// CertmanagerV1 retrieves the CertmanagerV1Client
+func (c *Clientset) CertmanagerV1() certmanagerv1.CertmanagerV1Interface {
+	return &fakecertmanagerv1.FakeCertmanagerV1{Fake: &c.Fake}
 }
