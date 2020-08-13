@@ -13,12 +13,19 @@ RELEASE_NAMESPACE = "cert-manager"
 VARIANTS = {
     "cert-manager": {
         "crd_variant": "regular",
+        "additional_api_versions": "",
         "values": {
             "installCRDs": "false",
         },
     },
     "cert-manager-legacy": {
         "crd_variant": "legacy",
+        # This following line tells Helm that we need to use v1beta1 webhooks
+        # When using helm template the API versions are determined for the version
+        # helm was compiled with, there is no way to remove any from this list
+        # the following hack adds an API version which we then can use to force
+        # the template engine to use v1beta1 webhooks.
+        "additional_api_versions": "hacking-helm.i-wish-this-wasnt-required.cert-manager.io/force-v1beta1-webhooks",
         "values": {
             "installCRDs": "false",
         },
@@ -27,6 +34,7 @@ VARIANTS = {
 
 [helm_tmpl(
     name = "%s.manifests" % name,
+    additional_api_versions = meta["additional_api_versions"],
     helm_pkg = "//deploy/charts/cert-manager",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,

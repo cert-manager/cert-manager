@@ -29,6 +29,7 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
+	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +53,7 @@ var (
 
 func init() {
 	admissionv1beta1.AddToScheme(defaultScheme)
+	admissionv1.AddToScheme(defaultScheme)
 	apiextensionsv1beta1.AddToScheme(defaultScheme)
 
 	// we need to add the options to empty v1
@@ -285,28 +287,52 @@ func (s *Server) scheme() *runtime.Scheme {
 	return s.Scheme
 }
 
-func (s *Server) validate(obj runtime.Object) runtime.Object {
-	review := obj.(*admissionv1beta1.AdmissionReview)
+func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
+	outputVersion := admissionv1.SchemeGroupVersion
+	review, isV1 := obj.(*admissionv1.AdmissionReview)
+	if !isV1 {
+		outputVersion = admissionv1beta1.SchemeGroupVersion
+		reviewv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
+		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, admissionv1.SchemeGroupVersion)
+		if err != nil {
+			return nil, err
+		}
+		review = convertedReview.(*admissionv1.AdmissionReview)
+	}
 	resp := s.ValidationWebhook.Validate(review.Request)
 	review.Response = resp
-	return review
+
+	versionedOutput, err := defaultScheme.ConvertToVersion(review, outputVersion)
+	return versionedOutput, err
 }
 
-func (s *Server) mutate(obj runtime.Object) runtime.Object {
-	review := obj.(*admissionv1beta1.AdmissionReview)
+func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
+	outputVersion := admissionv1.SchemeGroupVersion
+	review, isV1 := obj.(*admissionv1.AdmissionReview)
+	if !isV1 {
+		outputVersion = admissionv1beta1.SchemeGroupVersion
+		reviewv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
+		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, admissionv1.SchemeGroupVersion)
+		if err != nil {
+			return nil, err
+		}
+		review = convertedReview.(*admissionv1.AdmissionReview)
+	}
 	resp := s.MutationWebhook.Mutate(review.Request)
 	review.Response = resp
-	return review
+
+	versionedOutput, err := defaultScheme.ConvertToVersion(review, outputVersion)
+	return versionedOutput, err
 }
 
-func (s *Server) convert(obj runtime.Object) runtime.Object {
+func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
 	review := obj.(*apiextensionsv1beta1.ConversionReview)
 	resp := s.ConversionWebhook.Convert(review.Request)
 	review.Response = resp
-	return review
+	return review, nil
 }
 
-func (s *Server) handle(inner func(runtime.Object) runtime.Object) func(w http.ResponseWriter, req *http.Request) {
+func (s *Server) handle(inner func(runtime.Object) (runtime.Object, error)) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 
@@ -328,7 +354,12 @@ func (s *Server) handle(inner func(runtime.Object) runtime.Object) func(w http.R
 			return
 		}
 
-		result := inner(obj)
+		result, err := inner(obj)
+		if err != nil {
+			s.Log.Error(err, "failed to process webhook request")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		if err := codec.Encode(result, w); err != nil {
 			s.Log.Error(err, "failed to encode response body")
 			w.WriteHeader(http.StatusInternalServerError)

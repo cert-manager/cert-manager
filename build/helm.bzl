@@ -94,6 +94,7 @@ def helm_tmpl(
         helm_pkg,
         release_namespace,
         release_name,
+        additional_api_versions = "",
         values = {},
         helm_cmd = "//hack/bin:helm",
         **kwargs,
@@ -105,6 +106,7 @@ def helm_tmpl(
     tmpl_cmd = [
         "$(location %s)" % helm_cmd,
         "template",
+        "--api-versions=\"%s\"" % additional_api_versions,
         "--namespace=%s" % release_namespace,
         release_name,
         "$(location %s)" % helm_pkg,
