@@ -39,7 +39,7 @@ spec:
         namespace: '{{ .Release.Namespace }}'
         name: '{{ template "webhook.fullname" . }}'
         path: /convert
-  scope: Namespaced
+  scope: Cluster
   subresources:
     status: {}
   version: v1alpha2
