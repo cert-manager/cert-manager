@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/jetstack/cert-manager/pkg/api"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
@@ -152,6 +153,41 @@ func TestConversion(t *testing.T) {
 					SecretName: "abc",
 					CommonName: "test",
 					Subject: &v1beta1.X509Subject{
+						Organizations: []string{"test"},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+		},
+		"should convert Certificate from v1beta1 to v1": {
+			input: &v1beta1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1beta1.CertificateSpec{
+					SecretName: "abc",
+					CommonName: "test",
+					Subject: &v1beta1.X509Subject{
+						Organizations: []string{"test"},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+			targetGVK: v1.SchemeGroupVersion.WithKind("Certificate"),
+			output: &v1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1.CertificateSpec{
+					SecretName: "abc",
+					CommonName: "test",
+					Subject: &v1.X509Subject{
 						Organizations: []string{"test"},
 					},
 					IssuerRef: cmmeta.ObjectReference{

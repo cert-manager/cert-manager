@@ -5,6 +5,7 @@ go_test(
     srcs = ["conversion_test.go"],
     deps = [
         "//pkg/api:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/certmanager/v1alpha3:go_default_library",
         "//pkg/apis/certmanager/v1beta1:go_default_library",
