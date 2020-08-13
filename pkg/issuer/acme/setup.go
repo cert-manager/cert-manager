@@ -86,7 +86,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	privateKeySelector := acme.PrivateKeySelector(a.issuer.GetSpec().ACME.PrivateKey)
 	pk, err := kube.SecretTLSKeyRef(ctx, a.secretsLister, ns, privateKeySelector.Name, privateKeySelector.Key)
 	switch {
-	case apierrors.IsNotFound(err):
+	case !a.issuer.GetSpec().ACME.OnlyUseExistingAccountKey && apierrors.IsNotFound(err):
 		log.V(logf.InfoLevel).Info("generating acme account private key")
 		pk, err = a.createAccountPrivateKey(privateKeySelector, ns)
 		if err != nil {
@@ -96,6 +96,11 @@ func (a *Acme) Setup(ctx context.Context) error {
 		}
 		// We clear the ACME account URI as we have generated a new private key
 		a.issuer.GetStatus().ACMEStatus().URI = ""
+
+	case a.issuer.GetSpec().ACME.OnlyUseExistingAccountKey && apierrors.IsNotFound(err):
+		wrapErr := fmt.Errorf(messageAccountVerificationFailed+"the ACME issuer config has 'onlyUseExistingAccountKey' set to true, but the secret was not found: %w", err)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, wrapErr.Error())
+		return wrapErr
 
 	case errors.IsInvalidData(err):
 		apiutil.SetIssuerCondition(a.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, fmt.Sprintf("Account private key is invalid: %v", err))
