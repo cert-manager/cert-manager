@@ -1,7 +1,7 @@
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: clusterissuers.cert-manager.io
+  name: issuers.cert-manager.io
   annotations:
     cert-manager.io/inject-ca-from-secret: '{{ template "webhook.caRef" . }}'
   labels:
@@ -11,43 +11,43 @@ metadata:
     app.kubernetes.io/managed-by: '{{ .Release.Service }}'
     helm.sh/chart: '{{ template "cert-manager.chart" . }}'
 spec:
+  additionalPrinterColumns:
+    - JSONPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - JSONPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      priority: 1
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+      name: Age
+      type: date
   group: cert-manager.io
   names:
-    kind: ClusterIssuer
-    listKind: ClusterIssuerList
-    plural: clusterissuers
-    singular: clusterissuer
-  scope: Cluster
+    kind: Issuer
+    listKind: IssuerList
+    plural: issuers
+    singular: issuer
+  preserveUnknownFields: false
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
     strategy: Webhook
     # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
-    webhook:
-      conversionReviewVersions: ["v1beta1"]
-      clientConfig:
-        service:
-          namespace: '{{ .Release.Namespace }}'
-          name: '{{ template "webhook.fullname" . }}'
-          path: /convert
+    webhookClientConfig:
+      service:
+        namespace: '{{ .Release.Namespace }}'
+        name: '{{ template "webhook.fullname" . }}'
+        path: /convert
+  scope: Namespaced
+  subresources:
+    status: {}
+  version: v1alpha2
   versions:
     - name: v1alpha2
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
-          description: A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.
+          description: An Issuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is scoped to a single namespace and can therefore only be referenced by resources within the same namespace.
           type: object
           properties:
             apiVersion:
@@ -59,7 +59,7 @@ spec:
             metadata:
               type: object
             spec:
-              description: Desired state of the ClusterIssuer resource.
+              description: Desired state of the Issuer resource.
               type: object
               properties:
                 acme:
@@ -322,7 +322,7 @@ spec:
                                   - nameserver
                                 properties:
                                   nameserver:
-                                    description: The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1]) ; port is optional. This field is required.
+                                    description: The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1]) ; port is optional. This field is required.
                                     type: string
                                   tsigAlgorithm:
                                     description: 'The TSIG Algorithm configured in the DNS supporting RFC2136. Used only when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined. Supported values are (case-insensitive): ``HMACMD5`` (default), ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.'
@@ -1004,7 +1004,7 @@ spec:
                       description: Zone is the Venafi Policy Zone to use for this issuer. All requests made to the Venafi platform will be restricted by the named zone policy. This field is required.
                       type: string
             status:
-              description: Status of the ClusterIssuer. This is set and managed automatically.
+              description: Status of the Issuer. This is set and managed automatically.
               type: object
               properties:
                 acme:
@@ -1050,23 +1050,9 @@ spec:
       served: true
       storage: true
     - name: v1alpha3
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
-          description: A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.
+          description: An Issuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is scoped to a single namespace and can therefore only be referenced by resources within the same namespace.
           type: object
           properties:
             apiVersion:
@@ -1078,7 +1064,7 @@ spec:
             metadata:
               type: object
             spec:
-              description: Desired state of the ClusterIssuer resource.
+              description: Desired state of the Issuer resource.
               type: object
               properties:
                 acme:
@@ -1341,7 +1327,7 @@ spec:
                                   - nameserver
                                 properties:
                                   nameserver:
-                                    description: The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1]) ; port is optional. This field is required.
+                                    description: The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1]) ; port is optional. This field is required.
                                     type: string
                                   tsigAlgorithm:
                                     description: 'The TSIG Algorithm configured in the DNS supporting RFC2136. Used only when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined. Supported values are (case-insensitive): ``HMACMD5`` (default), ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.'
@@ -2023,7 +2009,7 @@ spec:
                       description: Zone is the Venafi Policy Zone to use for this issuer. All requests made to the Venafi platform will be restricted by the named zone policy. This field is required.
                       type: string
             status:
-              description: Status of the ClusterIssuer. This is set and managed automatically.
+              description: Status of the Issuer. This is set and managed automatically.
               type: object
               properties:
                 acme:
@@ -2069,23 +2055,9 @@ spec:
       served: true
       storage: false
     - name: v1beta1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
-          description: A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.
+          description: An Issuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is scoped to a single namespace and can therefore only be referenced by resources within the same namespace.
           type: object
           required:
             - spec
@@ -2099,7 +2071,7 @@ spec:
             metadata:
               type: object
             spec:
-              description: Desired state of the ClusterIssuer resource.
+              description: Desired state of the Issuer resource.
               type: object
               properties:
                 acme:
@@ -2362,7 +2334,7 @@ spec:
                                   - nameserver
                                 properties:
                                   nameserver:
-                                    description: The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1]) ; port is optional. This field is required.
+                                    description: The IP address or hostname of an authoritative DNS server supporting RFC2136 in the form host:port. If the host is an IPv6 address it must be enclosed in square brackets (e.g [2001:db8::1]) ; port is optional. This field is required.
                                     type: string
                                   tsigAlgorithm:
                                     description: 'The TSIG Algorithm configured in the DNS supporting RFC2136. Used only when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined. Supported values are (case-insensitive): ``HMACMD5`` (default), ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.'
@@ -3044,7 +3016,7 @@ spec:
                       description: Zone is the Venafi Policy Zone to use for this issuer. All requests made to the Venafi platform will be restricted by the named zone policy. This field is required.
                       type: string
             status:
-              description: Status of the ClusterIssuer. This is set and managed automatically.
+              description: Status of the Issuer. This is set and managed automatically.
               type: object
               properties:
                 acme:

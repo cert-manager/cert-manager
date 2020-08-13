@@ -1,4 +1,4 @@
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: certificates.cert-manager.io
@@ -11,7 +11,36 @@ metadata:
     app.kubernetes.io/managed-by: '{{ .Release.Service }}'
     helm.sh/chart: '{{ template "cert-manager.chart" . }}'
 spec:
+  additionalPrinterColumns:
+    - JSONPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - JSONPath: .spec.secretName
+      name: Secret
+      type: string
+    - JSONPath: .spec.issuerRef.name
+      name: Issuer
+      priority: 1
+      type: string
+    - JSONPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      priority: 1
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+      name: Age
+      type: date
   group: cert-manager.io
+  preserveUnknownFields: false
+  conversion:
+    # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
+    strategy: Webhook
+    # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
+    webhookClientConfig:
+      service:
+        namespace: '{{ .Release.Namespace }}'
+        name: '{{ template "webhook.fullname" . }}'
+        path: /convert
   names:
     kind: Certificate
     listKind: CertificateList
@@ -21,42 +50,14 @@ spec:
       - certs
     singular: certificate
   scope: Namespaced
-  conversion:
-    # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
-    strategy: Webhook
-    # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
-    webhook:
-      conversionReviewVersions: ["v1beta1"]
-      clientConfig:
-        service:
-          namespace: '{{ .Release.Namespace }}'
-          name: '{{ template "webhook.fullname" . }}'
-          path: /convert
+  subresources:
+    status: {}
   versions:
     - name: v1alpha2
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .spec.secretName
-          name: Secret
-          type: string
-        - jsonPath: .spec.issuerRef.name
-          name: Issuer
-          priority: 1
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
-      schema:
-        openAPIV3Schema:
+      served: true
+      storage: true
+      "schema":
+        "openAPIV3Schema":
           description: "A Certificate resource should be created to ensure an up to date and signed x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`. \n The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`)."
           type: object
           properties:
@@ -325,32 +326,11 @@ spec:
                 revision:
                   description: "The current 'revision' of the certificate as issued. \n When a CertificateRequest resource is created, it will have the `cert-manager.io/certificate-revision` set to one greater than the current value of this field. \n Upon issuance, this field will be set to the value of the annotation on the CertificateRequest resource used to issue the certificate. \n Persisting the value on the CertificateRequest resource allows the certificates controller to know whether a request is part of an old issuance or if it is part of the ongoing revision's issuance by checking if the revision value in the annotation is greater than this field."
                   type: integer
-      served: true
-      storage: true
     - name: v1alpha3
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .spec.secretName
-          name: Secret
-          type: string
-        - jsonPath: .spec.issuerRef.name
-          name: Issuer
-          priority: 1
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
-      schema:
-        openAPIV3Schema:
+      served: true
+      storage: false
+      "schema":
+        "openAPIV3Schema":
           description: "A Certificate resource should be created to ensure an up to date and signed x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`. \n The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`)."
           type: object
           properties:
@@ -619,32 +599,11 @@ spec:
                 revision:
                   description: "The current 'revision' of the certificate as issued. \n When a CertificateRequest resource is created, it will have the `cert-manager.io/certificate-revision` set to one greater than the current value of this field. \n Upon issuance, this field will be set to the value of the annotation on the CertificateRequest resource used to issue the certificate. \n Persisting the value on the CertificateRequest resource allows the certificates controller to know whether a request is part of an old issuance or if it is part of the ongoing revision's issuance by checking if the revision value in the annotation is greater than this field."
                   type: integer
+    - name: v1beta1
       served: true
       storage: false
-    - name: v1beta1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .spec.secretName
-          name: Secret
-          type: string
-        - jsonPath: .spec.issuerRef.name
-          name: Issuer
-          priority: 1
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
-      schema:
-        openAPIV3Schema:
+      "schema":
+        "openAPIV3Schema":
           description: "A Certificate resource should be created to ensure an up to date and signed x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`. \n The stored certificate will be renewed before it expires (as configured by `spec.renewBefore`)."
           type: object
           required:
@@ -915,11 +874,3 @@ spec:
                 revision:
                   description: "The current 'revision' of the certificate as issued. \n When a CertificateRequest resource is created, it will have the `cert-manager.io/certificate-revision` set to one greater than the current value of this field. \n Upon issuance, this field will be set to the value of the annotation on the CertificateRequest resource used to issue the certificate. \n Persisting the value on the CertificateRequest resource allows the certificates controller to know whether a request is part of an old issuance or if it is part of the ongoing revision's issuance by checking if the revision value in the annotation is greater than this field."
                   type: integer
-      served: true
-      storage: false
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
