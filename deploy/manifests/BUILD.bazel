@@ -25,6 +25,24 @@ VARIANTS = {
     },
 }
 
+[genrule(
+    name = "%s.nohelm.crds.yaml" % name,
+    srcs = [
+        "//deploy/crds:crds.%s" % meta["crd_variant"],
+    ],
+    outs = ["%s.crds.nohelm.out" % name],
+    cmd = " ".join([
+        "$(location //hack/filter-crd)",
+        "-variant=no-helm",
+        "$(location //deploy/crds:crds.%s)" % meta["crd_variant"],
+        "> $@",
+    ]),
+    tools = [
+        "//hack/filter-crd",
+    ],
+    visibility = ["//visibility:public"],
+) for (name, meta) in VARIANTS.items()]
+
 [helm_tmpl(
     name = "%s.manifests" % name,
     helm_pkg = "//deploy/charts/cert-manager",
@@ -35,7 +53,7 @@ VARIANTS = {
 
 [licensed_file(
     name = "%s.crds.yaml" % name,
-    src = "//deploy/crds:crds.%s" % meta["crd_variant"],
+    src = ":%s.nohelm.crds.yaml" % name,
 ) for (name, meta) in VARIANTS.items()]
 
 [genrule(
@@ -55,9 +73,27 @@ VARIANTS = {
     ]),
 ) for (name, meta) in VARIANTS.items()]
 
+[genrule(
+    name = "%s.unlicensed.nohelm" % name,
+    srcs = [
+        ":%s.unlicensed" % name,
+    ],
+    outs = ["%s.unlicensed.nohelm.yaml" % name],
+    cmd = " ".join([
+        "$(location //hack/filter-crd)",
+        "-variant=no-helm",
+        "$(location :%s.unlicensed)" % name,
+        "> $@",
+    ]),
+    tools = [
+        "//hack/filter-crd",
+    ],
+    visibility = ["//visibility:public"],
+) for (name, meta) in VARIANTS.items()]
+
 [licensed_file(
     name = "%s.yaml" % name,
-    src = "%s.unlicensed" % name,
+    src = "%s.unlicensed.nohelm" % name,
 ) for (name, meta) in VARIANTS.items()]
 
 pkg_tar(
