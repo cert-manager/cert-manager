@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 

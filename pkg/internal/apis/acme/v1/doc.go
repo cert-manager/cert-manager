@@ -15,9 +15,9 @@ limitations under the License.
 */
 
 // +k8s:conversion-gen=github.com/jetstack/cert-manager/pkg/internal/apis/acme
-// +k8s:conversion-gen-external-types=github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1
+// +k8s:conversion-gen-external-types=github.com/jetstack/cert-manager/pkg/apis/acme/v1
 // +k8s:defaulter-gen=TypeMeta
-// +k8s:defaulter-gen-input=../../../../apis/acme/v1beta1
+// +k8s:defaulter-gen-input=../../../../apis/acme/v1
 
 // +groupName=acme.cert-manager.io
-package v1beta1
+package v1

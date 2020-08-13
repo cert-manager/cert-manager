@@ -14,17 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: certmanager.GroupName, Version: "v1beta1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: certmanager.GroupName, Version: "v1"}
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
 func Resource(resource string) schema.GroupResource {
