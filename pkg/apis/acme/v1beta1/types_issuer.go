@@ -73,6 +73,15 @@ type ACMEIssuer struct {
 	// For more information, see: https://cert-manager.io/docs/configuration/acme/
 	// +optional
 	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
+
+	// Enables or disables generating a new ACME account key.
+	// If true, the Issuer resource will not request a new account but will expect
+	// the account key to be supplied via an existing secret.
+	// If false, the cert-manager system will generate a new ACME account key
+	// for the Issuer.
+	// Defaults to false.
+	// +optional
+	OnlyUseExistingAccountKey bool `json:"onlyUseExistingAccountKey,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
