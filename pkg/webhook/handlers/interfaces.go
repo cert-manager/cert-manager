@@ -18,7 +18,7 @@ package handlers
 
 import (
 	admissionv1 "k8s.io/api/admission/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 type ValidatingAdmissionHook interface {
@@ -35,5 +35,5 @@ type MutatingAdmissionHook interface {
 
 type ConversionHook interface {
 	// Convert is called to convert a resource in one version into a different version.
-	Convert(conversionSpec *apiextensionsv1beta1.ConversionRequest) *apiextensionsv1beta1.ConversionResponse
+	Convert(conversionSpec *apiextensionsv1.ConversionRequest) *apiextensionsv1.ConversionResponse
 }
