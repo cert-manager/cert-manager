@@ -195,6 +195,8 @@ func loadVariant() {
 		removeKeys = []string{
 			"metadata/labels/app.kubernetes.io/managed-by",
 			"metadata/labels/helm.sh/chart",
+			"spec/template/metadata/labels/app.kubernetes.io/managed-by",
+			"spec/template/metadata/labels/helm.sh/chart",
 		}
 	}
 }
