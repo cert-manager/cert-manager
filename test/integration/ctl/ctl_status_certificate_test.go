@@ -133,6 +133,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 		clusterIssuer *cmapi.ClusterIssuer
 		secret        *v1.Secret
 		order         *cmacme.Order
+		challenges    []*cmacme.Challenge
 
 		expErr    bool
 		expOutput string
@@ -203,6 +204,22 @@ No CertificateRequest found for this Certificate$`,
 				gen.SetOrderCsr(testCSR),
 				gen.SetOrderIssuer(cmmeta.ObjectReference{Name: "letsencrypt-prod", Kind: "Issuer"}),
 				gen.SetOrderDNSNames("www.example.com")),
+			challenges: []*cmacme.Challenge{
+				gen.Challenge("test-challenge1",
+					gen.SetChallengeNamespace(ns1),
+					gen.SetChallengeType("http-01"),
+					gen.SetChallengeToken("dummy-token1"),
+					gen.SetChallengePresented(false),
+					gen.SetChallengeProcessing(false),
+				),
+				gen.Challenge("test-challenge2",
+					gen.SetChallengeNamespace(ns1),
+					gen.SetChallengeType("dns-01"),
+					gen.SetChallengeToken("dummy-token2"),
+					gen.SetChallengePresented(false),
+					gen.SetChallengeProcessing(false),
+				),
+			},
 			expErr: false,
 			expOutput: `^Name: testcrt-2
 Namespace: testns-1
@@ -242,7 +259,10 @@ CertificateRequest:
 Order:
   Name: example-order
   State: , Reason: 
-  No Authorizations for this Order$`,
+  No Authorizations for this Order
+Challenges:
+- Name: test-challenge1, Type: HTTP-01, Token: dummy-token1, Key: , State: , Reason: , Processing: false, Presented: false
+- Name: test-challenge2, Type: DNS-01, Token: dummy-token2, Key: , State: , Reason: , Processing: false, Presented: false$`,
 		},
 		"certificate issued and renewal in progress without Issuer": {
 			certificate: gen.Certificate(crt3Name,
@@ -375,6 +395,17 @@ CertificateRequest:
 				}
 			}
 
+			if len(test.challenges) > 0 {
+				createdOrder, err := cmCl.AcmeV1alpha2().Orders(test.req.Namespace).Get(ctx, test.order.Name, metav1.GetOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = createChallengesOwnedByOrder(t, cmCl, ctx, createdOrder, test.challenges)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
 			// Options to run status command
 			streams, _, outBuf, _ := genericclioptions.NewTestIOStreams()
 			opts := &statuscertcmd.Options{
@@ -459,6 +490,25 @@ func createOrderOwnedByCR(t *testing.T, cmCl versioned.Interface, ctx context.Co
 	order, err = cmCl.AcmeV1alpha2().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
 	if err != nil {
 		t.Errorf("Update Err: %v", err)
+	}
+
+	return nil
+}
+
+func createChallengesOwnedByOrder(t *testing.T, cmCl versioned.Interface, ctx context.Context,
+	order *cmacme.Order, challenges []*cmacme.Challenge) error {
+
+	for _, c := range challenges {
+		challenge, err := cmCl.AcmeV1alpha2().Challenges(order.Namespace).Create(ctx, c, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+
+		challenge.OwnerReferences = append(challenge.OwnerReferences, *metav1.NewControllerRef(order, cmacme.SchemeGroupVersion.WithKind("Order")))
+		challenge, err = cmCl.AcmeV1alpha2().Challenges(order.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
+		if err != nil {
+			t.Errorf("Update Err: %v", err)
+		}
 	}
 
 	return nil

@@ -354,6 +354,74 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 				},
 			},
 		},
+		"Correct information extracted from Challenge resources": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns)),
+				Challenges: []*cmacme.Challenge{
+					{
+						TypeMeta:   metav1.TypeMeta{},
+						ObjectMeta: metav1.ObjectMeta{Name: "test-challenge1", Namespace: ns},
+						Spec: cmacme.ChallengeSpec{
+							Type:  "HTTP-01",
+							Token: "token",
+							Key:   "key",
+						},
+						Status: cmacme.ChallengeStatus{
+							Processing: false,
+							Presented:  false,
+							Reason:     "reason",
+							State:      "state",
+						},
+					},
+					{
+						TypeMeta:   metav1.TypeMeta{},
+						ObjectMeta: metav1.ObjectMeta{Name: "test-challenge2", Namespace: ns},
+						Spec: cmacme.ChallengeSpec{
+							Type:  "HTTP-01",
+							Token: "token",
+							Key:   "key",
+						},
+						Status: cmacme.ChallengeStatus{
+							Processing: false,
+							Presented:  false,
+							Reason:     "reason",
+							State:      "state",
+						},
+					},
+				},
+				ChallengeErr: nil,
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				ChallengeStatusList: &ChallengeStatusList{
+					ChallengeStatuses: []*ChallengeStatus{
+						{
+							Name:       "test-challenge1",
+							Type:       "HTTP-01",
+							Token:      "token",
+							Key:        "key",
+							State:      "state",
+							Reason:     "reason",
+							Processing: false,
+							Presented:  false,
+						},
+						{
+							Name:       "test-challenge2",
+							Type:       "HTTP-01",
+							Token:      "token",
+							Key:        "key",
+							State:      "state",
+							Reason:     "reason",
+							Processing: false,
+							Presented:  false,
+						},
+					},
+				},
+			},
+		},
 		"When error, ignore rest of the info about the resource": {
 			inputData: &Data{
 				Certificate: gen.Certificate("test-crt",
@@ -370,16 +438,19 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 				Order: &cmacme.Order{
 					ObjectMeta: metav1.ObjectMeta{Name: "test-order"},
 				},
-				OrderError: errors.New("dummy error"),
+				OrderError:   errors.New("dummy error"),
+				Challenges:   []*cmacme.Challenge{{ObjectMeta: metav1.ObjectMeta{Name: "test-challenge"}}},
+				ChallengeErr: errors.New("dummy error"),
 			},
 			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				IssuerStatus: &IssuerStatus{Error: errors.New("dummy error")},
-				SecretStatus: &SecretStatus{Error: errors.New("dummy error")},
-				CRStatus:     &CRStatus{Error: errors.New("dummy error")},
-				OrderStatus:  &OrderStatus{Error: errors.New("dummy error")},
+				Name:                "test-crt",
+				Namespace:           ns,
+				CreationTime:        metav1.Time{},
+				IssuerStatus:        &IssuerStatus{Error: errors.New("dummy error")},
+				SecretStatus:        &SecretStatus{Error: errors.New("dummy error")},
+				CRStatus:            &CRStatus{Error: errors.New("dummy error")},
+				OrderStatus:         &OrderStatus{Error: errors.New("dummy error")},
+				ChallengeStatusList: &ChallengeStatusList{Error: errors.New("dummy error")},
 			},
 		},
 	}
