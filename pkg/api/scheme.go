@@ -28,9 +28,11 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	cmacmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
 	cmacmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
+	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	cmapiv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
@@ -53,9 +55,11 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	cmapi.AddToScheme,
 	cmapiv1alpha3.AddToScheme,
 	cmapiv1beta1.AddToScheme,
+	cmapiv1.AddToScheme,
 	cmacme.AddToScheme,
 	cmacmev1alpha3.AddToScheme,
 	cmacmev1beta1.AddToScheme,
+	cmacmev1.AddToScheme,
 	cmmeta.AddToScheme,
 	whapi.AddToScheme,
 	kscheme.AddToScheme,

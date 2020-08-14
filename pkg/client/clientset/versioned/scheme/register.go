@@ -19,9 +19,11 @@ limitations under the License.
 package scheme
 
 import (
+	acmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	acmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	acmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
 	acmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
+	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
@@ -39,9 +41,11 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	acmev1alpha2.AddToScheme,
 	acmev1alpha3.AddToScheme,
 	acmev1beta1.AddToScheme,
+	acmev1.AddToScheme,
 	certmanagerv1alpha2.AddToScheme,
 	certmanagerv1alpha3.AddToScheme,
 	certmanagerv1beta1.AddToScheme,
+	certmanagerv1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

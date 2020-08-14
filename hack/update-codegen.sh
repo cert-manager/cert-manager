@@ -38,10 +38,12 @@ deepcopy_inputs=(
   pkg/apis/certmanager/v1alpha2 \
   pkg/apis/certmanager/v1alpha3 \
   pkg/apis/certmanager/v1beta1 \
+  pkg/apis/certmanager/v1 \
   pkg/internal/apis/certmanager \
   pkg/apis/acme/v1alpha2 \
   pkg/apis/acme/v1alpha3 \
   pkg/apis/acme/v1beta1 \
+  pkg/apis/acme/v1 \
   pkg/internal/apis/acme \
   pkg/apis/meta/v1 \
   pkg/internal/apis/meta \
@@ -58,9 +60,11 @@ client_inputs=(
   pkg/apis/certmanager/v1alpha2 \
   pkg/apis/certmanager/v1alpha3 \
   pkg/apis/certmanager/v1beta1 \
+  pkg/apis/certmanager/v1 \
   pkg/apis/acme/v1alpha2 \
   pkg/apis/acme/v1alpha3 \
   pkg/apis/acme/v1beta1 \
+  pkg/apis/acme/v1 \
 )
 
 # Generate defaulting functions to be used by the mutating webhook
@@ -68,9 +72,11 @@ defaulter_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
   pkg/internal/apis/certmanager/v1alpha3 \
   pkg/internal/apis/certmanager/v1beta1 \
+  pkg/internal/apis/certmanager/v1 \
   pkg/internal/apis/acme/v1alpha2 \
   pkg/internal/apis/acme/v1alpha3 \
   pkg/internal/apis/acme/v1beta1 \
+  pkg/internal/apis/acme/v1 \
   pkg/internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
@@ -81,9 +87,11 @@ conversion_inputs=(
   pkg/internal/apis/certmanager/v1alpha2 \
   pkg/internal/apis/certmanager/v1alpha3 \
   pkg/internal/apis/certmanager/v1beta1 \
+  pkg/internal/apis/certmanager/v1 \
   pkg/internal/apis/acme/v1alpha2 \
   pkg/internal/apis/acme/v1alpha3 \
   pkg/internal/apis/acme/v1beta1 \
+  pkg/internal/apis/acme/v1 \
   pkg/internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \

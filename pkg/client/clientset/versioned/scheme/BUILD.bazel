@@ -9,9 +9,11 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/acme/v1alpha2:go_default_library",
         "//pkg/apis/acme/v1alpha3:go_default_library",
         "//pkg/apis/acme/v1beta1:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/apis/certmanager/v1alpha3:go_default_library",
         "//pkg/apis/certmanager/v1beta1:go_default_library",
