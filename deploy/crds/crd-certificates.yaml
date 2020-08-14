@@ -972,8 +972,8 @@ spec:
                 duration:
                   description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types. If overridden and `renewBefore` is greater than the actual certificate duration, the certificate will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
-                emailSANs:
-                  description: EmailSANs is a list of email subjectAltNames to be set on the Certificate.
+                emailAddresses:
+                  description: EmailAddresses is a list of email subjectAltNames to be set on the Certificate.
                   type: array
                   items:
                     type: string
@@ -1120,8 +1120,8 @@ spec:
                       type: array
                       items:
                         type: string
-                uriSANs:
-                  description: URISANs is a list of URI subjectAltNames to be set on the Certificate.
+                uris:
+                  description: URIs is a list of URI subjectAltNames to be set on the Certificate.
                   type: array
                   items:
                     type: string
