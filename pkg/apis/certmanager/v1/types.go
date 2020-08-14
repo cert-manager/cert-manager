@@ -47,13 +47,6 @@ const (
 	IsNextPrivateKeySecretLabelKey = "cert-manager.io/next-private-key"
 )
 
-// Deprecated annotation names for Secrets
-// These will be removed in a future release.
-const (
-	DeprecatedIssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
-	DeprecatedIssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
-)
-
 const (
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.

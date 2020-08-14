@@ -207,15 +207,6 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	secret.Annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 	secret.Annotations[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
 
-	// If deprecated annotations exist with any value, then they too shall be
-	// updated
-	if _, ok := secret.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey]; ok {
-		secret.Annotations[cmapi.DeprecatedIssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	}
-	if _, ok := secret.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey]; ok {
-		secret.Annotations[cmapi.DeprecatedIssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
-	}
-
 	// if the certificate data is empty, clear the subject related annotations
 	if len(data.Certificate) == 0 {
 		delete(secret.Annotations, cmapi.CommonNameAnnotationKey)
