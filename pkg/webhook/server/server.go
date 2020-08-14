@@ -56,6 +56,7 @@ func init() {
 	admissionv1beta1.AddToScheme(defaultScheme)
 	admissionv1.AddToScheme(defaultScheme)
 	apiextensionsv1beta1.AddToScheme(defaultScheme)
+	apiextensionsv1.AddToScheme(defaultScheme)
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
