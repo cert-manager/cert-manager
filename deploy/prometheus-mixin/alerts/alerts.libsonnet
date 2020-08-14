@@ -31,7 +31,7 @@
             message: 'The cert `{{ $labels.name }}` is {{ $value | humanizeDuration }} from expiry, it should have renewed over a week ago',
             impact: 'The domain that this cert covers will be unavailable after {{ $value | humanizeDuration }}',
             action: 'Ensure cert-manager is configured correctly, no lets-encrypt rate limits are being hit. To break glass, buy a cert.',
-            dashboard: 'https://' + $._config.domainPrefix + 'grafana' + $._config.domainSuffix + '/d/TvuRo2iMk/cert-manager',
+            dashboard: $._config.grafanaExternalUrl + '/d/TvuRo2iMk/cert-manager',
           },
         },
         {
@@ -49,7 +49,7 @@
             message: 'The cert `{{ $labels.name }}` is not ready to serve traffic.',
             impact: 'This certificate has not been ready to serve traffic for at least 10m. If the cert is being renewed or there is another valid cert, nginx _may_ be able to serve that instead.',
             action: 'Ensure cert-manager is configured correctly, no lets-encrypt rate limits are being hit. To break glass, buy a cert.',
-            dashboard: 'https://' + $._config.domainPrefix + 'grafana' + $._config.domainSuffix + '/d/TvuRo2iMk/cert-manager',
+            dashboard: $._config.grafanaExternalUrl + '/d/TvuRo2iMk/cert-manager',
           },
         },
         {
@@ -63,7 +63,7 @@
             message: 'The metric used to observe cert-manager cert expiry is missing',
             impact: 'We are blind as to whether or not we can alert on certificates expiring',
             action: 'Assuming cert-manager is running, this is likely due to cert-manager not having permission to see certificate CRDs, a breaking change in metrics exposed, or some other misconfiguration.',
-            dashboard: 'https://' + $._config.domainPrefix + 'grafana' + $._config.domainSuffix + '/d/TvuRo2iMk/cert-manager',
+            dashboard: $._config.grafanaExternalUrl + '/d/TvuRo2iMk/cert-manager',
           },
         },
         {
@@ -81,7 +81,7 @@
             message: 'Cert manager hitting LetsEncrypt rate limits',
             impact: 'Depending on the rate limit, cert-manager may be unable to generate certificates for up to a week.',
             action: 'Nothing we can really do in the short term. We can apply for a rate limit adjustment for the future, but it can take weeks to approve. Thoughts and prayers.',
-            dashboard: 'https://' + $._config.domainPrefix + 'grafana' + $._config.domainSuffix + '/d/TvuRo2iMk/cert-manager',
+            dashboard: $._config.grafanaExternalUrl + '/d/TvuRo2iMk/cert-manager',
             link_url: 'https://docs.google.com/forms/d/e/1FAIpQLSetFLqcyPrnnrom2Kw802ZjukDVex67dOM2g4O8jEbfWFs3dA/viewform',
             link_text: 'LetsEncrypt Rate Limit Request Form',
           },

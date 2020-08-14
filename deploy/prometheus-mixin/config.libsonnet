@@ -2,7 +2,6 @@
 {
   _config+:: {
     certManagerJobLabel: 'cert-manager',
-    domainPrefix: 'prefix.',
-    domainSuffix: '.example.com',
+    grafanaExternalUrl: 'https://grafana.example.com',
   },
 }
