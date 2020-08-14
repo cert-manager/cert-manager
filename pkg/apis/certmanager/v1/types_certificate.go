@@ -119,13 +119,13 @@ type CertificateSpec struct {
 	// +optional
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 
-	// URISANs is a list of URI subjectAltNames to be set on the Certificate.
+	// URIs is a list of URI subjectAltNames to be set on the Certificate.
 	// +optional
-	URISANs []string `json:"uriSANs,omitempty"`
+	URIs []string `json:"uris,omitempty"`
 
-	// EmailSANs is a list of email subjectAltNames to be set on the Certificate.
+	// EmailAddresses is a list of email subjectAltNames to be set on the Certificate.
 	// +optional
-	EmailSANs []string `json:"emailSANs,omitempty"`
+	EmailAddresses []string `json:"emailAddresses,omitempty"`
 
 	// SecretName is the name of the secret resource that will be automatically
 	// created and managed by this Certificate resource.

@@ -173,6 +173,8 @@ func TestConversion(t *testing.T) {
 					Subject: &v1beta1.X509Subject{
 						Organizations: []string{"test"},
 					},
+					URISANs:   []string{"spiffe://foo.foo.example.net"},
+					EmailSANs: []string{"alice@example.com"},
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
@@ -190,6 +192,8 @@ func TestConversion(t *testing.T) {
 					Subject: &v1.X509Subject{
 						Organizations: []string{"test"},
 					},
+					URIs:           []string{"spiffe://foo.foo.example.net"},
+					EmailAddresses: []string{"alice@example.com"},
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
