@@ -16,7 +16,7 @@ go_library(
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_mattbaird_jsonpatch//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
-        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
