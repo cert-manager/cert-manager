@@ -20,11 +20,11 @@ import (
 	"crypto/x509"
 	"errors"
 	"math/big"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
@@ -386,21 +386,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			got := StatusFromResources(test.inputData)
-			if !reflect.DeepEqual(got, test.expOutput) {
-				t.Errorf("Unexpected output; expected: \n%#v\nactual: \n%#v", test.expOutput, got)
-				if !reflect.DeepEqual(test.expOutput.IssuerStatus, got.IssuerStatus) {
-					t.Errorf("Unexpected IssuerStatus; expected: \n%#v\nactual: \n%#v", test.expOutput.IssuerStatus, got.IssuerStatus)
-				}
-				if !reflect.DeepEqual(test.expOutput.SecretStatus, got.SecretStatus) {
-					t.Errorf("Unexpected SecretStatus; expected: \n%#v\nactual: \n%#v", test.expOutput.SecretStatus, got.SecretStatus)
-				}
-				if !reflect.DeepEqual(test.expOutput.CRStatus, got.CRStatus) {
-					t.Errorf("Unexpected CRStatus; expected: \n%#v\nactual: \n%#v", test.expOutput.CRStatus, got.CRStatus)
-				}
-				if !reflect.DeepEqual(test.expOutput.OrderStatus, got.OrderStatus) {
-					t.Errorf("Unexpected OrderStatus; expected: \n%#v\nactual: \n%#v", test.expOutput.OrderStatus, got.OrderStatus)
-				}
-			}
+			assert.Equal(t, test.expOutput, got)
 		})
 	}
 }
