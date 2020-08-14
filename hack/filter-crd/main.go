@@ -89,6 +89,7 @@ func main() {
 		}
 
 		output = append(output, string(fileOut))
+		d = map[interface{}]interface{}{} // clean out the old, otherwise the decoder will merge keys
 	}
 
 	fmt.Println(strings.Join(output, "---\n"))
@@ -190,5 +191,12 @@ func loadVariant() {
 		}
 
 		singleCRDVersion = true
+	} else if variant == "no-helm" {
+		removeKeys = []string{
+			"metadata/labels/app.kubernetes.io/managed-by",
+			"metadata/labels/helm.sh/chart",
+			"spec/template/metadata/labels/app.kubernetes.io/managed-by",
+			"spec/template/metadata/labels/helm.sh/chart",
+		}
 	}
 }
