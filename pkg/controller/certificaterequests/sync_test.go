@@ -26,6 +26,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -441,9 +442,12 @@ func TestSync(t *testing.T) {
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{baseIssuer, baseCR.DeepCopy()},
+				CertManagerObjects: []runtime.Object{baseIssuer,
+					gen.CertificateRequestFrom(baseCR,
+						gen.SetCertificateRequestCertificate(certRSAPEMExpired),
+					)},
 				ExpectedEvents: []string{
-					"Normal CertificateIssued Certificate fetched from issuer successfully",
+					fmt.Sprintf("Warning MissIssued Certificate is already expired: NotAfter is %s while the time is %s", fixedClockStart.Add(-time.Hour*12).UTC().Format(expiryTimeFormat), fixedClockStart.UTC().Format(expiryTimeFormat)),
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -454,11 +458,12 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCertificate(certRSAPEMExpired),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "Issued",
-								Message:            "Certificate fetched from issuer successfully",
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Failed",
+								Message:            fmt.Sprintf("Certificate is already expired: NotAfter is %s while the time is %s", fixedClockStart.Add(-time.Hour*12).UTC().Format(expiryTimeFormat), fixedClockStart.UTC().Format(expiryTimeFormat)),
 								LastTransitionTime: &nowMetaTime,
 							}),
+							gen.SetCertificateRequestFailureTime(nowMetaTime),
 						),
 					)),
 				},
@@ -497,7 +502,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
-		"if calling sign returns a response with an expired EC certificate then set condition Ready": {
+		"if calling sign returns a response with an expired EC certificate then set condition Failed": {
 			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
@@ -507,9 +512,12 @@ func TestSync(t *testing.T) {
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{baseIssuer, baseCR.DeepCopy()},
+				CertManagerObjects: []runtime.Object{baseIssuer,
+					gen.CertificateRequestFrom(baseCR,
+						gen.SetCertificateRequestCertificate(certECPEMExpired),
+					)},
 				ExpectedEvents: []string{
-					"Normal CertificateIssued Certificate fetched from issuer successfully",
+					fmt.Sprintf("Warning MissIssued Certificate is already expired: NotAfter is %s while the time is %s", fixedClockStart.Add(-time.Hour*12).UTC().Format(expiryTimeFormat), fixedClockStart.UTC().Format(expiryTimeFormat)),
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -520,11 +528,12 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCertificate(certECPEMExpired),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionTrue,
-								Reason:             "Issued",
-								Message:            "Certificate fetched from issuer successfully",
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Failed",
+								Message:            fmt.Sprintf("Certificate is already expired: NotAfter is %s while the time is %s", fixedClockStart.Add(-time.Hour*12).UTC().Format(expiryTimeFormat), fixedClockStart.UTC().Format(expiryTimeFormat)),
 								LastTransitionTime: &nowMetaTime,
 							}),
+							gen.SetCertificateRequestFailureTime(nowMetaTime),
 						),
 					)),
 				},

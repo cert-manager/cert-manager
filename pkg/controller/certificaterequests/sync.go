@@ -41,6 +41,8 @@ var (
 	certificateRequestGvk = v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateRequestKind)
 )
 
+const expiryTimeFormat = "2006-01-02T15:04:05"
+
 func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) (err error) {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
@@ -145,9 +147,14 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) 
 	crCopy.Status.CA = resp.CA
 
 	// invalid cert
-	_, err = pki.DecodeX509CertificateBytes(crCopy.Status.Certificate)
+	issuedCert, err := pki.DecodeX509CertificateBytes(crCopy.Status.Certificate)
 	if err != nil {
 		c.reporter.Failed(crCopy, err, "DecodeError", "Failed to decode returned certificate")
+		return nil
+	}
+
+	if issuedCert.NotAfter.Before(c.clock.Now()) {
+		c.reporter.Failed(crCopy, fmt.Errorf("NotAfter is %s while the time is %s", issuedCert.NotAfter.UTC().Format(expiryTimeFormat), c.clock.Now().UTC().Format(expiryTimeFormat)), "MissIssued", "Certificate is already expired")
 		return nil
 	}
 
