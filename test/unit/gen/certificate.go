@@ -153,6 +153,18 @@ func SetCertificateNotAfter(p metav1.Time) CertificateModifier {
 	}
 }
 
+func SetCertificateNotBefore(p metav1.Time) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		crt.Status.NotBefore = &p
+	}
+}
+
+func SetCertificateRenewalTIme(p metav1.Time) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		crt.Status.RenewalTime = &p
+	}
+}
+
 func SetCertificateOrganization(orgs ...string) CertificateModifier {
 	return func(ch *v1alpha2.Certificate) {
 		ch.Spec.Organization = orgs

@@ -19,11 +19,18 @@ package certificate
 import (
 	"crypto/x509"
 	"errors"
+	"math/big"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 func TestFormatStringSlice(t *testing.T) {
@@ -179,6 +186,207 @@ func TestExtKeyUsageToString(t *testing.T) {
 			if actualOutput != test.expOutput {
 				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
 			}
+		})
+	}
+}
+
+func TestStatusFromResources(t *testing.T) {
+	timestamp, err := time.Parse(time.RFC3339, "2020-09-16T09:26:18Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tlsCrt := []byte(`-----BEGIN CERTIFICATE-----
+MIICyTCCAbGgAwIBAgIRAOL4jtyULBSEYyGdqQn9YzowDQYJKoZIhvcNAQELBQAw
+DzENMAsGA1UEAxMEdGVzdDAeFw0yMDA3MzAxNjExNDNaFw0yMDEwMjgxNjExNDNa
+MA8xDTALBgNVBAMTBHRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDdfNmjh5ag7f6U1hj1OAx/dEN9kQzPsSlBMXGb/Ho4k5iegrFd6w8JkYdCthFv
+lfg3bIhw5tCKaw1o57HnWKBKKGt7XpeIu1mEcv8pveMIPO7TZ4+oElgX880NfJmL
+DkjEcctEo/+FurudO1aEbNfbNWpzudYKj7gGtYshBytqaYt4/APqWARJBFCYVVys
+wexZ0fLi5cBD8H1bQ1Ec3OCr5Mrq9thAGkj+rVlgYR0AZVGa9+SCOj27t6YCmyzR
+AJSEQ35v58Zfxp5tNyYd6wcAswJ9YipnUXvwahF95PNlRmMhp3Eo15m9FxehcVXU
+BOfxykMwZN7onMhuHiiwiB+NAgMBAAGjIDAeMA4GA1UdDwEB/wQEAwIFoDAMBgNV
+HRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQALrnldWjTBTvV5WKapUHUG0rhA
+vp2Cf+5FsPw8vKScXp4L+wKGdPOjhHz6NOiw5wu8A0HxlVUFawRpagkjFkeTL78O
+9ghBHLiqn9xNPIKC6ID3WpnN5terwQxQeO/M54sVMslUWCcZm9Pu4Eb//2e6wEdu
+eMmpfeISQmCsBC1CTmpxUjeUg5DEQ0X1TQykXq+bG2iso6RYPxZTFTHJFzXiDYEc
+/X7H+bOmpo/dMrXapwfvp2gD+BEq96iVpf/DBzGYNs/657LAHJ4YtxtAZCa1CK9G
+MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
+-----END CERTIFICATE-----`)
+
+	serialNum, _ := new(big.Int).SetString("301696114246524167282555582613204853562", 10)
+	ns := "ns1"
+
+	tests := map[string]struct {
+		inputData *Data
+		expOutput *CertificateStatus
+	}{
+		"Correct information extracted from Certificate resource": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns),
+					gen.SetCertificateNotAfter(metav1.Time{Time: timestamp}),
+					gen.SetCertificateNotBefore(metav1.Time{Time: timestamp}),
+					gen.SetCertificateRenewalTIme(metav1.Time{Time: timestamp}),
+					gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
+						Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}),
+					gen.SetCertificateDNSNames("example.com"),
+				),
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady,
+					Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}},
+				DNSNames:    []string{"example.com"},
+				Events:      nil,
+				NotBefore:   &metav1.Time{Time: timestamp},
+				NotAfter:    &metav1.Time{Time: timestamp},
+				RenewalTime: &metav1.Time{Time: timestamp},
+			},
+		},
+		"Issuer correctly with Kind Issuer": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns)),
+				Issuer:      gen.Issuer("test-issuer"),
+				IssuerKind:  "Issuer",
+				IssuerError: nil,
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				IssuerStatus: &IssuerStatus{Name: "test-issuer", Kind: "Issuer"},
+			},
+		},
+		"Issuer correctly with Kind ClusterIssuer": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns)),
+				Issuer:      gen.Issuer("test-clusterissuer"),
+				IssuerKind:  "ClusterIssuer",
+				IssuerError: nil,
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				IssuerStatus: &IssuerStatus{Name: "test-clusterissuer", Kind: "ClusterIssuer"},
+			},
+		},
+		"Correct information extracted from Secret resource": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns)),
+				Secret: gen.Secret("existing-tls-secret",
+					gen.SetSecretNamespace(ns),
+					gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
+				SecretError: nil,
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				SecretStatus: &SecretStatus{
+					Error:              nil,
+					Name:               "existing-tls-secret",
+					IssuerCountry:      nil,
+					IssuerOrganisation: nil,
+					IssuerCommonName:   "test",
+					KeyUsage:           x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+					ExtKeyUsage:        nil,
+					PublicKeyAlgorithm: x509.RSA,
+					SignatureAlgorithm: x509.SHA256WithRSA,
+					SubjectKeyId:       nil,
+					AuthorityKeyId:     nil,
+					SerialNumber:       serialNum,
+				},
+			},
+		},
+		"Correct information extracted from CR resource": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns)),
+				Req: gen.CertificateRequest("test-req",
+					gen.SetCertificateRequestNamespace(ns),
+					gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "Pending", Message: "Waiting on certificate issuance from order default/example-order: \"pending\""})),
+				ReqError: nil,
+				ReqEvent: nil,
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				CRStatus: &CRStatus{
+					Error:      nil,
+					Name:       "test-req",
+					Namespace:  ns,
+					Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "Pending", Message: "Waiting on certificate issuance from order default/example-order: \"pending\""}},
+					Events:     nil,
+				},
+			},
+		},
+		"Correct information extracted from Order resource": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns)),
+				Order: &cmacme.Order{
+					TypeMeta:   metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{Name: "example-order", Namespace: ns},
+					Spec:       cmacme.OrderSpec{Request: []byte("dummyCSR"), DNSNames: []string{"www.example.com"}},
+					Status:     cmacme.OrderStatus{},
+				},
+				OrderError: nil,
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				OrderStatus: &OrderStatus{
+					Error:          nil,
+					Name:           "example-order",
+					State:          "",
+					Reason:         "",
+					Authorizations: nil,
+					FailureTime:    nil,
+				},
+			},
+		},
+		"When error, ignore rest of the info about the resource": {
+			inputData: &Data{
+				Certificate: gen.Certificate("test-crt",
+					gen.SetCertificateNamespace(ns)),
+				CrtEvents:   nil,
+				Issuer:      gen.Issuer("test-issuer"),
+				IssuerKind:  "",
+				IssuerError: errors.New("dummy error"),
+				Secret:      gen.Secret("test-secret"),
+				SecretError: errors.New("dummy error"),
+				Req:         gen.CertificateRequest("test-req"),
+				ReqError:    errors.New("dummy error"),
+				ReqEvent:    nil,
+				Order: &cmacme.Order{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-order"},
+				},
+				OrderError: errors.New("dummy error"),
+			},
+			expOutput: &CertificateStatus{
+				Name:         "test-crt",
+				Namespace:    ns,
+				CreationTime: metav1.Time{},
+				IssuerStatus: &IssuerStatus{Error: errors.New("dummy error")},
+				SecretStatus: &SecretStatus{Error: errors.New("dummy error")},
+				CRStatus:     &CRStatus{Error: errors.New("dummy error")},
+				OrderStatus:  &OrderStatus{Error: errors.New("dummy error")},
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := StatusFromResources(test.inputData)
+			assert.Equal(t, test.expOutput, got)
 		})
 	}
 }

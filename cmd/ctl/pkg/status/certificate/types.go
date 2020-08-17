@@ -73,9 +73,6 @@ type IssuerStatus struct {
 	Kind string
 	// Conditions of Issuer/ClusterIssuer resource
 	Conditions []cmapiv1alpha2.IssuerCondition
-	// boolean indicating if Issuer/ClusterIssuer is a ACME Issuer/ClusterIssuer
-	// Defaults to false even when Error is not nil
-	IsACME bool
 }
 
 type SecretStatus struct {
@@ -151,29 +148,21 @@ func (status *CertificateStatus) withEvents(events *v1.EventList) *CertificateSt
 	return status
 }
 
-func (status *CertificateStatus) withIssuer(issuer *cmapiv1alpha2.Issuer, err error) *CertificateStatus {
+func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapiv1alpha2.GenericIssuer, issuerKind string, err error) *CertificateStatus {
 	if err != nil {
 		status.IssuerStatus = &IssuerStatus{Error: err}
 		return status
 	}
-	if issuer == nil {
+	if genericIssuer == nil {
 		return status
 	}
-	status.IssuerStatus = &IssuerStatus{Name: issuer.Name, Kind: "Issuer",
-		Conditions: issuer.Status.Conditions, IsACME: issuer.Spec.ACME != nil}
-	return status
-}
-
-func (status *CertificateStatus) withClusterIssuer(clusterIssuer *cmapiv1alpha2.ClusterIssuer, err error) *CertificateStatus {
-	if err != nil {
-		status.IssuerStatus = &IssuerStatus{Error: err}
+	if issuerKind == "ClusterIssuer" {
+		status.IssuerStatus = &IssuerStatus{Name: genericIssuer.GetName(), Kind: "ClusterIssuer",
+			Conditions: genericIssuer.GetStatus().Conditions}
 		return status
 	}
-	if clusterIssuer == nil {
-		return status
-	}
-	status.IssuerStatus = &IssuerStatus{Name: clusterIssuer.Name, Kind: "ClusterIssuer",
-		Conditions: clusterIssuer.Status.Conditions, IsACME: clusterIssuer.Spec.ACME != nil}
+	status.IssuerStatus = &IssuerStatus{Name: genericIssuer.GetName(), Kind: "Issuer",
+		Conditions: genericIssuer.GetStatus().Conditions}
 	return status
 }
 
@@ -271,8 +260,8 @@ func (status *CertificateStatus) String() string {
 
 	output += status.CRStatus.String()
 
-	// Do not print anything about Order if not ACME Issuer to avoid confusion
-	if status.OrderStatus != nil && status.IssuerStatus.IsACME {
+	// OrderStatus is nil is not found or Issuer/ClusterIssuer is not ACME Issuer
+	if status.OrderStatus != nil {
 		output += status.OrderStatus.String()
 	}
 
