@@ -332,7 +332,10 @@ func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
 	review, isV1 := obj.(*apiextensionsv1.ConversionReview)
 	if !isV1 {
 		outputVersion = apiextensionsv1beta1.SchemeGroupVersion
-		reviewv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
+		reviewv1beta1, isV1beta1 := obj.(*admissionv1beta1.AdmissionReview)
+		if !isV1beta1 {
+			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
+		}
 		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, admissionv1.SchemeGroupVersion)
 		if err != nil {
 			return nil, err
