@@ -216,6 +216,26 @@ webhook:
     #   cpu: 10m
     #   memory: 32Mi
 
+  ## Liveness and readiness probe values
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ##
+  livenessProbe:
+    path: /livez
+    port: 6080
+    failureThreshold: 3
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 3
+  readinessProbe:
+    path: /healthz
+    port: 6080
+    failureThreshold: 3
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
   nodeSelector: {}
 
   affinity: {}
