@@ -31,6 +31,7 @@ import (
 	"github.com/go-logr/logr"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -55,6 +56,7 @@ func init() {
 	admissionv1beta1.AddToScheme(defaultScheme)
 	admissionv1.AddToScheme(defaultScheme)
 	apiextensionsv1beta1.AddToScheme(defaultScheme)
+	apiextensionsv1.AddToScheme(defaultScheme)
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
@@ -326,10 +328,26 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 }
 
 func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
-	review := obj.(*apiextensionsv1beta1.ConversionReview)
+	outputVersion := apiextensionsv1.SchemeGroupVersion
+	review, isV1 := obj.(*apiextensionsv1.ConversionReview)
+	if !isV1 {
+		outputVersion = apiextensionsv1beta1.SchemeGroupVersion
+		reviewv1beta1, isV1beta1 := obj.(*admissionv1beta1.AdmissionReview)
+		if !isV1beta1 {
+			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
+		}
+		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, admissionv1.SchemeGroupVersion)
+		if err != nil {
+			return nil, err
+		}
+		review = convertedReview.(*apiextensionsv1.ConversionReview)
+	}
+
 	resp := s.ConversionWebhook.Convert(review.Request)
 	review.Response = resp
-	return review, nil
+
+	versionedOutput, err := defaultScheme.ConvertToVersion(review, outputVersion)
+	return versionedOutput, err
 }
 
 func (s *Server) handle(inner func(runtime.Object) (runtime.Object, error)) func(w http.ResponseWriter, req *http.Request) {

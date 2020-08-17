@@ -1,4 +1,4 @@
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: certificaterequests.cert-manager.io
@@ -11,6 +11,22 @@ metadata:
     app.kubernetes.io/managed-by: '{{ .Release.Service }}'
     helm.sh/chart: '{{ template "cert-manager.chart" . }}'
 spec:
+  additionalPrinterColumns:
+    - JSONPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - JSONPath: .spec.issuerRef.name
+      name: Issuer
+      priority: 1
+      type: string
+    - JSONPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      priority: 1
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+      name: Age
+      type: date
   group: cert-manager.io
   names:
     kind: CertificateRequest
@@ -20,38 +36,22 @@ spec:
       - cr
       - crs
     singular: certificaterequest
-  scope: Namespaced
+  preserveUnknownFields: false
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
     strategy: Webhook
     # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
-    webhook:
-      conversionReviewVersions: ["v1", "v1beta1"]
-      clientConfig:
-        service:
-          namespace: '{{ .Release.Namespace }}'
-          name: '{{ template "webhook.fullname" . }}'
-          path: /convert
+    webhookClientConfig:
+      service:
+        namespace: '{{ .Release.Namespace }}'
+        name: '{{ template "webhook.fullname" . }}'
+        path: /convert
+  scope: Namespaced
+  subresources:
+    status: {}
+  version: v1alpha2
   versions:
     - name: v1alpha2
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .spec.issuerRef.name
-          name: Issuer
-          priority: 1
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: "A CertificateRequest is used to request a signed certificate from one of the configured issuers. \n All fields within the CertificateRequest's `spec` are immutable after creation. A CertificateRequest will either succeed or fail, as denoted by its `status.state` field. \n A CertificateRequest is a 'one-shot' resource, meaning it represents a single point in time request for a certificate and cannot be re-used."
@@ -176,24 +176,6 @@ spec:
       served: true
       storage: true
     - name: v1alpha3
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .spec.issuerRef.name
-          name: Issuer
-          priority: 1
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: "A CertificateRequest is used to request a signed certificate from one of the configured issuers. \n All fields within the CertificateRequest's `spec` are immutable after creation. A CertificateRequest will either succeed or fail, as denoted by its `status.state` field. \n A CertificateRequest is a 'one-shot' resource, meaning it represents a single point in time request for a certificate and cannot be re-used."
@@ -318,24 +300,6 @@ spec:
       served: true
       storage: false
     - name: v1beta1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .spec.issuerRef.name
-          name: Issuer
-          priority: 1
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: "A CertificateRequest is used to request a signed certificate from one of the configured issuers. \n All fields within the CertificateRequest's `spec` are immutable after creation. A CertificateRequest will either succeed or fail, as denoted by its `status.state` field. \n A CertificateRequest is a 'one-shot' resource, meaning it represents a single point in time request for a certificate and cannot be re-used."
@@ -462,24 +426,6 @@ spec:
       served: true
       storage: false
     - name: v1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .spec.issuerRef.name
-          name: Issuer
-          priority: 1
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: "A CertificateRequest is used to request a signed certificate from one of the configured issuers. \n All fields within the CertificateRequest's `spec` are immutable after creation. A CertificateRequest will either succeed or fail, as denoted by its `status.state` field. \n A CertificateRequest is a 'one-shot' resource, meaning it represents a single point in time request for a certificate and cannot be re-used."

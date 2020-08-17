@@ -1,4 +1,4 @@
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: clusterissuers.cert-manager.io
@@ -11,40 +11,40 @@ metadata:
     app.kubernetes.io/managed-by: '{{ .Release.Service }}'
     helm.sh/chart: '{{ template "cert-manager.chart" . }}'
 spec:
+  additionalPrinterColumns:
+    - JSONPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - JSONPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      priority: 1
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+      name: Age
+      type: date
   group: cert-manager.io
   names:
     kind: ClusterIssuer
     listKind: ClusterIssuerList
     plural: clusterissuers
     singular: clusterissuer
-  scope: Cluster
+  preserveUnknownFields: false
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
     strategy: Webhook
     # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
-    webhook:
-      conversionReviewVersions: ["v1", "v1beta1"]
-      clientConfig:
-        service:
-          namespace: '{{ .Release.Namespace }}'
-          name: '{{ template "webhook.fullname" . }}'
-          path: /convert
+    webhookClientConfig:
+      service:
+        namespace: '{{ .Release.Namespace }}'
+        name: '{{ template "webhook.fullname" . }}'
+        path: /convert
+  scope: Cluster
+  subresources:
+    status: {}
+  version: v1alpha2
   versions:
     - name: v1alpha2
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.
@@ -1050,20 +1050,6 @@ spec:
       served: true
       storage: true
     - name: v1alpha3
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.
@@ -2069,20 +2055,6 @@ spec:
       served: true
       storage: false
     - name: v1beta1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.
@@ -3090,20 +3062,6 @@ spec:
       served: true
       storage: false
     - name: v1
-      subresources:
-        status: {}
-      additionalPrinterColumns:
-        - jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].message
-          name: Status
-          priority: 1
-          type: string
-        - jsonPath: .metadata.creationTimestamp
-          description: CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
-          name: Age
-          type: date
       schema:
         openAPIV3Schema:
           description: A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.

@@ -6,10 +6,27 @@ variants = {
     "legacy": {},
 }
 
+crds = [
+    "certificaterequests",
+    "certificates",
+    "challenges",
+    "clusterissuers",
+    "issuers",
+    "orders",
+]
+
 # A single file containing all the CRD templates concatenated together
 concat_files(
     name = "templates.regular",
-    srcs = glob(["*.yaml"]),
+    srcs = [":crd-%s.yaml" % crd for crd in crds],
+    seperator = "---",
+    visibility = ["//visibility:public"],
+)
+
+# A single file containing all the CRD templates concatenated together
+concat_files(
+    name = "templates.v1beta1",
+    srcs = [":crd-%s.v1beta1.yaml" % crd for crd in crds],
     seperator = "---",
     visibility = ["//visibility:public"],
 )
@@ -18,13 +35,13 @@ concat_files(
 genrule(
     name = "templates.legacy",
     srcs = [
-        ":templates.regular",
+        ":templates.v1beta1",
     ],
     outs = ["templates.legacy.out"],
     cmd = " ".join([
         "$(location //hack/filter-crd)",
         "-variant=cert-manager-legacy",
-        "$(location :templates.regular)",
+        "$(location :templates.v1beta1)",
         "> $@",
     ]),
     tools = [
@@ -63,15 +80,6 @@ genrule(
     release_namespace = "cert-manager",
     visibility = ["//visibility:public"],
 ) for (variant, meta) in variants.items()]
-
-crds = [
-    "certificaterequests",
-    "certificates",
-    "challenges",
-    "clusterissuers",
-    "issuers",
-    "orders",
-]
 
 [helm_pkg(
     name = "crd-%s.package" % crd,

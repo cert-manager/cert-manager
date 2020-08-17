@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,7 +39,7 @@ func TestConvertTestType(t *testing.T) {
 	c := NewSchemeBackedConverter(log, scheme)
 	tests := map[string]conversionTestT{
 		"correctly handles requests with multiple input items": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects: []runtime.RawExtension{
 					{
@@ -70,7 +70,7 @@ func TestConvertTestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -87,11 +87,11 @@ func TestConvertTestType(t *testing.T) {
 			},
 		},
 		"succeeds when handling requests with no input items": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects:           []runtime.RawExtension{},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -99,12 +99,12 @@ func TestConvertTestType(t *testing.T) {
 			},
 		},
 		"copies across request UID to the response field": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects:           []runtime.RawExtension{},
 				UID:               types.UID("abc"),
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -113,7 +113,7 @@ func TestConvertTestType(t *testing.T) {
 			},
 		},
 		"converts from v1 to v1 without applying defaults": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects: []runtime.RawExtension{
 					{
@@ -131,7 +131,7 @@ func TestConvertTestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -144,7 +144,7 @@ func TestConvertTestType(t *testing.T) {
 			},
 		},
 		"converts from v1 to v2 without applying defaults": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v2",
 				Objects: []runtime.RawExtension{
 					{
@@ -162,7 +162,7 @@ func TestConvertTestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -175,7 +175,7 @@ func TestConvertTestType(t *testing.T) {
 			},
 		},
 		"converts from v1 to v2": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v2",
 				Objects: []runtime.RawExtension{
 					{
@@ -195,7 +195,7 @@ func TestConvertTestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -217,11 +217,11 @@ func TestConvertTestType(t *testing.T) {
 }
 
 type conversionTestT struct {
-	inputRequest     apiextensionsv1beta1.ConversionRequest
-	expectedResponse apiextensionsv1beta1.ConversionResponse
+	inputRequest     apiextensionsv1.ConversionRequest
+	expectedResponse apiextensionsv1.ConversionResponse
 }
 
-type convertFn func(*apiextensionsv1beta1.ConversionRequest) *apiextensionsv1beta1.ConversionResponse
+type convertFn func(*apiextensionsv1.ConversionRequest) *apiextensionsv1.ConversionResponse
 
 func runConversionTest(t *testing.T, fn convertFn, test conversionTestT) {
 	resp := fn(&test.inputRequest)
