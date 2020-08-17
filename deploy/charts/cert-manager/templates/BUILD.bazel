@@ -6,7 +6,7 @@ modify_file(
     name = "crds",
     src = "//deploy/crds:templates.regular",
     out = "crds.yaml",
-    prefix = """{{- if (semverCompare ">=1.15-0" .Capabilities.KubeVersion.GitVersion) }}
+    prefix = """{{- if (semverCompare ">=1.16-0" .Capabilities.KubeVersion.GitVersion) }}
 {{- if .Values.installCRDs }}""",
     suffix = """{{- end }}
 {{- end }}""",
@@ -17,7 +17,7 @@ modify_file(
     name = "crds.legacy",
     src = "//deploy/crds:templates.legacy",
     out = "crds.legacy.yaml",
-    prefix = """{{- if (semverCompare "<1.15-0" .Capabilities.KubeVersion.GitVersion) }}
+    prefix = """{{- if (semverCompare "<1.16-0" .Capabilities.KubeVersion.GitVersion) }}
 {{- if .Values.installCRDs }}""",
     suffix = """{{- end }}
 {{- end }}""",
