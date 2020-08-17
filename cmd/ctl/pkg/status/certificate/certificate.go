@@ -63,18 +63,20 @@ type Options struct {
 
 // Data is a struct containing the information to build a CertificateStatus
 type Data struct {
-	Certificate *cmapi.Certificate
-	CrtEvents   *corev1.EventList
-	Issuer      cmapi.GenericIssuer
-	IssuerKind  string
-	IssuerError error
-	Secret      *corev1.Secret
-	SecretError error
-	Req         *cmapi.CertificateRequest
-	ReqError    error
-	ReqEvent    *corev1.EventList
-	Order       *cmacme.Order
-	OrderError  error
+	Certificate  *cmapi.Certificate
+	CrtEvents    *corev1.EventList
+	Issuer       cmapi.GenericIssuer
+	IssuerKind   string
+	IssuerError  error
+	Secret       *corev1.Secret
+	SecretError  error
+	Req          *cmapi.CertificateRequest
+	ReqError     error
+	ReqEvent     *corev1.EventList
+	Order        *cmacme.Order
+	OrderError   error
+	Challenges   []*cmacme.Challenge
+	ChallengeErr error
 }
 
 // NewOptions returns initialized Options
@@ -199,8 +201,13 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		reqEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
 	}
 
-	var order *cmacme.Order
-	var orderErr error
+	var (
+		order        *cmacme.Order
+		orderErr     error
+		challenges   []*cmacme.Challenge
+		challengeErr error
+	)
+
 	// Nothing to output about Order and Challenge if no CR or not ACME Issuer
 	if req != nil && issuer != nil && issuer.GetSpec().ACME != nil {
 		// Get Order
@@ -210,21 +217,32 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		} else if order == nil {
 			orderErr = errors.New("No Order found for this Certificate\n")
 		}
+
+		if order != nil {
+			challenges, challengeErr = findMatchingChallenges(o.CMClient, ctx, order)
+			if challengeErr != nil {
+				challengeErr = fmt.Errorf("error when finding Challenges: %w\n", challengeErr)
+			} else if len(challenges) == 0 {
+				challengeErr = errors.New("No Challenges found for this Certificate\n")
+			}
+		}
 	}
 
 	return &Data{
-		Certificate: crt,
-		CrtEvents:   crtEvents,
-		Issuer:      issuer,
-		IssuerKind:  issuerKind,
-		IssuerError: issuerError,
-		Secret:      secret,
-		SecretError: secretErr,
-		Req:         req,
-		ReqError:    reqErr,
-		ReqEvent:    reqEvents,
-		Order:       order,
-		OrderError:  orderErr,
+		Certificate:  crt,
+		CrtEvents:    crtEvents,
+		Issuer:       issuer,
+		IssuerKind:   issuerKind,
+		IssuerError:  issuerError,
+		Secret:       secret,
+		SecretError:  secretErr,
+		Req:          req,
+		ReqError:     reqErr,
+		ReqEvent:     reqEvents,
+		Order:        order,
+		OrderError:   orderErr,
+		Challenges:   challenges,
+		ChallengeErr: challengeErr,
 	}, nil
 }
 
@@ -236,7 +254,8 @@ func StatusFromResources(data *Data) *CertificateStatus {
 		withGenericIssuer(data.Issuer, data.IssuerKind, data.IssuerError).
 		withSecret(data.Secret, data.SecretError).
 		withCR(data.Req, data.ReqEvent, data.ReqError).
-		withOrder(data.Order, data.OrderError)
+		withOrder(data.Order, data.OrderError).
+		withChallenges(data.Challenges, data.ChallengeErr)
 }
 
 // formatStringSlice takes in a string slice and formats the contents of the slice
@@ -343,4 +362,22 @@ func getGenericIssuer(cmClient cmclient.Interface, ctx context.Context, crt *cma
 		}
 		return clusterIssuer, issuerKind, issuerErr
 	}
+}
+
+// findMatchingChallenges tries to find Challenges that are owned by order.
+// If none found returns empty slice.
+func findMatchingChallenges(cmClient cmclient.Interface, ctx context.Context, order *cmacme.Order) ([]*cmacme.Challenge, error) {
+	challenges, err := cmClient.AcmeV1beta1().Challenges(order.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	possibleMatches := []*cmacme.Challenge{}
+	for _, challenge := range challenges.Items {
+		if predicate.ResourceOwnedBy(order)(&challenge) {
+			possibleMatches = append(possibleMatches, challenge.DeepCopy())
+		}
+	}
+
+	return possibleMatches, nil
 }

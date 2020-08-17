@@ -41,9 +41,21 @@ func ChallengeFrom(ch *cmacme.Challenge, mods ...ChallengeModifier) *cmacme.Chal
 	return ch
 }
 
+func SetChallengeNamespace(ns string) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Namespace = ns
+	}
+}
+
 func SetChallengeType(t string) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
 		ch.Spec.Type = cmacme.ACMEChallengeType(t)
+	}
+}
+
+func SetChallengeToken(t string) ChallengeModifier {
+	return func(ch *cmacme.Challenge) {
+		ch.Spec.Token = t
 	}
 }
 

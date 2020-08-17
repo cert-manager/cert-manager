@@ -61,6 +61,8 @@ type CertificateStatus struct {
 	CRStatus *CRStatus
 
 	OrderStatus *OrderStatus
+
+	ChallengeStatusList *ChallengeStatusList
 }
 
 type IssuerStatus struct {
@@ -131,6 +133,24 @@ type OrderStatus struct {
 	Authorizations []cmacme.ACMEAuthorization
 	// Time the Order failed
 	FailureTime *metav1.Time
+}
+
+type ChallengeStatusList struct {
+	// If Error is not nil, there was a problem getting the status of the Order resource,
+	// so the rest of the fields is unusable
+	Error             error
+	ChallengeStatuses []*ChallengeStatus
+}
+
+type ChallengeStatus struct {
+	Name       string
+	Type       cmacme.ACMEChallengeType
+	Token      string
+	Key        string
+	State      cmacme.State
+	Reason     string
+	Processing bool
+	Presented  bool
 }
 
 func newCertificateStatusFromCert(crt *cmapiv1alpha2.Certificate) *CertificateStatus {
@@ -224,6 +244,32 @@ func (status *CertificateStatus) withOrder(order *cmacme.Order, err error) *Cert
 	return status
 }
 
+func (status *CertificateStatus) withChallenges(challenges []*cmacme.Challenge, err error) *CertificateStatus {
+	if err != nil {
+		status.ChallengeStatusList = &ChallengeStatusList{Error: err}
+		return status
+	}
+	if len(challenges) == 0 {
+		return status
+	}
+
+	var list []*ChallengeStatus
+	for _, challenge := range challenges {
+		list = append(list, &ChallengeStatus{
+			Name:       challenge.Name,
+			Type:       challenge.Spec.Type,
+			Token:      challenge.Spec.Token,
+			Key:        challenge.Spec.Key,
+			State:      challenge.Status.State,
+			Reason:     challenge.Status.Reason,
+			Processing: challenge.Status.Processing,
+			Presented:  challenge.Status.Presented,
+		})
+	}
+	status.ChallengeStatusList = &ChallengeStatusList{ChallengeStatuses: list}
+	return status
+}
+
 func (status *CertificateStatus) String() string {
 	output := ""
 	output += fmt.Sprintf("Name: %s\n", status.Name)
@@ -263,6 +309,10 @@ func (status *CertificateStatus) String() string {
 	// OrderStatus is nil is not found or Issuer/ClusterIssuer is not ACME Issuer
 	if status.OrderStatus != nil {
 		output += status.OrderStatus.String()
+	}
+
+	if status.ChallengeStatusList != nil {
+		output += status.ChallengeStatusList.String()
 	}
 
 	return output
@@ -430,4 +480,24 @@ func (orderStatus *OrderStatus) String() string {
 	}
 
 	return output
+}
+
+func (c *ChallengeStatusList) String() string {
+	if c.Error != nil {
+		return c.Error.Error()
+	}
+
+	challengeStrings := []string{}
+	for _, challengeStatus := range c.ChallengeStatuses {
+		challengeStrings = append(challengeStrings, challengeStatus.String())
+	}
+	output := "Challenges:\n"
+	output += formatStringSlice(challengeStrings)
+	return output
+}
+
+func (challengeStatus *ChallengeStatus) String() string {
+	return fmt.Sprintf("Name: %s, Type: %s, Token: %s, Key: %s, State: %s, Reason: %s, Processing: %t, Presented: %t",
+		challengeStatus.Name, challengeStatus.Type, challengeStatus.Token, challengeStatus.Key, challengeStatus.State,
+		challengeStatus.Reason, challengeStatus.Processing, challengeStatus.Presented)
 }
