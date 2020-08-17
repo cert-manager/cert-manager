@@ -52,7 +52,9 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.webhook.image.repository }}:{{ default .Chart.AppVersion .Values.webhook.image.tag }}"
+          {{- with .Values.webhook.image }}
+          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{.digest}}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
+          {{- end }}
           imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
           {{- if .Values.global.logLevel }}
@@ -105,4 +107,3 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
-
