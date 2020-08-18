@@ -72,8 +72,8 @@ spec:
             containerPort: {{ .Values.webhook.securePort }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.webhook.livenessProbe.path | quote }}
-              port: {{ .Values.webhook.livenessProbe.port }}
+              path: /livez
+              port: 6080
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.livenessProbe.periodSeconds }}
@@ -82,8 +82,8 @@ spec:
             failureThreshold: {{ .Values.webhook.livenessProbe.failureThreshold }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.webhook.readinessProbe.path | quote }}
-              port: {{ .Values.webhook.readinessProbe.port }}
+              path: /healthz
+              port: 6080
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.readinessProbe.periodSeconds }}

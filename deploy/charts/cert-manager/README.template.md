@@ -152,20 +152,16 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
 | `webhook.containerSecurityContext` | Security context to be set on the webhook component container | `{}` |
 | `webhook.hostNetwork` | If `true`, run the Webhook on the host network. | `false` |
-| `webhook.livenessProbe.path` | The liveness probe path | `/healthz` |
-| `webhook.livenessProbe.port` | The livneness probe port | `6080` |
 | `webhook.livenessProbe.failureThreshold` | The livneness probe failure threshold | `3` |
 | `webhook.livenessProbe.initialDelaySeconds` | The livneness probe initial delay (in seconds) | `60` |
 | `webhook.livenessProbe.periodSeconds` | The livneness probe period (in seconds) | `10` |
 | `webhook.livenessProbe.successThreshold` | The livneness probe success threshold | `1` |
-| `webhook.livenessProbe.timeoutSeconds` | The livneness probe timeout (in seconds) | `3` |
-| `webhook.readinessProbe.path` | The readiness probe path | `/healthz` |
-| `webhook.readinessProbe.port` | The readiness probe port | `6080` |
+| `webhook.livenessProbe.timeoutSeconds` | The livneness probe timeout (in seconds) | `1` |
 | `webhook.readinessProbe.failureThreshold` | The readiness probe failure threshold | `3` |
 | `webhook.readinessProbe.initialDelaySeconds` | The readiness probe initial delay (in seconds) | `5` |
 | `webhook.readinessProbe.periodSeconds` | The readiness probe period (in seconds) | `5` |
 | `webhook.readinessProbe.successThreshold` | The readiness probe success threshold | `1` |
-| `webhook.readinessProbe.timeoutSeconds` | The readiness probe timeout (in seconds) | `3` |
+| `webhook.readinessProbe.timeoutSeconds` | The readiness probe timeout (in seconds) | `1` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
