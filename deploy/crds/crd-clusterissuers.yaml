@@ -3172,6 +3172,9 @@ spec:
                             name:
                               description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
+                    onlyUseExistingAccountKey:
+                      description: Enables or disables generating a new ACME account key. If true, the Issuer resource will not request a new account but will expect the account key to be supplied via an existing secret. If false, the cert-manager system will generate a new ACME account key for the Issuer. Defaults to false.
+                      type: boolean
                     privateKeySecretRef:
                       description: PrivateKey is the name of a Kubernetes Secret resource that will be used to store the automatically generated ACME account private key. Optionally, a `key` may be specified to select a specific entry within the named Secret resource. If `key` is not specified, a default of `tls.key` will be used.
                       type: object

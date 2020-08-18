@@ -692,6 +692,7 @@ func autoConvert_v1_ACMEIssuer_To_acme_ACMEIssuer(in *v1.ACMEIssuer, out *acme.A
 		return err
 	}
 	out.Solvers = *(*[]acme.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
+	out.OnlyUseExistingAccountKey = in.OnlyUseExistingAccountKey
 	return nil
 }
 
@@ -710,6 +711,7 @@ func autoConvert_acme_ACMEIssuer_To_v1_ACMEIssuer(in *acme.ACMEIssuer, out *v1.A
 		return err
 	}
 	out.Solvers = *(*[]v1.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
+	out.OnlyUseExistingAccountKey = in.OnlyUseExistingAccountKey
 	return nil
 }
 
