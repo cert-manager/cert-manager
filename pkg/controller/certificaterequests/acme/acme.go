@@ -30,7 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmacmeclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -97,7 +97,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 	// If the CommonName is also not present in the DNS names of the Request then hard fail.
 	if len(csr.Subject.CommonName) > 0 && !util.Contains(csr.DNSNames, csr.Subject.CommonName) {
 		err = fmt.Errorf("%q does not exist in %s", csr.Subject.CommonName, csr.DNSNames)
-		message := "The Request PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames"
+		message := "The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames"
 
 		a.reporter.Failed(cr, err, "InvalidOrder", message)
 
