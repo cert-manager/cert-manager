@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
@@ -31,6 +31,9 @@ type CertificateModifier func(*v1.Certificate)
 func Certificate(name string, mods ...CertificateModifier) *v1.Certificate {
 	c := &v1.Certificate{
 		ObjectMeta: ObjectMeta(name),
+		Spec: v1.CertificateSpec{
+			PrivateKey: &v1.CertificatePrivateKey{},
+		},
 	}
 	for _, mod := range mods {
 		mod(c)

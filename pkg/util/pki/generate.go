@@ -25,7 +25,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 const (
@@ -50,6 +51,10 @@ const (
 // parameters on the provided resource.
 // The returned key will either be RSA or ECDSA.
 func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error) {
+	crt = crt.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &v1.CertificatePrivateKey{}
+	}
 	switch crt.Spec.PrivateKey.Algorithm {
 	case v1.PrivateKeyAlgorithm(""), v1.RSAKeyAlgorithm:
 		keySize := MinRSAKeySize

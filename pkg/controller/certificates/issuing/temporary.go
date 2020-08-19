@@ -42,6 +42,11 @@ var temporaryCertificatePolicyChain = policies.Chain{
 // - If the Certificate/Key pair does not match the 'NextPrivateKey'
 // Returns true is a temporary certificate was issued
 func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.Certificate, pk crypto.Signer) (bool, error) {
+	crt = crt.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
+	}
+
 	// If certificate does not have temporary certificate annotation, do nothing
 	if !certificateHasTemporaryCertificateAnnotation(crt) {
 		return false, nil

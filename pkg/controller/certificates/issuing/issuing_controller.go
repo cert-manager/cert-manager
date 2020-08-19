@@ -311,6 +311,11 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 // certificate, and then store the certificate, CA and private key into the
 // Secret in the appropriate format type.
 func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt *cmapi.Certificate, req *cmapi.CertificateRequest, pk crypto.Signer) error {
+	crt = crt.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
+	}
+
 	pkData, err := utilpki.EncodePrivateKey(pk, crt.Spec.PrivateKey.Encoding)
 	if err != nil {
 		return err
@@ -325,8 +330,6 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	if err != nil {
 		return err
 	}
-
-	crt = crt.DeepCopy()
 
 	//Set status.revision to revision of the CertificateRequest
 	crt.Status.Revision = &nextRevision

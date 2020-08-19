@@ -29,11 +29,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	spec = *spec.DeepCopy()
+	if spec.PrivateKey == nil {
+		spec.PrivateKey = &v1.CertificatePrivateKey{}
+	}
 	switch spec.PrivateKey.Algorithm {
 	case "", cmapi.RSAKeyAlgorithm:
 		return rsaPrivateKeyMatchesSpec(pk, spec)

@@ -32,7 +32,7 @@ import (
 	"time"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
@@ -127,6 +127,9 @@ const defaultOrganization = "cert-manager"
 // Certificate resource.
 // If an Organization is not specifically set, a default will be used.
 func OrganizationForCertificate(crt *v1.Certificate) []string {
+	if crt.Spec.Subject == nil {
+		return nil
+	}
 	return crt.Spec.Subject.Organizations
 }
 
@@ -445,7 +448,11 @@ func EncodeX509Chain(certs []*x509.Certificate) ([]byte, error) {
 func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.SignatureAlgorithm, error) {
 	var sigAlgo x509.SignatureAlgorithm
 	var pubKeyAlgo x509.PublicKeyAlgorithm
-	switch crt.Spec.PrivateKey.Algorithm {
+	var specAlgorithm v1.PrivateKeyAlgorithm
+	if crt.Spec.PrivateKey != nil {
+		specAlgorithm = crt.Spec.PrivateKey.Algorithm
+	}
+	switch specAlgorithm {
 	case v1.PrivateKeyAlgorithm(""):
 		// If keyAlgorithm is not specified, we default to rsa with keysize 2048
 		pubKeyAlgo = x509.RSA

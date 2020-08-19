@@ -68,7 +68,11 @@ func mustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate) cryptoBundle {
 	return *c
 }
 
-func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
+func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) {
+	crt := originalCert.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
+	}
 	reqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return nil, err
@@ -160,7 +164,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 	)
 
 	return &cryptoBundle{
-		certificate:                            crt,
+		certificate:                            originalCert,
 		expectedRequestName:                    reqName,
 		privateKey:                             privateKey,
 		privateKeyBytes:                        privateKeyBytes,
