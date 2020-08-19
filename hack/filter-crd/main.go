@@ -185,9 +185,9 @@ func loadVariant() {
 			"spec/versions/[]/schema/openAPIV3Schema/properties/spec/properties/solver/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields",
 		}
 
-		// only retain the `v1alpha2` version in the CRD
+		// only retain the `v1` version in the CRD
 		retainElementForValue = map[string]string{
-			"spec/versions/[]/name": "v1alpha2",
+			"spec/versions/[]/name": "v1",
 		}
 
 		singleCRDVersion = true
