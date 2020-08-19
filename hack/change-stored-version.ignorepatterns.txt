@@ -1,0 +1,7 @@
+pkg/api/scheme.go
+pkg/apis/acme/v1alpha2
+pkg/apis/certmanager/v1alpha2
+pkg/internal/apis/acme/v1alpha2
+pkg/internal/apis/certmanager/v1alpha2
+zz_generated
+pkg/client

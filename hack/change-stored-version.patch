@@ -1,0 +1,112 @@
+diff --git a/pkg/controller/certificates/util_test.go b/pkg/controller/certificates/util_test.go
+index 776ad7158..3e11755fd 100644
+--- a/pkg/controller/certificates/util_test.go
++++ b/pkg/controller/certificates/util_test.go
+@@ -82,7 +82,15 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
+ 	}
+ 	for name, test := range tests {
+ 		t.Run(name, func(t *testing.T) {
+-			violations, err := PrivateKeyMatchesSpec(test.key, cmapi.CertificateSpec{KeyAlgorithm: test.expectedAlgo, KeySize: test.expectedSize})
++			violations, err := PrivateKeyMatchesSpec(
++				test.key,
++				cmapi.CertificateSpec{
++					PrivateKey: &cmapi.CertificatePrivateKey{
++						Algorithm: test.expectedAlgo,
++						Size:      test.expectedSize,
++					},
++				},
++			)
+ 			switch {
+ 			case err != nil:
+ 				if test.err != err.Error() {
+diff --git a/pkg/util/pki/generate_test.go b/pkg/util/pki/generate_test.go
+index 67535955d..8522e2a7e 100644
+--- a/pkg/util/pki/generate_test.go
++++ b/pkg/util/pki/generate_test.go
+@@ -30,16 +30,18 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
++	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+ )
+ 
+ func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) *v1.Certificate {
+ 	return &v1.Certificate{
+ 		Spec: v1.CertificateSpec{
+-			CommonName:   "test",
+-			DNSNames:     []string{"test.test"},
+-			KeyAlgorithm: keyAlgo,
+-			KeySize:      keySize,
++			CommonName: "test",
++			DNSNames:   []string{"test.test"},
++			PrivateKey: &v1.CertificatePrivateKey{
++				Algorithm: keyAlgo,
++				Size:      keySize,
++			},
+ 		},
+ 	}
+ }
+diff --git a/test/e2e/util/util.go b/test/e2e/util/util.go
+index 2601b8178..590be161f 100644
+--- a/test/e2e/util/util.go
++++ b/test/e2e/util/util.go
+@@ -269,12 +269,14 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
+ 			Name: name,
+ 		},
+ 		Spec: v1.CertificateSpec{
+-			CommonName:   cn,
+-			DNSNames:     dnsNames,
+-			Organization: []string{"test-org"},
+-			SecretName:   secretName,
+-			Duration:     duration,
+-			RenewBefore:  renewBefore,
++			CommonName: cn,
++			DNSNames:   dnsNames,
++			Subject: &v1.X509Subject{
++				Organizations: []string{"test-org"},
++			},
++			SecretName:  secretName,
++			Duration:    duration,
++			RenewBefore: renewBefore,
+ 			IssuerRef: cmmeta.ObjectReference{
+ 				Name: issuerName,
+ 				Kind: issuerKind,
+diff --git a/test/e2e/suite/conformance/certificates/suite.go b/test/e2e/suite/conformance/certificates/suite.go
+index 173298bdf..71bb04cd6 100644
+--- a/test/e2e/suite/conformance/certificates/suite.go
++++ b/test/e2e/suite/conformance/certificates/suite.go
+@@ -154,10 +154,12 @@ func (s *Suite) Define() {
+ 					Namespace: f.Namespace.Name,
+ 				},
+ 				Spec: cmapi.CertificateSpec{
+-					SecretName:   "testcert-tls",
+-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
+-					DNSNames:     []string{s.newDomain()},
+-					IssuerRef:    issuerRef,
++					SecretName: "testcert-tls",
++					PrivateKey: &cmapi.CertificatePrivateKey{
++						Algorithm: cmapi.ECDSAKeyAlgorithm,
++					},
++					DNSNames:  []string{s.newDomain()},
++					IssuerRef: issuerRef,
+ 				},
+ 			}
+ 			By("Creating a Certificate")
+@@ -197,10 +199,12 @@ func (s *Suite) Define() {
+ 					Namespace: f.Namespace.Name,
+ 				},
+ 				Spec: cmapi.CertificateSpec{
+-					SecretName:   "testcert-tls",
+-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
+-					CommonName:   "test-common-name",
+-					IssuerRef:    issuerRef,
++					SecretName: "testcert-tls",
++					PrivateKey: &cmapi.CertificatePrivateKey{
++						Algorithm: cmapi.ECDSAKeyAlgorithm,
++					},
++					CommonName: "test-common-name",
++					IssuerRef:  issuerRef,
+ 				},
+ 			}
+ 			By("Creating a Certificate")
