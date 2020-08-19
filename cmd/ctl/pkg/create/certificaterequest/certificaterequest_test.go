@@ -160,7 +160,7 @@ spec:
 			inputNamespace: ns1,
 			keyFilename:    "",
 			expErr:         true,
-			expErrMsg:      "decoded object is not a v1alpha2 Certificate",
+			expErrMsg:      "decoded object is not a v1 Certificate",
 		},
 		"empty manifest file throws error": {
 			inputFileContent: ``,

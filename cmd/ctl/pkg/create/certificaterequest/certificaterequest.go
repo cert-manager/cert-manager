@@ -22,13 +22,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	restclient "k8s.io/client-go/rest"
@@ -223,6 +223,11 @@ func (o *Options) Run(args []string) error {
 	crt, ok := crtObj.(*cmapiv1.Certificate)
 	if !ok {
 		return errors.New("decoded object is not a v1 Certificate")
+	}
+
+	crt = crt.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &cmapiv1.CertificatePrivateKey{}
 	}
 
 	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
