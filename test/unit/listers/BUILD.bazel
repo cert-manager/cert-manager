@@ -9,8 +9,8 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/test/unit/listers",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/acme/v1alpha2:go_default_library",
-        "//pkg/client/listers/acme/v1alpha2:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/client/listers/acme/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/labels:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",

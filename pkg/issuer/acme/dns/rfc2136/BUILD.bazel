@@ -10,7 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
-        "//pkg/apis/acme/v1alpha2:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/internal/apis/certmanager/validation/util:go_default_library",
         "//pkg/logs:go_default_library",
@@ -32,7 +32,7 @@ go_test(
     data = glob(["testdata/**"]),
     embed = [":go_default_library"],
     deps = [
-        "//pkg/apis/acme/v1alpha2:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/logs:go_default_library",
         "//test/acme/dns:go_default_library",

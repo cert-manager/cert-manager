@@ -7,8 +7,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme:go_default_library",
-        "//pkg/apis/acme/v1alpha2:go_default_library",
-        "//pkg/client/listers/acme/v1alpha2:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/client/listers/acme/v1:go_default_library",
         "//pkg/logs:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_apimachinery//pkg/labels:go_default_library",
@@ -20,7 +20,7 @@ go_test(
     srcs = ["scheduler_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/apis/acme/v1alpha2:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
         "//pkg/client/clientset/versioned/fake:go_default_library",
         "//pkg/client/informers/externalversions:go_default_library",
         "//pkg/util:go_default_library",

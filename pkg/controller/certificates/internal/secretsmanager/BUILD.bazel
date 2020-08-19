@@ -10,7 +10,7 @@ go_library(
     visibility = ["//pkg/controller/certificates:__subpackages__"],
     deps = [
         "//pkg/api/util:go_default_library",
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util/pki:go_default_library",
         "@com_github_pavel_v_chernykh_keystore_go//:go_default_library",
@@ -31,7 +31,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/certificates/internal/test:go_default_library",
