@@ -174,7 +174,7 @@ spec:
                   type: string
                   format: date-time
       served: true
-      storage: true
+      storage: false
     - name: v1alpha3
       subresources:
         status: {}
@@ -604,7 +604,7 @@ spec:
                   type: string
                   format: date-time
       served: true
-      storage: false
+      storage: true
 status:
   acceptedNames:
     kind: ""

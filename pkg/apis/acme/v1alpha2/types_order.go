@@ -24,7 +24,6 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:storageversion
 
 // Order is a type to represent an Order with an ACME server
 // +k8s:openapi-gen=true

@@ -37,6 +37,7 @@ const (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:storageversion
 
 // A CertificateRequest is used to request a signed certificate from one of the
 // configured issuers.
