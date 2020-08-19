@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -79,7 +79,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		return nil, err
 	}
 
-	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.KeyEncoding)
+	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.PrivateKey.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 			Annotations:     annotations,
 		},
 		Spec: cmapi.CertificateRequestSpec{
-			CSRPEM:    csrPEM,
+			Request:   csrPEM,
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,

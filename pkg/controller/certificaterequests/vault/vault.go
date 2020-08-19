@@ -23,7 +23,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
@@ -62,7 +62,7 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 	}
 }
 
-func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuerObj v1alpha2.GenericIssuer) (*issuer.IssueResponse, error) {
+func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
@@ -86,7 +86,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issue
 	}
 
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	certPem, caPem, err := client.Sign(cr.Spec.CSRPEM, certDuration)
+	certPem, caPem, err := client.Sign(cr.Spec.Request, certDuration)
 	if err != nil {
 		message := "Vault failed to sign certificate"
 

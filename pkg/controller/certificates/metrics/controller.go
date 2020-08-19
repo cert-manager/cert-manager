@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 )
@@ -58,7 +58,7 @@ func NewController(
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := cmFactory.Certmanager().V1alpha2().Certificates()
+	certificateInformer := cmFactory.Certmanager().V1().Certificates()
 
 	// Reconcile over all Certificate events. We do _not_ reconcile on Secret
 	// events that are related to Certificates. It is the responsibility of the

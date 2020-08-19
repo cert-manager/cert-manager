@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -84,7 +84,7 @@ func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.Obje
 	Expect(err).NotTo(HaveOccurred())
 
 	if ref.Kind == "ClusterIssuer" {
-		err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
@@ -100,7 +100,7 @@ func (v *vaultAppRoleProvisioner) createIssuer(f *framework.Framework) cmmeta.Ob
 	v.secretName = sec.Name
 	v.secretNamespace = sec.Namespace
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "vault-issuer-",
 		},
@@ -126,7 +126,7 @@ func (v *vaultAppRoleProvisioner) createClusterIssuer(f *framework.Framework) cm
 	v.secretName = sec.Name
 	v.secretNamespace = sec.Namespace
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "vault-cluster-issuer-",
 		},

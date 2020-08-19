@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/webhook/authority"
 )

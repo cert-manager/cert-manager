@@ -26,7 +26,7 @@ import (
 	acmeapi "golang.org/x/crypto/acme"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
 )

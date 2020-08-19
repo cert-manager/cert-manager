@@ -17,14 +17,14 @@ limitations under the License.
 package gen
 
 import (
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
-type IssuerModifier func(v1alpha2.GenericIssuer)
+type IssuerModifier func(v1.GenericIssuer)
 
-func ClusterIssuer(name string, mods ...IssuerModifier) *v1alpha2.ClusterIssuer {
-	c := &v1alpha2.ClusterIssuer{
+func ClusterIssuer(name string, mods ...IssuerModifier) *v1.ClusterIssuer {
+	c := &v1.ClusterIssuer{
 		ObjectMeta: ObjectMeta(name),
 	}
 	c.ObjectMeta.Namespace = ""
@@ -34,15 +34,15 @@ func ClusterIssuer(name string, mods ...IssuerModifier) *v1alpha2.ClusterIssuer 
 	return c
 }
 
-func ClusterIssuerFrom(iss *v1alpha2.ClusterIssuer, mods ...IssuerModifier) *v1alpha2.ClusterIssuer {
+func ClusterIssuerFrom(iss *v1.ClusterIssuer, mods ...IssuerModifier) *v1.ClusterIssuer {
 	for _, mod := range mods {
 		mod(iss)
 	}
 	return iss
 }
 
-func Issuer(name string, mods ...IssuerModifier) *v1alpha2.Issuer {
-	c := &v1alpha2.Issuer{
+func Issuer(name string, mods ...IssuerModifier) *v1.Issuer {
+	c := &v1.Issuer{
 		ObjectMeta: ObjectMeta(name),
 	}
 	for _, mod := range mods {
@@ -51,7 +51,7 @@ func Issuer(name string, mods ...IssuerModifier) *v1alpha2.Issuer {
 	return c
 }
 
-func IssuerFrom(iss *v1alpha2.Issuer, mods ...IssuerModifier) *v1alpha2.Issuer {
+func IssuerFrom(iss *v1.Issuer, mods ...IssuerModifier) *v1.Issuer {
 	iss = iss.DeepCopy()
 	for _, mod := range mods {
 		mod(iss)
@@ -60,43 +60,43 @@ func IssuerFrom(iss *v1alpha2.Issuer, mods ...IssuerModifier) *v1alpha2.Issuer {
 }
 
 func SetIssuerACME(a cmacme.ACMEIssuer) IssuerModifier {
-	return func(iss v1alpha2.GenericIssuer) {
+	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().ACME = &a
 	}
 }
 
-func SetIssuerCA(a v1alpha2.CAIssuer) IssuerModifier {
-	return func(iss v1alpha2.GenericIssuer) {
+func SetIssuerCA(a v1.CAIssuer) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().CA = &a
 	}
 }
 
-func SetIssuerVault(v v1alpha2.VaultIssuer) IssuerModifier {
-	return func(iss v1alpha2.GenericIssuer) {
+func SetIssuerVault(v v1.VaultIssuer) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().Vault = &v
 	}
 }
 
-func SetIssuerSelfSigned(a v1alpha2.SelfSignedIssuer) IssuerModifier {
-	return func(iss v1alpha2.GenericIssuer) {
+func SetIssuerSelfSigned(a v1.SelfSignedIssuer) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().SelfSigned = &a
 	}
 }
 
-func SetIssuerVenafi(a v1alpha2.VenafiIssuer) IssuerModifier {
-	return func(iss v1alpha2.GenericIssuer) {
+func SetIssuerVenafi(a v1.VenafiIssuer) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().Venafi = &a
 	}
 }
 
-func AddIssuerCondition(c v1alpha2.IssuerCondition) IssuerModifier {
-	return func(iss v1alpha2.GenericIssuer) {
+func AddIssuerCondition(c v1.IssuerCondition) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
 		iss.GetStatus().Conditions = append(iss.GetStatus().Conditions, c)
 	}
 }
 
 func SetIssuerNamespace(namespace string) IssuerModifier {
-	return func(iss v1alpha2.GenericIssuer) {
+	return func(iss v1.GenericIssuer) {
 		iss.GetObjectMeta().Namespace = namespace
 	}
 }

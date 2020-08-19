@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
@@ -568,7 +568,7 @@ func TestValidateDuration(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["ten years"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", cmapiv1alpha2.DefaultCertificateDuration, usefulDurations["ten years"].Duration))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["ten years"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", cmapiv1.DefaultCertificateDuration, usefulDurations["ten years"].Duration))},
 		},
 		"default renewBefore is bigger than the set duration": {
 			cfg: &cmapi.Certificate{
@@ -579,7 +579,7 @@ func TestValidateDuration(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), cmapiv1alpha2.DefaultRenewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one hour"].Duration, cmapiv1alpha2.DefaultRenewBefore))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), cmapiv1.DefaultRenewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one hour"].Duration, cmapiv1.DefaultRenewBefore))},
 		},
 		"renewBefore is bigger than the duration": {
 			cfg: &cmapi.Certificate{
@@ -602,7 +602,7 @@ func TestValidateDuration(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one second"].Duration, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapiv1alpha2.MinimumRenewBefore))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one second"].Duration, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapiv1.MinimumRenewBefore))},
 		},
 		"duration is less than the minimum permitted value": {
 			cfg: &cmapi.Certificate{
@@ -614,7 +614,7 @@ func TestValidateDuration(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", cmapiv1alpha2.MinimumCertificateDuration))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", cmapiv1.MinimumCertificateDuration))},
 		},
 	}
 	for n, s := range scenarios {

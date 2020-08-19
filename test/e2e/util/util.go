@@ -29,7 +29,7 @@ import (
 	"net/url"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -39,11 +39,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -56,7 +56,7 @@ func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, d
 	return true
 }
 
-func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn func(*v1alpha2.Issuer) (bool, error)) error {
+func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn func(*v1.Issuer) (bool, error)) error {
 	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			issuer, err := client.Get(context.TODO(), name, metav1.GetOptions{})
@@ -69,7 +69,7 @@ func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn f
 
 // WaitForIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
-func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1alpha2.IssuerCondition) error {
+func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1.IssuerCondition) error {
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			log.Logf("Waiting for issuer %v condition %#v", name, condition)
@@ -85,7 +85,7 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 }
 
 // try to retrieve last condition to help diagnose tests.
-func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollErr error, name string, conditionType v1alpha2.IssuerConditionType) error {
+func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollErr error, name string, conditionType v1.IssuerConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
@@ -107,7 +107,7 @@ func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollEr
 
 // WaitForClusterIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
-func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1alpha2.IssuerCondition) error {
+func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1.IssuerCondition) error {
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			log.Logf("Waiting for clusterissuer %v condition %#v", name, condition)
@@ -123,7 +123,7 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 }
 
 // try to retrieve last condition to help diagnose tests.
-func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInterface, pollErr error, name string, conditionType v1alpha2.IssuerConditionType) error {
+func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInterface, pollErr error, name string, conditionType v1.IssuerConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
@@ -145,7 +145,7 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 
 // WaitForCertificateCondition waits for the status of the named Certificate to contain
 // a condition whose type and status matches the supplied one.
-func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1alpha2.CertificateCondition, timeout time.Duration) error {
+func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) error {
 	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			log.Logf("Waiting for Certificate %v condition %#v", name, condition)
@@ -162,7 +162,7 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 
 // WaitForCertificateEvent waits for an event on the named Certificate to contain
 // an event reason matches the supplied one.
-func WaitForCertificateEvent(client kubernetes.Interface, cert *v1alpha2.Certificate, reason string, timeout time.Duration) error {
+func WaitForCertificateEvent(client kubernetes.Interface, cert *v1.Certificate, reason string, timeout time.Duration) error {
 	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			log.Logf("Waiting for Certificate event %v reason %#v", cert.Name, reason)
@@ -176,7 +176,7 @@ func WaitForCertificateEvent(client kubernetes.Interface, cert *v1alpha2.Certifi
 	)
 }
 
-func hasEvent(events *v1.EventList, reason string) bool {
+func hasEvent(events *corev1.EventList, reason string) bool {
 	for _, evt := range events.Items {
 		if evt.Reason == reason {
 			return true
@@ -186,7 +186,7 @@ func hasEvent(events *v1.EventList, reason string) bool {
 }
 
 // try to retrieve last condition to help diagnose tests.
-func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterface, pollErr error, name string, conditionType v1alpha2.CertificateConditionType) error {
+func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterface, pollErr error, name string, conditionType v1.CertificateConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
@@ -243,14 +243,14 @@ func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, nam
 	)
 }
 
-func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha2.ClusterIssuer {
-	return &v1alpha2.ClusterIssuer{
+func NewCertManagerCAClusterIssuer(name, secretName string) *v1.ClusterIssuer {
+	return &v1.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
-				CA: &v1alpha2.CAIssuer{
+		Spec: v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
+				CA: &v1.CAIssuer{
 					SecretName: secretName,
 				},
 			},
@@ -259,22 +259,24 @@ func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha2.ClusterIss
 }
 
 // Deprecated: use test/unit/gen/Certificate in future
-func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, dnsNames ...string) *v1alpha2.Certificate {
+func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, dnsNames ...string) *v1.Certificate {
 	cn := "test.domain.com"
 	if len(dnsNames) > 0 {
 		cn = dnsNames[0]
 	}
-	return &v1alpha2.Certificate{
+	return &v1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.CertificateSpec{
-			CommonName:   cn,
-			DNSNames:     dnsNames,
-			Organization: []string{"test-org"},
-			SecretName:   secretName,
-			Duration:     duration,
-			RenewBefore:  renewBefore,
+		Spec: v1.CertificateSpec{
+			CommonName: cn,
+			DNSNames:   dnsNames,
+			Subject: &v1.X509Subject{
+				Organizations: []string{"test-org"},
+			},
+			SecretName:  secretName,
+			Duration:    duration,
+			RenewBefore: renewBefore,
 			IssuerRef: cmmeta.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -285,7 +287,7 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 
 // Deprecated: use test/unit/gen/CertificateRequest in future
 func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind string, duration *metav1.Duration,
-	dnsNames []string, ips []net.IP, uris []string, keyAlgorithm x509.PublicKeyAlgorithm) (*v1alpha2.CertificateRequest, crypto.Signer, error) {
+	dnsNames []string, ips []net.IP, uris []string, keyAlgorithm x509.PublicKeyAlgorithm) (*v1.CertificateRequest, crypto.Signer, error) {
 	cn := "test.domain.com"
 	if len(dnsNames) > 0 {
 		cn = dnsNames[0]
@@ -343,13 +345,13 @@ func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind s
 		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
 	})
 
-	return &v1alpha2.CertificateRequest{
+	return &v1.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.CertificateRequestSpec{
+		Spec: v1.CertificateRequestSpec{
 			Duration: duration,
-			CSRPEM:   csrPEM,
+			Request:  csrPEM,
 			IssuerRef: cmmeta.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -358,12 +360,12 @@ func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind s
 	}, sk, nil
 }
 
-func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1alpha2.Certificate {
-	return &v1alpha2.Certificate{
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1.Certificate {
+	return &v1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.CertificateSpec{
+		Spec: v1.CertificateSpec{
 			CommonName:  "test.domain.com",
 			SecretName:  secretName,
 			Duration:    duration,
@@ -411,13 +413,13 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 	}
 }
 
-func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
+		Spec: v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
 				ACME: &cmacme.ACMEIssuer{
 					Email:         acmeEmail,
 					Server:        acmeURL,
@@ -433,14 +435,14 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 	}
 }
 
-func NewCertManagerCAIssuer(name, secretName string) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func NewCertManagerCAIssuer(name, secretName string) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
-				CA: &v1alpha2.CAIssuer{
+		Spec: v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
+				CA: &v1.CAIssuer{
 					SecretName: secretName,
 				},
 			},
@@ -448,31 +450,31 @@ func NewCertManagerCAIssuer(name, secretName string) *v1alpha2.Issuer {
 	}
 }
 
-func NewCertManagerSelfSignedIssuer(name string) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func NewCertManagerSelfSignedIssuer(name string) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
-				SelfSigned: &v1alpha2.SelfSignedIssuer{},
+		Spec: v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
+				SelfSigned: &v1.SelfSignedIssuer{},
 			},
 		},
 	}
 }
 
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
-				Vault: &v1alpha2.VaultIssuer{
+		Spec: v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,
 					CABundle: caBundle,
-					Auth: v1alpha2.VaultAuth{
+					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
 							Key: "secretkey",
 							LocalObjectReference: cmmeta.LocalObjectReference{
@@ -486,8 +488,8 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken,
 	}
 }
 
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: name,
 		},
@@ -495,8 +497,8 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 	}
 }
 
-func NewCertManagerVaultClusterIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha2.ClusterIssuer {
-	return &v1alpha2.ClusterIssuer{
+func NewCertManagerVaultClusterIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1.ClusterIssuer {
+	return &v1.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: name,
 		},
@@ -504,15 +506,15 @@ func NewCertManagerVaultClusterIssuerAppRole(name, vaultURL, vaultPath, roleId, 
 	}
 }
 
-func newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) v1alpha2.IssuerSpec {
-	return v1alpha2.IssuerSpec{
-		IssuerConfig: v1alpha2.IssuerConfig{
-			Vault: &v1alpha2.VaultIssuer{
+func newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) v1.IssuerSpec {
+	return v1.IssuerSpec{
+		IssuerConfig: v1.IssuerConfig{
+			Vault: &v1.VaultIssuer{
 				Server:   vaultURL,
 				Path:     vaultPath,
 				CABundle: caBundle,
-				Auth: v1alpha2.VaultAuth{
-					AppRole: &v1alpha2.VaultAppRole{
+				Auth: v1.VaultAuth{
+					AppRole: &v1.VaultAppRole{
 						Path:   authPath,
 						RoleId: roleId,
 						SecretRef: cmmeta.SecretKeySelector{
@@ -528,19 +530,19 @@ func newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecr
 	}
 }
 
-func NewCertManagerVaultIssuerKubernetes(name, vaultURL, vaultPath, vaultSecretServiceAccount string, role string, authPath string, caBundle []byte) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func NewCertManagerVaultIssuerKubernetes(name, vaultURL, vaultPath, vaultSecretServiceAccount string, role string, authPath string, caBundle []byte) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
-				Vault: &v1alpha2.VaultIssuer{
+		Spec: v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
+				Vault: &v1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,
 					CABundle: caBundle,
-					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.VaultKubernetesAuth{
+					Auth: v1.VaultAuth{
+						Kubernetes: &v1.VaultKubernetesAuth{
 							Path: authPath,
 							SecretRef: cmmeta.SecretKeySelector{
 								Key: "token",

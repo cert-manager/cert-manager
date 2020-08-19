@@ -30,8 +30,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -74,7 +74,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range newCrts {
-		_, err := c.cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Create(context.TODO(), crt, metav1.CreateOptions{})
+		_, err := c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(context.TODO(), crt, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range updateCrts {
-		_, err := c.cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Update(context.TODO(), crt, metav1.UpdateOptions{})
+		_, err := c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(context.TODO(), crt, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range unrequiredCrts {
-		err = c.cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Delete(context.TODO(), crt.Name, metav1.DeleteOptions{})
+		err = c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Delete(context.TODO(), crt.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}

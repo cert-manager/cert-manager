@@ -22,7 +22,7 @@ import (
 	"path"
 
 	vault "github.com/hashicorp/vault/api"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -45,8 +45,8 @@ type VaultInitializer struct {
 	APIServerCA        string // Kubernetes API Server CA certificate
 }
 
-func NewVaultTokenSecret(name string) *v1.Secret {
-	return &v1.Secret{
+func NewVaultTokenSecret(name string) *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -56,8 +56,8 @@ func NewVaultTokenSecret(name string) *v1.Secret {
 	}
 }
 
-func NewVaultAppRoleSecret(name, secretId string) *v1.Secret {
-	return &v1.Secret{
+func NewVaultAppRoleSecret(name, secretId string) *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: name,
 		},
@@ -67,8 +67,8 @@ func NewVaultAppRoleSecret(name, secretId string) *v1.Secret {
 	}
 }
 
-func NewVaultServiceAccount(name string) *v1.ServiceAccount {
-	return &v1.ServiceAccount{
+func NewVaultServiceAccount(name string) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -115,8 +115,8 @@ func NewVaultServiceAccountClusterRoleBinding(roleName, namespace, subject strin
 	}
 }
 
-func NewVaultKubernetesSecret(name string, serviceAccountName string) *v1.Secret {
-	return &v1.Secret{
+func NewVaultKubernetesSecret(name string, serviceAccountName string) *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Annotations: map[string]string{

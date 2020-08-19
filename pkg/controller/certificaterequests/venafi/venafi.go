@@ -28,7 +28,7 @@ import (
 	"github.com/Venafi/vcert/pkg/endpoint"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
@@ -113,7 +113,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	// check if the pickup ID annotation is there, if not set it up.
 	if pickupID == "" {
-		pickupID, err = client.RequestCertificate(cr.Spec.CSRPEM, duration, customFields)
+		pickupID, err = client.RequestCertificate(cr.Spec.Request, duration, customFields)
 		// Check some known error types
 		if err != nil {
 			switch err.(type) {
@@ -141,7 +141,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		return nil, nil
 	}
 
-	certPem, err := client.RetrieveCertificate(pickupID, cr.Spec.CSRPEM, duration, customFields)
+	certPem, err := client.RetrieveCertificate(pickupID, cr.Spec.Request, duration, customFields)
 	if err != nil {
 		switch err.(type) {
 		case endpoint.ErrCertificatePending, endpoint.ErrRetrieveCertificateTimeout:

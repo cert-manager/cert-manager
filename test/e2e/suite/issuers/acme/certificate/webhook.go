@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -75,20 +75,20 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+			issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 				issuerName,
-				v1alpha2.IssuerCondition{
-					Type:   v1alpha2.IssuerConditionReady,
+				v1.IssuerCondition{
+					Type:   v1.IssuerConditionReady,
 					Status: cmmeta.ConditionTrue,
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the ACME account URI is set")
-			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 				issuerName,
-				func(i *v1alpha2.Issuer) (bool, error) {
+				func(i *v1.Issuer) (bool, error) {
 					if i.GetStatus().ACMEStatus().URI == "" {
 						return false, nil
 					}
@@ -105,7 +105,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 		AfterEach(func() {
 			By("Cleaning up")
-			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
+			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), testingACMEPrivateKey, metav1.DeleteOptions{})
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), certificateSecretName, metav1.DeleteOptions{})
 		})
@@ -113,7 +113,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 		It("should call the dummy webhook provider and mark the challenges as presented=true", func() {
 			By("Creating a Certificate")
 
-			certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
+			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateSecretName(certificateSecretName),
@@ -174,7 +174,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 })
 
 func listOwnedChallenges(cl versioned.Interface, owner *cmacme.Order) ([]*cmacme.Challenge, error) {
-	l, err := cl.AcmeV1alpha2().Challenges(owner.Namespace).List(context.TODO(), metav1.ListOptions{})
+	l, err := cl.AcmeV1().Challenges(owner.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -190,15 +190,15 @@ func listOwnedChallenges(cl versioned.Interface, owner *cmacme.Order) ([]*cmacme
 	return owned, nil
 }
 
-func listOwnedOrders(cl versioned.Interface, owner *v1alpha2.Certificate) ([]*cmacme.Order, error) {
-	l, err := cl.AcmeV1alpha2().Orders(owner.Namespace).List(context.TODO(), metav1.ListOptions{})
+func listOwnedOrders(cl versioned.Interface, owner *v1.Certificate) ([]*cmacme.Order, error) {
+	l, err := cl.AcmeV1().Orders(owner.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	var owned []*cmacme.Order
 	for _, o := range l.Items {
-		v, ok := o.Annotations[v1alpha2.CertificateNameKey]
+		v, ok := o.Annotations[v1.CertificateNameKey]
 		if !ok || v != owner.Name {
 			continue
 		}

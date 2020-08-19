@@ -27,7 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -154,10 +154,12 @@ func (s *Suite) Define() {
 					Namespace: f.Namespace.Name,
 				},
 				Spec: cmapi.CertificateSpec{
-					SecretName:   "testcert-tls",
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					DNSNames:     []string{s.newDomain()},
-					IssuerRef:    issuerRef,
+					SecretName: "testcert-tls",
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
+					DNSNames:  []string{s.newDomain()},
+					IssuerRef: issuerRef,
 				},
 			}
 			By("Creating a Certificate")
@@ -197,10 +199,12 @@ func (s *Suite) Define() {
 					Namespace: f.Namespace.Name,
 				},
 				Spec: cmapi.CertificateSpec{
-					SecretName:   "testcert-tls",
-					KeyAlgorithm: cmapi.ECDSAKeyAlgorithm,
-					CommonName:   "test-common-name",
-					IssuerRef:    issuerRef,
+					SecretName: "testcert-tls",
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.ECDSAKeyAlgorithm,
+					},
+					CommonName: "test-common-name",
+					IssuerRef:  issuerRef,
 				},
 			}
 			By("Creating a Certificate")
@@ -241,9 +245,9 @@ func (s *Suite) Define() {
 					Namespace: f.Namespace.Name,
 				},
 				Spec: cmapi.CertificateSpec{
-					SecretName: "testcert-tls",
-					EmailSANs:  []string{"alice@example.com"},
-					IssuerRef:  issuerRef,
+					SecretName:     "testcert-tls",
+					EmailAddresses: []string{"alice@example.com"},
+					IssuerRef:      issuerRef,
 				},
 			}
 			By("Creating a Certificate")
@@ -264,7 +268,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					CommonName: "test-common-name",
-					URISANs:    []string{"spiffe://cluster.local/ns/sandbox/sa/foo"},
+					URIs:       []string{"spiffe://cluster.local/ns/sandbox/sa/foo"},
 					IssuerRef:  issuerRef,
 				},
 			}
@@ -377,7 +381,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, WildcardsFeature)
 
-		it("should issue a certificate that includes only a URISANs name", func(issuerRef cmmeta.ObjectReference) {
+		it("should issue a certificate that includes only a URIs name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -385,7 +389,7 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					URISANs: []string{
+					URIs: []string{
 						"spiffe://cluster.local/ns/sandbox/sa/foo",
 					},
 					IssuerRef: issuerRef,
@@ -495,7 +499,7 @@ func (s *Suite) Define() {
 
 			By("Waiting for the Certificate to exist...")
 			Expect(e2eutil.WaitForCertificateToExist(
-				f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name), certName, time.Minute,
+				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
 			)).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")

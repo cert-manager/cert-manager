@@ -28,8 +28,8 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )

@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	controllermetrics "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
@@ -124,7 +124,7 @@ func TestMetricsController(t *testing.T) {
 		gen.SetCertificateUID("uid-1"),
 	)
 
-	crt, err = cmClient.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 			Status: cmmeta.ConditionTrue,
 		},
 	}
-	_, err = cmClient.CertmanagerV1alpha2().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	_, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +172,7 @@ certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespac
 certmanager_controller_sync_call_count{controller="metrics_test"} 2
 `)
 
-	err = cmClient.CertmanagerV1alpha2().Certificates(namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
+	err = cmClient.CertmanagerV1().Certificates(namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

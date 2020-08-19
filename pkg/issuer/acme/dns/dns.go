@@ -29,8 +29,8 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
@@ -76,7 +76,7 @@ type Solver struct {
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
-func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	log := logf.WithResource(logf.FromContext(ctx, "Present"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logf.NewContext(ctx, log)
 
@@ -105,7 +105,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 }
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
-func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	log := logf.WithResource(logf.FromContext(ctx, "Check"), ch).WithValues("domain", ch.Spec.DNSName)
 
 	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, false, s.DNS01Nameservers...)
@@ -134,7 +134,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *c
 
 // CleanUp removes DNS records which are no longer needed after
 // certificate issuance.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	log := logf.WithResource(logf.FromContext(ctx, "CleanUp"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logf.NewContext(ctx, log)
 
@@ -178,7 +178,7 @@ func extractChallengeSolverConfig(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSo
 // solverForChallenge returns a Solver for the given providerName.
 // The providerName is the name of an ACME DNS-01 challenge provider as
 // specified on the Issuer resource for the Solver.
-func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) (solver, *cmacme.ACMEChallengeSolverDNS01, error) {
+func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) (solver, *cmacme.ACMEChallengeSolverDNS01, error) {
 	log := logf.FromContext(ctx, "solverForChallenge")
 	dbg := log.V(logf.DebugLevel)
 
@@ -379,7 +379,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 	return impl, providerConfig, nil
 }
 
-func (s *Solver) prepareChallengeRequest(issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
+func (s *Solver) prepareChallengeRequest(issuer v1.GenericIssuer, ch *cmacme.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
 	dns01Config, err := extractChallengeSolverConfig(ch)
 	if err != nil {
 		return nil, nil, err

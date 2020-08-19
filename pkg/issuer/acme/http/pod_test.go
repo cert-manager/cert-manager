@@ -21,12 +21,12 @@ import (
 	"reflect"
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 )
 
 func TestEnsurePod(t *testing.T) {
@@ -63,8 +63,8 @@ func TestEnsurePod(t *testing.T) {
 				s.Builder.Sync()
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				createdPod := s.testResources[createdPodKey].(*v1.Pod)
-				resp := args[0].(*v1.Pod)
+				createdPod := s.testResources[createdPodKey].(*corev1.Pod)
+				resp := args[0].(*corev1.Pod)
 				if resp == nil {
 					t.Errorf("unexpected pod = nil")
 					t.Fail()
@@ -92,7 +92,7 @@ func TestEnsurePod(t *testing.T) {
 				expectedPod := s.Solver.buildPod(s.Challenge)
 				// create a reactor that fails the test if a pod is created
 				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-					pod := action.(coretesting.CreateAction).GetObject().(*v1.Pod)
+					pod := action.(coretesting.CreateAction).GetObject().(*corev1.Pod)
 					// clear pod name as we don't know it yet in the expectedPod
 					pod.Name = ""
 					if !reflect.DeepEqual(pod, expectedPod) {
@@ -104,7 +104,7 @@ func TestEnsurePod(t *testing.T) {
 				s.Builder.Sync()
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resp := args[0].(*v1.Pod)
+				resp := args[0].(*corev1.Pod)
 				err := args[1]
 				if resp == nil && err == nil {
 					t.Errorf("unexpected pod = nil")
@@ -205,8 +205,8 @@ func TestGetPodsForCertificate(t *testing.T) {
 				s.Builder.Sync()
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				createdPod := s.testResources[createdPodKey].(*v1.Pod)
-				resp := args[0].([]*v1.Pod)
+				createdPod := s.testResources[createdPodKey].(*corev1.Pod)
+				resp := args[0].([]*corev1.Pod)
 				if len(resp) != 1 {
 					t.Errorf("expected one pod to be returned, but got %d", len(resp))
 					t.Fail()
@@ -239,7 +239,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 				s.Builder.Sync()
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resp := args[0].([]*v1.Pod)
+				resp := args[0].([]*corev1.Pod)
 				if len(resp) != 0 {
 					t.Errorf("expected zero pods to be returned, but got %d", len(resp))
 					t.Fail()
@@ -289,7 +289,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 										NodeSelector: map[string]string{
 											"node": "selector",
 										},
-										Tolerations: []v1.Toleration{
+										Tolerations: []corev1.Toleration{
 											{
 												Key:      "key",
 												Operator: "Exists",
@@ -319,7 +319,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				resultingPod.Spec.NodeSelector = map[string]string{
 					"node": "selector",
 				}
-				resultingPod.Spec.Tolerations = []v1.Toleration{
+				resultingPod.Spec.Tolerations = []corev1.Toleration{
 					{
 						Key:      "key",
 						Operator: "Exists",
@@ -333,9 +333,9 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				s.Builder.Sync()
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resultingPod := s.testResources[createdPodKey].(*v1.Pod)
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
-				resp, ok := args[0].(*v1.Pod)
+				resp, ok := args[0].(*corev1.Pod)
 				if !ok {
 					t.Errorf("expected pod to be returned, but got %v", args[0])
 					t.Fail()
@@ -370,9 +370,9 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				s.Builder.Sync()
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				resultingPod := s.testResources[createdPodKey].(*v1.Pod)
+				resultingPod := s.testResources[createdPodKey].(*corev1.Pod)
 
-				resp, ok := args[0].(*v1.Pod)
+				resp, ok := args[0].(*corev1.Pod)
 				if !ok {
 					t.Errorf("expected pod to be returned, but got %v", args[0])
 					t.Fail()

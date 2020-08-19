@@ -22,12 +22,12 @@ import (
 	"reflect"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -41,7 +41,7 @@ const (
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *controller) Sync(ctx context.Context, iss *v1alpha2.ClusterIssuer) (err error) {
+func (c *controller) Sync(ctx context.Context, iss *v1.ClusterIssuer) (err error) {
 	log := logf.FromContext(ctx)
 
 	issuerCopy := iss.DeepCopy()
@@ -54,13 +54,13 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha2.ClusterIssuer) (err
 	el := webhook.ValidationRegistry.Validate(issuerCopy, internalapi.SchemeGroupVersion.WithKind("ClusterIssuer"))
 	if len(el) > 0 {
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
-		apiutil.SetIssuerCondition(issuerCopy, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorConfig, msg)
+		apiutil.SetIssuerCondition(issuerCopy, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorConfig, msg)
 		return
 	}
 
 	// Remove existing ErrorConfig condition if it exists
 	for i, c := range issuerCopy.Status.Conditions {
-		if c.Type == v1alpha2.IssuerConditionReady {
+		if c.Type == v1.IssuerConditionReady {
 			if c.Reason == errorConfig && c.Status == cmmeta.ConditionFalse {
 				issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
 				break
@@ -81,16 +81,16 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha2.ClusterIssuer) (err
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		log.Error(err, "error setting up issuer")
-		c.recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
+		c.recorder.Event(issuerCopy, corev1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}
 
 	return nil
 }
 
-func (c *controller) updateIssuerStatus(old, new *v1alpha2.ClusterIssuer) (*v1alpha2.ClusterIssuer, error) {
+func (c *controller) updateIssuerStatus(old, new *v1.ClusterIssuer) (*v1.ClusterIssuer, error) {
 	if reflect.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
-	return c.cmClient.CertmanagerV1alpha2().ClusterIssuers().UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
+	return c.cmClient.CertmanagerV1().ClusterIssuers().UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
 }

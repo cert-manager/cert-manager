@@ -34,7 +34,7 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	certmgrscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -228,7 +228,7 @@ func (f *Framework) Helper() *helper.Helper {
 	return f.helper
 }
 
-func (f *Framework) CertificateDurationValid(c *v1alpha2.Certificate, duration, fuzz time.Duration) {
+func (f *Framework) CertificateDurationValid(c *v1.Certificate, duration, fuzz time.Duration) {
 	By("Verifying TLS certificate exists")
 	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), c.Spec.SecretName, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
@@ -246,7 +246,7 @@ func (f *Framework) CertificateDurationValid(c *v1alpha2.Certificate, duration, 
 	}
 }
 
-func (f *Framework) CertificateRequestDurationValid(c *v1alpha2.CertificateRequest, duration, fuzz time.Duration) {
+func (f *Framework) CertificateRequestDurationValid(c *v1.CertificateRequest, duration, fuzz time.Duration) {
 	By("Verifying TLS certificate exists")
 	if len(c.Status.Certificate) == 0 {
 		Failf("No certificate data found for CertificateRequest %s", c.Name)

@@ -26,9 +26,9 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -42,7 +42,7 @@ const (
 var keyFunc = controllerpkg.KeyFunc
 
 type Issuer interface {
-	Sign(context.Context, *v1alpha2.CertificateRequest, v1alpha2.GenericIssuer) (*issuer.IssueResponse, error)
+	Sign(context.Context, *v1.CertificateRequest, v1.GenericIssuer) (*issuer.IssueResponse, error)
 }
 
 type Controller struct {
@@ -109,11 +109,11 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// create a queue used to queue up items to be processed
 	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
-	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Issuers()
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	c.issuerLister = issuerInformer.Lister()
 
 	// obtain references to all the informers used by this controller
-	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().CertificateRequests()
+	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
@@ -133,7 +133,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
 	// register event handlers and obtain a lister for clusterissuers.
 	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers()
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
 		c.clusterIssuerLister = clusterIssuerInformer.Lister()
 		// register handler function for clusterissuer resources
 		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})

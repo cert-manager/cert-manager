@@ -38,7 +38,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	vaultfake "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -98,7 +98,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 }
 
 type testSignT struct {
-	issuer     *v1alpha2.Issuer
+	issuer     *v1.Issuer
 	fakeLister *listers.FakeSecretLister
 	fakeClient *vaultfake.Client
 
@@ -135,7 +135,7 @@ func TestSign(t *testing.T) {
 		"a good csr but failed request should error": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{}),
+				gen.SetIssuerVault(v1.VaultIssuer{}),
 			),
 			fakeClient:   vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("request failed")),
 			expectedErr:  errors.New("failed to sign certificate by vault: request failed"),
@@ -146,7 +146,7 @@ func TestSign(t *testing.T) {
 		"a good csr and good response should return a certificate": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{}),
+				gen.SetIssuerVault(v1.VaultIssuer{}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
@@ -160,7 +160,7 @@ func TestSign(t *testing.T) {
 		"vault issuer with namespace specified": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{Namespace: "test"}),
+				gen.SetIssuerVault(v1.VaultIssuer{Namespace: "test"}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
@@ -199,7 +199,7 @@ type testSetTokenT struct {
 	expectedToken string
 	expectedErr   error
 
-	issuer     *v1alpha2.Issuer
+	issuer     *v1.Issuer
 	fakeLister *listers.FakeSecretLister
 	fakeClient *vaultfake.Client
 }
@@ -225,9 +225,9 @@ func TestSetToken(t *testing.T) {
 	tests := map[string]testSetTokenT{
 		"if neither token secret ref, app role secret ref, or kube auth then not found then error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth:     v1alpha2.VaultAuth{},
+					Auth:     v1.VaultAuth{},
 				}),
 			),
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
@@ -240,9 +240,9 @@ func TestSetToken(t *testing.T) {
 
 		"if token secret ref is set but secret doesn't exist should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
+					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "secret-ref-name",
@@ -261,9 +261,9 @@ func TestSetToken(t *testing.T) {
 
 		"if token secret ref set, return client using token stored": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
+					Auth: v1.VaultAuth{
 						TokenSecretRef: &cmmeta.SecretKeySelector{
 							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "secret-ref-name",
@@ -283,10 +283,10 @@ func TestSetToken(t *testing.T) {
 
 		"if app role set but secret token not but vault fails to return token, error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
-						AppRole: &v1alpha2.VaultAppRole{
+					Auth: v1.VaultAuth{
+						AppRole: &v1.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -308,10 +308,10 @@ func TestSetToken(t *testing.T) {
 
 		"if app role secret ref set, return client using token stored": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
-						AppRole: &v1alpha2.VaultAppRole{
+					Auth: v1.VaultAuth{
+						AppRole: &v1.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -340,10 +340,10 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but reference secret doesn't exist return error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.VaultKubernetesAuth{
+					Auth: v1.VaultAuth{
+						Kubernetes: &v1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -365,10 +365,10 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but reference secret doesn't contain data at key error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.VaultKubernetesAuth{
+					Auth: v1.VaultAuth{
+						Kubernetes: &v1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -390,10 +390,10 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but errors with a raw request should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.VaultKubernetesAuth{
+					Auth: v1.VaultAuth{
+						Kubernetes: &v1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -415,10 +415,10 @@ func TestSetToken(t *testing.T) {
 
 		"foo": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.VaultKubernetesAuth{
+					Auth: v1.VaultAuth{
+						Kubernetes: &v1.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -447,10 +447,10 @@ func TestSetToken(t *testing.T) {
 
 		"if app role secret ref and token secret set, take preference on token secret": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha2.VaultAuth{
-						AppRole: &v1alpha2.VaultAppRole{
+					Auth: v1.VaultAuth{
+						AppRole: &v1.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -506,7 +506,7 @@ type testAppRoleRefT struct {
 	expectedSecretID string
 	expectedErr      error
 
-	appRole *v1alpha2.VaultAppRole
+	appRole *v1.VaultAppRole
 
 	fakeLister *listers.FakeSecretLister
 }
@@ -514,7 +514,7 @@ type testAppRoleRefT struct {
 func TestAppRoleRef(t *testing.T) {
 	errSecretGet := errors.New("no secret found")
 
-	basicAppRoleRef := &v1alpha2.VaultAppRole{
+	basicAppRoleRef := &v1.VaultAppRole{
 		RoleId: "my-role-id",
 	}
 
@@ -530,7 +530,7 @@ func TestAppRoleRef(t *testing.T) {
 		},
 
 		"no data in key should fail": {
-			appRole: &v1alpha2.VaultAppRole{
+			appRole: &v1.VaultAppRole{
 				RoleId: "",
 				SecretRef: cmmeta.SecretKeySelector{
 					LocalObjectReference: cmmeta.LocalObjectReference{
@@ -553,7 +553,7 @@ func TestAppRoleRef(t *testing.T) {
 		},
 
 		"should return roleID and secretID with trimmed space": {
-			appRole: &v1alpha2.VaultAppRole{
+			appRole: &v1.VaultAppRole{
 				RoleId: "    my-role-id  ",
 				SecretRef: cmmeta.SecretKeySelector{
 					LocalObjectReference: cmmeta.LocalObjectReference{
@@ -701,7 +701,7 @@ func TestTokenRef(t *testing.T) {
 
 type testNewConfigT struct {
 	expectedErr error
-	issuer      *v1alpha2.Issuer
+	issuer      *v1.Issuer
 	checkFunc   func(cfg *vault.Config) error
 }
 
@@ -709,7 +709,7 @@ func TestNewConfig(t *testing.T) {
 	tests := map[string]testNewConfigT{
 		"no CA bundle set in issuer should return nil": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: nil,
 				}),
 			),
@@ -718,7 +718,7 @@ func TestNewConfig(t *testing.T) {
 
 		"a bad cert bundle should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte("a bad cert bundle"),
 				}),
 			),
@@ -727,7 +727,7 @@ func TestNewConfig(t *testing.T) {
 
 		"a good cert bundle should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha2.VaultIssuer{
+				gen.SetIssuerVault(v1.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 				}),
 			),
@@ -780,7 +780,7 @@ func TestNewConfig(t *testing.T) {
 
 type requestTokenWithAppRoleRefT struct {
 	client  Client
-	appRole *v1alpha2.VaultAppRole
+	appRole *v1.VaultAppRole
 
 	fakeLister *listers.FakeSecretLister
 
@@ -789,7 +789,7 @@ type requestTokenWithAppRoleRefT struct {
 }
 
 func TestRequestTokenWithAppRoleRef(t *testing.T) {
-	basicAppRoleRef := &v1alpha2.VaultAppRole{
+	basicAppRoleRef := &v1.VaultAppRole{
 		RoleId: "test-role-id",
 		SecretRef: cmmeta.SecretKeySelector{
 			LocalObjectReference: cmmeta.LocalObjectReference{

@@ -29,8 +29,8 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -73,7 +73,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
-		_, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
+		_, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}
@@ -251,14 +251,14 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 
 	defer func() {
 		// call UpdateStatus first as we may have updated the challenge.status.reason field
-		ch, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
+		ch, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return
 		}
 		// call Update to remove the metadata.finalizers entry
 		ch.Finalizers = ch.Finalizers[1:]
-		_, updateErr = c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Update(context.TODO(), ch, metav1.UpdateOptions{})
+		_, updateErr = c.cmClient.AcmeV1().Challenges(ch.Namespace).Update(context.TODO(), ch, metav1.UpdateOptions{})
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return
@@ -351,7 +351,7 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	}
 
 	log.V(logf.DebugLevel).Info("waiting for authorization for domain")
-	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthzURL)
+	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthorizationURL)
 	if err != nil {
 		log.Error(err, "error waiting for authorization")
 		return c.handleAuthorizationError(ch, err)

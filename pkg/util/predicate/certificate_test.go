@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func TestCertificateSecretName(t *testing.T) {

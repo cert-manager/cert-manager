@@ -31,8 +31,8 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -87,8 +87,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	challengeInformer := ctx.SharedInformerFactory.Acme().V1alpha2().Challenges()
-	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Issuers()
+	challengeInformer := ctx.SharedInformerFactory.Acme().V1().Challenges()
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
 	// we register these informers here so the HTTP01 solver has a synced
 	// cache when managing pod/service/ingress resources
@@ -114,7 +114,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
 	// register event handlers and obtain a lister for clusterissuers.
 	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers()
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
 		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
 		c.clusterIssuerLister = clusterIssuerInformer.Lister()
 	}
@@ -167,7 +167,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
-		_, err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
+		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return

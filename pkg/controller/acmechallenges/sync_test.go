@@ -27,8 +27,8 @@ import (
 
 	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -36,28 +36,28 @@ import (
 )
 
 // Present the challenge value with the given solver.
-func (f *fakeSolver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (f *fakeSolver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakePresent(ctx, issuer, ch)
 }
 
 // Check should return Error only if propagation check cannot be performed.
 // It MUST return `false, nil` if can contact all relevant services and all is
 // doing is waiting for propagation
-func (f *fakeSolver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (f *fakeSolver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakeCheck(ctx, issuer, ch)
 }
 
 // CleanUp will remove challenge records for a given solver.
 // This may involve deleting resources in the Kubernetes API Server, or
 // communicating with other external components (e.g. DNS providers).
-func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakeCleanUp(ctx, issuer, ch)
 }
 
 type fakeSolver struct {
-	fakePresent func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error
-	fakeCheck   func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error
-	fakeCleanUp func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error
+	fakePresent func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
+	fakeCheck   func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
+	fakeCleanUp func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
 }
 
 type testT struct {
@@ -122,10 +122,10 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeType("http-01"),
 			),
 			httpSolver: &fakeSolver{
-				fakePresent: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakePresent: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return fmt.Errorf("some error")
 				},
 			},
@@ -164,10 +164,10 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -219,10 +219,10 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -278,10 +278,10 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -341,7 +341,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -376,7 +376,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -419,8 +419,8 @@ func runTest(t *testing.T, test testT) {
 	c := &controller{}
 	c.Register(test.builder.Context)
 	c.helper = issuer.NewHelper(
-		test.builder.SharedInformerFactory.Certmanager().V1alpha2().Issuers().Lister(),
-		test.builder.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers().Lister(),
+		test.builder.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
+		test.builder.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
 	)
 	c.accountRegistry = &accountstest.FakeRegistry{
 		GetClientFunc: func(_ string) (acmecl.Interface, error) {

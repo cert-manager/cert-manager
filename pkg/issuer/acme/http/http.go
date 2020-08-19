@@ -30,8 +30,8 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -96,7 +96,7 @@ func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolve
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
-func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	ctx = http01LogCtx(ctx)
 
 	_, podErr := s.ensurePod(ctx, ch)
@@ -108,7 +108,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	ctx = logf.NewContext(http01LogCtx(ctx), nil, "selfCheck")
 	log := logf.FromContext(ctx)
 
@@ -149,7 +149,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *c
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
 // cert-manager created data.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	var errs []error
 	errs = append(errs, s.cleanupPods(ctx, ch))
 	errs = append(errs, s.cleanupServices(ctx, ch))

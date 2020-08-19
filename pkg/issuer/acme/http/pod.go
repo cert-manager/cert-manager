@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 

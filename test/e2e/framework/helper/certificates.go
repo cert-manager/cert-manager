@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -45,7 +45,7 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for Certificate %v to be ready", name)
-			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
+			certificate, err = h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
@@ -73,7 +73,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for Certificate %v to be ready", name)
-			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
+			certificate, err = h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
@@ -116,8 +116,8 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	}
 
 	// validate private key is of the correct type (rsa or ecdsa)
-	switch certificate.Spec.KeyAlgorithm {
-	case cmapi.KeyAlgorithm(""),
+	switch certificate.Spec.PrivateKey.Algorithm {
+	case cmapi.PrivateKeyAlgorithm(""),
 		cmapi.RSAKeyAlgorithm:
 		_, ok := key.(*rsa.PrivateKey)
 		if !ok {
@@ -129,7 +129,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
 		}
 	default:
-		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.KeyAlgorithm)
+		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.PrivateKey.Algorithm)
 	}
 
 	// TODO: validate private key KeySize
@@ -200,7 +200,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	certificateExtKeyUsages = append(certificateExtKeyUsages, defaultCertExtKeyUsages...)
 
 	// If using ECDSA then ignore key encipherment
-	if certificate.Spec.KeyAlgorithm == cmapi.ECDSAKeyAlgorithm {
+	if certificate.Spec.PrivateKey.Algorithm == cmapi.ECDSAKeyAlgorithm {
 		certificateKeyUsages &^= x509.KeyUsageKeyEncipherment
 		cert.KeyUsage &^= x509.KeyUsageKeyEncipherment
 	}
@@ -214,8 +214,8 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 			apiutil.ExtKeyUsageStrings(certificateExtKeyUsages), apiutil.ExtKeyUsageStrings(cert.ExtKeyUsage))
 	}
 
-	if !util.EqualUnsorted(cert.EmailAddresses, certificate.Spec.EmailSANs) {
-		return nil, fmt.Errorf("certificate doesn't contain Email SANs: exp=%v got=%v", certificate.Spec.EmailSANs, cert.EmailAddresses)
+	if !util.EqualUnsorted(cert.EmailAddresses, certificate.Spec.EmailAddresses) {
+		return nil, fmt.Errorf("certificate doesn't contain Email SANs: exp=%v got=%v", certificate.Spec.EmailAddresses, cert.EmailAddresses)
 	}
 
 	var dnsName string
@@ -267,7 +267,7 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 	var issuerSpec *cmapi.IssuerSpec
 	switch issuerRef.Kind {
 	case "ClusterIssuer":
-		issuerObj, err := h.CMClient.CertmanagerV1alpha2().ClusterIssuers().Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
+		issuerObj, err := h.CMClient.CertmanagerV1().ClusterIssuers().Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return 0, nil, fmt.Errorf("failed to find referenced ClusterIssuer %v: %s",
 				issuerRef, err)
@@ -275,7 +275,7 @@ func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectRefere
 
 		issuerSpec = &issuerObj.Spec
 	default:
-		issuerObj, err := h.CMClient.CertmanagerV1alpha2().Issuers(ns).Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
+		issuerObj, err := h.CMClient.CertmanagerV1().Issuers(ns).Get(context.TODO(), issuerRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return 0, nil, fmt.Errorf("failed to find referenced Issuer %v: %s",
 				issuerRef, err)

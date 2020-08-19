@@ -34,7 +34,7 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
@@ -163,7 +163,7 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		return nil, err
 	}
 
-	crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(o.Namespace).Get(ctx, crtName, metav1.GetOptions{})
+	crt, err := o.CMClient.CertmanagerV1().Certificates(o.Namespace).Get(ctx, crtName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error when getting Certificate resource: %v", err)
 	}
@@ -282,7 +282,7 @@ func formatTimeString(t *metav1.Time) string {
 // If one found returns the CR
 // If multiple found or error occurs when listing CRs, returns error
 func findMatchingCR(cmClient cmclient.Interface, ctx context.Context, crt *cmapi.Certificate) (*cmapi.CertificateRequest, error) {
-	reqs, err := cmClient.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).List(ctx, metav1.ListOptions{})
+	reqs, err := cmClient.CertmanagerV1().CertificateRequests(crt.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error when listing CertificateRequest resources: %w", err)
 	}
@@ -349,14 +349,14 @@ func getGenericIssuer(cmClient cmclient.Interface, ctx context.Context, crt *cma
 		return nil, "", fmt.Errorf("The %s %q is not of the group cert-manager.io, this command currently does not support third party issuers.\nTo get more information about %q, try 'kubectl describe'\n",
 			issuerKind, crt.Spec.IssuerRef.Name, crt.Spec.IssuerRef.Name)
 	} else if issuerKind == "Issuer" {
-		issuer, issuerErr := cmClient.CertmanagerV1alpha2().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		issuer, issuerErr := cmClient.CertmanagerV1().Issuers(crt.Namespace).Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
 		if issuerErr != nil {
 			issuerErr = fmt.Errorf("error when getting Issuer: %v\n", issuerErr)
 		}
 		return issuer, issuerKind, issuerErr
 	} else {
 		// ClusterIssuer
-		clusterIssuer, issuerErr := cmClient.CertmanagerV1alpha2().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
+		clusterIssuer, issuerErr := cmClient.CertmanagerV1().ClusterIssuers().Get(ctx, crt.Spec.IssuerRef.Name, metav1.GetOptions{})
 		if issuerErr != nil {
 			issuerErr = fmt.Errorf("error when getting ClusterIssuer: %v\n", issuerErr)
 		}

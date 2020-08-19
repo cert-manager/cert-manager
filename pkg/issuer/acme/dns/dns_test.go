@@ -25,8 +25,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
@@ -35,14 +35,14 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
-func newIssuer(name, namespace string) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func newIssuer(name, namespace string) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
+		Spec: v1.IssuerSpec{
+			IssuerConfig: v1.IssuerConfig{
 				ACME: &cmacme.ACMEIssuer{},
 			},
 		},

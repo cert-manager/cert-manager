@@ -22,15 +22,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 func TestGetGenericIssuer(t *testing.T) {
-	var nilIssuer *v1alpha2.Issuer
-	var nilClusterIssuer *v1alpha2.ClusterIssuer
+	var nilIssuer *v1.Issuer
+	var nilClusterIssuer *v1.ClusterIssuer
 	type testT struct {
 		Name                   string
 		Kind                   string
@@ -38,7 +38,7 @@ func TestGetGenericIssuer(t *testing.T) {
 		CMObjects              []runtime.Object
 		NilClusterIssuerLister bool
 		Err                    bool
-		Expected               v1alpha2.GenericIssuer
+		Expected               v1.GenericIssuer
 	}
 	tests := []testT{
 		{
@@ -86,8 +86,8 @@ func TestGetGenericIssuer(t *testing.T) {
 			}
 			b.Init()
 			c := &helperImpl{
-				issuerLister:        b.FakeCMInformerFactory().Certmanager().V1alpha2().Issuers().Lister(),
-				clusterIssuerLister: b.FakeCMInformerFactory().Certmanager().V1alpha2().ClusterIssuers().Lister(),
+				issuerLister:        b.FakeCMInformerFactory().Certmanager().V1().Issuers().Lister(),
+				clusterIssuerLister: b.FakeCMInformerFactory().Certmanager().V1().ClusterIssuers().Lister(),
 			}
 			b.Start()
 			defer b.Stop()

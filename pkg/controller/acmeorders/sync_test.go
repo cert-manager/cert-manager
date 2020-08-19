@@ -29,7 +29,7 @@ import (
 
 	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"

@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/acmeorders/selectors"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
@@ -297,12 +297,12 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 
 	// 5. construct Challenge resource with spec.solver field set
 	return &cmacme.ChallengeSpec{
-		AuthzURL: authz.URL,
-		Type:     chType,
-		URL:      selectedChallenge.URL,
-		DNSName:  authz.Identifier,
-		Token:    selectedChallenge.Token,
-		Key:      key,
+		AuthorizationURL: authz.URL,
+		Type:             chType,
+		URL:              selectedChallenge.URL,
+		DNSName:          authz.Identifier,
+		Token:            selectedChallenge.Token,
+		Key:              key,
 		// selectedSolver cannot be nil due to the check above.
 		Solver:    *selectedSolver,
 		Wildcard:  wc,

@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
-	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
@@ -140,8 +140,8 @@ func validateEmailAddresses(a *cmapi.CertificateSpec, fldPath *field.Path) field
 func validateUsages(a *cmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	for i, u := range a.Usages {
-		_, kok := util.KeyUsageType(cmapiv1alpha2.KeyUsage(u))
-		_, ekok := util.ExtKeyUsageType(cmapiv1alpha2.KeyUsage(u))
+		_, kok := util.KeyUsageType(cmapiv1.KeyUsage(u))
+		_, ekok := util.ExtKeyUsageType(cmapiv1.KeyUsage(u))
 		if !kok && !ekok {
 			el = append(el, field.Invalid(fldPath.Child("usages").Index(i), u, "unknown keyusage"))
 		}
@@ -153,15 +153,15 @@ func ValidateDuration(crt *cmapi.CertificateSpec, fldPath *field.Path) field.Err
 	el := field.ErrorList{}
 
 	duration := util.DefaultCertDuration(crt.Duration)
-	renewBefore := cmapiv1alpha2.DefaultRenewBefore
+	renewBefore := cmapiv1.DefaultRenewBefore
 	if crt.RenewBefore != nil {
 		renewBefore = crt.RenewBefore.Duration
 	}
-	if duration < cmapiv1alpha2.MinimumCertificateDuration {
-		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", cmapiv1alpha2.MinimumCertificateDuration)))
+	if duration < cmapiv1.MinimumCertificateDuration {
+		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", cmapiv1.MinimumCertificateDuration)))
 	}
-	if renewBefore < cmapiv1alpha2.MinimumRenewBefore {
-		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapiv1alpha2.MinimumRenewBefore)))
+	if renewBefore < cmapiv1.MinimumRenewBefore {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapiv1.MinimumRenewBefore)))
 	}
 	if duration <= renewBefore {
 		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, renewBefore)))

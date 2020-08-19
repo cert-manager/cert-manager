@@ -27,7 +27,7 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -151,7 +151,7 @@ func TestCtlRenew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Create Certificates
 			for _, crt := range []*cmapi.Certificate{crt1, crt2, crt3, crt4} {
-				_, err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{})
+				_, err := cmCl.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -177,7 +177,7 @@ func TestCtlRenew(t *testing.T) {
 
 			// Check issuing condition against Certificates
 			for crt, shouldIssue := range test.crtsWithIssuing {
-				gotCrt, err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
+				gotCrt, err := cmCl.CertmanagerV1().Certificates(crt.Namespace).Get(ctx, crt.Name, metav1.GetOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -194,7 +194,7 @@ func TestCtlRenew(t *testing.T) {
 
 			// Clean up Certificates
 			for _, crt := range []*cmapi.Certificate{crt1, crt2, crt3, crt4} {
-				err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
+				err := cmCl.CertmanagerV1().Certificates(crt.Namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}

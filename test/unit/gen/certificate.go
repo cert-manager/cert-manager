@@ -22,14 +22,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
-type CertificateModifier func(*v1alpha2.Certificate)
+type CertificateModifier func(*v1.Certificate)
 
-func Certificate(name string, mods ...CertificateModifier) *v1alpha2.Certificate {
-	c := &v1alpha2.Certificate{
+func Certificate(name string, mods ...CertificateModifier) *v1.Certificate {
+	c := &v1.Certificate{
 		ObjectMeta: ObjectMeta(name),
 	}
 	for _, mod := range mods {
@@ -38,7 +38,7 @@ func Certificate(name string, mods ...CertificateModifier) *v1alpha2.Certificate
 	return c
 }
 
-func CertificateFrom(crt *v1alpha2.Certificate, mods ...CertificateModifier) *v1alpha2.Certificate {
+func CertificateFrom(crt *v1.Certificate, mods ...CertificateModifier) *v1.Certificate {
 	crt = crt.DeepCopy()
 	for _, mod := range mods {
 		mod(crt)
@@ -48,87 +48,87 @@ func CertificateFrom(crt *v1alpha2.Certificate, mods ...CertificateModifier) *v1
 
 // SetIssuer sets the Certificate.spec.issuerRef field
 func SetCertificateIssuer(o cmmeta.ObjectReference) CertificateModifier {
-	return func(c *v1alpha2.Certificate) {
+	return func(c *v1.Certificate) {
 		c.Spec.IssuerRef = o
 	}
 }
 
 func SetCertificateDNSNames(dnsNames ...string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Spec.DNSNames = dnsNames
 	}
 }
 
 func SetCertificateCommonName(commonName string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Spec.CommonName = commonName
 	}
 }
 
 func SetCertificateIPs(ips ...string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Spec.IPAddresses = ips
 	}
 }
 
 func SetCertificateURIs(uris ...string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
-		crt.Spec.URISANs = uris
+	return func(crt *v1.Certificate) {
+		crt.Spec.URIs = uris
 	}
 }
 
 func SetCertificateIsCA(isCA bool) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Spec.IsCA = isCA
 	}
 }
 
-func SetCertificateKeyAlgorithm(keyAlgorithm v1alpha2.KeyAlgorithm) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
-		crt.Spec.KeyAlgorithm = keyAlgorithm
+func SetCertificateKeyAlgorithm(keyAlgorithm v1.PrivateKeyAlgorithm) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.PrivateKey.Algorithm = keyAlgorithm
 	}
 }
 
 func SetCertificateKeySize(keySize int) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
-		crt.Spec.KeySize = keySize
+	return func(crt *v1.Certificate) {
+		crt.Spec.PrivateKey.Size = keySize
 	}
 }
 
-func SetCertificateKeyEncoding(keyEncoding v1alpha2.KeyEncoding) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
-		crt.Spec.KeyEncoding = keyEncoding
+func SetCertificateKeyEncoding(keyEncoding v1.PrivateKeyEncoding) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.PrivateKey.Encoding = keyEncoding
 	}
 }
 
 func SetCertificateSecretName(secretName string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Spec.SecretName = secretName
 	}
 }
 
 func SetCertificateDuration(duration time.Duration) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Spec.Duration = &metav1.Duration{Duration: duration}
 	}
 }
 
 func SetCertificateRenewBefore(renewBefore time.Duration) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: renewBefore}
 	}
 }
 
 func SetCertificateNextPrivateKeySecretName(name string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Status.NextPrivateKeySecretName = &name
 	}
 }
 
-func SetCertificateStatusCondition(c v1alpha2.CertificateCondition) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+func SetCertificateStatusCondition(c v1.CertificateCondition) CertificateModifier {
+	return func(crt *v1.Certificate) {
 		if len(crt.Status.Conditions) == 0 {
-			crt.Status.Conditions = []v1alpha2.CertificateCondition{c}
+			crt.Status.Conditions = []v1.CertificateCondition{c}
 			return
 		}
 		for i, existingC := range crt.Status.Conditions {
@@ -142,61 +142,61 @@ func SetCertificateStatusCondition(c v1alpha2.CertificateCondition) CertificateM
 }
 
 func SetCertificateLastFailureTime(p metav1.Time) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Status.LastFailureTime = &p
 	}
 }
 
 func SetCertificateNotAfter(p metav1.Time) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Status.NotAfter = &p
 	}
 }
 
 func SetCertificateNotBefore(p metav1.Time) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Status.NotBefore = &p
 	}
 }
 
 func SetCertificateRenewalTIme(p metav1.Time) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Status.RenewalTime = &p
 	}
 }
 
 func SetCertificateOrganization(orgs ...string) CertificateModifier {
-	return func(ch *v1alpha2.Certificate) {
-		ch.Spec.Organization = orgs
+	return func(ch *v1.Certificate) {
+		ch.Spec.Subject.Organizations = orgs
 	}
 }
 
 func SetCertificateNamespace(namespace string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.ObjectMeta.Namespace = namespace
 	}
 }
 
-func SetCertificateKeyUsages(usages ...v1alpha2.KeyUsage) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+func SetCertificateKeyUsages(usages ...v1.KeyUsage) CertificateModifier {
+	return func(crt *v1.Certificate) {
 		crt.Spec.Usages = usages
 	}
 }
 
 func SetCertificateRevision(revision int) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.Status.Revision = &revision
 	}
 }
 
 func SetCertificateUID(uid types.UID) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		crt.UID = uid
 	}
 }
 
 func AddCertificateAnnotations(annotations map[string]string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
@@ -208,7 +208,7 @@ func AddCertificateAnnotations(annotations map[string]string) CertificateModifie
 }
 
 func AddCertificateLabels(labels map[string]string) CertificateModifier {
-	return func(crt *v1alpha2.Certificate) {
+	return func(crt *v1.Certificate) {
 		if crt.Labels == nil {
 			crt.Labels = make(map[string]string)
 		}

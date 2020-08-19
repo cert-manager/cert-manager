@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
@@ -39,7 +39,7 @@ import (
 func NewEventRecorder(t *testing.T) record.EventRecorder {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(t.Logf)
-	return eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: t.Name()})
+	return eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: t.Name()})
 }
 
 func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, informers.SharedInformerFactory, cmclient.Interface, cminformers.SharedInformerFactory) {

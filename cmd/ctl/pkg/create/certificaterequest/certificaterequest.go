@@ -38,7 +38,7 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/util"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
@@ -190,7 +190,7 @@ func (o *Options) Run(args []string) error {
 
 	// Read file as internal API version
 	r := builder.
-		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1alpha2.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
+		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
 		NamespaceParam(o.CmdNamespace).DefaultNamespace().
 		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: []string{o.InputFilename}}).Flatten().Do()
@@ -213,16 +213,16 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("multiple objects found in manifest file %q. Expected only one Certificate object", o.InputFilename)
 	}
 	info := infos[0]
-	// Convert to v1alpha2 because that version is needed for functions that follow
-	crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1alpha2.SchemeGroupVersion)
+	// Convert to v1 because that version is needed for functions that follow
+	crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1.SchemeGroupVersion)
 	if err != nil {
-		return fmt.Errorf("failed to convert object into version v1alpha2: %w", err)
+		return fmt.Errorf("failed to convert object into version v1: %w", err)
 	}
 
 	// Cast Object into Certificate
-	crt, ok := crtObj.(*cmapiv1alpha2.Certificate)
+	crt, ok := crtObj.(*cmapiv1.Certificate)
 	if !ok {
-		return errors.New("decoded object is not a v1alpha2 Certificate")
+		return errors.New("decoded object is not a v1 Certificate")
 	}
 
 	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
@@ -230,7 +230,7 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when generating new private key for CertificateRequest: %w", err)
 	}
 
-	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
+	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.PrivateKey.Encoding)
 	if err != nil {
 		return fmt.Errorf("failed to encode new private key for CertificateRequest: %w", err)
 	}
@@ -257,7 +257,7 @@ func (o *Options) Run(args []string) error {
 	if ns == "" {
 		ns = o.CmdNamespace
 	}
-	req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
+	req, err = o.CMClient.CertmanagerV1().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating CertificateRequest: %w", err)
 	}
@@ -267,12 +267,12 @@ func (o *Options) Run(args []string) error {
 		fmt.Fprintf(o.ErrOut, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
 			req.Name, req.Namespace)
 		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
-			req, err = o.CMClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
+			req, err = o.CMClient.CertmanagerV1().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}
-			return apiutil.CertificateRequestHasCondition(req, cmapiv1alpha2.CertificateRequestCondition{
-				Type:   cmapiv1alpha2.CertificateRequestConditionReady,
+			return apiutil.CertificateRequestHasCondition(req, cmapiv1.CertificateRequestCondition{
+				Type:   cmapiv1.CertificateRequestConditionReady,
 				Status: cmmeta.ConditionTrue,
 			}) && len(req.Status.Certificate) > 0, nil
 		})
@@ -297,20 +297,20 @@ func (o *Options) Run(args []string) error {
 }
 
 // Builds a CertificateRequest
-func buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName string) (*cmapiv1alpha2.CertificateRequest, error) {
+func buildCertificateRequest(crt *cmapiv1.Certificate, pk []byte, crName string) (*cmapiv1.CertificateRequest, error) {
 	csrPEM, err := generateCSR(crt, pk)
 	if err != nil {
 		return nil, err
 	}
 
-	cr := &cmapiv1alpha2.CertificateRequest{
+	cr := &cmapiv1.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        crName,
 			Annotations: crt.Annotations,
 			Labels:      crt.Labels,
 		},
-		Spec: cmapiv1alpha2.CertificateRequestSpec{
-			CSRPEM:    csrPEM,
+		Spec: cmapiv1.CertificateRequestSpec{
+			Request:   csrPEM,
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,
@@ -321,7 +321,7 @@ func buildCertificateRequest(crt *cmapiv1alpha2.Certificate, pk []byte, crName s
 	return cr, nil
 }
 
-func generateCSR(crt *cmapiv1alpha2.Certificate, pk []byte) ([]byte, error) {
+func generateCSR(crt *cmapiv1.Certificate, pk []byte) ([]byte, error) {
 	csr, err := pki.GenerateCSR(crt)
 	if err != nil {
 		return nil, err

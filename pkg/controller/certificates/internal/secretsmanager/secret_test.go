@@ -28,7 +28,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"

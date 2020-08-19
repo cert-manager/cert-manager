@@ -30,7 +30,7 @@ import (
 	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing"
@@ -116,7 +116,7 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
-	crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestIssuingController(t *testing.T) {
 			cmapi.SchemeGroupVersion.WithKind("Certificate"),
 		)),
 	)
-	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +171,7 @@ func TestIssuingController(t *testing.T) {
 	req.Status.CA = certPem
 	req.Status.Certificate = certPem
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestIssuingController(t *testing.T) {
 	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
-	crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +188,7 @@ func TestIssuingController(t *testing.T) {
 	// Wait for the Certificate to have the 'Issuing' condition removed, and for
 	// the signed certificate, ca, and private key stored in the Secret.
 	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
-		crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
 			return false, nil
@@ -320,7 +320,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
 	)
 
-	crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -366,7 +366,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 			cmapi.SchemeGroupVersion.WithKind("Certificate"),
 		)),
 	)
-	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +375,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	req.Status.CA = certPem
 	req.Status.Certificate = certPem
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -384,7 +384,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
 	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
 	crt.Status.Revision = &revision
-	crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +392,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	// Wait for the Certificate to have the 'Issuing' condition removed, and for
 	// the signed certificate, ca, and private key stored in the Secret.
 	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
-		crt, err = cmCl.CertmanagerV1alpha2().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
 			return false, nil
