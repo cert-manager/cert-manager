@@ -184,3 +184,13 @@ const (
 	UsageMicrosoftSGC       KeyUsage = "microsoft sgc"
 	UsageNetscapeSGC        KeyUsage = "netscape sgc"
 )
+
+// DefaultKeyUsages contains the default list of key usages
+func DefaultKeyUsages() []KeyUsage {
+	// The serverAuth EKU is required as of Mac OS Catalina: https://support.apple.com/en-us/HT210176
+	// Without this usage, certificates will _always_ flag a warning in newer Mac OS browsers.
+	// We don't explicitly add it here as it leads to strange behaviour when a user sets isCA: true
+	// (in which case, 'serverAuth' on the CA can break a lot of clients).
+	// CAs can (and often do) opt to automatically add usages.
+	return []KeyUsage{UsageDigitalSignature, UsageKeyEncipherment}
+}
