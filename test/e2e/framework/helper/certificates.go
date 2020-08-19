@@ -116,7 +116,11 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	}
 
 	// validate private key is of the correct type (rsa or ecdsa)
-	switch certificate.Spec.PrivateKey.Algorithm {
+	privateKey := certificate.Spec.PrivateKey
+	if privateKey == nil {
+		privateKey = &cmapi.CertificatePrivateKey{}
+	}
+	switch privateKey.Algorithm {
 	case cmapi.PrivateKeyAlgorithm(""),
 		cmapi.RSAKeyAlgorithm:
 		_, ok := key.(*rsa.PrivateKey)
@@ -200,7 +204,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	certificateExtKeyUsages = append(certificateExtKeyUsages, defaultCertExtKeyUsages...)
 
 	// If using ECDSA then ignore key encipherment
-	if certificate.Spec.PrivateKey.Algorithm == cmapi.ECDSAKeyAlgorithm {
+	if certificate.Spec.PrivateKey != nil && certificate.Spec.PrivateKey.Algorithm == cmapi.ECDSAKeyAlgorithm {
 		certificateKeyUsages &^= x509.KeyUsageKeyEncipherment
 		cert.KeyUsage &^= x509.KeyUsageKeyEncipherment
 	}
