@@ -27,7 +27,7 @@ import (
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func TestChallengeSpecForAuthorization(t *testing.T) {
@@ -124,7 +124,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -163,7 +163,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -230,7 +230,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "dns-01",
+				Type:    cmacme.ACMEChallengeTypeDNS01,
 				DNSName: "example.com",
 				Token:   acmeChallengeDNS01.Token,
 				Key:     "dns01",
@@ -258,7 +258,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -295,7 +295,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -333,7 +333,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -364,7 +364,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "dns-01",
+				Type:    cmacme.ACMEChallengeTypeDNS01,
 				DNSName: "example.com",
 				Token:   acmeChallengeDNS01.Token,
 				Key:     "dns01",
@@ -419,7 +419,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -450,7 +450,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "notexample.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -498,7 +498,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -557,7 +557,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -606,7 +606,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -655,7 +655,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -715,7 +715,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -768,7 +768,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     "dns-01",
+				Type:     cmacme.ACMEChallengeTypeDNS01,
 				DNSName:  "example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
@@ -818,7 +818,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -858,7 +858,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -899,7 +899,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     "dns-01",
+				Type:     cmacme.ACMEChallengeTypeDNS01,
 				DNSName:  "www.example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
@@ -959,7 +959,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     "dns-01",
+				Type:     cmacme.ACMEChallengeTypeDNS01,
 				DNSName:  "www.prod.example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
@@ -1019,7 +1019,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:     "dns-01",
+				Type:     cmacme.ACMEChallengeTypeDNS01,
 				DNSName:  "www.prod.example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
@@ -1086,7 +1086,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -1148,7 +1148,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -1208,7 +1208,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
@@ -1249,7 +1249,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				Challenges: []cmacme.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &cmacme.ChallengeSpec{
-				Type:    "http-01",
+				Type:    cmacme.ACMEChallengeTypeHTTP01,
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
