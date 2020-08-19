@@ -75,15 +75,21 @@ spec:
               path: /livez
               port: 6080
               scheme: HTTP
-            initialDelaySeconds: 60
-            periodSeconds: 10
+            initialDelaySeconds: {{ .Values.webhook.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webhook.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.webhook.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.webhook.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webhook.livenessProbe.failureThreshold }}
           readinessProbe:
             httpGet:
               path: /healthz
               port: 6080
               scheme: HTTP
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: {{ .Values.webhook.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webhook.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.webhook.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.webhook.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webhook.readinessProbe.failureThreshold }}
           {{- if .Values.webhook.containerSecurityContext }}
           securityContext:
             {{- toYaml .Values.webhook.containerSecurityContext | nindent 12 }}
