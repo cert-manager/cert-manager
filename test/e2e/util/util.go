@@ -40,7 +40,7 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
@@ -277,6 +277,7 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			SecretName:  secretName,
 			Duration:    duration,
 			RenewBefore: renewBefore,
+			PrivateKey:  &v1.CertificatePrivateKey{},
 			IssuerRef: cmmeta.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
