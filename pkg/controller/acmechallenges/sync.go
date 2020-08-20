@@ -387,9 +387,9 @@ func (c *controller) handleAuthorizationError(ch *cmacme.Challenge, err error) e
 
 func (c *controller) solverFor(challengeType cmacme.ACMEChallengeType) (solver, error) {
 	switch challengeType {
-	case "http-01":
+	case cmacme.ACMEChallengeTypeHTTP01:
 		return c.httpSolver, nil
-	case "dns-01":
+	case cmacme.ACMEChallengeTypeDNS01:
 		return c.dnsSolver, nil
 	}
 	return nil, fmt.Errorf("no solver for %q implemented", challengeType)
