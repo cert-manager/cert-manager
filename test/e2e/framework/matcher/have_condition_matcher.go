@@ -24,7 +24,7 @@ import (
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 )
 
@@ -55,11 +55,11 @@ func toGenericCondition(c interface{}) (*genericCondition, error) {
 func (c *conditionMatcher) getUpToDateResource(obj interface{}) (interface{}, error) {
 	switch obj := obj.(type) {
 	case *cmapi.Certificate:
-		return c.f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
+		return c.f.CertManagerClientSet.CertmanagerV1().Certificates(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	case *cmapi.Issuer:
-		return c.f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
+		return c.f.CertManagerClientSet.CertmanagerV1().Issuers(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	case *cmapi.CertificateRequest:
-		return c.f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
+		return c.f.CertManagerClientSet.CertmanagerV1().CertificateRequests(obj.Namespace).Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	default:
 		return nil, fmt.Errorf("unsupported resource type %T", c)
 	}

@@ -23,7 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -46,7 +46,7 @@ func mustGenerateECDSA(t *testing.T, keySize int) crypto.PrivateKey {
 func TestPrivateKeyMatchesSpec(t *testing.T) {
 	tests := map[string]struct {
 		key          crypto.PrivateKey
-		expectedAlgo cmapi.KeyAlgorithm
+		expectedAlgo cmapi.PrivateKeyAlgorithm
 		expectedSize int
 		violations   []string
 		err          string
@@ -82,7 +82,15 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			violations, err := PrivateKeyMatchesSpec(test.key, cmapi.CertificateSpec{KeyAlgorithm: test.expectedAlgo, KeySize: test.expectedSize})
+			violations, err := PrivateKeyMatchesSpec(
+				test.key,
+				cmapi.CertificateSpec{
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: test.expectedAlgo,
+						Size:      test.expectedSize,
+					},
+				},
+			)
 			switch {
 			case err != nil:
 				if test.err != err.Error() {

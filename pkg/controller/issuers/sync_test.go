@@ -26,13 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
-func newFakeIssuerWithStatus(name string, status v1alpha2.IssuerStatus) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func newFakeIssuerWithStatus(name string, status v1.IssuerStatus) *v1.Issuer {
+	return &v1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -58,17 +58,17 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	cmClient := b.FakeCMClient()
 	assertNumberOfActions(t, fatalf, filter(cmClient.Actions()), 0)
 
-	originalIssuer := newFakeIssuerWithStatus("test", v1alpha2.IssuerStatus{})
+	originalIssuer := newFakeIssuerWithStatus("test", v1.IssuerStatus{})
 
-	issuer, err := cmClient.CertmanagerV1alpha2().Issuers("testns").Create(context.TODO(), originalIssuer, metav1.CreateOptions{})
+	issuer, err := cmClient.CertmanagerV1().Issuers("testns").Create(context.TODO(), originalIssuer, metav1.CreateOptions{})
 	assertErrIsNil(t, fatalf, err)
 
 	assertNumberOfActions(t, fatalf, filter(cmClient.Actions()), 1)
 
-	newStatus := v1alpha2.IssuerStatus{
-		Conditions: []v1alpha2.IssuerCondition{
+	newStatus := v1.IssuerStatus{
+		Conditions: []v1.IssuerCondition{
 			{
-				Type:   v1alpha2.IssuerConditionReady,
+				Type:   v1.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
 			},
 		},
@@ -111,10 +111,10 @@ func assertErrIsNil(t *testing.T, f failfFunc, err error) {
 	}
 }
 
-func assertIsIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1alpha2.Issuer {
-	issuer, ok := obj.(*v1alpha2.Issuer)
+func assertIsIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1.Issuer {
+	issuer, ok := obj.(*v1.Issuer)
 	if !ok {
-		f(t, "expected runtime.Object to be of type *v1alpha2.Issuer, but it was %#v", obj)
+		f(t, "expected runtime.Object to be of type *v1.Issuer, but it was %#v", obj)
 	}
 	return issuer
 }

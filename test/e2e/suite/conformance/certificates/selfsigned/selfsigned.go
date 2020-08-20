@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
@@ -44,7 +44,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned Issuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-issuer-",
 		},
@@ -60,14 +60,14 @@ func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 }
 
 func deleteSelfSignedClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectReference) {
-	err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+	err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 
 func createSelfSignedClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned ClusterIssuer")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "selfsigned-cluster-issuer-",
 		},

@@ -24,7 +24,6 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:storageversion
 
 // Challenge is a type to represent a Challenge request with an ACME server
 // +k8s:openapi-gen=true

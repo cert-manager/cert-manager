@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -51,8 +51,8 @@ func mustGenerateRSA(t *testing.T, keySize int) []byte {
 func relaxedCertificateRequestMatcher(l coretesting.Action, r coretesting.Action) error {
 	objL := l.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()
 	objR := r.(coretesting.CreateAction).GetObject().(*cmapi.CertificateRequest).DeepCopy()
-	objL.Spec.CSRPEM = nil
-	objR.Spec.CSRPEM = nil
+	objL.Spec.Request = nil
+	objR.Spec.Request = nil
 	if !reflect.DeepEqual(objL, objR) {
 		return fmt.Errorf("unexpected difference between actions: %s", pretty.Diff(objL, objR))
 	}

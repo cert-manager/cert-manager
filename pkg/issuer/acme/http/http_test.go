@@ -22,7 +22,7 @@ import (
 	"net/url"
 	"testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 )
 
 // countReachabilityTestCalls is a wrapper function that allows us to count the number

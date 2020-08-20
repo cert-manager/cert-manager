@@ -21,8 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 

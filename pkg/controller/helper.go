@@ -21,7 +21,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 

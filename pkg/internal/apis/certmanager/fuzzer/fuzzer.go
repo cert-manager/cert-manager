@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	acmefuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/acme/fuzzer"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
@@ -36,23 +36,23 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.Spec.DNSNames = []string{s.Spec.CommonName}
 			}
 			if s.Spec.IssuerRef.Kind == "" {
-				s.Spec.IssuerRef.Kind = v1alpha2.IssuerKind
+				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}
 			if s.Spec.Duration == nil {
-				s.Spec.Duration = &metav1.Duration{Duration: v1alpha2.DefaultCertificateDuration}
+				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
 			if s.Spec.RenewBefore == nil {
-				s.Spec.RenewBefore = &metav1.Duration{Duration: v1alpha2.DefaultRenewBefore}
+				s.Spec.RenewBefore = &metav1.Duration{Duration: v1.DefaultRenewBefore}
 			}
 		},
 		func(s *certmanager.CertificateRequest, c fuzz.Continue) {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again
 
 			if s.Spec.IssuerRef.Kind == "" {
-				s.Spec.IssuerRef.Kind = v1alpha2.IssuerKind
+				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}
 			if s.Spec.Duration == nil {
-				s.Spec.Duration = &metav1.Duration{Duration: v1alpha2.DefaultCertificateDuration}
+				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
 		},
 	}...)

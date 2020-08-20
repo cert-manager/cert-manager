@@ -20,7 +20,7 @@ import (
 	"github.com/miekg/dns"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 )
 
 func DNSZones(sel cmacme.CertificateDNSNameSelector) Selector {

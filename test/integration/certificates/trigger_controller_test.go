@@ -26,7 +26,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -66,7 +66,7 @@ func TestTriggerController(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
-	cert, err := cmCl.CertmanagerV1alpha2().Certificates("testns").Create(ctx, &cmapi.Certificate{
+	cert, err := cmCl.CertmanagerV1().Certificates("testns").Create(ctx, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
@@ -79,7 +79,7 @@ func TestTriggerController(t *testing.T) {
 	}
 
 	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
-		c, err := cmCl.CertmanagerV1alpha2().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
+		c, err := cmCl.CertmanagerV1().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
 			return false, nil
@@ -126,7 +126,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
-	cert, err := cmCl.CertmanagerV1alpha2().Certificates("testns").Create(ctx, &cmapi.Certificate{
+	cert, err := cmCl.CertmanagerV1().Certificates("testns").Create(ctx, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
@@ -147,7 +147,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	t.Logf("Setting status.renewalTime in the future on Certificate resource")
 	renewalTime := metav1.NewTime(fakeClock.Now().Add(time.Second))
 	cert.Status.RenewalTime = &renewalTime
-	cert, err = cmCl.CertmanagerV1alpha2().Certificates(cert.Namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	cert, err = cmCl.CertmanagerV1().Certificates(cert.Namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	fakeClock.SetTime(renewalTime.Time.Add(time.Millisecond))
 
 	err = wait.Poll(time.Millisecond*200, time.Second*2, func() (done bool, err error) {
-		c, err := cmCl.CertmanagerV1alpha2().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
+		c, err := cmCl.CertmanagerV1().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -181,7 +181,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 
 func ensureCertificateDoesNotHaveIssuingCondition(ctx context.Context, t *testing.T, cmCl cmclient.Interface, namespace, name string) {
 	err := wait.Poll(time.Millisecond*200, time.Second*2, func() (done bool, err error) {
-		c, err := cmCl.CertmanagerV1alpha2().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
+		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

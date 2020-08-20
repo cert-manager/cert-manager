@@ -24,13 +24,13 @@ import (
 	"math/big"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubectl/pkg/describe"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
-	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -42,7 +42,7 @@ type CertificateStatus struct {
 	// Creation Time of Certificate resource
 	CreationTime metav1.Time
 	// Conditions of Certificate resource
-	Conditions []cmapiv1alpha2.CertificateCondition
+	Conditions []cmapi.CertificateCondition
 	// DNS Names of Certificate resource
 	DNSNames []string
 	// Events of Certificate resource
@@ -74,7 +74,7 @@ type IssuerStatus struct {
 	// Kind of the resource, can be Issuer or ClusterIssuer
 	Kind string
 	// Conditions of Issuer/ClusterIssuer resource
-	Conditions []cmapiv1alpha2.IssuerCondition
+	Conditions []cmapi.IssuerCondition
 }
 
 type SecretStatus struct {
@@ -114,7 +114,7 @@ type CRStatus struct {
 	// Namespace of the CertificateRequest resource
 	Namespace string
 	// Conditions of CertificateRequest resource
-	Conditions []cmapiv1alpha2.CertificateRequestCondition
+	Conditions []cmapi.CertificateRequestCondition
 	// Events of CertificateRequest resource
 	Events *v1.EventList
 }
@@ -153,7 +153,7 @@ type ChallengeStatus struct {
 	Presented  bool
 }
 
-func newCertificateStatusFromCert(crt *cmapiv1alpha2.Certificate) *CertificateStatus {
+func newCertificateStatusFromCert(crt *cmapi.Certificate) *CertificateStatus {
 	if crt == nil {
 		return nil
 	}
@@ -168,7 +168,7 @@ func (status *CertificateStatus) withEvents(events *v1.EventList) *CertificateSt
 	return status
 }
 
-func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapiv1alpha2.GenericIssuer, issuerKind string, err error) *CertificateStatus {
+func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapi.GenericIssuer, issuerKind string, err error) *CertificateStatus {
 	if err != nil {
 		status.IssuerStatus = &IssuerStatus{Error: err}
 		return status
@@ -217,7 +217,7 @@ func (status *CertificateStatus) withSecret(secret *v1.Secret, err error) *Certi
 	return status
 }
 
-func (status *CertificateStatus) withCR(req *cmapiv1alpha2.CertificateRequest, events *v1.EventList, err error) *CertificateStatus {
+func (status *CertificateStatus) withCR(req *cmapi.CertificateRequest, events *v1.EventList, err error) *CertificateStatus {
 	if err != nil {
 		status.CRStatus = &CRStatus{Error: err}
 		return status

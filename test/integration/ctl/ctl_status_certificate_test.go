@@ -30,14 +30,14 @@ import (
 	"time"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -131,7 +131,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 		// At most one of issuer and clusterIssuer is not nil
 		issuer        *cmapi.Issuer
 		clusterIssuer *cmapi.ClusterIssuer
-		secret        *v1.Secret
+		secret        *corev1.Secret
 		order         *cmacme.Order
 		challenges    []*cmacme.Challenge
 
@@ -207,14 +207,14 @@ No CertificateRequest found for this Certificate$`,
 			challenges: []*cmacme.Challenge{
 				gen.Challenge("test-challenge1",
 					gen.SetChallengeNamespace(ns1),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengeToken("dummy-token1"),
 					gen.SetChallengePresented(false),
 					gen.SetChallengeProcessing(false),
 				),
 				gen.Challenge("test-challenge2",
 					gen.SetChallengeNamespace(ns1),
-					gen.SetChallengeType("dns-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeDNS01),
 					gen.SetChallengeToken("dummy-token2"),
 					gen.SetChallengePresented(false),
 					gen.SetChallengeProcessing(false),
@@ -347,7 +347,7 @@ CertificateRequest:
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Create Certificate resource
-			crt, err := cmCl.CertmanagerV1alpha2().Certificates(test.inputNamespace).Create(ctx, test.certificate, metav1.CreateOptions{})
+			crt, err := cmCl.CertmanagerV1().Certificates(test.inputNamespace).Create(ctx, test.certificate, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -365,13 +365,13 @@ CertificateRequest:
 			}
 
 			if test.issuer != nil {
-				_, err := cmCl.CertmanagerV1alpha2().Issuers(crt.Namespace).Create(ctx, test.issuer, metav1.CreateOptions{})
+				_, err := cmCl.CertmanagerV1().Issuers(crt.Namespace).Create(ctx, test.issuer, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
 			}
 			if test.clusterIssuer != nil {
-				_, err := cmCl.CertmanagerV1alpha2().ClusterIssuers().Create(ctx, test.clusterIssuer, metav1.CreateOptions{})
+				_, err := cmCl.CertmanagerV1().ClusterIssuers().Create(ctx, test.clusterIssuer, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -385,7 +385,7 @@ CertificateRequest:
 			}
 
 			if test.order != nil {
-				createdReq, err := cmCl.CertmanagerV1alpha2().CertificateRequests(test.req.Namespace).Get(ctx, test.req.Name, metav1.GetOptions{})
+				createdReq, err := cmCl.CertmanagerV1().CertificateRequests(test.req.Namespace).Get(ctx, test.req.Name, metav1.GetOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -396,7 +396,7 @@ CertificateRequest:
 			}
 
 			if len(test.challenges) > 0 {
-				createdOrder, err := cmCl.AcmeV1alpha2().Orders(test.req.Namespace).Get(ctx, test.order.Name, metav1.GetOptions{})
+				createdOrder, err := cmCl.AcmeV1().Orders(test.req.Namespace).Get(ctx, test.order.Name, metav1.GetOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -450,27 +450,27 @@ func setCertificateStatus(cmCl versioned.Interface, crt *cmapi.Certificate,
 	}
 	crt.Status.NotAfter = status.NotAfter
 	crt.Status.Revision = status.Revision
-	crt, err := cmCl.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	crt, err := cmCl.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	return crt, err
 }
 
 func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Context, crt *cmapi.Certificate,
 	req *cmapi.CertificateRequest, reqStatus *cmapi.CertificateRequestStatus) error {
 
-	req, err := cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(ctx, req, metav1.CreateOptions{})
+	req, err := cmCl.CertmanagerV1().CertificateRequests(crt.Namespace).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	req.OwnerReferences = append(req.OwnerReferences, *metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")))
-	req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Update(ctx, req, metav1.UpdateOptions{})
+	req, err = cmCl.CertmanagerV1().CertificateRequests(crt.Namespace).Update(ctx, req, metav1.UpdateOptions{})
 	if err != nil {
 		t.Errorf("Update Err: %v", err)
 	}
 
 	if reqStatus != nil {
 		req.Status.Conditions = reqStatus.Conditions
-		req, err = cmCl.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+		req, err = cmCl.CertmanagerV1().CertificateRequests(crt.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
 		if err != nil {
 			t.Errorf("Update Err: %v", err)
 		}
@@ -481,13 +481,13 @@ func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Cont
 func createOrderOwnedByCR(t *testing.T, cmCl versioned.Interface, ctx context.Context,
 	req *cmapi.CertificateRequest, order *cmacme.Order) error {
 
-	order, err := cmCl.AcmeV1alpha2().Orders(req.Namespace).Create(ctx, order, metav1.CreateOptions{})
+	order, err := cmCl.AcmeV1().Orders(req.Namespace).Create(ctx, order, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	order.OwnerReferences = append(order.OwnerReferences, *metav1.NewControllerRef(req, cmapi.SchemeGroupVersion.WithKind("CertificateRequest")))
-	order, err = cmCl.AcmeV1alpha2().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
+	order, err = cmCl.AcmeV1().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
 	if err != nil {
 		t.Errorf("Update Err: %v", err)
 	}
@@ -499,13 +499,13 @@ func createChallengesOwnedByOrder(t *testing.T, cmCl versioned.Interface, ctx co
 	order *cmacme.Order, challenges []*cmacme.Challenge) error {
 
 	for _, c := range challenges {
-		challenge, err := cmCl.AcmeV1alpha2().Challenges(order.Namespace).Create(ctx, c, metav1.CreateOptions{})
+		challenge, err := cmCl.AcmeV1().Challenges(order.Namespace).Create(ctx, c, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
 
 		challenge.OwnerReferences = append(challenge.OwnerReferences, *metav1.NewControllerRef(order, cmacme.SchemeGroupVersion.WithKind("Order")))
-		challenge, err = cmCl.AcmeV1alpha2().Challenges(order.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
+		challenge, err = cmCl.AcmeV1().Challenges(order.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
 		if err != nil {
 			t.Errorf("Update Err: %v", err)
 		}

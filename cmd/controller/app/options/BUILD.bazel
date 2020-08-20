@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager:go_default_library",
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/controller/acmechallenges:go_default_library",
         "//pkg/controller/acmeorders:go_default_library",
         "//pkg/controller/certificaterequests/acme:go_default_library",

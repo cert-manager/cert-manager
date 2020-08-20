@@ -28,19 +28,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
-	switch spec.KeyAlgorithm {
+	spec = *spec.DeepCopy()
+	if spec.PrivateKey == nil {
+		spec.PrivateKey = &v1.CertificatePrivateKey{}
+	}
+	switch spec.PrivateKey.Algorithm {
 	case "", cmapi.RSAKeyAlgorithm:
 		return rsaPrivateKeyMatchesSpec(pk, spec)
 	case cmapi.ECDSAKeyAlgorithm:
 		return ecdsaPrivateKeyMatchesSpec(pk, spec)
 	default:
-		return nil, fmt.Errorf("unrecognised key algorithm type %q", spec.KeyAlgorithm)
+		return nil, fmt.Errorf("unrecognised key algorithm type %q", spec.PrivateKey.Algorithm)
 	}
 }
 
@@ -56,8 +61,8 @@ func rsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) 
 	//  from older versions.
 	// The default RSA keySize is set to 2048.
 	keySize := pki.MinRSAKeySize
-	if spec.KeySize > 0 {
-		keySize = spec.KeySize
+	if spec.PrivateKey.Size > 0 {
+		keySize = spec.PrivateKey.Size
 	}
 	if rsaPk.N.BitLen() != keySize {
 		violations = append(violations, "spec.keySize")
@@ -77,8 +82,8 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 	//  from older versions.
 	// The default EC curve type is EC256
 	expectedKeySize := pki.ECCurve256
-	if spec.KeySize > 0 {
-		expectedKeySize = spec.KeySize
+	if spec.PrivateKey.Size > 0 {
+		expectedKeySize = spec.PrivateKey.Size
 	}
 	if expectedKeySize != ecdsaPk.Curve.Params().BitSize {
 		violations = append(violations, "spec.keySize")
@@ -91,7 +96,7 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 // counterpart fields on the CertificateRequest.
 // If decoding the x509 certificate request fails, an error will be returned.
 func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpec) ([]string, error) {
-	x509req, err := pki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
+	x509req, err := pki.DecodeX509CertificateRequestBytes(req.Spec.Request)
 	if err != nil {
 		return nil, err
 	}
@@ -112,13 +117,13 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 	if !util.EqualUnsorted(pki.IPAddressesToString(x509req.IPAddresses), spec.IPAddresses) {
 		violations = append(violations, "spec.ipAddresses")
 	}
-	if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URISANs) {
+	if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URIs) {
 		violations = append(violations, "spec.uriSANs")
 	}
 	if x509req.Subject.SerialNumber != spec.Subject.SerialNumber {
 		violations = append(violations, "spec.subject.serialNumber")
 	}
-	if !util.EqualUnsorted(x509req.Subject.Organization, spec.Organization) {
+	if !util.EqualUnsorted(x509req.Subject.Organization, spec.Subject.Organizations) {
 		violations = append(violations, "spec.subject.organizations")
 	}
 	if !util.EqualUnsorted(x509req.Subject.Country, spec.Subject.Countries) {
@@ -196,10 +201,10 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 	if !util.EqualUnsorted(pki.IPAddressesToString(x509cert.IPAddresses), spec.IPAddresses) {
 		violations = append(violations, "spec.ipAddresses")
 	}
-	if !util.EqualUnsorted(pki.URLsToString(x509cert.URIs), spec.URISANs) {
+	if !util.EqualUnsorted(pki.URLsToString(x509cert.URIs), spec.URIs) {
 		violations = append(violations, "spec.uriSANs")
 	}
-	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailSANs) {
+	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailAddresses) {
 		violations = append(violations, "spec.emailSANs")
 	}
 

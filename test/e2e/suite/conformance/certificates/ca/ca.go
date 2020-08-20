@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
@@ -56,7 +56,7 @@ func (c *ca) createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 
 	c.secretName = rootCertSecret.Name
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "ca-issuer-",
 		},
@@ -80,7 +80,7 @@ func (c *ca) createCAClusterIssuer(f *framework.Framework) cmmeta.ObjectReferenc
 
 	c.secretName = rootCertSecret.Name
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "ca-cluster-issuer-",
 		},
@@ -102,7 +102,7 @@ func (c *ca) deleteCAClusterIssuer(f *framework.Framework, issuer cmmeta.ObjectR
 	err := f.KubeClientSet.CoreV1().Secrets(f.Config.Addons.CertManager.ClusterResourceNamespace).Delete(context.TODO(), c.secretName, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to delete root signing keypair secret")
 
-	err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
+	err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), issuer.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to delete ca issuer")
 }
 

@@ -25,7 +25,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 const (
@@ -49,26 +50,30 @@ const (
 // the provided cert-manager Certificate resource, taking into account the
 // parameters on the provided resource.
 // The returned key will either be RSA or ECDSA.
-func GeneratePrivateKeyForCertificate(crt *v1alpha2.Certificate) (crypto.Signer, error) {
-	switch crt.Spec.KeyAlgorithm {
-	case v1alpha2.KeyAlgorithm(""), v1alpha2.RSAKeyAlgorithm:
+func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error) {
+	crt = crt.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &v1.CertificatePrivateKey{}
+	}
+	switch crt.Spec.PrivateKey.Algorithm {
+	case v1.PrivateKeyAlgorithm(""), v1.RSAKeyAlgorithm:
 		keySize := MinRSAKeySize
 
-		if crt.Spec.KeySize > 0 {
-			keySize = crt.Spec.KeySize
+		if crt.Spec.PrivateKey.Size > 0 {
+			keySize = crt.Spec.PrivateKey.Size
 		}
 
 		return GenerateRSAPrivateKey(keySize)
-	case v1alpha2.ECDSAKeyAlgorithm:
+	case v1.ECDSAKeyAlgorithm:
 		keySize := ECCurve256
 
-		if crt.Spec.KeySize > 0 {
-			keySize = crt.Spec.KeySize
+		if crt.Spec.PrivateKey.Size > 0 {
+			keySize = crt.Spec.PrivateKey.Size
 		}
 
 		return GenerateECPrivateKey(keySize)
 	default:
-		return nil, fmt.Errorf("unsupported private key algorithm specified: %s", crt.Spec.KeyAlgorithm)
+		return nil, fmt.Errorf("unsupported private key algorithm specified: %s", crt.Spec.PrivateKey.Algorithm)
 	}
 }
 
@@ -109,9 +114,9 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 // EncodePrivateKey will encode a given crypto.PrivateKey by first inspecting
 // the type of key encoding and then inspecting the type of key provided.
 // It only supports encoding RSA or ECDSA keys.
-func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1alpha2.KeyEncoding) ([]byte, error) {
+func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1.PrivateKeyEncoding) ([]byte, error) {
 	switch keyEncoding {
-	case v1alpha2.KeyEncoding(""), v1alpha2.PKCS1:
+	case v1.PrivateKeyEncoding(""), v1.PKCS1:
 		switch k := pk.(type) {
 		case *rsa.PrivateKey:
 			return EncodePKCS1PrivateKey(k), nil
@@ -120,7 +125,7 @@ func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1alpha2.KeyEncoding) ([
 		default:
 			return nil, fmt.Errorf("error encoding private key: unknown key type: %T", pk)
 		}
-	case v1alpha2.PKCS8:
+	case v1.PKCS8:
 		return EncodePKCS8PrivateKey(pk)
 	default:
 		return nil, fmt.Errorf("error encoding private key: unknown key encoding: %s", keyEncoding)

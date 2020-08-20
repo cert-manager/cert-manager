@@ -33,7 +33,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -51,7 +51,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			return
 		}
 		log.V(logf.DebugLevel).Info("updating Order resource status")
-		_, updateErr := c.cmClient.AcmeV1alpha2().Orders(o.Namespace).UpdateStatus(context.TODO(), o, metav1.UpdateOptions{})
+		_, updateErr := c.cmClient.AcmeV1().Orders(o.Namespace).UpdateStatus(context.TODO(), o, metav1.UpdateOptions{})
 		if updateErr != nil {
 			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
@@ -330,7 +330,7 @@ func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmacme
 
 func (c *controller) createRequiredChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
 	for _, ch := range requiredChallenges {
-		_, err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Create(context.TODO(), &ch, metav1.CreateOptions{})
+		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(context.TODO(), &ch, metav1.CreateOptions{})
 		if apierrors.IsAlreadyExists(err) {
 			continue
 		}
@@ -358,7 +358,7 @@ func (c *controller) deleteLeftoverChallenges(o *cmacme.Order, requiredChallenge
 	}
 
 	for _, ch := range leftover {
-		if err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Delete(context.TODO(), ch.Name, metav1.DeleteOptions{}); err != nil {
+		if err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(context.TODO(), ch.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -373,7 +373,7 @@ func (c *controller) deleteAllChallenges(o *cmacme.Order) error {
 	}
 
 	for _, ch := range challenges {
-		if err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Delete(context.TODO(), ch.Name, metav1.DeleteOptions{}); err != nil {
+		if err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(context.TODO(), ch.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -426,14 +426,14 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// Due to a bug in the initial release of this controller, we previously
 	// only supported DER encoded CSRs and not PEM encoded as they are intended
 	// to be as part of our API.
-	// To work around this, we first attempt to decode the CSR into DER bytes
-	// by running pem.Decode. If the PEM block is empty, we assume that the CSR
+	// To work around this, we first attempt to decode the Request into DER bytes
+	// by running pem.Decode. If the PEM block is empty, we assume that the Request
 	// is DER encoded and continue to call FinalizeOrder.
 	var derBytes []byte
-	block, _ := pem.Decode(o.Spec.CSR)
+	block, _ := pem.Decode(o.Spec.Request)
 	if block == nil {
-		log.V(logf.WarnLevel).Info("failed to parse CSR as PEM data, attempting to treat CSR as DER encoded for compatibility reasons")
-		derBytes = o.Spec.CSR
+		log.V(logf.WarnLevel).Info("failed to parse Request as PEM data, attempting to treat Request as DER encoded for compatibility reasons")
+		derBytes = o.Spec.Request
 	} else {
 		derBytes = block.Bytes
 	}

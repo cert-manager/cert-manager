@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -68,7 +68,11 @@ func mustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate) cryptoBundle {
 	return *c
 }
 
-func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
+func createCryptoBundle(originalCert *cmapi.Certificate) (*cryptoBundle, error) {
+	crt := originalCert.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
+	}
 	reqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return nil, err
@@ -79,7 +83,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		return nil, err
 	}
 
-	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.KeyEncoding)
+	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.PrivateKey.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +121,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 			Annotations:     annotations,
 		},
 		Spec: cmapi.CertificateRequestSpec{
-			CSRPEM:    csrPEM,
+			Request:   csrPEM,
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,
@@ -160,7 +164,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 	)
 
 	return &cryptoBundle{
-		certificate:                            crt,
+		certificate:                            originalCert,
 		expectedRequestName:                    reqName,
 		privateKey:                             privateKey,
 		privateKeyBytes:                        privateKeyBytes,

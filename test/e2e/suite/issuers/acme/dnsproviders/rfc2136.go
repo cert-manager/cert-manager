@@ -17,7 +17,7 @@ limitations under the License.
 package dnsproviders
 
 import (
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 )
 

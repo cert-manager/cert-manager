@@ -28,8 +28,8 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -1006,9 +1006,9 @@ func TestSync(t *testing.T) {
 				kClient:             b.Client,
 				cmClient:            b.CMClient,
 				recorder:            b.Recorder,
-				issuerLister:        b.SharedInformerFactory.Certmanager().V1alpha2().Issuers().Lister(),
-				clusterIssuerLister: b.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers().Lister(),
-				certificateLister:   b.SharedInformerFactory.Certmanager().V1alpha2().Certificates().Lister(),
+				issuerLister:        b.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
+				clusterIssuerLister: b.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
+				certificateLister:   b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(),
 				defaults: defaults{
 					issuerName:                 test.DefaultIssuerName,
 					issuerKind:                 test.DefaultIssuerKind,

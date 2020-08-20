@@ -27,8 +27,8 @@ import (
 
 	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -36,28 +36,28 @@ import (
 )
 
 // Present the challenge value with the given solver.
-func (f *fakeSolver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (f *fakeSolver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakePresent(ctx, issuer, ch)
 }
 
 // Check should return Error only if propagation check cannot be performed.
 // It MUST return `false, nil` if can contact all relevant services and all is
 // doing is waiting for propagation
-func (f *fakeSolver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (f *fakeSolver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakeCheck(ctx, issuer, ch)
 }
 
 // CleanUp will remove challenge records for a given solver.
 // This may involve deleting resources in the Kubernetes API Server, or
 // communicating with other external components (e.g. DNS providers).
-func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 	return f.fakeCleanUp(ctx, issuer, ch)
 }
 
 type fakeSolver struct {
-	fakePresent func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error
-	fakeCheck   func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error
-	fakeCleanUp func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error
+	fakePresent func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
+	fakeCheck   func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
+	fakeCleanUp func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error
 }
 
 type testT struct {
@@ -119,13 +119,13 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 			),
 			httpSolver: &fakeSolver{
-				fakePresent: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakePresent: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return fmt.Errorf("some error")
 				},
 			},
@@ -134,7 +134,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -145,12 +145,12 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Pending),
 							gen.SetChallengePresented(true),
-							gen.SetChallengeType("http-01"),
-							gen.SetChallengeReason("Waiting for http-01 challenge propagation: some error"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
 						))),
 				},
 				ExpectedEvents: []string{
-					"Normal Presented Presented challenge using http-01 challenge mechanism",
+					"Normal Presented Presented challenge using HTTP-01 challenge mechanism",
 				},
 			},
 		},
@@ -160,14 +160,14 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeDNSName("test.com"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -177,7 +177,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeDNSName("test.com"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -189,13 +189,13 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeDNSName("test.com"),
 							gen.SetChallengeState(cmacme.Valid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Successfully authorized domain"),
 						))),
 				},
 				ExpectedEvents: []string{
-					`Normal DomainVerified Domain "test.com" verified with "http-01" validation`,
+					`Normal DomainVerified Domain "test.com" verified with "HTTP-01" validation`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -215,14 +215,14 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -231,7 +231,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -242,7 +242,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Invalid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: an error happened"),
 						))),
@@ -274,14 +274,14 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *cmacme.Challenge) error {
+				fakeCleanUp: func(context.Context, v1.GenericIssuer, *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -290,7 +290,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -301,7 +301,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Invalid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error"),
 						))),
@@ -337,11 +337,11 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Valid),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -350,7 +350,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Valid),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -361,7 +361,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(false),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Valid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(false),
 						))),
 				},
@@ -372,11 +372,11 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Invalid),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
+				fakeCleanUp: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
 					return nil
 				},
 			},
@@ -385,7 +385,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Invalid),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -396,7 +396,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(false),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Invalid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(false),
 						))),
 				},
@@ -419,8 +419,8 @@ func runTest(t *testing.T, test testT) {
 	c := &controller{}
 	c.Register(test.builder.Context)
 	c.helper = issuer.NewHelper(
-		test.builder.SharedInformerFactory.Certmanager().V1alpha2().Issuers().Lister(),
-		test.builder.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers().Lister(),
+		test.builder.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
+		test.builder.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
 	)
 	c.accountRegistry = &accountstest.FakeRegistry{
 		GetClientFunc: func(_ string) (acmecl.Interface, error) {

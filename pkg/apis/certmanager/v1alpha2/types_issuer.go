@@ -27,7 +27,6 @@ import (
 // +genclient:nonNamespaced
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:storageversion
 
 // A ClusterIssuer represents a certificate issuing authority which can be
 // referenced as part of `issuerRef` fields.
@@ -58,7 +57,6 @@ type ClusterIssuerList struct {
 // +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:storageversion
 
 // An Issuer represents a certificate issuing authority which can be
 // referenced as part of `issuerRef` fields.

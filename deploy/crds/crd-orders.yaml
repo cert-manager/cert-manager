@@ -179,7 +179,7 @@ spec:
                   description: URL of the Order. This will initially be empty when the resource is first created. The Order controller will populate this field when the Order is first processed. This field will be immutable after it is initially set.
                   type: string
       served: true
-      storage: true
+      storage: false
     - name: v1alpha3
       subresources:
         status: {}
@@ -631,7 +631,7 @@ spec:
                   description: URL of the Order. This will initially be empty when the resource is first created. The Order controller will populate this field when the Order is first processed. This field will be immutable after it is initially set.
                   type: string
       served: true
-      storage: false
+      storage: true
 status:
   acceptedNames:
     kind: ""

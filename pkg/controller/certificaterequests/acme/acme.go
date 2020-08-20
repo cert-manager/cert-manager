@@ -29,10 +29,10 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmacmeclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2"
-	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmacmeclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
@@ -53,7 +53,7 @@ type ACME struct {
 	issuerOptions controllerpkg.IssuerOptions
 
 	orderLister cmacmelisters.OrderLister
-	acmeClientV cmacmeclientset.AcmeV1alpha2Interface
+	acmeClientV cmacmeclientset.AcmeV1Interface
 
 	reporter *crutil.Reporter
 }
@@ -63,7 +63,7 @@ func init() {
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		// watch owned Order resources and trigger resyncs of CertificateRequests
 		// that own Orders automatically
-		orderInformer := ctx.SharedInformerFactory.Acme().V1alpha2().Orders().Informer()
+		orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
 			For(certificaterequests.New(apiutil.IssuerACME, NewACME(ctx), orderInformer)).
 			Complete()
@@ -74,27 +74,27 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 	return &ACME{
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
-		orderLister:   ctx.SharedInformerFactory.Acme().V1alpha2().Orders().Lister(),
-		acmeClientV:   ctx.CMClient.AcmeV1alpha2(),
+		orderLister:   ctx.SharedInformerFactory.Acme().V1().Orders().Lister(),
+		acmeClientV:   ctx.CMClient.AcmeV1(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 	}
 }
 
-func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer v1alpha2.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	// If we can't decode the CSR PEM we have to hard fail
-	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
+	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.Request)
 	if err != nil {
-		message := "Failed to decode CSR in spec"
+		message := "Failed to decode CSR in spec.request"
 
-		a.reporter.Failed(cr, err, "CSRParsingError", message)
+		a.reporter.Failed(cr, err, "RequestParsingError", message)
 		log.Error(err, message)
 
 		return nil, nil
 	}
 
-	// If the CommonName is also not present in the DNS names of the CSR then hard fail.
+	// If the CommonName is also not present in the DNS names of the Request then hard fail.
 	if len(csr.Subject.CommonName) > 0 && !util.Contains(csr.DNSNames, csr.Subject.CommonName) {
 		err = fmt.Errorf("%q does not exist in %s", csr.Subject.CommonName, csr.DNSNames)
 		message := "The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames"
@@ -151,7 +151,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 		// TODO: improve this behaviour - this issue occurs because someone
 		//  else may create a CertificateRequest with a name that is equal to
 		//  the name of the request we are creating, due to our hash function
-		//  not account for parameters stored on the CSR (i.e. the public key).
+		//  not account for parameters stored on the Request (i.e. the public key).
 		//  We should improve the way we hash input data or somehow avoid
 		//  relying on deterministic names for Order resources.
 		return nil, fmt.Errorf("found Order resource not owned by this CertificateRequest, retrying")
@@ -201,9 +201,9 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
+func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
 	spec := cmacme.OrderSpec{
-		CSR:        cr.Spec.CSRPEM,
+		Request:    cr.Spec.Request,
 		IssuerRef:  cr.Spec.IssuerRef,
 		CommonName: csr.Subject.CommonName,
 		DNSNames:   csr.DNSNames,
@@ -223,7 +223,7 @@ func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (
 			Labels:      cr.Labels,
 			Annotations: cr.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateRequestKind)),
+				*metav1.NewControllerRef(cr, v1.SchemeGroupVersion.WithKind(v1.CertificateRequestKind)),
 			},
 		},
 		Spec: spec,
@@ -231,8 +231,8 @@ func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (
 }
 
 func hashOrder(orderSpec cmacme.OrderSpec) (uint32, error) {
-	// create a shallow copy of the OrderSpec so we can overwrite the CSR field
-	orderSpec.CSR = nil
+	// create a shallow copy of the OrderSpec so we can overwrite the Request field
+	orderSpec.Request = nil
 
 	orderSpecBytes, err := json.Marshal(orderSpec)
 	if err != nil {

@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
@@ -36,20 +36,20 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 	f := framework.NewDefaultFramework("create-selfsigned-certificaterequest")
 	h := f.Helper()
 
-	var basicCR *v1alpha2.CertificateRequest
+	var basicCR *v1.CertificateRequest
 	issuerName := "test-selfsigned-issuer"
 	certificateRequestName := "test-selfsigned-certificaterequest"
 	certificateRequestSecretName := "test-selfsigned-private-key"
 
 	JustBeforeEach(func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerSelfSignedIssuer(issuerName), metav1.CreateOptions{})
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerSelfSignedIssuer(issuerName), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
-			v1alpha2.IssuerCondition{
-				Type:   v1alpha2.IssuerConditionReady,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
 				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
@@ -64,7 +64,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				Kind:  "Issuer",
 			}),
 			gen.AddCertificateRequestAnnotations(map[string]string{
-				v1alpha2.CertificateRequestPrivateKeyAnnotationKey: certificateRequestSecretName,
+				v1.CertificateRequestPrivateKeyAnnotationKey: certificateRequestSecretName,
 			}),
 		)
 	})
@@ -72,7 +72,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), certificateRequestSecretName, metav1.DeleteOptions{})
-		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
+		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
 	})
 
 	Context("Self Signed and private key", func() {
@@ -85,7 +85,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 		})
 
 		It("should generate a valid certificate from CSR backed by a RSA key", func() {
-			crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
+			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 			By("Creating a CertificateRequest")
 			csr, err := generateRSACSR()
@@ -107,7 +107,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				certificateRequestSecretName, f.Namespace.Name, rootECKey), metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
+			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 			By("Creating a CertificateRequest")
 			csr, err := generateECCSR()
 			Expect(err).NotTo(HaveOccurred())
@@ -140,7 +140,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 		}
 		for _, v := range cases {
 			It("should generate a signed certificate valid for "+v.label, func() {
-				crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
+				crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
 
 				By("Creating a CertificateRequest")
 				csr, err := generateRSACSR()

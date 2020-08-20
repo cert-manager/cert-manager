@@ -28,11 +28,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"software.sslmate.com/src/go-pkcs12"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-func mustGeneratePrivateKey(t *testing.T, encoding cmapi.KeyEncoding) []byte {
+func mustGeneratePrivateKey(t *testing.T, encoding cmapi.PrivateKeyEncoding) []byte {
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)

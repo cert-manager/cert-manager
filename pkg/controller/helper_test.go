@@ -24,12 +24,12 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func TestCalculateDurationUntilRenew(t *testing.T) {
 	c := IssuerOptions{
-		RenewBeforeExpiryDuration: v1alpha2.DefaultRenewBefore,
+		RenewBeforeExpiryDuration: v1.DefaultRenewBefore,
 	}
 	currentTime := time.Now()
 	now = func() time.Time { return currentTime }
@@ -101,8 +101,8 @@ func TestCalculateDurationUntilRenew(t *testing.T) {
 		},
 	}
 	for k, v := range tests {
-		cert := &v1alpha2.Certificate{
-			Spec: v1alpha2.CertificateSpec{
+		cert := &v1.Certificate{
+			Spec: v1.CertificateSpec{
 				Duration:    v.duration,
 				RenewBefore: v.renewBefore,
 			},

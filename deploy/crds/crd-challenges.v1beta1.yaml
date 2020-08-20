@@ -45,7 +45,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
-  version: v1alpha2
+  version: v1
   versions:
     - name: v1alpha2
       schema:
@@ -854,7 +854,7 @@ spec:
                     - expired
                     - errored
       served: true
-      storage: true
+      storage: false
     - name: v1alpha3
       schema:
         openAPIV3Schema:
@@ -3280,7 +3280,7 @@ spec:
                     - expired
                     - errored
       served: true
-      storage: false
+      storage: true
 status:
   acceptedNames:
     kind: ""

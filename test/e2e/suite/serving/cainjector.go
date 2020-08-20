@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
@@ -59,7 +59,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 				By("Waiting for Issuer to become Ready")
-				err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
+				err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 					issuerName,
 					certmanager.IssuerCondition{
 						Type:   certmanager.IssuerConditionReady,
@@ -85,7 +85,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
+				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
 					Type:   certmanager.CertificateConditionReady,
 					Status: cmmeta.ConditionTrue,
 				}, time.Second*30)
@@ -431,7 +431,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 	//	makeInjectable: func(namePrefix string) runtime.Object {
 	//		return &apireg.APIService{
 	//			ObjectMeta: metav1.ObjectMeta{
-	//				Name: "v1." + namePrefix + ".testing.cert-manager.io",
+	//				Name: "corev1." + namePrefix + ".testing.cert-manager.io",
 	//				Annotations: map[string]string{
 	//					certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 	//				},

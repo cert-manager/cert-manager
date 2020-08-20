@@ -17,7 +17,7 @@ limitations under the License.
 package gen
 
 import (
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
@@ -47,9 +47,9 @@ func SetChallengeNamespace(ns string) ChallengeModifier {
 	}
 }
 
-func SetChallengeType(t string) ChallengeModifier {
+func SetChallengeType(t cmacme.ACMEChallengeType) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
-		ch.Spec.Type = cmacme.ACMEChallengeType(t)
+		ch.Spec.Type = t
 	}
 }
 

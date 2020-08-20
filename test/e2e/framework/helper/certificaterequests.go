@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -44,7 +44,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for CertificateRequest %s to be ready", name)
-			cr, err = h.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Get(context.TODO(), name, metav1.GetOptions{})
+			cr, err = h.CMClient.CertmanagerV1().CertificateRequests(ns).Get(context.TODO(), name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 			}
@@ -72,7 +72,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 // the x509 certificate are correct as defined by the CertificateRequest's
 // spec.
 func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
-	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
+	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.Request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.Request: %s", err)
 	}
@@ -136,7 +136,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		return nil, fmt.Errorf("failed to build key usages from certificate: %s", err)
 	}
 
-	var keyAlg cmapi.KeyAlgorithm
+	var keyAlg cmapi.PrivateKeyAlgorithm
 	switch csr.PublicKeyAlgorithm {
 	case x509.RSA:
 		keyAlg = cmapi.RSAKeyAlgorithm

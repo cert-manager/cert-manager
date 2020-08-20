@@ -24,6 +24,7 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:storageversion
 
 // A Certificate resource should be created to ensure an up to date and signed
 // x509 certificate is stored in the Kubernetes Secret resource named in `spec.secretName`.

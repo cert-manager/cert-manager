@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/client:go_default_library",
-        "//pkg/apis/acme/v1alpha2:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
     ],
 )
 

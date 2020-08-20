@@ -22,11 +22,11 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type Vault struct {
-	NewFn  func(string, corelisters.SecretLister, v1alpha2.GenericIssuer) (*Vault, error)
+	NewFn  func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)
 	SignFn func([]byte, time.Duration) ([]byte, []byte, error)
 }
 
@@ -37,7 +37,7 @@ func New() *Vault {
 		},
 	}
 
-	v.NewFn = func(string, corelisters.SecretLister, v1alpha2.GenericIssuer) (*Vault, error) {
+	v.NewFn = func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error) {
 		return v, nil
 	}
 
@@ -55,12 +55,12 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	return v
 }
 
-func (v *Vault) WithNew(f func(string, corelisters.SecretLister, v1alpha2.GenericIssuer) (*Vault, error)) *Vault {
+func (v *Vault) WithNew(f func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)) *Vault {
 	v.NewFn = f
 	return v
 }
 
-func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1alpha2.GenericIssuer) (*Vault, error) {
+func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer) (*Vault, error) {
 	_, err := v.NewFn(ns, sl, iss)
 	if err != nil {
 		return nil, err

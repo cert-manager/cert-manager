@@ -31,7 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 

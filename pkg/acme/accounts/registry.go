@@ -23,7 +23,7 @@ import (
 	"sync"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 )
 
 // ErrNotFound is returned by GetClient if there is no ACME client registered.

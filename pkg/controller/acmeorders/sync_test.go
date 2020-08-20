@@ -29,7 +29,7 @@ import (
 
 	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -189,7 +189,7 @@ dGVzdA==
 					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
 				},
 				ExpectedEvents: []string{
-					`Normal Created Created Challenge resource "testorder-3664516355" for domain "test.com"`,
+					`Normal Created Created Challenge resource "testorder-2179654896" for domain "test.com"`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{

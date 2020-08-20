@@ -42,7 +42,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
-  version: v1alpha2
+  version: v1
   versions:
     - name: v1alpha2
       schema:
@@ -1048,7 +1048,7 @@ spec:
                         description: Type of the condition, known values are ('Ready').
                         type: string
       served: true
-      storage: true
+      storage: false
     - name: v1alpha3
       schema:
         openAPIV3Schema:
@@ -4067,7 +4067,7 @@ spec:
                         description: Type of the condition, known values are ('Ready').
                         type: string
       served: true
-      storage: false
+      storage: true
 status:
   acceptedNames:
     kind: ""

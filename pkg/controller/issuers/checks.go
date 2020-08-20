@@ -22,17 +22,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
-func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha2.Issuer, error) {
+func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1.Issuer, error) {
 	issuers, err := c.issuerLister.List(labels.NewSelector())
 
 	if err != nil {
 		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
-	var affected []*v1alpha2.Issuer
+	var affected []*v1.Issuer
 	for _, iss := range issuers {
 		// only applicable for Issuer resources
 		if iss.Namespace != secret.Namespace {

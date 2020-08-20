@@ -14,7 +14,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/internal/api/validation:go_default_library",
         "//pkg/internal/apis/acme:go_default_library",
         "//pkg/internal/apis/certmanager:go_default_library",
@@ -36,7 +36,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/internal/apis/acme:go_default_library",
         "//pkg/internal/apis/certmanager:go_default_library",
         "//pkg/internal/apis/meta:go_default_library",

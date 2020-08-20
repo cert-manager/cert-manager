@@ -38,11 +38,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -77,8 +77,8 @@ func NewController(
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := cmFactory.Certmanager().V1alpha2().Certificates()
-	certificateRequestInformer := cmFactory.Certmanager().V1alpha2().CertificateRequests()
+	certificateInformer := cmFactory.Certmanager().V1().Certificates()
+	certificateRequestInformer := cmFactory.Certmanager().V1().CertificateRequests()
 	secretsInformer := factory.Core().V1().Secrets()
 
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
@@ -213,7 +213,7 @@ func (c *controller) deleteRequestsWithoutRevision(ctx context.Context, reqs ...
 		log := logf.WithRelatedResource(log, req)
 		if req.Annotations == nil || req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == "" {
 			log.V(logf.DebugLevel).Info("Deleting CertificateRequest as it does not contain a revision annotation")
-			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
+			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}
 			continue
@@ -222,7 +222,7 @@ func (c *controller) deleteRequestsWithoutRevision(ctx context.Context, reqs ...
 		_, err := strconv.ParseInt(reqRevisionStr, 10, 0)
 		if err != nil {
 			log.V(logf.DebugLevel).Info("Deleting CertificateRequest as it contains an invalid revision annotation")
-			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
+			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}
 			continue
@@ -260,19 +260,19 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 		violations, err := certificates.RequestMatchesSpec(req, crt.Spec)
 		if err != nil {
 			log.Error(err, "Failed to check if CertificateRequest matches spec, deleting CertificateRequest")
-			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
+			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}
 			continue
 		}
 		if len(violations) > 0 {
 			log.V(logf.InfoLevel).WithValues("violations", violations).Info("CertificateRequest does not match requirements on certificate.spec, deleting CertificateRequest", "violations", violations)
-			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
+			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}
 			continue
 		}
-		x509Req, err := pki.DecodeX509CertificateRequestBytes(req.Spec.CSRPEM)
+		x509Req, err := pki.DecodeX509CertificateRequestBytes(req.Spec.Request)
 		if err != nil {
 			// this case cannot happen as RequestMatchesSpec would have returned an error too
 			return nil, err
@@ -283,7 +283,7 @@ func (c *controller) deleteRequestsNotMatchingSpec(ctx context.Context, crt *cma
 		}
 		if !matches {
 			log.V(logf.DebugLevel).Info("CertificateRequest contains a CSR that does not have the same public key as the stored next private key secret, deleting CertificateRequest")
-			if err := c.client.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
+			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}
 			continue
@@ -330,13 +330,13 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		Spec: cmapi.CertificateRequestSpec{
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
-			CSRPEM:    csrPEM.Bytes(),
+			Request:   csrPEM.Bytes(),
 			IsCA:      crt.Spec.IsCA,
 			Usages:    crt.Spec.Usages,
 		},
 	}
 
-	cr, err = c.client.CertmanagerV1alpha2().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
+	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

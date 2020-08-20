@@ -852,7 +852,7 @@ spec:
                     - expired
                     - errored
       served: true
-      storage: true
+      storage: false
       subresources:
         status: {}
     - additionalPrinterColumns:
@@ -3329,7 +3329,7 @@ spec:
                     - expired
                     - errored
       served: true
-      storage: false
+      storage: true
       subresources:
         status: {}
 status:

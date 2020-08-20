@@ -25,7 +25,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/metrics"
@@ -35,7 +35,7 @@ import (
 // certificates from any ACME server. It supports DNS01 and HTTP01 challenge
 // mechanisms.
 type Acme struct {
-	issuer v1alpha2.GenericIssuer
+	issuer v1.GenericIssuer
 
 	secretsLister corelisters.SecretLister
 	secretsClient core.SecretsGetter
@@ -51,7 +51,7 @@ type Acme struct {
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(ctx *controller.Context, issuer v1alpha2.GenericIssuer) (issuer.Interface, error) {
+func New(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}

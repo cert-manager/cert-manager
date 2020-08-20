@@ -27,7 +27,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -79,7 +79,11 @@ func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, fixedClock *fa
 	return *c
 }
 
-func createCryptoBundle(crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) (*CryptoBundle, error) {
+func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.FakeClock) (*CryptoBundle, error) {
+	crt := originalCert.DeepCopy()
+	if crt.Spec.PrivateKey == nil {
+		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
+	}
 	reqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return nil, err
@@ -90,7 +94,7 @@ func createCryptoBundle(crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock)
 		return nil, err
 	}
 
-	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.KeyEncoding)
+	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.PrivateKey.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +127,7 @@ func createCryptoBundle(crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock)
 			Annotations:     annotations,
 		},
 		Spec: cmapi.CertificateRequestSpec{
-			CSRPEM:    csrPEM,
+			Request:   csrPEM,
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,
@@ -179,7 +183,7 @@ func createCryptoBundle(crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock)
 	}
 
 	return &CryptoBundle{
-		Certificate:                            crt,
+		Certificate:                            originalCert,
 		ExpectedRequestName:                    reqName,
 		PrivateKey:                             privateKey,
 		PrivateKeyBytes:                        privateKeyBytes,

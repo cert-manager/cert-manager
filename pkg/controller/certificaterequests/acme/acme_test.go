@@ -33,11 +33,11 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -194,7 +194,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-3921610499",
+					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-1733622556",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -211,7 +211,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Created Order resource default-unit-test-ns/test-cr-3921610499",
+								Message:            "Created Order resource default-unit-test-ns/test-cr-1733622556",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -253,7 +253,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-3921610499: this is a network error",
+					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-1733622556: this is a network error",
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
@@ -266,7 +266,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to get order resource default-unit-test-ns/test-cr-3921610499: this is a network error",
+								Message:            "Failed to get order resource default-unit-test-ns/test-cr-1733622556: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -289,7 +289,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Warning OrderFailed Failed to wait for order resource "test-cr-3921610499" to become ready: order is in "invalid" state: simulated failure`,
+					`Warning OrderFailed Failed to wait for order resource "test-cr-1733622556" to become ready: order is in "invalid" state: simulated failure`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -307,7 +307,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Failed to wait for order resource "test-cr-3921610499" to become ready: order is in "invalid" state: simulated failure`,
+								Message:            `Failed to wait for order resource "test-cr-1733622556" to become ready: order is in "invalid" state: simulated failure`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -321,7 +321,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-3921610499: "pending"`,
+					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-1733622556: "pending"`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -338,7 +338,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-3921610499: "pending"`,
+								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-1733622556: "pending"`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),

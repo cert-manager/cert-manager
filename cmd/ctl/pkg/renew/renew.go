@@ -32,7 +32,7 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
@@ -162,7 +162,7 @@ func (o *Options) Run(args []string) error {
 	for _, ns := range nss {
 		switch {
 		case o.All, len(o.LabelSelector) > 0:
-			crtsList, err := o.CMClient.CertmanagerV1alpha2().Certificates(ns.Name).List(ctx, metav1.ListOptions{
+			crtsList, err := o.CMClient.CertmanagerV1().Certificates(ns.Name).List(ctx, metav1.ListOptions{
 				LabelSelector: o.LabelSelector,
 			})
 			if err != nil {
@@ -173,7 +173,7 @@ func (o *Options) Run(args []string) error {
 
 		default:
 			for _, crtName := range args {
-				crt, err := o.CMClient.CertmanagerV1alpha2().Certificates(ns.Name).Get(ctx, crtName, metav1.GetOptions{})
+				crt, err := o.CMClient.CertmanagerV1().Certificates(ns.Name).Get(ctx, crtName, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -204,7 +204,7 @@ func (o *Options) Run(args []string) error {
 
 func (o *Options) renewCertificate(ctx context.Context, crt *cmapi.Certificate) error {
 	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "ManuallyTriggered", "Certificate re-issuance manually triggered")
-	_, err := o.CMClient.CertmanagerV1alpha2().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	_, err := o.CMClient.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to trigger issuance of Certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 	}
