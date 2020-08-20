@@ -38,7 +38,7 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/util"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
@@ -190,7 +190,7 @@ func (o *Options) Run(args []string) error {
 
 	// Read file as internal API version
 	r := builder.
-		WithScheme(scheme, schema.GroupVersion{Group: cmapiv1.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
+		WithScheme(scheme, schema.GroupVersion{Group: cmapi.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
 		NamespaceParam(o.CmdNamespace).DefaultNamespace().
 		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: []string{o.InputFilename}}).Flatten().Do()
@@ -214,20 +214,20 @@ func (o *Options) Run(args []string) error {
 	}
 	info := infos[0]
 	// Convert to v1 because that version is needed for functions that follow
-	crtObj, err := scheme.ConvertToVersion(info.Object, cmapiv1.SchemeGroupVersion)
+	crtObj, err := scheme.ConvertToVersion(info.Object, cmapi.SchemeGroupVersion)
 	if err != nil {
 		return fmt.Errorf("failed to convert object into version v1: %w", err)
 	}
 
 	// Cast Object into Certificate
-	crt, ok := crtObj.(*cmapiv1.Certificate)
+	crt, ok := crtObj.(*cmapi.Certificate)
 	if !ok {
 		return errors.New("decoded object is not a v1 Certificate")
 	}
 
 	crt = crt.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
-		crt.Spec.PrivateKey = &cmapiv1.CertificatePrivateKey{}
+		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
 	}
 
 	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
@@ -276,8 +276,8 @@ func (o *Options) Run(args []string) error {
 			if err != nil {
 				return false, nil
 			}
-			return apiutil.CertificateRequestHasCondition(req, cmapiv1.CertificateRequestCondition{
-				Type:   cmapiv1.CertificateRequestConditionReady,
+			return apiutil.CertificateRequestHasCondition(req, cmapi.CertificateRequestCondition{
+				Type:   cmapi.CertificateRequestConditionReady,
 				Status: cmmeta.ConditionTrue,
 			}) && len(req.Status.Certificate) > 0, nil
 		})
@@ -302,19 +302,19 @@ func (o *Options) Run(args []string) error {
 }
 
 // Builds a CertificateRequest
-func buildCertificateRequest(crt *cmapiv1.Certificate, pk []byte, crName string) (*cmapiv1.CertificateRequest, error) {
+func buildCertificateRequest(crt *cmapi.Certificate, pk []byte, crName string) (*cmapi.CertificateRequest, error) {
 	csrPEM, err := generateCSR(crt, pk)
 	if err != nil {
 		return nil, err
 	}
 
-	cr := &cmapiv1.CertificateRequest{
+	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        crName,
 			Annotations: crt.Annotations,
 			Labels:      crt.Labels,
 		},
-		Spec: cmapiv1.CertificateRequestSpec{
+		Spec: cmapi.CertificateRequestSpec{
 			Request:   csrPEM,
 			Duration:  crt.Spec.Duration,
 			IssuerRef: crt.Spec.IssuerRef,
@@ -326,7 +326,7 @@ func buildCertificateRequest(crt *cmapiv1.Certificate, pk []byte, crName string)
 	return cr, nil
 }
 
-func generateCSR(crt *cmapiv1.Certificate, pk []byte) ([]byte, error) {
+func generateCSR(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	csr, err := pki.GenerateCSR(crt)
 	if err != nil {
 		return nil, err
