@@ -28,7 +28,7 @@ import (
 	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -119,7 +119,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 			),
 			httpSolver: &fakeSolver{
 				fakePresent: func(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
@@ -134,7 +134,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
@@ -145,12 +145,12 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Pending),
 							gen.SetChallengePresented(true),
-							gen.SetChallengeType("http-01"),
-							gen.SetChallengeReason("Waiting for http-01 challenge propagation: some error"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
+							gen.SetChallengeReason("Waiting for HTTP-01 challenge propagation: some error"),
 						))),
 				},
 				ExpectedEvents: []string{
-					"Normal Presented Presented challenge using http-01 challenge mechanism",
+					"Normal Presented Presented challenge using HTTP-01 challenge mechanism",
 				},
 			},
 		},
@@ -160,7 +160,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeDNSName("test.com"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
@@ -177,7 +177,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeDNSName("test.com"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -189,13 +189,13 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeDNSName("test.com"),
 							gen.SetChallengeState(cmacme.Valid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Successfully authorized domain"),
 						))),
 				},
 				ExpectedEvents: []string{
-					`Normal DomainVerified Domain "test.com" verified with "http-01" validation`,
+					`Normal DomainVerified Domain "test.com" verified with "HTTP-01" validation`,
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -215,7 +215,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
@@ -231,7 +231,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -242,7 +242,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Invalid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: an error happened"),
 						))),
@@ -274,7 +274,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Pending),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
@@ -290,7 +290,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Pending),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -301,7 +301,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Invalid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization error for example.com: 400 fakeerror: this is a very detailed error"),
 						))),
@@ -337,7 +337,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Valid),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
@@ -350,7 +350,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Valid),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -361,7 +361,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(false),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Valid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(false),
 						))),
 				},
@@ -372,7 +372,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(cmacme.Invalid),
-				gen.SetChallengeType("http-01"),
+				gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
@@ -385,7 +385,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(cmacme.Invalid),
-					gen.SetChallengeType("http-01"),
+					gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
@@ -396,7 +396,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeProcessing(false),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(cmacme.Invalid),
-							gen.SetChallengeType("http-01"),
+							gen.SetChallengeType(cmacme.ACMEChallengeTypeHTTP01),
 							gen.SetChallengePresented(false),
 						))),
 				},

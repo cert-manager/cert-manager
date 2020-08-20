@@ -47,9 +47,9 @@ func SetChallengeNamespace(ns string) ChallengeModifier {
 	}
 }
 
-func SetChallengeType(t string) ChallengeModifier {
+func SetChallengeType(t cmacme.ACMEChallengeType) ChallengeModifier {
 	return func(ch *cmacme.Challenge) {
-		ch.Spec.Type = cmacme.ACMEChallengeType(t)
+		ch.Spec.Type = t
 	}
 }
 
