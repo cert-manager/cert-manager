@@ -83,10 +83,10 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
-	// If we can't decode the Request PEM we have to hard fail
+	// If we can't decode the CSR PEM we have to hard fail
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.Request)
 	if err != nil {
-		message := "Failed to decode Request in spec"
+		message := "Failed to decode CSR in spec.request"
 
 		a.reporter.Failed(cr, err, "RequestParsingError", message)
 		log.Error(err, message)

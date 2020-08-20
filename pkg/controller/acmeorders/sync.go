@@ -424,7 +424,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	log := logf.FromContext(ctx)
 
 	// Due to a bug in the initial release of this controller, we previously
-	// only supported DER encoded Requests and not PEM encoded as they are intended
+	// only supported DER encoded CSRs and not PEM encoded as they are intended
 	// to be as part of our API.
 	// To work around this, we first attempt to decode the Request into DER bytes
 	// by running pem.Decode. If the PEM block is empty, we assume that the Request
