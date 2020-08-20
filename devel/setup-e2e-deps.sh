@@ -37,6 +37,8 @@ echo "Installing cert-manager into the cluster..."
 check_bazel
 bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //devel/addon/...
 
+EXIT=0
+
 echo "Installing sample-webhook into the cluster..."
 "${SCRIPT_ROOT}/addon/samplewebhook/install.sh" &
 
@@ -52,4 +54,14 @@ echo "Installing ingress-nginx into the cluster..."
 echo "Loading vault into the cluster..."
 "${SCRIPT_ROOT}/addon/vault/install.sh" &
 
-wait
+# Wait for all background jobs to finish and exit with non-zero if any of them fail
+# See https://stackoverflow.com/a/515170/919436
+for job in $(jobs -p); do
+    wait $job || let "EXIT+=1"
+done
+
+if [[ "$EXIT" > 0 ]]; then
+    echo "ERROR: ${EXIT} setup jobs failed. Check logs above for details."
+fi
+
+exit $EXIT
