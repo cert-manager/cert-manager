@@ -27,7 +27,7 @@ $ kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/rel
 ```
 
 > **Note**: If you're using a Kubernetes version below `v1.15` you will need to install the legacy version of the custom resource definitions.
-> This version does not have API version conversion enabled and only supports `cert-manager.io/v1alpha2` API resources.
+> This version does not have API version conversion enabled and only supports `cert-manager.io/v1` API resources.
 
 To install the chart with the release name `my-release`:
 
