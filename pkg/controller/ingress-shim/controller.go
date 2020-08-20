@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	cmv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -122,7 +122,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 }
 
 func (c *controller) certificateDeleted(obj interface{}) {
-	crt, ok := obj.(*cmv1alpha1.Certificate)
+	crt, ok := obj.(*cmapi.Certificate)
 	if !ok {
 		runtime.HandleError(fmt.Errorf("Object is not a certificate object %#v", obj))
 		return
