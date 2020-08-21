@@ -127,6 +127,11 @@ const (
 	// The value is an array with objects containing the name and value keys
 	// for example: `[{"name": "custom-field", "value": "custom-value"}]`
 	VenafiCustomFieldsAnnotationKey = "venafi.cert-manager.io/custom-fields"
+
+	// VenafiPickupIDAnnotationKey is the annotation key used to record the
+	// Venafi Pickup ID of a certificate signing request that has been submitted
+	// to the Venafi API for collection later.
+	VenafiPickupIDAnnotationKey = "venafi.cert-manager.io/pickup-id"
 )
 
 // KeyUsage specifies valid usage contexts for keys.
