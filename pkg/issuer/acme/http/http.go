@@ -31,7 +31,7 @@ import (
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -44,10 +44,6 @@ const (
 	HTTP01Timeout = time.Minute * 15
 	// acmeSolverListenPort is the port acmesolver should listen on
 	acmeSolverListenPort = 8089
-
-	domainLabelKey               = "acme.cert-manager.io/http-domain"
-	tokenLabelKey                = "acme.cert-manager.io/http-token"
-	solverIdentificationLabelKey = "acme.cert-manager.io/http01-solver"
 )
 
 var (
