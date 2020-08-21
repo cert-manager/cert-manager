@@ -40,8 +40,7 @@ import (
 )
 
 const (
-	CRControllerName         = "certificaterequests-issuer-venafi"
-	VenafiPickupIDAnnotation = "venafi.cert-manager.io/pickup-id"
+	CRControllerName = "certificaterequests-issuer-venafi"
 )
 
 type Venafi struct {
@@ -109,7 +108,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	}
 
 	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	pickupID := cr.ObjectMeta.Annotations[VenafiPickupIDAnnotation]
+	pickupID := cr.ObjectMeta.Annotations[cmapi.VenafiPickupIDAnnotationKey]
 
 	// check if the pickup ID annotation is there, if not set it up.
 	if pickupID == "" {
@@ -136,7 +135,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 		v.reporter.Pending(cr, err, "IssuancePending", "Venafi certificate is requested")
 
-		metav1.SetMetaDataAnnotation(&cr.ObjectMeta, VenafiPickupIDAnnotation, pickupID)
+		metav1.SetMetaDataAnnotation(&cr.ObjectMeta, cmapi.VenafiPickupIDAnnotationKey, pickupID)
 
 		return nil, nil
 	}

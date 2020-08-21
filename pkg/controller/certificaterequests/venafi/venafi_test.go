@@ -385,7 +385,7 @@ func TestSign(t *testing.T) {
 								Message:            "Venafi certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -400,7 +400,7 @@ func TestSign(t *testing.T) {
 								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 				},
@@ -431,7 +431,7 @@ func TestSign(t *testing.T) {
 								Message:            "Venafi certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -446,7 +446,7 @@ func TestSign(t *testing.T) {
 								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 				},
@@ -539,7 +539,7 @@ func TestSign(t *testing.T) {
 								Message:            "Venafi certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -555,7 +555,7 @@ func TestSign(t *testing.T) {
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestCertificate(certPEM),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 				},
@@ -585,7 +585,7 @@ func TestSign(t *testing.T) {
 								Message:            "Venafi certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -601,7 +601,7 @@ func TestSign(t *testing.T) {
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestCertificate(certPEM),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 				},
@@ -631,7 +631,7 @@ func TestSign(t *testing.T) {
 								Message:            "Venafi certificate is requested",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -647,7 +647,7 @@ func TestSign(t *testing.T) {
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestCertificate(certPEM),
-							gen.AddCertificateRequestAnnotations(map[string]string{VenafiPickupIDAnnotation: "test"}),
+							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
 				},
@@ -769,7 +769,7 @@ func runTest(t *testing.T, test testT) {
 
 	if err == nil && test.fakeClient != nil && test.fakeClient.RetrieveCertificateFn != nil && !test.skipSecondSignCall {
 		// request state is ok! simulating a 2nd sync to fetch the cert
-		metav1.SetMetaDataAnnotation(&test.certificateRequest.ObjectMeta, VenafiPickupIDAnnotation, "test")
+		metav1.SetMetaDataAnnotation(&test.certificateRequest.ObjectMeta, cmapi.VenafiPickupIDAnnotationKey, "test")
 		err = controller.Sync(context.Background(), test.certificateRequest)
 	}
 
