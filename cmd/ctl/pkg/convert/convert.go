@@ -34,7 +34,6 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/ctl"
 )
 
@@ -127,7 +126,7 @@ func (o *Options) Run() error {
 	builder := new(resource.Builder)
 
 	r := builder.
-		WithScheme(scheme, schema.GroupVersion{Group: cmapi.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
+		WithScheme(scheme).
 		LocalParam(true).FilenameParam(false, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {

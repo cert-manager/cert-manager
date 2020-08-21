@@ -48,8 +48,8 @@ func init() {
 	metainstall.Install(Scheme)
 
 	// This is used to add the List object type
-	coreGroupVersion := schema.GroupVersion{Group: "", Version: runtime.APIVersionInternal}
-	Scheme.AddKnownTypes(coreGroupVersion, &metainternalversion.List{})
+	listGroupVersion := schema.GroupVersionKind{Group: "", Version: runtime.APIVersionInternal, Kind: "List"}
+	Scheme.AddKnownTypeWithName(listGroupVersion, &metainternalversion.List{})
 
 	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
 	utilruntime.Must(kscheme.AddToScheme(Scheme))
