@@ -29,8 +29,8 @@ const (
 	testdataResource1                        = "./testdata/convert/input/resource1.yaml"
 	testdataResource2                        = "./testdata/convert/input/resource2.yaml"
 	testdataResource3                        = "./testdata/convert/input/resource3.yaml"
-	testdataResourceAsList                   = "./testdata/convert/input/resource_as_list.yaml"
 	testdataResourceWithOrganizationV1alpha2 = "./testdata/convert/input/resource_with_organization_v1alpha2.yaml"
+	testdataResourcesAsListV1alpha2          = "./testdata/convert/input/resources_as_list_v1alpha2.yaml"
 
 	testdataNoOutputError                    = "./testdata/convert/output/no_output_error.yaml"
 	testdataResource1V1alpha2                = "./testdata/convert/output/resource1_v1alpha2.yaml"
@@ -40,6 +40,9 @@ const (
 	testdataResource3V1alpha2                = "./testdata/convert/output/resource3_v1alpha2.yaml"
 	testdataResourceWithOrganizationV1alpha3 = "./testdata/convert/output/resource_with_organization_v1alpha3.yaml"
 	testdataResourceWithOrganizationV1beta1  = "./testdata/convert/output/resource_with_organization_v1beta1.yaml"
+	testdataResourcesOutAsListV1alpha2       = "./testdata/convert/output/resources_as_list_v1alpha2.yaml"
+	testdataResourcesOutAsListV1alpha3       = "./testdata/convert/output/resources_as_list_v1alpha3.yaml"
+	testdataResourcesOutAsListV1beta1        = "./testdata/convert/output/resources_as_list_v1beta1.yaml"
 
 	targetv1alpha2 = "cert-manager.io/v1alpha2"
 	targetv1alpha3 = "cert-manager.io/v1alpha3"
@@ -105,6 +108,21 @@ func TestCtlConvert(t *testing.T) {
 			input:         testdataResourceWithOrganizationV1alpha2,
 			targetVersion: targetv1beta1,
 			expOutputFile: testdataResourceWithOrganizationV1beta1,
+		},
+		"a list in v1alpha2 should parsed": {
+			input:         testdataResourcesAsListV1alpha2,
+			targetVersion: targetv1alpha2,
+			expOutputFile: testdataResourcesOutAsListV1alpha2,
+		},
+		"a list in v1alpha2 should be converted to v1alpha3": {
+			input:         testdataResourcesAsListV1alpha2,
+			targetVersion: targetv1alpha3,
+			expOutputFile: testdataResourcesOutAsListV1alpha3,
+		},
+		"a list in v1alpha2 should be converted to v1beta1": {
+			input:         testdataResourcesAsListV1alpha2,
+			targetVersion: targetv1beta1,
+			expOutputFile: testdataResourcesOutAsListV1beta1,
 		},
 	}
 

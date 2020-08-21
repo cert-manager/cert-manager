@@ -1,0 +1,42 @@
+apiVersion: v1
+items:
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    creationTimestamp: null
+    name: list-test-1
+    namespace: default
+  spec:
+    dnsNames:
+    - example.cert-manager.1
+    duration: 24h0m0s
+    issuerRef:
+      name: cert-manager-test-1
+    secretName: cert-manager-test-1
+  status: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Certificate
+  metadata:
+    creationTimestamp: null
+    name: list-test-1
+    namespace: default
+  spec:
+    dnsNames:
+    - example.cert-manager.2
+    duration: 24h0m0s
+    issuerRef:
+      name: cert-manager-test-2
+    secretName: cert-manager-test-2
+  status: {}
+- apiVersion: cert-manager.io/v1alpha2
+  kind: Issuer
+  metadata:
+    creationTimestamp: null
+    name: ca-issuer
+    namespace: sandbox
+  spec:
+    ca:
+      secretName: ca-key-pair
+  status: {}
+kind: List
+metadata: {}
