@@ -130,13 +130,13 @@ func (o *Options) Run() error {
 		LocalParam(true).FilenameParam(false, &o.FilenameOptions).Flatten().Do()
 
 	if err := r.Err(); err != nil {
-		return fmt.Errorf("error here: %s", err)
+		return err
 	}
 
 	singleItemImplied := false
 	infos, err := r.IntoSingleItemImplied(&singleItemImplied).Infos()
 	if err != nil {
-		return fmt.Errorf("error here instead: %s", err)
+		return err
 	}
 
 	if len(infos) == 0 {
