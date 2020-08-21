@@ -19,6 +19,7 @@ package acmeorders
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"reflect"
@@ -34,6 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -141,7 +143,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	switch {
 	case o.Status.State == cmacme.Ready:
 		log.V(logf.DebugLevel).Info("Finalizing Order as order state is 'Ready'")
-		return c.finalizeOrder(ctx, cl, o)
+		return c.finalizeOrder(ctx, cl, o, genericIssuer)
 	case anyChallengesFailed(challenges):
 		// TODO (@munnerz): instead of waiting for the ACME server to mark this
 		//  Order as failed, we could just mark the Order as failed as there is
@@ -420,7 +422,7 @@ func (c *controller) listOwnedChallenges(o *cmacme.Order) ([]*cmacme.Challenge, 
 	return ownedChs, nil
 }
 
-func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
+func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order, issuer cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx)
 
 	// Due to a bug in the initial release of this controller, we previously
@@ -438,7 +440,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		derBytes = block.Bytes
 	}
 
-	certSlice, _, err := cl.CreateOrderCert(ctx, o.Status.FinalizeURL, derBytes, true)
+	certSlice, certURL, err := cl.CreateOrderCert(ctx, o.Status.FinalizeURL, derBytes, true)
 	// if an ACME error is returned and it's a 4xx error, mark this Order as
 	// failed and do not retry it until after applying the global backoff.
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
@@ -471,6 +473,30 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// check for errors from FinalizeOrder
 	if err != nil {
 		return fmt.Errorf("error finalizing order: %v", err)
+	}
+
+	if issuer.GetSpec().ACME != nil && issuer.GetSpec().ACME.PreferredChain != "" {
+		altBundles, err := cl.FetchCertAlternatives(ctx, certURL, true)
+		if err != nil {
+			return fmt.Errorf("error fetching alternate certificates: %w", err)
+		}
+		for _, altBundle := range altBundles {
+			for _, certPEM := range altBundle {
+				cert, err := x509.ParseCertificate(certPEM)
+				if err != nil {
+					return fmt.Errorf("error parsing alternate certificates: %w", err)
+				}
+
+				log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Found alternative ACME bundle")
+				if cert.Issuer.CommonName == issuer.GetSpec().ACME.PreferredChain {
+					// if the issuer's CN matched the preffered chain it means this bundle is
+					// signed by the requested chain
+					return c.storeCertificateOnStatus(ctx, o, altBundle)
+				}
+			}
+		}
+		// if no match is found we return to the actual cert
+		// it is a *prefered* chain after all
 	}
 
 	return c.storeCertificateOnStatus(ctx, o, certSlice)

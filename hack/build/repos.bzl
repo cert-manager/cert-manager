@@ -1967,9 +1967,9 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/crypto",
-        replace = "github.com/munnerz/crypto",
-        sum = "h1:hzR/iusv78rQSxebvSpz0olAoNmGbJrE42oeKFQ+Ni8=",
-        version = "v0.0.0-20191203200931-e1844778daa5",
+        replace = "github.com/meyskens/crypto",
+        sum = "h1:09XQpCKCNW3zrjz4zvD/cYU3hqUEWW+bZrBwK8NwFW0=",
+        version = "v0.0.0-20200821143559-6ca9aec645f0",
     )
     go_repository(
         name = "org_golang_x_exp",

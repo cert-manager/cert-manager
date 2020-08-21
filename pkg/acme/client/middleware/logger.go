@@ -73,6 +73,15 @@ func (l *Logger) FetchCert(ctx context.Context, url string, bundle bool) ([][]by
 	return l.baseCl.FetchCert(ctx, url, bundle)
 }
 
+func (l *Logger) FetchCertAlternatives(ctx context.Context, url string, bundle bool) ([][]byte, error) {
+	l.log.V(logf.TraceLevel).Info("Calling FetchCertAlternatives")
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	return l.baseCl.FetchCertAlternatives(ctx, url, bundle)
+}
+
 func (l *Logger) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
 	l.log.V(logf.TraceLevel).Info("Calling WaitOrder")
 

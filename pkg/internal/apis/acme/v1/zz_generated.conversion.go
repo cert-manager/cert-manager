@@ -685,6 +685,7 @@ func Convert_acme_ACMEExternalAccountBinding_To_v1_ACMEExternalAccountBinding(in
 func autoConvert_v1_ACMEIssuer_To_acme_ACMEIssuer(in *v1.ACMEIssuer, out *acme.ACMEIssuer, s conversion.Scope) error {
 	out.Email = in.Email
 	out.Server = in.Server
+	out.PreferredChain = in.PreferredChain
 	out.SkipTLSVerify = in.SkipTLSVerify
 	out.ExternalAccountBinding = (*acme.ACMEExternalAccountBinding)(unsafe.Pointer(in.ExternalAccountBinding))
 	// TODO: Inefficient conversion - can we improve it?
@@ -703,6 +704,7 @@ func Convert_v1_ACMEIssuer_To_acme_ACMEIssuer(in *v1.ACMEIssuer, out *acme.ACMEI
 func autoConvert_acme_ACMEIssuer_To_v1_ACMEIssuer(in *acme.ACMEIssuer, out *v1.ACMEIssuer, s conversion.Scope) error {
 	out.Email = in.Email
 	out.Server = in.Server
+	out.PreferredChain = in.PreferredChain
 	out.SkipTLSVerify = in.SkipTLSVerify
 	out.ExternalAccountBinding = (*v1.ACMEExternalAccountBinding)(unsafe.Pointer(in.ExternalAccountBinding))
 	// TODO: Inefficient conversion - can we improve it?
