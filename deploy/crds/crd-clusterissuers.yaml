@@ -69,6 +69,9 @@ spec:
                     - privateKeySecretRef
                     - server
                   properties:
+                    disableAccountKeyGeneration:
+                      description: Enables or disables generating a new ACME account key. If true, the Issuer resource will *not* request a new account but will expect the account key to be supplied via an existing secret. If false, the cert-manager system will generate a new ACME account key for the Issuer. Defaults to false.
+                      type: boolean
                     email:
                       description: Email is the email address to be associated with the ACME account. This field is optional, but it is strongly recommended to be set. It will be used to contact you in case of issues with your account or certificates, including expiry notification emails. This field may be updated after the account is initially registered.
                       type: string
@@ -1088,6 +1091,9 @@ spec:
                     - privateKeySecretRef
                     - server
                   properties:
+                    disableAccountKeyGeneration:
+                      description: Enables or disables generating a new ACME account key. If true, the Issuer resource will *not* request a new account but will expect the account key to be supplied via an existing secret. If false, the cert-manager system will generate a new ACME account key for the Issuer. Defaults to false.
+                      type: boolean
                     email:
                       description: Email is the email address to be associated with the ACME account. This field is optional, but it is strongly recommended to be set. It will be used to contact you in case of issues with your account or certificates, including expiry notification emails. This field may be updated after the account is initially registered.
                       type: string
@@ -2109,6 +2115,9 @@ spec:
                     - privateKeySecretRef
                     - server
                   properties:
+                    disableAccountKeyGeneration:
+                      description: Enables or disables generating a new ACME account key. If true, the Issuer resource will *not* request a new account but will expect the account key to be supplied via an existing secret. If false, the cert-manager system will generate a new ACME account key for the Issuer. Defaults to false.
+                      type: boolean
                     email:
                       description: Email is the email address to be associated with the ACME account. This field is optional, but it is strongly recommended to be set. It will be used to contact you in case of issues with your account or certificates, including expiry notification emails. This field may be updated after the account is initially registered.
                       type: string
@@ -3130,6 +3139,9 @@ spec:
                     - privateKeySecretRef
                     - server
                   properties:
+                    disableAccountKeyGeneration:
+                      description: Enables or disables generating a new ACME account key. If true, the Issuer resource will *not* request a new account but will expect the account key to be supplied via an existing secret. If false, the cert-manager system will generate a new ACME account key for the Issuer. Defaults to false.
+                      type: boolean
                     email:
                       description: Email is the email address to be associated with the ACME account. This field is optional, but it is strongly recommended to be set. It will be used to contact you in case of issues with your account or certificates, including expiry notification emails. This field may be updated after the account is initially registered.
                       type: string
