@@ -312,6 +312,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 
 		chain := mustLeafWithChain(t)
 		out, err := encodePKCS12Keystore(password, chain.leaf.keyPEM, chain.all.certsToPEM(), emptyCAChain)
+		require.NoError(t, err)
 
 		pkOut, certOut, caChain, err := pkcs12.DecodeChain(out, password)
 		require.NoError(t, err)
@@ -330,6 +331,7 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 
 		chain := mustLeafWithChain(t)
 		out, err := encodePKCS12Keystore(password, chain.leaf.keyPEM, chain.all.certsToPEM(), caChainInPEM)
+		require.NoError(t, err)
 
 		pkOut, certOut, caChainOut, err := pkcs12.DecodeChain(out, password)
 		require.NoError(t, err)
