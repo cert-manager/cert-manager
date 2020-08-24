@@ -373,25 +373,34 @@ func TestRemoveDuplicates(t *testing.T) {
 }
 
 func TestGenerateCSR(t *testing.T) {
-	asn1Value, err := asn1.Marshal([]asn1.ObjectIdentifier{})
+	asn1KeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
+	asn1ExtKeyUsage, err := asn1.Marshal([]asn1.ObjectIdentifier{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	dafaultExtraExtensions := []pkix.Extension{
 		{
+			Id:    oidExtensionKeyUsage,
+			Value: asn1KeyUsage,
+		},
+		{
 			Id:    oidExtensionExtendedKeyUsage,
-			Value: asn1Value,
+			Value: asn1ExtKeyUsage,
 		},
 	}
 
-	asn1Value, err = asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageIPSECEndSystem})
+	asn1ExtKeyUsage, err = asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageIPSECEndSystem})
 	if err != nil {
 		t.Fatal(err)
 	}
 	ipsecExtraExtensions := []pkix.Extension{
 		{
+			Id:    oidExtensionKeyUsage,
+			Value: asn1KeyUsage,
+		},
+		{
 			Id:    oidExtensionExtendedKeyUsage,
-			Value: asn1Value,
+			Value: asn1ExtKeyUsage,
 		},
 	}
 
@@ -423,7 +432,7 @@ func TestGenerateCSR(t *testing.T) {
 		},
 		{
 			name: "Generate CSR from certificate with extended key usages",
-			crt:  &v1.Certificate{Spec: v1.CertificateSpec{CommonName: "example.org", Usages: []v1.KeyUsage{v1.UsageIPsecEndSystem}}},
+			crt:  &v1.Certificate{Spec: v1.CertificateSpec{CommonName: "example.org", Usages: []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageIPsecEndSystem}}},
 			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,

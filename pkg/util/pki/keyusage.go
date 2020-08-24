@@ -18,11 +18,15 @@ package pki
 
 import (
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 )
 
 // Copied from x509.go
-var oidExtensionExtendedKeyUsage = []int{2, 5, 29, 37}
+var (
+	oidExtensionKeyUsage         = []int{2, 5, 29, 15}
+	oidExtensionExtendedKeyUsage = []int{2, 5, 29, 37}
+)
 
 // RFC 5280, 4.2.1.12  Extended Key Usage
 //
@@ -82,4 +86,54 @@ func OIDFromExtKeyUsage(eku x509.ExtKeyUsage) (oid asn1.ObjectIdentifier, ok boo
 		}
 	}
 	return
+}
+
+// asn1BitLength returns the bit-length of bitString by considering the
+// most-significant bit in a byte to be the "first" bit. This convention
+// matches ASN.1, but differs from almost everything else.
+func asn1BitLength(bitString []byte) int {
+	bitLen := len(bitString) * 8
+
+	for i := range bitString {
+		b := bitString[len(bitString)-i-1]
+
+		for bit := uint(0); bit < 8; bit++ {
+			if (b>>bit)&1 == 1 {
+				return bitLen
+			}
+			bitLen--
+		}
+	}
+
+	return 0
+}
+
+func reverseBitsInAByte(in byte) byte {
+	b1 := in>>4 | in<<4
+	b2 := b1>>2&0x33 | b1<<2&0xcc
+	b3 := b2>>1&0x55 | b2<<1&0xaa
+	return b3
+}
+
+func buildANS1KeyUsageRequest(usage x509.KeyUsage) (pkix.Extension, error) {
+	oidExtensionKeyUsage := pkix.Extension{
+		Id: oidExtensionKeyUsage,
+	}
+	var a [2]byte
+	a[0] = reverseBitsInAByte(byte(usage))
+	a[1] = reverseBitsInAByte(byte(usage >> 8))
+
+	l := 1
+	if a[1] != 0 {
+		l = 2
+	}
+
+	bitString := a[:l]
+	var err error
+	oidExtensionKeyUsage.Value, err = asn1.Marshal(asn1.BitString{Bytes: bitString, BitLength: asn1BitLength(bitString)})
+	if err != nil {
+		return pkix.Extension{}, err
+	}
+
+	return oidExtensionKeyUsage, nil
 }
