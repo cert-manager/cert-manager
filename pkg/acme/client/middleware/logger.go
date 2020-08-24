@@ -73,7 +73,7 @@ func (l *Logger) FetchCert(ctx context.Context, url string, bundle bool) ([][]by
 	return l.baseCl.FetchCert(ctx, url, bundle)
 }
 
-func (l *Logger) FetchCertAlternatives(ctx context.Context, url string, bundle bool) ([][]byte, error) {
+func (l *Logger) FetchCertAlternatives(ctx context.Context, url string, bundle bool) ([][][]byte, error) {
 	l.log.V(logf.TraceLevel).Info("Calling FetchCertAlternatives")
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
