@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -121,8 +122,6 @@ Outer:
 	return found
 }
 
-const defaultOrganization = "cert-manager"
-
 // OrganizationForCertificate will return the Organization to set for the
 // Certificate resource.
 // If an Organization is not specifically set, a default will be used.
@@ -196,6 +195,21 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		return nil, err
 	}
 
+	_, eka, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	asn1Usages := []asn1.ObjectIdentifier{}
+	for _, eku := range eka {
+		if oid, ok := OIDFromExtKeyUsage(eku); ok {
+			asn1Usages = append(asn1Usages, oid)
+		}
+	}
+	extendedUsage := pkix.Extension{
+		Id: oidExtensionExtendedKeyUsage,
+	}
+	extendedUsage.Value, err = asn1.Marshal(asn1Usages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
+	}
+
 	return &x509.CertificateRequest{
 		Version:            3,
 		SignatureAlgorithm: sigAlgo,
@@ -211,12 +225,11 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 			SerialNumber:       subject.SerialNumber,
 			CommonName:         commonName,
 		},
-		DNSNames:       dnsNames,
-		IPAddresses:    iPAddresses,
-		URIs:           uriNames,
-		EmailAddresses: crt.Spec.EmailAddresses,
-		// TODO: work out how best to handle extensions/key usages here
-		ExtraExtensions: []pkix.Extension{},
+		DNSNames:        dnsNames,
+		IPAddresses:     iPAddresses,
+		URIs:            uriNames,
+		EmailAddresses:  crt.Spec.EmailAddresses,
+		ExtraExtensions: []pkix.Extension{extendedUsage},
 	}, nil
 }
 

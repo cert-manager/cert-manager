@@ -18,10 +18,12 @@ package pki
 
 import (
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"reflect"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -367,5 +369,84 @@ func TestRemoveDuplicates(t *testing.T) {
 			t.Errorf("returned %q for %q but expected %q", actualOutput, test.input, test.output)
 			continue
 		}
+	}
+}
+
+func TestGenerateCSR(t *testing.T) {
+	asn1Value, err := asn1.Marshal([]asn1.ObjectIdentifier{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dafaultExtraExtensions := []pkix.Extension{
+		{
+			Id:    oidExtensionExtendedKeyUsage,
+			Value: asn1Value,
+		},
+	}
+
+	asn1Value, err = asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageIPSECEndSystem})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ipsecExtraExtensions := []pkix.Extension{
+		{
+			Id:    oidExtensionExtendedKeyUsage,
+			Value: asn1Value,
+		},
+	}
+
+	tests := []struct {
+		name    string
+		crt     *v1.Certificate
+		want    *x509.CertificateRequest
+		wantErr bool
+	}{
+		{
+			name: "Generate CSR from certificate with only DNS",
+			crt:  &v1.Certificate{Spec: v1.CertificateSpec{DNSNames: []string{"example.org"}}},
+			want: &x509.CertificateRequest{Version: 3,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				DNSNames:           []string{"example.org"},
+				ExtraExtensions:    dafaultExtraExtensions,
+			},
+		},
+		{
+			name: "Generate CSR from certificate with only CN",
+			crt:  &v1.Certificate{Spec: v1.CertificateSpec{CommonName: "example.org"}},
+			want: &x509.CertificateRequest{Version: 3,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions:    dafaultExtraExtensions,
+			},
+		},
+		{
+			name: "Generate CSR from certificate with extended key usages",
+			crt:  &v1.Certificate{Spec: v1.CertificateSpec{CommonName: "example.org", Usages: []v1.KeyUsage{v1.UsageIPsecEndSystem}}},
+			want: &x509.CertificateRequest{Version: 3,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions:    ipsecExtraExtensions,
+			},
+		},
+		{
+			name:    "Error on generating CSR from certificate with no subject",
+			crt:     &v1.Certificate{Spec: v1.CertificateSpec{}},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GenerateCSR(tt.crt)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GenerateCSR() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GenerateCSR() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "csr.go",
         "generate.go",
+        "keyusage.go",
         "parse.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/util/pki",
