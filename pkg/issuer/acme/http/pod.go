@@ -40,9 +40,9 @@ func podLabels(ch *cmacme.Challenge) map[string]string {
 		// this value should probably be hashed, and then the full plain text
 		// value stored as an annotation to make it easier for users to read
 		// see #425 for details: https://github.com/jetstack/cert-manager/issues/425
-		domainLabelKey:               domainHash,
-		tokenLabelKey:                tokenHash,
-		solverIdentificationLabelKey: solverIdent,
+		cmacme.DomainLabelKey:               domainHash,
+		cmacme.TokenLabelKey:                tokenHash,
+		cmacme.SolverIdentificationLabelKey: solverIdent,
 	}
 }
 

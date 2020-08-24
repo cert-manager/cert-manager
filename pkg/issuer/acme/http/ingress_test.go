@@ -451,8 +451,8 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
 									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
 										Labels: map[string]string{
-											"this is a":                        "label",
-											"acme.cert-manager.io/http-domain": "44655555555",
+											"this is a":           "label",
+											cmacme.DomainLabelKey: "44655555555",
 										},
 										Annotations: map[string]string{
 											"nginx.ingress.kubernetes.io/whitelist-source-range":  "0.0.0.0/0,::/0",
@@ -472,10 +472,10 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 					t.Errorf("error preparing test: %v", err)
 				}
 				expectedIngress.Labels = map[string]string{
-					"this is a":                          "label",
-					"acme.cert-manager.io/http-domain":   "44655555555",
-					"acme.cert-manager.io/http-token":    "1",
-					"acme.cert-manager.io/http01-solver": "true",
+					"this is a":                         "label",
+					cmacme.DomainLabelKey:               "44655555555",
+					cmacme.TokenLabelKey:                "1",
+					cmacme.SolverIdentificationLabelKey: "true",
 				}
 				expectedIngress.Annotations = map[string]string{
 					"kubernetes.io/ingress.class":                         "nginx",

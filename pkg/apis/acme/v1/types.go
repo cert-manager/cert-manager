@@ -35,6 +35,18 @@ const (
 	// IngressEditInPlaceAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
 	IngressEditInPlaceAnnotationKey = "acme.cert-manager.io/http01-edit-in-place"
+
+	// DomainLabelKey is added to the labels of a Pod serving an ACME challenge.
+	// Its value will be the hash of the domain name that is being verified.
+	DomainLabelKey = "acme.cert-manager.io/http-domain"
+
+	// TokenLabelKey is added to the labels of a Pod serving an ACME challenge.
+	// Its value will be the hash of the challenge token that is being served by the pod.
+	TokenLabelKey = "acme.cert-manager.io/http-token"
+
+	// SolverIdentificationLabelKey is added to the labels of a Pod serving an ACME challenge.
+	// Its value will be the "true" if the Pod is an HTTP-01 solver.
+	SolverIdentificationLabelKey = "acme.cert-manager.io/http01-solver"
 )
 
 const (
