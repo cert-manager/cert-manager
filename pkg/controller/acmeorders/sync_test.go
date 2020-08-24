@@ -477,7 +477,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 						return nil, errors.New("Cert URL is incorrect")
 					}
 
-					return [][][]byte{[][]byte{rawTestCert.Bytes}}, nil
+					return [][][]byte{{rawTestCert.Bytes}}, nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
