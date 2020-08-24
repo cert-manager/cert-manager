@@ -163,6 +163,7 @@ Issuer:
   Kind: ClusterIssuer
   Conditions:
     No Conditions set
+  Events:  <none>
 error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
@@ -235,6 +236,7 @@ Issuer:
   Kind: Issuer
   Conditions:
     No Conditions set
+  Events:  <none>
 Secret:
   Name: existing-tls-secret
   Issuer Country: 
@@ -247,6 +249,7 @@ Secret:
   Subject Key ID: 
   Authority Key ID: 
   Serial Number: e2f88edc942c148463219da909fd633a
+  Events:  <none>
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>

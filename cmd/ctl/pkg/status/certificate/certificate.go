@@ -68,11 +68,13 @@ type Data struct {
 	Issuer       cmapi.GenericIssuer
 	IssuerKind   string
 	IssuerError  error
+	IssuerEvents *corev1.EventList
 	Secret       *corev1.Secret
 	SecretError  error
+	SecretEvents *corev1.EventList
 	Req          *cmapi.CertificateRequest
 	ReqError     error
-	ReqEvent     *corev1.EventList
+	ReqEvents    *corev1.EventList
 	Order        *cmacme.Order
 	OrderError   error
 	Challenges   []*cmacme.Challenge
@@ -176,10 +178,28 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
 
 	issuer, issuerKind, issuerError := getGenericIssuer(o.CMClient, ctx, crt)
+	var issuerEvents *corev1.EventList
+	if issuer != nil {
+		issuerRef, err := reference.GetReference(ctl.Scheme, issuer)
+		if err != nil {
+			return nil, err
+		}
+		// Ignore error, since if there was an error, issuerEvents would be nil and handled down the line in DescribeEvents
+		issuerEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, issuerRef)
+	}
 
 	secret, secretErr := clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
 	if secretErr != nil {
 		secretErr = fmt.Errorf("error when finding Secret %q: %w\n", crt.Spec.SecretName, secretErr)
+	}
+	var secretEvents *corev1.EventList
+	if secret != nil {
+		secretRef, err := reference.GetReference(ctl.Scheme, secret)
+		if err != nil {
+			return nil, err
+		}
+		// Ignore error, since if there was an error, secretEvents would be nil and handled down the line in DescribeEvents
+		secretEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, secretRef)
 	}
 
 	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
@@ -234,11 +254,13 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		Issuer:       issuer,
 		IssuerKind:   issuerKind,
 		IssuerError:  issuerError,
+		IssuerEvents: issuerEvents,
 		Secret:       secret,
 		SecretError:  secretErr,
+		SecretEvents: secretEvents,
 		Req:          req,
 		ReqError:     reqErr,
-		ReqEvent:     reqEvents,
+		ReqEvents:    reqEvents,
 		Order:        order,
 		OrderError:   orderErr,
 		Challenges:   challenges,
@@ -251,9 +273,9 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 func StatusFromResources(data *Data) *CertificateStatus {
 	return newCertificateStatusFromCert(data.Certificate).
 		withEvents(data.CrtEvents).
-		withGenericIssuer(data.Issuer, data.IssuerKind, data.IssuerError).
-		withSecret(data.Secret, data.SecretError).
-		withCR(data.Req, data.ReqEvent, data.ReqError).
+		withGenericIssuer(data.Issuer, data.IssuerKind, data.IssuerEvents, data.IssuerError).
+		withSecret(data.Secret, data.SecretEvents, data.SecretError).
+		withCR(data.Req, data.ReqEvents, data.ReqError).
 		withOrder(data.Order, data.OrderError).
 		withChallenges(data.Challenges, data.ChallengeErr)
 }
