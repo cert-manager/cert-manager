@@ -186,7 +186,8 @@ func (c *controller) createOrder(parentCtx context.Context, cl acmecl.Interface,
 	// This will only create the order which should be relatively short
 	// Keeping this on 10 minutes to let the ACME library backoff for a bit
 	// on intermittent network issues or shorter timed rate limits.
-	ctx, _ := context.WithTimeout(parentCtx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
+	defer cancel()
 	log := logf.FromContext(ctx)
 
 	if o.Status.URL != "" {
