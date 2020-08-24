@@ -22,6 +22,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"reflect"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -178,7 +179,14 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	return nil
 }
 
-func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
+func (c *controller) createOrder(parentCtx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
+	// The Go ACME library sees 429 `too many certificates already issued` as a retryable error.
+	// However this will cause a hang on waiting for the ACME functions to return.
+	// This adds a timeout to prevent that, while not perfect it prevents worse issues.
+	// This will only create the order which should be relatively short
+	// Keeping this on 10 minutes to let the ACME library backoff for a bit
+	// on intermittent network issues or shorter timed rate limits.
+	ctx, _ := context.WithTimeout(parentCtx, 10*time.Minute)
 	log := logf.FromContext(ctx)
 
 	if o.Status.URL != "" {
