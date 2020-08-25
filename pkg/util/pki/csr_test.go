@@ -380,11 +380,11 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	dafaultExtraExtensions := []pkix.Extension{
 		{
-			Id:    oidExtensionKeyUsage,
+			Id:    OIDExtensionKeyUsage,
 			Value: asn1KeyUsage,
 		},
 		{
-			Id:    oidExtensionExtendedKeyUsage,
+			Id:    OIDExtensionExtendedKeyUsage,
 			Value: asn1ExtKeyUsage,
 		},
 	}
@@ -395,11 +395,11 @@ func TestGenerateCSR(t *testing.T) {
 	}
 	ipsecExtraExtensions := []pkix.Extension{
 		{
-			Id:    oidExtensionKeyUsage,
+			Id:    OIDExtensionKeyUsage,
 			Value: asn1KeyUsage,
 		},
 		{
-			Id:    oidExtensionExtendedKeyUsage,
+			Id:    OIDExtensionExtendedKeyUsage,
 			Value: asn1ExtKeyUsage,
 		},
 	}

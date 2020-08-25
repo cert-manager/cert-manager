@@ -24,8 +24,8 @@ import (
 
 // Copied from x509.go
 var (
-	oidExtensionKeyUsage         = []int{2, 5, 29, 15}
-	oidExtensionExtendedKeyUsage = []int{2, 5, 29, 37}
+	OIDExtensionKeyUsage         = []int{2, 5, 29, 15}
+	OIDExtensionExtendedKeyUsage = []int{2, 5, 29, 37}
 )
 
 // RFC 5280, 4.2.1.12  Extended Key Usage
@@ -88,6 +88,15 @@ func OIDFromExtKeyUsage(eku x509.ExtKeyUsage) (oid asn1.ObjectIdentifier, ok boo
 	return
 }
 
+func ExtKeyUsageFromOID(oid asn1.ObjectIdentifier) (eku x509.ExtKeyUsage, ok bool) {
+	for _, pair := range extKeyUsageOIDs {
+		if oid.Equal(pair.oid) {
+			return pair.extKeyUsage, true
+		}
+	}
+	return
+}
+
 // asn1BitLength returns the bit-length of bitString by considering the
 // most-significant bit in a byte to be the "first" bit. This convention
 // matches ASN.1, but differs from almost everything else.
@@ -116,8 +125,8 @@ func reverseBitsInAByte(in byte) byte {
 }
 
 func buildANS1KeyUsageRequest(usage x509.KeyUsage) (pkix.Extension, error) {
-	oidExtensionKeyUsage := pkix.Extension{
-		Id: oidExtensionKeyUsage,
+	OIDExtensionKeyUsage := pkix.Extension{
+		Id: OIDExtensionKeyUsage,
 	}
 	var a [2]byte
 	a[0] = reverseBitsInAByte(byte(usage))
@@ -130,10 +139,10 @@ func buildANS1KeyUsageRequest(usage x509.KeyUsage) (pkix.Extension, error) {
 
 	bitString := a[:l]
 	var err error
-	oidExtensionKeyUsage.Value, err = asn1.Marshal(asn1.BitString{Bytes: bitString, BitLength: asn1BitLength(bitString)})
+	OIDExtensionKeyUsage.Value, err = asn1.Marshal(asn1.BitString{Bytes: bitString, BitLength: asn1BitLength(bitString)})
 	if err != nil {
 		return pkix.Extension{}, err
 	}
 
-	return oidExtensionKeyUsage, nil
+	return OIDExtensionKeyUsage, nil
 }

@@ -17,7 +17,12 @@ limitations under the License.
 package validation
 
 import (
+	"crypto/x509"
+	"encoding/asn1"
 	"fmt"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kr/pretty"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -40,11 +45,61 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 	if len(crSpec.Request) == 0 {
 		el = append(el, field.Required(fldPath.Child("request"), "must be specified"))
 	} else {
-		_, err := pki.DecodeX509CertificateRequestBytes(crSpec.Request)
+		csr, err := pki.DecodeX509CertificateRequestBytes(crSpec.Request)
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
+		} else {
+			// only compare usages if set on CR and in the CSR
+			if len(crSpec.Usages) > 0 && len(csr.ExtraExtensions) > 0 {
+				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, err, el)
+				if len(err) > 0 {
+					el = append(el, err...)
+				} else if !reflect.DeepEqual(csrUsages, crSpec.Usages) {
+					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages: %s", pretty.Diff(csrUsages, crSpec.Usages))))
+				}
+			}
 		}
 	}
 
 	return el
+}
+
+func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, csr *x509.CertificateRequest, err error, el field.ErrorList) ([]v1.KeyUsage, field.ErrorList) {
+	var ekus []x509.ExtKeyUsage
+	var ku x509.KeyUsage
+
+	for _, extention := range csr.ExtraExtensions {
+		if reflect.DeepEqual(extention.Id, pki.OIDExtensionExtendedKeyUsage) {
+			var asn1ExtendedUsages []asn1.ObjectIdentifier
+			_, err = asn1.Unmarshal(extention.Value, &asn1ExtendedUsages)
+			if err != nil {
+				el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr extended usages: %s", err)
+			} else {
+				for _, asnExtUsage := range asn1ExtendedUsages {
+					eku, ok := pki.ExtKeyUsageFromOID(asnExtUsage)
+					if ok {
+						ekus = append(ekus, eku)
+					}
+				}
+			}
+		}
+		if reflect.DeepEqual(extention.Id, pki.OIDExtensionKeyUsage) {
+			// RFC 5280, 4.2.1.3
+			var asn1bits asn1.BitString
+			_, err := asn1.Unmarshal(extention.Value, &asn1bits)
+			if err != nil {
+				el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr usages: %s", err)))
+			} else {
+				var usage int
+				for i := 0; i < 9; i++ {
+					if asn1bits.At(i) != 0 {
+						usage |= 1 << uint(i)
+					}
+				}
+				ku = x509.KeyUsage(usage)
+			}
+		}
+	}
+
+	return pki.BuildCertManagerKeyUsages(ku, ekus), el
 }

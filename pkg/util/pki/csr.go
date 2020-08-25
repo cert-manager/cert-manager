@@ -166,6 +166,13 @@ func BuildKeyUsages(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x5
 	return
 }
 
+func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.KeyUsage {
+	usages := apiutil.KeyUsageStrings(ku)
+	usages = append(usages, apiutil.ExtKeyUsageStrings(eku)...)
+
+	return usages
+}
+
 // GenerateCSR will generate a new *x509.CertificateRequest template to be used
 // by issuers that utilise CSRs to obtain Certificates.
 // The CSR will not be signed, and should be passed to either EncodeCSR or
@@ -207,7 +214,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		}
 	}
 	extendedUsage := pkix.Extension{
-		Id: oidExtensionExtendedKeyUsage,
+		Id: OIDExtensionExtendedKeyUsage,
 	}
 	extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
 	if err != nil {
