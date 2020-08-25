@@ -115,8 +115,16 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) field
 		}
 	}
 
+	solversWithoutSelector := 0
 	for i, sol := range iss.Solvers {
 		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
+		if sol.Selector == nil {
+			solversWithoutSelector++
+		}
+	}
+
+	if solversWithoutSelector > 1 {
+		el = append(el, field.Required(fldPath.Child("solvers"), "More than 1 solvers do not have a selector set"))
 	}
 
 	return el
