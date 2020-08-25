@@ -18,6 +18,11 @@ package client
 
 import (
 	"context"
+	"crypto/rand"
+	"math/big"
+	"net/http"
+	"strconv"
+	"time"
 
 	"golang.org/x/crypto/acme"
 )
@@ -40,4 +45,47 @@ type Interface interface {
 	UpdateReg(ctx context.Context, a *acme.Account) (*acme.Account, error)
 }
 
-var _ Interface = &acme.Client{}
+var _ Interface = &acme.Client{
+	// inspired by acme/http.go
+	RetryBackoff: func(n int, r *http.Request, res *http.Response) time.Duration {
+		var jitter time.Duration
+		if x, err := rand.Int(rand.Reader, big.NewInt(1000)); err == nil {
+			// Set the minimum to 1ms to avoid a case where
+			// an invalid Retry-After value is parsed into 0 below,
+			// resulting in the 0 returned value which would unintentionally
+			// stop the retries.
+			jitter = (1 + time.Duration(x.Int64())) * time.Millisecond
+		}
+		if v, ok := res.Header["Retry-After"]; ok {
+			if i, err := strconv.Atoi(v[0]); err == nil {
+				return time.Duration(i) * time.Second
+			}
+			t, err := http.ParseTime(v[0])
+			if err != nil {
+				return 0
+			}
+
+			if t.Sub(time.Now()) > 5*time.Minute {
+				// if Retry-After is bigger than 5 minutes we should
+				// error and let the cert-manager logic retry instead
+				return -1
+			}
+
+			return t.Sub(time.Now()) + jitter
+		}
+
+		// classic backoff here in case we got no reply
+		// eg. flakes
+		if n < 1 {
+			n = 1
+		}
+		if n > 30 {
+			n = 30
+		}
+		d := time.Duration(1<<uint(n-1))*time.Second + jitter
+		if d > 10*time.Second {
+			return 10 * time.Second
+		}
+		return d
+	},
+}
