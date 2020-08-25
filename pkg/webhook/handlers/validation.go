@@ -89,9 +89,11 @@ func (r *registryBackedValidator) Validate(admissionSpec *admissionv1.AdmissionR
 		}
 	}
 	errs := field.ErrorList{}
-	// perform validation on new version of resource
-	errs = append(errs, r.registry.Validate(obj, gvk)...)
-	if oldObj != nil {
+
+	if admissionSpec.Operation == admissionv1.Create {
+		// perform validation on new version of resource
+		errs = append(errs, r.registry.Validate(obj, gvk)...)
+	} else if admissionSpec.Operation == admissionv1.Update {
 		// perform update validation on resource
 		errs = append(errs, r.registry.ValidateUpdate(oldObj, obj, gvk)...)
 	}

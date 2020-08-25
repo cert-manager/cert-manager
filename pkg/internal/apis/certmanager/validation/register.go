@@ -25,13 +25,28 @@ func AddToValidationRegistry(reg *validation.Registry) error {
 	if err := reg.AddValidateFunc(&cmapi.Certificate{}, ValidateCertificate); err != nil {
 		return err
 	}
+	if err := reg.AddValidateUpdateFunc(&cmapi.Certificate{}, ValidateUpdateCertificate); err != nil {
+		return err
+	}
+
 	if err := reg.AddValidateFunc(&cmapi.CertificateRequest{}, ValidateCertificateRequest); err != nil {
 		return err
 	}
+	if err := reg.AddValidateUpdateFunc(&cmapi.CertificateRequest{}, ValidateUpdateCertificateRequest); err != nil {
+		return err
+	}
+
 	if err := reg.AddValidateFunc(&cmapi.ClusterIssuer{}, ValidateClusterIssuer); err != nil {
 		return err
 	}
+	if err := reg.AddValidateUpdateFunc(&cmapi.ClusterIssuer{}, ValidateUpdateClusterIssuer); err != nil {
+		return err
+	}
+
 	if err := reg.AddValidateFunc(&cmapi.Issuer{}, ValidateIssuer); err != nil {
+		return err
+	}
+	if err := reg.AddValidateUpdateFunc(&cmapi.Issuer{}, ValidateUpdateIssuer); err != nil {
 		return err
 	}
 	return nil
