@@ -21,7 +21,6 @@ import (
 	"crypto/rand"
 	"math/big"
 	"net/http"
-	"strconv"
 	"time"
 
 	"golang.org/x/crypto/acme"
@@ -56,22 +55,10 @@ var _ Interface = &acme.Client{
 			// stop the retries.
 			jitter = (1 + time.Duration(x.Int64())) * time.Millisecond
 		}
-		if v, ok := res.Header["Retry-After"]; ok {
-			if i, err := strconv.Atoi(v[0]); err == nil {
-				return time.Duration(i) * time.Second
-			}
-			t, err := http.ParseTime(v[0])
-			if err != nil {
-				return 0
-			}
-
-			if t.Sub(time.Now()) > 5*time.Minute {
-				// if Retry-After is bigger than 5 minutes we should
-				// error and let the cert-manager logic retry instead
-				return -1
-			}
-
-			return t.Sub(time.Now()) + jitter
+		if _, ok := res.Header["Retry-After"]; ok {
+			// if Retry-After is set we should
+			// error and let the cert-manager logic retry instead
+			return -1
 		}
 
 		// classic backoff here in case we got no reply
