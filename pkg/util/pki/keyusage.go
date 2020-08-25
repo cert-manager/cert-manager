@@ -117,6 +117,7 @@ func asn1BitLength(bitString []byte) int {
 	return 0
 }
 
+// Copied from x509.go
 func reverseBitsInAByte(in byte) byte {
 	b1 := in>>4 | in<<4
 	b2 := b1>>2&0x33 | b1<<2&0xcc
@@ -124,7 +125,8 @@ func reverseBitsInAByte(in byte) byte {
 	return b3
 }
 
-func buildANS1KeyUsageRequest(usage x509.KeyUsage) (pkix.Extension, error) {
+// Adapted from x509.go
+func buildASN1KeyUsageRequest(usage x509.KeyUsage) (pkix.Extension, error) {
 	OIDExtensionKeyUsage := pkix.Extension{
 		Id: OIDExtensionKeyUsage,
 	}

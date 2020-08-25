@@ -202,13 +202,13 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		return nil, err
 	}
 
-	ku, eku, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
-	usage, err := buildANS1KeyUsageRequest(ku)
+	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	usage, err := buildASN1KeyUsageRequest(ku)
 	if err != nil {
 		return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
 	}
 	asn1ExtendedUsages := []asn1.ObjectIdentifier{}
-	for _, eku := range eku {
+	for _, eku := range ekus {
 		if oid, ok := OIDFromExtKeyUsage(eku); ok {
 			asn1ExtendedUsages = append(asn1ExtendedUsages, oid)
 		}

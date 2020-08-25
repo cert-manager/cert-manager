@@ -23,13 +23,13 @@ import (
 	"reflect"
 	"testing"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-func buildCertificate(cn string, dnsNames ...string) *v1.Certificate {
-	return &v1.Certificate{
-		Spec: v1.CertificateSpec{
+func buildCertificate(cn string, dnsNames ...string) *cmapi.Certificate {
+	return &cmapi.Certificate{
+		Spec: cmapi.CertificateSpec{
 			CommonName: cn,
 			DNSNames:   dnsNames,
 		},
@@ -39,7 +39,7 @@ func buildCertificate(cn string, dnsNames ...string) *v1.Certificate {
 func TestBuildUsages(t *testing.T) {
 	type testT struct {
 		name                string
-		usages              []v1.KeyUsage
+		usages              []cmapi.KeyUsage
 		isCa                bool
 		expectedKeyUsage    x509.KeyUsage
 		expectedExtKeyUsage []x509.ExtKeyUsage
@@ -48,43 +48,43 @@ func TestBuildUsages(t *testing.T) {
 	tests := []testT{
 		{
 			name:             "default",
-			usages:           []v1.KeyUsage{},
+			usages:           []cmapi.KeyUsage{},
 			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 			expectedError:    false,
 		},
 		{
 			name:             "isCa",
-			usages:           []v1.KeyUsage{},
+			usages:           []cmapi.KeyUsage{},
 			isCa:             true,
 			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign,
 			expectedError:    false,
 		},
 		{
 			name:             "existing keyusage",
-			usages:           []v1.KeyUsage{"crl sign"},
+			usages:           []cmapi.KeyUsage{"crl sign"},
 			expectedKeyUsage: x509.KeyUsageCRLSign,
 			expectedError:    false,
 		},
 		{
 			name:          "nonexisting keyusage error",
-			usages:        []v1.KeyUsage{"nonexistant"},
+			usages:        []cmapi.KeyUsage{"nonexistant"},
 			expectedError: true,
 		},
 		{
 			name:             "duplicate keyusage",
-			usages:           []v1.KeyUsage{"signing", "signing"},
+			usages:           []cmapi.KeyUsage{"signing", "signing"},
 			expectedKeyUsage: x509.KeyUsageDigitalSignature,
 			expectedError:    false,
 		},
 		{
 			name:                "existing extkeyusage",
-			usages:              []v1.KeyUsage{"server auth"},
+			usages:              []cmapi.KeyUsage{"server auth"},
 			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 			expectedError:       false,
 		},
 		{
 			name:                "duplicate extkeyusage",
-			usages:              []v1.KeyUsage{"s/mime", "s/mime"},
+			usages:              []cmapi.KeyUsage{"s/mime", "s/mime"},
 			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageEmailProtection, x509.ExtKeyUsageEmailProtection},
 			expectedError:       false,
 		},
@@ -220,7 +220,7 @@ func TestDNSNamesForCertificate(t *testing.T) {
 func TestSignatureAlgorithmForCertificate(t *testing.T) {
 	type testT struct {
 		name            string
-		keyAlgo         v1.PrivateKeyAlgorithm
+		keyAlgo         cmapi.PrivateKeyAlgorithm
 		keySize         int
 		expectErr       bool
 		expectedSigAlgo x509.SignatureAlgorithm
@@ -230,79 +230,79 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 	tests := []testT{
 		{
 			name:      "certificate with KeyAlgorithm rsa and size 1024",
-			keyAlgo:   v1.RSAKeyAlgorithm,
+			keyAlgo:   cmapi.RSAKeyAlgorithm,
 			keySize:   1024,
 			expectErr: true,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and no size set should default to rsa256",
-			keyAlgo:         v1.RSAKeyAlgorithm,
+			keyAlgo:         cmapi.RSAKeyAlgorithm,
 			expectedSigAlgo: x509.SHA256WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm not set",
-			keyAlgo:         v1.PrivateKeyAlgorithm(""),
+			keyAlgo:         cmapi.PrivateKeyAlgorithm(""),
 			expectedSigAlgo: x509.SHA256WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and size 2048",
-			keyAlgo:         v1.RSAKeyAlgorithm,
+			keyAlgo:         cmapi.RSAKeyAlgorithm,
 			keySize:         2048,
 			expectedSigAlgo: x509.SHA256WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and size 3072",
-			keyAlgo:         v1.RSAKeyAlgorithm,
+			keyAlgo:         cmapi.RSAKeyAlgorithm,
 			keySize:         3072,
 			expectedSigAlgo: x509.SHA384WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and size 4096",
-			keyAlgo:         v1.RSAKeyAlgorithm,
+			keyAlgo:         cmapi.RSAKeyAlgorithm,
 			keySize:         4096,
 			expectedSigAlgo: x509.SHA512WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with ecdsa key algorithm set and no key size default to ecdsa256",
-			keyAlgo:         v1.ECDSAKeyAlgorithm,
+			keyAlgo:         cmapi.ECDSAKeyAlgorithm,
 			expectedSigAlgo: x509.ECDSAWithSHA256,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 256",
-			keyAlgo:         v1.ECDSAKeyAlgorithm,
+			keyAlgo:         cmapi.ECDSAKeyAlgorithm,
 			keySize:         256,
 			expectedSigAlgo: x509.ECDSAWithSHA256,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 384",
-			keyAlgo:         v1.ECDSAKeyAlgorithm,
+			keyAlgo:         cmapi.ECDSAKeyAlgorithm,
 			keySize:         384,
 			expectedSigAlgo: x509.ECDSAWithSHA384,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 521",
-			keyAlgo:         v1.ECDSAKeyAlgorithm,
+			keyAlgo:         cmapi.ECDSAKeyAlgorithm,
 			keySize:         521,
 			expectedSigAlgo: x509.ECDSAWithSHA512,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:      "certificate with KeyAlgorithm ecdsa and size 100",
-			keyAlgo:   v1.ECDSAKeyAlgorithm,
+			keyAlgo:   cmapi.ECDSAKeyAlgorithm,
 			keySize:   100,
 			expectErr: true,
 		},
 		{
 			name:      "certificate with KeyAlgorithm set to unknown key algo",
-			keyAlgo:   v1.PrivateKeyAlgorithm("blah"),
+			keyAlgo:   cmapi.PrivateKeyAlgorithm("blah"),
 			expectErr: true,
 		},
 	}
@@ -373,12 +373,13 @@ func TestRemoveDuplicates(t *testing.T) {
 }
 
 func TestGenerateCSR(t *testing.T) {
+	// 0xa0 = DigitalSignature and Encipherment usage
 	asn1KeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
 	asn1ExtKeyUsage, err := asn1.Marshal([]asn1.ObjectIdentifier{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	dafaultExtraExtensions := []pkix.Extension{
+	defaultExtraExtensions := []pkix.Extension{
 		{
 			Id:    OIDExtensionKeyUsage,
 			Value: asn1KeyUsage,
@@ -406,33 +407,33 @@ func TestGenerateCSR(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		crt     *v1.Certificate
+		crt     *cmapi.Certificate
 		want    *x509.CertificateRequest
 		wantErr bool
 	}{
 		{
 			name: "Generate CSR from certificate with only DNS",
-			crt:  &v1.Certificate{Spec: v1.CertificateSpec{DNSNames: []string{"example.org"}}},
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{DNSNames: []string{"example.org"}}},
 			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
 				DNSNames:           []string{"example.org"},
-				ExtraExtensions:    dafaultExtraExtensions,
+				ExtraExtensions:    defaultExtraExtensions,
 			},
 		},
 		{
 			name: "Generate CSR from certificate with only CN",
-			crt:  &v1.Certificate{Spec: v1.CertificateSpec{CommonName: "example.org"}},
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org"}},
 			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
 				Subject:            pkix.Name{CommonName: "example.org"},
-				ExtraExtensions:    dafaultExtraExtensions,
+				ExtraExtensions:    defaultExtraExtensions,
 			},
 		},
 		{
 			name: "Generate CSR from certificate with extended key usages",
-			crt:  &v1.Certificate{Spec: v1.CertificateSpec{CommonName: "example.org", Usages: []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageIPsecEndSystem}}},
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageIPsecEndSystem}}},
 			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
@@ -442,7 +443,7 @@ func TestGenerateCSR(t *testing.T) {
 		},
 		{
 			name:    "Error on generating CSR from certificate with no subject",
-			crt:     &v1.Certificate{Spec: v1.CertificateSpec{}},
+			crt:     &cmapi.Certificate{Spec: cmapi.CertificateSpec{}},
 			wantErr: true,
 		},
 	}
