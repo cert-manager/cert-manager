@@ -20,13 +20,14 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kr/pretty"
 	"reflect"
+
+	"github.com/kr/pretty"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -73,7 +74,7 @@ func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, c
 			var asn1ExtendedUsages []asn1.ObjectIdentifier
 			_, err = asn1.Unmarshal(extention.Value, &asn1ExtendedUsages)
 			if err != nil {
-				el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr extended usages: %s", err)
+				el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr extended usages: %s", err)))
 			} else {
 				for _, asnExtUsage := range asn1ExtendedUsages {
 					eku, ok := pki.ExtKeyUsageFromOID(asnExtUsage)
