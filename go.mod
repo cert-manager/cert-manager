@@ -47,19 +47,19 @@ require (
 	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c // indirect
-	k8s.io/api v0.19.0-rc.3
-	k8s.io/apiextensions-apiserver v0.19.0-rc.3
-	k8s.io/apimachinery v0.19.0-rc.3
-	k8s.io/apiserver v0.19.0-rc.3
-	k8s.io/cli-runtime v0.19.0-rc.3
-	k8s.io/client-go v0.19.0-rc.3
-	k8s.io/code-generator v0.19.0-rc.3
-	k8s.io/component-base v0.19.0-rc.3
+	k8s.io/api v0.19.0-rc.4
+	k8s.io/apiextensions-apiserver v0.19.0-rc.4
+	k8s.io/apimachinery v0.19.0-rc.4
+	k8s.io/apiserver v0.19.0-rc.4
+	k8s.io/cli-runtime v0.19.0-rc.4
+	k8s.io/client-go v0.19.0-rc.4
+	k8s.io/code-generator v0.19.0-rc.4
+	k8s.io/component-base v0.19.0-rc.4
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.3.0
-	k8s.io/kube-aggregator v0.19.0-rc.3
+	k8s.io/kube-aggregator v0.19.0-rc.4
 	k8s.io/kube-openapi v0.0.0-20200427153329-656914f816f9
-	k8s.io/kubectl v0.19.0-rc.3
+	k8s.io/kubectl v0.19.0-rc.4
 	k8s.io/utils v0.0.0-20200720150651-0bdb4ca86cbc
 	sigs.k8s.io/controller-runtime v0.6.1-0.20200728202347-cea989b02ed0
 	sigs.k8s.io/controller-tools v0.2.9-0.20200414181213-645d44dca7c0
