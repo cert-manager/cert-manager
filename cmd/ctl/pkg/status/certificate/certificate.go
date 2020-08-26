@@ -174,8 +174,11 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
-	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
+	// If no events found, crtEvents would be nil and handled down the line in DescribeEvents
+	crtEvents, err := clientSet.CoreV1().Events(crt.Namespace).Search(ctl.Scheme, crtRef)
+	if err != nil {
+		return nil, err
+	}
 
 	issuer, issuerKind, issuerError := getGenericIssuer(o.CMClient, ctx, crt)
 	var issuerEvents *corev1.EventList
@@ -184,11 +187,14 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Ignore error, since if there was an error, issuerEvents would be nil and handled down the line in DescribeEvents
-		issuerEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, issuerRef)
+		// If no events found, issuerEvents would be nil and handled down the line in DescribeEvents
+		issuerEvents, err = clientSet.CoreV1().Events(issuer.GetNamespace()).Search(ctl.Scheme, issuerRef)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	secret, secretErr := clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
+	secret, secretErr := clientSet.CoreV1().Secrets(crt.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
 	if secretErr != nil {
 		secretErr = fmt.Errorf("error when finding Secret %q: %w\n", crt.Spec.SecretName, secretErr)
 	}
@@ -198,8 +204,11 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Ignore error, since if there was an error, secretEvents would be nil and handled down the line in DescribeEvents
-		secretEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, secretRef)
+		// If no events found, secretEvents would be nil and handled down the line in DescribeEvents
+		secretEvents, err = clientSet.CoreV1().Events(secret.Namespace).Search(ctl.Scheme, secretRef)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
@@ -217,8 +226,11 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
-		reqEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
+		// If no events found,  reqEvents would be nil and handled down the line in DescribeEvents
+		reqEvents, err = clientSet.CoreV1().Events(req.Namespace).Search(ctl.Scheme, reqRef)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var (
