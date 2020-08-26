@@ -88,7 +88,6 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Fatal(err)
 	}
 
-	// TODO: configure Validating and Mutating webhook
 	return config, func() {
 		defer stopWebhook()
 		if err := env.Stop(); err != nil {
