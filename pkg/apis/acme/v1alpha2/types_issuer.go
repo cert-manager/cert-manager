@@ -42,6 +42,17 @@ type ACMEIssuer struct {
 	// Only ACME v2 endpoints (i.e. RFC 8555) are supported.
 	Server string `json:"server"`
 
+	// PreferredChain is the chain to use if the ACME server outputs multiple.
+	// PreferredChain is no guarantee that this one gets delivered by the ACME
+	// endpoint.
+	// For example, for Let's Encrypt's DST crosssign you would use:
+	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
+	// This value picks the first certificate bundle in the ACME alternative
+	// chains that has a certificate with this value as its issuer's CN
+	// +optional
+	// +kubebuilder:validation:MaxLength=64
+	PreferredChain string `json:"preferredChain"`
+
 	// Enables or disables validation of the ACME server TLS certificate.
 	// If true, requests to the ACME server will not have their TLS certificate
 	// validated (i.e. insecure connections will be allowed).

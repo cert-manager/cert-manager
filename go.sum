@@ -357,6 +357,8 @@ github.com/mattn/go-isatty v0.0.8/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hd
 github.com/mattn/go-runewidth v0.0.2/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0jegS5sx/RkqARlsWZ6pIwiU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
+github.com/meyskens/crypto v0.0.0-20200821143559-6ca9aec645f0 h1:09XQpCKCNW3zrjz4zvD/cYU3hqUEWW+bZrBwK8NwFW0=
+github.com/meyskens/crypto v0.0.0-20200821143559-6ca9aec645f0/go.mod h1:ihkquczjM7M0cZsn7H1TJ3ACXW1rCuAMKX9lZEWNU3U=
 github.com/miekg/dns v1.1.29 h1:xHBEhR+t5RzcFJjBLJlax2daXOrTYtr9z4WdKEfWFzg=
 github.com/miekg/dns v1.1.29/go.mod h1:KNUDUusw/aVsxyTYZM1oqvCicbwhgbNgztCETuNZ7xM=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
@@ -378,8 +380,6 @@ github.com/modern-go/reflect2 v1.0.1 h1:9f412s+6RmYXLWZSEzVVgPGK7C2PphHj5RJrvfx9
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/munnerz/crd-schema-fuzz v1.0.0 h1:8erI9yzEnOGw9K5O+a8zZdoo8N/OwrFi7c7SjBtkHAs=
 github.com/munnerz/crd-schema-fuzz v1.0.0/go.mod h1:4z/rcm37JxUkSsExFcLL6ZIT1SgDRdLiu7qq1evdVS0=
-github.com/munnerz/crypto v0.0.0-20191203200931-e1844778daa5 h1:hzR/iusv78rQSxebvSpz0olAoNmGbJrE42oeKFQ+Ni8=
-github.com/munnerz/crypto v0.0.0-20191203200931-e1844778daa5/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
