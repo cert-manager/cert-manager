@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -25,7 +26,6 @@ import (
 	"testing"
 
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -42,8 +42,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/api"
 	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 )
-
-var testNamespaces = []string{"testns", "testns-1", "testns-2"}
 
 func init() {
 	// Set environment variables for controller-runtime's envtest package.
@@ -73,8 +71,6 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Fatalf("failed to start control plane: %v", err)
 	}
 
-<<<<<<< HEAD
-	// set up test namespace
 	cl, err := client.New(config, client.Options{Scheme: api.Scheme})
 	if err != nil {
 		t.Fatal(err)
@@ -92,20 +88,6 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Fatal(err)
 	}
 
-	for _, namespace := range testNamespaces {
-		err = cl.Create(context.Background(), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
-			},
-		})
-
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-=======
->>>>>>> 88dcb326f... Move NS creation to individual tests
 	// TODO: configure Validating and Mutating webhook
 	return config, func() {
 		defer stopWebhook()
