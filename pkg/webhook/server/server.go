@@ -59,6 +59,8 @@ var (
 func init() {
 	apiextensionsv1beta1.AddToScheme(defaultScheme)
 	apiextensionsv1.AddToScheme(defaultScheme)
+	admissionv1beta1.AddToScheme(defaultScheme)
+	admissionv1.AddToScheme(defaultScheme)
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
@@ -72,6 +74,7 @@ func init() {
 		&metav1.APIGroupList{},
 		&metav1.APIGroup{},
 		&metav1.APIResourceList{},
+		&metav1.CreateOptions{},
 	)
 }
 
@@ -450,8 +453,8 @@ func convert_v1beta1_AdmissionRequest_To_admission_AdmissionRequest(in *admissio
 	out.Namespace = in.Namespace
 	out.Operation = admissionv1.Operation(in.Operation)
 	out.Object = in.Object
-	out.Object = in.OldObject
-	out.Object = in.Options
+	out.OldObject = in.OldObject
+	out.Options = in.Options
 }
 
 func convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(in *admissionv1.AdmissionReview, out *admissionv1beta1.AdmissionReview) {
@@ -480,6 +483,6 @@ func convert_admission_AdmissionRequest_To_v1beta1_AdmissionRequest(in *admissio
 	out.Namespace = in.Namespace
 	out.Operation = admissionv1beta1.Operation(in.Operation)
 	out.Object = in.Object
-	out.Object = in.OldObject
-	out.Object = in.Options
+	out.OldObject = in.OldObject
+	out.Options = in.Options
 }
