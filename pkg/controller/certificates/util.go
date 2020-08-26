@@ -117,8 +117,9 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		violations = append(violations, "spec.ipAddresses")
 	}
 	if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URIs) {
-		violations = append(violations, "spec.uriSANs")
+		violations = append(violations, "spec.uris")
 	}
+	// TODO: Check EmailAddresses here too
 	if x509req.Subject.SerialNumber != spec.Subject.SerialNumber {
 		violations = append(violations, "spec.subject.serialNumber")
 	}
@@ -201,10 +202,10 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 		violations = append(violations, "spec.ipAddresses")
 	}
 	if !util.EqualUnsorted(pki.URLsToString(x509cert.URIs), spec.URIs) {
-		violations = append(violations, "spec.uriSANs")
+		violations = append(violations, "spec.uris")
 	}
 	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailAddresses) {
-		violations = append(violations, "spec.emailSANs")
+		violations = append(violations, "spec.emailAddresses")
 	}
 
 	return violations, nil
