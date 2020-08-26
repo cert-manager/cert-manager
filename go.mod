@@ -3,7 +3,8 @@ module github.com/jetstack/cert-manager
 go 1.12
 
 replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.4
-
+// this if a fork to add EAB and alternative chains in ACME
+// to be replaced after https://github.com/golang/crypto/pull/109 merges
 replace golang.org/x/crypto => github.com/meyskens/crypto v0.0.0-20200821143559-6ca9aec645f0
 
 require (
