@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -37,7 +36,7 @@ import (
 func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
 	spec = *spec.DeepCopy()
 	if spec.PrivateKey == nil {
-		spec.PrivateKey = &v1.CertificatePrivateKey{}
+		spec.PrivateKey = &cmapi.CertificatePrivateKey{}
 	}
 	switch spec.PrivateKey.Algorithm {
 	case "", cmapi.RSAKeyAlgorithm:
@@ -118,7 +117,10 @@ func RequestMatchesSpec(req *cmapi.CertificateRequest, spec cmapi.CertificateSpe
 		violations = append(violations, "spec.ipAddresses")
 	}
 	if !util.EqualUnsorted(pki.URLsToString(x509req.URIs), spec.URIs) {
-		violations = append(violations, "spec.uriSANs")
+		violations = append(violations, "spec.uris")
+	}
+	if !util.EqualUnsorted(x509req.EmailAddresses, spec.EmailAddresses) {
+		violations = append(violations, "spec.emailAddresses")
 	}
 	if x509req.Subject.SerialNumber != spec.Subject.SerialNumber {
 		violations = append(violations, "spec.subject.serialNumber")
@@ -202,10 +204,10 @@ func SecretDataAltNamesMatchSpec(secret *corev1.Secret, spec cmapi.CertificateSp
 		violations = append(violations, "spec.ipAddresses")
 	}
 	if !util.EqualUnsorted(pki.URLsToString(x509cert.URIs), spec.URIs) {
-		violations = append(violations, "spec.uriSANs")
+		violations = append(violations, "spec.uris")
 	}
 	if !util.EqualUnsorted(x509cert.EmailAddresses, spec.EmailAddresses) {
-		violations = append(violations, "spec.emailSANs")
+		violations = append(violations, "spec.emailAddresses")
 	}
 
 	return violations, nil
