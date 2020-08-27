@@ -1,6 +1,6 @@
 module github.com/jetstack/cert-manager
 
-go 1.12
+go 1.15
 
 replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.4
 
