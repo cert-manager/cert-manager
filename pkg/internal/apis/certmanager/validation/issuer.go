@@ -150,6 +150,12 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fl
 		el = append(el, field.Required(fldPath, "no solver type configured"))
 	}
 
+	if sol.Selector != nil {
+		if len(sol.Selector.DNSNames) == 0 && len(sol.Selector.DNSZones) == 0 && len(sol.Selector.MatchLabels) == 0 {
+			el = append(el, field.Required(fldPath.Child("selector"), "selector need at least 1 item in dnsNames, dnsZones or matchLabels"))
+		}
+	}
+
 	return el
 }
 
