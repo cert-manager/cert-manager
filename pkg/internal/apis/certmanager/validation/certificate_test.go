@@ -125,7 +125,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs or emailSANs must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris or emailAddresses must be set"),
 			},
 		},
 		"certificate with no issuerRef": {
@@ -457,7 +457,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailSANs").Index(0), "aliceexample.com", "invalid email address: mail: missing '@' or angle-addr"),
+				field.Invalid(fldPath.Child("emailAddresses").Index(0), "aliceexample.com", "invalid email address: mail: missing '@' or angle-addr"),
 			},
 		},
 		"invalid certificate with email formatted with name": {
@@ -469,7 +469,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailSANs").Index(0), "Alice <alice@example.com>", "invalid email address: make sure the supplied value only contains the email address itself"),
+				field.Invalid(fldPath.Child("emailAddresses").Index(0), "Alice <alice@example.com>", "invalid email address: make sure the supplied value only contains the email address itself"),
 			},
 		},
 		"invalid certificate with email formatted with mailto": {
@@ -481,7 +481,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailSANs").Index(0), "mailto:alice@example.com", "invalid email address: mail: expected comma"),
+				field.Invalid(fldPath.Child("emailAddresses").Index(0), "mailto:alice@example.com", "invalid email address: mail: expected comma"),
 			},
 		},
 	}

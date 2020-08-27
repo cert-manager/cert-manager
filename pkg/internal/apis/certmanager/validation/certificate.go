@@ -41,7 +41,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
 	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 && len(crt.EmailSANs) == 0 {
-		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uriSANs or emailSANs must be set"))
+		el = append(el, field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris or emailAddresses must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars
@@ -127,11 +127,11 @@ func validateEmailAddresses(a *internalcmapi.CertificateSpec, fldPath *field.Pat
 	for i, d := range a.EmailSANs {
 		e, err := mail.ParseAddress(d)
 		if err != nil {
-			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, fmt.Sprintf("invalid email address: %s", err)))
+			el = append(el, field.Invalid(fldPath.Child("emailAddresses").Index(i), d, fmt.Sprintf("invalid email address: %s", err)))
 		} else if e.Address != d {
 			// Go accepts email names as per RFC 5322 (name <email>)
 			// This checks if the supplied value only contains the email address and nothing else
-			el = append(el, field.Invalid(fldPath.Child("emailSANs").Index(i), d, "invalid email address: make sure the supplied value only contains the email address itself"))
+			el = append(el, field.Invalid(fldPath.Child("emailAddresses").Index(i), d, "invalid email address: make sure the supplied value only contains the email address itself"))
 		}
 	}
 	return el
