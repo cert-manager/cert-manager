@@ -64,7 +64,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 			},
 			expectError: false,
 		},
-		"No errors on  valid certificaterequest with special usages set": {
+		"No errors on valid certificaterequest with special usages set": {
 			input: &v1.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
@@ -75,6 +75,43 @@ func TestValidationCertificateRequests(t *testing.T) {
 						Spec: v1.CertificateSpec{
 							DNSNames: []string{"example.com"},
 							Usages:   []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+						},
+					}),
+					Usages:    []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+				},
+			},
+			expectError: false,
+		},
+		"No errors on valid certificaterequest with special usages set only in CSR": {
+			input: &v1.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &v1.Certificate{
+						Spec: v1.CertificateSpec{
+							DNSNames: []string{"example.com"},
+							Usages:   []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+						},
+					}),
+					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+				},
+			},
+			expectError: false,
+		},
+		"No errors on valid certificaterequest with special usages only set in spec": {
+			input: &v1.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &v1.Certificate{
+						Spec: v1.CertificateSpec{
+							DNSNames: []string{"example.com"},
+							Usages:   []v1.KeyUsage{},
 						},
 					}),
 					Usages:    []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
@@ -101,7 +138,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 				},
 			},
 			expectError: true,
-			errorSuffix: "csr key usages do not match specified usages: [[2]: \"client auth\" != \"code signing\"]",
+			errorSuffix: "csr key usages do not match specified usages, these should match if both are set: [[2]: \"client auth\" != \"code signing\"]",
 		},
 	}
 	for name, test := range tests {

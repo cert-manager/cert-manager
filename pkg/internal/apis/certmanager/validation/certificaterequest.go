@@ -21,6 +21,8 @@ import (
 	"encoding/asn1"
 	"fmt"
 
+	"github.com/jetstack/cert-manager/pkg/util"
+
 	"reflect"
 
 	"github.com/kr/pretty"
@@ -32,6 +34,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
+var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment}
+
 func ValidateCertificateRequest(obj runtime.Object) field.ErrorList {
 	cr := obj.(*cmapi.CertificateRequest)
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), true)
@@ -40,6 +44,7 @@ func ValidateCertificateRequest(obj runtime.Object) field.ErrorList {
 
 func ValidateUpdateCertificateRequest(oldObj, obj runtime.Object) field.ErrorList {
 	cr := obj.(*cmapi.CertificateRequest)
+	// do not check the CSR content here not to break existing resources on upgrade
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), false)
 	return allErrs
 }
@@ -57,12 +62,12 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
 		} else {
 			// only compare usages if set on CR and in the CSR
-			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && validateCSRContent {
-				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, err, el)
+			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && validateCSRContent && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
+				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, el)
 				if len(err) > 0 {
 					el = append(el, err...)
-				} else if !reflect.DeepEqual(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crSpec.Usages)) {
-					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages: %s", pretty.Diff(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crSpec.Usages)))))
+				} else if len(csrUsages) > 0 && !isUsageEqual(csrUsages, crSpec.Usages) && !isUsageEqual(csrUsages, defaultInternalKeyUsages) {
+					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages, these should match if both are set: %s", pretty.Diff(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crSpec.Usages)))))
 				}
 			}
 		}
@@ -71,14 +76,14 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 	return el
 }
 
-func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, csr *x509.CertificateRequest, err error, el field.ErrorList) ([]cmapi.KeyUsage, field.ErrorList) {
+func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, csr *x509.CertificateRequest, el field.ErrorList) ([]cmapi.KeyUsage, field.ErrorList) {
 	var ekus []x509.ExtKeyUsage
 	var ku x509.KeyUsage
 
 	for _, extension := range csr.Extensions {
 		if extension.Id.String() == asn1.ObjectIdentifier(pki.OIDExtensionExtendedKeyUsage).String() {
 			var asn1ExtendedUsages []asn1.ObjectIdentifier
-			_, err = asn1.Unmarshal(extension.Value, &asn1ExtendedUsages)
+			_, err := asn1.Unmarshal(extension.Value, &asn1ExtendedUsages)
 			if err != nil {
 				el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr extended usages: %s", err)))
 			} else {
@@ -125,4 +130,21 @@ func patchDuplicateKeyUsage(usages []cmapi.KeyUsage) []cmapi.KeyUsage {
 	}
 
 	return usages
+}
+
+func isUsageEqual(a, b []cmapi.KeyUsage) bool {
+	a = patchDuplicateKeyUsage(a)
+	b = patchDuplicateKeyUsage(b)
+
+	var aStrings, bStrings []string
+
+	for _, usage := range a {
+		aStrings = append(aStrings, string(usage))
+	}
+
+	for _, usage := range b {
+		bStrings = append(bStrings, string(usage))
+	}
+
+	return util.EqualUnsorted(aStrings, bStrings)
 }
