@@ -17,7 +17,6 @@ limitations under the License.
 package api
 
 import (
-	auditreg "k8s.io/api/auditregistration/v1alpha1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,7 +64,6 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	kscheme.AddToScheme,
 	apireg.AddToScheme,
 	apiext.AddToScheme,
-	auditreg.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition
