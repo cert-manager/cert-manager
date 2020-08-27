@@ -239,7 +239,7 @@ func signTestCert(key crypto.Signer) *x509.Certificate {
 		SerialNumber:          serialNumber,
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		Subject: pkix.Name{
-			Organization: []string{defaultOrganization},
+			Organization: []string{"cert-manager"},
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),

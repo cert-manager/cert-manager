@@ -98,6 +98,7 @@ type CertificateRequestSpec struct {
 	IsCA bool `json:"isCA,omitempty"`
 
 	// Usages is the set of x509 usages that are requested for the certificate.
+	// If usages are set they SHOULD be encoded inside the CSR spec
 	// Defaults to `digital signature` and `key encipherment` if not specified.
 	// +optional
 	Usages []KeyUsage `json:"usages,omitempty"`

@@ -30,3 +30,9 @@ func ValidateClusterIssuer(obj runtime.Object) field.ErrorList {
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs
 }
+
+func ValidateUpdateClusterIssuer(oldObj, obj runtime.Object) field.ErrorList {
+	iss := obj.(*cmapi.ClusterIssuer)
+	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	return allErrs
+}

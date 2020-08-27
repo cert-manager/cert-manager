@@ -55,6 +55,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 			inputRequest: admissionv1.AdmissionRequest{
 				UID:         types.UID("abc"),
 				RequestKind: testTypeGVK,
+				Operation:   admissionv1.Create,
 				Object: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -82,6 +83,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 		"should allow setting immutable field if it is not already set": {
 			inputRequest: admissionv1.AdmissionRequest{
 				RequestKind: testTypeGVK,
+				Operation:   admissionv1.Update,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -117,6 +119,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 		"should not allow setting immutable field if it is already set": {
 			inputRequest: admissionv1.AdmissionRequest{
 				RequestKind: testTypeGVK,
+				Operation:   admissionv1.Update,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -157,6 +160,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 		"should not allow setting immutable field if it is already set (v2)": {
 			inputRequest: admissionv1.AdmissionRequest{
 				RequestKind: testTypeGVKV2,
+				Operation:   admissionv1.Update,
 				OldObject: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -198,6 +202,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 			inputRequest: admissionv1.AdmissionRequest{
 				UID:         types.UID("abc"),
 				RequestKind: testTypeGVKV2,
+				Operation:   admissionv1.Create,
 				Object: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -226,6 +231,7 @@ func TestRegistryBackedValidator(t *testing.T) {
 			inputRequest: admissionv1.AdmissionRequest{
 				UID:         types.UID("abc"),
 				RequestKind: testTypeGVK,
+				Operation:   admissionv1.Create,
 				Object: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {
@@ -248,8 +254,9 @@ func TestRegistryBackedValidator(t *testing.T) {
 		},
 		"should validate in the current APIVersion if RequestKind is not set (for Kubernetes <1.15 support)": {
 			inputRequest: admissionv1.AdmissionRequest{
-				UID:  types.UID("abc"),
-				Kind: *testTypeGVKV2,
+				UID:       types.UID("abc"),
+				Kind:      *testTypeGVKV2,
+				Operation: admissionv1.Create,
 				Object: runtime.RawExtension{
 					Raw: []byte(fmt.Sprintf(`
 {

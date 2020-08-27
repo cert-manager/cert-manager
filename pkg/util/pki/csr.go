@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -121,8 +122,6 @@ Outer:
 	return found
 }
 
-const defaultOrganization = "cert-manager"
-
 // OrganizationForCertificate will return the Organization to set for the
 // Certificate resource.
 // If an Organization is not specifically set, a default will be used.
@@ -167,6 +166,13 @@ func BuildKeyUsages(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x5
 	return
 }
 
+func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.KeyUsage {
+	usages := apiutil.KeyUsageStrings(ku)
+	usages = append(usages, apiutil.ExtKeyUsageStrings(eku)...)
+
+	return usages
+}
+
 // GenerateCSR will generate a new *x509.CertificateRequest template to be used
 // by issuers that utilise CSRs to obtain Certificates.
 // The CSR will not be signed, and should be passed to either EncodeCSR or
@@ -196,6 +202,25 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		return nil, err
 	}
 
+	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	usage, err := buildASN1KeyUsageRequest(ku)
+	if err != nil {
+		return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
+	}
+	asn1ExtendedUsages := []asn1.ObjectIdentifier{}
+	for _, eku := range ekus {
+		if oid, ok := OIDFromExtKeyUsage(eku); ok {
+			asn1ExtendedUsages = append(asn1ExtendedUsages, oid)
+		}
+	}
+	extendedUsage := pkix.Extension{
+		Id: OIDExtensionExtendedKeyUsage,
+	}
+	extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
+	}
+
 	return &x509.CertificateRequest{
 		Version:            3,
 		SignatureAlgorithm: sigAlgo,
@@ -211,12 +236,11 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 			SerialNumber:       subject.SerialNumber,
 			CommonName:         commonName,
 		},
-		DNSNames:       dnsNames,
-		IPAddresses:    iPAddresses,
-		URIs:           uriNames,
-		EmailAddresses: crt.Spec.EmailAddresses,
-		// TODO: work out how best to handle extensions/key usages here
-		ExtraExtensions: []pkix.Extension{},
+		DNSNames:        dnsNames,
+		IPAddresses:     iPAddresses,
+		URIs:            uriNames,
+		EmailAddresses:  crt.Spec.EmailAddresses,
+		ExtraExtensions: []pkix.Extension{usage, extendedUsage},
 	}, nil
 }
 

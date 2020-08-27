@@ -87,6 +87,12 @@ func ValidateCertificate(obj runtime.Object) field.ErrorList {
 	return allErrs
 }
 
+func ValidateUpdateCertificate(oldObj, obj runtime.Object) field.ErrorList {
+	crt := obj.(*internalcmapi.Certificate)
+	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	return allErrs
+}
+
 func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
