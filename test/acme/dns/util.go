@@ -39,11 +39,8 @@ var (
 )
 
 func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
-	if _, err := f.clientset.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-	}, metav1.CreateOptions{}); err != nil {
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}
+	if _, err := f.clientset.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{}); err != nil {
 		t.Fatalf("error creating test namespace %q: %v", name, err)
 	}
 

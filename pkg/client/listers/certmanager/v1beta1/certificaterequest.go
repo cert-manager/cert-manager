@@ -26,8 +26,10 @@ import (
 )
 
 // CertificateRequestLister helps list CertificateRequests.
+// All objects returned here must be treated as read-only.
 type CertificateRequestLister interface {
 	// List lists all CertificateRequests in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CertificateRequest, err error)
 	// CertificateRequests returns an object that can list and get CertificateRequests.
 	CertificateRequests(namespace string) CertificateRequestNamespaceLister
@@ -58,10 +60,13 @@ func (s *certificateRequestLister) CertificateRequests(namespace string) Certifi
 }
 
 // CertificateRequestNamespaceLister helps list and get CertificateRequests.
+// All objects returned here must be treated as read-only.
 type CertificateRequestNamespaceLister interface {
 	// List lists all CertificateRequests in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CertificateRequest, err error)
 	// Get retrieves the CertificateRequest from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.CertificateRequest, error)
 	CertificateRequestNamespaceListerExpansion
 }

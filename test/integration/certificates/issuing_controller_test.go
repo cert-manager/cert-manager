@@ -80,6 +80,13 @@ func TestIssuingController(t *testing.T) {
 		secretName               = "test-crt-tls"
 	)
 
+	// Create Namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Create a new private key
 	sk, err := utilpki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -276,6 +283,13 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		nextPrivateKeySecretName = "next-private-key-test-crt"
 		secretName               = "test-crt-tls"
 	)
+
+	// Create Namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Create a new private key
 	sk, err := utilpki.GenerateRSAPrivateKey(2048)

@@ -26,8 +26,6 @@ import (
 	"net/http"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-
 	"github.com/go-logr/logr"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -40,9 +38,11 @@ import (
 	ciphers "k8s.io/component-base/cli/flag"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
+	"github.com/jetstack/cert-manager/pkg/webhook/server/util"
 )
 
 var (
@@ -53,10 +53,10 @@ var (
 )
 
 func init() {
-	admissionv1beta1.AddToScheme(defaultScheme)
-	admissionv1.AddToScheme(defaultScheme)
 	apiextensionsv1beta1.AddToScheme(defaultScheme)
 	apiextensionsv1.AddToScheme(defaultScheme)
+	admissionv1beta1.AddToScheme(defaultScheme)
+	admissionv1.AddToScheme(defaultScheme)
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
@@ -70,6 +70,7 @@ func init() {
 		&metav1.APIGroupList{},
 		&metav1.APIGroup{},
 		&metav1.APIResourceList{},
+		&metav1.CreateOptions{},
 	)
 }
 
@@ -294,18 +295,25 @@ func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
 	review, isV1 := obj.(*admissionv1.AdmissionReview)
 	if !isV1 {
 		outputVersion = admissionv1beta1.SchemeGroupVersion
-		reviewv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
-		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, admissionv1.SchemeGroupVersion)
-		if err != nil {
-			return nil, err
+		reviewv1beta1, isv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
+		if !isv1beta1 {
+			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 		}
-		review = convertedReview.(*admissionv1.AdmissionReview)
+		review = &admissionv1.AdmissionReview{}
+		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
 	resp := s.ValidationWebhook.Validate(review.Request)
 	review.Response = resp
 
-	versionedOutput, err := defaultScheme.ConvertToVersion(review, outputVersion)
-	return versionedOutput, err
+	// reply v1
+	if outputVersion.Version == admissionv1.SchemeGroupVersion.Version {
+		return review, nil
+	}
+
+	// reply v1beta1
+	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
+	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
+	return reviewv1beta1, nil
 }
 
 func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
@@ -313,18 +321,25 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 	review, isV1 := obj.(*admissionv1.AdmissionReview)
 	if !isV1 {
 		outputVersion = admissionv1beta1.SchemeGroupVersion
-		reviewv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
-		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, admissionv1.SchemeGroupVersion)
-		if err != nil {
-			return nil, err
+		reviewv1beta1, isv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
+		if !isv1beta1 {
+			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 		}
-		review = convertedReview.(*admissionv1.AdmissionReview)
+		review = &admissionv1.AdmissionReview{}
+		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
 	resp := s.MutationWebhook.Mutate(review.Request)
 	review.Response = resp
 
-	versionedOutput, err := defaultScheme.ConvertToVersion(review, outputVersion)
-	return versionedOutput, err
+	// reply v1
+	if outputVersion.Version == admissionv1.SchemeGroupVersion.Version {
+		return review, nil
+	}
+
+	// reply v1beta1
+	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
+	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
+	return reviewv1beta1, nil
 }
 
 func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {

@@ -26,10 +26,13 @@ import (
 )
 
 // ClusterIssuerLister helps list ClusterIssuers.
+// All objects returned here must be treated as read-only.
 type ClusterIssuerLister interface {
 	// List lists all ClusterIssuers in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.ClusterIssuer, err error)
 	// Get retrieves the ClusterIssuer from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.ClusterIssuer, error)
 	ClusterIssuerListerExpansion
 }

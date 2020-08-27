@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -46,7 +48,7 @@ func TestMetricsController(t *testing.T) {
 	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
-	_, factory, cmClient, cmFactory := framework.NewClients(t, config)
+	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
 	metricsHandler := metrics.New(logf.Log)
 	server, err := metricsHandler.Start("127.0.0.1:0")
@@ -78,6 +80,13 @@ func TestMetricsController(t *testing.T) {
 
 		lastErr error
 	)
+
+	// Create Namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err = kubernetesCl.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testMetrics := func(expectedOutput string) error {
 		resp, err := http.DefaultClient.Get(metricsEndpoint)

@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -51,7 +53,17 @@ func TestTriggerController(t *testing.T) {
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
-	_, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+
+	namespace := "testns"
+
+	// Create Namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, policies.NewTriggerPolicyChain(fakeClock))
 	c := controllerpkg.NewController(
 		context.Background(),
@@ -66,7 +78,7 @@ func TestTriggerController(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
-	cert, err := cmCl.CertmanagerV1().Certificates("testns").Create(ctx, &cmapi.Certificate{
+	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
@@ -111,7 +123,16 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// required
 	policyChain := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock)}
 	// Build, instantiate and run the trigger controller.
-	_, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+
+	namespace := "testns"
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, policyChain)
 	c := controllerpkg.NewController(
 		logf.NewContext(context.Background(), logf.Log, "trigger_controller_RenewNearExpiry"),
@@ -126,8 +147,8 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	defer stopController()
 
 	// Create a Certificate resource and wait for it to have the 'Issuing' condition.
-	cert, err := cmCl.CertmanagerV1().Certificates("testns").Create(ctx, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "testns"},
+	cert, err := cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: namespace},
 		Spec: cmapi.CertificateSpec{
 			SecretName: "example",
 			CommonName: "example.com",

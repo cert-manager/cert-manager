@@ -46,8 +46,18 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 	config, stop := framework.RunControlPlane(t)
 	defer stop()
 
+	kubeClient, _, _, _ := framework.NewClients(t, config)
+
+	namespace := "testns"
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	auth := authority.DynamicAuthority{
-		SecretNamespace: "testns",
+		SecretNamespace: namespace,
 		SecretName:      "testsecret",
 		RESTConfig:      config,
 		Log:             logtesting.TestLogger{T: t},
@@ -75,8 +85,18 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 	config, stop := framework.RunControlPlane(t)
 	defer stop()
 
+	kubeClient, _, _, _ := framework.NewClients(t, config)
+
+	namespace := "testns"
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	auth := authority.DynamicAuthority{
-		SecretNamespace: "testns",
+		SecretNamespace: namespace,
 		SecretName:      "testsecret",
 		RESTConfig:      config,
 		Log:             logtesting.TestLogger{T: t},

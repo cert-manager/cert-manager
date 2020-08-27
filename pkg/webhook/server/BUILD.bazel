@@ -10,6 +10,7 @@ go_library(
         "//pkg/util/profiling:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/server/tls:go_default_library",
+        "//pkg/webhook/server/util:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_api//admission/v1beta1:go_default_library",
@@ -36,6 +37,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/webhook/server/tls:all-srcs",
+        "//pkg/webhook/server/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

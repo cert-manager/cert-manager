@@ -24,11 +24,12 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme"
-	v1 "github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha3"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1beta1"
 	acmevalidation "github.com/jetstack/cert-manager/pkg/internal/apis/acme/validation"
+	cmmetav1 "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1"
 )
 
 // Install registers the API group and adds types to a scheme
@@ -37,7 +38,8 @@ func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	utilruntime.Must(v1alpha3.AddToScheme(scheme))
 	utilruntime.Must(v1beta1.AddToScheme(scheme))
-	utilruntime.Must(v1.AddToScheme(scheme))
+	utilruntime.Must(cmapi.AddToScheme(scheme))
+	utilruntime.Must(cmmetav1.AddToScheme(scheme))
 }
 
 // InstallValidation registers validation functions for the API group with a

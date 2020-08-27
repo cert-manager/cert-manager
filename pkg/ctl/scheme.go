@@ -20,8 +20,10 @@ limitations under the License.
 package ctl
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -50,7 +52,25 @@ func init() {
 	// This is used to add the List object type
 	listGroupVersion := schema.GroupVersionKind{Group: "", Version: runtime.APIVersionInternal, Kind: "List"}
 	Scheme.AddKnownTypeWithName(listGroupVersion, &metainternalversion.List{})
-
 	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
+
 	utilruntime.Must(kscheme.AddToScheme(Scheme))
+	utilruntime.Must(metainternalversion.AddToScheme(Scheme))
+
+	// Adds the conversion between internalmeta.List and corev1.List
+	Scheme.AddConversionFunc((*corev1.List)(nil), (*metainternalversion.List)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		metaList := &metav1.List{}
+		metaList.Items = a.(*corev1.List).Items
+		return metainternalversion.Convert_v1_List_To_internalversion_List(metaList, b.(*metainternalversion.List), scope)
+	})
+
+	Scheme.AddConversionFunc((*metainternalversion.List)(nil), (*corev1.List)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		metaList := &metav1.List{}
+		err := metainternalversion.Convert_internalversion_List_To_v1_List(a.(*metainternalversion.List), metaList, scope)
+		if err != nil {
+			return err
+		}
+		b.(*corev1.List).Items = metaList.Items
+		return nil
+	})
 }

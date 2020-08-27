@@ -19,6 +19,7 @@ package logs
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -163,4 +164,17 @@ func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Con
 
 func V(level int) klog.Verbose {
 	return klog.V(klog.Level(level))
+}
+
+type LogWithFormat struct {
+	logr.Logger
+}
+
+func WithInfof(l logr.Logger) *LogWithFormat {
+	return &LogWithFormat{l}
+}
+
+// is a patch to the controller eventBroadcaster for sending non-string objects
+func (l *LogWithFormat) Infof(format string, a ...interface{}) {
+	l.Info(fmt.Sprintf(format, a...))
 }

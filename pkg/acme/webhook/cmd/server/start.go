@@ -18,7 +18,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	"io"
 	"net"
 
@@ -27,6 +26,7 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 
+	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/apiserver"
 )
@@ -49,7 +49,6 @@ func NewWebhookServerOptions(out, errOut io.Writer, groupName string, solvers ..
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
 			defaultEtcdPathPrefix,
 			apiserver.Codecs.LegacyCodec(whapi.SchemeGroupVersion),
-			nil,
 		),
 
 		SolverGroup: groupName,
