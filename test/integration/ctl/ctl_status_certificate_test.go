@@ -33,6 +33,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/reference"
 
 	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -40,6 +42,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -140,6 +143,10 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 		secret        *corev1.Secret
 		order         *cmacme.Order
 		challenges    []*cmacme.Challenge
+		crtEvents     *corev1.EventList
+		issuerEvents  *corev1.EventList
+		secretEvents  *corev1.EventList
+		reqEvents     *corev1.EventList
 
 		expErr    bool
 		expOutput string
@@ -152,6 +159,17 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 				gen.SetCertificateSecretName("example-tls")),
 			certificateStatus: &cmapi.CertificateStatus{Conditions: []cmapi.CertificateCondition{crtReadyAndUpToDateCond},
 				NotAfter: &metav1.Time{Time: certIsValidTime}, Revision: &revision1},
+			crtEvents: &corev1.EventList{
+				Items: []corev1.Event{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "crtEvent",
+						Namespace: ns1,
+					},
+					Type:    "type",
+					Reason:  "reason",
+					Message: "message",
+				}},
+			},
 			inputArgs:      []string{crt1Name},
 			inputNamespace: ns1,
 			clusterIssuer:  gen.ClusterIssuer("letsencrypt-prod", gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{})),
@@ -163,12 +181,16 @@ Conditions:
   Ready: True, Reason: , Message: Certificate is up to date and has not expired
 DNS Names:
 - www.example.com
-Events:  <none>
+Events:
+  Type  Reason  Age        From  Message
+  ----  ------  ----       ----  -------
+  type  reason  <unknown>        message
 Issuer:
   Name: letsencrypt-prod
   Kind: ClusterIssuer
   Conditions:
     No Conditions set
+  Events:  <none>
 error when finding Secret "example-tls": secrets "example-tls" not found
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
@@ -202,9 +224,30 @@ No CertificateRequest found for this Certificate$`,
 						Key: "test",
 					},
 				})),
+			issuerEvents: &corev1.EventList{
+				Items: []corev1.Event{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "issuerEvent",
+					},
+					Type:    "type",
+					Reason:  "reason",
+					Message: "message",
+				}},
+			},
 			secret: gen.Secret("existing-tls-secret",
 				gen.SetSecretNamespace(ns1),
 				gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
+			secretEvents: &corev1.EventList{
+				Items: []corev1.Event{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secretEvent",
+						Namespace: ns1,
+					},
+					Type:    "type",
+					Reason:  "reason",
+					Message: "message",
+				}},
+			},
 			order: gen.Order("example-order",
 				gen.SetOrderNamespace(ns1),
 				gen.SetOrderCsr(testCSR),
@@ -241,6 +284,10 @@ Issuer:
   Kind: Issuer
   Conditions:
     No Conditions set
+  Events:
+    Type  Reason  Age        From  Message
+    ----  ------  ----       ----  -------
+    type  reason  <unknown>        message
 Secret:
   Name: existing-tls-secret
   Issuer Country: 
@@ -253,6 +300,10 @@ Secret:
   Subject Key ID: 
   Authority Key ID: 
   Serial Number: e2f88edc942c148463219da909fd633a
+  Events:
+    Type  Reason  Age        From  Message
+    ----  ------  ----       ----  -------
+    type  reason  <unknown>        message
 Not Before: <none>
 Not After: 2020-09-16T09:26:18Z
 Renewal Time: <none>
@@ -286,8 +337,19 @@ Challenges:
 				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Name: "non-existing-issuer", Kind: "Issuer"}),
 				gen.SetCertificateRequestCSR(testCSR)),
 			reqStatus: &cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{reqNotReadyCond}},
-			issuer:    nil,
-			expErr:    false,
+			reqEvents: &corev1.EventList{
+				Items: []corev1.Event{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "reqEvent",
+						Namespace: ns1,
+					},
+					Type:    "type",
+					Reason:  "reason",
+					Message: "message",
+				}},
+			},
+			issuer: nil,
+			expErr: false,
 			expOutput: `^Name: testcrt-3
 Namespace: testns-1
 Created at: ([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))
@@ -307,7 +369,10 @@ CertificateRequest:
   Namespace: testns-1
   Conditions:
     Ready: False, Reason: Pending, Message: Waiting on certificate issuance from order default/example-order: "pending"
-  Events:  <none>$`,
+  Events:
+    Type  Reason  Age        From  Message
+    ----  ------  ----       ----  -------
+    type  reason  <unknown>        message$`,
 		},
 		"certificate issued and renewal in progress without ClusterIssuer": {
 			certificate: gen.Certificate(crt4Name,
@@ -361,32 +426,82 @@ CertificateRequest:
 			if err != nil {
 				t.Fatal(err)
 			}
+			if test.crtEvents != nil {
+				crtRef, err := reference.GetReference(ctl.Scheme, crt)
+				if err != nil {
+					t.Fatalf("error when getting ObjectReference: %v", err)
+				}
+				err = createEventsOwnedByRef(kubernetesCl, ctx, test.crtEvents, crtRef, crt.Namespace)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
 
 			// Set up related resources
 			if test.req != nil {
-				err = createCROwnedByCrt(t, cmCl, ctx, crt, test.req, test.reqStatus)
+				req, err := createCROwnedByCrt(cmCl, ctx, crt, test.req, test.reqStatus)
 				if err != nil {
 					t.Fatal(err)
+				}
+				if test.reqEvents != nil {
+					reqRef, err := reference.GetReference(ctl.Scheme, req)
+					if err != nil {
+						t.Fatalf("error when getting ObjectReference: %v", err)
+					}
+					err = createEventsOwnedByRef(kubernetesCl, ctx, test.reqEvents, reqRef, req.Namespace)
+					if err != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 
 			if test.issuer != nil {
-				_, err := cmCl.CertmanagerV1().Issuers(crt.Namespace).Create(ctx, test.issuer, metav1.CreateOptions{})
+				issuer, err := cmCl.CertmanagerV1().Issuers(crt.Namespace).Create(ctx, test.issuer, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
 				}
+				if test.issuerEvents != nil {
+					issuerRef, err := reference.GetReference(ctl.Scheme, issuer)
+					if err != nil {
+						t.Fatalf("error when getting ObjectReference: %v", err)
+					}
+					err = createEventsOwnedByRef(kubernetesCl, ctx, test.issuerEvents, issuerRef, issuer.Namespace)
+					if err != nil {
+						t.Fatal(err)
+					}
+				}
 			}
 			if test.clusterIssuer != nil {
-				_, err := cmCl.CertmanagerV1().ClusterIssuers().Create(ctx, test.clusterIssuer, metav1.CreateOptions{})
+				clusterIssuer, err := cmCl.CertmanagerV1().ClusterIssuers().Create(ctx, test.clusterIssuer, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
+				}
+				if test.issuerEvents != nil {
+					issuerRef, err := reference.GetReference(ctl.Scheme, clusterIssuer)
+					if err != nil {
+						t.Fatalf("error when getting ObjectReference: %v", err)
+					}
+					err = createEventsOwnedByRef(kubernetesCl, ctx, test.issuerEvents, issuerRef, clusterIssuer.Namespace)
+					if err != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 
 			if test.secret != nil {
-				_, err = kubernetesCl.CoreV1().Secrets(test.inputNamespace).Create(ctx, test.secret, metav1.CreateOptions{})
+				secret, err := kubernetesCl.CoreV1().Secrets(test.inputNamespace).Create(ctx, test.secret, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal(err)
+				}
+				if test.secretEvents != nil {
+					secretRef, err := reference.GetReference(ctl.Scheme, secret)
+					if err != nil {
+						t.Fatalf("error when getting ObjectReference: %v", err)
+					}
+					err = createEventsOwnedByRef(kubernetesCl, ctx, test.secretEvents, secretRef, secret.Namespace)
+					if err != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 
@@ -395,7 +510,7 @@ CertificateRequest:
 				if err != nil {
 					t.Fatal(err)
 				}
-				err = createOrderOwnedByCR(t, cmCl, ctx, createdReq, test.order)
+				err = createOrderOwnedByCR(cmCl, ctx, createdReq, test.order)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -406,7 +521,7 @@ CertificateRequest:
 				if err != nil {
 					t.Fatal(err)
 				}
-				err = createChallengesOwnedByOrder(t, cmCl, ctx, createdOrder, test.challenges)
+				err = createChallengesOwnedByOrder(cmCl, ctx, createdOrder, test.challenges)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -424,15 +539,14 @@ CertificateRequest:
 			err = opts.Run(test.inputArgs)
 			if err != nil {
 				if !test.expErr {
-					t.Errorf("got unexpected error when validating args and flags: %v", err)
+					t.Errorf("got unexpected error: %v", err)
+				} else {
+					t.Logf("got an error, which was expected, details: %v", err)
 				}
-				t.Logf("got an error, which was expected, details: %v", err)
 				return
-			} else {
-				// got no error
-				if test.expErr {
-					t.Errorf("expected but got no error validating args and flags")
-				}
+			} else if test.expErr {
+				// expected error but error is nil
+				t.Errorf("expected but got no error")
 			}
 
 			match, err := regexp.MatchString(strings.TrimSpace(test.expOutput), strings.TrimSpace(outBuf.String()))
@@ -460,31 +574,31 @@ func setCertificateStatus(cmCl versioned.Interface, crt *cmapi.Certificate,
 	return crt, err
 }
 
-func createCROwnedByCrt(t *testing.T, cmCl versioned.Interface, ctx context.Context, crt *cmapi.Certificate,
-	req *cmapi.CertificateRequest, reqStatus *cmapi.CertificateRequestStatus) error {
+func createCROwnedByCrt(cmCl versioned.Interface, ctx context.Context, crt *cmapi.Certificate,
+	req *cmapi.CertificateRequest, reqStatus *cmapi.CertificateRequestStatus) (*cmapi.CertificateRequest, error) {
 
 	req, err := cmCl.CertmanagerV1().CertificateRequests(crt.Namespace).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.OwnerReferences = append(req.OwnerReferences, *metav1.NewControllerRef(crt, cmapi.SchemeGroupVersion.WithKind("Certificate")))
 	req, err = cmCl.CertmanagerV1().CertificateRequests(crt.Namespace).Update(ctx, req, metav1.UpdateOptions{})
 	if err != nil {
-		t.Errorf("Update Err: %v", err)
+		return nil, fmt.Errorf("Update Err: %v", err)
 	}
 
 	if reqStatus != nil {
 		req.Status.Conditions = reqStatus.Conditions
 		req, err = cmCl.CertmanagerV1().CertificateRequests(crt.Namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
 		if err != nil {
-			t.Errorf("Update Err: %v", err)
+			return nil, fmt.Errorf("Update Err: %v", err)
 		}
 	}
-	return nil
+	return req, nil
 }
 
-func createOrderOwnedByCR(t *testing.T, cmCl versioned.Interface, ctx context.Context,
+func createOrderOwnedByCR(cmCl versioned.Interface, ctx context.Context,
 	req *cmapi.CertificateRequest, order *cmacme.Order) error {
 
 	order, err := cmCl.AcmeV1().Orders(req.Namespace).Create(ctx, order, metav1.CreateOptions{})
@@ -495,13 +609,13 @@ func createOrderOwnedByCR(t *testing.T, cmCl versioned.Interface, ctx context.Co
 	order.OwnerReferences = append(order.OwnerReferences, *metav1.NewControllerRef(req, cmapi.SchemeGroupVersion.WithKind("CertificateRequest")))
 	order, err = cmCl.AcmeV1().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
 	if err != nil {
-		t.Errorf("Update Err: %v", err)
+		return fmt.Errorf("Update Err: %v", err)
 	}
 
 	return nil
 }
 
-func createChallengesOwnedByOrder(t *testing.T, cmCl versioned.Interface, ctx context.Context,
+func createChallengesOwnedByOrder(cmCl versioned.Interface, ctx context.Context,
 	order *cmacme.Order, challenges []*cmacme.Challenge) error {
 
 	for _, c := range challenges {
@@ -513,9 +627,21 @@ func createChallengesOwnedByOrder(t *testing.T, cmCl versioned.Interface, ctx co
 		challenge.OwnerReferences = append(challenge.OwnerReferences, *metav1.NewControllerRef(order, cmacme.SchemeGroupVersion.WithKind("Order")))
 		challenge, err = cmCl.AcmeV1().Challenges(order.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
 		if err != nil {
-			t.Errorf("Update Err: %v", err)
+			return fmt.Errorf("Update Err: %v", err)
 		}
 	}
 
+	return nil
+}
+
+func createEventsOwnedByRef(kubernetesCl kubernetes.Interface, ctx context.Context,
+	eventList *corev1.EventList, objRef *corev1.ObjectReference, ns string) error {
+	for _, event := range eventList.Items {
+		event.InvolvedObject = *objRef
+		_, err := kubernetesCl.CoreV1().Events(ns).Create(ctx, &event, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf(err.Error())
+		}
+	}
 	return nil
 }

@@ -75,6 +75,8 @@ type IssuerStatus struct {
 	Kind string
 	// Conditions of Issuer/ClusterIssuer resource
 	Conditions []cmapi.IssuerCondition
+	// Events of Issuer/ClusterIssuer resource
+	Events *v1.EventList
 }
 
 type SecretStatus struct {
@@ -103,6 +105,8 @@ type SecretStatus struct {
 	AuthorityKeyId []byte
 	// Serial Number of the x509 certificate in the Secret
 	SerialNumber *big.Int
+	// Events of Secret resource
+	Events *v1.EventList
 }
 
 type CRStatus struct {
@@ -168,7 +172,7 @@ func (status *CertificateStatus) withEvents(events *v1.EventList) *CertificateSt
 	return status
 }
 
-func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapi.GenericIssuer, issuerKind string, err error) *CertificateStatus {
+func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapi.GenericIssuer, issuerKind string, issuerEvents *v1.EventList, err error) *CertificateStatus {
 	if err != nil {
 		status.IssuerStatus = &IssuerStatus{Error: err}
 		return status
@@ -178,15 +182,15 @@ func (status *CertificateStatus) withGenericIssuer(genericIssuer cmapi.GenericIs
 	}
 	if issuerKind == "ClusterIssuer" {
 		status.IssuerStatus = &IssuerStatus{Name: genericIssuer.GetName(), Kind: "ClusterIssuer",
-			Conditions: genericIssuer.GetStatus().Conditions}
+			Conditions: genericIssuer.GetStatus().Conditions, Events: issuerEvents}
 		return status
 	}
 	status.IssuerStatus = &IssuerStatus{Name: genericIssuer.GetName(), Kind: "Issuer",
-		Conditions: genericIssuer.GetStatus().Conditions}
+		Conditions: genericIssuer.GetStatus().Conditions, Events: issuerEvents}
 	return status
 }
 
-func (status *CertificateStatus) withSecret(secret *v1.Secret, err error) *CertificateStatus {
+func (status *CertificateStatus) withSecret(secret *v1.Secret, secretEvents *v1.EventList, err error) *CertificateStatus {
 	if err != nil {
 		status.SecretStatus = &SecretStatus{Error: err}
 		return status
@@ -213,7 +217,7 @@ func (status *CertificateStatus) withSecret(secret *v1.Secret, err error) *Certi
 		ExtKeyUsage: x509Cert.ExtKeyUsage, PublicKeyAlgorithm: x509Cert.PublicKeyAlgorithm,
 		SignatureAlgorithm: x509Cert.SignatureAlgorithm,
 		SubjectKeyId:       x509Cert.SubjectKeyId, AuthorityKeyId: x509Cert.AuthorityKeyId,
-		SerialNumber: x509Cert.SerialNumber}
+		SerialNumber: x509Cert.SerialNumber, Events: secretEvents}
 	return status
 }
 
@@ -289,13 +293,7 @@ func (status *CertificateStatus) String() string {
 
 	output += fmt.Sprintf("DNS Names:\n%s", formatStringSlice(status.DNSNames))
 
-	var buf bytes.Buffer
-	tabWriter := util.NewTabWriter(&buf)
-	prefixWriter := describe.NewPrefixWriter(tabWriter)
-	util.DescribeEvents(status.Events, prefixWriter, 0)
-	tabWriter.Flush()
-	output += buf.String()
-	buf.Reset()
+	output += eventsToString(status.Events, 0)
 
 	output += status.IssuerStatus.String()
 	output += status.SecretStatus.String()
@@ -336,7 +334,9 @@ func (issuerStatus *IssuerStatus) String() string {
 	if conditionMsg == "" {
 		conditionMsg = "  No Conditions set\n"
 	}
-	return fmt.Sprintf(issuerFormat, issuerStatus.Name, issuerStatus.Kind, conditionMsg)
+	output := fmt.Sprintf(issuerFormat, issuerStatus.Name, issuerStatus.Kind, conditionMsg)
+	output += eventsToString(issuerStatus.Events, 1)
+	return output
 }
 
 // String returns the information about the status of a Secret as a string to be printed as output
@@ -363,12 +363,14 @@ func (secretStatus *SecretStatus) String() string {
 	if err != nil {
 		extKeyUsageString = err.Error()
 	}
-	return fmt.Sprintf(secretFormat, secretStatus.Name, strings.Join(secretStatus.IssuerCountry, ", "),
+	output := fmt.Sprintf(secretFormat, secretStatus.Name, strings.Join(secretStatus.IssuerCountry, ", "),
 		strings.Join(secretStatus.IssuerOrganisation, ", "),
 		secretStatus.IssuerCommonName, keyUsageToString(secretStatus.KeyUsage),
 		extKeyUsageString, secretStatus.PublicKeyAlgorithm, secretStatus.SignatureAlgorithm,
 		hex.EncodeToString(secretStatus.SubjectKeyId), hex.EncodeToString(secretStatus.AuthorityKeyId),
 		hex.EncodeToString(secretStatus.SerialNumber.Bytes()))
+	output += eventsToString(secretStatus.Events, 1)
+	return output
 }
 
 var (
@@ -442,13 +444,7 @@ func (crStatus *CRStatus) String() string {
 	infos := fmt.Sprintf(crFormat, crStatus.Name, crStatus.Namespace, conditionMsg)
 	infos = fmt.Sprintf("CertificateRequest:%s", infos)
 
-	var buf bytes.Buffer
-	tabWriter := util.NewTabWriter(&buf)
-	prefixWriter := describe.NewPrefixWriter(tabWriter)
-	util.DescribeEvents(crStatus.Events, prefixWriter, 1)
-	tabWriter.Flush()
-	infos += buf.String()
-	buf.Reset()
+	infos += eventsToString(crStatus.Events, 1)
 	return infos
 }
 
@@ -500,4 +496,14 @@ func (challengeStatus *ChallengeStatus) String() string {
 	return fmt.Sprintf("Name: %s, Type: %s, Token: %s, Key: %s, State: %s, Reason: %s, Processing: %t, Presented: %t",
 		challengeStatus.Name, challengeStatus.Type, challengeStatus.Token, challengeStatus.Key, challengeStatus.State,
 		challengeStatus.Reason, challengeStatus.Processing, challengeStatus.Presented)
+}
+
+func eventsToString(events *v1.EventList, baseLevel int) string {
+	var buf bytes.Buffer
+	defer buf.Reset()
+	tabWriter := util.NewTabWriter(&buf)
+	prefixWriter := describe.NewPrefixWriter(tabWriter)
+	util.DescribeEvents(events, prefixWriter, baseLevel)
+	tabWriter.Flush()
+	return buf.String()
 }

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
@@ -216,6 +217,13 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 
 	serialNum, _ := new(big.Int).SetString("301696114246524167282555582613204853562", 10)
 	ns := "ns1"
+	dummyEventList := &corev1.EventList{
+		Items: []corev1.Event{{
+			Type:    "type",
+			Reason:  "reason",
+			Message: "message",
+		}},
+	}
 
 	tests := map[string]struct {
 		inputData *Data
@@ -232,6 +240,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 						Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}),
 					gen.SetCertificateDNSNames("example.com"),
 				),
+				CrtEvents: dummyEventList,
 			},
 			expOutput: &CertificateStatus{
 				Name:         "test-crt",
@@ -240,7 +249,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 				Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady,
 					Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}},
 				DNSNames:    []string{"example.com"},
-				Events:      nil,
+				Events:      dummyEventList,
 				NotBefore:   &metav1.Time{Time: timestamp},
 				NotAfter:    &metav1.Time{Time: timestamp},
 				RenewalTime: &metav1.Time{Time: timestamp},
@@ -250,30 +259,40 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 			inputData: &Data{
 				Certificate: gen.Certificate("test-crt",
 					gen.SetCertificateNamespace(ns)),
-				Issuer:      gen.Issuer("test-issuer"),
-				IssuerKind:  "Issuer",
-				IssuerError: nil,
+				Issuer:       gen.Issuer("test-issuer"),
+				IssuerKind:   "Issuer",
+				IssuerError:  nil,
+				IssuerEvents: dummyEventList,
 			},
 			expOutput: &CertificateStatus{
 				Name:         "test-crt",
 				Namespace:    ns,
 				CreationTime: metav1.Time{},
-				IssuerStatus: &IssuerStatus{Name: "test-issuer", Kind: "Issuer"},
+				IssuerStatus: &IssuerStatus{
+					Name:   "test-issuer",
+					Kind:   "Issuer",
+					Events: dummyEventList,
+				},
 			},
 		},
 		"Issuer correctly with Kind ClusterIssuer": {
 			inputData: &Data{
 				Certificate: gen.Certificate("test-crt",
 					gen.SetCertificateNamespace(ns)),
-				Issuer:      gen.Issuer("test-clusterissuer"),
-				IssuerKind:  "ClusterIssuer",
-				IssuerError: nil,
+				Issuer:       gen.Issuer("test-clusterissuer"),
+				IssuerKind:   "ClusterIssuer",
+				IssuerError:  nil,
+				IssuerEvents: dummyEventList,
 			},
 			expOutput: &CertificateStatus{
 				Name:         "test-crt",
 				Namespace:    ns,
 				CreationTime: metav1.Time{},
-				IssuerStatus: &IssuerStatus{Name: "test-clusterissuer", Kind: "ClusterIssuer"},
+				IssuerStatus: &IssuerStatus{
+					Name:   "test-clusterissuer",
+					Kind:   "ClusterIssuer",
+					Events: dummyEventList,
+				},
 			},
 		},
 		"Correct information extracted from Secret resource": {
@@ -283,7 +302,8 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 				Secret: gen.Secret("existing-tls-secret",
 					gen.SetSecretNamespace(ns),
 					gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
-				SecretError: nil,
+				SecretError:  nil,
+				SecretEvents: dummyEventList,
 			},
 			expOutput: &CertificateStatus{
 				Name:         "test-crt",
@@ -302,6 +322,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 					SubjectKeyId:       nil,
 					AuthorityKeyId:     nil,
 					SerialNumber:       serialNum,
+					Events:             dummyEventList,
 				},
 			},
 		},
@@ -312,8 +333,8 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 				Req: gen.CertificateRequest("test-req",
 					gen.SetCertificateRequestNamespace(ns),
 					gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "Pending", Message: "Waiting on certificate issuance from order default/example-order: \"pending\""})),
-				ReqError: nil,
-				ReqEvent: nil,
+				ReqError:  nil,
+				ReqEvents: dummyEventList,
 			},
 			expOutput: &CertificateStatus{
 				Name:         "test-crt",
@@ -324,7 +345,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 					Name:       "test-req",
 					Namespace:  ns,
 					Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "Pending", Message: "Waiting on certificate issuance from order default/example-order: \"pending\""}},
-					Events:     nil,
+					Events:     dummyEventList,
 				},
 			},
 		},
@@ -426,15 +447,17 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 			inputData: &Data{
 				Certificate: gen.Certificate("test-crt",
 					gen.SetCertificateNamespace(ns)),
-				CrtEvents:   nil,
-				Issuer:      gen.Issuer("test-issuer"),
-				IssuerKind:  "",
-				IssuerError: errors.New("dummy error"),
-				Secret:      gen.Secret("test-secret"),
-				SecretError: errors.New("dummy error"),
-				Req:         gen.CertificateRequest("test-req"),
-				ReqError:    errors.New("dummy error"),
-				ReqEvent:    nil,
+				CrtEvents:    nil,
+				Issuer:       gen.Issuer("test-issuer"),
+				IssuerKind:   "",
+				IssuerError:  errors.New("dummy error"),
+				IssuerEvents: dummyEventList,
+				Secret:       gen.Secret("test-secret"),
+				SecretError:  errors.New("dummy error"),
+				SecretEvents: dummyEventList,
+				Req:          gen.CertificateRequest("test-req"),
+				ReqError:     errors.New("dummy error"),
+				ReqEvents:    dummyEventList,
 				Order: &cmacme.Order{
 					ObjectMeta: metav1.ObjectMeta{Name: "test-order"},
 				},

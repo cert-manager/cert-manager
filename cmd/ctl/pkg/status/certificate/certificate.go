@@ -68,11 +68,13 @@ type Data struct {
 	Issuer       cmapi.GenericIssuer
 	IssuerKind   string
 	IssuerError  error
+	IssuerEvents *corev1.EventList
 	Secret       *corev1.Secret
 	SecretError  error
+	SecretEvents *corev1.EventList
 	Req          *cmapi.CertificateRequest
 	ReqError     error
-	ReqEvent     *corev1.EventList
+	ReqEvents    *corev1.EventList
 	Order        *cmacme.Order
 	OrderError   error
 	Challenges   []*cmacme.Challenge
@@ -172,14 +174,41 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Ignore error, since if there was an error, crtEvents would be nil and handled down the line in DescribeEvents
-	crtEvents, _ := clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, crtRef)
+	// If no events found, crtEvents would be nil and handled down the line in DescribeEvents
+	crtEvents, err := clientSet.CoreV1().Events(crt.Namespace).Search(ctl.Scheme, crtRef)
+	if err != nil {
+		return nil, err
+	}
 
 	issuer, issuerKind, issuerError := getGenericIssuer(o.CMClient, ctx, crt)
+	var issuerEvents *corev1.EventList
+	if issuer != nil {
+		issuerRef, err := reference.GetReference(ctl.Scheme, issuer)
+		if err != nil {
+			return nil, err
+		}
+		// If no events found, issuerEvents would be nil and handled down the line in DescribeEvents
+		issuerEvents, err = clientSet.CoreV1().Events(issuer.GetNamespace()).Search(ctl.Scheme, issuerRef)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	secret, secretErr := clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
+	secret, secretErr := clientSet.CoreV1().Secrets(crt.Namespace).Get(ctx, crt.Spec.SecretName, metav1.GetOptions{})
 	if secretErr != nil {
 		secretErr = fmt.Errorf("error when finding Secret %q: %w\n", crt.Spec.SecretName, secretErr)
+	}
+	var secretEvents *corev1.EventList
+	if secret != nil {
+		secretRef, err := reference.GetReference(ctl.Scheme, secret)
+		if err != nil {
+			return nil, err
+		}
+		// If no events found, secretEvents would be nil and handled down the line in DescribeEvents
+		secretEvents, err = clientSet.CoreV1().Events(secret.Namespace).Search(ctl.Scheme, secretRef)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// TODO: What about timing issues? When I query condition it's not ready yet, but then looking for cr it's finished and deleted
@@ -197,8 +226,11 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Ignore error, since if there was an error, reqEvents would be nil and handled down the line in DescribeEvents
-		reqEvents, _ = clientSet.CoreV1().Events(o.Namespace).Search(ctl.Scheme, reqRef)
+		// If no events found,  reqEvents would be nil and handled down the line in DescribeEvents
+		reqEvents, err = clientSet.CoreV1().Events(req.Namespace).Search(ctl.Scheme, reqRef)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var (
@@ -234,11 +266,13 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 		Issuer:       issuer,
 		IssuerKind:   issuerKind,
 		IssuerError:  issuerError,
+		IssuerEvents: issuerEvents,
 		Secret:       secret,
 		SecretError:  secretErr,
+		SecretEvents: secretEvents,
 		Req:          req,
 		ReqError:     reqErr,
-		ReqEvent:     reqEvents,
+		ReqEvents:    reqEvents,
 		Order:        order,
 		OrderError:   orderErr,
 		Challenges:   challenges,
@@ -251,9 +285,9 @@ func (o *Options) GetResources(crtName string) (*Data, error) {
 func StatusFromResources(data *Data) *CertificateStatus {
 	return newCertificateStatusFromCert(data.Certificate).
 		withEvents(data.CrtEvents).
-		withGenericIssuer(data.Issuer, data.IssuerKind, data.IssuerError).
-		withSecret(data.Secret, data.SecretError).
-		withCR(data.Req, data.ReqEvent, data.ReqError).
+		withGenericIssuer(data.Issuer, data.IssuerKind, data.IssuerEvents, data.IssuerError).
+		withSecret(data.Secret, data.SecretEvents, data.SecretError).
+		withCR(data.Req, data.ReqEvents, data.ReqError).
 		withOrder(data.Order, data.OrderError).
 		withChallenges(data.Challenges, data.ChallengeErr)
 }
