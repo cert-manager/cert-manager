@@ -25,9 +25,8 @@ import (
 	"net"
 	"net/http"
 	"time"
-	"unsafe"
 
-	"k8s.io/apimachinery/pkg/types"
+	"github.com/jetstack/cert-manager/pkg/webhook/server/util"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
@@ -37,7 +36,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -304,7 +302,7 @@ func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
 			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 		}
 		review = &admissionv1.AdmissionReview{}
-		convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
+		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
 	resp := s.ValidationWebhook.Validate(review.Request)
 	review.Response = resp
@@ -316,7 +314,7 @@ func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
 
 	// reply v1beta1
 	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
-	convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
+	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
 	return reviewv1beta1, nil
 }
 
@@ -330,7 +328,7 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 		}
 		review = &admissionv1.AdmissionReview{}
-		convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
+		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
 	resp := s.MutationWebhook.Mutate(review.Request)
 	review.Response = resp
@@ -342,7 +340,7 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 
 	// reply v1beta1
 	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
-	convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
+	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
 	return reviewv1beta1, nil
 }
 
@@ -421,68 +419,4 @@ func (s *Server) handleLivez(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	w.WriteHeader(http.StatusOK)
-}
-
-// these conversions are copied from https://github.com/kubernetes/kubernetes/blob/4db3a096ce8ac730b2280494422e1c4cf5fe875e/pkg/apis/admission/v1beta1/zz_generated.conversion.go
-// to avoid copying in kubernetes/kubernetes
-// they are sightly modified to remove complexity
-
-func convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(in *admissionv1beta1.AdmissionReview, out *admissionv1.AdmissionReview) {
-	if in.Request != nil {
-		if out.Request == nil {
-			out.Request = &admissionv1.AdmissionRequest{}
-		}
-		in, out := &in.Request, &out.Request
-		*out = new(admissionv1.AdmissionRequest)
-		convert_v1beta1_AdmissionRequest_To_admission_AdmissionRequest(*in, *out)
-	} else {
-		out.Request = nil
-	}
-	out.Response = (*admissionv1.AdmissionResponse)(unsafe.Pointer(in.Response))
-}
-
-func convert_v1beta1_AdmissionRequest_To_admission_AdmissionRequest(in *admissionv1beta1.AdmissionRequest, out *admissionv1.AdmissionRequest) {
-	out.UID = types.UID(in.UID)
-	out.Kind = in.Kind
-	out.Resource = in.Resource
-	out.SubResource = in.SubResource
-	out.RequestKind = (*v1.GroupVersionKind)(unsafe.Pointer(in.RequestKind))
-	out.RequestResource = (*v1.GroupVersionResource)(unsafe.Pointer(in.RequestResource))
-	out.RequestSubResource = in.RequestSubResource
-	out.Name = in.Name
-	out.Namespace = in.Namespace
-	out.Operation = admissionv1.Operation(in.Operation)
-	out.Object = in.Object
-	out.OldObject = in.OldObject
-	out.Options = in.Options
-}
-
-func convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(in *admissionv1.AdmissionReview, out *admissionv1beta1.AdmissionReview) {
-	if in.Request != nil {
-		if out.Request == nil {
-			out.Request = &admissionv1beta1.AdmissionRequest{}
-		}
-		in, out := &in.Request, &out.Request
-		*out = new(admissionv1beta1.AdmissionRequest)
-		convert_admission_AdmissionRequest_To_v1beta1_AdmissionRequest(*in, *out)
-	} else {
-		out.Request = nil
-	}
-	out.Response = (*admissionv1beta1.AdmissionResponse)(unsafe.Pointer(in.Response))
-}
-
-func convert_admission_AdmissionRequest_To_v1beta1_AdmissionRequest(in *admissionv1.AdmissionRequest, out *admissionv1beta1.AdmissionRequest) {
-	out.UID = types.UID(in.UID)
-	out.Kind = in.Kind
-	out.Resource = in.Resource
-	out.SubResource = in.SubResource
-	out.RequestKind = (*v1.GroupVersionKind)(unsafe.Pointer(in.RequestKind))
-	out.RequestResource = (*v1.GroupVersionResource)(unsafe.Pointer(in.RequestResource))
-	out.RequestSubResource = in.RequestSubResource
-	out.Name = in.Name
-	out.Namespace = in.Namespace
-	out.Operation = admissionv1beta1.Operation(in.Operation)
-	out.Object = in.Object
-	out.OldObject = in.OldObject
-	out.Options = in.Options
 }
