@@ -10,6 +10,7 @@ go_library(
         "//pkg/util/profiling:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/server/tls:go_default_library",
+        "//pkg/webhook/server/util:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_api//admission/v1beta1:go_default_library",
@@ -19,7 +20,6 @@ go_library(
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
-        "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_component_base//cli/flag:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
     ],
@@ -37,6 +37,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/webhook/server/tls:all-srcs",
+        "//pkg/webhook/server/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
