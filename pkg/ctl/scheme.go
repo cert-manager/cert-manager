@@ -20,9 +20,6 @@ limitations under the License.
 package ctl
 
 import (
-	acmeinstall "github.com/jetstack/cert-manager/pkg/internal/apis/acme/install"
-	cminstall "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/install"
-	metainstall "github.com/jetstack/cert-manager/pkg/internal/apis/meta/install"
 	corev1 "k8s.io/api/core/v1"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
+
+	acmeinstall "github.com/jetstack/cert-manager/pkg/internal/apis/acme/install"
+	cminstall "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/install"
+	metainstall "github.com/jetstack/cert-manager/pkg/internal/apis/meta/install"
 )
 
 // Define a Scheme that has all cert-manager API types registered, including

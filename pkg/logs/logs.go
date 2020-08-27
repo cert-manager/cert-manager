@@ -174,6 +174,7 @@ func WithInfof(l logr.Logger) *LogWithFormat {
 	return &LogWithFormat{l}
 }
 
+// is a patch to the controller eventBroadcaster for sending non-string objects
 func (l *LogWithFormat) Infof(format string, a ...interface{}) {
 	l.Info(fmt.Sprintf(format, a...))
 }

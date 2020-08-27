@@ -26,10 +26,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/server/util"
-
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-
 	"github.com/go-logr/logr"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -42,9 +38,11 @@ import (
 	ciphers "k8s.io/component-base/cli/flag"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
+	"github.com/jetstack/cert-manager/pkg/webhook/server/util"
 )
 
 var (
