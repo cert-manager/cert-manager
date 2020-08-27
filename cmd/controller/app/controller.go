@@ -186,7 +186,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	intscheme.AddToScheme(scheme.Scheme)
 	log.V(logf.DebugLevel).Info("creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.V(logf.DebugLevel).Info)
+	eventBroadcaster.StartLogging(logf.WithInfof(log.V(logf.DebugLevel)).Infof)
 	eventBroadcaster.StartRecordingToSink(&clientv1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
