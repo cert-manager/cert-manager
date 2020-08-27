@@ -67,9 +67,7 @@ elif [[ "$K8S_VERSION" =~ 1\.18 ]] ; then
   KIND_IMAGE_SHA="sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f"
   KIND_IMAGE_CONFIG="v1beta2"
 elif [[ "$K8S_VERSION" =~ 1\.19 ]] ; then
-  # maartje/kindest-node:v1.19.0-rc.4 @ sha256:25af7a09c5b134b9c2a7ac2b193b16a8f5bfedf100d793c2db95d596d4bc2ff2
-  KIND_IMAGE_SHA="sha256:739966c0f3fffbba96d6b38ea7698746a8145e7205f8467ed42916132f989ca9"
-  KIND_IMAGE_REPO="maartje/kindest-node"
+  KIND_IMAGE_SHA="sha256:6a6e4d588db3c2873652f382465eeadc2644562a64659a1da4db73d3beaa8848"
   KIND_IMAGE_CONFIG="v1beta2"
 else
   echo "Unrecognised Kubernetes version '${K8S_VERSION}'! Aborting..."
