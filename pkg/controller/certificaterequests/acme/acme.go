@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"regexp"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -246,14 +245,6 @@ func computeACMEOrderName(cr *v1.CertificateRequest, orderSpec cmacme.OrderSpec)
 		return "", err
 	}
 
-	crName := cr.Name
-	if len(crName) >= 52 {
-		// shorten the cert name to 52 chars to ensure the total length of the name
-		// also shorten the 52 char string to the last non-symbol character
-		// is less than or equal to 64 characters
-		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", crName), -1)
-		crName = crName[:validCharIndexes[len(validCharIndexes)-1][1]]
-	}
-
+	crName := apiutil.DNSSafeSchortenTo52Characters(cr.Name)
 	return fmt.Sprintf("%s-%d", crName, hashF.Sum32()), nil
 }

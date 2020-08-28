@@ -21,13 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"regexp"
-
-	"github.com/jetstack/cert-manager/pkg/acme"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
+	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/acmeorders/selectors"
@@ -88,14 +87,7 @@ func buildChallengeName(orderName string, chSpec cmacme.ChallengeSpec) (string, 
 		return "", err
 	}
 
-	if len(orderName) >= 52 {
-		// shorten the cert name to 52 chars to ensure the total length of the name
-		// also shorten the 52 char string to the last non-symbol character
-		// is less than or equal to 64 characters
-		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", orderName), -1)
-		orderName = orderName[:validCharIndexes[len(validCharIndexes)-1][1]]
-	}
-
+	orderName = util.DNSSafeSchortenTo52Characters(orderName)
 	return fmt.Sprintf("%s-%d", orderName, hash), nil
 }
 

@@ -38,14 +38,19 @@ func ComputeCertificateRequestName(crt *cmapi.Certificate) (string, error) {
 		return "", err
 	}
 
-	crtName := crt.Name
-	if len(crtName) >= 52 {
+	crtName := DNSSafeSchortenTo52Characters(crt.Name)
+
+	return fmt.Sprintf("%s-%d", crtName, hashF.Sum32()), nil
+}
+
+func DNSSafeSchortenTo52Characters(in string) string {
+	if len(in) >= 52 {
 		// shorten the cert name to 52 chars to ensure the total length of the name
 		// also shorten the 52 char string to the last non-symbol character
 		// is less than or equal to 64 characters
-		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", crtName), -1)
-		crtName = crtName[:validCharIndexes[len(validCharIndexes)-1][1]]
+		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", in), -1)
+		in = in[:validCharIndexes[len(validCharIndexes)-1][1]]
 	}
 
-	return fmt.Sprintf("%s-%d", crtName, hashF.Sum32()), nil
+	return in
 }
