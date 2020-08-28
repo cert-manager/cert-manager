@@ -35,10 +35,10 @@ import (
 // Install registers the API group and adds types to a scheme
 func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(certmanager.AddToScheme(scheme))
-	utilruntime.Must(v1alpha2.AddToScheme(scheme))
-	utilruntime.Must(v1alpha3.AddToScheme(scheme))
-	utilruntime.Must(v1beta1.AddToScheme(scheme))
 	utilruntime.Must(v1.AddToScheme(scheme))
+	utilruntime.Must(v1beta1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha3.AddToScheme(scheme))
+	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 
 	utilruntime.Must(cmmetav1.AddToScheme(scheme))
 }
