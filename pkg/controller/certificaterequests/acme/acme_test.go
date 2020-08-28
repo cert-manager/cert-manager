@@ -420,3 +420,68 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.CheckAndFinish(err)
 }
+
+func TestComputeACMEOrderName(t *testing.T) {
+	type args struct {
+		cr        *cmapi.CertificateRequest
+		orderSpec cmacme.OrderSpec
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Test output of a short domain",
+			args: args{
+				cr: &cmapi.CertificateRequest{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "unit.test.jetstack.io-1683025094",
+					},
+				},
+				orderSpec: cmacme.OrderSpec{},
+			},
+			want:    "unit.test.jetstack.io-1683025094-3418488114",
+			wantErr: false,
+		},
+		{
+			name: "Test output of a 52 character CR name",
+			args: args{
+				cr: &cmapi.CertificateRequest{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-108802726",
+					},
+				},
+				orderSpec: cmacme.OrderSpec{},
+			},
+			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-3418488114",
+			wantErr: false,
+		},
+		{
+			name: "Test output of a dot at 52nd character CR name",
+			args: args{
+				cr: &cmapi.CertificateRequest{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com-tl2t89g",
+					},
+				},
+				orderSpec: cmacme.OrderSpec{},
+			},
+			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-3418488114",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := computeACMEOrderName(tt.args.cr, tt.args.orderSpec)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ComputeACMEOrderName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ComputeACMEOrderName() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

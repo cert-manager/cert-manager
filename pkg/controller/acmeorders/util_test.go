@@ -1274,3 +1274,56 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		})
 	}
 }
+
+func Test_buildChallengeName(t *testing.T) {
+	type args struct {
+		orderName string
+		chSpec    cmacme.ChallengeSpec
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Test output of a short domain",
+			args: args{
+				orderName: "unit.test.jetstack.io-1683025094-3418488114",
+				chSpec:    cmacme.ChallengeSpec{},
+			},
+			want:    "unit.test.jetstack.io-1683025094-3418488114-4226717179",
+			wantErr: false,
+		},
+		{
+			name: "Test output of a 52 character CR name",
+			args: args{
+				orderName: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-4226717179",
+				chSpec:    cmacme.ChallengeSpec{},
+			},
+			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-4226717179",
+			wantErr: false,
+		},
+		{
+			name: "Test output of a dot at 52nd character CR name",
+			args: args{
+				orderName: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com-tl2t89g",
+				chSpec:    cmacme.ChallengeSpec{},
+			},
+			want:    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-4226717179",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := buildChallengeName(tt.args.orderName, tt.args.chSpec)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("buildChallengeName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("buildChallengeName() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

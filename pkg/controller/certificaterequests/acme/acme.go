@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"regexp"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -208,7 +209,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		CommonName: csr.Subject.CommonName,
 		DNSNames:   csr.DNSNames,
 	}
-	hash, err := hashOrder(spec)
+	name, err := computeACMEOrderName(cr, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +219,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 	// the hyphen.
 	return &cmacme.Order{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        fmt.Sprintf("%.52s-%d", cr.Name, hash),
+			Name:        name,
 			Namespace:   cr.Namespace,
 			Labels:      cr.Labels,
 			Annotations: cr.Annotations,
@@ -230,20 +231,29 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 	}, nil
 }
 
-func hashOrder(orderSpec cmacme.OrderSpec) (uint32, error) {
+func computeACMEOrderName(cr *v1.CertificateRequest, orderSpec cmacme.OrderSpec) (string, error) {
 	// create a shallow copy of the OrderSpec so we can overwrite the Request field
 	orderSpec.Request = nil
 
 	orderSpecBytes, err := json.Marshal(orderSpec)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	hashF := fnv.New32()
 	_, err = hashF.Write(orderSpecBytes)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return hashF.Sum32(), nil
+	crName := cr.Name
+	if len(crName) >= 52 {
+		// shorten the cert name to 52 chars to ensure the total length of the name
+		// also shorten the 52 char string to the last non-symbol character
+		// is less than or equal to 64 characters
+		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", crName), -1)
+		crName = crName[:validCharIndexes[len(validCharIndexes)-1][1]]
+	}
+
+	return fmt.Sprintf("%s-%d", crName, hashF.Sum32()), nil
 }
