@@ -322,7 +322,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       crt.Namespace,
-			GenerateName:    crt.Name + "-",
+			GenerateName:    apiutil.DNSSafeShortenTo52Characters(crt.Name) + "-",
 			Annotations:     annotations,
 			Labels:          crt.Labels,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},

@@ -19,9 +19,7 @@ package acme
 import (
 	"context"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
-	"hash/fnv"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -208,7 +206,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		CommonName: csr.Subject.CommonName,
 		DNSNames:   csr.DNSNames,
 	}
-	name, err := computeACMEOrderName(cr, spec)
+	name, err := apiutil.ComputeName(cr.Name, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -228,23 +226,4 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		},
 		Spec: spec,
 	}, nil
-}
-
-func computeACMEOrderName(cr *v1.CertificateRequest, orderSpec cmacme.OrderSpec) (string, error) {
-	// create a shallow copy of the OrderSpec so we can overwrite the Request field
-	orderSpec.Request = nil
-
-	orderSpecBytes, err := json.Marshal(orderSpec)
-	if err != nil {
-		return "", err
-	}
-
-	hashF := fnv.New32()
-	_, err = hashF.Write(orderSpecBytes)
-	if err != nil {
-		return "", err
-	}
-
-	crName := apiutil.DNSSafeSchortenTo52Characters(cr.Name)
-	return fmt.Sprintf("%s-%d", crName, hashF.Sum32()), nil
 }
