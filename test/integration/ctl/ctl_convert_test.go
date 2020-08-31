@@ -34,20 +34,24 @@ const (
 	testdataResourcesAsListV1alpha2          = "./testdata/convert/input/resources_as_list_v1alpha2.yaml"
 
 	testdataNoOutputError                    = "./testdata/convert/output/no_output_error.yaml"
+	testdataResource1V1                      = "./testdata/convert/output/resource1_v1.yaml"
 	testdataResource1V1alpha2                = "./testdata/convert/output/resource1_v1alpha2.yaml"
 	testdataResource1V1alpha3                = "./testdata/convert/output/resource1_v1alpha3.yaml"
+	testdataResource2V1                      = "./testdata/convert/output/resource2_v1.yaml"
 	testdataResource2V1alpha2                = "./testdata/convert/output/resource2_v1alpha2.yaml"
 	testdataResource2V1alpha3                = "./testdata/convert/output/resource2_v1alpha3.yaml"
-	testdataResource3V1alpha2                = "./testdata/convert/output/resource3_v1alpha2.yaml"
 	testdataResourceWithOrganizationV1alpha3 = "./testdata/convert/output/resource_with_organization_v1alpha3.yaml"
 	testdataResourceWithOrganizationV1beta1  = "./testdata/convert/output/resource_with_organization_v1beta1.yaml"
+	testdataResourceWithOrganizationV1       = "./testdata/convert/output/resource_with_organization_v1.yaml"
 	testdataResourcesOutAsListV1alpha2       = "./testdata/convert/output/resources_as_list_v1alpha2.yaml"
 	testdataResourcesOutAsListV1alpha3       = "./testdata/convert/output/resources_as_list_v1alpha3.yaml"
 	testdataResourcesOutAsListV1beta1        = "./testdata/convert/output/resources_as_list_v1beta1.yaml"
+	testdataResourcesOutAsListV1             = "./testdata/convert/output/resources_as_list_v1.yaml"
 
 	targetv1alpha2 = "cert-manager.io/v1alpha2"
 	targetv1alpha3 = "cert-manager.io/v1alpha3"
 	targetv1beta1  = "cert-manager.io/v1beta1"
+	targetv1       = "cert-manager.io/v1"
 )
 
 func TestCtlConvert(t *testing.T) {
@@ -56,9 +60,9 @@ func TestCtlConvert(t *testing.T) {
 		targetVersion        string
 		expErr               bool
 	}{
-		"a single cert-manager resource should convert to v1alpha2 with no target": {
+		"a single cert-manager resource should convert to v1 with no target": {
 			input:         testdataResource1,
-			expOutputFile: testdataResource1V1alpha2,
+			expOutputFile: testdataResource1V1,
 		},
 		"a single cert-manager resource should convert to v1alpha2 with target v1alpha2": {
 			input:         testdataResource1,
@@ -70,12 +74,13 @@ func TestCtlConvert(t *testing.T) {
 			targetVersion: targetv1alpha3,
 			expOutputFile: testdataResource1V1alpha3,
 		},
-		"a list of cert-manager resources should convert to v1alpha2 with no target": {
+		"a list of cert-manager resources should convert to v1 with no target": {
 			input:         testdataResource2,
-			expOutputFile: testdataResource2V1alpha2,
+			expOutputFile: testdataResource2V1,
 		},
 		"a list of cert-manager resources should convert to v1alpha2 with target v1alpha2": {
 			input:         testdataResource2,
+			targetVersion: targetv1alpha2,
 			expOutputFile: testdataResource2V1alpha2,
 		},
 		"a list of cert-manager resources should convert to v1alpha3 with target v1alpha3": {
@@ -83,10 +88,10 @@ func TestCtlConvert(t *testing.T) {
 			targetVersion: targetv1alpha3,
 			expOutputFile: testdataResource2V1alpha3,
 		},
-		"a list of a mix of cert-manager and non cert-manager resources should convert to v1alpha2 with no target": {
-			input:         testdataResource2,
-			targetVersion: targetv1alpha3,
-			expOutputFile: testdataResource2V1alpha3,
+		"a list of a mix of cert-manager and non cert-manager resources should error with no target": {
+			input:         testdataResource3,
+			expOutputFile: testdataNoOutputError,
+			expErr:        true,
 		},
 		"a list of a mix of cert-manager and non cert-manager resources should error with target v1alpha2": {
 			input:         testdataResource3,
@@ -110,6 +115,11 @@ func TestCtlConvert(t *testing.T) {
 			targetVersion: targetv1beta1,
 			expOutputFile: testdataResourceWithOrganizationV1beta1,
 		},
+		"an object in v1alpha2 that uses a field that has been renamed in v1 should be converted properly": {
+			input:         testdataResourceWithOrganizationV1alpha2,
+			targetVersion: targetv1,
+			expOutputFile: testdataResourceWithOrganizationV1,
+		},
 		"a list in v1alpha2 should parsed": {
 			input:         testdataResourcesAsListV1alpha2,
 			targetVersion: targetv1alpha2,
@@ -124,6 +134,11 @@ func TestCtlConvert(t *testing.T) {
 			input:         testdataResourcesAsListV1alpha2,
 			targetVersion: targetv1beta1,
 			expOutputFile: testdataResourcesOutAsListV1beta1,
+		},
+		"a list in v1alpha2 should be converted to v1": {
+			input:         testdataResourcesAsListV1alpha2,
+			targetVersion: targetv1,
+			expOutputFile: testdataResourcesOutAsListV1,
 		},
 	}
 
