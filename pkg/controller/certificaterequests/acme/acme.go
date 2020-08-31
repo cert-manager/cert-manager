@@ -206,7 +206,11 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		CommonName: csr.Subject.CommonName,
 		DNSNames:   csr.DNSNames,
 	}
-	name, err := apiutil.ComputeName(cr.Name, spec)
+
+	computeNameSpec := spec.DeepCopy()
+	// create a shallow copy of the OrderSpec so we can overwrite the Request field
+	computeNameSpec.Request = nil
+	name, err := apiutil.ComputeName(cr.Name, computeNameSpec)
 	if err != nil {
 		return nil, err
 	}
