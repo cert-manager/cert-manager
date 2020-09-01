@@ -19,9 +19,7 @@ package acme
 import (
 	"context"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
-	"hash/fnv"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -208,7 +206,11 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		CommonName: csr.Subject.CommonName,
 		DNSNames:   csr.DNSNames,
 	}
-	hash, err := hashOrder(spec)
+
+	computeNameSpec := spec.DeepCopy()
+	// create a deep copy of the OrderSpec so we can overwrite the Request field
+	computeNameSpec.Request = nil
+	name, err := apiutil.ComputeName(cr.Name, computeNameSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +220,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 	// the hyphen.
 	return &cmacme.Order{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        fmt.Sprintf("%.52s-%d", cr.Name, hash),
+			Name:        name,
 			Namespace:   cr.Namespace,
 			Labels:      cr.Labels,
 			Annotations: cr.Annotations,
@@ -228,22 +230,4 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		},
 		Spec: spec,
 	}, nil
-}
-
-func hashOrder(orderSpec cmacme.OrderSpec) (uint32, error) {
-	// create a shallow copy of the OrderSpec so we can overwrite the Request field
-	orderSpec.Request = nil
-
-	orderSpecBytes, err := json.Marshal(orderSpec)
-	if err != nil {
-		return 0, err
-	}
-
-	hashF := fnv.New32()
-	_, err = hashF.Write(orderSpecBytes)
-	if err != nil {
-		return 0, err
-	}
-
-	return hashF.Sum32(), nil
 }

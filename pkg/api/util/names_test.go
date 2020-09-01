@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-func TestComputeCertificateRequestName(t *testing.T) {
+func TestComputeName(t *testing.T) {
 	type args struct {
 		crt *cmapi.Certificate
 	}
@@ -97,16 +97,16 @@ func TestComputeCertificateRequestName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ComputeCertificateRequestName(tt.args.crt)
+			got, err := ComputeName(tt.args.crt.Name, tt.args.crt.Spec)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ComputeCertificateRequestName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ComputeName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ComputeCertificateRequestName() = %v, want %v", got, tt.want)
+				t.Errorf("ComputeName() = %v, want %v", got, tt.want)
 			}
 			if len(validation.IsQualifiedName(got)) != 0 {
-				t.Errorf("ComputeCertificateRequestName() = %v is not DNS-1123 valid", got)
+				t.Errorf("ComputeName() = %v is not DNS-1123 valid", got)
 			}
 		})
 	}

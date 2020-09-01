@@ -22,30 +22,35 @@ import (
 	"hash/fnv"
 
 	"regexp"
-
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
-func ComputeCertificateRequestName(crt *cmapi.Certificate) (string, error) {
-	specBytes, err := json.Marshal(crt.Spec)
+func ComputeName(prefix string, obj interface{}) (string, error) {
+	objectBytes, err := json.Marshal(obj)
 	if err != nil {
 		return "", err
 	}
 
 	hashF := fnv.New32()
-	_, err = hashF.Write(specBytes)
+	_, err = hashF.Write(objectBytes)
 	if err != nil {
 		return "", err
 	}
 
-	crtName := crt.Name
-	if len(crtName) >= 52 {
+	// we're shortening to stay under 64 as we use this in services
+	// and pods down the road for ACME resources.
+	prefix = DNSSafeShortenTo52Characters(prefix)
+
+	return fmt.Sprintf("%s-%d", prefix, hashF.Sum32()), nil
+}
+
+func DNSSafeShortenTo52Characters(in string) string {
+	if len(in) >= 52 {
 		// shorten the cert name to 52 chars to ensure the total length of the name
 		// also shorten the 52 char string to the last non-symbol character
 		// is less than or equal to 64 characters
-		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", crtName), -1)
-		crtName = crtName[:validCharIndexes[len(validCharIndexes)-1][1]]
+		validCharIndexes := regexp.MustCompile(`[a-zA-Z\d]`).FindAllStringIndex(fmt.Sprintf("%.52s", in), -1)
+		in = in[:validCharIndexes[len(validCharIndexes)-1][1]]
 	}
 
-	return fmt.Sprintf("%s-%d", crtName, hashF.Sum32()), nil
+	return in
 }

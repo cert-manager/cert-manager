@@ -364,7 +364,7 @@ func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificat
 		return
 	}
 
-	crName, err := apiutil.ComputeCertificateRequestName(certificate)
+	crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
 	if err != nil {
 		log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
 		return

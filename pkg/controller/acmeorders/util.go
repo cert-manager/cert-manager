@@ -20,12 +20,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/acme"
 	"hash/fnv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
+	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/acmeorders/selectors"
@@ -64,7 +65,7 @@ func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.Gener
 		return nil, err
 	}
 
-	chName, err := buildChallengeName(o.Name, *chSpec)
+	chName, err := util.ComputeName(o.Name, chSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -78,15 +79,6 @@ func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.Gener
 		},
 		Spec: *chSpec,
 	}, nil
-}
-
-func buildChallengeName(orderName string, chSpec cmacme.ChallengeSpec) (string, error) {
-	hash, err := hashChallenge(chSpec)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s-%d", orderName, hash), nil
 }
 
 func hashChallenge(spec cmacme.ChallengeSpec) (uint32, error) {
