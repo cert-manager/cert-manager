@@ -36,6 +36,8 @@ func ComputeName(prefix string, obj interface{}) (string, error) {
 		return "", err
 	}
 
+	// we're shortening to stay under 64 as we use this in services
+	// and pods down the road for ACME resources.
 	prefix = DNSSafeShortenTo52Characters(prefix)
 
 	return fmt.Sprintf("%s-%d", prefix, hashF.Sum32()), nil
