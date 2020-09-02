@@ -351,7 +351,7 @@ func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
 		if !isV1beta1 {
 			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 		}
-		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, admissionv1.SchemeGroupVersion)
+		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, apiextensionsv1.SchemeGroupVersion)
 		if err != nil {
 			return nil, err
 		}
