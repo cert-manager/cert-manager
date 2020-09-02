@@ -20,16 +20,6 @@ and has borrowed some wisdom from other similar projects e.g.
 
 ![cert-manager high level overview diagram](https://cert-manager.io/images/high-level-overview.svg)
 
-## Current status
-
-As this project is pre-1.0, we do not currently offer strong guarantees around our
-API stability.
-
-Notably, we may choose to make breaking changes to our API specification (i.e. the
-Issuer, ClusterIssuer and Certificate resources) in new minor releases.
-
-These will always be clearly documented in the [upgrade section of the documentation](https://cert-manager.io/docs/installation/upgrading/).
-
 ## Documentation
 
 Documentation for cert-manager can be found at [cert-manager.io](https://cert-manager.io/docs/).
