@@ -155,7 +155,7 @@ func (b *controller) worker(ctx context.Context) {
 			b.metrics.IncrementSyncCallCount(b.name)
 
 			if err := b.syncHandler(ctx, key); err != nil {
-				log.Error(err, "re-queuing item  due to error processing")
+				log.Error(err, "re-queuing item due to error processing")
 				b.queue.AddRateLimited(obj)
 				return
 			}
