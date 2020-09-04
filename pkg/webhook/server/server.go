@@ -29,6 +29,7 @@ import (
 	"github.com/go-logr/logr"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,8 +54,7 @@ var (
 )
 
 func init() {
-	apiextensionsv1beta1.AddToScheme(defaultScheme)
-	apiextensionsv1.AddToScheme(defaultScheme)
+	apiextensionsinstall.Install(defaultScheme)
 	admissionv1beta1.AddToScheme(defaultScheme)
 	admissionv1.AddToScheme(defaultScheme)
 
@@ -343,26 +343,22 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 }
 
 func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
-	outputVersion := apiextensionsv1.SchemeGroupVersion
-	review, isV1 := obj.(*apiextensionsv1.ConversionReview)
-	if !isV1 {
-		outputVersion = apiextensionsv1beta1.SchemeGroupVersion
-		reviewv1beta1, isV1beta1 := obj.(*apiextensionsv1beta1.ConversionReview)
-		if !isV1beta1 {
-			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
+	switch review := obj.(type) {
+	case *apiextensionsv1.ConversionReview:
+		if review.Request == nil {
+			return nil, errors.New("review.request was nil")
 		}
-		convertedReview, err := defaultScheme.ConvertToVersion(reviewv1beta1, apiextensionsv1.SchemeGroupVersion)
-		if err != nil {
-			return nil, err
+		review.Response = s.ConversionWebhook.ConvertV1(review.Request)
+		return review, nil
+	case *apiextensionsv1beta1.ConversionReview:
+		if review.Request == nil {
+			return nil, errors.New("review.request was nil")
 		}
-		review = convertedReview.(*apiextensionsv1.ConversionReview)
+		review.Response = s.ConversionWebhook.ConvertV1Beta1(review.Request)
+		return review, nil
+	default:
+		return nil, fmt.Errorf("unsupported conversion review type: %T", review)
 	}
-
-	resp := s.ConversionWebhook.Convert(review.Request)
-	review.Response = resp
-
-	versionedOutput, err := defaultScheme.ConvertToVersion(review, outputVersion)
-	return versionedOutput, err
 }
 
 func (s *Server) handle(inner func(runtime.Object) (runtime.Object, error)) func(w http.ResponseWriter, req *http.Request) {
