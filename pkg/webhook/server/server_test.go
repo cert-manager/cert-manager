@@ -33,7 +33,6 @@ func TestConvert(t *testing.T) {
 	type testCase struct {
 		name string
 		in   runtime.Object
-		out  runtime.Object
 		err  string
 	}
 	tests := []testCase{
