@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"testing"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -29,14 +28,22 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
-func TestConvertTestType(t *testing.T) {
+func TestConvertV1TestType(t *testing.T) {
 	scheme := runtime.NewScheme()
 	install.Install(scheme)
 
 	log := klogr.New()
 	c := NewSchemeBackedConverter(log, scheme)
+
+	type conversionTestT struct {
+		inputRequest     apiextensionsv1.ConversionRequest
+		expectedResponse apiextensionsv1.ConversionResponse
+	}
+
 	tests := map[string]conversionTestT{
 		"correctly handles requests with multiple input items": {
 			inputRequest: apiextensionsv1.ConversionRequest{
@@ -211,21 +218,204 @@ func TestConvertTestType(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			runConversionTest(t, c.ConvertV1, test)
+			resp := c.ConvertV1(&test.inputRequest)
+			if !reflect.DeepEqual(&test.expectedResponse, resp) {
+				t.Errorf("Response was not as expected: %v", diff.ObjectGoPrintSideBySide(&test.expectedResponse, resp))
+			}
 		})
 	}
 }
 
-type conversionTestT struct {
-	inputRequest     apiextensionsv1.ConversionRequest
-	expectedResponse apiextensionsv1.ConversionResponse
+func TestConvertV1Beta1TestType(t *testing.T) {
+	scheme := runtime.NewScheme()
+	install.Install(scheme)
+
+	log := klogr.New()
+	c := NewSchemeBackedConverter(log, scheme)
+
+	type conversionTestT struct {
+		inputRequest     apiextensionsv1beta1.ConversionRequest
+		expectedResponse apiextensionsv1beta1.ConversionResponse
+	}
+
+	tests := map[string]conversionTestT{
+		"correctly handles requests with multiple input items": {
+			inputRequest: apiextensionsv1beta1.ConversionRequest{
+				DesiredAPIVersion: testgroup.GroupName + "/v1",
+				Objects: []runtime.RawExtension{
+					{
+						Raw: []byte(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v1",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	}
 }
+`),
+					},
+					{
+						Raw: []byte(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v1",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	}
+}
+`),
+					},
+				},
+			},
+			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+				Result: metav1.Status{
+					Status: metav1.StatusSuccess,
+				},
+				ConvertedObjects: []runtime.RawExtension{
+					{
+						Raw: []byte(`{"kind":"TestType","apiVersion":"testgroup.testing.cert-manager.io/v1","metadata":{"name":"testing","namespace":"abc","creationTimestamp":null},"testField":"","testFieldImmutable":""}
+`),
+					},
+					{
+						Raw: []byte(`{"kind":"TestType","apiVersion":"testgroup.testing.cert-manager.io/v1","metadata":{"name":"testing","namespace":"abc","creationTimestamp":null},"testField":"","testFieldImmutable":""}
+`),
+					},
+				},
+			},
+		},
+		"succeeds when handling requests with no input items": {
+			inputRequest: apiextensionsv1beta1.ConversionRequest{
+				DesiredAPIVersion: testgroup.GroupName + "/v1",
+				Objects:           []runtime.RawExtension{},
+			},
+			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+				Result: metav1.Status{
+					Status: metav1.StatusSuccess,
+				},
+				ConvertedObjects: []runtime.RawExtension{},
+			},
+		},
+		"copies across request UID to the response field": {
+			inputRequest: apiextensionsv1beta1.ConversionRequest{
+				DesiredAPIVersion: testgroup.GroupName + "/v1",
+				Objects:           []runtime.RawExtension{},
+				UID:               types.UID("abc"),
+			},
+			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+				Result: metav1.Status{
+					Status: metav1.StatusSuccess,
+				},
+				UID:              types.UID("abc"),
+				ConvertedObjects: []runtime.RawExtension{},
+			},
+		},
+		"converts from v1 to v1 without applying defaults": {
+			inputRequest: apiextensionsv1beta1.ConversionRequest{
+				DesiredAPIVersion: testgroup.GroupName + "/v1",
+				Objects: []runtime.RawExtension{
+					{
+						Raw: []byte(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v1",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	}
+}
+`),
+					},
+				},
+			},
+			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+				Result: metav1.Status{
+					Status: metav1.StatusSuccess,
+				},
+				ConvertedObjects: []runtime.RawExtension{
+					{
+						Raw: []byte(`{"kind":"TestType","apiVersion":"testgroup.testing.cert-manager.io/v1","metadata":{"name":"testing","namespace":"abc","creationTimestamp":null},"testField":"","testFieldImmutable":""}
+`),
+					},
+				},
+			},
+		},
+		"converts from v1 to v2 without applying defaults": {
+			inputRequest: apiextensionsv1beta1.ConversionRequest{
+				DesiredAPIVersion: testgroup.GroupName + "/v2",
+				Objects: []runtime.RawExtension{
+					{
+						Raw: []byte(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v1",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	}
+}
+`),
+					},
+				},
+			},
+			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+				Result: metav1.Status{
+					Status: metav1.StatusSuccess,
+				},
+				ConvertedObjects: []runtime.RawExtension{
+					{
+						Raw: []byte(`{"kind":"TestType","apiVersion":"testgroup.testing.cert-manager.io/v2","metadata":{"name":"testing","namespace":"abc","creationTimestamp":null},"testField":"","testFieldImmutable":""}
+`),
+					},
+				},
+			},
+		},
+		"converts from v1 to v2": {
+			inputRequest: apiextensionsv1beta1.ConversionRequest{
+				DesiredAPIVersion: testgroup.GroupName + "/v2",
+				Objects: []runtime.RawExtension{
+					{
+						Raw: []byte(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v1",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testField": "atest",
+	"testFieldPtr": "something"
+}
+`),
+					},
+				},
+			},
+			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+				Result: metav1.Status{
+					Status: metav1.StatusSuccess,
+				},
+				ConvertedObjects: []runtime.RawExtension{
+					{
+						Raw: []byte(`{"kind":"TestType","apiVersion":"testgroup.testing.cert-manager.io/v2","metadata":{"name":"testing","namespace":"abc","creationTimestamp":null},"testField":"atest","testFieldPtrAlt":"something","testFieldImmutable":""}
+`),
+					},
+				},
+			},
+		},
+	}
 
-type convertFn func(*apiextensionsv1.ConversionRequest) *apiextensionsv1.ConversionResponse
-
-func runConversionTest(t *testing.T, fn convertFn, test conversionTestT) {
-	resp := fn(&test.inputRequest)
-	if !reflect.DeepEqual(&test.expectedResponse, resp) {
-		t.Errorf("Response was not as expected: %v", diff.ObjectGoPrintSideBySide(&test.expectedResponse, resp))
+	for n, test := range tests {
+		t.Run(n, func(t *testing.T) {
+			resp := c.ConvertV1Beta1(&test.inputRequest)
+			if !reflect.DeepEqual(&test.expectedResponse, resp) {
+				t.Errorf("Response was not as expected: %v", diff.ObjectGoPrintSideBySide(&test.expectedResponse, resp))
+			}
+		})
 	}
 }
