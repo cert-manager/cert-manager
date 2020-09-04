@@ -31,6 +31,8 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/metrics"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned"
+	routeinformers "github.com/openshift/client-go/route/informers/externalversions"
 )
 
 // Context contains various types that are used by controller implementations.
@@ -50,6 +52,8 @@ type Context struct {
 	Client kubernetes.Interface
 	// CMClient is a cert-manager clientset
 	CMClient clientset.Interface
+	// RouteClient is an openshift route clientset
+	RouteClient routeclient.Interface
 	// Recorder to record events to
 	Recorder record.EventRecorder
 
@@ -59,6 +63,8 @@ type Context struct {
 	// SharedInformerFactory can be used to obtain shared SharedIndexInformer
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
+
+	OpenShiftRouteInformerFactory routeinformers.SharedInformerFactory
 
 	// Namespace is the namespace to operate within.
 	// If unset, operates on all namespaces

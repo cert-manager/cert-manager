@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	routev1client "github.com/openshift/client-go/route/clientset/versioned"
 	api "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -73,6 +74,7 @@ type Framework struct {
 	KubeClientSet          kubernetes.Interface
 	CertManagerClientSet   clientset.Interface
 	APIExtensionsClientSet apiextcs.Interface
+	RouteV1ClientSet       routev1client.Interface
 
 	// controller-runtime client for newer controllers
 	CRClient crclient.Client
@@ -124,6 +126,10 @@ func (f *Framework) BeforeEach() {
 	f.KubeClientSet, err = kubernetes.NewForConfig(kubeConfig)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Creating an OpenShift route client")
+	f.RouteV1ClientSet, err = routev1client.NewForConfig(kubeConfig)
+	Expect(err).NotTo(HaveOccurred())
+
 	By("Creating an API extensions client")
 	f.APIExtensionsClientSet, err = apiextcs.NewForConfig(kubeConfig)
 	Expect(err).NotTo(HaveOccurred())
@@ -148,6 +154,7 @@ func (f *Framework) BeforeEach() {
 
 	f.helper.CMClient = f.CertManagerClientSet
 	f.helper.KubeClient = f.KubeClientSet
+	f.helper.RouteClient = f.RouteV1ClientSet
 }
 
 // AfterEach deletes the namespace, after reading its events.

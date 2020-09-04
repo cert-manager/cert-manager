@@ -31,6 +31,8 @@ require (
 	github.com/munnerz/crd-schema-fuzz v1.0.0
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
+	github.com/openshift/api v0.0.0-20200330134433-8e259f67fc55
+	github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
 	github.com/pavel-v-chernykh/keystore-go v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1

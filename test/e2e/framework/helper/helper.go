@@ -21,14 +21,16 @@ import (
 
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	routev1client "github.com/openshift/client-go/route/clientset/versioned"
 )
 
 // Helper provides methods for common operations needed during tests.
 type Helper struct {
 	cfg *config.Config
 
-	KubeClient kubernetes.Interface
-	CMClient   cmclient.Interface
+	KubeClient  kubernetes.Interface
+	CMClient    cmclient.Interface
+	RouteClient routev1client.Interface
 }
 
 func NewHelper(cfg *config.Config) *Helper {

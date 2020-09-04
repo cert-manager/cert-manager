@@ -19,5 +19,6 @@ package suite
 import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/routes"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/serving"
 )

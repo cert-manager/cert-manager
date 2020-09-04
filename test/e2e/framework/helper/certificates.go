@@ -36,6 +36,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
+	routev1 "github.com/openshift/api/route/v1"
 )
 
 // WaitForCertificateReady waits for the certificate resource to enter a Ready
@@ -346,6 +347,108 @@ func (h *Helper) keyUsagesMatch(aKU x509.KeyUsage, aEKU []x509.ExtKeyUsage,
 	}
 
 	return true
+}
+
+func (h *Helper) WaitRouteValidCA(ns, name string, timeout time.Duration, caValue string) error {
+	route, err := h.WaitForRouteReady(ns, name, timeout)
+	if err != nil {
+		log.Logf("Error waiting for Route to become Ready: %v", err)
+		h.Kubectl(ns).DescribeResource("route", name)
+		return err
+	}
+
+	err = h.ValidateIssuedDestCARoute(route, caValue)
+	if err != nil {
+		log.Logf("Error validating issued route: %v", err)
+		h.Kubectl(ns).DescribeResource("route", name)
+		return err
+	}
+
+	return nil
+}
+
+func (h *Helper) WaitRouteValidTLS(ns, name string, timeout time.Duration, certKeyValue string, certValue string) error {
+	route, err := h.WaitForRouteReady(ns, name, timeout)
+	if err != nil {
+		log.Logf("Error waiting for Route to become Ready: %v", err)
+		h.Kubectl(ns).DescribeResource("route", name)
+		return err
+	}
+
+	err = h.ValidateIssuedRoute(route, certKeyValue, certValue)
+	if err != nil {
+		log.Logf("Error validating issued route: %v", err)
+		h.Kubectl(ns).DescribeResource("route", name)
+		return err
+	}
+
+	return nil
+}
+
+func (h *Helper) ValidateIssuedRoute(route *routev1.Route, certKeyValue string, certValue string) error {
+	if route.Spec.TLS.Certificate != certValue {
+		return fmt.Errorf("Route tls does not match expected %v : %v", route.Spec.TLS.Certificate, certValue)
+	}
+
+	if route.Spec.TLS.Key != certKeyValue {
+		return fmt.Errorf("Route tls does not match expected %v : %v", route.Spec.TLS.Key, certKeyValue)
+	}
+
+	return nil
+}
+
+func (h *Helper) ValidateIssuedDestCARoute(route *routev1.Route, caValue string) error {
+	if route.Spec.TLS.DestinationCACertificate != caValue {
+		return fmt.Errorf("Route tls does not match expected %v : %v", route.Spec.TLS.Certificate, caValue)
+	}
+
+	return nil
+}
+
+func (h *Helper) WaitForRouteReady(ns, name string, timeout time.Duration) (*routev1.Route, error) {
+	var route *routev1.Route
+	err := wait.PollImmediate(time.Second, timeout,
+		func() (bool, error) {
+			var err error
+			log.Logf("Waiting for Route %v to be ready", name)
+			route, err = h.RouteClient.RouteV1().Routes(ns).Get(context.TODO(), name, metav1.GetOptions{})
+			if err != nil {
+				return false, fmt.Errorf("error getting route %v: %v", name, err)
+			}
+			log.Logf("route spec: %v", route.Spec)
+			isReady := route.Spec.TLS != nil && (route.Spec.TLS.Certificate != "" || route.Spec.TLS.DestinationCACertificate != "")
+			if !isReady {
+				log.Logf("Expected Route to have tls set")
+				return false, nil
+			}
+			return true, nil
+		},
+	)
+
+	// return certificate even when error to use for debugging
+	return route, err
+}
+
+func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Duration, rootCAPEM []byte) error {
+	certificate, err := h.WaitForCertificateReady(ns, name, timeout)
+	if err != nil {
+		log.Logf("Error waiting for Certificate to become Ready: %v", err)
+		h.Kubectl(ns).DescribeResource("certificate", name)
+		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
+		return err
+	}
+
+	_, err = h.ValidateIssuedCertificate(certificate, rootCAPEM)
+	if err != nil {
+		log.Logf("Error validating issued certificate: %v", err)
+		h.Kubectl(ns).DescribeResource("certificate", name)
+		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
+		return err
+	}
+
+	return nil
 }
 
 func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *cmapi.Certificate) {

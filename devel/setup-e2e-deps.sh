@@ -31,6 +31,9 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
+echo "Installing OpenShift route CRD..."
+"${SCRIPT_ROOT}/addon/route/install.sh" &
+
 echo "Installing cert-manager into the cluster..."
 "${SCRIPT_ROOT}/addon/certmanager/install.sh"
 
