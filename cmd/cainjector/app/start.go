@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -106,23 +108,35 @@ func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{})
 		LeaderElectionID:        "cert-manager-cainjector-leader-election",
 		MetricsBindAddress:      "0",
 	})
-
 	if err != nil {
 		o.log.Error(err, "error creating manager")
 		os.Exit(1)
 	}
 
-	err = cainjector.RegisterCertificateBased(mgr)
-	if err != nil {
-		o.log.Error(err, "error registering controllers")
-	}
-	err = cainjector.RegisterSecretBased(mgr)
-	if err != nil {
-		o.log.Error(err, "error registering controllers")
-	}
+	go func() {
+		if err := mgr.Start(stopCh); err != nil {
+			o.log.Error(err, "error running manager")
+			os.Exit(1)
+		}
+	}()
 
-	if err := mgr.Start(stopCh); err != nil {
-		o.log.Error(err, "error running manager")
-		os.Exit(1)
-	}
+	go func() {
+		<-mgr.Elected()
+		for {
+			if err = cainjector.RegisterCertificateBased(mgr); err != nil {
+				o.log.Error(err, "error registering controllers")
+			}
+			time.Sleep(time.Second * 5)
+		}
+	}()
+	go func() {
+		<-mgr.Elected()
+		for {
+			if err = cainjector.RegisterSecretBased(mgr); err != nil {
+				o.log.Error(err, "error registering controllers")
+			}
+			time.Sleep(time.Second * 5)
+		}
+	}()
+	<-stopCh
 }

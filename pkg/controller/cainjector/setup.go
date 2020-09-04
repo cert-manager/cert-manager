@@ -17,6 +17,7 @@ limitations under the License.
 package cainjector
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -27,6 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // injectorSet describes a particular setup of the injector controller
@@ -84,20 +88,36 @@ func registerAllInjectors(mgr ctrl.Manager, sources ...caDataSource) error {
 // Register registers an injection controller with the given manager, and adds relevant indicies.
 func Register(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
 	typ := setup.injector.NewTarget().AsObject()
-	builder := ctrl.NewControllerManagedBy(mgr).For(typ)
+
+	c, err := controller.NewUnmanaged("xxx-controller", mgr, controller.Options{
+		Reconciler: &genericInjectReconciler{
+			Client:       mgr.GetClient(),
+			sources:      sources,
+			log:          ctrl.Log.WithName("inject-controller"),
+			resourceName: setup.resourceName,
+			injector:     setup.injector,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("unable to create controller: %v", err)
+	}
+
+	if err := c.Watch(&source.Kind{Type: typ}, &handler.EnqueueRequestForObject{}); err != nil {
+		return fmt.Errorf("unable to watch: %v", err)
+	}
+
 	for _, s := range sources {
-		if err := s.ApplyTo(mgr, setup, builder); err != nil {
-			return err
+		if err := s.ApplyTo(mgr, setup, c); err != nil {
+			return fmt.Errorf("error from ApplyTo: %v", err)
 		}
 	}
 
-	return builder.Complete(&genericInjectReconciler{
-		Client:       mgr.GetClient(),
-		sources:      sources,
-		log:          ctrl.Log.WithName("inject-controller"),
-		resourceName: setup.resourceName,
-		injector:     setup.injector,
-	})
+	stop := make(<-chan struct{})
+	if err := c.Start(stop); err != nil {
+		return fmt.Errorf("unable to start: %v", err)
+	}
+
+	return nil
 }
 
 // dataFromSliceOrFile returns data from the slice (if non-empty), or from the file,
