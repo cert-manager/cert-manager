@@ -203,6 +203,10 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 	}
 
 	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build key usages: %w", err)
+	}
+
 	usage, err := buildASN1KeyUsageRequest(ku)
 	if err != nil {
 		return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)

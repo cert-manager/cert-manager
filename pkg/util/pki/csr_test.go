@@ -375,6 +375,9 @@ func TestRemoveDuplicates(t *testing.T) {
 func TestGenerateCSR(t *testing.T) {
 	// 0xa0 = DigitalSignature and Encipherment usage
 	asn1KeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
+	if err != nil {
+		t.Fatal(err)
+	}
 	asn1ExtKeyUsage, err := asn1.Marshal([]asn1.ObjectIdentifier{})
 	if err != nil {
 		t.Fatal(err)
