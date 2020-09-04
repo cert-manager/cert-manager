@@ -211,7 +211,7 @@ func TestConvertTestType(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			runConversionTest(t, c.Convert, test)
+			runConversionTest(t, c.ConvertV1, test)
 		})
 	}
 }
