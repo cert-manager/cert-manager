@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,6 +40,8 @@ type SchemeBackedConverter struct {
 	serializer *apijson.Serializer
 }
 
+var _ ConversionHook = &SchemeBackedConverter{}
+
 func NewSchemeBackedConverter(log logr.Logger, scheme *runtime.Scheme) *SchemeBackedConverter {
 	serializer := apijson.NewSerializerWithOptions(apijson.DefaultMetaFactory, scheme, scheme, apijson.SerializerOptions{})
 	return &SchemeBackedConverter{
@@ -48,47 +51,69 @@ func NewSchemeBackedConverter(log logr.Logger, scheme *runtime.Scheme) *SchemeBa
 	}
 }
 
-func (c *SchemeBackedConverter) Convert(conversionSpec *apiextensionsv1.ConversionRequest) *apiextensionsv1.ConversionResponse {
-	status := &apiextensionsv1.ConversionResponse{}
-	status.UID = conversionSpec.UID
-	status.ConvertedObjects = make([]runtime.RawExtension, 0)
-
-	desiredGV, err := schema.ParseGroupVersion(conversionSpec.DesiredAPIVersion)
+func (c *SchemeBackedConverter) convertObjects(desiredAPIVersion string, objects []runtime.RawExtension) ([]runtime.RawExtension, error) {
+	desiredGV, err := schema.ParseGroupVersion(desiredAPIVersion)
 	if err != nil {
-		status.Result = metav1.Status{
-			Status: metav1.StatusFailure, Code: http.StatusBadRequest, Reason: metav1.StatusReasonBadRequest,
-			Message: fmt.Sprintf("Failed to parse desired apiVersion: %v", err.Error()),
-		}
-		return status
+		return nil, fmt.Errorf("Failed to parse desired apiVersion: %v", err)
 	}
-
-	groupVersioner := schema.GroupVersions([]schema.GroupVersion{desiredGV})
-	codec := versioning.NewCodec(c.serializer, c.serializer, runtime.UnsafeObjectConvertor(c.scheme), c.scheme, c.scheme, nil, groupVersioner, runtime.InternalGroupVersioner, c.scheme.Name())
 
 	c.log.V(logf.DebugLevel).Info("Parsed desired groupVersion", "desired_group_version", desiredGV)
-	for _, raw := range conversionSpec.Objects {
+
+	groupVersioner := schema.GroupVersions([]schema.GroupVersion{desiredGV})
+	codec := versioning.NewCodec(
+		c.serializer,
+		c.serializer,
+		runtime.UnsafeObjectConvertor(c.scheme),
+		c.scheme,
+		c.scheme,
+		nil,
+		groupVersioner,
+		runtime.InternalGroupVersioner, c.scheme.Name(),
+	)
+
+	convertedObjects := make([]runtime.RawExtension, len(objects))
+	for i, raw := range objects {
 		decodedObject, currentGVK, err := codec.Decode(raw.Raw, nil, nil)
 		if err != nil {
-			status.Result = metav1.Status{
-				Status: metav1.StatusFailure, Code: http.StatusBadRequest, Reason: metav1.StatusReasonBadRequest,
-				Message: fmt.Sprintf("Failed to decode into apiVersion: %v", err.Error()),
-			}
-			return status
+			return nil, fmt.Errorf("Failed to decode into apiVersion: %v", err)
 		}
 		c.log.V(logf.DebugLevel).Info("Decoded resource", "decoded_group_version_kind", currentGVK)
-
 		buf := bytes.Buffer{}
 		if err := codec.Encode(decodedObject, &buf); err != nil {
-			status.Result = metav1.Status{
-				Status: metav1.StatusFailure, Code: http.StatusBadRequest, Reason: metav1.StatusReasonBadRequest,
-				Message: fmt.Sprintf("Failed to convert to desired apiVersion: %v", err.Error()),
-			}
-			return status
+			return nil, fmt.Errorf("Failed to convert to desired apiVersion: %v", err)
 		}
-
-		status.ConvertedObjects = append(status.ConvertedObjects, runtime.RawExtension{Raw: buf.Bytes()})
+		convertedObjects[i] = runtime.RawExtension{Raw: buf.Bytes()}
 	}
+	return convertedObjects, nil
+}
 
-	status.Result.Status = metav1.StatusSuccess
-	return status
+func (c *SchemeBackedConverter) ConvertV1(conversionSpec *apiextensionsv1.ConversionRequest) *apiextensionsv1.ConversionResponse {
+	result := metav1.Status{Status: metav1.StatusSuccess}
+	convertedObjects, err := c.convertObjects(conversionSpec.DesiredAPIVersion, conversionSpec.Objects)
+	if err != nil {
+		result.Status = metav1.StatusFailure
+		result.Code = http.StatusBadRequest
+		result.Reason = metav1.StatusReasonBadRequest
+		result.Message = err.Error()
+	}
+	return &apiextensionsv1.ConversionResponse{
+		UID:              conversionSpec.UID,
+		ConvertedObjects: convertedObjects,
+		Result:           result,
+	}
+}
+func (c *SchemeBackedConverter) ConvertV1Beta1(conversionSpec *apiextensionsv1beta1.ConversionRequest) *apiextensionsv1beta1.ConversionResponse {
+	result := metav1.Status{Status: metav1.StatusSuccess}
+	convertedObjects, err := c.convertObjects(conversionSpec.DesiredAPIVersion, conversionSpec.Objects)
+	if err != nil {
+		result.Status = metav1.StatusFailure
+		result.Code = http.StatusBadRequest
+		result.Reason = metav1.StatusReasonBadRequest
+		result.Message = err.Error()
+	}
+	return &apiextensionsv1beta1.ConversionResponse{
+		UID:              conversionSpec.UID,
+		ConvertedObjects: convertedObjects,
+		Result:           result,
+	}
 }
