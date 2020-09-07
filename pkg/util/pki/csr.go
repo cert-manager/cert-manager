@@ -217,12 +217,18 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 			asn1ExtendedUsages = append(asn1ExtendedUsages, oid)
 		}
 	}
-	extendedUsage := pkix.Extension{
-		Id: OIDExtensionExtendedKeyUsage,
-	}
-	extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
-	if err != nil {
-		return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
+
+	extraExtensions := []pkix.Extension{usage}
+	if len(ekus) > 0 {
+		extendedUsage := pkix.Extension{
+			Id: OIDExtensionExtendedKeyUsage,
+		}
+		extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
+		if err != nil {
+			return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
+		}
+
+		extraExtensions = append(extraExtensions, extendedUsage)
 	}
 
 	return &x509.CertificateRequest{
@@ -244,7 +250,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		IPAddresses:     iPAddresses,
 		URIs:            uriNames,
 		EmailAddresses:  crt.Spec.EmailAddresses,
-		ExtraExtensions: []pkix.Extension{usage, extendedUsage},
+		ExtraExtensions: extraExtensions,
 	}, nil
 }
 
