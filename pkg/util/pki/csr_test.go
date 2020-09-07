@@ -378,22 +378,14 @@ func TestGenerateCSR(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	asn1ExtKeyUsage, err := asn1.Marshal([]asn1.ObjectIdentifier{})
-	if err != nil {
-		t.Fatal(err)
-	}
 	defaultExtraExtensions := []pkix.Extension{
 		{
 			Id:    OIDExtensionKeyUsage,
 			Value: asn1KeyUsage,
 		},
-		{
-			Id:    OIDExtensionExtendedKeyUsage,
-			Value: asn1ExtKeyUsage,
-		},
 	}
 
-	asn1ExtKeyUsage, err = asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageIPSECEndSystem})
+	asn1ExtKeyUsage, err := asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageIPSECEndSystem})
 	if err != nil {
 		t.Fatal(err)
 	}
