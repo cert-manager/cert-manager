@@ -48,7 +48,7 @@ kubectl cert-manager renew my-app vault
 # Renew all Certificates in the 'kube-system' namespace.
 kubectl cert-manager renew --namespace kube-system --all
 
-# Renew all Certificates in all namespaces, provided those Certificates have the label 'app=my-service
+# Renew all Certificates in all namespaces, provided those Certificates have the label 'app=my-service'
 kubectl cert-manager renew --all-namespaces -l app=my-service`))
 )
 
