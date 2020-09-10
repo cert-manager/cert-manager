@@ -98,20 +98,6 @@ servers and webhook servers.`,
 }
 
 func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{}) {
-	eitherStopCh := make(chan struct{})
-	go func() {
-		defer close(eitherStopCh)
-		o.runCertificateBasedInjector(stopCh)
-	}()
-	go func() {
-		defer close(eitherStopCh)
-		o.runSecretBasedInjector(stopCh)
-	}()
-
-	<-eitherStopCh
-}
-
-func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan struct{}) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                  api.Scheme,
 		Namespace:               o.Namespace,
@@ -126,7 +112,11 @@ func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan str
 		os.Exit(1)
 	}
 
-	// TODO(directxman12): enabled controllers for separate injectors?
+	if err := cainjector.RegisterSecretBased(mgr); err != nil {
+		o.log.Error(err, "error registering core-only controllers")
+		os.Exit(1)
+	}
+
 	if err := cainjector.RegisterCertificateBased(mgr); err != nil {
 		o.log.Error(err, "error registering controllers")
 		os.Exit(1)
@@ -134,33 +124,6 @@ func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan str
 
 	if err := mgr.Start(stopCh); err != nil {
 		o.log.Error(err, "error running manager")
-		os.Exit(1)
-	}
-}
-
-func (o InjectorControllerOptions) runSecretBasedInjector(stopCh <-chan struct{}) {
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                  api.Scheme,
-		Namespace:               o.Namespace,
-		LeaderElection:          o.LeaderElect,
-		LeaderElectionNamespace: o.LeaderElectionNamespace,
-		LeaderElectionID:        "cert-manager-cainjector-leader-election-core",
-		MetricsBindAddress:      "0",
-	})
-
-	if err != nil {
-		o.log.Error(err, "error creating core-only manager")
-		os.Exit(1)
-	}
-
-	// TODO(directxman12): enabled controllers for separate injectors?
-	if err := cainjector.RegisterSecretBased(mgr); err != nil {
-		o.log.Error(err, "error registering core-only controllers")
-		os.Exit(1)
-	}
-
-	if err := mgr.Start(stopCh); err != nil {
-		o.log.Error(err, "error running core-only manager")
 		os.Exit(1)
 	}
 }
