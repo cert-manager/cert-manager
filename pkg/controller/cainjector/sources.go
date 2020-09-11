@@ -26,7 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -52,8 +54,8 @@ type caDataSource interface {
 	// failed to read.
 	ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error)
 
-	// ApplyTo applies any required watchers to the given controller builder.
-	ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error
+	// ApplyTo applies any required watchers to the given controller.
+	ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error
 }
 
 // kubeconfigDataSource reads the ca bundle provided as part of the struct
@@ -71,7 +73,7 @@ func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, meta
 	return c.apiserverCABundle, nil
 }
 
-func (c *kubeconfigDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
+func (c *kubeconfigDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, _ controller.Controller, _ cache.Cache) error {
 	cfg := mgr.GetConfig()
 	caBundle, err := dataFromSliceOrFile(cfg.CAData, cfg.CAFile)
 	if err != nil {
@@ -140,26 +142,30 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	return caData, nil
 }
 
-func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
+func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
 	typ := setup.injector.NewTarget().AsObject()
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), typ, injectFromPath, injectableCAFromIndexer); err != nil {
+	if err := ca.IndexField(context.TODO(), typ, injectFromPath, injectableCAFromIndexer); err != nil {
 		return err
 	}
 
-	builder.Watches(&source.Kind{Type: &cmapi.Certificate{}},
+	if err := controller.Watch(source.NewKindWithCache(&cmapi.Certificate{}, ca),
 		&handler.EnqueueRequestsFromMapFunc{ToRequests: &certMapper{
 			Client:       mgr.GetClient(),
 			log:          ctrl.Log.WithName("cert-mapper"),
 			toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
 		}},
-	).
-		Watches(&source.Kind{Type: &corev1.Secret{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForCertificateMapper{
-				Client:                  mgr.GetClient(),
-				log:                     ctrl.Log.WithName("secret-for-certificate-mapper"),
-				certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
-			}},
-		)
+	); err != nil {
+		return err
+	}
+	if err := controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
+		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForCertificateMapper{
+			Client:                  mgr.GetClient(),
+			log:                     ctrl.Log.WithName("secret-for-certificate-mapper"),
+			certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
+		}},
+	); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -213,18 +219,16 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	return caData, nil
 }
 
-func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
+func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
 	typ := setup.injector.NewTarget().AsObject()
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
+	if err := ca.IndexField(context.TODO(), typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
 		return err
 	}
-
-	builder.Watches(&source.Kind{Type: &corev1.Secret{}},
+	return controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
 		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForInjectableMapper{
 			Client:             mgr.GetClient(),
 			log:                ctrl.Log.WithName("secret-mapper"),
 			secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
 		}},
 	)
-	return nil
 }

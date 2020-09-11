@@ -112,12 +112,12 @@ func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{})
 		os.Exit(1)
 	}
 
-	if err := cainjector.RegisterSecretBased(mgr); err != nil {
+	if err := cainjector.RegisterSecretBased(mgr, stopCh); err != nil {
 		o.log.Error(err, "error registering core-only controllers")
 		os.Exit(1)
 	}
 
-	if err := cainjector.RegisterCertificateBased(mgr); err != nil {
+	if err := cainjector.RegisterCertificateBased(mgr, stopCh); err != nil {
 		o.log.Error(err, "error registering controllers")
 		os.Exit(1)
 	}
