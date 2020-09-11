@@ -35,11 +35,11 @@ import (
 
 // certificateToInjectableFunc converts a given certificate to the reconcile requests for the corresponding injectables
 // (webhooks, api services, etc) that reference it.
-type certificateToInjectableFunc func(log logr.Logger, cl client.Client, certName types.NamespacedName) []ctrl.Request
+type certificateToInjectableFunc func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request
 
 // buildCertToInjectableFunc creates a certificateToInjectableFunc that maps from certificates to the given type of injectable.
 func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) certificateToInjectableFunc {
-	return func(log logr.Logger, cl client.Client, certName types.NamespacedName) []ctrl.Request {
+	return func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request {
 		log = log.WithValues("type", resourceName)
 		objs := listTyp.DeepCopyObject()
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromPath: certName.String()}); err != nil {
@@ -71,7 +71,7 @@ func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) cert
 
 // secretForCertificateMapper is a Mapper that converts secrets up to injectables, through certificates.
 type secretForCertificateMapper struct {
-	client.Client
+	Client                  client.Reader
 	log                     logr.Logger
 	certificateToInjectable certificateToInjectableFunc
 }
@@ -99,7 +99,7 @@ func (m *secretForCertificateMapper) Map(obj handler.MapObject) []ctrl.Request {
 
 // certMapper is a mapper that converts Certificates up to injectables
 type certMapper struct {
-	client.Client
+	Client       client.Reader
 	log          logr.Logger
 	toInjectable certificateToInjectableFunc
 }
@@ -138,11 +138,11 @@ func injectableCAFromIndexer(rawObj runtime.Object) []string {
 
 // secretToInjectableFunc converts a given certificate to the reconcile requests for the corresponding injectables
 // (webhooks, api services, etc) that reference it.
-type secretToInjectableFunc func(log logr.Logger, cl client.Client, certName types.NamespacedName) []ctrl.Request
+type secretToInjectableFunc func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request
 
 // buildSecretToInjectableFunc creates a certificateToInjectableFunc that maps from certificates to the given type of injectable.
 func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) secretToInjectableFunc {
-	return func(log logr.Logger, cl client.Client, secretName types.NamespacedName) []ctrl.Request {
+	return func(log logr.Logger, cl client.Reader, secretName types.NamespacedName) []ctrl.Request {
 		log = log.WithValues("type", resourceName)
 		objs := listTyp.DeepCopyObject()
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromSecretPath: secretName.String()}); err != nil {
@@ -175,7 +175,7 @@ func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) se
 // secretForInjectableMapper is a Mapper that converts secrets to injectables
 // via the 'inject-ca-from-secret' annotation
 type secretForInjectableMapper struct {
-	client.Client
+	Client             client.Reader
 	log                logr.Logger
 	secretToInjectable secretToInjectableFunc
 }

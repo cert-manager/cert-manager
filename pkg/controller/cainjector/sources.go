@@ -150,7 +150,7 @@ func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, c
 
 	if err := controller.Watch(source.NewKindWithCache(&cmapi.Certificate{}, ca),
 		&handler.EnqueueRequestsFromMapFunc{ToRequests: &certMapper{
-			Client:       mgr.GetClient(),
+			Client:       ca,
 			log:          ctrl.Log.WithName("cert-mapper"),
 			toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
 		}},
@@ -159,7 +159,7 @@ func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, c
 	}
 	if err := controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
 		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForCertificateMapper{
-			Client:                  mgr.GetClient(),
+			Client:                  ca,
 			log:                     ctrl.Log.WithName("secret-for-certificate-mapper"),
 			certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
 		}},
@@ -226,7 +226,7 @@ func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, contro
 	}
 	return controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
 		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForInjectableMapper{
-			Client:             mgr.GetClient(),
+			Client:             ca,
 			log:                ctrl.Log.WithName("secret-mapper"),
 			secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
 		}},
