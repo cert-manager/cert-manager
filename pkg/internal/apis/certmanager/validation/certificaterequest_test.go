@@ -67,6 +67,15 @@ func TestValidateCertificateRequestSpec(t *testing.T) {
 			want: []*field.Error{},
 		},
 		{
+			name: "Test csr with reordered usages",
+			crSpec: &cminternal.CertificateRequestSpec{
+				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
+				IssuerRef: validIssuerRef,
+				Usages:    []cminternal.KeyUsage{cminternal.UsageServerAuth, cminternal.UsageClientAuth, cminternal.UsageKeyEncipherment, cminternal.UsageDigitalSignature},
+			},
+			want: []*field.Error{},
+		},
+		{
 			name: "Error on csr not having all usages",
 			crSpec: &cminternal.CertificateRequestSpec{
 				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth))),
