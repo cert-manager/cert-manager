@@ -445,6 +445,16 @@ func TestGenerateCSR(t *testing.T) {
 			},
 		},
 		{
+			name: "Generate CSR from certificate with double signing key usages",
+			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageSigning}}},
+			want: &x509.CertificateRequest{Version: 3,
+				SignatureAlgorithm: x509.SHA256WithRSA,
+				PublicKeyAlgorithm: x509.RSA,
+				Subject:            pkix.Name{CommonName: "example.org"},
+				ExtraExtensions:    defaultExtraExtensions,
+			},
+		},
+		{
 			name:    "Error on generating CSR from certificate with no subject",
 			crt:     &cmapi.Certificate{Spec: cmapi.CertificateSpec{}},
 			wantErr: true,

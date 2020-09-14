@@ -123,13 +123,21 @@ func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, c
 
 func patchDuplicateKeyUsage(usages []cmapi.KeyUsage) []cmapi.KeyUsage {
 	// usage signing and digital signature are the same key use in x509
-	for i, usage := range usages {
-		if usage == cmapi.UsageSigning {
-			usages[i] = cmapi.UsageDigitalSignature
+	// we should patch this for proper validation
+
+	newUsages := []cmapi.KeyUsage(nil)
+	hasUsageSigning := false
+	for _, usage := range usages {
+		if (usage == cmapi.UsageSigning || usage == cmapi.UsageDigitalSignature) && !hasUsageSigning {
+			newUsages = append(newUsages, cmapi.UsageDigitalSignature)
+			// prevent having 2 UsageDigitalSignature in the slice
+			hasUsageSigning = true
+		} else {
+			newUsages = append(newUsages, usage)
 		}
 	}
 
-	return usages
+	return newUsages
 }
 
 func isUsageEqual(a, b []cmapi.KeyUsage) bool {
