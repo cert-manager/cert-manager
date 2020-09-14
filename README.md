@@ -26,6 +26,8 @@ Documentation for cert-manager can be found at [cert-manager.io](https://cert-ma
 Please make sure to select the correct version of the documentation to view on
 the top right of the page.
 
+Issues and PRs towards the documentation should be filed in the [website repo](https://github.com/cert-manager/website/).
+
 For the common use-case of automatically issuing TLS certificates to
 Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
 replacement, see the [cert-manager nginx ingress quick start
@@ -39,6 +41,8 @@ for installation instructions.
 
 If you encounter any issues whilst using cert-manager, we have a number of places you
 can use to try and get help.
+
+First of all we recommend looking at the [troubleshooting guide](https://cert-manager.io/docs/faq/troubleshooting/) of our documentation.
 
 The quickest way to ask a question is to first post on our Slack channel (#cert-manager)
 on the [Kubernetes Slack](http://slack.kubernetes.io/).
@@ -62,6 +66,7 @@ Please be sure to include as much information as possible about your environment
 There is a Google Group used for project wide announcements and development coordination.
 Anybody can join the group by visiting [here](https://groups.google.com/forum/#!forum/cert-manager-dev)
 and clicking "Join Group". A Google account is required to join the group.
+Joining this group will also invite you to the cert-manager development meetings.
 
 ### Bi-weekly development meeting
 Once you have become a member, you should receive an invite to the bi-weekly development
