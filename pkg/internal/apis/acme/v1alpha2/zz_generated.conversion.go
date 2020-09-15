@@ -1254,6 +1254,7 @@ func autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, ou
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	// WARNING: in.IPAddresses requires manual conversion: does not exist in peer-type
 	return nil
 }
 

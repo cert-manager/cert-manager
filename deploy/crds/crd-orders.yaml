@@ -83,6 +83,13 @@ spec:
                   type: array
                   items:
                     type: string
+                ipAddresses:
+                  description: IPAddresses is a list of IP address that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
+                  type: array
+                  items:
+                    description: "An IP is a single IP address, a slice of bytes. Functions in this package accept either 4-byte (IPv4) or 16-byte (IPv6) slices as input. \n Note that in this documentation, referring to an IP address as an IPv4 address or an IPv6 address is a semantic property of the address, not just the length of the byte slice: a 16-byte slice can still be an IPv4 address."
+                    type: string
+                    format: byte
                 issuerRef:
                   description: IssuerRef references a properly configured ACME-type Issuer which should be used to create this Order. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Order will be marked as failed.
                   type: object
@@ -233,6 +240,13 @@ spec:
                   type: array
                   items:
                     type: string
+                ipAddresses:
+                  description: IPAddresses is a list of IP address that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
+                  type: array
+                  items:
+                    description: "An IP is a single IP address, a slice of bytes. Functions in this package accept either 4-byte (IPv4) or 16-byte (IPv6) slices as input. \n Note that in this documentation, referring to an IP address as an IPv4 address or an IPv6 address is a semantic property of the address, not just the length of the byte slice: a 16-byte slice can still be an IPv4 address."
+                    type: string
+                    format: byte
                 issuerRef:
                   description: IssuerRef references a properly configured ACME-type Issuer which should be used to create this Order. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Order will be marked as failed.
                   type: object
@@ -380,6 +394,13 @@ spec:
                   type: array
                   items:
                     type: string
+                ipAddresses:
+                  description: IPAddresses is a list of IP address that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
+                  type: array
+                  items:
+                    description: "An IP is a single IP address, a slice of bytes. Functions in this package accept either 4-byte (IPv4) or 16-byte (IPv6) slices as input. \n Note that in this documentation, referring to an IP address as an IPv4 address or an IPv6 address is a semantic property of the address, not just the length of the byte slice: a 16-byte slice can still be an IPv4 address."
+                    type: string
+                    format: byte
                 issuerRef:
                   description: IssuerRef references a properly configured ACME-type Issuer which should be used to create this Order. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Order will be marked as failed.
                   type: object
@@ -531,6 +552,13 @@ spec:
                   type: array
                   items:
                     type: string
+                ipAddresses:
+                  description: IPAddresses is a list of IP address that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
+                  type: array
+                  items:
+                    description: "An IP is a single IP address, a slice of bytes. Functions in this package accept either 4-byte (IPv4) or 16-byte (IPv6) slices as input. \n Note that in this documentation, referring to an IP address as an IPv4 address or an IPv6 address is a semantic property of the address, not just the length of the byte slice: a 16-byte slice can still be an IPv4 address."
+                    type: string
+                    format: byte
                 issuerRef:
                   description: IssuerRef references a properly configured ACME-type Issuer which should be used to create this Order. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Order will be marked as failed.
                   type: object

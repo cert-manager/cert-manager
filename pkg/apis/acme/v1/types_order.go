@@ -17,6 +17,8 @@ limitations under the License.
 package v1
 
 import (
+	"net"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -69,7 +71,14 @@ type OrderSpec struct {
 	// DNSNames is a list of DNS names that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
+	//+optonal
 	DNSNames []string `json:"dnsNames"`
+
+	// IPAddresses is a list of IP address that should be included as part of the Order
+	// validation process.
+	// This field must match the corresponding field on the DER encoded CSR.
+	// +optional
+	IPAddresses []net.IP `json:"ipAddresses,omitempty"`
 }
 
 type OrderStatus struct {
