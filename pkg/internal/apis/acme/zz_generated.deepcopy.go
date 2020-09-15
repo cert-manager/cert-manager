@@ -21,6 +21,8 @@ limitations under the License.
 package acme
 
 import (
+	net "net"
+
 	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -783,6 +785,17 @@ func (in *OrderSpec) DeepCopyInto(out *OrderSpec) {
 		in, out := &in.DNSNames, &out.DNSNames
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.IPAddresses != nil {
+		in, out := &in.IPAddresses, &out.IPAddresses
+		*out = make([]net.IP, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = make(net.IP, len(*in))
+				copy(*out, *in)
+			}
+		}
 	}
 	return
 }

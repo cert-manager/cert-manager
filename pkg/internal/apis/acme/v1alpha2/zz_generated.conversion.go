@@ -21,6 +21,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	net "net"
 	unsafe "unsafe"
 
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
@@ -1254,7 +1255,7 @@ func autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, ou
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	// WARNING: in.IPAddresses requires manual conversion: does not exist in peer-type
+	out.IPAddresses = *(*[]net.IP)(unsafe.Pointer(&in.IPAddresses))
 	return nil
 }
 
@@ -1266,6 +1267,7 @@ func autoConvert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	out.IPAddresses = *(*[]net.IP)(unsafe.Pointer(&in.IPAddresses))
 	return nil
 }
 
