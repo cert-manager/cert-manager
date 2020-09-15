@@ -76,6 +76,26 @@ func TestValidateCertificateRequestSpec(t *testing.T) {
 			want: []*field.Error{},
 		},
 		{
+			name: "Test csr that is CA with usages set",
+			crSpec: &cminternal.CertificateRequestSpec{
+				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageCertSign), gen.SetCertificateIsCA(true))),
+				IssuerRef: validIssuerRef,
+				IsCA:      true,
+				Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment, cminternal.UsageCertSign},
+			},
+			want: []*field.Error{},
+		},
+		{
+			name: "Test csr that is CA but no cert sign in usages",
+			crSpec: &cminternal.CertificateRequestSpec{
+				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth, cmapi.UsageServerAuth), gen.SetCertificateIsCA(true))),
+				IssuerRef: validIssuerRef,
+				IsCA:      true,
+				Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment, cminternal.UsageClientAuth, cminternal.UsageServerAuth},
+			},
+			want: []*field.Error{},
+		},
+		{
 			name: "Error on csr not having all usages",
 			crSpec: &cminternal.CertificateRequestSpec{
 				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth))),
