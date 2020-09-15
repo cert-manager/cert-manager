@@ -63,6 +63,9 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 		} else {
 			// only compare usages if set on CR and in the CSR
 			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && validateCSRContent && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
+				if crSpec.IsCA {
+					crSpec.Usages = ensureCertSignIsSet(crSpec.Usages)
+				}
 				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, el)
 				if len(err) > 0 {
 					el = append(el, err...)
@@ -155,4 +158,17 @@ func isUsageEqual(a, b []cmapi.KeyUsage) bool {
 	}
 
 	return util.EqualUnsorted(aStrings, bStrings)
+}
+
+// ensureCertSignIsSet adds UsageCertSign in case it is not set
+// TODO: add a mutating webhook to make sure this is always set
+// when isCA is true.
+func ensureCertSignIsSet(list []cmapi.KeyUsage) []cmapi.KeyUsage {
+	for _, usage := range list {
+		if usage == cmapi.UsageCertSign {
+			return list
+		}
+	}
+
+	return append(list, cmapi.UsageCertSign)
 }
