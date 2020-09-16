@@ -17,10 +17,13 @@ limitations under the License.
 package cainjector
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -72,9 +75,19 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func registerAllInjectors(mgr ctrl.Manager, stopCh <-chan struct{}, sources []caDataSource) error {
+func registerAllInjectors(ctx context.Context, name string, mgr ctrl.Manager, sources []caDataSource) error {
+	cacheOptions := cache.Options{
+		Scheme: mgr.GetScheme(),
+		Mapper: mgr.GetRESTMapper(),
+	}
+	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	controllers := map[string]controller.Controller{}
 	for _, setup := range injectorSetups {
-		if err := Register(mgr, stopCh, setup, sources); err != nil {
+		controller, err := Register(fmt.Sprintf("%s-injector-%s", name, setup.resourceName), mgr, setup, sources, ca)
+		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
 			}
@@ -82,26 +95,46 @@ func registerAllInjectors(mgr ctrl.Manager, stopCh <-chan struct{}, sources []ca
 				" Enable the feature on the API server in order to use this injector",
 				"injector", setup.resourceName)
 		}
+		controllers[setup.resourceName] = controller
 	}
-	return nil
+	g, gctx := errgroup.WithContext(ctx)
+
+	g.Go(func() (err error) {
+		defer func() {
+			ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: cache routine finished", "name", name)
+		}()
+		ctrl.Log.V(logf.TraceLevel).Info("DEBUG: cache routine starting", "name", name)
+		if err = ca.Start(gctx.Done()); err != nil {
+			return errors.WithStack(err)
+		}
+		return nil
+	})
+	if ca.WaitForCacheSync(gctx.Done()) {
+		for resourceName, controller := range controllers {
+			if gctx.Err() != nil {
+				continue
+			}
+			resourceName := resourceName
+			controller := controller
+			g.Go(func() (err error) {
+				defer func() {
+					ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: controller routine finished", "name", name, "resourceName", resourceName)
+				}()
+				ctrl.Log.V(logf.TraceLevel).Info("DEBUG: controller routine starting", "name", name, "resourceName", resourceName)
+				return controller.Start(gctx.Done())
+			})
+		}
+	}
+	return g.Wait()
 }
 
 // Register registers an injection controller with the given manager, and adds relevant indicies.
-func Register(mgr ctrl.Manager, stopCh <-chan struct{}, setup injectorSetup, sources []caDataSource) error {
+func Register(name string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache) (controller.Controller, error) {
 	typ := setup.injector.NewTarget().AsObject()
 
-	cacheOptions := cache.Options{
-		Scheme: mgr.GetScheme(),
-		Mapper: mgr.GetRESTMapper(),
-	}
-	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
-	if err != nil {
-		return fmt.Errorf("error creating cache: %v", err)
-	}
-
 	c, err := controller.NewUnmanaged(
-		// strings.ToLower(typ.GetObjectKind().GroupVersionKind().Kind),
-		"controller-xxx",
+		// XXX:  strings.ToLower(typ.GetObjectKind().GroupVersionKind().Kind),
+		name,
 		mgr,
 		controller.Options{
 			Reconciler: &genericInjectReconciler{
@@ -113,30 +146,19 @@ func Register(mgr ctrl.Manager, stopCh <-chan struct{}, setup injectorSetup, sou
 			},
 		})
 	if err != nil {
-		return fmt.Errorf("unable to create controller: %v", err)
+		return nil, errors.WithStack(err)
 	}
 	if err := c.Watch(source.NewKindWithCache(typ, ca), &handler.EnqueueRequestForObject{}); err != nil {
-		return fmt.Errorf("unable to watch: %v", err)
+		return nil, errors.WithStack(err)
 	}
 
 	for _, s := range sources {
 		if err := s.ApplyTo(mgr, setup, c, ca); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	go func() {
-		<-mgr.Elected()
-		if err := ca.Start(stopCh); err != nil {
-			ctrl.Log.Error(err, "error starting cache")
-		}
-	}()
-	go func() {
-		<-mgr.Elected()
-		if err := c.Start(stopCh); err != nil {
-			ctrl.Log.Error(err, "error starting controller")
-		}
-	}()
-	return nil
+
+	return c, nil
 }
 
 // dataFromSliceOrFile returns data from the slice (if non-empty), or from the file,
@@ -160,10 +182,11 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 // indices.
 // The registered controllers require the cert-manager API to be available
 // in order to run.
-func RegisterCertificateBased(mgr ctrl.Manager, stopCh <-chan struct{}) error {
+func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 	return registerAllInjectors(
+		ctx,
+		"certificate",
 		mgr,
-		stopCh,
 		[]caDataSource{
 			&certificateDataSource{client: mgr.GetClient()},
 		},
@@ -175,10 +198,11 @@ func RegisterCertificateBased(mgr ctrl.Manager, stopCh <-chan struct{}) error {
 // indices.
 // The registered controllers only require the corev1 APi to be available in
 // order to run.
-func RegisterSecretBased(mgr ctrl.Manager, stopCh <-chan struct{}) error {
+func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
 	return registerAllInjectors(
+		ctx,
+		"secret",
 		mgr,
-		stopCh,
 		[]caDataSource{
 			&secretDataSource{client: mgr.GetClient()},
 			&kubeconfigDataSource{},

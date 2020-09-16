@@ -17,13 +17,15 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/sync/errgroup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -68,7 +70,7 @@ func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOpti
 }
 
 // NewCommandStartInjectorController is a CLI handler for starting cert-manager
-func NewCommandStartInjectorController(out, errOut io.Writer, stopCh <-chan struct{}) *cobra.Command {
+func NewCommandStartInjectorController(ctx context.Context, out, errOut io.Writer) *cobra.Command {
 	o := NewInjectorControllerOptions(out, errOut)
 
 	cmd := &cobra.Command{
@@ -83,11 +85,11 @@ CA data from the referenced certificates, which can then be used to serve API
 servers and webhook servers.`,
 
 		// TODO: Refactor this function from this package
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			o.log = logf.Log.WithName("ca-injector")
 
 			logf.V(logf.InfoLevel).InfoS("starting", "version", util.AppVersion, "revision", util.AppGitCommit)
-			o.RunInjectorController(stopCh)
+			return o.RunInjectorController(ctx)
 		},
 	}
 
@@ -97,7 +99,7 @@ servers and webhook servers.`,
 	return cmd
 }
 
-func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{}) {
+func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                  api.Scheme,
 		Namespace:               o.Namespace,
@@ -106,24 +108,52 @@ func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{})
 		LeaderElectionID:        "cert-manager-cainjector-leader-election",
 		MetricsBindAddress:      "0",
 	})
-
 	if err != nil {
-		o.log.Error(err, "error creating manager")
-		os.Exit(1)
+		return fmt.Errorf("error creating manager: %v", err)
 	}
 
-	if err := cainjector.RegisterSecretBased(mgr, stopCh); err != nil {
-		o.log.Error(err, "error registering core-only controllers")
-		os.Exit(1)
-	}
+	g, gctx := errgroup.WithContext(ctx)
 
-	if err := cainjector.RegisterCertificateBased(mgr, stopCh); err != nil {
-		o.log.Error(err, "error registering controllers")
-		os.Exit(1)
-	}
+	g.Go(func() (err error) {
+		defer func() {
+			o.log.Error(err, "manager goroutine exited")
+		}()
 
-	if err := mgr.Start(stopCh); err != nil {
-		o.log.Error(err, "error running manager")
-		os.Exit(1)
-	}
+		if err = mgr.Start(gctx.Done()); err != nil {
+			return fmt.Errorf("error running manager: %v", err)
+		}
+		return nil
+	})
+
+	<-mgr.Elected()
+
+	g.Go(func() (err error) {
+		defer func() {
+			o.log.Error(err, "certificate based controller goroutine exited")
+		}()
+		for {
+			err = cainjector.RegisterCertificateBased(gctx, mgr)
+			if err == nil {
+				return
+			}
+			o.log.Error(err, "Error registering certificate based controllers. Retrying after 5 seconds.")
+			select {
+			case <-time.After(time.Second * 5):
+			case <-gctx.Done():
+				return
+			}
+		}
+	})
+
+	g.Go(func() (err error) {
+		defer func() {
+			o.log.Error(err, "secret based controller goroutine exited")
+		}()
+		if err = cainjector.RegisterSecretBased(gctx, mgr); err != nil {
+			return fmt.Errorf("error registering secret controller: %v", err)
+		}
+		return
+	})
+
+	return g.Wait()
 }

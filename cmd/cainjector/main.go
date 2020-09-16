@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 
 	"os"
@@ -34,12 +35,18 @@ func main() {
 	ctrl.SetLogger(logf.Log)
 
 	stopCh := utilcmd.SetupSignalHandler()
-	cmd := app.NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		<-stopCh
+		logf.Log.Info("stop received")
+		cancel()
+	}()
+	cmd := app.NewCommandStartInjectorController(ctx, os.Stdout, os.Stderr)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		logf.Log.Error(err, "error executing command")
-		os.Exit(1)
+		cmd.PrintErrln(err)
 	}
 }
