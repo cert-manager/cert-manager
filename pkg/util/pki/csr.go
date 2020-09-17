@@ -202,6 +202,35 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		return nil, err
 	}
 
+	extraExtensions, err := extensionsForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &x509.CertificateRequest{
+		Version:            3,
+		SignatureAlgorithm: sigAlgo,
+		PublicKeyAlgorithm: pubKeyAlgo,
+		Subject: pkix.Name{
+			Country:            subject.Countries,
+			Organization:       organization,
+			OrganizationalUnit: subject.OrganizationalUnits,
+			Locality:           subject.Localities,
+			Province:           subject.Provinces,
+			StreetAddress:      subject.StreetAddresses,
+			PostalCode:         subject.PostalCodes,
+			SerialNumber:       subject.SerialNumber,
+			CommonName:         commonName,
+		},
+		DNSNames:        dnsNames,
+		IPAddresses:     iPAddresses,
+		URIs:            uriNames,
+		EmailAddresses:  crt.Spec.EmailAddresses,
+		ExtraExtensions: extraExtensions,
+	}, nil
+}
+
+func extensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
 	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build key usages: %w", err)
@@ -230,28 +259,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 
 		extraExtensions = append(extraExtensions, extendedUsage)
 	}
-
-	return &x509.CertificateRequest{
-		Version:            3,
-		SignatureAlgorithm: sigAlgo,
-		PublicKeyAlgorithm: pubKeyAlgo,
-		Subject: pkix.Name{
-			Country:            subject.Countries,
-			Organization:       organization,
-			OrganizationalUnit: subject.OrganizationalUnits,
-			Locality:           subject.Localities,
-			Province:           subject.Provinces,
-			StreetAddress:      subject.StreetAddresses,
-			PostalCode:         subject.PostalCodes,
-			SerialNumber:       subject.SerialNumber,
-			CommonName:         commonName,
-		},
-		DNSNames:        dnsNames,
-		IPAddresses:     iPAddresses,
-		URIs:            uriNames,
-		EmailAddresses:  crt.Spec.EmailAddresses,
-		ExtraExtensions: extraExtensions,
-	}, nil
+	return extraExtensions, nil
 }
 
 // GenerateTemplate will create a x509.Certificate for the given Certificate resource.
