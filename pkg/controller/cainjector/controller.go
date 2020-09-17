@@ -145,6 +145,11 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 	log = logf.WithResource(r.log, metaObj)
 
+	if !metaObj.GetDeletionTimestamp().IsZero() {
+		log.V(logf.TraceLevel).Info("ignoring", "reason", "object has a non-zero deletion timestamp")
+		return ctrl.Result{}, nil
+	}
+
 	dataSource, err := r.caDataSourceFor(log, metaObj)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to determine ca data source for injectable")
