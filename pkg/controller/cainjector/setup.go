@@ -75,10 +75,10 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func registerAllInjectors(ctx context.Context, name string, mgr ctrl.Manager, sources []caDataSource, ca cache.Cache) error {
+func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, ca cache.Cache) error {
 	controllers := map[string]controller.Controller{}
 	for _, setup := range injectorSetups {
-		controller, err := Register(fmt.Sprintf("%s-injector-%s", name, setup.resourceName), mgr, setup, sources, ca)
+		controller, err := Register(groupName, mgr, setup, sources, ca)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
@@ -93,9 +93,9 @@ func registerAllInjectors(ctx context.Context, name string, mgr ctrl.Manager, so
 
 	g.Go(func() (err error) {
 		defer func() {
-			ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: cache routine finished", "name", name)
+			ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: cache routine finished", "group-name", groupName)
 		}()
-		ctrl.Log.V(logf.TraceLevel).Info("DEBUG: cache routine starting", "name", name)
+		ctrl.Log.V(logf.TraceLevel).Info("DEBUG: cache routine starting", "group-name", groupName)
 		if err = ca.Start(gctx.Done()); err != nil {
 			return errors.WithStack(err)
 		}
@@ -110,9 +110,9 @@ func registerAllInjectors(ctx context.Context, name string, mgr ctrl.Manager, so
 			controller := controller
 			g.Go(func() (err error) {
 				defer func() {
-					ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: controller routine finished", "name", name, "resourceName", resourceName)
+					ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: controller routine finished", "group-name", groupName, "resourceName", resourceName)
 				}()
-				ctrl.Log.V(logf.TraceLevel).Info("DEBUG: controller routine starting", "name", name, "resourceName", resourceName)
+				ctrl.Log.V(logf.TraceLevel).Info("DEBUG: controller routine starting", "group-name", groupName, "resourceName", resourceName)
 				return controller.Start(gctx.Done())
 			})
 		}
@@ -121,21 +121,23 @@ func registerAllInjectors(ctx context.Context, name string, mgr ctrl.Manager, so
 }
 
 // Register registers an injection controller with the given manager, and adds relevant indicies.
-func Register(name string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache) (controller.Controller, error) {
+func Register(groupName string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache) (controller.Controller, error) {
+	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
 
 	c, err := controller.NewUnmanaged(
 		// XXX:  strings.ToLower(typ.GetObjectKind().GroupVersionKind().Kind),
-		name,
+		fmt.Sprintf("controller-for-%s-%s", groupName, setup.resourceName),
 		mgr,
 		controller.Options{
 			Reconciler: &genericInjectReconciler{
 				Client:       mgr.GetClient(),
 				sources:      sources,
-				log:          ctrl.Log.WithName("inject-controller"),
+				log:          log.WithName("generic-inject-reconciler"),
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
 			},
+			Log:                     log,
 			MaxConcurrentReconciles: 5,
 		})
 	if err != nil {
