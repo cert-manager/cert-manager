@@ -136,6 +136,7 @@ func Register(name string, mgr ctrl.Manager, setup injectorSetup, sources []caDa
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
 			},
+			MaxConcurrentReconciles: 5,
 		})
 	if err != nil {
 		return nil, errors.WithStack(err)
