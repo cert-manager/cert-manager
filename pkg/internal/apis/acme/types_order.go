@@ -17,8 +17,6 @@ limitations under the License.
 package acme
 
 import (
-	"net"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
@@ -71,7 +69,7 @@ type OrderSpec struct {
 	// IPAddresses is a list of IP address that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
-	IPAddresses []net.IP `json:"ipAddresses,omitempty"`
+	IPAddresses []string `json:"ipAddresses,omitempty"`
 }
 
 type OrderStatus struct {

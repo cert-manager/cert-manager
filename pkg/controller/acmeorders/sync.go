@@ -194,10 +194,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", dnsIdentifierSet.List())
 
-	ipIdentifierSet := sets.NewString()
-	for _, ip := range o.Spec.IPAddresses {
-		ipIdentifierSet.Insert(ip.String())
-	}
+	ipIdentifierSet := sets.NewString(o.Spec.IPAddresses...)
 	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", dnsIdentifierSet.List())
 
 	authzIDs := acmeapi.DomainIDs(dnsIdentifierSet.List()...)

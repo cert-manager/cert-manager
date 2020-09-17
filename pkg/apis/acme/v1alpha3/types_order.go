@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"net"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -76,7 +74,7 @@ type OrderSpec struct {
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
 	// +optional
-	IPAddresses []net.IP `json:"ipAddresses,omitempty"`
+	IPAddresses []string `json:"ipAddresses,omitempty"`
 }
 
 type OrderStatus struct {
