@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -451,6 +452,93 @@ func TestGenerateCSR(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GenerateCSR() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_extensionsForCertificate(t *testing.T) {
+	// 0xa0 = DigitalSignature and Encipherment usage
+	asn1DefaultKeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	asn1ClientAuth, err := asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageClientAuth})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	asn1ServerClientAuth, err := asn1.Marshal([]asn1.ObjectIdentifier{oidExtKeyUsageServerAuth, oidExtKeyUsageClientAuth})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name    string
+		crt     *v1.Certificate
+		want    []pkix.Extension
+		wantErr bool
+	}{
+		{
+			name: "Test no usages set",
+			crt:  &v1.Certificate{},
+			want: []pkix.Extension{
+				{
+					Id:    OIDExtensionKeyUsage,
+					Value: asn1DefaultKeyUsage,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test client auth extended usage set",
+			crt: &v1.Certificate{
+				Spec: v1.CertificateSpec{
+					Usages: []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+				},
+			},
+			want: []pkix.Extension{
+				{
+					Id:    OIDExtensionKeyUsage,
+					Value: asn1DefaultKeyUsage,
+				},
+				{
+					Id:    OIDExtensionExtendedKeyUsage,
+					Value: asn1ClientAuth,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test server + client auth extended usage set",
+			crt: &v1.Certificate{
+				Spec: v1.CertificateSpec{
+					Usages: []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageServerAuth, v1.UsageClientAuth},
+				},
+			},
+			want: []pkix.Extension{
+				{
+					Id:    OIDExtensionKeyUsage,
+					Value: asn1DefaultKeyUsage,
+				},
+				{
+					Id:    OIDExtensionExtendedKeyUsage,
+					Value: asn1ServerClientAuth,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extensionsForCertificate(tt.crt)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("extensionsForCertificate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("extensionsForCertificate() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
