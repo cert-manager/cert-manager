@@ -75,15 +75,7 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func registerAllInjectors(ctx context.Context, name string, mgr ctrl.Manager, sources []caDataSource) error {
-	cacheOptions := cache.Options{
-		Scheme: mgr.GetScheme(),
-		Mapper: mgr.GetRESTMapper(),
-	}
-	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
-	if err != nil {
-		return errors.WithStack(err)
-	}
+func registerAllInjectors(ctx context.Context, name string, mgr ctrl.Manager, sources []caDataSource, ca cache.Cache) error {
 	controllers := map[string]controller.Controller{}
 	for _, setup := range injectorSetups {
 		controller, err := Register(fmt.Sprintf("%s-injector-%s", name, setup.resourceName), mgr, setup, sources, ca)
@@ -183,13 +175,22 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 // The registered controllers require the cert-manager API to be available
 // in order to run.
 func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
+	cacheOptions := cache.Options{
+		Scheme: mgr.GetScheme(),
+		Mapper: mgr.GetRESTMapper(),
+	}
+	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	return registerAllInjectors(
 		ctx,
 		"certificate",
 		mgr,
 		[]caDataSource{
-			&certificateDataSource{client: mgr.GetClient()},
+			&certificateDataSource{client: ca},
 		},
+		ca,
 	)
 }
 
@@ -199,13 +200,22 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 // The registered controllers only require the corev1 APi to be available in
 // order to run.
 func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
+	cacheOptions := cache.Options{
+		Scheme: mgr.GetScheme(),
+		Mapper: mgr.GetRESTMapper(),
+	}
+	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	return registerAllInjectors(
 		ctx,
 		"secret",
 		mgr,
 		[]caDataSource{
-			&secretDataSource{client: mgr.GetClient()},
+			&secretDataSource{client: ca},
 			&kubeconfigDataSource{},
 		},
+		ca,
 	)
 }

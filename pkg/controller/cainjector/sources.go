@@ -88,7 +88,7 @@ func (c *kubeconfigDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, _ 
 // the 'cert-manager.io/inject-ca-from' annotation in the form
 // 'namespace/name'.
 type certificateDataSource struct {
-	client client.Client
+	client client.Reader
 }
 
 func (c *certificateDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
@@ -174,7 +174,7 @@ func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, c
 // 'cert-manager.io/inject-ca-from-secret' annotation in the form
 // 'namespace/name'.
 type secretDataSource struct {
-	client client.Client
+	client client.Reader
 }
 
 func (c *secretDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
