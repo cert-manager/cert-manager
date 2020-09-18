@@ -34,19 +34,22 @@ func main() {
 	defer logf.FlushLogs()
 	ctrl.SetLogger(logf.Log)
 
+	// Set up signal handlers and a cancellable context which gets cancelled on
+	// when either SIGINT or SIGTERM are received.
 	stopCh := utilcmd.SetupSignalHandler()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
 		<-stopCh
-		logf.Log.Info("stop received")
 		cancel()
 	}()
+
 	cmd := app.NewCommandStartInjectorController(ctx, os.Stdout, os.Stderr)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
 		cmd.PrintErrln(err)
+		os.Exit(1)
 	}
 }
