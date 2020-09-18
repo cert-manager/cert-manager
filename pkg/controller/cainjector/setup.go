@@ -130,8 +130,7 @@ func newGenericInjectionController(groupName string, mgr ctrl.Manager, setup inj
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
 			},
-			Log:                     log,
-			MaxConcurrentReconciles: 5,
+			Log: log,
 		})
 	if err != nil {
 		return nil, errors.WithStack(err)
