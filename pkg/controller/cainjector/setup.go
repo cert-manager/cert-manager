@@ -109,6 +109,10 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 				return controller.Start(gctx.Done())
 			})
 		}
+	} else {
+		// I assume that if the cache sync fails, then the already-started cache
+		// will exit with a meaningful error which will be returned by the errgroup
+		ctrl.Log.Error(nil, "timed out or failed while waiting for cache")
 	}
 	return g.Wait()
 }
