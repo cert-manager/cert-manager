@@ -102,7 +102,7 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 	if ca.WaitForCacheSync(gctx.Done()) {
 		for _, controller := range controllers {
 			if gctx.Err() != nil {
-				continue
+				break
 			}
 			controller := controller
 			g.Go(func() (err error) {
