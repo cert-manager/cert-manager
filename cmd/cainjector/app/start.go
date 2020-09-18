@@ -128,9 +128,6 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	<-mgr.Elected()
 
 	g.Go(func() (err error) {
-		defer func() {
-			o.log.Error(err, "certificate based controller goroutine exited")
-		}()
 		for {
 			err = cainjector.RegisterCertificateBased(gctx, mgr)
 			if err == nil {
@@ -146,9 +143,6 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	})
 
 	g.Go(func() (err error) {
-		defer func() {
-			o.log.Error(err, "secret based controller goroutine exited")
-		}()
 		if err = cainjector.RegisterSecretBased(gctx, mgr); err != nil {
 			return fmt.Errorf("error registering secret controller: %v", err)
 		}

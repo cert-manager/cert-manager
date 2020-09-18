@@ -78,8 +78,8 @@ var (
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
 func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
-	controllers := map[string]controller.Controller{}
-	for _, setup := range injectorSetups {
+	controllers := make([]controller.Controller, len(injectorSetups))
+	for i, setup := range injectorSetups {
 		controller, err := Register(groupName, mgr, setup, sources, ca, client)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
@@ -89,32 +89,23 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 				" Enable the feature on the API server in order to use this injector",
 				"injector", setup.resourceName)
 		}
-		controllers[setup.resourceName] = controller
+		controllers[i] = controller
 	}
 	g, gctx := errgroup.WithContext(ctx)
 
 	g.Go(func() (err error) {
-		defer func() {
-			ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: cache routine finished", "group-name", groupName)
-		}()
-		ctrl.Log.V(logf.TraceLevel).Info("DEBUG: cache routine starting", "group-name", groupName)
 		if err = ca.Start(gctx.Done()); err != nil {
 			return errors.WithStack(err)
 		}
 		return nil
 	})
 	if ca.WaitForCacheSync(gctx.Done()) {
-		for resourceName, controller := range controllers {
+		for _, controller := range controllers {
 			if gctx.Err() != nil {
 				continue
 			}
-			resourceName := resourceName
 			controller := controller
 			g.Go(func() (err error) {
-				defer func() {
-					ctrl.Log.V(logf.TraceLevel).Error(err, "DEBUG: controller routine finished", "group-name", groupName, "resourceName", resourceName)
-				}()
-				ctrl.Log.V(logf.TraceLevel).Info("DEBUG: controller routine starting", "group-name", groupName, "resourceName", resourceName)
 				return controller.Start(gctx.Done())
 			})
 		}
