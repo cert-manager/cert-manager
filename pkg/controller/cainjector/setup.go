@@ -218,6 +218,12 @@ func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
 	)
 }
 
+// newIndependentCacheAndDelegatingClient creates a cache and a delegating
+// client which are independent of the cache of the manager.
+// This allows us to start the manager and secrets based injectors before the
+// cert-manager Certificates CRDs have been installed and before the CA bundles
+// have been injected into the cert-manager CRDs, by the secrets based injector,
+// which is running in a separate goroutine.
 func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, client.Client, error) {
 	cacheOptions := cache.Options{
 		Scheme: mgr.GetScheme(),
