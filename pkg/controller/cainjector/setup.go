@@ -32,8 +32,10 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -75,10 +77,10 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, ca cache.Cache) error {
+func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
 	controllers := map[string]controller.Controller{}
 	for _, setup := range injectorSetups {
-		controller, err := Register(groupName, mgr, setup, sources, ca)
+		controller, err := Register(groupName, mgr, setup, sources, ca, client)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
@@ -121,7 +123,7 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 }
 
 // Register registers an injection controller with the given manager, and adds relevant indicies.
-func Register(groupName string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache) (controller.Controller, error) {
+func Register(groupName string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache, client client.Client) (controller.Controller, error) {
 	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
 
@@ -131,7 +133,7 @@ func Register(groupName string, mgr ctrl.Manager, setup injectorSetup, sources [
 		mgr,
 		controller.Options{
 			Reconciler: &genericInjectReconciler{
-				Client:       mgr.GetClient(),
+				Client:       client,
 				sources:      sources,
 				log:          log.WithName("generic-inject-reconciler"),
 				resourceName: setup.resourceName,
@@ -178,22 +180,19 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 // The registered controllers require the cert-manager API to be available
 // in order to run.
 func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
-	cacheOptions := cache.Options{
-		Scheme: mgr.GetScheme(),
-		Mapper: mgr.GetRESTMapper(),
-	}
-	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return registerAllInjectors(
 		ctx,
 		"certificate",
 		mgr,
 		[]caDataSource{
-			&certificateDataSource{client: ca},
+			&certificateDataSource{client: cache},
 		},
-		ca,
+		client,
+		cache,
 	)
 }
 
@@ -203,22 +202,40 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 // The registered controllers only require the corev1 APi to be available in
 // order to run.
 func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
-	cacheOptions := cache.Options{
-		Scheme: mgr.GetScheme(),
-		Mapper: mgr.GetRESTMapper(),
-	}
-	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
+	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return registerAllInjectors(
 		ctx,
 		"secret",
 		mgr,
 		[]caDataSource{
-			&secretDataSource{client: ca},
+			&secretDataSource{client: cache},
 			&kubeconfigDataSource{},
 		},
-		ca,
+		client,
+		cache,
 	)
+}
+
+func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, client.Client, error) {
+	cacheOptions := cache.Options{
+		Scheme: mgr.GetScheme(),
+		Mapper: mgr.GetRESTMapper(),
+	}
+	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+
+	clientOptions := client.Options{
+		Scheme: mgr.GetScheme(),
+		Mapper: mgr.GetRESTMapper(),
+	}
+	client, err := manager.DefaultNewClient(ca, mgr.GetConfig(), clientOptions)
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+	return ca, client, nil
 }
