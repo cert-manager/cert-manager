@@ -80,7 +80,7 @@ var (
 func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
 	controllers := make([]controller.Controller, len(injectorSetups))
 	for i, setup := range injectorSetups {
-		controller, err := Register(groupName, mgr, setup, sources, ca, client)
+		controller, err := newGenericInjectionController(groupName, mgr, setup, sources, ca, client)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
@@ -113,13 +113,13 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 	return g.Wait()
 }
 
-// Register registers an injection controller with the given manager, and adds relevant indicies.
-func Register(groupName string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache, client client.Client) (controller.Controller, error) {
+// newGenericInjectionController creates a controller and adds relevant watches
+// and indexers to the supplied cache.
+func newGenericInjectionController(groupName string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache, client client.Client) (controller.Controller, error) {
 	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
 
 	c, err := controller.NewUnmanaged(
-		// XXX:  strings.ToLower(typ.GetObjectKind().GroupVersionKind().Kind),
 		fmt.Sprintf("controller-for-%s-%s", groupName, setup.resourceName),
 		mgr,
 		controller.Options{
