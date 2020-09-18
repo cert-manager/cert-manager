@@ -119,6 +119,11 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 
 // newGenericInjectionController creates a controller and adds relevant watches
 // and indexers to the supplied cache.
+// TODO: We can't use the controller-runtime controller.Builder mechanism here
+// because it doesn't allow us to specify the cache to which we link watches,
+// indexes and event sources. Keep checking new controller-runtime releases for
+// improvements which might make this easier:
+// * https://github.com/kubernetes-sigs/controller-runtime/issues/764
 func newGenericInjectionController(groupName string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache, client client.Client) (controller.Controller, error) {
 	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
