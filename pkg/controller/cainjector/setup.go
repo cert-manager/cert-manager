@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
@@ -95,7 +94,7 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 
 	g.Go(func() (err error) {
 		if err = ca.Start(gctx.Done()); err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 		return nil
 	})
@@ -142,10 +141,10 @@ func newGenericInjectionController(groupName string, mgr ctrl.Manager, setup inj
 			Log: log,
 		})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	if err := c.Watch(source.NewKindWithCache(typ, ca), &handler.EnqueueRequestForObject{}); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	for _, s := range sources {
@@ -231,7 +230,7 @@ func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, clie
 	}
 	ca, err := cache.New(mgr.GetConfig(), cacheOptions)
 	if err != nil {
-		return nil, nil, errors.WithStack(err)
+		return nil, nil, err
 	}
 
 	clientOptions := client.Options{
@@ -240,7 +239,7 @@ func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, clie
 	}
 	client, err := manager.DefaultNewClient(ca, mgr.GetConfig(), clientOptions)
 	if err != nil {
-		return nil, nil, errors.WithStack(err)
+		return nil, nil, err
 	}
 	return ca, client, nil
 }

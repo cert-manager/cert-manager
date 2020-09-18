@@ -20,7 +20,6 @@ import (
 	"context"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/pkg/errors"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -78,7 +77,7 @@ func (c *kubeconfigDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, _ 
 	cfg := mgr.GetConfig()
 	caBundle, err := dataFromSliceOrFile(cfg.CAData, cfg.CAFile)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	c.apiserverCABundle = caBundle
 	return nil
@@ -146,7 +145,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
 	typ := setup.injector.NewTarget().AsObject()
 	if err := ca.IndexField(context.TODO(), typ, injectFromPath, injectableCAFromIndexer); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	if err := controller.Watch(source.NewKindWithCache(&cmapi.Certificate{}, ca),
@@ -156,7 +155,7 @@ func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, c
 			toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
 		}},
 	); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	if err := controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
 		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForCertificateMapper{
@@ -165,7 +164,7 @@ func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, c
 			certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
 		}},
 	); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -223,7 +222,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
 	typ := setup.injector.NewTarget().AsObject()
 	if err := ca.IndexField(context.TODO(), typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	if err := controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
 		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForInjectableMapper{
@@ -232,7 +231,7 @@ func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, contro
 			secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
 		}},
 	); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
