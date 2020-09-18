@@ -131,13 +131,13 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	if err := r.Client.Get(ctx, req.NamespacedName, target.AsObject()); err != nil {
 		if dropNotFound(err) == nil {
 			// don't requeue on deletions, which yield a non-found object
+			log.V(logf.DebugLevel).Info("ignoring", "reason", "not found", "err", err)
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "unable to fetch target object to inject into")
 		return ctrl.Result{}, err
 	}
 
-	// ensure that it wants injection
 	metaObj, err := meta.Accessor(target.AsObject())
 	if err != nil {
 		log.Error(err, "unable to get metadata for object")
@@ -145,6 +145,13 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 	log = logf.WithResource(r.log, metaObj)
 
+	// ignore resources that are being deleted
+	if !metaObj.GetDeletionTimestamp().IsZero() {
+		log.V(logf.DebugLevel).Info("ignoring", "reason", "object has a non-zero deletion timestamp")
+		return ctrl.Result{}, nil
+	}
+
+	// ensure that it wants injection
 	dataSource, err := r.caDataSourceFor(log, metaObj)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to determine ca data source for injectable")

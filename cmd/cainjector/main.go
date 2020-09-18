@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 
 	"os"
@@ -33,13 +34,22 @@ func main() {
 	defer logf.FlushLogs()
 	ctrl.SetLogger(logf.Log)
 
+	// Set up signal handlers and a cancellable context which gets cancelled on
+	// when either SIGINT or SIGTERM are received.
 	stopCh := utilcmd.SetupSignalHandler()
-	cmd := app.NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		<-stopCh
+		cancel()
+	}()
+
+	cmd := app.NewCommandStartInjectorController(ctx, os.Stdout, os.Stderr)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		logf.Log.Error(err, "error executing command")
+		cmd.PrintErrln(err)
 		os.Exit(1)
 	}
 }

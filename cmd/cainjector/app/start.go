@@ -17,13 +17,15 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/sync/errgroup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -68,7 +70,7 @@ func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOpti
 }
 
 // NewCommandStartInjectorController is a CLI handler for starting cert-manager
-func NewCommandStartInjectorController(out, errOut io.Writer, stopCh <-chan struct{}) *cobra.Command {
+func NewCommandStartInjectorController(ctx context.Context, out, errOut io.Writer) *cobra.Command {
 	o := NewInjectorControllerOptions(out, errOut)
 
 	cmd := &cobra.Command{
@@ -83,11 +85,11 @@ CA data from the referenced certificates, which can then be used to serve API
 servers and webhook servers.`,
 
 		// TODO: Refactor this function from this package
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			o.log = logf.Log.WithName("ca-injector")
 
 			logf.V(logf.InfoLevel).InfoS("starting", "version", util.AppVersion, "revision", util.AppGitCommit)
-			o.RunInjectorController(stopCh)
+			return o.RunInjectorController(ctx)
 		},
 	}
 
@@ -97,21 +99,7 @@ servers and webhook servers.`,
 	return cmd
 }
 
-func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{}) {
-	eitherStopCh := make(chan struct{})
-	go func() {
-		defer close(eitherStopCh)
-		o.runCertificateBasedInjector(stopCh)
-	}()
-	go func() {
-		defer close(eitherStopCh)
-		o.runSecretBasedInjector(stopCh)
-	}()
-
-	<-eitherStopCh
-}
-
-func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan struct{}) {
+func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                  api.Scheme,
 		Namespace:               o.Namespace,
@@ -120,47 +108,66 @@ func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan str
 		LeaderElectionID:        "cert-manager-cainjector-leader-election",
 		MetricsBindAddress:      "0",
 	})
-
 	if err != nil {
-		o.log.Error(err, "error creating manager")
-		os.Exit(1)
+		return fmt.Errorf("error creating manager: %v", err)
 	}
 
-	// TODO(directxman12): enabled controllers for separate injectors?
-	if err := cainjector.RegisterCertificateBased(mgr); err != nil {
-		o.log.Error(err, "error registering controllers")
-		os.Exit(1)
-	}
+	g, gctx := errgroup.WithContext(ctx)
 
-	if err := mgr.Start(stopCh); err != nil {
-		o.log.Error(err, "error running manager")
-		os.Exit(1)
-	}
-}
+	g.Go(func() (err error) {
+		defer func() {
+			o.log.Error(err, "manager goroutine exited")
+		}()
 
-func (o InjectorControllerOptions) runSecretBasedInjector(stopCh <-chan struct{}) {
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                  api.Scheme,
-		Namespace:               o.Namespace,
-		LeaderElection:          o.LeaderElect,
-		LeaderElectionNamespace: o.LeaderElectionNamespace,
-		LeaderElectionID:        "cert-manager-cainjector-leader-election-core",
-		MetricsBindAddress:      "0",
+		if err = mgr.Start(gctx.Done()); err != nil {
+			return fmt.Errorf("error running manager: %v", err)
+		}
+		return nil
 	})
 
-	if err != nil {
-		o.log.Error(err, "error creating core-only manager")
-		os.Exit(1)
+	// Don't launch the controllers unless we have been elected leader
+	<-mgr.Elected()
+
+	// Exit early if the Elected channel gets closed because we are shutting down.
+	select {
+	case <-gctx.Done():
+		return g.Wait()
+	default:
 	}
 
-	// TODO(directxman12): enabled controllers for separate injectors?
-	if err := cainjector.RegisterSecretBased(mgr); err != nil {
-		o.log.Error(err, "error registering core-only controllers")
-		os.Exit(1)
-	}
+	// Retry the start up of the certificate based controller in case the
+	// cert-manager CRDs have not been installed yet or in case the CRD API is
+	// not working. E.g. The conversion webhook has not yet had its CA bundle
+	// injected by the secret based controller, which is launched in its own
+	// goroutine.
+	// When shutting down, return the last error if there is one.
+	// Never retry if the controller exits cleanly.
+	g.Go(func() (err error) {
+		for {
+			err = cainjector.RegisterCertificateBased(gctx, mgr)
+			if err == nil {
+				return
+			}
+			o.log.Error(err, "Error registering certificate based controllers. Retrying after 5 seconds.")
+			select {
+			case <-time.After(time.Second * 5):
+			case <-gctx.Done():
+				return
+			}
+		}
+	})
 
-	if err := mgr.Start(stopCh); err != nil {
-		o.log.Error(err, "error running core-only manager")
-		os.Exit(1)
-	}
+	// Secrets based controller is started in its own goroutine so that it can
+	// perform injection of the CA bundle into any webhooks required by the
+	// cert-manager CRD API.
+	// We do not retry this controller because it only interacts with core APIs
+	// which should always be in a working state.
+	g.Go(func() (err error) {
+		if err = cainjector.RegisterSecretBased(gctx, mgr); err != nil {
+			return fmt.Errorf("error registering secret controller: %v", err)
+		}
+		return
+	})
+
+	return g.Wait()
 }
