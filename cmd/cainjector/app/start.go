@@ -125,7 +125,15 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		return nil
 	})
 
+	// Don't launch the controllers unless we have been elected leader
 	<-mgr.Elected()
+
+	// Exit early if the Elected channel gets closed because we are shutting down.
+	select {
+	case <-gctx.Done():
+		return g.Wait()
+	default:
+	}
 
 	g.Go(func() (err error) {
 		for {
