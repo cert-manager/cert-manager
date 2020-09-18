@@ -135,6 +135,13 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	default:
 	}
 
+	// Retry the start up of the certificate based controller in case the
+	// cert-manager CRDs have not been installed yet or in case the CRD API is
+	// not working. E.g. The conversion webhook has not yet had its CA bundle
+	// injected by the secret based controller, which is launched in its own
+	// goroutine.
+	// When shutting down, return the last error if there is one.
+	// Never retry if the controller exits cleanly.
 	g.Go(func() (err error) {
 		for {
 			err = cainjector.RegisterCertificateBased(gctx, mgr)
@@ -150,6 +157,11 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		}
 	})
 
+	// Secrets based controller is started in its own goroutine so that it can
+	// perform injection of the CA bundle into any webhooks required by the
+	// cert-manager CRD API.
+	// We do not retry this controller because it only interacts with core APIs
+	// which should always be in a working state.
 	g.Go(func() (err error) {
 		if err = cainjector.RegisterSecretBased(gctx, mgr); err != nil {
 			return fmt.Errorf("error registering secret controller: %v", err)
