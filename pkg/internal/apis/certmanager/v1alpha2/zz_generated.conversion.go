@@ -718,6 +718,7 @@ func autoConvert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 	} else {
 		out.PrivateKey = nil
 	}
+	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	return nil
 }
 
@@ -755,6 +756,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in *cer
 	} else {
 		out.PrivateKey = nil
 	}
+	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
 	return nil
 }
 

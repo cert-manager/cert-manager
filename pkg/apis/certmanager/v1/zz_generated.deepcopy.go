@@ -375,6 +375,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = new(CertificatePrivateKey)
 		**out = **in
 	}
+	if in.EncodeUsagesInRequest != nil {
+		in, out := &in.EncodeUsagesInRequest, &out.EncodeUsagesInRequest
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
