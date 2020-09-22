@@ -34,6 +34,7 @@ go_test(
     srcs = [
         "certificate_for_issuer_test.go",
         "certificate_test.go",
+        "certificaterequest_test.go",
         "issuer_test.go",
     ],
     embed = [":go_default_library"],
@@ -42,6 +43,7 @@ go_test(
         "//pkg/internal/apis/acme:go_default_library",
         "//pkg/internal/apis/certmanager:go_default_library",
         "//pkg/internal/apis/meta:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
