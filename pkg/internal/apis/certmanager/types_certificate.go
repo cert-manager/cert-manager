@@ -142,6 +142,10 @@ type CertificateSpec struct {
 
 	// Options to control private keys used for the Certificate.
 	PrivateKey *CertificatePrivateKey
+
+	// EncodeUsagesInRequest controls whether key usages should be present
+	// in the CertificateRequest
+	EncodeUsagesInRequest *bool
 }
 
 // CertificatePrivateKey contains configuration options for private keys

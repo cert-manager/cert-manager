@@ -202,9 +202,12 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		return nil, err
 	}
 
-	extraExtensions, err := extensionsForCertificate(crt)
-	if err != nil {
-		return nil, err
+	var extraExtensions []pkix.Extension
+	if crt.Spec.EncodeUsagesInRequest == nil || *crt.Spec.EncodeUsagesInRequest {
+		extraExtensions, err = buildKeyUsagesExtensionsForCertificate(crt)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &x509.CertificateRequest{
@@ -230,7 +233,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 	}, nil
 }
 
-func extensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
+func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
 	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build key usages: %w", err)
