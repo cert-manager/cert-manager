@@ -202,27 +202,9 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		return nil, err
 	}
 
-	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	extraExtensions, err := extensionsForCertificate(crt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build key usages: %w", err)
-	}
-
-	usage, err := buildASN1KeyUsageRequest(ku)
-	if err != nil {
-		return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
-	}
-	asn1ExtendedUsages := []asn1.ObjectIdentifier{}
-	for _, eku := range ekus {
-		if oid, ok := OIDFromExtKeyUsage(eku); ok {
-			asn1ExtendedUsages = append(asn1ExtendedUsages, oid)
-		}
-	}
-	extendedUsage := pkix.Extension{
-		Id: OIDExtensionExtendedKeyUsage,
-	}
-	extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
-	if err != nil {
-		return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
+		return nil, err
 	}
 
 	return &x509.CertificateRequest{
@@ -244,8 +226,40 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		IPAddresses:     iPAddresses,
 		URIs:            uriNames,
 		EmailAddresses:  crt.Spec.EmailAddresses,
-		ExtraExtensions: []pkix.Extension{usage, extendedUsage},
+		ExtraExtensions: extraExtensions,
 	}, nil
+}
+
+func extensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
+	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build key usages: %w", err)
+	}
+
+	usage, err := buildASN1KeyUsageRequest(ku)
+	if err != nil {
+		return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
+	}
+	asn1ExtendedUsages := []asn1.ObjectIdentifier{}
+	for _, eku := range ekus {
+		if oid, ok := OIDFromExtKeyUsage(eku); ok {
+			asn1ExtendedUsages = append(asn1ExtendedUsages, oid)
+		}
+	}
+
+	extraExtensions := []pkix.Extension{usage}
+	if len(ekus) > 0 {
+		extendedUsage := pkix.Extension{
+			Id: OIDExtensionExtendedKeyUsage,
+		}
+		extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
+		if err != nil {
+			return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
+		}
+
+		extraExtensions = append(extraExtensions, extendedUsage)
+	}
+	return extraExtensions, nil
 }
 
 // GenerateTemplate will create a x509.Certificate for the given Certificate resource.
