@@ -45,4 +45,5 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--repo-root="${REPO_ROOT}" \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
+	--acme-ingress-ip="$INGRESS_IP" \
 	"$@"
