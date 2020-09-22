@@ -63,6 +63,9 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 		} else {
 			// only compare usages if set on CR and in the CSR
 			if len(crSpec.Usages) > 0 && len(csr.Extensions) > 0 && validateCSRContent && !reflect.DeepEqual(crSpec.Usages, defaultInternalKeyUsages) {
+				if crSpec.IsCA {
+					crSpec.Usages = ensureCertSignIsSet(crSpec.Usages)
+				}
 				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, el)
 				if len(err) > 0 {
 					el = append(el, err...)
@@ -123,13 +126,21 @@ func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, c
 
 func patchDuplicateKeyUsage(usages []cmapi.KeyUsage) []cmapi.KeyUsage {
 	// usage signing and digital signature are the same key use in x509
-	for i, usage := range usages {
-		if usage == cmapi.UsageSigning {
-			usages[i] = cmapi.UsageDigitalSignature
+	// we should patch this for proper validation
+
+	newUsages := []cmapi.KeyUsage(nil)
+	hasUsageSigning := false
+	for _, usage := range usages {
+		if (usage == cmapi.UsageSigning || usage == cmapi.UsageDigitalSignature) && !hasUsageSigning {
+			newUsages = append(newUsages, cmapi.UsageDigitalSignature)
+			// prevent having 2 UsageDigitalSignature in the slice
+			hasUsageSigning = true
+		} else {
+			newUsages = append(newUsages, usage)
 		}
 	}
 
-	return usages
+	return newUsages
 }
 
 func isUsageEqual(a, b []cmapi.KeyUsage) bool {
@@ -147,4 +158,17 @@ func isUsageEqual(a, b []cmapi.KeyUsage) bool {
 	}
 
 	return util.EqualUnsorted(aStrings, bStrings)
+}
+
+// ensureCertSignIsSet adds UsageCertSign in case it is not set
+// TODO: add a mutating webhook to make sure this is always set
+// when isCA is true.
+func ensureCertSignIsSet(list []cmapi.KeyUsage) []cmapi.KeyUsage {
+	for _, usage := range list {
+		if usage == cmapi.UsageCertSign {
+			return list
+		}
+	}
+
+	return append(list, cmapi.UsageCertSign)
 }
