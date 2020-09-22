@@ -118,6 +118,9 @@ volumeMounts: []
 # Optional additional annotations to add to the controller Pods
 # podAnnotations: {}
 
+# Optional additional annotations to add to the controller Service
+# serviceAnnotations: {}
+
 podLabels: {}
 
 # Optional DNS settings, useful if you have a public and private DNS zone for
@@ -201,6 +204,9 @@ webhook:
 
   # Optional additional annotations to add to the webhook Pods
   # podAnnotations: {}
+
+  # Optional additional annotations to add to the webhook Service
+  # serviceAnnotations: {}
 
   # Optional additional annotations to add to the webhook MutatingWebhookConfiguration
   # mutatingWebhookConfigurationAnnotations: {}

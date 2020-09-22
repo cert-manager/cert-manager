@@ -126,6 +126,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.servicemonitor.scrapeTimeout` | Prometheus scrape timeout | `30s` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
 | `deploymentAnnotations` | Annotations to add to the cert-manager deployment | `{}` |
+| `serviceAnnotations` | Annotations to add to the cert-manager service | `{}` |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
 | `podDnsConfig` | Optional cert-manager pod [DNS configurations](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-config) |  |
 | `podLabels` | Labels to add to the cert-manager pod | `{}` |
@@ -135,6 +136,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
+| `webhook.serviceAnnotations` | Annotations to add to the webhook service | `{}` |
 | `webhook.mutatingWebhookConfigurationAnnotations` | Annotations to add to the mutating webhook configuration | `{}` |
 | `webhook.validatingWebhookConfigurationAnnotations` | Annotations to add to the validating webhook configuration | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
