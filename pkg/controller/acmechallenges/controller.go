@@ -77,6 +77,8 @@ type controller struct {
 	log logr.Logger
 
 	dns01Nameservers []string
+
+	DNS01CheckRetryPeriod time.Duration
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
@@ -137,6 +139,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// read options from context
 	c.dns01Nameservers = ctx.ACMEOptions.DNS01Nameservers
+	c.DNS01CheckRetryPeriod = ctx.ACMEOptions.DNS01CheckRetryPeriod
 
 	return c.queue, mustSync, nil
 }

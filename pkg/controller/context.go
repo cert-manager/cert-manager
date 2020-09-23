@@ -126,6 +126,9 @@ type ACMEOptions struct {
 	// AccountRegistry is used as a cache of ACME accounts between various
 	// components of cert-manager
 	AccountRegistry accounts.Registry
+
+	// DNS01CheckRetryPeriod is the time the controller should wait between checking if a ACME dns entry exists.
+	DNS01CheckRetryPeriod time.Duration
 }
 
 type IngressShimOptions struct {
