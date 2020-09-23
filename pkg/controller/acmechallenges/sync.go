@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -189,8 +188,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 			return err
 		}
 
-		// retry after 10s
-		c.queue.AddAfter(key, time.Second*10)
+		c.queue.AddAfter(key, c.DNS01CheckRetryPeriod)
 
 		return nil
 	}
