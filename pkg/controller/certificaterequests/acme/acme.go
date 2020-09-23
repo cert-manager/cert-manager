@@ -200,15 +200,21 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 
 // Build order. If we error here it is a terminating failure.
 func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
-	ipAddresses := []string(nil)
+	ipAddresses := []string{}
 	for _, ip := range csr.IPAddresses {
 		ipAddresses = append(ipAddresses, ip.String())
 	}
+
+	dnsNames := []string{}
+	if csr.DNSNames != nil {
+		dnsNames = csr.DNSNames
+	}
+
 	spec := cmacme.OrderSpec{
 		Request:     cr.Spec.Request,
 		IssuerRef:   cr.Spec.IssuerRef,
 		CommonName:  csr.Subject.CommonName,
-		DNSNames:    csr.DNSNames,
+		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
 	}
 

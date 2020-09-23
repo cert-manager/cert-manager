@@ -68,7 +68,6 @@ spec:
               type: object
               required:
                 - csr
-                - dnsNames
                 - issuerRef
               properties:
                 commonName:
@@ -223,7 +222,6 @@ spec:
               type: object
               required:
                 - csr
-                - dnsNames
                 - issuerRef
               properties:
                 commonName:
@@ -378,7 +376,6 @@ spec:
             spec:
               type: object
               required:
-                - dnsNames
                 - issuerRef
                 - request
               properties:
@@ -534,7 +531,6 @@ spec:
             spec:
               type: object
               required:
-                - dnsNames
                 - issuerRef
                 - request
               properties:

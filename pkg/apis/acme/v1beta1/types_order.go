@@ -69,7 +69,7 @@ type OrderSpec struct {
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
 	//+optonal
-	DNSNames []string `json:"dnsNames"`
+	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// IPAddresses is a list of IP address that should be included as part of the Order
 	// validation process.
