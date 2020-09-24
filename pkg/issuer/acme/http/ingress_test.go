@@ -71,6 +71,39 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				}
 			},
 		},
+		"should return one ingress for IP that matches": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "10.0.0.1",
+					Solver: cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+
+				s.testResources[createdIngressKey] = ing
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				createdIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
+				resp := args[0].([]*v1beta1.Ingress)
+				if len(resp) != 1 {
+					t.Errorf("expected one ingress to be returned, but got %d", len(resp))
+					t.Fail()
+					return
+				}
+				if !reflect.DeepEqual(resp[0], createdIngress) {
+					t.Errorf("Expected %v to equal %v", resp[0], createdIngress)
+				}
+			},
+		},
 		"should not return an ingress for the same certificate but different domain": {
 			Challenge: &cmacme.Challenge{
 				Spec: cmacme.ChallengeSpec{
