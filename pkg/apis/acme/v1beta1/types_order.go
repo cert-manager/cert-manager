@@ -71,7 +71,7 @@ type OrderSpec struct {
 	//+optonal
 	DNSNames []string `json:"dnsNames,omitempty"`
 
-	// IPAddresses is a list of IP address that should be included as part of the Order
+	// IPAddresses is a list of IP addresses that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
 	// +optional
