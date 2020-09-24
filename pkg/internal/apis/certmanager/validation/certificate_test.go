@@ -125,7 +125,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris or emailAddresses must be set"),
+				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"),
 			},
 		},
 		"certificate with no issuerRef": {
