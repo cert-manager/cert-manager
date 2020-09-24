@@ -21,10 +21,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	k8snet "k8s.io/utils/net"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -157,6 +160,11 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 	url := &url.URL{}
 	url.Scheme = "http"
 	url.Host = ch.Spec.DNSName
+
+	// we need brackets for IPv6 addresses for the HTTP client to work
+	if k8snet.IsIPv6(net.ParseIP(url.Host)) {
+		url.Host = fmt.Sprintf("[%s]", url.Host)
+	}
 	url.Path = fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token)
 
 	return url
