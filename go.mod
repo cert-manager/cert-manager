@@ -7,27 +7,26 @@ go 1.15
 replace golang.org/x/crypto => github.com/meyskens/crypto v0.0.0-20200821143559-6ca9aec645f0
 
 require (
-	github.com/Azure/azure-sdk-for-go v32.5.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.9.6
-	github.com/Azure/go-autorest/autorest/adal v0.8.2
-	github.com/Azure/go-autorest/autorest/to v0.3.0
-	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
+	github.com/Azure/azure-sdk-for-go v46.3.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.6
+	github.com/Azure/go-autorest/autorest/adal v0.9.4
+	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/Azure/go-autorest/autorest/validation v0.3.0 // indirect
 	github.com/Venafi/vcert v0.0.0-20200310111556-eba67a23943f
-	github.com/aws/aws-sdk-go v1.31.3
-	github.com/cloudflare/cloudflare-go v0.8.5
+	github.com/aws/aws-sdk-go v1.34.30
+	github.com/cloudflare/cloudflare-go v0.13.2
 	github.com/cpu/goacmedns v0.0.3
-	github.com/digitalocean/godo v1.29.0
+	github.com/digitalocean/godo v1.44.0
 	github.com/go-logr/logr v0.2.1-0.20200730175230-ee2de8da5be6
 	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/google/go-cmp v0.4.1 // indirect
-	github.com/google/gofuzz v1.1.0
-	github.com/gorilla/context v1.1.1 // indirect
-	github.com/gorilla/mux v1.6.2
+	github.com/google/gofuzz v1.2.0
+	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/hashicorp/vault/sdk v0.1.13
-	github.com/kr/pretty v0.2.0
+	github.com/kr/pretty v0.2.1
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
-	github.com/miekg/dns v1.1.29
+	github.com/miekg/dns v1.1.31
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/munnerz/crd-schema-fuzz v1.0.0
 	github.com/onsi/ginkgo v1.12.1
@@ -35,14 +34,14 @@ require (
 	github.com/pavel-v-chernykh/keystore-go v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
-	github.com/sergi/go-diff v1.0.0
-	github.com/smartystreets/assertions v1.0.0 // indirect
+	github.com/sergi/go-diff v1.1.0
+	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
-	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/api v0.15.0
 	gopkg.in/ini.v1 v1.52.0 // indirect
@@ -65,5 +64,5 @@ require (
 	sigs.k8s.io/controller-tools v0.2.9-0.20200414181213-645d44dca7c0
 	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0
-	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
+	software.sslmate.com/src/go-pkcs12 v0.0.0-20200830195227-52f69702a001
 )
