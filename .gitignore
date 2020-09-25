@@ -10,3 +10,4 @@
 bazel-*
 /.settings/
 /.project
+_artifatcs/
