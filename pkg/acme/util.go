@@ -17,10 +17,9 @@ limitations under the License.
 package acme
 
 import (
-	corev1 "k8s.io/api/core/v1"
-
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // IsFinalState will return true if the given ACME State is a 'final' state.
