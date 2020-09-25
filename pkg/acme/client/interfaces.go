@@ -18,10 +18,8 @@ package client
 
 import (
 	"context"
-	"crypto/rand"
-	"math/big"
-	"net/http"
-	"time"
+
+	acmeutil "github.com/jetstack/cert-manager/pkg/acme/util"
 
 	"golang.org/x/crypto/acme"
 )
@@ -46,34 +44,5 @@ type Interface interface {
 }
 
 var _ Interface = &acme.Client{
-	// inspired by acme/http.go
-	RetryBackoff: func(n int, r *http.Request, res *http.Response) time.Duration {
-		var jitter time.Duration
-		if x, err := rand.Int(rand.Reader, big.NewInt(1000)); err == nil {
-			// Set the minimum to 1ms to avoid a case where
-			// an invalid Retry-After value is parsed into 0 below,
-			// resulting in the 0 returned value which would unintentionally
-			// stop the retries.
-			jitter = (1 + time.Duration(x.Int64())) * time.Millisecond
-		}
-		if _, ok := res.Header["Retry-After"]; ok {
-			// if Retry-After is set we should
-			// error and let the cert-manager logic retry instead
-			return -1
-		}
-
-		// classic backoff here in case we got no reply
-		// eg. flakes
-		if n < 1 {
-			n = 1
-		}
-		if n > 30 {
-			n = 30
-		}
-		d := time.Duration(1<<uint(n-1))*time.Second + jitter
-		if d > 10*time.Second {
-			return 10 * time.Second
-		}
-		return d
-	},
+	RetryBackoff: acmeutil.RetryBackoff,
 }
