@@ -26,22 +26,22 @@ func RetryBackoff(n int, r *http.Request, res *http.Response) time.Duration {
 		return -1
 	}
 
+	// don't retry more than 10 times
+	if n > 10 {
+		return -1
+	}
+
 	// classic backoff here in case we got no reply
 	// eg. flakes
 	if n < 1 {
 		n = 1
 	}
 
-	// don't retry more than 10 times
-	if n > 10 {
-		return -1
-	}
+	logs.Log.V(logs.DebugLevel).WithValues("backoff", d).Info("Hit an error in golang.org/x/crypto/acme, retrying")
+
 	d := time.Duration(1<<uint(n-1))*time.Second + jitter
 	if d > 10*time.Second {
 		return 10 * time.Second
 	}
-
-	logs.Log.V(logs.DebugLevel).WithValues("backoff", d).Info("Hit an error in golang.org/x/crypto/acme, retrying")
-
 	return d
 }
