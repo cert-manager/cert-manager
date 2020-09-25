@@ -69,7 +69,7 @@ type OrderSpec struct {
 	// IPAddresses is a list of IP addresses that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
-	IPAddresses []string `json:"ipAddresses,omitempty"`
+	IPAddresses []string
 }
 
 type OrderStatus struct {
