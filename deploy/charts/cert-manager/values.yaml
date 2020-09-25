@@ -178,6 +178,7 @@ tolerations: []
 
 webhook:
   replicaCount: 1
+  timeoutSeconds: 10
 
   strategy: {}
     # type: RollingUpdate
