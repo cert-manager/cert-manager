@@ -25,6 +25,7 @@ filegroup(
         ":package-srcs",
         "//pkg/acme/accounts:all-srcs",
         "//pkg/acme/client:all-srcs",
+        "//pkg/acme/util:all-srcs",
         "//pkg/acme/webhook:all-srcs",
     ],
     tags = ["automanaged"],

@@ -26,6 +26,7 @@ import (
 	acmeapi "golang.org/x/crypto/acme"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
+	acmeutil "github.com/jetstack/cert-manager/pkg/acme/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -38,6 +39,7 @@ func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.Pr
 		HTTPClient:   client,
 		DirectoryURL: config.Server,
 		UserAgent:    util.CertManagerUserAgent,
+		RetryBackoff: acmeutil.RetryBackoff,
 	}
 }
 
