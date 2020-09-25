@@ -37,9 +37,8 @@ func RetryBackoff(n int, r *http.Request, res *http.Response) time.Duration {
 		n = 1
 	}
 
-	logs.Log.V(logs.DebugLevel).WithValues("backoff", d).Info("Hit an error in golang.org/x/crypto/acme, retrying")
-
 	d := time.Duration(1<<uint(n-1))*time.Second + jitter
+	logs.Log.V(logs.DebugLevel).WithValues("backoff", d).Info("Hit an error in golang.org/x/crypto/acme, retrying")
 	if d > 10*time.Second {
 		return 10 * time.Second
 	}
