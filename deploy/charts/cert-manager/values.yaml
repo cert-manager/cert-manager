@@ -41,7 +41,7 @@ featureGates: ""
 image:
   repository: quay.io/jetstack/cert-manager-controller
   # You can manage a registry with
-  # registy: quay.io
+  # registry: quay.io
   # repository: jetstack/cert-manager-controller
 
   # Override the image tag to deploy by setting this variable.
@@ -241,7 +241,7 @@ webhook:
   image:
     repository: quay.io/jetstack/cert-manager-webhook
     # You can manage a registry with
-    # registy: quay.io
+    # registry: quay.io
     # repository: jetstack/cert-manager-webhook
 
     # Override the image tag to deploy by setting this variable.
@@ -325,7 +325,7 @@ cainjector:
   image:
     repository: quay.io/jetstack/cert-manager-cainjector
     # You can manage a registry with
-    # registy: quay.io
+    # registry: quay.io
     # repository: jetstack/cert-manager-cainjector
 
     # Override the image tag to deploy by setting this variable.
