@@ -19,6 +19,8 @@ package venafi
 import (
 	"context"
 
+	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,31 +33,31 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	//// unsupportedFeatures is a list of features that are not supported by the
-	//// Venafi issuer.
-	//var unsupportedFeatures = certificates.NewFeatureSet(
-	//	certificates.DurationFeature,
-	//	// Due to the current configuration of the test environment, it does not
-	//	// support signing certificates that pair with an elliptic curve private
-	//	// key or using the same private key multiple times.
-	//	certificates.ECDSAFeature,
-	//	certificates.ReusePrivateKeyFeature,
-	//)
-	//
-	//provisioner := new(venafiProvisioner)
-	//(&certificates.Suite{
-	//	Name:                "Venafi Issuer",
-	//	CreateIssuerFunc:    provisioner.createIssuer,
-	//	DeleteIssuerFunc:    provisioner.delete,
-	//	UnsupportedFeatures: unsupportedFeatures,
-	//}).Define()
+	// unsupportedFeatures is a list of features that are not supported by the
+	// Venafi issuer.
+	var unsupportedFeatures = certificates.NewFeatureSet(
+		certificates.DurationFeature,
+		// Due to the current configuration of the test environment, it does not
+		// support signing certificates that pair with an elliptic curve private
+		// key or using the same private key multiple times.
+		certificates.ECDSAFeature,
+		certificates.ReusePrivateKeyFeature,
+	)
 
-	//(&certificates.Suite{
-	//	Name:                "Venafi ClusterIssuer",
-	//	CreateIssuerFunc:    provisioner.createClusterIssuer,
-	//	DeleteIssuerFunc:    provisioner.delete,
-	//	UnsupportedFeatures: unsupportedFeatures,
-	//}).Define()
+	provisioner := new(venafiProvisioner)
+	(&certificates.Suite{
+		Name:                "Venafi Issuer",
+		CreateIssuerFunc:    provisioner.createIssuer,
+		DeleteIssuerFunc:    provisioner.delete,
+		UnsupportedFeatures: unsupportedFeatures,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "Venafi ClusterIssuer",
+		CreateIssuerFunc:    provisioner.createClusterIssuer,
+		DeleteIssuerFunc:    provisioner.delete,
+		UnsupportedFeatures: unsupportedFeatures,
+	}).Define()
 })
 
 type venafiProvisioner struct {
