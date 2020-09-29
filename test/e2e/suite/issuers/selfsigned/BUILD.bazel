@@ -16,7 +16,6 @@ go_library(
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/e2e/framework:go_default_library",
-        "//test/e2e/framework/helper/validations:go_default_library",
         "//test/e2e/util:go_default_library",
         "//test/unit/gen:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
