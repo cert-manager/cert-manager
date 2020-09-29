@@ -20,7 +20,7 @@ import (
 	"context"
 	"path"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -42,8 +42,8 @@ const (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	var unsupportedFeatures = certificates.NewFeatureSet(
-		certificates.KeyUsagesFeature,
+	var unsupportedFeatures = featureset.NewFeatureSet(
+		featureset.KeyUsagesFeature,
 	)
 
 	provisioner := new(vaultAppRoleProvisioner)
@@ -53,11 +53,6 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		CreateIssuerFunc:    provisioner.createIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectKeyUsageKeyUsageKeyAgreement,
-			validations.ExpectEmailsToMatch,
-			validations.ExpectCertificateURIsToMatch,
-			validations.ExpectCertificateURIsToMatch),
 	}).Define()
 
 	(&certificates.Suite{
@@ -65,11 +60,6 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		CreateIssuerFunc:    provisioner.createClusterIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectKeyUsageKeyUsageKeyAgreement,
-			validations.ExpectEmailsToMatch,
-			validations.ExpectCertificateURIsToMatch,
-			validations.ExpectCertificateURIsToMatch),
 	}).Define()
 })
 

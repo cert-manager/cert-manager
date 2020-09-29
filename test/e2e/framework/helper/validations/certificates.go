@@ -25,7 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -65,8 +65,8 @@ func ExpectValidPrivateKeyData(certificate *cmapi.Certificate, secret *corev1.Se
 	}
 
 	// validate private key is of the correct type (rsa or ecdsa)
-	switch certificate.Spec.KeyAlgorithm {
-	case cmapi.KeyAlgorithm(""),
+	switch certificate.Spec.PrivateKey.Algorithm {
+	case cmapi.PrivateKeyAlgorithm(""),
 		cmapi.RSAKeyAlgorithm:
 		_, ok := key.(*rsa.PrivateKey)
 		if !ok {
@@ -78,7 +78,7 @@ func ExpectValidPrivateKeyData(certificate *cmapi.Certificate, secret *corev1.Se
 			return fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
 		}
 	default:
-		return fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.KeyAlgorithm)
+		return fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.PrivateKey.Algorithm)
 	}
 
 	// TODO: validate private key KeySize
@@ -247,8 +247,8 @@ func ExpectEmailsToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) 
 		return err
 	}
 
-	if !util.EqualUnsorted(cert.EmailAddresses, certificate.Spec.EmailSANs) {
-		return fmt.Errorf("certificate doesn't contain Email SANs: exp=%v got=%v", certificate.Spec.EmailSANs, cert.EmailAddresses)
+	if !util.EqualUnsorted(cert.EmailAddresses, certificate.Spec.EmailAddresses) {
+		return fmt.Errorf("certificate doesn't contain Email SANs: exp=%v got=%v", certificate.Spec.EmailAddresses, cert.EmailAddresses)
 	}
 
 	return nil

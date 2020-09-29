@@ -3,7 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "featureset.go",
         "suite.go",
         "tests.go",
     ],
@@ -15,7 +14,7 @@ go_library(
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/e2e/framework:go_default_library",
-        "//test/e2e/framework/helper:go_default_library",
+        "//test/e2e/framework/helper/featureset:go_default_library",
         "//test/e2e/util:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",

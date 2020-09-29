@@ -27,7 +27,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
@@ -43,10 +42,6 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		Name:             "CA ClusterIssuer",
 		CreateIssuerFunc: caClusterIssuer.createCAClusterIssuer,
 		DeleteIssuerFunc: caClusterIssuer.deleteCAClusterIssuer,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectEmailsToMatch,
-			validations.ExpectCertificateURIsToMatch,
-			validations.ExpectCertificateURIsToMatch),
 	}).Define()
 })
 

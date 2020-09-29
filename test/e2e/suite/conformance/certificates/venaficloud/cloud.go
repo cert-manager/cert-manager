@@ -19,6 +19,8 @@ package venaficloud
 import (
 	"context"
 
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +28,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
@@ -35,33 +36,31 @@ import (
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
 	// Venafi Cloud issuer.
-	var unsupportedFeatures = certificates.NewFeatureSet(
-		certificates.DurationFeature,
+	var unsupportedFeatures = featureset.NewFeatureSet(
+		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve private
 		// key or using the same private key multiple times.
-		certificates.ECDSAFeature,
-		certificates.EmailSANsFeature,
-		certificates.CommonNameFeature,
-		certificates.IPAddressFeature,
-		certificates.URISANsFeature,
+		featureset.ECDSAFeature,
+		featureset.EmailSANsFeature,
+		featureset.CommonNameFeature,
+		featureset.IPAddressFeature,
+		featureset.URISANsFeature,
 	)
 
 	provisioner := new(venafiProvisioner)
 	(&certificates.Suite{
-		Name:                      "Venafi Cloud Issuer",
-		CreateIssuerFunc:          provisioner.createIssuer,
-		DeleteIssuerFunc:          provisioner.delete,
-		UnsupportedFeatures:       unsupportedFeatures,
-		ValidateCertificateChecks: validations.DefaultCertificateValidations,
+		Name:                "Venafi Cloud Issuer",
+		CreateIssuerFunc:    provisioner.createIssuer,
+		DeleteIssuerFunc:    provisioner.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                      "Venafi Cloud ClusterIssuer",
-		CreateIssuerFunc:          provisioner.createClusterIssuer,
-		DeleteIssuerFunc:          provisioner.delete,
-		UnsupportedFeatures:       unsupportedFeatures,
-		ValidateCertificateChecks: validations.DefaultCertificateValidations,
+		Name:                "Venafi Cloud ClusterIssuer",
+		CreateIssuerFunc:    provisioner.createClusterIssuer,
+		DeleteIssuerFunc:    provisioner.delete,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 

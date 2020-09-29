@@ -8,16 +8,11 @@ go_library(
         "tpp.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon",
-<<<<<<< HEAD
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
-=======
-    visibility = ["//visibility:public"],
-    deps = [
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
->>>>>>> 3f7b6ac24... Add bazel files
         "//pkg/apis/meta/v1:go_default_library",
         "//test/e2e/framework/addon/base:go_default_library",
         "//test/e2e/framework/config:go_default_library",

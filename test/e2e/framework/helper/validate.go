@@ -19,7 +19,11 @@ package helper
 import (
 	"context"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
+
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,14 +31,55 @@ import (
 // ValidationFunc describes a certificate validation helper function
 type ValidationFunc func(certificate *cmapi.Certificate, secret *v1.Secret) error
 
-func (h *Helper) getValidationFuncsForFeatureSet() []ValidationFunc {
-	h.
-	return []ValidationFunc{}
+func (h *Helper) DefaultValidationSet() []ValidationFunc {
+	return []ValidationFunc{
+		validations.Expect2Or3KeysInSecret,
+		validations.ExpectValidAnnotations,
+		validations.ExpectValidPrivateKeyData,
+		validations.ExpectValidCertificate,
+		//validations.ExpectCertificateOrganizationToMatch,
+		validations.ExpectCertificateDNSNamesToMatch,
+		validations.ExpectCertificateURIsToMatch,
+		validations.ExpectValidCommonName,
+		validations.ExpectValidNotAfterDate,
+		validations.ExpectKeyUsageExtKeyUsageServerAuth,
+		validations.ExpectKeyUsageExtKeyUsageClientAuth,
+		validations.ExpectKeyUsageKeyUsageKeyAgreement,
+		validations.ExpectEmailsToMatch,
+	}
+}
+
+func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []ValidationFunc {
+	// basics
+	out := []ValidationFunc{
+		validations.Expect2Or3KeysInSecret,
+		validations.ExpectValidAnnotations,
+		validations.ExpectValidPrivateKeyData,
+		validations.ExpectValidCertificate,
+		validations.ExpectCertificateOrganizationToMatch,
+		validations.ExpectCertificateDNSNamesToMatch,
+		validations.ExpectValidCommonName,
+		validations.ExpectValidNotAfterDate,
+		validations.ExpectKeyUsageKeyUsageKeyAgreement,
+	}
+
+	if !fs.Contains(featureset.URISANsFeature) {
+		out = append(out, validations.ExpectCertificateURIsToMatch)
+	}
+
+	if !fs.Contains(featureset.EmailSANsFeature) {
+		out = append(out, validations.ExpectEmailsToMatch)
+	}
+
+	return out
 }
 
 // ValidateCertificate retreives the issued certificate and runs all validation functions
-func (h *Helper) ValidateCertificate(ns, name string) error {
-	certificate, err := h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
+func (h *Helper) ValidateCertificate(ns, name string, validations ...ValidationFunc) error {
+	if len(validations) == 0 {
+		validations = h.DefaultValidationSet()
+	}
+	certificate, err := h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -43,7 +88,7 @@ func (h *Helper) ValidateCertificate(ns, name string) error {
 		return err
 	}
 
-	for _, fn := range h.getValidationFuncsForFeatureSet() {
+	for _, fn := range validations {
 		err := fn(certificate, secret)
 		if err != nil {
 			return err

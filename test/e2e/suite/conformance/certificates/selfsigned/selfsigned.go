@@ -19,7 +19,6 @@ package selfsigned
 import (
 	"context"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,20 +33,12 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	(&certificates.Suite{
 		Name:             "SelfSigned Issuer",
 		CreateIssuerFunc: createSelfSignedIssuer,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectEmailsToMatch,
-			validations.ExpectCertificateURIsToMatch,
-			validations.ExpectCertificateURIsToMatch),
 	}).Define()
 
 	(&certificates.Suite{
 		Name:             "SelfSigned ClusterIssuer",
 		CreateIssuerFunc: createSelfSignedClusterIssuer,
 		DeleteIssuerFunc: deleteSelfSignedClusterIssuer,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectEmailsToMatch,
-			validations.ExpectCertificateURIsToMatch,
-			validations.ExpectCertificateURIsToMatch),
 	}).Define()
 })
 

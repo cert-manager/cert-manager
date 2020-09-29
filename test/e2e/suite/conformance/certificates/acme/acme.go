@@ -20,7 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,25 +48,25 @@ var _ = framework.ConformanceDescribe("Certificates with External Account Bindin
 func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
-	var unsupportedHTTP01Features = certificates.NewFeatureSet(
-		certificates.IPAddressFeature,
-		certificates.DurationFeature,
-		certificates.WildcardsFeature,
-		certificates.URISANsFeature,
-		certificates.CommonNameFeature,
-		certificates.KeyUsagesFeature,
-		certificates.EmailSANsFeature,
+	var unsupportedHTTP01Features = featureset.NewFeatureSet(
+		featureset.IPAddressFeature,
+		featureset.DurationFeature,
+		featureset.WildcardsFeature,
+		featureset.URISANsFeature,
+		featureset.CommonNameFeature,
+		featureset.KeyUsagesFeature,
+		featureset.EmailSANsFeature,
 	)
 
 	// unsupportedDNS01Features is a list of features that are not supported by the ACME
 	// issuer type using DNS01
-	var unsupportedDNS01Features = certificates.NewFeatureSet(
-		certificates.IPAddressFeature,
-		certificates.DurationFeature,
-		certificates.URISANsFeature,
-		certificates.CommonNameFeature,
-		certificates.KeyUsagesFeature,
-		certificates.EmailSANsFeature,
+	var unsupportedDNS01Features = featureset.NewFeatureSet(
+		featureset.IPAddressFeature,
+		featureset.DurationFeature,
+		featureset.URISANsFeature,
+		featureset.CommonNameFeature,
+		featureset.KeyUsagesFeature,
+		featureset.EmailSANsFeature,
 	)
 
 	provisionerHTTP01 := &acmeIssuerProvisioner{
@@ -82,8 +82,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 
 	(&certificates.Suite{
@@ -92,8 +90,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerDNS01.createDNS01Issuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 
 	(&certificates.Suite{
@@ -101,8 +97,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 
 	(&certificates.Suite{
@@ -111,8 +105,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerDNS01.createDNS01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
-		ValidateCertificateChecks: append(validations.DefaultCertificateValidations,
-			validations.ExpectKeyUsageExtKeyUsageServerAuth),
 	}).Define()
 }
 
