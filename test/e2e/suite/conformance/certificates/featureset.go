@@ -116,4 +116,8 @@ const (
 	// KeyUsages denotes whether the target issuer is able to sign certificates
 	// with arbitrary key usages.
 	KeyUsagesFeature = "KeyUsages"
+
+	// OnlySAN denotes whether the target issuer is able to sign certificates
+	// with only SANs set
+	OnlySAN = "OnlySAN"
 )

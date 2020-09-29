@@ -145,7 +145,7 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		})
+		}, OnlySAN)
 
 		it("should issue an ECDSA, defaulted certificate for a single distinct dnsName", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -169,7 +169,7 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		}, ECDSAFeature)
+		}, ECDSAFeature, OnlySAN)
 
 		it("should issue a basic, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -257,7 +257,7 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		}, EmailSANsFeature)
+		}, EmailSANsFeature, OnlySAN)
 
 		it("should issue a certificate that defines a CommonName and URI SAN", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -358,7 +358,7 @@ func (s *Suite) Define() {
 			// We set a 30 second buffer time here since Vault issues certificates
 			// with an extra 30 seconds on its duration.
 			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
-		}, DurationFeature)
+		}, DurationFeature, OnlySAN)
 
 		it("should issue a certificate which has a wildcard DNS name defined", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -379,7 +379,7 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		}, WildcardsFeature)
+		}, WildcardsFeature, OnlySAN)
 
 		it("should issue a certificate that includes only a URIs name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -402,7 +402,7 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		}, URISANsFeature)
+		}, URISANsFeature, OnlySAN)
 
 		it("should issue a certificate that includes arbitrary key usages", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -427,7 +427,7 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-		}, KeyUsagesFeature)
+		}, KeyUsagesFeature, OnlySAN)
 
 		it("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
@@ -479,7 +479,7 @@ func (s *Suite) Define() {
 			if !match {
 				Fail("Both signed certificates not signed by same private key")
 			}
-		}, ReusePrivateKeyFeature)
+		}, ReusePrivateKeyFeature, OnlySAN)
 
 		it("should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
 			ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)

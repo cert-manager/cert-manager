@@ -42,6 +42,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// key or using the same private key multiple times.
 		certificates.ECDSAFeature,
 		certificates.ReusePrivateKeyFeature,
+		certificates.OnlySAN,
 	)
 
 	provisioner := new(venafiProvisioner)
