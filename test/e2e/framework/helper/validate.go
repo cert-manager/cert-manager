@@ -37,14 +37,10 @@ func (h *Helper) DefaultValidationSet() []ValidationFunc {
 		validations.ExpectValidAnnotations,
 		validations.ExpectValidPrivateKeyData,
 		validations.ExpectValidCertificate,
-		//validations.ExpectCertificateOrganizationToMatch,
 		validations.ExpectCertificateDNSNamesToMatch,
 		validations.ExpectCertificateURIsToMatch,
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
-		validations.ExpectKeyUsageExtKeyUsageServerAuth,
-		validations.ExpectKeyUsageExtKeyUsageClientAuth,
-		validations.ExpectKeyUsageKeyUsageKeyAgreement,
 		validations.ExpectEmailsToMatch,
 	}
 }
@@ -60,7 +56,6 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 		validations.ExpectCertificateDNSNamesToMatch,
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
-		validations.ExpectKeyUsageKeyUsageKeyAgreement,
 	}
 
 	if !fs.Contains(featureset.URISANsFeature) {

@@ -46,6 +46,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.CommonNameFeature,
 		featureset.IPAddressFeature,
 		featureset.URISANsFeature,
+		featureset.OnlySAN,
 	)
 
 	provisioner := new(venafiProvisioner)

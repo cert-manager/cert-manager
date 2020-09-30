@@ -65,20 +65,22 @@ func ExpectValidPrivateKeyData(certificate *cmapi.Certificate, secret *corev1.Se
 	}
 
 	// validate private key is of the correct type (rsa or ecdsa)
-	switch certificate.Spec.PrivateKey.Algorithm {
-	case cmapi.PrivateKeyAlgorithm(""),
-		cmapi.RSAKeyAlgorithm:
-		_, ok := key.(*rsa.PrivateKey)
-		if !ok {
-			return fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
+	if certificate.Spec.PrivateKey != nil {
+		switch certificate.Spec.PrivateKey.Algorithm {
+		case cmapi.PrivateKeyAlgorithm(""),
+			cmapi.RSAKeyAlgorithm:
+			_, ok := key.(*rsa.PrivateKey)
+			if !ok {
+				return fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
+			}
+		case cmapi.ECDSAKeyAlgorithm:
+			_, ok := key.(*ecdsa.PrivateKey)
+			if !ok {
+				return fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
+			}
+		default:
+			return fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.PrivateKey.Algorithm)
 		}
-	case cmapi.ECDSAKeyAlgorithm:
-		_, ok := key.(*ecdsa.PrivateKey)
-		if !ok {
-			return fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
-		}
-	default:
-		return fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.PrivateKey.Algorithm)
 	}
 
 	// TODO: validate private key KeySize
