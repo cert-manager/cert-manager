@@ -20,8 +20,6 @@ import (
 	"context"
 	"path"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 

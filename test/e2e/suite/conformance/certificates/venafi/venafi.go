@@ -19,8 +19,6 @@ package venafi
 import (
 	"context"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +26,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
