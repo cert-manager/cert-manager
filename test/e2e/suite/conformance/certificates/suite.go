@@ -172,6 +172,10 @@ func (s *Suite) Define() {
 		}, ECDSAFeature, OnlySAN)
 
 		it("should issue a basic, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
+			// Some issuers use the CN to define the cert's "ID"
+			// if one cert manages to be in an error state in the issuer it might throw an error
+			// this makes the CN more unique
+			cn := "test-common-name-" + util.RandStringRunes(10)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -180,7 +184,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					CommonName: "test-common-name",
+					CommonName: cn,
 				},
 			}
 			By("Creating a Certificate")
@@ -193,6 +197,10 @@ func (s *Suite) Define() {
 		}, CommonNameFeature)
 
 		it("should issue an ECDSA, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
+			// Some issuers use the CN to define the cert's "ID"
+			// if one cert manages to be in an error state in the issuer it might throw an error
+			// this makes the CN more unique
+			cn := "test-common-name-" + util.RandStringRunes(10)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -203,7 +211,7 @@ func (s *Suite) Define() {
 					PrivateKey: &cmapi.CertificatePrivateKey{
 						Algorithm: cmapi.ECDSAKeyAlgorithm,
 					},
-					CommonName: "test-common-name",
+					CommonName: cn,
 					IssuerRef:  issuerRef,
 				},
 			}
@@ -481,7 +489,7 @@ func (s *Suite) Define() {
 			}
 		}, ReusePrivateKeyFeature, OnlySAN)
 
-		it("should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+		it("should issue a basic certificate for a single distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
 			ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
 
 			name := "testcert-ingress"
@@ -493,6 +501,34 @@ func (s *Suite) Define() {
 				"cert-manager.io/issuer-kind":  issuerRef.Kind,
 				"cert-manager.io/issuer-group": issuerRef.Group,
 			}, s.newDomain()), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			certName := ingress.Spec.TLS[0].SecretName
+
+			By("Waiting for the Certificate to exist...")
+			Expect(e2eutil.WaitForCertificateToExist(
+				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
+			)).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, certName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		}, OnlySAN)
+
+		it("should issue a basic certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+			ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+
+			name := "testcert-ingress"
+			secretName := "testcert-ingress-tls"
+			domain := s.newDomain()
+
+			By("Creating an Ingress with the issuer name annotation set")
+			ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
+				"cert-manager.io/issuer":       issuerRef.Name,
+				"cert-manager.io/issuer-kind":  issuerRef.Kind,
+				"cert-manager.io/issuer-group": issuerRef.Group,
+				"cert-manager.io/common-name":  domain,
+			}, domain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			certName := ingress.Spec.TLS[0].SecretName

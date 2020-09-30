@@ -41,7 +41,9 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// support signing certificates that pair with an elliptic curve private
 		// key or using the same private key multiple times.
 		certificates.ECDSAFeature,
-		certificates.ReusePrivateKeyFeature,
+		certificates.EmailSANsFeature,
+		certificates.URISANsFeature,
+		certificates.IPAddressFeature,
 		certificates.OnlySAN,
 	)
 

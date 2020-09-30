@@ -84,7 +84,7 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*90)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
