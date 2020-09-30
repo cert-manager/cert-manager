@@ -33,7 +33,7 @@ import (
 // Expect2Or3KeysInSecret checks if the secret resource has the correct amount of fields in the secret data
 func Expect2Or3KeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error {
 	if !(len(secret.Data) == 2 || len(secret.Data) == 3) {
-		return fmt.Errorf("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
+		return fmt.Errorf("Expected 2 or 3 keys in certificate secret, but there was %d", len(secret.Data))
 	}
 
 	return nil
