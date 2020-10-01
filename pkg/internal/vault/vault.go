@@ -30,7 +30,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -144,7 +144,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 
 	var caPem []byte = nil
 	if len(bundle.CAChain) > 0 {
-		caPem = []byte(bundle.CAChain[0])
+		caPem = []byte(strings.Join(bundle.CAChain, "\n"))
 	}
 
 	return []byte(bundle.ToPEMBundle()), caPem, nil
