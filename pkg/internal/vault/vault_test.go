@@ -38,7 +38,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	vaultfake "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -48,23 +48,98 @@ import (
 
 const (
 	testCertBundle = `-----BEGIN CERTIFICATE-----
-MIIDBTCCAe2gAwIBAgIUAR4qkcRVjl3D2ZNXyAjGrmJJafUwDQYJKoZIhvcNAQEL
-BQAwEjEQMA4GA1UEAwwHZm9vLmJhcjAeFw0xOTA2MTExMTQ4MjZaFw0yOTA2MDgx
-MTQ4MjZaMBIxEDAOBgNVBAMMB2Zvby5iYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IB
-DwAwggEKAoIBAQC6nycZ01dEcR1xaMdhP7HWeHEZVTCMBkvk9NJ7CjHBjEcRFPbo
-koMfIeuQ2lO+mFXpLo9iJOE+fh+Pl8/vNihS9Xan23EFNYGNukmpup4zcZ5sBueA
-sE9A1LwuHxCIhwutvSOatfzbw5i4LrXNncIRabNjHmJgd4j7hhRJF0PR3x5uTV0t
-lMsPVtBUX2FehR3ZvJBaYRFk4ITa7wX8a9p2JQeavoeoSxX2UWGxdE9v2oMUU0Sn
-+LjzoNHVWzkTZv5yn8X3GKS1Co4bWaeDmZywL8HSkK//ST/rk7UDItWgeetMRvTt
-UO1xLjEYU4HO4aPEdmwVha58nzS87pdJm+LfAgMBAAGjUzBRMB0GA1UdDgQWBBR0
-B9MwNgun4l7JAyd2tqL24oRmGDAfBgNVHSMEGDAWgBR0B9MwNgun4l7JAyd2tqL2
-4oRmGDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQAOofYo23Xv
-I5fh1sg4cmayLU5TSZ1hv9/qLzqYDu/9MSJtY0ww8RotkZOL5E3sphh8JQfKnj0G
-0NvJrq6RP3Bd9FfizF2k1y2Z6D/dorztd5uum6ctdylfBPgeZEemv9aCfdigAwd+
-nh5C+XrIPnsN7Xeq3N4gzyLVzdkFHbuMWTqmqJo5XaMEWP3/dzPl447z/QlSXVqe
-nCSne2t3DgvoiqS+A1hVLzHeEiwwd9kmQdPUrybwXZ/i6B1sfcxf8eklbiuhtunQ
-jy1M5ZaOOfj2WFwmydx1ycGdJbJiKppN3oehi7EJ2lAxwbGoKy4VD4Ks/nMu4TEY
-2lUQ3SmEzoFL
+MIIFFTCCAv2gAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwRjELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgMAkNBMRQwEgYDVQQKDAtDRVJUTUFOQUdFUjEUMBIGA1UEAwwLZm9v
+LmJhci5pbnQwHhcNMjAxMDAyMTQ1NzMwWhcNMjExMDEyMTQ1NzMwWjBKMQswCQYD
+VQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAoMC0NFUlRNQU5BR0VSMRgwFgYD
+VQQDDA9leGFtcGxlLmZvby5iYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQC8yTGzYIX3OoRma11vewbNf8dgKHc9GgvJJ29SVjaNwRAJjKOXokGOwcyQ
+7Ieb1puYQ5KdSPC1IxyUx77URovIvd3Wql+J1gIxyrdN3om3uQdJ2ck6xatBZ8BI
+Y3Z+6WpUQ2067Wk4KpUGfMrbGg5zVcesh6zc8J9yEiItUENeR+6GyEf+B8IJ0xqe
+5lps2LaxZp6I6vaKeMELjj17Nb9r81Rjyk8BN7yX74tFE1mUGX9o75tsODU9IrYW
+nqSl5gr2PO9Zb/bd6zhoncLJr9kj2tk6cLRPht+JOPoA2LAP6D0aEdC3a2XWuj2E
+EsUYJR9e5C/X49VQaak0VdNnhO6RAgMBAAGjggEHMIIBAzAJBgNVHRMEAjAAMBEG
+CWCGSAGG+EIBAQQEAwIGQDAzBglghkgBhvhCAQ0EJhYkT3BlblNTTCBHZW5lcmF0
+ZWQgU2VydmVyIENlcnRpZmljYXRlMB0GA1UdDgQWBBQ41U/GiA2rQtuMz6tNL55C
+o4pnBDBqBgNVHSMEYzBhgBSfus9cb7UA/PCfHJAGtL6ot2EpLKFFpEMwQTEPMA0G
+A1UEAwwGYmFyLmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAoM
+C0NFUlRNQU5BR0VSggIQADAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYB
+BQUHAwEwDQYJKoZIhvcNAQELBQADggIBAFFTJNqKSkkJNWWt+R7WFNIEKoaPcFH5
+yupCQRYX9LK2cXdBQpF458/PFxREyt5jKFUcDyzQhOglFYq0hfcoAc2EB3Vw8Ww9
+c4QCiCU6ehJVMRt7MzZ9uUVGCRVOA+Fa1tIFfL3dKlI+4pTSbDhNHRqDtFhfWOZK
+bgtruQEUOW1lQR61AsidOF1iwDBU6ckpVY9Lc2SHEAfQFs0MoXmJ8B4MqFptF4+H
+al+IAeQ1bC/2EccFYg3tq9+YKHDCyghHf8qeKJR9tZslvkHrAzuX56e0MHxM3AD6
+D0L8nG3DsrHcjK0MlVUWmq0QFnY5t+78iocLoQZzpILZYuZn3p+XNlUdW4lcqSBn
+y5fUwQ3RIuvN66GBhTeDV4vzYPa7g3i9PoBFoG50Ayr6VtIVn08rnl03lgp57Edv
+A5oRrSHcd8Hd8/lk0Y9BpFTnZEg7RLhFhh9nazVp1/pjwaGx449uHIGEoxREQoPq
+9Q+KLGMJR2IqiNI6+U1z2j8BChTOPkuAvsnSuAXyotu4BXBL5zbDzfDoggEk1ps1
+bfHWnmdelE0WP7h7B0PSA0EXn0pdg2VQIQsknV6y3MCzFQCCSAog/OSguokXG1PG
+l6fctDJ3+AF07EjtgArOBkUn7Nt3/CgMN8I1rnBZ1Vmd8yrHEP0E3yRXBL7cDj5j
+Fqmd89NQLlGs
+-----END CERTIFICATE-----`
+
+	testCertCa = `-----BEGIN CERTIFICATE-----
+MIIFaTCCA1GgAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwQTEPMA0GA1UEAwwGYmFy
+LmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAoMC0NFUlRNQU5B
+R0VSMB4XDTIwMTAwMjE0NTY1MFoXDTMwMDkzMDE0NTY1MFowRjELMAkGA1UEBhMC
+VVMxCzAJBgNVBAgMAkNBMRQwEgYDVQQKDAtDRVJUTUFOQUdFUjEUMBIGA1UEAwwL
+Zm9vLmJhci5pbnQwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQCv1hQq
+Gg5LN0zekkaOzu/Xk2PUDA3ysEOXfzjL1EQ5guno93sH5WCG0tUbGQbzQyCXuyG+
+bbeGiUXhF3vPPH5yAHNoLz14GQ9WRe3Y93Lco0qD3jcgw90ctrEcOsq69Eqr6PB/
+fV3P5fKmqZcy3kywaM+suvZ3AvMVMHXKODpPSo9f8uuXd5VYvjqUUllA+iGJNUu8
+hfThn+pUMDbdAEXckIfDHqZlDQxRmRsySi0kHB1Tjgo3eH/Mj+00ZSbxEhxj2HFs
+0Vn81Uo0lVjvQ6oPIm19KIo2/nOZowuy94idXSWkdXCv1UjVSVRo2NHWlH3meKWs
+pALeV8Z68shyVC8HjHBAbElumBTLiWQfpQYOa0MNaBRBvp3x8ajDcx5RfqG7n45i
+Ezd/UrC0mcnC0dzhFySEjPgkqZ35vEcxoDDfUJ/aLt7laBL4MPZ2U2BddQjfJVQA
+A0mP1l7MPBk3+qrwErci8D+iYT4I4sQs31ip/Ht5sfc9zsF9wVlOgMx44LN0AWrE
+FK+ufWeB8npJAwkfwoyfwlyvJGwwhP7PMR57y24nQvife29FnqjYdA43QQzhgXO5
+iktI0B9ApVw12/cxfMFC64fcUZF8ENpCMIM0IpoYMeFNyvod4UV0OZY06zUGindh
+4qwh8U3qxQ4+bTTF9hkuiKq+9nd52GRt7BSpxwIDAQABo2YwZDAdBgNVHQ4EFgQU
+n7rPXG+1APzwnxyQBrS+qLdhKSwwHwYDVR0jBBgwFoAUl2WJOv19aAspu+JphX7I
+PkCr2ogwEgYDVR0TAQH/BAgwBgEB/wIBADAOBgNVHQ8BAf8EBAMCAYYwDQYJKoZI
+hvcNAQELBQADggIBAGLWfRG5rHuf+t+ebU+XJj0QFUWxt08glVwJLvR7EBTxMtfa
+D4Da3OYCyY78SIqWHpa51UC727GRUxKZxFrNtyPBQaBmLF4lm0xRoM1EZTqtF+Qf
+yJTd92YQQJNYUCZS8NvCt2+9h9d7Gb11wOc/r5IqQ9boRP2VW7UjqmqZeBeo+Dfw
+5VBg8ytF+XvrEJtp2nEobbGK2ZXPkOBt1aUVz57e3BpDw6bRbWnz8fbiEsN2b7Zs
+Z5JtP8NaX81ZMV8MYeX2GRH5z8xeXjdb5xyVZHlv8mWrlN7uaRhK4AlWJ9Cdcq+x
+Z5rhvg7nTfd4GoTuAhGIgW8qBNGdn6DVGURu33+w1roZn4J1tfD+Se2Oo5TScM+F
+068TweDlwfYP0p+2YMKmUvQxB5R74x0Y2+49btpXXHSd/euT1PVHtc84g3acTwfK
+rFQvv3jOPJ99IUpYpJydpv0Rfds3zMy2FJ6uex8gmlF7+XDZUSLQLuuFcjyHybfB
+zwZlUQ6EVmjOWLDdAmpeIAIkNEiogPuSz9E7xKdU+5bFYSgm6uxe8tFZSge2VEMC
+vPY2RcZ6uPZwpItqPmna8beydzlYohPcNcs4eK3hblLLacBV6eltP+q4/td+y87N
+yNCb90/k5dhi3YML4qoFeZjYfbY65RKHTztv5iqHH36dIZos0LucuphEWlKK
+-----END CERTIFICATE-----`
+	testSecondCertCa = `-----BEGIN CERTIFICATE-----
+MIIFczCCA1ugAwIBAgIUcq3TKhc/RJfQOLCF2UQ805R+lkIwDQYJKoZIhvcNAQEL
+BQAwQTEPMA0GA1UEAwwGYmFyLmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0Ex
+FDASBgNVBAoMC0NFUlRNQU5BR0VSMB4XDTIwMTAwMjE0NTY0MVoXDTQwMDkyNzE0
+NTY0MVowQTEPMA0GA1UEAwwGYmFyLmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwC
+Q0ExFDASBgNVBAoMC0NFUlRNQU5BR0VSMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A
+MIICCgKCAgEAmEzgpmKns5FOmfjmOm6WBcdAZ8N0oXpVmx3atfsTeedavgi71AyL
+NTwL1cwi3Y6UANMvSk0tca4YAZ2phVSvgaUmNXWXNbrrS/K5R73XpDos3igHTTvP
+0kuVXgYSY2iXELA+UmzQFMpjCwBOeriz3oFA0JZxQaX4h7vZqSsabOArywTihwNt
+SMH8a3ErdKwkYx9DNZYIwsU8+YIViJgx55Covenj/qoJ3ULsm5B3ILlvN4KDcVeQ
+UPKPa5B5MeMS5XNoX1wNzwpLGV+9QVFQScxLAm9rcksWLm3xoUkPvNZkT3891VPo
+MHT5kXFmM/7ynTC/fvG5Z4vxWm105d2WwYOJqmJR7q8/TmsNzL8+J8SojqWL1xYQ
+wds4/5XYgdXBMVaaFAOYDOczIU7v3hu6Zn4UGJWSlgNiC1+xBRY0iYQSnNrhtwev
+w+oO8qvXZYN05/g1/o21iJRdbquE7gU7PRIzNQKZg6mMqloJxzeh1HDoOq1LIMj0
+TSYxX8971lUZVmv7ydWafzLY5JV0FM1tGANhyTuHJtDwVy8qZYiTjl75WQ3CLFof
+SsoS3gFR09XhZ/2wKE5sGLGsQvlAA3arPgi9Sv5qUjye3ZpZWrjd0hSVfTNpKDxc
+hIoIem892zq0KHnV7xhu1L80b6oQ9ZSGhw7drRMBoljYxNqmn4UYKp0CAwEAAaNj
+MGEwHQYDVR0OBBYEFJdliTr9fWgLKbviaYV+yD5Aq9qIMB8GA1UdIwQYMBaAFJdl
+iTr9fWgLKbviaYV+yD5Aq9qIMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQD
+AgGGMA0GCSqGSIb3DQEBCwUAA4ICAQBXwhW6hoG0ooL6B8Mr6GlqQ40Jesv9lEHS
+rhLjd3RpCoK162eL7RJQsZAKfj8wViV2FjD1t0N4L94NnkGo1fuVds3auw1ghrFd
+1HEdr37s/nMvpFu6SS4bGwzdYZEEweRr2iQGxPXTXMu+Vu7EDGTXkqDKeSYZoHNX
+3GfR0I8eXfNfqW+tdCYzBCOGGTQAHmfyM9YiCnMAQtHQu0ljnBdMhkoBi2EzULAR
+lDWBxQE5NmzTCxhd0JHXroKXBvq2Sig2FdKsFIbN9y7colJga6eSN8xARLoLO99q
+7dzly9gVOrzBkdX5kRQyzu9CesXbPc0EAqUzj3mXaxeVchZzQ1IlUQO31Mzl5y/z
+e1WvQuW1BJQdcIkYp0JVEacYGi6CjjcDphFiaAajRsi7rtiODo8pidMOTXxBitD6
+O4MslwSiWvenq5apF9PzvwDndFIfSKzIE6A7/gyKKKuMYz87FTiHipsA/GAOjNUO
+8kQ91o6TIF7YTjNS3u8xICa7M8qTxQIHsbsRWzPqAxRnYQkY0aRjO9+5Qqqsg5j4
+Pc7TUJiY8gW9SWhPVUPaMkTIBgfN11c6BzLlhzN2r1zaZyghXr8QmcG4kWywkX7k
+oXeN5eS8iO5fx0EOvIcYQ4yRZLGafZxsLHlsZmt32N/ZZtcl4KDP5LRE7iZEOaE/
+UXY5wAUH2A==
 -----END CERTIFICATE-----`
 )
 
@@ -108,17 +183,29 @@ type testSignT struct {
 	expectedCA   string
 }
 
-func TestSign(t *testing.T) {
-	privatekey := generateRSAPrivateKey(t)
-	csrPEM := generateCSR(t, privatekey)
-
+func bundlePEM(csrPEM []byte, caPEM ...string) ([]byte, error) {
 	bundle := certutil.Secret{
 		Data: map[string]interface{}{
 			"certificate": testCertBundle,
 		},
 	}
+	if len(caPEM) > 0 {
+		bundle.Data["ca_chain"] = caPEM
+	}
+	return jsonutil.EncodeJSON(&bundle)
+}
 
-	bundleData, err := jsonutil.EncodeJSON(&bundle)
+func TestSign(t *testing.T) {
+	privatekey := generateRSAPrivateKey(t)
+	csrPEM := generateCSR(t, privatekey)
+
+	bundleData, err := bundlePEM(csrPEM, testCertCa)
+	if err != nil {
+		t.Errorf("failed to encode bundle for testing: %s", err)
+		t.FailNow()
+	}
+
+	multiCABundle, err := bundlePEM(csrPEM, testCertCa, testSecondCertCa)
 	if err != nil {
 		t.Errorf("failed to encode bundle for testing: %s", err)
 		t.FailNow()
@@ -154,7 +241,7 @@ func TestSign(t *testing.T) {
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testCertBundle,
-			expectedCA:   testCertBundle,
+			expectedCA:   testCertCa,
 		},
 
 		"vault issuer with namespace specified": {
@@ -168,7 +255,23 @@ func TestSign(t *testing.T) {
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testCertBundle,
-			expectedCA:   testCertBundle,
+			expectedCA:   testCertCa,
+		},
+
+		"vault issuer with multiple CA certificates": {
+			csrPEM: csrPEM,
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1.VaultIssuer{
+					Namespace: "test",
+				}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: ioutil.NopCloser(bytes.NewReader(multiCABundle))},
+			}, nil),
+			expectedErr:  nil,
+			expectedCert: testCertBundle,
+			expectedCA:   strings.Join([]string{testCertCa, testSecondCertCa}, "\n"),
 		},
 	}
 
@@ -180,7 +283,7 @@ func TestSign(t *testing.T) {
 			client:        test.fakeClient,
 		}
 
-		cert, _, err := v.Sign(test.csrPEM, time.Minute)
+		cert, ca, err := v.Sign(test.csrPEM, time.Minute)
 		if ((test.expectedErr == nil) != (err == nil)) &&
 			test.expectedErr != nil &&
 			test.expectedErr.Error() != err.Error() {
@@ -188,9 +291,27 @@ func TestSign(t *testing.T) {
 				name, test.expectedErr, err)
 		}
 
-		if test.expectedCert != string(cert) {
+		if (test.expectedCert == "" || string(cert) == "") && test.expectedCert != string(cert) {
 			t.Errorf("unexpected certificate in response bundle, exp=%s got=%s",
 				test.expectedCert, cert)
+		} else if test.expectedCert != string(cert) {
+			parsedBundle, err := certutil.ParsePEMBundle(string(cert))
+			if err != nil {
+				t.Errorf("%s: failed to decode bundle: %s", name, err)
+			}
+			bundle, err := parsedBundle.ToCertBundle()
+			if err != nil {
+				t.Errorf("%s: failed to convert bundle: %s", name, err)
+			}
+			if test.expectedCert != bundle.Certificate {
+				t.Errorf("unexpected certificate in response bundle, exp=%s got=%s",
+					test.expectedCert, cert)
+			}
+		}
+
+		if test.expectedCA != string(ca) {
+			t.Errorf("unexpected ca in response bundle, exp=%s got=%s; %s",
+				test.expectedCA, ca, name)
 		}
 	}
 }
