@@ -135,7 +135,7 @@ func patchDuplicateKeyUsage(usages []cmapi.KeyUsage) []cmapi.KeyUsage {
 			newUsages = append(newUsages, cmapi.UsageDigitalSignature)
 			// prevent having 2 UsageDigitalSignature in the slice
 			hasUsageSigning = true
-		} else {
+		} else if usage != cmapi.UsageSigning && usage != cmapi.UsageDigitalSignature {
 			newUsages = append(newUsages, usage)
 		}
 	}
