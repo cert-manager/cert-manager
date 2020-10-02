@@ -30,14 +30,14 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/certutil"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var _ Interface = &Vault{}
 
 type VaultClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1.GenericIssuer) (Interface, error)
+	issuer cmapi.GenericIssuer) (Interface, error)
 
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
@@ -54,14 +54,14 @@ type Client interface {
 
 type Vault struct {
 	secretsLister corelisters.SecretLister
-	issuer        v1.GenericIssuer
+	issuer        cmapi.GenericIssuer
 	namespace     string
 
 	client Client
 }
 
 func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1.GenericIssuer) (Interface, error) {
+	issuer cmapi.GenericIssuer) (Interface, error) {
 	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
@@ -213,7 +213,7 @@ func (v *Vault) tokenRef(name, namespace, key string) (string, error) {
 	}
 
 	if key == "" {
-		key = v1.DefaultVaultTokenAuthSecretKey
+		key = cmapi.DefaultVaultTokenAuthSecretKey
 	}
 
 	keyBytes, ok := secret.Data[key]
@@ -227,7 +227,7 @@ func (v *Vault) tokenRef(name, namespace, key string) (string, error) {
 	return token, nil
 }
 
-func (v *Vault) appRoleRef(appRole *v1.VaultAppRole) (roleId, secretId string, err error) {
+func (v *Vault) appRoleRef(appRole *cmapi.VaultAppRole) (roleId, secretId string, err error) {
 	roleId = strings.TrimSpace(appRole.RoleId)
 
 	secret, err := v.secretsLister.Secrets(v.namespace).Get(appRole.SecretRef.Name)
@@ -248,7 +248,7 @@ func (v *Vault) appRoleRef(appRole *v1.VaultAppRole) (roleId, secretId string, e
 	return roleId, secretId, nil
 }
 
-func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRole) (string, error) {
+func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *cmapi.VaultAppRole) (string, error) {
 	roleId, secretId, err := v.appRoleRef(appRole)
 	if err != nil {
 		return "", err
@@ -297,7 +297,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 	return token, nil
 }
 
-func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1.VaultKubernetesAuth) (string, error) {
+func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *cmapi.VaultKubernetesAuth) (string, error) {
 	secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
 	if err != nil {
 		return "", err
@@ -305,7 +305,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	key := kubernetesAuth.SecretRef.Key
 	if key == "" {
-		key = v1.DefaultVaultTokenAuthSecretKey
+		key = cmapi.DefaultVaultTokenAuthSecretKey
 	}
 
 	keyBytes, ok := secret.Data[key]
@@ -322,7 +322,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	mountPath := kubernetesAuth.Path
 	if mountPath == "" {
-		mountPath = v1.DefaultVaultKubernetesAuthMountPath
+		mountPath = cmapi.DefaultVaultKubernetesAuthMountPath
 	}
 
 	url := filepath.Join(mountPath, "login")
