@@ -1,4 +1,7 @@
 # Contributing
+
+You can find our full contributing guide on [our website](https://cert-manager.io/docs/contributing/).
+
 ## DCO Sign off
 
 All authors to the project retain copyright to their work. However, to ensure
