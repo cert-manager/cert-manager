@@ -78,7 +78,7 @@ l6fctDJ3+AF07EjtgArOBkUn7Nt3/CgMN8I1rnBZ1Vmd8yrHEP0E3yRXBL7cDj5j
 Fqmd89NQLlGs
 -----END CERTIFICATE-----`
 
-	testCertCa = `-----BEGIN CERTIFICATE-----
+	testIntermediateCa = `-----BEGIN CERTIFICATE-----
 MIIFaTCCA1GgAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwQTEPMA0GA1UEAwwGYmFy
 LmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExFDASBgNVBAoMC0NFUlRNQU5B
 R0VSMB4XDTIwMTAwMjE0NTY1MFoXDTMwMDkzMDE0NTY1MFowRjELMAkGA1UEBhMC
@@ -109,7 +109,7 @@ zwZlUQ6EVmjOWLDdAmpeIAIkNEiogPuSz9E7xKdU+5bFYSgm6uxe8tFZSge2VEMC
 vPY2RcZ6uPZwpItqPmna8beydzlYohPcNcs4eK3hblLLacBV6eltP+q4/td+y87N
 yNCb90/k5dhi3YML4qoFeZjYfbY65RKHTztv5iqHH36dIZos0LucuphEWlKK
 -----END CERTIFICATE-----`
-	testSecondCertCa = `-----BEGIN CERTIFICATE-----
+	testRootCa = `-----BEGIN CERTIFICATE-----
 MIIFczCCA1ugAwIBAgIUcq3TKhc/RJfQOLCF2UQ805R+lkIwDQYJKoZIhvcNAQEL
 BQAwQTEPMA0GA1UEAwwGYmFyLmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0Ex
 FDASBgNVBAoMC0NFUlRNQU5BR0VSMB4XDTIwMTAwMjE0NTY0MVoXDTQwMDkyNzE0
@@ -199,13 +199,13 @@ func TestSign(t *testing.T) {
 	privatekey := generateRSAPrivateKey(t)
 	csrPEM := generateCSR(t, privatekey)
 
-	bundleData, err := bundlePEM(csrPEM, testCertCa)
+	bundleData, err := bundlePEM(csrPEM, testIntermediateCa)
 	if err != nil {
 		t.Errorf("failed to encode bundle for testing: %s", err)
 		t.FailNow()
 	}
 
-	multiCABundle, err := bundlePEM(csrPEM, testCertCa, testSecondCertCa)
+	multiCABundle, err := bundlePEM(csrPEM, testIntermediateCa, testRootCa)
 	if err != nil {
 		t.Errorf("failed to encode bundle for testing: %s", err)
 		t.FailNow()
@@ -241,7 +241,7 @@ func TestSign(t *testing.T) {
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testCertBundle,
-			expectedCA:   testCertCa,
+			expectedCA:   testIntermediateCa,
 		},
 
 		"vault issuer with namespace specified": {
@@ -255,7 +255,7 @@ func TestSign(t *testing.T) {
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testCertBundle,
-			expectedCA:   testCertCa,
+			expectedCA:   testIntermediateCa,
 		},
 
 		"vault issuer with multiple CA certificates": {
@@ -271,7 +271,7 @@ func TestSign(t *testing.T) {
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testCertBundle,
-			expectedCA:   strings.Join([]string{testCertCa, testSecondCertCa}, "\n"),
+			expectedCA:   strings.Join([]string{testIntermediateCa, testRootCa}, "\n"),
 		},
 	}
 
