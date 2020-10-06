@@ -70,6 +70,9 @@ type OrderSpec struct {
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
 	IPAddresses []string
+
+	// NotAfter is the date for the requested certificate's Not Valid After date
+	NotAfter *metav1.Time `json:"notAfter"`
 }
 
 type OrderStatus struct {

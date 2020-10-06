@@ -102,6 +102,10 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                notAfter:
+                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  type: string
+                  format: date-time
             status:
               type: object
               properties:
@@ -256,6 +260,10 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                notAfter:
+                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  type: string
+                  format: date-time
             status:
               type: object
               properties:
@@ -407,6 +415,10 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                notAfter:
+                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  type: string
+                  format: date-time
                 request:
                   description: Certificate signing request bytes in DER encoding. This will be used when finalizing the order. This field must be set on the order.
                   type: string
@@ -562,6 +574,10 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
+                notAfter:
+                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  type: string
+                  format: date-time
                 request:
                   description: Certificate signing request bytes in DER encoding. This will be used when finalizing the order. This field must be set on the order.
                   type: string

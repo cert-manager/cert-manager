@@ -68,7 +68,7 @@ type OrderSpec struct {
 	// DNSNames is a list of DNS names that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
-	//+optonal
+	//+optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// IPAddresses is a list of IP addresses that should be included as part of the Order
@@ -76,6 +76,10 @@ type OrderSpec struct {
 	// This field must match the corresponding field on the DER encoded CSR.
 	// +optional
 	IPAddresses []string `json:"ipAddresses,omitempty"`
+
+	// NotAfter is the date for the requested certificate's Not Valid After date
+	// +optional
+	NotAfter *metav1.Time `json:"notAfter,omitempty"`
 }
 
 type OrderStatus struct {

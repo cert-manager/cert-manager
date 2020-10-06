@@ -789,6 +789,10 @@ func (in *OrderSpec) DeepCopyInto(out *OrderSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.NotAfter != nil {
+		in, out := &in.NotAfter, &out.NotAfter
+		*out = (*in).DeepCopy()
+	}
 	return
 }
 

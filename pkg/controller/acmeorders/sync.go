@@ -200,7 +200,12 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	authzIDs := acmeapi.DomainIDs(dnsIdentifierSet.List()...)
 	authzIDs = append(authzIDs, acmeapi.IPIDs(ipIdentifierSet.List()...)...)
 	// create a new order with the acme server
-	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs)
+
+	var options []acmeapi.OrderOption
+	if o.Spec.NotAfter != nil {
+		options = append(options, acmeapi.WithOrderNotAfter(o.Spec.NotAfter.Time))
+	}
+	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to create Order resource due to bad request, marking Order as failed")

@@ -153,7 +153,7 @@ func TestSign(t *testing.T) {
 		t.Fatalf("failed to build order during testing: %s", err)
 	}
 
-	baseOrder, err := buildOrder(baseCR, csr)
+	baseOrder, err := buildOrder(baseCR, csr, baseIssuer)
 	if err != nil {
 		t.Fatalf("failed to build order during testing: %s", err)
 	}

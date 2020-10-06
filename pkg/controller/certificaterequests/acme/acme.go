@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,7 +106,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 	}
 
 	// If we fail to build the order we have to hard fail.
-	expectedOrder, err := buildOrder(cr, csr)
+	expectedOrder, err := buildOrder(cr, csr, issuer)
 	if err != nil {
 		message := "Failed to build order"
 
@@ -199,7 +200,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
+func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, issuer v1.GenericIssuer) (*cmacme.Order, error) {
 	var ipAddresses []string
 	for _, ip := range csr.IPAddresses {
 		ipAddresses = append(ipAddresses, ip.String())
@@ -218,9 +219,15 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		IPAddresses: ipAddresses,
 	}
 
+	if issuer.GetSpec().ACME.EnableNotAfterDate {
+		notAfterTime := metav1.NewTime(time.Now().Add(cr.Spec.Duration.Duration))
+		spec.NotAfter = &notAfterTime
+	}
+
 	computeNameSpec := spec.DeepCopy()
-	// create a deep copy of the OrderSpec so we can overwrite the Request field
+	// create a deep copy of the OrderSpec so we can overwrite the Request and NotAfter field
 	computeNameSpec.Request = nil
+	computeNameSpec.NotAfter = nil // NotAfter is time based and will shift, confusing the controller to reconcile
 	name, err := apiutil.ComputeName(cr.Name, computeNameSpec)
 	if err != nil {
 		return nil, err
