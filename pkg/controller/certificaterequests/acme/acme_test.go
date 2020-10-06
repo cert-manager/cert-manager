@@ -155,7 +155,7 @@ func TestSign(t *testing.T) {
 
 	baseOrder, err := buildOrder(baseCR, csr)
 	if err != nil {
-		t.Fatal("failed to build order during testing: %s", err)
+		t.Fatalf("failed to build order during testing: %s", err)
 	}
 
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
