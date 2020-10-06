@@ -83,6 +83,12 @@ const (
 	// will never pass tests that validate the duration is as expected.
 	DurationFeature Feature = "Duration"
 
+	// UsagesFeature denotes tests that set the 'usages' field to some
+	// custom value.
+	// Some issuers enforce key usages, meaning they
+	// will never pass tests that validate the duration is as expected.
+	UsagesFeature Feature = "Usages"
+
 	// WildcardsFeature denotes tests that request certificates for wildcard
 	// domains. Some issuer's disable wildcard certificate issuance, so this
 	// feature allows runs of the suite to exclude those tests that utilise

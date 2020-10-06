@@ -20,6 +20,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -406,6 +409,8 @@ func (s *Suite) Define() {
 					Usages: []cmapi.KeyUsage{
 						cmapi.UsageSigning,
 						cmapi.UsageDataEncipherment,
+						cmapi.UsageServerAuth,
+						cmapi.UsageClientAuth,
 					},
 				},
 			}
@@ -418,7 +423,16 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+
+			validations := []helper.ValidationFunc{
+				validations.ExpectKeyUsageExtKeyUsageClientAuth,
+				validations.ExpectKeyUsageExtKeyUsageServerAuth,
+				validations.ExpectKeyUsageUsageSigning,
+				validations.ExpectKeyUsageUsageDataEncipherment,
+			}
+			validations = append(validations, f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.KeyUsagesFeature, featureset.OnlySAN)
 

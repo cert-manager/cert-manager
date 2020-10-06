@@ -224,19 +224,37 @@ func ExpectKeyUsageExtKeyUsageClientAuth(certificate *cmapi.Certificate, secret 
 	return nil
 }
 
-// ExpectKeyUsageKeyUsageKeyAgreement checks if the issued certificate has the key usage of key agreement
-func ExpectKeyUsageKeyUsageKeyAgreement(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+// ExpectKeyUsageUsageSigning checks if a cert has the KeyUsageCertSign key usage set
+func ExpectKeyUsageUsageSigning(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
 		return err
 	}
 
-	// taking the key usage here and use a binary OR to flip all non KeyUsageKeyAgreement bits to 0
-	// so if KeyUsageKeyAgreement the value will be exacty x509.KeyUsageKeyAgreement
+	// taking the key usage here and use a binary OR to flip all non KeyUsageCertSign bits to 0
+	// so if KeyUsageCertSign the value will be exacty x509.KeyUsageCertSign
 	usage := cert.KeyUsage
-	usage &= x509.KeyUsageKeyAgreement
-	if usage != x509.KeyUsageKeyAgreement {
-		return fmt.Errorf("Expected certificate to have KeyUsageKeyAgreement %#b, but got %v %#b", x509.KeyUsageKeyAgreement, usage, usage)
+	usage &= x509.KeyUsageCertSign
+	if usage != x509.KeyUsageCertSign {
+		return fmt.Errorf("Expected certificate to have KeyUsageCertSign %#b, but got %v %#b", x509.KeyUsageCertSign, usage, usage)
+	}
+
+	return nil
+}
+
+// ExpectKeyUsageUsageDataEncipherment checks if a cert has the KeyUsageDataEncipherment key usage set
+func ExpectKeyUsageUsageDataEncipherment(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+	if err != nil {
+		return err
+	}
+
+	// taking the key usage here and use a binary OR to flip all non KeyUsageDataEncipherment bits to 0
+	// so if KeyUsageDataEncipherment the value will be exacty x509.KeyUsageDataEncipherment
+	usage := cert.KeyUsage
+	usage &= x509.KeyUsageDataEncipherment
+	if usage != x509.KeyUsageDataEncipherment {
+		return fmt.Errorf("Expected certificate to have KeyUsageDataEncipherment %#b, but got %v %#b", x509.KeyUsageDataEncipherment, usage, usage)
 	}
 
 	return nil
