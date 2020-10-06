@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -240,7 +241,9 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
-					// TODO: assert url = "http://authzurl"
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
 					return testACMEAuthorizationPending, nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -277,7 +280,9 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
-					// TODO: assert url = "http://authzurl"
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
 					return testACMEAuthorizationPending, nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
