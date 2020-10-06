@@ -36,14 +36,18 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
 	// Venafi issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
+		// Venafi TPP doesn't allow setting a duration
 		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve private
 		// key
 		featureset.ECDSAFeature,
+		// Our Venafi TPP doesn't allow setting non DNS SANs
+		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,
 		featureset.URISANsFeature,
 		featureset.IPAddressFeature,
+		// Venafi doesn't allow certs with empty CN & DN
 		featureset.OnlySAN,
 	)
 

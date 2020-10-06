@@ -36,15 +36,15 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
 	// Venafi Cloud issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
+		// Venafi Cloud does not allow setting duration in request
 		featureset.DurationFeature,
-		// Due to the current configuration of the test environment, it does not
-		// support signing certificates that pair with an elliptic curve private
-		// key or using the same private key multiple times.
+		// Venafi Cloud has no ECDSA support
 		featureset.ECDSAFeature,
+		// Alternate SANS are currently not suppored in Venafi Cloud
 		featureset.EmailSANsFeature,
-		featureset.CommonNameFeature,
 		featureset.IPAddressFeature,
 		featureset.URISANsFeature,
+		// Venafi doesn't allow certs with empty CN & DN
 		featureset.OnlySAN,
 	)
 

@@ -22,12 +22,11 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	corev1 "k8s.io/api/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-
-	corev1 "k8s.io/api/core/v1"
+	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 // Expect2Or3KeysInSecret checks if the secret resource has the correct amount of fields in the secret data
@@ -143,8 +142,9 @@ func ExpectCertificateURIsToMatch(certificate *cmapi.Certificate, secret *corev1
 	if err != nil {
 		return fmt.Errorf("failed to parse URIs: %s", err)
 	}
+	actualURIs := pki.URLsToString(cert.URIs)
 	expectedURIs := pki.URLsToString(uris)
-	if !util.EqualUnsorted(pki.URLsToString(cert.URIs), expectedURIs) {
+	if !util.EqualUnsorted(actualURIs, expectedURIs) {
 		return fmt.Errorf("Expected certificate valid for URIs %v, but got a certificate valid for URIs %v", expectedURIs, pki.URLsToString(cert.URIs))
 	}
 
