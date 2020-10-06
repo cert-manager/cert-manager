@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -269,6 +270,40 @@ func ExpectEmailsToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) 
 
 	if !util.EqualUnsorted(cert.EmailAddresses, certificate.Spec.EmailAddresses) {
 		return fmt.Errorf("certificate doesn't contain Email SANs: exp=%v got=%v", certificate.Spec.EmailAddresses, cert.EmailAddresses)
+	}
+
+	return nil
+}
+
+// ExpectCorrectTrustChain checks if the cert is signed by the root CA if one is provided
+func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	// if we don't know the root CA we will skip this tests and return no errors.
+	if secret.Data[cmmeta.TLSCAKey] == nil {
+		return nil
+	}
+
+	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+	if err != nil {
+		return err
+	}
+
+	var dnsName string
+	if len(certificate.Spec.DNSNames) > 0 {
+		dnsName = certificate.Spec.DNSNames[0]
+	}
+
+	rootCertPool := x509.NewCertPool()
+	rootCertPool.AppendCertsFromPEM(secret.Data[cmmeta.TLSCAKey])
+	intermediateCertPool := x509.NewCertPool()
+	intermediateCertPool.AppendCertsFromPEM(secret.Data[corev1.TLSCertKey])
+	opts := x509.VerifyOptions{
+		DNSName:       dnsName,
+		Intermediates: intermediateCertPool,
+		Roots:         rootCertPool,
+	}
+
+	if _, err := cert.Verify(opts); err != nil {
+		return err
 	}
 
 	return nil

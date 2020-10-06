@@ -41,6 +41,7 @@ func (h *Helper) DefaultValidationSet() []ValidationFunc {
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
 		validations.ExpectEmailsToMatch,
+		validations.ExpectCorrectTrustChain,
 	}
 }
 
@@ -55,6 +56,7 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 		validations.ExpectCertificateDNSNamesToMatch,
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
+		validations.ExpectCorrectTrustChain,
 	}
 
 	if !fs.Contains(featureset.URISANsFeature) {

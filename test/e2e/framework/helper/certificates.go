@@ -345,49 +345,6 @@ func (h *Helper) keyUsagesMatch(aKU x509.KeyUsage, aEKU []x509.ExtKeyUsage,
 	return true
 }
 
-// IsTrustedCertificate checks if the cert is signed by the root CA if one is provided
-func (h *Helper) IsTrustedCertificate(ns, name string, rootCAPEM []byte) error {
-	// if we don't know the root CA we will skip this tests and return no errors.
-	if rootCAPEM == nil {
-		return nil
-	}
-
-	certificate, err := h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	secret, err := h.KubeClient.CoreV1().Secrets(certificate.Namespace).Get(context.TODO(), certificate.Spec.SecretName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
-	if err != nil {
-		return err
-	}
-
-	var dnsName string
-	if len(certificate.Spec.DNSNames) > 0 {
-		dnsName = certificate.Spec.DNSNames[0]
-	}
-
-	rootCertPool := x509.NewCertPool()
-	rootCertPool.AppendCertsFromPEM(rootCAPEM)
-	intermediateCertPool := x509.NewCertPool()
-	intermediateCertPool.AppendCertsFromPEM(secret.Data[corev1.TLSCertKey])
-	opts := x509.VerifyOptions{
-		DNSName:       dnsName,
-		Intermediates: intermediateCertPool,
-		Roots:         rootCertPool,
-	}
-
-	if _, err := cert.Verify(opts); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *cmapi.Certificate) {
 	if certificate == nil {
 		return
