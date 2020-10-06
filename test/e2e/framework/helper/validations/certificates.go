@@ -225,8 +225,8 @@ func ExpectKeyUsageExtKeyUsageClientAuth(certificate *cmapi.Certificate, secret 
 	return nil
 }
 
-// ExpectKeyUsageUsageSigning checks if a cert has the KeyUsageCertSign key usage set
-func ExpectKeyUsageUsageSigning(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+// UsageDigitalSignature checks if a cert has the KeyUsageDigitalSignature key usage set
+func ExpectKeyUsageUsageDigitalSignature(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
 		return err
@@ -235,9 +235,9 @@ func ExpectKeyUsageUsageSigning(certificate *cmapi.Certificate, secret *corev1.S
 	// taking the key usage here and use a binary OR to flip all non KeyUsageCertSign bits to 0
 	// so if KeyUsageCertSign the value will be exacty x509.KeyUsageCertSign
 	usage := cert.KeyUsage
-	usage &= x509.KeyUsageCertSign
-	if usage != x509.KeyUsageCertSign {
-		return fmt.Errorf("Expected certificate to have KeyUsageCertSign %#b, but got %v %#b", x509.KeyUsageCertSign, usage, usage)
+	usage &= x509.KeyUsageDigitalSignature
+	if usage != x509.KeyUsageDigitalSignature {
+		return fmt.Errorf("Expected certificate to have KeyUsageDigitalSignature %#b, but got %v %#b", x509.KeyUsageDigitalSignature, usage, usage)
 	}
 
 	return nil

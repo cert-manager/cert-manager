@@ -427,7 +427,7 @@ func (s *Suite) Define() {
 			validations := []helper.ValidationFunc{
 				validations.ExpectKeyUsageExtKeyUsageClientAuth,
 				validations.ExpectKeyUsageExtKeyUsageServerAuth,
-				validations.ExpectKeyUsageUsageSigning,
+				validations.ExpectKeyUsageUsageDigitalSignature,
 				validations.ExpectKeyUsageUsageDataEncipherment,
 			}
 			validations = append(validations, f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
