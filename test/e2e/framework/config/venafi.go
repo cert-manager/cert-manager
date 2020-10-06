@@ -61,7 +61,7 @@ func (v *VenafiTPPConfiguration) Validate() []error {
 
 func (v *VenafiCloudConfiguration) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&v.Zone, "global.venafi-cloud-zone", os.Getenv("VENAFI_CLOUD_ZONE"), "Zone to use during Venafi Cloud end-to-end tests")
-	fs.StringVar(&v.APIToken, "global.venafi-cloud-apitoken", os.Getenv("VENAFI_CLOUD_APITOKEN"), "Username to use when authenticating with the Venafi Cloud instance")
+	fs.StringVar(&v.APIToken, "global.venafi-cloud-apitoken", os.Getenv("VENAFI_CLOUD_APITOKEN"), "API token to use when authenticating with the Venafi Cloud instance")
 }
 
 func (v *VenafiCloudConfiguration) Validate() []error {

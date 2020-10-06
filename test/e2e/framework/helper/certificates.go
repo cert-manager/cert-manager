@@ -352,7 +352,7 @@ func (h *Helper) IsTrustedCertificate(ns, name string, rootCAPEM []byte) error {
 		return nil
 	}
 
-	certificate, err := h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
+	certificate, err := h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

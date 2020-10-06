@@ -132,7 +132,7 @@ func ExpectCertificateDNSNamesToMatch(certificate *cmapi.Certificate, secret *co
 	return nil
 }
 
-// ExpectCertificateDNSNamesToMatch checks if the issued certificate has all URI SANs names it requested
+// ExpectCertificateURIsToMatch checks if the issued certificate has all URI SANs names it requested
 func ExpectCertificateURIsToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
@@ -211,7 +211,7 @@ func ExpectKeyUsageExtKeyUsageServerAuth(certificate *cmapi.Certificate, secret 
 	return nil
 }
 
-// ExpectKeyUsageExtKeyUsageServerAuth checks if the issued certificate has the extended key usage of client auth
+// ExpectKeyUsageExtKeyUsageClientAuth checks if the issued certificate has the extended key usage of client auth
 func ExpectKeyUsageExtKeyUsageClientAuth(certificate *cmapi.Certificate, secret *corev1.Secret) error {
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {

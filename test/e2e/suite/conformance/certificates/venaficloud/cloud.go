@@ -93,7 +93,7 @@ func (v *venafiProvisioner) createIssuer(f *framework.Framework) cmmeta.ObjectRe
 	Expect(v.cloud.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := v.cloud.Details().BuildIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return cmmeta.ObjectReference{
@@ -119,7 +119,7 @@ func (v *venafiProvisioner) createClusterIssuer(f *framework.Framework) cmmeta.O
 	Expect(v.cloud.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := v.cloud.Details().BuildClusterIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	issuer, err = f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
 	return cmmeta.ObjectReference{
