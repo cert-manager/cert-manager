@@ -87,6 +87,8 @@ type ControllerOptions struct {
 	// The host and port address, separated by a ':', that the Prometheus server
 	// should expose metrics on.
 	MetricsListenAddress string
+
+	DNS01CheckRetryPeriod time.Duration
 }
 
 const (
@@ -115,6 +117,8 @@ const (
 	defaultMaxConcurrentChallenges = 60
 
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
+
+	defaultDNS01CheckRetryPeriod = 10 * time.Second
 )
 
 var (
@@ -169,6 +173,7 @@ func NewControllerOptions() *ControllerOptions {
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
+		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
 	}
 }
 
@@ -264,6 +269,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
+	fs.DurationVar(&s.DNS01CheckRetryPeriod, "dns01-check-retry-period", defaultDNS01CheckRetryPeriod, ""+
+		"The duration the controller should wait between checking if a ACME dns entry exists."+
+		"This should be a valid duration string, for example 180s or 1h")
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")
