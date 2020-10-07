@@ -44,7 +44,6 @@ var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole)
 
 func runVaultAppRoleTests(issuerKind string) {
 	f := framework.NewDefaultFramework("create-vault-certificate")
-	h := f.Helper()
 
 	var (
 		vault = &vaultaddon.Vault{
@@ -155,7 +154,12 @@ func runVaultAppRoleTests(issuerKind string) {
 		_, err = certClient.Create(context.TODO(), util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, vaultIssuerName, issuerKind, nil, nil), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 		Expect(err).NotTo(HaveOccurred())
 
 	})
@@ -234,7 +238,12 @@ func runVaultAppRoleTests(issuerKind string) {
 			cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, vaultIssuerName, issuerKind, v.inputDuration, v.inputRenewBefore), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Vault substract 30 seconds to the NotBefore date.

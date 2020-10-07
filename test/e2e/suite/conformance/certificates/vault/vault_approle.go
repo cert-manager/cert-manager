@@ -29,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
@@ -40,8 +41,8 @@ const (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	var unsupportedFeatures = certificates.NewFeatureSet(
-		certificates.KeyUsagesFeature,
+	var unsupportedFeatures = featureset.NewFeatureSet(
+		featureset.KeyUsagesFeature,
 	)
 
 	provisioner := new(vaultAppRoleProvisioner)

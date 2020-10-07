@@ -22,5 +22,6 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/selfsigned"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/vault"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/venafi"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/venaficloud"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/rbac"
 )

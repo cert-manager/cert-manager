@@ -9,6 +9,7 @@ go_library(
         "kubectl.go",
         "pod_start.go",
         "secret.go",
+        "validate.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/framework/helper",
     tags = ["manual"],
@@ -21,6 +22,8 @@ go_library(
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/e2e/framework/config:go_default_library",
+        "//test/e2e/framework/helper/featureset:go_default_library",
+        "//test/e2e/framework/helper/validations:go_default_library",
         "//test/e2e/framework/log:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
@@ -39,7 +42,11 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//test/e2e/framework/helper/featureset:all-srcs",
+        "//test/e2e/framework/helper/validations:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

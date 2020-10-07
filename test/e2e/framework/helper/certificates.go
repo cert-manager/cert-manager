@@ -26,6 +26,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -263,8 +264,15 @@ func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsa
 	return us
 }
 
-func (h *Helper) WaitCertificateIssuedValid(ns, name string, timeout time.Duration) error {
-	return h.WaitCertificateIssuedValidTLS(ns, name, timeout, nil)
+func (h *Helper) WaitCertificateIssued(ns, name string, timeout time.Duration) error {
+	certificate, err := h.WaitForCertificateReady(ns, name, timeout)
+	if err != nil {
+		log.Logf("Error waiting for Certificate to become Ready: %v", err)
+		h.Kubectl(ns).DescribeResource("certificate", name)
+		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
+	}
+	return err
 }
 
 func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectReference) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
@@ -335,28 +343,6 @@ func (h *Helper) keyUsagesMatch(aKU x509.KeyUsage, aEKU []x509.ExtKeyUsage,
 	}
 
 	return true
-}
-
-func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Duration, rootCAPEM []byte) error {
-	certificate, err := h.WaitForCertificateReady(ns, name, timeout)
-	if err != nil {
-		log.Logf("Error waiting for Certificate to become Ready: %v", err)
-		h.Kubectl(ns).DescribeResource("certificate", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		h.describeCertificateRequestFromCertificate(ns, certificate)
-		return err
-	}
-
-	_, err = h.ValidateIssuedCertificate(certificate, rootCAPEM)
-	if err != nil {
-		log.Logf("Error validating issued certificate: %v", err)
-		h.Kubectl(ns).DescribeResource("certificate", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		h.describeCertificateRequestFromCertificate(ns, certificate)
-		return err
-	}
-
-	return nil
 }
 
 func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *cmapi.Certificate) {

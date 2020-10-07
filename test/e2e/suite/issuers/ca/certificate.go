@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
@@ -33,7 +33,6 @@ import (
 
 var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	f := framework.NewDefaultFramework("create-ca-certificate")
-	h := f.Helper()
 
 	issuerName := "test-ca-issuer"
 	issuerSecretName := "ca-issuer-signing-keypair"
@@ -74,7 +73,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			_, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -89,8 +93,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			_, err := certClient.Create(context.TODO(), crt, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -121,9 +129,14 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				By("Creating a Certificate")
 				cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, v.inputDuration, v.inputRenewBefore), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				By("Verifying the Certificate is valid")
-				err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
+				By("Waiting for the Certificate to be issued...")
+				err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
 				Expect(err).NotTo(HaveOccurred())
+
+				By("Validating the issued Certificate...")
+				err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+				Expect(err).NotTo(HaveOccurred())
+
 				f.CertificateDurationValid(cert, v.expectedDuration, 0)
 			})
 		}
@@ -142,8 +155,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			By("Creating a Certificate")
 			_, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -161,8 +178,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			By("Creating a Certificate with Usages")
 			_, err := certClient.Create(context.TODO(), gen.Certificate(certificateName, gen.SetCertificateNamespace(f.Namespace.Name), gen.SetCertificateCommonName("test.domain.com"), gen.SetCertificateSecretName(certificateSecretName), gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName, Kind: v1.IssuerKind}), gen.SetCertificateKeyUsages(v1.UsageServerAuth, v1.UsageClientAuth)), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

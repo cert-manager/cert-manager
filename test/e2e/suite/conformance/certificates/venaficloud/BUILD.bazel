@@ -2,17 +2,17 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["vault_approle.go"],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/vault",
+    srcs = ["cloud.go"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/venaficloud",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//test/e2e/framework:go_default_library",
-        "//test/e2e/framework/addon:go_default_library",
-        "//test/e2e/framework/addon/vault:go_default_library",
         "//test/e2e/framework/helper/featureset:go_default_library",
+        "//test/e2e/framework/util/errors:go_default_library",
         "//test/e2e/suite/conformance/certificates:go_default_library",
+        "//test/e2e/suite/issuers/venafi/addon:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",

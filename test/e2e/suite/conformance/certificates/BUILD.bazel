@@ -3,8 +3,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "featureset.go",
         "suite.go",
+        "tests.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates",
     visibility = ["//visibility:public"],
@@ -14,6 +14,9 @@ go_library(
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/e2e/framework:go_default_library",
+        "//test/e2e/framework/helper:go_default_library",
+        "//test/e2e/framework/helper/featureset:go_default_library",
+        "//test/e2e/framework/helper/validations:go_default_library",
         "//test/e2e/util:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",
@@ -38,6 +41,7 @@ filegroup(
         "//test/e2e/suite/conformance/certificates/selfsigned:all-srcs",
         "//test/e2e/suite/conformance/certificates/vault:all-srcs",
         "//test/e2e/suite/conformance/certificates/venafi:all-srcs",
+        "//test/e2e/suite/conformance/certificates/venaficloud:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

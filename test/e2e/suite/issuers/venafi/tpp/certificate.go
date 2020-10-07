@@ -34,7 +34,6 @@ import (
 
 var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-certificate")
-	h := f.Helper()
 
 	var (
 		issuer                *cmapi.Issuer
@@ -83,8 +82,12 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 		_, err := certClient.Create(context.TODO(), crt, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Verifying the Certificate is valid")
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*90)
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
