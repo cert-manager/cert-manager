@@ -33,3 +33,27 @@ func DNS01LookupFQDN(domain string, followCNAME bool, nameservers ...string) (st
 
 	return fqdn, nil
 }
+
+// FindBestMatch returns the longest match for a given domain within a list of domains
+func FindBestMatch(query string, domains ...string) (string, error) {
+	var maxSoFar int
+	var longest string
+
+	for _, domain := range domains {
+		if query == domain {
+			// Found exact match
+			return domain, nil
+		}
+
+		maxHere := dns.CompareDomainName(query, domain)
+		if maxHere > maxSoFar && dns.IsSubDomain(domain, query) {
+			maxSoFar = maxHere
+			longest = domain
+		}
+	}
+
+	if len(longest) == 0 {
+		return "", fmt.Errorf("query: %v has no matches", query)
+	}
+	return longest, nil
+}
