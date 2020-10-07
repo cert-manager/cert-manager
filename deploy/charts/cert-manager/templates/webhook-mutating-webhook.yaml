@@ -35,6 +35,7 @@ webhooks:
           - "*/*"
     {{- if $isV1AdmissionRegistration }}
     admissionReviewVersions: ["v1", "v1beta1"]
+    timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
     {{- end }}
     failurePolicy: Fail
 {{- if (semverCompare ">=1.12-0" .Capabilities.KubeVersion.GitVersion) }}

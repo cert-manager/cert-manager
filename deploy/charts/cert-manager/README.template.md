@@ -133,6 +133,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `https_proxy` | Value of the `HTTPS_PROXY` environment variable in the cert-manager pod | |
 | `no_proxy` | Value of the `NO_PROXY` environment variable in the cert-manager pod | |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
+| `webhook.timeoutSeconds` | Seconds the API server should wait the webhook to respond before treating the call as a failure. | `10` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.mutatingWebhookConfigurationAnnotations` | Annotations to add to the mutating webhook configuration | `{}` |
