@@ -20,14 +20,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-
-	"github.com/Venafi/vcert"
-	"github.com/Venafi/vcert/pkg/certificate"
-	"github.com/Venafi/vcert/pkg/endpoint"
+	vcert "github.com/Venafi/vcert/v4"
+	"github.com/Venafi/vcert/v4/pkg/certificate"
+	"github.com/Venafi/vcert/v4/pkg/endpoint"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 )
 
 const (

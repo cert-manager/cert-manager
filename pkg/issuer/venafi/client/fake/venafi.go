@@ -19,7 +19,7 @@ package fake
 import (
 	"time"
 
-	"github.com/Venafi/vcert/pkg/endpoint"
+	"github.com/Venafi/vcert/v4/pkg/endpoint"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 )
