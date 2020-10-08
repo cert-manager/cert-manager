@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Venafi/vcert/pkg/certificate"
-	"github.com/Venafi/vcert/pkg/endpoint"
-	"github.com/Venafi/vcert/pkg/venafi/fake"
+	"github.com/Venafi/vcert/v4/pkg/certificate"
+	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/Venafi/vcert/v4/pkg/venafi/fake"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 	internalfake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"

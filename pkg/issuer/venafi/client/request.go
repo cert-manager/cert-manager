@@ -23,10 +23,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Venafi/vcert/v4/pkg/certificate"
+
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-
-	"github.com/Venafi/vcert/pkg/certificate"
-
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
