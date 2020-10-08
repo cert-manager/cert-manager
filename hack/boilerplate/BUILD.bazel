@@ -13,3 +13,16 @@ filegroup(
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
+
+genrule(
+    name = "boilerplate.bzl.timestamped.txt",
+    srcs = [":boilerplate.bzl.txt"],
+    outs = ["boilerplate.bzl.timestamped.txt.out"],
+    cmd = " ".join([
+        "sed",
+        "s/YEAR/$$(date +\"%Y\")/",
+        "$(location :boilerplate.bzl.txt)",
+        "> $@",
+    ]),
+    visibility = ["//visibility:public"],
+)
