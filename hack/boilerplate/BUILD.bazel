@@ -20,9 +20,10 @@ genrule(
     outs = ["boilerplate.bzl.timestamped.txt.out"],
     cmd = " ".join([
         "sed",
-        "s/YEAR/$$(date +\"%Y\")/",
+        "s/YEAR/$$(grep '^STABLE_LAST_COMMIT_YEAR' bazel-out/stable-status.txt | awk '{print $$2}')/",
         "$(location :boilerplate.bzl.txt)",
         "> $@",
     ]),
+    stamp = 1,
     visibility = ["//visibility:public"],
 )

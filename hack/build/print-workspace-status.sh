@@ -33,6 +33,7 @@ if [ ! -z "$(git status --porcelain)" ]; then
 fi
 
 cat <<EOF
+STABLE_LAST_COMMIT_YEAR $(git log -1 --date=format:"%Y" --format="%ad")
 STABLE_BUILD_GIT_COMMIT ${KUBE_GIT_COMMIT-}
 STABLE_BUILD_SCM_STATUS ${KUBE_GIT_TREE_STATE-}
 STABLE_BUILD_SCM_REVISION ${KUBE_GIT_VERSION-}
