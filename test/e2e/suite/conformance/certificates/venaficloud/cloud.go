@@ -72,7 +72,7 @@ func (v *venafiProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectRefe
 	Expect(v.cloud.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision cloud venafi")
 
 	if ref.Kind == "ClusterIssuer" {
-		err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
+		err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Delete(context.TODO(), ref.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
