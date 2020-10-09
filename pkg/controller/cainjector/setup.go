@@ -24,11 +24,14 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"golang.org/x/sync/errgroup"
 
-	admissionreg "k8s.io/api/admissionregistration/v1beta1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	admissionregv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
+	apiregv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	apiregv1beta1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,37 +49,71 @@ type injectorSetup struct {
 }
 
 var (
-	MutatingWebhookSetup = injectorSetup{
-		resourceName: "mutatingwebhookconfiguration",
-		injector:     mutatingWebhookInjector{},
-		listType:     &admissionreg.MutatingWebhookConfigurationList{},
-	}
-
-	ValidatingWebhookSetup = injectorSetup{
-		resourceName: "validatingwebhookconfiguration",
-		injector:     validatingWebhookInjector{},
-		listType:     &admissionreg.ValidatingWebhookConfigurationList{},
-	}
-
-	APIServiceSetup = injectorSetup{
-		resourceName: "apiservice",
-		injector:     apiServiceInjector{},
-		listType:     &apireg.APIServiceList{},
-	}
-
-	CRDSetup = injectorSetup{
-		resourceName: "customresourcedefinition",
-		injector:     crdConversionInjector{},
-		listType:     &apiext.CustomResourceDefinitionList{},
-	}
-
-	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 	ControllerNames []string
 )
+
+// buildInjectorSetups builds the injectors for supported Kubernetes API versions
+func buildInjectorSetups(mgr ctrl.Manager) []injectorSetup {
+	var injectorSetups []injectorSetup
+	if mgr.GetScheme().IsVersionRegistered(apiextv1.SchemeGroupVersion) {
+		injectorSetups = append(injectorSetups, injectorSetup{
+			resourceName: "customresourcedefinition",
+			injector:     crdConversionInjector{},
+			listType:     &apiextv1.CustomResourceDefinitionList{},
+		})
+	} else {
+		// fall back to v1beta1
+		injectorSetups = append(injectorSetups, injectorSetup{
+			resourceName: "customresourcedefinition",
+			injector:     crdConversionv1beta1Injector{},
+			listType:     &apiextv1beta1.CustomResourceDefinitionList{},
+		})
+	}
+	if !mgr.GetScheme().IsVersionRegistered(admissionregv1.SchemeGroupVersion) {
+		injectorSetups = append(injectorSetups, injectorSetup{
+			resourceName: "mutatingwebhookconfiguration",
+			injector:     mutatingWebhookInjector{},
+			listType:     &admissionregv1.MutatingWebhookConfigurationList{},
+		}, injectorSetup{
+			resourceName: "validatingwebhookconfiguration",
+			injector:     validatingWebhookInjector{},
+			listType:     &admissionregv1.ValidatingWebhookConfigurationList{},
+		})
+	} else {
+		injectorSetups = append(injectorSetups, injectorSetup{
+			resourceName: "mutatingwebhookconfiguration",
+			injector:     mutatingWebhookv1beta1Injector{},
+			listType:     &admissionregv1beta1.MutatingWebhookConfigurationList{},
+		}, injectorSetup{
+			resourceName: "validatingwebhookconfiguration",
+			injector:     validatingWebhookv1beta1Injector{},
+			listType:     &admissionregv1beta1.ValidatingWebhookConfigurationList{},
+		})
+	}
+
+	if !mgr.GetScheme().IsVersionRegistered(apiregv1.SchemeGroupVersion) {
+		injectorSetups = append(injectorSetups, injectorSetup{
+			resourceName: "apiservice",
+			injector:     apiServiceInjector{},
+			listType:     &apiregv1.APIServiceList{},
+		})
+	} else {
+		// fall back to v1beta1
+		injectorSetups = append(injectorSetups, injectorSetup{
+			resourceName: "apiservice",
+			injector:     apiServicev1beta1Injector{},
+			listType:     &apiregv1beta1.APIServiceList{},
+		})
+	}
+
+	return injectorSetups
+}
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
 func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
+	injectorSetups := buildInjectorSetups(mgr)
+
 	controllers := make([]controller.Controller, len(injectorSetups))
 	for i, setup := range injectorSetups {
 		controller, err := newGenericInjectionController(groupName, mgr, setup, sources, ca, client)
