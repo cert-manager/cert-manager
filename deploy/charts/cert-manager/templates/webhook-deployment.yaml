@@ -18,9 +18,13 @@ spec:
   replicas: {{ .Values.webhook.replicaCount }}
   selector:
     matchLabels:
+{{- if .Values.deploymentMatchLabels }}
+{{ toYaml .Values.webhook.deploymentMatchLabels | indent 6 }}
+{{- else }}
       app.kubernetes.io/name: {{ include "webhook.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "webhook"
+{{- end }}
   {{- with .Values.webhook.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}

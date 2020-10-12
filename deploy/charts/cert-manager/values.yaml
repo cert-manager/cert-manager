@@ -138,6 +138,10 @@ ingressShim: {}
   # defaultIssuerKind: ""
   # defaultIssuerGroup: ""
 
+# Optional match labels for the cert-manager deployment. If no value is set
+# the default labels will be used.
+deploymentMatchLabels: {}
+
 prometheus:
   enabled: true
   servicemonitor:
@@ -199,6 +203,10 @@ webhook:
 
   # Optional additional annotations to add to the webhook Deployment
   # deploymentAnnotations: {}
+
+  # Optional match labels for the cert-manager deployment. If no value is set
+  # the default labels will be used.
+  deploymentMatchLabels: {}
 
   # Optional additional annotations to add to the webhook Pods
   # podAnnotations: {}
@@ -311,6 +319,10 @@ cainjector:
 
   # Optional additional arguments for cainjector
   extraArgs: []
+
+  # Optional match labels for the cainjector deployment. If no value is set
+  # the default labels will be used.
+  deploymentMatchLabels: {}
 
   resources: {}
     # requests:

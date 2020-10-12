@@ -19,9 +19,13 @@ spec:
   replicas: {{ .Values.cainjector.replicaCount }}
   selector:
     matchLabels:
+{{- if .Values.deploymentMatchLabels }}
+{{ toYaml .Values.cainjector.deploymentMatchLabels | indent 6 }}
+{{- else }}
       app.kubernetes.io/name: {{ include "cainjector.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "cainjector"
+{{- end }}
   {{- with .Values.cainjector.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}

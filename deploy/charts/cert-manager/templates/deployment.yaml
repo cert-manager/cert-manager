@@ -18,9 +18,13 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
+{{- if .Values.deploymentMatchLabels }}
+{{ toYaml .Values.deploymentMatchLabels | indent 6 }}
+{{- else }}
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "controller"
+{{- end }}
   {{- with .Values.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}
