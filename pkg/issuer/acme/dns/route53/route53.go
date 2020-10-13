@@ -245,16 +245,23 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return "", err
 	}
 
-	var hostedZoneID string
+	zoneToID := make(map[string]string)
+	var hostedZones []string
 	for _, hostedZone := range resp.HostedZones {
 		// .Name has a trailing dot
-		if !*hostedZone.Config.PrivateZone && *hostedZone.Name == authZone {
-			hostedZoneID = *hostedZone.Id
-			break
+		if !*hostedZone.Config.PrivateZone {
+			zoneToID[*hostedZone.Name] = *hostedZone.Id
+			hostedZones = append(hostedZones, *hostedZone.Name)
 		}
 	}
+	authZone, err = util.FindBestMatch(fqdn, hostedZones...)
+	if err != nil {
+		return "", fmt.Errorf("Zone %s not found in Route 53 for domain %s", authZone, fqdn)
+	}
 
-	if len(hostedZoneID) == 0 {
+	hostedZoneID, ok := zoneToID[authZone]
+
+	if len(hostedZoneID) == 0 || !ok {
 		return "", fmt.Errorf("Zone %s not found in Route 53 for domain %s", authZone, fqdn)
 	}
 

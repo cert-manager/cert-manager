@@ -105,6 +105,7 @@ func TestRoute53Present(t *testing.T) {
 	mockResponses := MockResponseMap{
 		"/2013-04-01/hostedzonesbyname":         MockResponse{StatusCode: 200, Body: ListHostedZonesByNameResponse},
 		"/2013-04-01/hostedzone/ABCDEFG/rrset/": MockResponse{StatusCode: 200, Body: ChangeResourceRecordSetsResponse},
+		"/2013-04-01/hostedzone/HIJKLMN/rrset/": MockResponse{StatusCode: 200, Body: ChangeResourceRecordSetsResponse},
 		"/2013-04-01/change/123456":             MockResponse{StatusCode: 200, Body: GetChangeResponse},
 	}
 
@@ -118,6 +119,18 @@ func TestRoute53Present(t *testing.T) {
 
 	err := provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
+
+	subDomain := "foo.example.com"
+	err = provider.Present(subDomain, "_acme-challenge."+subDomain+".", keyAuth)
+	assert.NoError(t, err, "Expected Present to return no error")
+
+	nonExistentSubDomain := "bar.foo.example.com"
+	err = provider.Present(nonExistentSubDomain, nonExistentSubDomain+".", keyAuth)
+	assert.NoError(t, err, "Expected Present to return no error")
+
+	nonExistentDomain := "baz.com"
+	err = provider.Present(nonExistentDomain, nonExistentDomain+".", keyAuth)
+	assert.Error(t, err, "Expected Present to return an error")
 }
 
 func TestAssumeRole(t *testing.T) {
