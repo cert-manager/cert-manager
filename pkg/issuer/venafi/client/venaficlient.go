@@ -30,8 +30,9 @@ import (
 )
 
 const (
-	tppUsernameKey = "username"
-	tppPasswordKey = "password"
+	tppUsernameKey    = "username"
+	tppPasswordKey    = "password"
+	tppAccessTokenKey = "access-token"
 
 	defaultAPIKeyKey = "api-key"
 )
@@ -101,6 +102,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 
 		username := string(tppSecret.Data[tppUsernameKey])
 		password := string(tppSecret.Data[tppPasswordKey])
+		accessToken := string(tppSecret.Data[tppAccessTokenKey])
 		caBundle := string(tpp.CABundle)
 
 		return &vcert.Config{
@@ -111,8 +113,9 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 			LogVerbose:      true,
 			ConnectionTrust: caBundle,
 			Credentials: &endpoint.Authentication{
-				User:     username,
-				Password: password,
+				User:        username,
+				Password:    password,
+				AccessToken: accessToken,
 			},
 		}, nil
 	case venCfg.Cloud != nil:
