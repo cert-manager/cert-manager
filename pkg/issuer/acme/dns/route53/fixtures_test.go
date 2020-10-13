@@ -30,6 +30,16 @@ var ListHostedZonesByNameResponse = `<?xml version="1.0" encoding="UTF-8"?>
          </Config>
          <ResourceRecordSetCount>10</ResourceRecordSetCount>
       </HostedZone>
+      <HostedZone>
+         <Id>/hostedzone/HIJKLMN</Id>
+         <Name>foo.example.com.</Name>
+         <CallerReference>D2224C5B-684A-DB4A-BB9A-E09E3BAFEA7A</CallerReference>
+         <Config>
+            <Comment>Test comment</Comment>
+            <PrivateZone>false</PrivateZone>
+         </Config>
+         <ResourceRecordSetCount>10</ResourceRecordSetCount>
+      </HostedZone>
    </HostedZones>
    <IsTruncated>true</IsTruncated>
    <NextDNSName>example2.com</NextDNSName>
