@@ -192,7 +192,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", defaultKubeconfig, ""+
 		"Paths to a kubeconfig. Only required if out-of-cluster.")
 	fs.Float32Var(&s.KubernetesAPIQPS, "kubernetes-api-qps", defaultKubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
-	fs.IntVar(&s.KubernetesAPIBurst, "kubernetes-api-burst", defaultKubernetesAPIBurst, "maximum burst for throttle requests to the Kubernetes apiserver")
+	fs.IntVar(&s.KubernetesAPIBurst, "kubernetes-api-burst", defaultKubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
 	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
