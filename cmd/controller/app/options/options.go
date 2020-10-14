@@ -45,8 +45,11 @@ import (
 )
 
 type ControllerOptions struct {
-	APIServerHost            string
-	Kubeconfig               string
+	APIServerHost      string
+	Kubeconfig         string
+	KubernetesAPIQPS   float32
+	KubernetesAPIBurst int
+
 	ClusterResourceNamespace string
 	Namespace                string
 
@@ -92,8 +95,11 @@ type ControllerOptions struct {
 }
 
 const (
-	defaultAPIServerHost            = ""
-	defaultKubeconfig               = ""
+	defaultAPIServerHost              = ""
+	defaultKubeconfig                 = ""
+	defaultKubernetesAPIQPS   float32 = 10
+	defaultKubernetesAPIBurst         = 20
+
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
 
@@ -155,6 +161,8 @@ func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
 		APIServerHost:                     defaultAPIServerHost,
 		ClusterResourceNamespace:          defaultClusterResourceNamespace,
+		KubernetesAPIQPS:                  defaultKubernetesAPIQPS,
+		KubernetesAPIBurst:                defaultKubernetesAPIBurst,
 		Namespace:                         defaultNamespace,
 		LeaderElect:                       defaultLeaderElect,
 		LeaderElectionNamespace:           defaultLeaderElectionNamespace,
@@ -183,6 +191,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"will be attempted.")
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", defaultKubeconfig, ""+
 		"Paths to a kubeconfig. Only required if out-of-cluster.")
+	fs.Float32Var(&s.KubernetesAPIQPS, "kubernetes-api-qps", defaultKubernetesAPIQPS, "indicates the maximum QPS requests to the Kubernetes master")
+	fs.IntVar(&s.KubernetesAPIBurst, "kubernetes-api-burst", defaultKubernetesAPIBurst, "maximum burst for throttle requests to the Kubernetes master")
 	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
