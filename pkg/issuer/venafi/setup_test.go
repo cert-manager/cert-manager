@@ -65,6 +65,11 @@ func TestSetup(t *testing.T) {
 			clientBuilder: failingClientBuilder,
 			expectedErr:   true,
 			iss:           baseIssuer.DeepCopy(),
+			expectedCondition: &cmapi.IssuerCondition{
+				Reason:  "ErrorSetup",
+				Message: "Failed to setup Venafi issuer: error building client: this is an error",
+				Status:  "False",
+			},
 		},
 
 		"if ping fails then should error": {
@@ -72,8 +77,8 @@ func TestSetup(t *testing.T) {
 			iss:           baseIssuer.DeepCopy(),
 			expectedErr:   true,
 			expectedCondition: &cmapi.IssuerCondition{
-				Reason:  "ErrorPing",
-				Message: "Failed to connect to Venafi endpoint",
+				Reason:  "ErrorSetup",
+				Message: "Failed to setup Venafi issuer: error pinging Venafi API: this is a ping error",
 				Status:  "False",
 			},
 		},
