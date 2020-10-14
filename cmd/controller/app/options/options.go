@@ -97,8 +97,8 @@ type ControllerOptions struct {
 const (
 	defaultAPIServerHost              = ""
 	defaultKubeconfig                 = ""
-	defaultKubernetesAPIQPS   float32 = 10
-	defaultKubernetesAPIBurst         = 20
+	defaultKubernetesAPIQPS   float32 = 5
+	defaultKubernetesAPIBurst         = 10
 
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
@@ -191,8 +191,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"will be attempted.")
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", defaultKubeconfig, ""+
 		"Paths to a kubeconfig. Only required if out-of-cluster.")
-	fs.Float32Var(&s.KubernetesAPIQPS, "kubernetes-api-qps", defaultKubernetesAPIQPS, "indicates the maximum QPS requests to the Kubernetes master")
-	fs.IntVar(&s.KubernetesAPIBurst, "kubernetes-api-burst", defaultKubernetesAPIBurst, "maximum burst for throttle requests to the Kubernetes master")
+	fs.Float32Var(&s.KubernetesAPIQPS, "kubernetes-api-qps", defaultKubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
+	fs.IntVar(&s.KubernetesAPIBurst, "kubernetes-api-burst", defaultKubernetesAPIBurst, "maximum burst for throttle requests to the Kubernetes apiserver")
 	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
@@ -293,6 +293,10 @@ func (o *ControllerOptions) Validate() error {
 	case "ClusterIssuer":
 	default:
 		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
+	}
+
+	if float32(o.KubernetesAPIBurst) < o.KubernetesAPIQPS {
+		return fmt.Errorf("invalid value for kubernetes-api-burst: %v must be higheror equal to kubernetes-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 
 	for _, server := range o.DNS01RecursiveNameservers {
