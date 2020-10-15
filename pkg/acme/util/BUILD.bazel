@@ -5,7 +5,6 @@ go_library(
     srcs = ["util.go"],
     importpath = "github.com/jetstack/cert-manager/pkg/acme/util",
     visibility = ["//visibility:public"],
-    deps = ["//pkg/logs:go_default_library"],
 )
 
 filegroup(
