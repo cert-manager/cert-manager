@@ -304,7 +304,7 @@ func (o *ControllerOptions) Validate() error {
 	}
 
 	if float32(o.KubernetesAPIBurst) < o.KubernetesAPIQPS {
-		return fmt.Errorf("invalid value for kube-api-burst: %v must be higheror equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
+		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher or equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 
 	for _, server := range o.DNS01RecursiveNameservers {
