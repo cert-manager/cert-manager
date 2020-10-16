@@ -97,8 +97,8 @@ type ControllerOptions struct {
 const (
 	defaultAPIServerHost              = ""
 	defaultKubeconfig                 = ""
-	defaultKubernetesAPIQPS   float32 = 5
-	defaultKubernetesAPIBurst         = 10
+	defaultKubernetesAPIQPS   float32 = 20
+	defaultKubernetesAPIBurst         = 50
 
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
@@ -191,8 +191,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"will be attempted.")
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", defaultKubeconfig, ""+
 		"Paths to a kubeconfig. Only required if out-of-cluster.")
-	fs.Float32Var(&s.KubernetesAPIQPS, "kubernetes-api-qps", defaultKubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
-	fs.IntVar(&s.KubernetesAPIBurst, "kubernetes-api-burst", defaultKubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
+	fs.Float32Var(&s.KubernetesAPIQPS, "kube-api-qps", defaultKubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
+	fs.IntVar(&s.KubernetesAPIBurst, "kube-api-burst", defaultKubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
 	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
@@ -295,8 +295,16 @@ func (o *ControllerOptions) Validate() error {
 		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
 	}
 
+	if o.KubernetesAPIBurst <= 0 {
+		return fmt.Errorf("invalid value for kube-api-burst: %v must be higher than 0", o.KubernetesAPIBurst)
+	}
+
+	if o.KubernetesAPIQPS <= 0 {
+		return fmt.Errorf("invalid value for kube-api-qps: %v must be higher than 0", o.KubernetesAPIQPS)
+	}
+
 	if float32(o.KubernetesAPIBurst) < o.KubernetesAPIQPS {
-		return fmt.Errorf("invalid value for kubernetes-api-burst: %v must be higheror equal to kubernetes-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
+		return fmt.Errorf("invalid value for kube-api-burst: %v must be higheror equal to kube-api-qps: %v", o.KubernetesAPIQPS, o.KubernetesAPIQPS)
 	}
 
 	for _, server := range o.DNS01RecursiveNameservers {
