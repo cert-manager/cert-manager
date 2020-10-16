@@ -28,10 +28,11 @@ type Venafi struct {
 }
 
 type VenafiTPPConfiguration struct {
-	URL      string
-	Zone     string
-	Username string
-	Password string
+	URL         string
+	Zone        string
+	Username    string
+	Password    string
+	AccessToken string
 }
 
 type VenafiCloudConfiguration struct {
@@ -53,6 +54,7 @@ func (v *VenafiTPPConfiguration) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&v.Zone, "global.venafi-tpp-zone", os.Getenv("VENAFI_TPP_ZONE"), "Zone to use during Venafi TPP end-to-end tests")
 	fs.StringVar(&v.Username, "global.venafi-tpp-username", os.Getenv("VENAFI_TPP_USERNAME"), "Username to use when authenticating with the Venafi TPP instance")
 	fs.StringVar(&v.Password, "global.venafi-tpp-password", os.Getenv("VENAFI_TPP_PASSWORD"), "Password to use when authenticating with the Venafi TPP instance")
+	fs.StringVar(&v.AccessToken, "global.venafi-tpp-access-token", os.Getenv("VENAFI_TPP_ACCESS_TOKEN"), "Access token to use when authenticating with the Venafi TPP instance")
 }
 
 func (v *VenafiTPPConfiguration) Validate() []error {

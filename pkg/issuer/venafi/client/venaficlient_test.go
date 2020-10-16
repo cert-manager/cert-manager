@@ -64,6 +64,7 @@ func TestConfigForIssuerT(t *testing.T) {
 	zone := "test-zone"
 	username := "test-username"
 	password := "test-password"
+	accessToken := "KT2EEVTIjWM/37L78dqJAg=="
 	apiKey := "test-api-key"
 	customKey := "test-custom-key"
 
@@ -122,6 +123,21 @@ func TestConfigForIssuerT(t *testing.T) {
 				}
 				if pass := cnf.Credentials.Password; pass != password {
 					t.Errorf("got unexpected password: %s", pass)
+				}
+				checkZone(t, zone, cnf)
+			},
+			expectedErr: false,
+		},
+		"if TPP and secret returns access-token, should return config with those credentials": {
+			iss: tppIssuer,
+			secretsLister: generateSecretLister(&corev1.Secret{
+				Data: map[string][]byte{
+					tppAccessTokenKey: []byte(accessToken),
+				},
+			}, nil),
+			CheckFn: func(t *testing.T, cnf *vcert.Config) {
+				if actualAccessToken := cnf.Credentials.AccessToken; actualAccessToken != accessToken {
+					t.Errorf("got unexpected accessToken: %q", actualAccessToken)
 				}
 				checkZone(t, zone, cnf)
 			},

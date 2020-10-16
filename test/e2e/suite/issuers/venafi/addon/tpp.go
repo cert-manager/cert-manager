@@ -63,11 +63,14 @@ func (v *VenafiTPP) Setup(cfg *config.Config) error {
 	if v.config.Addons.Venafi.TPP.Zone == "" {
 		return errors.NewSkip(fmt.Errorf("Venafi TPP Zone must be set"))
 	}
-	if v.config.Addons.Venafi.TPP.Username == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi TPP Username must be set"))
-	}
-	if v.config.Addons.Venafi.TPP.Password == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi TPP Password must be set"))
+
+	if v.config.Addons.Venafi.TPP.AccessToken == "" {
+		if v.config.Addons.Venafi.TPP.Username == "" {
+			return errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing username"))
+		}
+		if v.config.Addons.Venafi.TPP.Password == "" {
+			return errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing password"))
+		}
 	}
 
 	return nil
@@ -80,8 +83,9 @@ func (v *VenafiTPP) Provision() error {
 			Namespace:    v.Namespace,
 		},
 		Data: map[string][]byte{
-			"username": []byte(v.config.Addons.Venafi.TPP.Username),
-			"password": []byte(v.config.Addons.Venafi.TPP.Password),
+			"username":     []byte(v.config.Addons.Venafi.TPP.Username),
+			"password":     []byte(v.config.Addons.Venafi.TPP.Password),
+			"access-token": []byte(v.config.Addons.Venafi.TPP.AccessToken),
 		},
 	}
 
