@@ -110,6 +110,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `securityContext.enabled` | Deprecated (use `securityContext`) - Enable security context | `false` |
 | `containerSecurityContext` | Security context to be set on the controller component container | `{}` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
+| `deploymentMatchLabels` | Match Labels that will be applied to all the deployments | `{app.kubernetes.io/name: (cert-manager|cert-manager-webhook|cert-manager-cainjector), app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/component: (controller|webhook|cainjector)}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
 | `ingressShim.defaultIssuerName` | Optional default issuer to use for ingress resources |  |
