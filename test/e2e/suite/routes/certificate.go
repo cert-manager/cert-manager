@@ -62,7 +62,7 @@ var _ = framework.CertManagerDescribe("route binding", func() {
 
 			By("Creating a Route with Annotations")
 			routeAnnotations := make(map[string]string)
-			routeAnnotations["cert-manager.io/certs-from-secret"] = certificateSecretName
+			routeAnnotations["routes.cert-manager.io/certs-from-secret"] = certificateSecretName
 			_, err = routeClient.Create(context.TODO(),
 				gen.Route(routeName, gen.SetRouteNamespace(f.Namespace.Name),
 					gen.AddRouteAnnotations(routeAnnotations),
@@ -88,7 +88,7 @@ var _ = framework.CertManagerDescribe("route binding", func() {
 
 			By("Creating a Route with Annotations")
 			routeAnnotations := make(map[string]string)
-			routeAnnotations["cert-manager.io/certs-from-secret"] = certificateSecretName
+			routeAnnotations["routes.cert-manager.io/certs-from-secret"] = certificateSecretName
 			_, err = routeClient.Create(context.TODO(),
 				gen.Route(routeName, gen.SetRouteNamespace(f.Namespace.Name),
 					gen.AddRouteAnnotations(routeAnnotations),
@@ -112,7 +112,7 @@ var _ = framework.CertManagerDescribe("route binding", func() {
 
 			By("Creating a Route with Annotations")
 			routeAnnotations := make(map[string]string)
-			routeAnnotations["cert-manager.io/destinationCA-from-secret"] = certificateSecretName
+			routeAnnotations["routes.cert-manager.io/destinationCA-from-secret"] = certificateSecretName
 			_, err = routeClient.Create(context.TODO(),
 				gen.Route(routeName, gen.SetRouteNamespace(f.Namespace.Name),
 					gen.AddRouteAnnotations(routeAnnotations),

@@ -34,11 +34,11 @@ func (c *routeRequestManager) Sync(ctx context.Context, instance *routev1.Route)
 	if instance.Spec.TLS == nil {
 		return nil
 	}
-	secretName, ok := instance.GetAnnotations()[certAnnotation]
-	caSecretName, okCa := instance.GetAnnotations()[destCAAnnotation]
+	secretName, secretNameDefined := instance.GetAnnotations()[certAnnotation]
+	caSecretName, caSecretNameDefined := instance.GetAnnotations()[destCAAnnotation]
 	shouldUpdate := false
 
-	if !ok {
+	if !secretNameDefined {
 		log.Error(nil, "Unable to get annotation", "route", instance)
 		if instance.Spec.TLS.Key != "" {
 			instance.Spec.TLS.Key = ""
@@ -63,7 +63,7 @@ func (c *routeRequestManager) Sync(ctx context.Context, instance *routev1.Route)
 		log.Info("Attaching Cert to Route from Secret", "secret", secretName)
 		shouldUpdate = shouldUpdate || populateRouteWithCertifcates(instance, secret)
 	}
-	if !okCa {
+	if !caSecretNameDefined {
 		if instance.Spec.TLS.DestinationCACertificate != "" {
 			instance.Spec.TLS.DestinationCACertificate = ""
 			shouldUpdate = true
@@ -92,19 +92,19 @@ func populateRouteWithCertifcates(route *routev1.Route, secret *corev1.Secret) b
 	shouldUpdate := false
 	if route.Spec.TLS.Termination == "edge" || route.Spec.TLS.Termination == "reencrypt" {
 		// here we need to replace the terminating certifciate
-		if value, ok := secret.Data[Key]; ok && len(value) != 0 {
+		if value, ok := secret.Data[corev1.TLSPrivateKeyKey]; ok && len(value) != 0 {
 			if route.Spec.TLS.Key != string(value) {
 				route.Spec.TLS.Key = string(value)
 				shouldUpdate = true
 			}
 		}
-		if value, ok := secret.Data[Cert]; ok && len(value) != 0 {
+		if value, ok := secret.Data[corev1.TLSCertKey]; ok && len(value) != 0 {
 			if route.Spec.TLS.Certificate != string(value) {
 				route.Spec.TLS.Certificate = string(value)
 				shouldUpdate = true
 			}
 		}
-		if value, ok := secret.Data[CA]; ok && len(value) != 0 {
+		if value, ok := secret.Data[corev1.ServiceAccountRootCAKey]; ok && len(value) != 0 {
 			if route.Spec.TLS.CACertificate != string(value) {
 				route.Spec.TLS.CACertificate = string(value)
 				shouldUpdate = true
@@ -116,7 +116,7 @@ func populateRouteWithCertifcates(route *routev1.Route, secret *corev1.Secret) b
 
 func populateRouteDestCA(route *routev1.Route, secret *corev1.Secret) bool {
 	shouldUpdate := false
-	if value, ok := secret.Data[CA]; ok && len(value) != 0 {
+	if value, ok := secret.Data[corev1.ServiceAccountRootCAKey]; ok && len(value) != 0 {
 		if route.Spec.TLS.DestinationCACertificate != string(value) {
 			route.Spec.TLS.DestinationCACertificate = string(value)
 			shouldUpdate = true

@@ -21,11 +21,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const TLSSecret = "kubernetes.io/tls"
-const AnnotationBase = "cert-manager.io"
-const Cert = "tls.crt"
-const Key = "tls.key"
-const CA = "ca.crt"
+// const TLSSecret = "kubernetes.io/tls"
+const AnnotationBase = "routes.cert-manager.io"
+
+// const Cert = "tls.crt"
+// const Key = "tls.key"
+// const CA = "ca.crt"
 const certAnnotation = AnnotationBase + "/certs-from-secret"
 const destCAAnnotation = AnnotationBase + "/destinationCA-from-secret"
 
@@ -39,7 +40,7 @@ func IsRouteResourceAvailable(ctx *controllerpkg.Context) (bool, error) {
 	apiResources, err := ctx.RouteClient.Discovery().ServerResourcesForGroupVersion(gvk.GroupVersion().String())
 
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	for _, resource := range apiResources.APIResources {
 		if resource.Kind == "Route" {

@@ -205,9 +205,9 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, time.Second*30, informers.WithNamespace(opts.Namespace))
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, time.Second*30, kubeinformers.WithNamespace(opts.Namespace))
+	openshiftRouteInformerFactory := openshiftRouteInformers.NewSharedInformerFactoryWithOptions(routeCl, time.Second*30, openshiftRouteInformers.WithNamespace(opts.Namespace))
 
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
-	openshiftRouteInformerFactory := openshiftRouteInformers.NewSharedInformerFactoryWithOptions(routeCl, time.Second*30, openshiftRouteInformers.WithNamespace(opts.Namespace))
 
 	return &controller.Context{
 		RootContext:                   ctx,

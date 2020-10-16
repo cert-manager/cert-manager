@@ -50,7 +50,7 @@ type routeRequestManager struct {
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
 
-	// // used for testing
+	// used for testing
 	clock clock.Clock
 }
 
@@ -59,7 +59,7 @@ type routeRequestManager struct {
 // InformerSynced functions that must be synced, or an error.
 func (c *routeRequestManager) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
-	// log := logf.FromContext(ctx.RootContext, ControllerName)
+	log := logf.FromContext(ctx.RootContext, ControllerName)
 
 	// create a queue used to queue up items to be processed
 	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
@@ -81,7 +81,7 @@ func (c *routeRequestManager) Register(ctx *controllerpkg.Context) (workqueue.Ra
 
 	// register handler functions
 	routeInformer.V1().Routes().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
-	// secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: secretResourceHandler(log, c.routeLister, c.queue)})
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: secretResourceHandler(log, c.routeLister, c.queue)})
 
 	// clock is used to determine whether certificates need renewal
 	c.clock = clock.RealClock{}
