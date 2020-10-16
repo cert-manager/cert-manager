@@ -21,37 +21,41 @@ import (
 	"fmt"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (v *Venafi) Setup(ctx context.Context) error {
+func (v *Venafi) Setup(ctx context.Context) (err error) {
+	defer func() {
+		if err != nil {
+			errorMessage := "Failed to setup Venafi issuer"
+			v.log.Error(err, errorMessage)
+			apiutil.SetIssuerCondition(v.issuer, cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "ErrorSetup", fmt.Sprintf("%s: %v", errorMessage, err))
+			err = fmt.Errorf("%s: %v", errorMessage, err)
+		}
+	}()
+
 	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
-		return err
+		return fmt.Errorf("error building client: %v", err)
 	}
-
 	err = client.Ping()
 	if err != nil {
-		v.log.Error(err, "Issuer could not connect to endpoint with provided credentials. Issuer failed to connect to endpoint")
-		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse,
-			"ErrorPing", fmt.Sprintf("Failed to connect to Venafi endpoint"))
-		return fmt.Errorf("error verifying Venafi client: %s", err.Error())
+		return fmt.Errorf("error pinging Venafi API: %v", err)
 	}
 
 	// If it does not already have a 'ready' condition, we'll also log an event
 	// to make it really clear to users that this Issuer is ready.
-	if !apiutil.IssuerHasCondition(v.issuer, v1.IssuerCondition{
-		Type:   v1.IssuerConditionReady,
+	if !apiutil.IssuerHasCondition(v.issuer, cmapi.IssuerCondition{
+		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}) {
 		v.Recorder.Eventf(v.issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with Venafi server")
 	}
-
 	v.log.V(logf.DebugLevel).Info("Venafi issuer started")
-	apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionTrue, "Venafi issuer started", "Venafi issuer started")
+	apiutil.SetIssuerCondition(v.issuer, cmapi.IssuerConditionReady, cmmeta.ConditionTrue, "Venafi issuer started", "Venafi issuer started")
 
 	return nil
 }
