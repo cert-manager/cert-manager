@@ -53,8 +53,7 @@ func TestE2E(t *testing.T) {
 	flag.Parse()
 
 	if err := framework.DefaultConfig.Validate(); err != nil {
-		t.Errorf("Invalid test config: %v", err)
-		t.Fail()
+		t.Fatalf("Invalid test config: %v", err)
 	}
 
 	gomega.NewWithT(t)
