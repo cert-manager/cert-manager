@@ -139,6 +139,9 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		return nil, nil, fmt.Errorf("error creating rest config: %s", err.Error())
 	}
 
+	kubeCfg.QPS = opts.KubernetesAPIQPS
+	kubeCfg.Burst = opts.KubernetesAPIBurst
+
 	// Add User-Agent to client
 	kubeCfg = rest.AddUserAgent(kubeCfg, util.CertManagerUserAgent)
 
