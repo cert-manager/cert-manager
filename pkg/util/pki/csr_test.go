@@ -467,7 +467,7 @@ func TestGenerateCSR(t *testing.T) {
 	}
 }
 
-func Test_extensionsForCertificate(t *testing.T) {
+func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 	// 0xa0 = DigitalSignature and Encipherment usage
 	asn1DefaultKeyUsage, err := asn1.Marshal(asn1.BitString{Bytes: []byte{0xa0}, BitLength: asn1BitLength([]byte{0xa0})})
 	if err != nil {
@@ -542,13 +542,13 @@ func Test_extensionsForCertificate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := extensionsForCertificate(tt.crt)
+			got, err := buildKeyUsagesExtensionsForCertificate(tt.crt)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("extensionsForCertificate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("buildKeyUsagesExtensionsForCertificate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("extensionsForCertificate() got = %v, want %v", got, tt.want)
+				t.Errorf("buildKeyUsagesExtensionsForCertificate() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

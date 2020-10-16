@@ -91,6 +91,9 @@ spec:
                   type: array
                   items:
                     type: string
+                encodeUsagesInRequest:
+                  description: EncodeUsagesInRequest controls whether key usages should be present in the CertificateRequest
+                  type: boolean
                 ipAddresses:
                   description: IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
                   type: array
@@ -364,6 +367,9 @@ spec:
                   type: array
                   items:
                     type: string
+                encodeUsagesInRequest:
+                  description: EncodeUsagesInRequest controls whether key usages should be present in the CertificateRequest
+                  type: boolean
                 ipAddresses:
                   description: IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
                   type: array
@@ -639,6 +645,9 @@ spec:
                   type: array
                   items:
                     type: string
+                encodeUsagesInRequest:
+                  description: EncodeUsagesInRequest controls whether key usages should be present in the CertificateRequest
+                  type: boolean
                 ipAddresses:
                   description: IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
                   type: array
@@ -914,6 +923,9 @@ spec:
                   type: array
                   items:
                     type: string
+                encodeUsagesInRequest:
+                  description: EncodeUsagesInRequest controls whether key usages should be present in the CertificateRequest
+                  type: boolean
                 ipAddresses:
                   description: IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
                   type: array

@@ -186,6 +186,11 @@ type CertificateSpec struct {
 	// Options to control private keys used for the Certificate.
 	// +optional
 	PrivateKey *CertificatePrivateKey `json:"privateKey,omitempty"`
+
+	// EncodeUsagesInRequest controls whether key usages should be present
+	// in the CertificateRequest
+	// +optional
+	EncodeUsagesInRequest *bool `json:"encodeUsagesInRequest,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
