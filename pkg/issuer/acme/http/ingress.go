@@ -19,6 +19,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"net"
 
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -156,6 +157,11 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
 
+	httpHost := ch.Spec.DNSName
+	// if we need to verify ownership of an IP the challenge should propagate on all hosts
+	if net.ParseIP(httpHost) != nil {
+		httpHost = ""
+	}
 	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
@@ -167,7 +173,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 		Spec: extv1beta1.IngressSpec{
 			Rules: []extv1beta1.IngressRule{
 				{
-					Host: ch.Spec.DNSName,
+					Host: httpHost,
 					IngressRuleValue: extv1beta1.IngressRuleValue{
 						HTTP: &extv1beta1.HTTPIngressRuleValue{
 							Paths: []extv1beta1.HTTPIngressPath{ingPathToAdd},

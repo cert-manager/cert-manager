@@ -27,6 +27,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/util/intstr:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
         "@io_k8s_client_go//listers/extensions/v1beta1:go_default_library",
+        "@io_k8s_utils//net:go_default_library",
     ],
 )
 

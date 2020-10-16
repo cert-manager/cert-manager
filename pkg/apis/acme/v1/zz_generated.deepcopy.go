@@ -784,6 +784,11 @@ func (in *OrderSpec) DeepCopyInto(out *OrderSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.IPAddresses != nil {
+		in, out := &in.IPAddresses, &out.IPAddresses
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

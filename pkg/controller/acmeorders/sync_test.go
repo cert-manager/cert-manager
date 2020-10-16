@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -41,6 +42,16 @@ func TestSyncHappyPath(t *testing.T) {
 	nowTime := time.Now()
 	nowMetaTime := metav1.NewTime(nowTime)
 	fixedClock := fakeclock.NewFakeClock(nowTime)
+
+	testIssuerHTTP01 := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
+		Solvers: []cmacme.ACMEChallengeSolver{
+			{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+				},
+			},
+		},
+	}))
 
 	testIssuerHTTP01TestCom := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
 		Solvers: []cmacme.ACMEChallengeSolver{
@@ -75,6 +86,8 @@ func TestSyncHappyPath(t *testing.T) {
 			Name: testIssuerHTTP01TestCom.Name,
 		}),
 	)
+
+	testOrderIP := gen.Order("testorder", gen.SetOrderIssuer(cmmeta.ObjectReference{Name: testIssuerHTTP01.Name}), gen.SetOrderIPAddresses("10.0.0.1"))
 
 	pendingStatus := cmacme.OrderStatus{
 		State:       cmacme.Pending,
@@ -228,7 +241,48 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					return testACMEOrderPending, nil
 				},
 				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
-					// TODO: assert url = "http://authzurl"
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+		},
+		"create a new order with the acme server with an IP address": {
+			order: testOrderIP,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01, testOrderIP},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace,
+						gen.OrderFrom(testOrderIP, gen.SetOrderStatus(cmacme.OrderStatus{
+							State:       cmacme.Pending,
+							URL:         "http://testurl.com/abcde",
+							FinalizeURL: "http://testurl.com/abcde/finalize",
+							Authorizations: []cmacme.ACMEAuthorization{
+								{
+									URL: "http://authzurl",
+								},
+							},
+						})))),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeAuthorizeOrder: func(ctx context.Context, id []acmeapi.AuthzID, opt ...acmeapi.OrderOption) (*acmeapi.Order, error) {
+					if id[0].Value != "10.0.0.1" || id[0].Type != "ip" {
+						return nil, errors.New("AuthzID needs to be the IP")
+					}
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					if url != "http://authzurl" {
+						return nil, fmt.Errorf("Invalid URL: expected http://authzurl got %q", url)
+					}
 					return testACMEAuthorizationPending, nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {

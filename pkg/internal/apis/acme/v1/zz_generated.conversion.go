@@ -1244,6 +1244,7 @@ func autoConvert_v1_OrderSpec_To_acme_OrderSpec(in *v1.OrderSpec, out *acme.Orde
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	return nil
 }
 
@@ -1260,6 +1261,7 @@ func autoConvert_acme_OrderSpec_To_v1_OrderSpec(in *acme.OrderSpec, out *v1.Orde
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	return nil
 }
 

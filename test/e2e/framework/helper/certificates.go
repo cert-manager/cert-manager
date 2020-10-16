@@ -142,6 +142,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	// check the provided certificate is valid
 	expectedOrganization := pki.OrganizationForCertificate(certificate)
 	expectedDNSNames := certificate.Spec.DNSNames
+	expectedIPAddresses := certificate.Spec.IPAddresses
 	uris, err := pki.URIsForCertificate(certificate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URIs: %s", err)
@@ -162,7 +163,8 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	commonNameCorrect := true
 	expectedCN := certificate.Spec.CommonName
 	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
-		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) {
+		// issuers might set an IP or DNSName as CN
+		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) && !util.Contains(pki.IPAddressesToString(cert.IPAddresses), cert.Subject.CommonName) {
 			commonNameCorrect = false
 		}
 	} else if expectedCN != cert.Subject.CommonName {
@@ -170,9 +172,10 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 	}
 
 	if !commonNameCorrect || !util.Subset(cert.DNSNames, expectedDNSNames) || !util.EqualUnsorted(pki.URLsToString(cert.URIs), expectedURIs) ||
+		!util.Subset(pki.IPAddressesToString(cert.IPAddresses), expectedIPAddresses) ||
 		!(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
-		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v,but got a certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v",
-			expectedCN, expectedOrganization, expectedDNSNames, expectedURIs, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.URIs)
+		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v,but got a certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v, ipAddresses %v",
+			expectedCN, expectedOrganization, expectedDNSNames, expectedURIs, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.URIs, cert.IPAddresses)
 	}
 
 	if certificate.Status.NotAfter == nil {

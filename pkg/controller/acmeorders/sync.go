@@ -188,12 +188,17 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	}
 	log.V(logf.DebugLevel).Info("order URL not set, submitting Order to ACME server")
 
-	identifierSet := sets.NewString(o.Spec.DNSNames...)
+	dnsIdentifierSet := sets.NewString(o.Spec.DNSNames...)
 	if o.Spec.CommonName != "" {
-		identifierSet.Insert(o.Spec.CommonName)
+		dnsIdentifierSet.Insert(o.Spec.CommonName)
 	}
-	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", identifierSet.List())
-	authzIDs := acmeapi.DomainIDs(identifierSet.List()...)
+	log.V(logf.DebugLevel).Info("build set of domains for Order", "domains", dnsIdentifierSet.List())
+
+	ipIdentifierSet := sets.NewString(o.Spec.IPAddresses...)
+	log.V(logf.DebugLevel).Info("build set of IPs for Order", "domains", dnsIdentifierSet.List())
+
+	authzIDs := acmeapi.DomainIDs(dnsIdentifierSet.List()...)
+	authzIDs = append(authzIDs, acmeapi.IPIDs(ipIdentifierSet.List()...)...)
 	// create a new order with the acme server
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {

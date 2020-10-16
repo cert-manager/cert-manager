@@ -54,6 +54,12 @@ func SetOrderDNSNames(dnsNames ...string) OrderModifier {
 	}
 }
 
+func SetOrderIPAddresses(ips ...string) OrderModifier {
+	return func(order *cmacme.Order) {
+		order.Spec.IPAddresses = ips
+	}
+}
+
 func SetOrderURL(url string) OrderModifier {
 	return func(order *cmacme.Order) {
 		order.Status.URL = url

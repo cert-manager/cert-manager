@@ -57,7 +57,7 @@ type OrderSpec struct {
 	IssuerRef cmmeta.ObjectReference
 
 	// CommonName is the common name as specified on the DER encoded CSR.
-	// If specified, this value must also be present in `dnsNames`.
+	// If specified, this value must also be present in `dnsNames` or `ipAddresses`.
 	// This field must match the corresponding field on the DER encoded CSR.
 	CommonName string
 
@@ -65,6 +65,11 @@ type OrderSpec struct {
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
 	DNSNames []string
+
+	// IPAddresses is a list of IP addresses that should be included as part of the Order
+	// validation process.
+	// This field must match the corresponding field on the DER encoded CSR.
+	IPAddresses []string
 }
 
 type OrderStatus struct {
