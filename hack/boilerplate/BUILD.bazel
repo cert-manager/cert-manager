@@ -13,3 +13,17 @@ filegroup(
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
+
+genrule(
+    name = "boilerplate.bzl.timestamped.txt",
+    srcs = [":boilerplate.bzl.txt"],
+    outs = ["boilerplate.bzl.timestamped.txt.out"],
+    cmd = " ".join([
+        "sed",
+        "s/YEAR/$$(grep '^STABLE_LAST_COMMIT_YEAR' bazel-out/stable-status.txt | awk '{print $$2}')/",
+        "$(location :boilerplate.bzl.txt)",
+        "> $@",
+    ]),
+    stamp = 1,
+    visibility = ["//visibility:public"],
+)

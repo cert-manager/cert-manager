@@ -19,7 +19,7 @@ def licensed_file(
     # This uses '#' as a way to denote a comment.
     # This will likely need changing depending on the type of the file being
     # generated.
-    license_boilerplate = "//hack/boilerplate:boilerplate.bzl.txt",
+    license_boilerplate = "//hack/boilerplate:boilerplate.bzl.timestamped.txt",
     **kwargs,
 ):
     native.genrule(

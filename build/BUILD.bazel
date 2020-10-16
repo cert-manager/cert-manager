@@ -33,7 +33,7 @@ DOCKERIZED_BINARIES = {
     # Since the multi_arch_container macro replaces the {ARCH} format string,
     # we need to escape the stamping vars.
     docker_tags = ["{{STABLE_DOCKER_REGISTRY}}/cert-manager-%s-{ARCH}:{{STABLE_DOCKER_TAG}}" % binary],
-    stamp = True,
+    stamp = 1,
     symlinks = {
         # Some cluster startup scripts expect to find the binaries in /usr/local/bin,
         # but the debs install the binaries into /usr/bin.
