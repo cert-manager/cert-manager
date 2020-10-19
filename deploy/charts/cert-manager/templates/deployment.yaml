@@ -126,13 +126,19 @@ spec:
           {{- if .Values.http_proxy }}
           - name: HTTP_PROXY
             value: {{ .Values.http_proxy }}
+          - name: http_proxy
+            value: {{ .Values.http_proxy }}
           {{- end }}
           {{- if .Values.https_proxy }}
           - name: HTTPS_PROXY
             value: {{ .Values.https_proxy }}
+          - name: http_proxy
+            value: {{ .Values.https_proxy }}
           {{- end }}
           {{- if .Values.no_proxy }}
           - name: NO_PROXY
+            value: {{ .Values.no_proxy }}
+          - name: no_proxy
             value: {{ .Values.no_proxy }}
           {{- end }}
           resources:
