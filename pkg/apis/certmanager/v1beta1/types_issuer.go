@@ -91,6 +91,8 @@ type IssuerSpec struct {
 	IssuerConfig `json:",inline"`
 }
 
+// The configuration for the issuer.
+// Only one of these can be set.
 type IssuerConfig struct {
 	// ACME configures this issuer to communicate with a RFC8555 (ACME) server
 	// to obtain signed x509 certificates.
