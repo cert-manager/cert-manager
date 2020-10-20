@@ -69,6 +69,9 @@ func (s *Scheduler) scheduleN(n int, allChallenges []*cmacme.Challenge) ([]*cmac
 
 	numberToSelect := n
 	remainingNumberAllowedChallenges := s.maxConcurrentChallenges - inProgressChallengeCount
+	if remainingNumberAllowedChallenges < 0 {
+		remainingNumberAllowedChallenges = 0
+	}
 	if numberToSelect > remainingNumberAllowedChallenges {
 		numberToSelect = remainingNumberAllowedChallenges
 	}
