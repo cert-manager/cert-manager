@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -193,8 +192,8 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	eventBroadcaster.StartRecordingToSink(&clientv1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
-	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, time.Second*30, informers.WithNamespace(opts.Namespace))
-	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, time.Second*30, kubeinformers.WithNamespace(opts.Namespace))
+	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, opts.ResyncPeriod, informers.WithNamespace(opts.Namespace))
+	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, opts.ResyncPeriod, kubeinformers.WithNamespace(opts.Namespace))
 
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 

@@ -92,6 +92,9 @@ type ControllerOptions struct {
 	MetricsListenAddress string
 
 	DNS01CheckRetryPeriod time.Duration
+
+	// ResyncPeriod sets the resync of our informers
+	ResyncPeriod time.Duration
 }
 
 const (
@@ -125,6 +128,8 @@ const (
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
+
+	defaultResyncPeriod = 30 * time.Second
 )
 
 var (
@@ -182,6 +187,7 @@ func NewControllerOptions() *ControllerOptions {
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
+		ResyncPeriod:                      defaultResyncPeriod,
 	}
 }
 
@@ -193,6 +199,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Paths to a kubeconfig. Only required if out-of-cluster.")
 	fs.Float32Var(&s.KubernetesAPIQPS, "kube-api-qps", defaultKubernetesAPIQPS, "indicates the maximum queries-per-second requests to the Kubernetes apiserver")
 	fs.IntVar(&s.KubernetesAPIBurst, "kube-api-burst", defaultKubernetesAPIBurst, "the maximum burst queries-per-second of requests sent to the Kubernetes apiserver")
+	fs.DurationVar(&s.ResyncPeriod, "resync-period", defaultResyncPeriod, "the resync period for the informers being used")
 	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
