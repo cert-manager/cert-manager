@@ -221,6 +221,13 @@ spec:
                 duration:
                   description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types.
                   type: string
+                extensions:
+                  description: Extensions is a map of x509 extensions that are requested for the certificate. Key usage extensions should be specified in Usages instead.
+                  type: object
+                  additionalProperties:
+                    description: ExtensionValue is an x509 extension value
+                    type: string
+                    format: byte
                 isCA:
                   description: IsCA will request to mark the certificate as valid for certificate signing when submitting to the issuer. This will automatically add the `cert sign` usage to the list of `usages`.
                   type: boolean
@@ -361,6 +368,13 @@ spec:
                 duration:
                   description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types.
                   type: string
+                extensions:
+                  description: Extensions is a map of x509 extensions that are requested for the certificate. Key usage extensions should be specified in Usages instead.
+                  type: object
+                  additionalProperties:
+                    description: ExtensionValue is an x509 extension value
+                    type: string
+                    format: byte
                 isCA:
                   description: IsCA will request to mark the certificate as valid for certificate signing when submitting to the issuer. This will automatically add the `cert sign` usage to the list of `usages`.
                   type: boolean
@@ -505,6 +519,13 @@ spec:
                 duration:
                   description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types.
                   type: string
+                extensions:
+                  description: Extensions is a map of x509 extensions that are requested for the certificate. Key usage extensions should be specified in Usages instead.
+                  type: object
+                  additionalProperties:
+                    description: ExtensionValue is an x509 extension value
+                    type: string
+                    format: byte
                 isCA:
                   description: IsCA will request to mark the certificate as valid for certificate signing when submitting to the issuer. This will automatically add the `cert sign` usage to the list of `usages`.
                   type: boolean

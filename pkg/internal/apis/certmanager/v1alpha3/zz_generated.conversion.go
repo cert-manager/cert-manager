@@ -639,6 +639,7 @@ func autoConvert_v1alpha3_CertificateRequestSpec_To_certmanager_CertificateReque
 	// WARNING: in.CSRPEM requires manual conversion: does not exist in peer-type
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
+	// WARNING: in.Extensions requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -705,6 +706,7 @@ func autoConvert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 	}
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
+	// WARNING: in.Extensions requires manual conversion: does not exist in peer-type
 	// WARNING: in.KeySize requires manual conversion: does not exist in peer-type
 	// WARNING: in.KeyAlgorithm requires manual conversion: does not exist in peer-type
 	// WARNING: in.KeyEncoding requires manual conversion: does not exist in peer-type

@@ -391,6 +391,13 @@ spec:
                 encodeUsagesInRequest:
                   description: EncodeUsagesInRequest controls whether key usages should be present in the CertificateRequest
                   type: boolean
+                extensions:
+                  description: Extensions is a map of x509 extensions that are requested for the certificate. Key usage extensions should be specified in Usages instead.
+                  type: object
+                  additionalProperties:
+                    description: ExtensionValue is an x509 extension value
+                    type: string
+                    format: byte
                 ipAddresses:
                   description: IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
                   type: array
@@ -690,6 +697,13 @@ spec:
                 encodeUsagesInRequest:
                   description: EncodeUsagesInRequest controls whether key usages should be present in the CertificateRequest
                   type: boolean
+                extensions:
+                  description: Extensions is a map of x509 extensions that are requested for the certificate. Key usage extensions should be specified in Usages instead.
+                  type: object
+                  additionalProperties:
+                    description: ExtensionValue is an x509 extension value
+                    type: string
+                    format: byte
                 ipAddresses:
                   description: IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
                   type: array
@@ -989,6 +1003,13 @@ spec:
                 encodeUsagesInRequest:
                   description: EncodeUsagesInRequest controls whether key usages should be present in the CertificateRequest
                   type: boolean
+                extensions:
+                  description: Extensions is a map of x509 extensions that are requested for the certificate. Key usage extensions should be specified in Usages instead.
+                  type: object
+                  additionalProperties:
+                    description: ExtensionValue is an x509 extension value
+                    type: string
+                    format: byte
                 ipAddresses:
                   description: IPAddresses is a list of IP address subjectAltNames to be set on the Certificate.
                   type: array
