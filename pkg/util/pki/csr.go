@@ -29,6 +29,7 @@ import (
 	"math/big"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -204,7 +205,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 
 	var extraExtensions []pkix.Extension
 	if crt.Spec.EncodeUsagesInRequest == nil || *crt.Spec.EncodeUsagesInRequest {
-		extraExtensions, err = buildKeyUsagesExtensionsForCertificate(crt)
+		extraExtensions, err = buildExtensionsForCertificate(crt)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +234,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 	}, nil
 }
 
-func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
+func buildExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
 	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build key usages: %w", err)
@@ -262,7 +263,42 @@ func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extensi
 
 		extraExtensions = append(extraExtensions, extendedUsage)
 	}
+
+	// Add extra
+	for oid, value := range crt.Spec.Extensions {
+		parsedOID, err := parseOID(oid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse OID: %w", err)
+		}
+
+		ext := pkix.Extension{
+			Id: parsedOID,
+		}
+
+		ext.Value, err = asn1.Marshal(value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to asn1 encode extension value: %w", err)
+		}
+
+		extraExtensions = append(extraExtensions, ext)
+	}
+
 	return extraExtensions, nil
+}
+
+// help function
+func parseOID(oid string) ([]int, error) {
+	digits := strings.Split(oid)
+	values := make([]int, 0, len(digits))
+	for _, raw := range digits {
+		v, err := strconv.Atoi(raw)
+		if err != nil {
+			return values, fmt.Errorf("failed to parse OID '%s': %w", oid, err)
+		}
+		values = append(values, v)
+	}
+
+	return values, nil
 }
 
 // GenerateTemplate will create a x509.Certificate for the given Certificate resource.

@@ -204,4 +204,4 @@ func DefaultKeyUsages() []KeyUsage {
 type ExtensionOID string
 
 // ExtensionValue is an x509 extension value
-type ExtensionValue string
+type ExtensionValue []byte
