@@ -155,6 +155,11 @@ type CertificateSpec struct {
 	// +optional
 	Usages []KeyUsage `json:"usages,omitempty"`
 
+	// Extensions is a map of x509 extensions that are requested for the certificate.
+	// Key usage extensions should be specified in Usages instead.
+	// +optional
+	Extensions map[ExtensionOID]ExtensionValue `json:"extensions,omitempty"`
+
 	// KeySize is the key bit size of the corresponding private key for this certificate.
 	// If `keyAlgorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
 	// and will default to `2048` if not specified.

@@ -157,6 +157,11 @@ type CertificateSpec struct {
 	// +optional
 	Usages []KeyUsage `json:"usages,omitempty"`
 
+	// Extensions is a map of x509 extensions that are requested for the certificate.
+	// Key usage extensions should be specified in Usages instead.
+	// +optional
+	Extensions map[ExtensionOID]ExtensionValue `json:"extensions,omitempty"`
+
 	// Options to control private keys used for the Certificate.
 	// +optional
 	PrivateKey *CertificatePrivateKey `json:"privateKey,omitempty"`

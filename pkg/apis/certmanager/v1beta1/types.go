@@ -191,3 +191,9 @@ const (
 	UsageMicrosoftSGC       KeyUsage = "microsoft sgc"
 	UsageNetscapeSGC        KeyUsage = "netscape sgc"
 )
+
+// ExtensionOID is an x509 extension OID
+type ExtensionOID string
+
+// ExtensionValue is an x509 extension value
+type ExtensionValue string

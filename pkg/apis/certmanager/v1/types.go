@@ -199,3 +199,9 @@ func DefaultKeyUsages() []KeyUsage {
 	// CAs can (and often do) opt to automatically add usages.
 	return []KeyUsage{UsageDigitalSignature, UsageKeyEncipherment}
 }
+
+// ExtensionOID is an x509 extension OID
+type ExtensionOID string
+
+// ExtensionValue is an x509 extension value
+type ExtensionValue string
