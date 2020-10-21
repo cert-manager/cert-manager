@@ -129,7 +129,7 @@ const (
 
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
 
-	defaultResyncPeriod = 30 * time.Second
+	defaultResyncPeriod = 10 * time.Hour
 )
 
 var (
