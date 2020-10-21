@@ -148,7 +148,7 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 	ipBaseCR := gen.CertificateRequestFrom(baseCR, gen.SetCertificateRequestCSR(ipCSRPEM))
-	ipBaseOrder, err := buildOrder(ipBaseCR, ipCSR)
+	ipBaseOrder, err := buildOrder(ipBaseCR, ipCSR, baseIssuer)
 	if err != nil {
 		t.Fatalf("failed to build order during testing: %s", err)
 	}
