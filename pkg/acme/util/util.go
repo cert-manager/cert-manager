@@ -18,62 +18,21 @@ package util
 
 import (
 	"crypto/rand"
-	"encoding/json"
-	"io/ioutil"
 	"math/big"
 	"net/http"
-	"strings"
 	"time"
-
-	"golang.org/x/crypto/acme"
 )
-
-// wireError is a subset of fields of the Problem Details object
-// as described in https://tools.ietf.org/html/rfc7807#section-3.1.
-// it is used to check for badNonce errors in the retry logic
-type wireError struct {
-	Status   int
-	Type     string
-	Detail   string
-	Instance string
-}
-
-func (e *wireError) error(h http.Header) *acme.Error {
-	return &acme.Error{
-		StatusCode:  e.Status,
-		ProblemType: e.Type,
-		Detail:      e.Detail,
-		Instance:    e.Instance,
-		Header:      h,
-	}
-}
 
 // RetryBackoff is the ACME client RetryBackoff that does not retry
 // all retries will be handled by cert-manager
 func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 
-	// reaging the error response to check for any errors we MUST retry
-	// don't care if ReadAll returns an error:
-	// json.Unmarshal will fail in that case anyway
-	b, _ := ioutil.ReadAll(resp.Body)
-	e := &wireError{Status: resp.StatusCode}
-	if err := json.Unmarshal(b, e); err != nil {
-		// this is not a regular error response:
-		// populate detail with anything we received,
-		// e.Status will already contain HTTP response code value
-		e.Detail = string(b)
-		if e.Detail == "" {
-			e.Detail = resp.Status
-		}
-	}
-
 	// According to the spec badNonce is urn:ietf:params:acme:error:badNonce.
-	// However, ACME servers in the wild return their versions of the error.
-	// See https://tools.ietf.org/html/draft-ietf-acme-acme-02#section-5.4
-	// and https://github.com/letsencrypt/boulder/blob/0e07eacb/docs/acme-divergences.md#section-66.
-	if strings.HasSuffix(strings.ToLower(e.error(resp.Header).ProblemType), ":badnonce") {
-		// don't retry more than 10 times, if we get 10 nonce mismatches something is quite wrong
-		if n > 10 {
+	// However, we can not use the request body in here as it is closed already.
+	// So we're using it's status code instead: 400
+	if resp.StatusCode == http.StatusBadRequest {
+		// don't retry more than 5 times, if we get 5 nonce mismatches something is quite wrong
+		if n > 5 {
 			return -1
 		} else if n < 1 {
 			// n is used for the backoff time below
