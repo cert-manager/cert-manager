@@ -142,6 +142,12 @@ func TestScheduleN(t *testing.T) {
 			expected:   ascendingChallengeN(maxConcurrentChallenges),
 		},
 		{
+			name:       "schedule no new if current number is higher than MaxConcurrentChallenges",
+			n:          maxConcurrentChallenges,
+			challenges: ascendingChallengeN(maxConcurrentChallenges * 4),
+			expected:   ascendingChallengeN(maxConcurrentChallenges),
+		},
+		{
 			name: "schedule duplicate challenge if second challenge is in a final state",
 			n:    5,
 			challenges: []*cmacme.Challenge{
