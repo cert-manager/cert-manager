@@ -10,6 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/internal/apis/certmanager/v1:go_default_library",
         "//pkg/issuer/venafi/client/api:go_default_library",
         "//pkg/util/pki:go_default_library",
         "@com_github_venafi_vcert_v4//:go_default_library",

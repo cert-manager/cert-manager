@@ -18,8 +18,19 @@ package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+func SetDefaults_VenafiCloud(o *cmapi.VenafiCloud) {
+	if o.URL == "" {
+		o.URL = cmapi.DefaultVenafiCloudURL
+	}
+	if o.APITokenSecretRef.Key == "" {
+		o.APITokenSecretRef.Key = cmapi.DefaultVenafiCloudAPITokenSecretRefKey
+	}
 }

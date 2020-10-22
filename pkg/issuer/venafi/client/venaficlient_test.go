@@ -153,7 +153,7 @@ func TestConfigForIssuerT(t *testing.T) {
 			iss: cloudIssuer,
 			secretsLister: generateSecretLister(&corev1.Secret{
 				Data: map[string][]byte{
-					defaultAPIKeyKey: []byte(apiKey),
+					cmapi.DefaultVenafiCloudAPITokenSecretRefKey: []byte(apiKey),
 				},
 			}, nil),
 			CheckFn: func(t *testing.T, cnf *vcert.Config) {

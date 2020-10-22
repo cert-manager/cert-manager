@@ -14,23 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha3
+package v1
 
-import (
-	"k8s.io/apimachinery/pkg/runtime"
-
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+const (
+	DefaultVenafiCloudURL                  = "https://api.venafi.cloud/v1"
+	DefaultVenafiCloudAPITokenSecretRefKey = "api-key"
 )
-
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
-}
-
-func SetDefaults_VenafiCloud(o *cmapi.VenafiCloud) {
-	if o.URL == "" {
-		o.URL = cmapi.DefaultVenafiCloudURL
-	}
-	if o.APITokenSecretRef.Key == "" {
-		o.APITokenSecretRef.Key = cmapi.DefaultVenafiCloudAPITokenSecretRefKey
-	}
-}

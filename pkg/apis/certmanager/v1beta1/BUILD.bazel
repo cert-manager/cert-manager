@@ -10,6 +10,7 @@ go_library(
         "types_certificate.go",
         "types_certificaterequest.go",
         "types_issuer.go",
+        "venafi.go",
         "zz_generated.deepcopy.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1",

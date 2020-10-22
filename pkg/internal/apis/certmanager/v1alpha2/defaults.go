@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +18,19 @@ package v1alpha2
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+func SetDefaults_VenafiCloud(o *cmapi.VenafiCloud) {
+	if o.URL == "" {
+		o.URL = cmapi.DefaultVenafiCloudURL
+	}
+	if o.APITokenSecretRef.Key == "" {
+		o.APITokenSecretRef.Key = cmapi.DefaultVenafiCloudAPITokenSecretRefKey
+	}
 }

@@ -26,6 +26,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 )
 
@@ -33,8 +34,6 @@ const (
 	tppUsernameKey    = "username"
 	tppPasswordKey    = "password"
 	tppAccessTokenKey = "access-token"
-
-	defaultAPIKeyKey = "api-key"
 )
 
 type VenafiClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
@@ -119,17 +118,14 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 			},
 		}, nil
 	case venCfg.Cloud != nil:
-		cloud := venCfg.Cloud
+		cloud := venCfg.Cloud.DeepCopy()
+		internalcmapi.SetDefaults_VenafiCloud(cloud)
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {
 			return nil, err
 		}
 
-		k := defaultAPIKeyKey
-		if cloud.APITokenSecretRef.Key != "" {
-			k = cloud.APITokenSecretRef.Key
-		}
-		apiKey := string(cloudSecret.Data[k])
+		apiKey := string(cloudSecret.Data[cloud.APITokenSecretRef.Key])
 
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeCloud,

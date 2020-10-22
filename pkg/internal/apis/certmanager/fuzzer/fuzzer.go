@@ -55,5 +55,16 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
 		},
+		func(s *certmanager.VenafiCloud, c fuzz.Continue) {
+			c.FuzzNoCustom(s) // fuzz self without calling this function again
+			// Match defaulting
+			if s.URL == "" {
+				s.URL = v1.DefaultVenafiCloudURL
+			}
+			// Match defaulting
+			if s.APITokenSecretRef.Key == "" {
+				s.APITokenSecretRef.Key = v1.DefaultVenafiCloudAPITokenSecretRefKey
+			}
+		},
 	}...)
 }

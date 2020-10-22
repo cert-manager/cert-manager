@@ -21,6 +21,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -28,5 +29,39 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&v1alpha2.ClusterIssuer{}, func(obj interface{}) { SetObjectDefaults_ClusterIssuer(obj.(*v1alpha2.ClusterIssuer)) })
+	scheme.AddTypeDefaultingFunc(&v1alpha2.ClusterIssuerList{}, func(obj interface{}) { SetObjectDefaults_ClusterIssuerList(obj.(*v1alpha2.ClusterIssuerList)) })
+	scheme.AddTypeDefaultingFunc(&v1alpha2.Issuer{}, func(obj interface{}) { SetObjectDefaults_Issuer(obj.(*v1alpha2.Issuer)) })
+	scheme.AddTypeDefaultingFunc(&v1alpha2.IssuerList{}, func(obj interface{}) { SetObjectDefaults_IssuerList(obj.(*v1alpha2.IssuerList)) })
 	return nil
+}
+
+func SetObjectDefaults_ClusterIssuer(in *v1alpha2.ClusterIssuer) {
+	if in.Spec.IssuerConfig.Venafi != nil {
+		if in.Spec.IssuerConfig.Venafi.Cloud != nil {
+			SetDefaults_VenafiCloud(in.Spec.IssuerConfig.Venafi.Cloud)
+		}
+	}
+}
+
+func SetObjectDefaults_ClusterIssuerList(in *v1alpha2.ClusterIssuerList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_ClusterIssuer(a)
+	}
+}
+
+func SetObjectDefaults_Issuer(in *v1alpha2.Issuer) {
+	if in.Spec.IssuerConfig.Venafi != nil {
+		if in.Spec.IssuerConfig.Venafi.Cloud != nil {
+			SetDefaults_VenafiCloud(in.Spec.IssuerConfig.Venafi.Cloud)
+		}
+	}
+}
+
+func SetObjectDefaults_IssuerList(in *v1alpha2.IssuerList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_Issuer(a)
+	}
 }
