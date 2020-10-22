@@ -216,9 +216,39 @@ func ValidateVaultIssuerConfig(iss *certmanager.VaultIssuer, fldPath *field.Path
 	// TODO: add validation for Vault authentication types
 }
 
-func ValidateVenafiIssuerConfig(iss *certmanager.VenafiIssuer, fldPath *field.Path) field.ErrorList {
-	//TODO: make extended validation fro fake\tpp\cloud modes
-	return nil
+func ValidateVenafiTPP(tpp *certmanager.VenafiTPP, fldPath *field.Path) (el field.ErrorList) {
+	if tpp.URL == "" {
+		el = append(el, field.Required(fldPath.Child("url"), ""))
+	}
+	return el
+}
+
+func ValidateVenafiCloud(c *certmanager.VenafiCloud, fldPath *field.Path) (el field.ErrorList) {
+	return el
+}
+
+func ValidateVenafiIssuerConfig(iss *certmanager.VenafiIssuer, fldPath *field.Path) (el field.ErrorList) {
+	if iss.Zone == "" {
+		el = append(el, field.Required(fldPath.Child("zone"), ""))
+	}
+	unionCount := 0
+	if iss.TPP != nil {
+		unionCount++
+		el = append(el, ValidateVenafiTPP(iss.TPP, fldPath.Child("tpp"))...)
+	}
+	if iss.Cloud != nil {
+		unionCount++
+		el = append(el, ValidateVenafiCloud(iss.Cloud, fldPath.Child("cloud"))...)
+	}
+
+	if unionCount == 0 {
+		el = append(el, field.Required(fldPath, "please supply one of: tpp, cloud"))
+	}
+	if unionCount > 1 {
+		el = append(el, field.Forbidden(fldPath, "please supply one of: tpp, cloud"))
+	}
+
+	return el
 }
 
 // This list must be kept in sync with pkg/issuer/acme/dns/rfc2136/rfc2136.go

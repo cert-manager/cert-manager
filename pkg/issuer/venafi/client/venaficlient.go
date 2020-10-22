@@ -142,7 +142,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 			},
 		}, nil
 	}
-
+	// API validation in webhook and in the ClusterIssuer and Issuer controller
+	// Sync functions should make this unreachable in production.
 	return nil, fmt.Errorf("neither Venafi Cloud or TPP configuration found")
 }
 
