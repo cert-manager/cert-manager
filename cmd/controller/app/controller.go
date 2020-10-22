@@ -52,6 +52,11 @@ import (
 
 const controllerAgentName = "cert-manager"
 
+// This sets the informer's resync period to 10 hours
+// following the controller-runtime defaults
+//and following discussion: https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
+const resyncPeriod = 10 * time.Hour
+
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
 	rootCtx = logf.NewContext(rootCtx, nil, "controller")
@@ -193,8 +198,8 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	eventBroadcaster.StartRecordingToSink(&clientv1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
-	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, 10*time.Hour, informers.WithNamespace(opts.Namespace))
-	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, 10*time.Hour, kubeinformers.WithNamespace(opts.Namespace))
+	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, resyncPeriod, informers.WithNamespace(opts.Namespace))
+	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, resyncPeriod, kubeinformers.WithNamespace(opts.Namespace))
 
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
