@@ -16,6 +16,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.30
 	github.com/cloudflare/cloudflare-go v0.13.2
 	github.com/cpu/goacmedns v0.0.3
+	github.com/davecgh/go-spew v1.1.1
 	github.com/digitalocean/godo v1.44.0
 	github.com/go-logr/logr v0.2.1-0.20200730175230-ee2de8da5be6
 	github.com/go-logr/zapr v0.1.1 // indirect

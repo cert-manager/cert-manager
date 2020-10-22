@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "extensionsv1beta1.go",
+        "networkingv1beta1.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/http/convertlister",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_api//networking/v1:go_default_library",
+        "@io_k8s_api//networking/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/labels:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/intstr:go_default_library",
+        "@io_k8s_client_go//listers/extensions/v1beta1:go_default_library",
+        "@io_k8s_client_go//listers/networking/v1:go_default_library",
+        "@io_k8s_client_go//listers/networking/v1beta1:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

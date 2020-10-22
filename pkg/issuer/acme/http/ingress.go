@@ -21,13 +21,12 @@ import (
 	"fmt"
 	"net"
 
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -37,7 +36,7 @@ import (
 
 // getIngressesForChallenge returns a list of Ingresses that were created to solve
 // http challenges for the given domain
-func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*extv1beta1.Ingress, error) {
+func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*networkingv1.Ingress, error) {
 	log := logf.FromContext(ctx)
 
 	podLabels := podLabels(ch)
@@ -56,7 +55,7 @@ func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challe
 		return nil, err
 	}
 
-	var relevantIngresses []*extv1beta1.Ingress
+	var relevantIngresses []*networkingv1.Ingress
 	for _, ingress := range ingressList {
 		if !metav1.IsControlledBy(ingress, ch) {
 			logf.WithRelatedResource(log, ingress).Info("found existing solver ingress for this challenge resource, however " +
@@ -72,7 +71,7 @@ func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challe
 // ensureIngress will ensure the ingress required to solve this challenge
 // exists, or if an existing ingress is specified on the secret will ensure
 // that the ingress has an appropriate challenge path configured
-func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (ing *extv1beta1.Ingress, err error) {
+func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (ing *networkingv1.Ingress, err error) {
 	log := logf.FromContext(ctx).WithName("ensureIngress")
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
@@ -113,13 +112,13 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 	return s.createIngress(ch, svcName)
 }
 
-func ingressServiceName(ing *extv1beta1.Ingress) string {
-	return ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServiceName
+func ingressServiceName(ing *networkingv1.Ingress) string {
+	return ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.Service.Name
 }
 
 // createIngress will create a challenge solving ingress for the given certificate,
 // domain, token and key.
-func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
 	ing, err := buildIngressResource(ch, svcName)
 	if err != nil {
 		return nil, err
@@ -131,10 +130,10 @@ func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*extv1beta
 		ing = s.mergeIngressObjectMetaWithIngressResourceTemplate(ing, ch.Spec.Solver.HTTP01.Ingress.IngressTemplate)
 	}
 
-	return s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Create(context.TODO(), ing, metav1.CreateOptions{})
+	return s.CreateIngress(ch.Namespace, ing)
 }
 
-func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
@@ -162,7 +161,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 	if net.ParseIP(httpHost) != nil {
 		httpHost = ""
 	}
-	return &extv1beta1.Ingress{
+	return &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       ch.Namespace,
@@ -170,13 +169,13 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 			Annotations:     ingAnnotations,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
-		Spec: extv1beta1.IngressSpec{
-			Rules: []extv1beta1.IngressRule{
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
 				{
 					Host: httpHost,
-					IngressRuleValue: extv1beta1.IngressRuleValue{
-						HTTP: &extv1beta1.HTTPIngressRuleValue{
-							Paths: []extv1beta1.HTTPIngressPath{ingPathToAdd},
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{ingPathToAdd},
 						},
 					},
 				},
@@ -186,7 +185,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 }
 
 // Merge object meta from the ingress template. Fall back to default values.
-func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *extv1beta1.Ingress, ingressTempl *cmacme.ACMEChallengeSolverHTTP01IngressTemplate) *extv1beta1.Ingress {
+func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *networkingv1.Ingress, ingressTempl *cmacme.ACMEChallengeSolverHTTP01IngressTemplate) *networkingv1.Ingress {
 	if ingressTempl == nil {
 		return ingress
 	}
@@ -210,7 +209,7 @@ func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *extv
 	return ingress
 }
 
-func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
@@ -227,36 +226,36 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == ch.Spec.DNSName {
 			if rule.HTTP == nil {
-				rule.HTTP = &extv1beta1.HTTPIngressRuleValue{}
+				rule.HTTP = &networkingv1.HTTPIngressRuleValue{}
 			}
 			for i, p := range rule.HTTP.Paths {
 				// if an existing path exists on this rule for the challenge path,
 				// we overwrite it else we'll confuse ingress controllers
 				if p.Path == ingPathToAdd.Path {
 					// ingress resource is already up to date
-					if p.Backend.ServiceName == ingPathToAdd.Backend.ServiceName &&
-						p.Backend.ServicePort == ingPathToAdd.Backend.ServicePort {
+					if p.Backend.Service.Name == ingPathToAdd.Backend.Service.Name &&
+						(p.Backend.Service.Port.Number == ingPathToAdd.Backend.Service.Port.Number || p.Backend.Service.Port.Name == ingPathToAdd.Backend.Service.Port.Name) {
 						return ing, nil
 					}
 					rule.HTTP.Paths[i] = ingPathToAdd
-					return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+					return s.UpdateIngress(ing.Namespace, ing)
 				}
 			}
-			rule.HTTP.Paths = append([]extv1beta1.HTTPIngressPath{ingPathToAdd}, rule.HTTP.Paths...)
-			return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+			rule.HTTP.Paths = append([]networkingv1.HTTPIngressPath{ingPathToAdd}, rule.HTTP.Paths...)
+			return s.UpdateIngress(ing.Namespace, ing)
 		}
 	}
 
 	// if one doesn't exist, create a new IngressRule
-	ing.Spec.Rules = append(ing.Spec.Rules, extv1beta1.IngressRule{
+	ing.Spec.Rules = append(ing.Spec.Rules, networkingv1.IngressRule{
 		Host: ch.Spec.DNSName,
-		IngressRuleValue: extv1beta1.IngressRuleValue{
-			HTTP: &extv1beta1.HTTPIngressRuleValue{
-				Paths: []extv1beta1.HTTPIngressPath{ingPathToAdd},
+		IngressRuleValue: networkingv1.IngressRuleValue{
+			HTTP: &networkingv1.HTTPIngressRuleValue{
+				Paths: []networkingv1.HTTPIngressPath{ingPathToAdd},
 			},
 		},
 	})
-	return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+	return s.UpdateIngress(ing.Namespace, ing)
 }
 
 // cleanupIngresses will remove the rules added by cert-manager to an existing
@@ -295,7 +294,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 	}
 
 	// otherwise, we need to remove any cert-manager added rules from the ingress resource
-	ing, err := s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Get(context.TODO(), existingIngressName, metav1.GetOptions{})
+	ing, err := s.GetIngress(ch.Namespace, existingIngressName)
 	if k8sErrors.IsNotFound(err) {
 		log.Error(err, "named ingress resource not found, skipping cleanup")
 		return nil
@@ -307,7 +306,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 
 	log.V(logf.DebugLevel).Info("attempting to clean up automatically added solver paths on ingress resource")
 	ingPathToDel := solverPathFn(ch.Spec.Token)
-	var ingRules []extv1beta1.IngressRule
+	var ingRules []networkingv1.IngressRule
 	for _, rule := range ing.Spec.Rules {
 		// always retain rules that are not for the same DNSName
 		if rule.Host != ch.Spec.DNSName {
@@ -338,7 +337,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 
 	ing.Spec.Rules = ingRules
 
-	_, err = s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+	_, err = s.UpdateIngress(ing.Namespace, ing)
 	if err != nil {
 		return err
 	}
@@ -350,12 +349,14 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 
 // ingressPath returns the ingress HTTPIngressPath object needed to solve this
 // challenge.
-func ingressPath(token, serviceName string) extv1beta1.HTTPIngressPath {
-	return extv1beta1.HTTPIngressPath{
+func ingressPath(token, serviceName string) networkingv1.HTTPIngressPath {
+	return networkingv1.HTTPIngressPath{
 		Path: solverPathFn(token),
-		Backend: extv1beta1.IngressBackend{
-			ServiceName: serviceName,
-			ServicePort: intstr.FromInt(acmeSolverListenPort),
+		Backend: networkingv1.IngressBackend{
+			Service: &networkingv1.IngressServiceBackend{
+				Name: serviceName,
+				Port: networkingv1.ServiceBackendPort{Number: acmeSolverListenPort},
+			},
 		},
 	}
 }

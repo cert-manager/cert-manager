@@ -223,6 +223,9 @@ rules:
   - apiGroups: ["extensions"]
     resources: ["ingresses"]
     verbs: ["get", "list", "watch", "create", "delete", "update"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
   # We require the ability to specify a custom hostname when we are creating
   # new ingress resources.
   # See: https://github.com/openshift/origin/blob/21f191775636f9acadb44fa42beeb4f75b255532/pkg/route/apiserver/admission/ingress_admission.go#L84-L148
@@ -264,10 +267,16 @@ rules:
   - apiGroups: ["extensions"]
     resources: ["ingresses"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
   # We require these rules to support users with the OwnerReferencesPermissionEnforcement
   # admission controller enabled:
   # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
   - apiGroups: ["extensions"]
+    resources: ["ingresses/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses/finalizers"]
     verbs: ["update"]
   - apiGroups: [""]

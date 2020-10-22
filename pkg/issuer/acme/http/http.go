@@ -21,17 +21,21 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+
+	"github.com/davecgh/go-spew/spew"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/convertlister"
+
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	apimachineryv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8snet "k8s.io/utils/net"
-
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -39,6 +43,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	corev1listers "k8s.io/client-go/listers/core/v1"
+	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 )
 
 const (
@@ -59,7 +66,9 @@ type Solver struct {
 
 	podLister     corev1listers.PodLister
 	serviceLister corev1listers.ServiceLister
-	ingressLister extv1beta1listers.IngressLister
+	ingressLister networkingv1listers.IngressLister
+
+	apiVersion schema.GroupVersion
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -70,14 +79,57 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
 func NewSolver(ctx *controller.Context) *Solver {
-	return &Solver{
+	s := &Solver{
 		Context:          ctx,
 		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
 		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
 		testReachability: testReachability,
 		requiredPasses:   5,
 	}
+
+	groups, err := ctx.Client.Discovery().ServerGroups()
+	if err != nil {
+		panic(err) // TODO FIX MEEEEEEE
+	}
+
+	// TODO turn me on once i figured out how to fetch the kind
+	//if isAPIGroupSupported(networkingv1.SchemeGroupVersion, groups) {
+	//	// prefer networking.k8s.io/v1 if available (Kubernetes 1.19+)
+	//	s.ingressLister = ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Lister()
+	//	s.apiVersion = networkingv1.SchemeGroupVersion
+	//	panic("YIKES networkingv1")
+	//} else
+	if isAPIGroupSupported(networkingv1beta1.SchemeGroupVersion, groups) {
+		// fall back to networking.k8s.io/v1beta1 if available (Kubernetes 1.14+)
+		s.ingressLister = convertlister.NewNetworkingv1beta1ConvertLister(ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister())
+		s.apiVersion = networkingv1beta1.SchemeGroupVersion
+	} else {
+		// use extensions/v1beta1 as last resort
+		//s.ingressLister = convertlister.NewExtensionsv1beta1ConvertLister(ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister())
+		//s.apiVersion = extensionsv1beta1.SchemeGroupVersion
+		//panic("YIKES extensionsv1beta1")
+	}
+
+	// TODO: rm the force override
+	s.ingressLister = convertlister.NewNetworkingv1beta1ConvertLister(ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister())
+	s.apiVersion = networkingv1beta1.SchemeGroupVersion
+
+	return s
+}
+
+func isAPIGroupSupported(gvk schema.GroupVersion, groupsResp *apimachineryv1.APIGroupList) bool {
+	for _, group := range groupsResp.Groups {
+		spew.Dump(group)
+		if gvk.Group == group.Name {
+			for _, version := range group.Versions {
+				if version.Version == gvk.Version {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 func http01LogCtx(ctx context.Context) context.Context {
