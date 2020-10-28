@@ -138,6 +138,7 @@ func NewDNSProviderServiceAccountBytes(project string, saBytes []byte, dns01Name
 		client:           svc,
 		dns01Nameservers: dns01Nameservers,
 		hostedZoneName:   hostedZoneName,
+		log:              logf.Log.WithName("clouddns"),
 	}, nil
 }
 
