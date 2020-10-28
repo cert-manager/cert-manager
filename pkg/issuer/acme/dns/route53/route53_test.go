@@ -45,7 +45,7 @@ func restoreRoute53Env() {
 	os.Setenv("AWS_REGION", route53Region)
 }
 
-func makeRoute53Provider(ts *httptest.Server) *DNSProvider {
+func makeRoute53Provider(ts *httptest.Server) (*DNSProvider, error) {
 	config := &aws.Config{
 		Credentials: credentials.NewStaticCredentials("abc", "123", " "),
 		Endpoint:    aws.String(ts.URL),
@@ -53,8 +53,12 @@ func makeRoute53Provider(ts *httptest.Server) *DNSProvider {
 		MaxRetries:  aws.Int(1),
 	}
 
-	client := route53.New(session.New(config))
-	return &DNSProvider{client: client, dns01Nameservers: util.RecursiveNameservers}
+	sess, err := session.NewSession(config)
+	if err != nil {
+		return nil, err
+	}
+	client := route53.New(sess)
+	return &DNSProvider{client: client, dns01Nameservers: util.RecursiveNameservers}, nil
 }
 
 func TestAmbientCredentialsFromEnv(t *testing.T) {
@@ -112,12 +116,13 @@ func TestRoute53Present(t *testing.T) {
 	ts := newMockServer(t, mockResponses)
 	defer ts.Close()
 
-	provider := makeRoute53Provider(ts)
+	provider, err := makeRoute53Provider(ts)
+	assert.NoError(t, err, "Expected to make a Route 53 provider without error")
 
 	domain := "example.com"
 	keyAuth := "123456d=="
 
-	err := provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
+	err = provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 
 	subDomain := "foo.example.com"
