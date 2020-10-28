@@ -965,3 +965,101 @@ func TestValidateSecretKeySelector(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateVenafiIssuerConfig(t *testing.T) {
+	fldPath := field.NewPath("test")
+	scenarios := map[string]struct {
+		cfg  *cmapi.VenafiIssuer
+		errs []*field.Error
+	}{
+		"valid": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "a\\b\\c",
+				TPP: &cmapi.VenafiTPP{
+					URL: "https://tpp.example.com/vedsdk",
+				},
+			},
+		},
+		"missing zone": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "",
+				TPP: &cmapi.VenafiTPP{
+					URL: "https://tpp.example.com/vedsdk",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("zone"), ""),
+			},
+		},
+		"missing configuration": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "a\\b\\c",
+			},
+			errs: []*field.Error{
+				field.Required(fldPath, "please supply one of: tpp, cloud"),
+			},
+		},
+		"multiple configuration": {
+			cfg: &cmapi.VenafiIssuer{
+				Zone: "a\\b\\c",
+				TPP: &cmapi.VenafiTPP{
+					URL: "https://tpp.example.com/vedsdk",
+				},
+				Cloud: &cmapi.VenafiCloud{},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath, "please supply one of: tpp, cloud"),
+			},
+		},
+	}
+
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateVenafiIssuerConfig(s.cfg, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Fatalf("Expected %v but got %v", s.errs, errs)
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateVenafiTPP(t *testing.T) {
+	fldPath := field.NewPath("test")
+	scenarios := map[string]struct {
+		cfg  *cmapi.VenafiTPP
+		errs []*field.Error
+	}{
+		"valid": {
+			cfg: &cmapi.VenafiTPP{
+				URL: "https://tpp.example.com/vedsdk",
+			},
+		},
+		"missing url": {
+			cfg: &cmapi.VenafiTPP{},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("url"), ""),
+			},
+		},
+	}
+
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateVenafiTPP(s.cfg, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Fatalf("Expected %v but got %v", s.errs, errs)
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
