@@ -142,12 +142,15 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
 	}
 
-	var caPem []byte = nil
+	var caPem []byte
 	if len(bundle.CAChain) > 0 {
-		caPem = []byte(bundle.CAChain[0])
+		caPem = []byte(bundle.CAChain[len(bundle.CAChain)-1])
 	}
 
-	return []byte(bundle.ToPEMBundle()), caPem, nil
+	crtPems := []string{bundle.Certificate}
+	crtPems = append(crtPems, bundle.CAChain[0:len(bundle.CAChain)-1]...)
+
+	return []byte(strings.Join(crtPems, "\n")), caPem, nil
 }
 
 func (v *Vault) setToken(client Client) error {
