@@ -183,29 +183,32 @@ type testSignT struct {
 	expectedCA   string
 }
 
-func bundlePEM(csrPEM []byte, caPEM ...string) ([]byte, error) {
-	bundle := certutil.Secret{
+func signedCertificateSecret(issuingCaPEM string, caPEM ...string) *certutil.Secret {
+	secret := &certutil.Secret{
 		Data: map[string]interface{}{
 			"certificate": testLeafCertificate,
 		},
 	}
-	if len(caPEM) > 0 {
-		bundle.Data["ca_chain"] = caPEM
-	}
-	return jsonutil.EncodeJSON(&bundle)
+
+	secret.Data["issuing_ca"] = issuingCaPEM
+
+	chain := []string{issuingCaPEM}
+	chain = append(chain, caPEM...)
+	secret.Data["ca_chain"] = chain
+
+	return secret
+}
+
+func bundlePEM(issuingCaPEM string, caPEM ...string) ([]byte, error) {
+	secret := signedCertificateSecret(issuingCaPEM, caPEM...)
+	return jsonutil.EncodeJSON(&secret)
 }
 
 func TestSign(t *testing.T) {
 	privatekey := generateRSAPrivateKey(t)
 	csrPEM := generateCSR(t, privatekey)
 
-	bundleData, err := bundlePEM(csrPEM, testIntermediateCa)
-	if err != nil {
-		t.Errorf("failed to encode bundle for testing: %s", err)
-		t.FailNow()
-	}
-
-	bundleDataWithIntermediate, err := bundlePEM(csrPEM, testIntermediateCa, testRootCa)
+	bundleData, err := bundlePEM(testIntermediateCa)
 	if err != nil {
 		t.Errorf("failed to encode bundle for testing: %s", err)
 		t.FailNow()
@@ -257,22 +260,6 @@ func TestSign(t *testing.T) {
 			expectedCert: testLeafCertificate,
 			expectedCA:   testIntermediateCa,
 		},
-
-		"vault issuer with a CA chain (issuer working as a intermediate CA)": {
-			csrPEM: csrPEM,
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(cmapi.VaultIssuer{
-					Namespace: "test",
-				}),
-			),
-			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
-				Response: &http.Response{
-					Body: ioutil.NopCloser(bytes.NewReader(bundleDataWithIntermediate))},
-			}, nil),
-			expectedErr:  nil,
-			expectedCert: strings.Join([]string{testLeafCertificate, testIntermediateCa}, "\n"),
-			expectedCA:   testRootCa,
-		},
 	}
 
 	for name, test := range tests {
@@ -312,6 +299,47 @@ func TestSign(t *testing.T) {
 		if test.expectedCA != string(ca) {
 			t.Errorf("unexpected ca in response bundle, exp=%s got=%s; %s",
 				test.expectedCA, ca, name)
+		}
+	}
+}
+
+type testExtractCertificatesFromVaultCertT struct {
+	secret       *certutil.Secret
+	expectedCert []string
+	expectedCA   string
+}
+
+func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
+	tests := map[string]testExtractCertificatesFromVaultCertT{
+		"when a Vault engine is a root CA": {
+			secret:       signedCertificateSecret(testIntermediateCa),
+			expectedCert: []string{testLeafCertificate},
+			expectedCA:   testIntermediateCa,
+		},
+		"when a Vault engine is an intermediate CA, and its parent is a root CA": {
+			secret:       signedCertificateSecret(testIntermediateCa, testRootCa),
+			expectedCert: []string{testLeafCertificate, testIntermediateCa},
+			expectedCA:   testRootCa,
+		},
+		"when a Vault engine is an intermediate CA, and its parent is a intermediate CA": {
+			secret:       signedCertificateSecret(testIntermediateCa, testIntermediateCa, testRootCa),
+			expectedCert: []string{testLeafCertificate, testIntermediateCa, testIntermediateCa},
+			expectedCA:   testRootCa,
+		},
+	}
+
+	for name, test := range tests {
+		cert, ca, err := extractCertificatesFromVaultCertificateSecret(test.secret)
+
+		if err != nil {
+			t.Errorf("%s: failed to extract certificate: %s", name, err)
+		}
+		expectedCert := strings.Join(test.expectedCert, "\n")
+		if expectedCert != string(cert) {
+			t.Errorf("%s: unexpected leaf certificate, exp=%s, got=%s", name, expectedCert, cert)
+		}
+		if test.expectedCA != string(ca) {
+			t.Errorf("%s: unexpected root certificate, exp=%s, got=%s", name, test.expectedCA, cert)
 		}
 	}
 }
