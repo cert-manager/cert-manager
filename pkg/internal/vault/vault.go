@@ -358,7 +358,9 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) (cer
 	}
 
 	crtPems := []string{bundle.Certificate}
-	crtPems = append(crtPems, bundle.CAChain[0:len(bundle.CAChain)-1]...)
+	if len(bundle.CAChain) > 0 {
+		crtPems = append(crtPems, bundle.CAChain[0:len(bundle.CAChain)-1]...)
+	}
 
 	return []byte(strings.Join(crtPems, "\n")), caPem, nil
 }
