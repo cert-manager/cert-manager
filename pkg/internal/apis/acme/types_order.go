@@ -71,8 +71,10 @@ type OrderSpec struct {
 	// This field must match the corresponding field on the DER encoded CSR.
 	IPAddresses []string
 
-	// NotAfter is the date for the requested certificate's Not Valid After date
-	NotAfter *metav1.Time `json:"notAfter"`
+	// Duration is the duration for the not after date for the requested certificate.
+	// this is set on order creation as pe the ACME spec.
+	// +optional
+	Duration *metav1.Duration `json:"notAfter,omitempty"`
 }
 
 type OrderStatus struct {

@@ -1257,7 +1257,7 @@ func autoConvert_v1alpha3_OrderSpec_To_acme_OrderSpec(in *v1alpha3.OrderSpec, ou
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.NotAfter = (*apismetav1.Time)(unsafe.Pointer(in.NotAfter))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
 	return nil
 }
 
@@ -1270,7 +1270,7 @@ func autoConvert_acme_OrderSpec_To_v1alpha3_OrderSpec(in *acme.OrderSpec, out *v
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.NotAfter = (*apismetav1.Time)(unsafe.Pointer(in.NotAfter))
+	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
 	return nil
 }
 

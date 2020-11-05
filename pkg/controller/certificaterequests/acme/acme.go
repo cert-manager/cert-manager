@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -220,14 +219,12 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, issuer 
 	}
 
 	if issuer.GetSpec().ACME.EnableNotAfterDate {
-		notAfterTime := metav1.NewTime(time.Now().Add(cr.Spec.Duration.Duration))
-		spec.NotAfter = &notAfterTime
+		spec.Duration = cr.Spec.Duration
 	}
 
 	computeNameSpec := spec.DeepCopy()
 	// create a deep copy of the OrderSpec so we can overwrite the Request and NotAfter field
 	computeNameSpec.Request = nil
-	computeNameSpec.NotAfter = nil // NotAfter is time based and will shift, confusing the controller to reconcile
 	name, err := apiutil.ComputeName(cr.Name, computeNameSpec)
 	if err != nil {
 		return nil, err

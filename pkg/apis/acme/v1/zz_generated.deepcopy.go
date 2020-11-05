@@ -24,6 +24,7 @@ import (
 	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -789,9 +790,10 @@ func (in *OrderSpec) DeepCopyInto(out *OrderSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.NotAfter != nil {
-		in, out := &in.NotAfter, &out.NotAfter
-		*out = (*in).DeepCopy()
+	if in.Duration != nil {
+		in, out := &in.Duration, &out.Duration
+		*out = new(apismetav1.Duration)
+		**out = **in
 	}
 	return
 }

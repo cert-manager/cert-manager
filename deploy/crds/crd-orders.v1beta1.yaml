@@ -103,9 +103,8 @@ spec:
                       description: Name of the resource being referred to.
                       type: string
                 notAfter:
-                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
                   type: string
-                  format: date-time
             status:
               type: object
               properties:
@@ -243,9 +242,8 @@ spec:
                       description: Name of the resource being referred to.
                       type: string
                 notAfter:
-                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
                   type: string
-                  format: date-time
             status:
               type: object
               properties:
@@ -380,9 +378,8 @@ spec:
                       description: Name of the resource being referred to.
                       type: string
                 notAfter:
-                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
                   type: string
-                  format: date-time
                 request:
                   description: Certificate signing request bytes in DER encoding. This will be used when finalizing the order. This field must be set on the order.
                   type: string
@@ -521,9 +518,8 @@ spec:
                       description: Name of the resource being referred to.
                       type: string
                 notAfter:
-                  description: NotAfter is the date for the requested certificate's Not Valid After date
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
                   type: string
-                  format: date-time
                 request:
                   description: Certificate signing request bytes in DER encoding. This will be used when finalizing the order. This field must be set on the order.
                   type: string

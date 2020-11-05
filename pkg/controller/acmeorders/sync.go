@@ -202,8 +202,8 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	// create a new order with the acme server
 
 	var options []acmeapi.OrderOption
-	if o.Spec.NotAfter != nil {
-		options = append(options, acmeapi.WithOrderNotAfter(o.Spec.NotAfter.Time))
+	if o.Spec.Duration != nil {
+		options = append(options, acmeapi.WithOrderNotAfter(c.clock.Now().Add(o.Spec.Duration.Duration)))
 	}
 	acmeOrder, err := cl.AuthorizeOrder(ctx, authzIDs, options...)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {

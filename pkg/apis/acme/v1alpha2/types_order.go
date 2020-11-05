@@ -76,9 +76,10 @@ type OrderSpec struct {
 	// +optional
 	IPAddresses []string `json:"ipAddresses,omitempty"`
 
-	// NotAfter is the date for the requested certificate's Not Valid After date
+	// Duration is the duration for the not after date for the requested certificate.
+	// this is set on order creation as pe the ACME spec.
 	// +optional
-	NotAfter *metav1.Time `json:"notAfter,omitempty"`
+	Duration *metav1.Duration `json:"notAfter,omitempty"`
 }
 
 type OrderStatus struct {
