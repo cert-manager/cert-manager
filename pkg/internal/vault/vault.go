@@ -355,6 +355,8 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) (cer
 	var caPem []byte
 	if len(bundle.CAChain) > 0 {
 		caPem = []byte(bundle.CAChain[len(bundle.CAChain)-1])
+	} else {
+		caPem = []byte(bundle.IssuingCA)
 	}
 
 	crtPems := []string{bundle.Certificate}
