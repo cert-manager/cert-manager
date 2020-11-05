@@ -239,6 +239,9 @@ webhook:
 
   tolerations: []
 
+  # Optional additional labels to add to the Webhook Pods
+  podLabels: {}
+
   image:
     repository: quay.io/jetstack/cert-manager-webhook
     # You can manage a registry with
@@ -322,6 +325,9 @@ cainjector:
   affinity: {}
 
   tolerations: []
+
+  # Optional additional labels to add to the CA Injector Pods
+  podLabels: {}
 
   image:
     repository: quay.io/jetstack/cert-manager-cainjector

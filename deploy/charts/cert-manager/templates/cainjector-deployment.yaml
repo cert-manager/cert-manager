@@ -35,6 +35,9 @@ spec:
         app.kubernetes.io/managed-by: {{ .Release.Service }}
         app.kubernetes.io/component: "cainjector"
         helm.sh/chart: {{ include "cainjector.chart" . }}
+{{- if .Values.cainjector.podLabels }}
+{{ toYaml .Values.cainjector.podLabels | indent 8 }}
+{{- end }}
       {{- if .Values.cainjector.podAnnotations }}
       annotations:
 {{ toYaml .Values.cainjector.podAnnotations | indent 8 }}
