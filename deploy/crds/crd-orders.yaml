@@ -82,6 +82,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array
@@ -102,9 +105,6 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
-                notAfter:
-                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
-                  type: string
             status:
               type: object
               properties:
@@ -239,6 +239,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array
@@ -259,9 +262,6 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
-                notAfter:
-                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
-                  type: string
             status:
               type: object
               properties:
@@ -393,6 +393,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array
@@ -413,9 +416,6 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
-                notAfter:
-                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
-                  type: string
                 request:
                   description: Certificate signing request bytes in DER encoding. This will be used when finalizing the order. This field must be set on the order.
                   type: string
@@ -551,6 +551,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array
@@ -571,9 +574,6 @@ spec:
                     name:
                       description: Name of the resource being referred to.
                       type: string
-                notAfter:
-                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
-                  type: string
                 request:
                   description: Certificate signing request bytes in DER encoding. This will be used when finalizing the order. This field must be set on the order.
                   type: string
