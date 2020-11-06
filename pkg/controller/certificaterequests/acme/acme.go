@@ -218,7 +218,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, issuer 
 		IPAddresses: ipAddresses,
 	}
 
-	if issuer.GetSpec().ACME.EnableNotAfterDate {
+	if issuer.GetSpec().ACME.RequestDuration {
 		spec.Duration = cr.Spec.Duration
 	}
 
