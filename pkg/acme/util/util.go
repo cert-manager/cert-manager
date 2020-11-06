@@ -31,7 +31,7 @@ func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 	// However, we can not use the request body in here as it is closed already.
 	// So we're using it's status code instead: 400
 	if resp.StatusCode == http.StatusBadRequest {
-		// don't retry more than 5 times, if we get 5 nonce mismatches something is quite wrong
+		// don't retry more than 6 times, if we get 6 nonce mismatches something is quite wrong
 		if n > 5 {
 			return -1
 		} else if n < 1 {
