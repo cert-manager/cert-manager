@@ -51,7 +51,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 	BeforeEach(func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
 		// Enable NotAfter feature
-		acmeIssuer.Spec.ACME.EnableNotAfterDate = true
+		acmeIssuer.Spec.ACME.RequestDuration = true
 		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{

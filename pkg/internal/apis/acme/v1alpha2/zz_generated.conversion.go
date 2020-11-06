@@ -694,7 +694,7 @@ func autoConvert_v1alpha2_ACMEIssuer_To_acme_ACMEIssuer(in *v1alpha2.ACMEIssuer,
 	}
 	out.Solvers = *(*[]acme.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
-	out.EnableNotAfterDate = in.EnableNotAfterDate
+	out.RequestDuration = in.RequestDuration
 	return nil
 }
 
@@ -715,7 +715,7 @@ func autoConvert_acme_ACMEIssuer_To_v1alpha2_ACMEIssuer(in *acme.ACMEIssuer, out
 	}
 	out.Solvers = *(*[]v1alpha2.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
-	out.EnableNotAfterDate = in.EnableNotAfterDate
+	out.RequestDuration = in.RequestDuration
 	return nil
 }
 

@@ -100,7 +100,7 @@ type ACMEIssuer struct {
 	// it it will create an error on the Order.
 	// Defaults to false.
 	// +optional
-	EnableNotAfterDate bool `json:"enableNotAfterDate,omitempty"`
+	RequestDuration bool `json:"requestDuration,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
