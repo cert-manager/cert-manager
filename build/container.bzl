@@ -40,7 +40,7 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 #     The format string {ARCH} will be replaced with the configured GOARCH;
 #     any stamping variables should be escaped, e.g. {{STABLE_MY_VAR}}.
 #   tags: will be applied to all targets
-#   visiblity: will be applied only to the container_bundles; the internal
+#   visibility: will be applied only to the container_bundles; the internal
 #     container_image is private
 #   All other args will be applied to the internal container_image.
 def multi_arch_container(

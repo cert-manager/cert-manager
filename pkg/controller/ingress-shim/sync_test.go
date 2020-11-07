@@ -929,7 +929,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:         "if an ingress contains multiple tls entires that specify the same secretName, an error should be logged and no action taken",
+			Name:         "if an ingress contains multiple tls entries that specify the same secretName, an error should be logged and no action taken",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			ExpectedEvents: []string{

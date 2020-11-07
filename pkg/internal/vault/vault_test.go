@@ -127,7 +127,7 @@ func TestSign(t *testing.T) {
 	tests := map[string]testSignT{
 		"a garbage csr should return err": {
 			csrPEM:       []byte("a bad csr"),
-			expectedErr:  errors.New("faild to decode CSR for signing: error decoding certificate request PEM block"),
+			expectedErr:  errors.New("failed to decode CSR for signing: error decoding certificate request PEM block"),
 			expectedCert: "",
 			expectedCA:   "",
 		},

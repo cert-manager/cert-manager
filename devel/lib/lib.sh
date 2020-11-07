@@ -97,7 +97,7 @@ require_image() {
   load_image "$IMAGE_NAME"
 }
 
-# load_image will lod an image into the local cluster
+# load_image will load an image into the local cluster
 # for a kind cluster it will load it into the cluster
 # with name $KIND_CLUSTER_NAME
 load_image() {

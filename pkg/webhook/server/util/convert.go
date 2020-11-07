@@ -27,7 +27,7 @@ import (
 
 // these conversions are copied from https://github.com/kubernetes/kubernetes/blob/4db3a096ce8ac730b2280494422e1c4cf5fe875e/pkg/apis/admission/v1beta1/zz_generated.conversion.go
 // to avoid copying in kubernetes/kubernetes
-// they are sightly modified to remove complexity
+// they are slightly modified to remove complexity
 
 func Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(in *admissionv1beta1.AdmissionReview, out *admissionv1.AdmissionReview) {
 	if in.Request != nil {

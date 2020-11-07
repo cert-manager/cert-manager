@@ -16,7 +16,7 @@
 # file, separated by the given separator.
 # If a specific output filename is desired, it can be specified using the arg
 # 'out'. Otherwise the output file will be named 'name.out'.
-def concat_files(name, srcs, seperator, out = None, **kwargs):
+def concat_files(name, srcs, separator, out = None, **kwargs):
     if not out:
         out = "%s.out" % name
 
@@ -27,7 +27,7 @@ for each in $(SRCS); do
     cat $$each >> $@
     echo -e "%s" >> $@
 done
-""" % seperator,
+""" % separator,
         srcs = srcs,
         outs = [out],
         **kwargs

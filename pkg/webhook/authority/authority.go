@@ -65,7 +65,7 @@ type DynamicAuthority struct {
 	// Defaults to 365d.
 	CADuration time.Duration
 
-	// The amount of time leaf certificates signed by ths authority will be
+	// The amount of time leaf certificates signed by this authority will be
 	// valid for.
 	// This must be less than CADuration.
 	// Defaults to 7d.

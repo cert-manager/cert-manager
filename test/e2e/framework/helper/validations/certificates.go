@@ -233,7 +233,7 @@ func ExpectKeyUsageUsageDigitalSignature(certificate *cmapi.Certificate, secret 
 	}
 
 	// taking the key usage here and use a binary OR to flip all non KeyUsageCertSign bits to 0
-	// so if KeyUsageCertSign the value will be exacty x509.KeyUsageCertSign
+	// so if KeyUsageCertSign the value will be exactly x509.KeyUsageCertSign
 	usage := cert.KeyUsage
 	usage &= x509.KeyUsageDigitalSignature
 	if usage != x509.KeyUsageDigitalSignature {
@@ -251,7 +251,7 @@ func ExpectKeyUsageUsageDataEncipherment(certificate *cmapi.Certificate, secret 
 	}
 
 	// taking the key usage here and use a binary OR to flip all non KeyUsageDataEncipherment bits to 0
-	// so if KeyUsageDataEncipherment the value will be exacty x509.KeyUsageDataEncipherment
+	// so if KeyUsageDataEncipherment the value will be exactly x509.KeyUsageDataEncipherment
 	usage := cert.KeyUsage
 	usage &= x509.KeyUsageDataEncipherment
 	if usage != x509.KeyUsageDataEncipherment {

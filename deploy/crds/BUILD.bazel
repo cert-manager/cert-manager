@@ -19,7 +19,7 @@ crds = [
 concat_files(
     name = "templates.regular",
     srcs = [":crd-%s.yaml" % crd for crd in crds],
-    seperator = "---",
+    separator = "---",
     visibility = ["//visibility:public"],
 )
 
@@ -27,7 +27,7 @@ concat_files(
 concat_files(
     name = "templates.v1beta1",
     srcs = [":crd-%s.v1beta1.yaml" % crd for crd in crds],
-    seperator = "---",
+    separator = "---",
     visibility = ["//visibility:public"],
 )
 
