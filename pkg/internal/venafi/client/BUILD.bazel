@@ -1,0 +1,71 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "builder.go",
+        "cloud.go",
+        "request.go",
+        "store.go",
+        "tpp.go",
+        "venaficlient.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/internal/venafi/client",
+    visibility = ["//pkg:__subpackages__"],
+    deps = [
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/internal/venafi/client/api:go_default_library",
+        "//pkg/internal/venafi/defaults:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/certificate:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/endpoint:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/venafi/cloud:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/venafi/tpp:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_client_go//kubernetes/typed/core/v1:go_default_library",
+        "@io_k8s_client_go//listers/core/v1:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "builder_test.go",
+        "cloud_test.go",
+        "request_test.go",
+        "store_test.go",
+        "tpp_test.go",
+        "venaficlient_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/internal/venafi/client/api:go_default_library",
+        "//pkg/internal/venafi/client/fake:go_default_library",
+        "//pkg/util:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/certificate:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/endpoint:go_default_library",
+        "@com_github_venafi_vcert_v4//pkg/venafi/fake:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/internal/venafi/client/api:all-srcs",
+        "//pkg/internal/venafi/client/fake:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

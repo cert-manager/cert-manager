@@ -21,7 +21,7 @@ import (
 
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi/client/api"
 )
 
 type Venafi struct {
@@ -29,6 +29,8 @@ type Venafi struct {
 	RequestCertificateFn    func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
 	RetrieveCertificateFn   func(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	ReadZoneConfigurationFn func() (*endpoint.ZoneConfiguration, error)
+	AuthenticateFn          func() error
+	RotateCredentialsFn     func() error
 }
 
 func (v *Venafi) Ping() error {
@@ -48,3 +50,11 @@ func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 }
 
 func (v *Venafi) SetClient(endpoint.Connector) {}
+
+func (v *Venafi) Authenticate() error {
+	return v.AuthenticateFn()
+}
+
+func (v *Venafi) RotateCredentials() error {
+	return v.RotateCredentialsFn()
+}

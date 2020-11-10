@@ -30,8 +30,8 @@ import (
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
 	"github.com/Venafi/vcert/v4/pkg/venafi/fake"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-	internalfake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi/client/api"
+	internalfake "github.com/jetstack/cert-manager/pkg/internal/venafi/client/fake"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -109,7 +109,7 @@ func TestVenafi_RequestCertificate(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		vcertClient  connector
+		vcertClient  vcertClient
 		args         args
 		wantPickupID bool
 		wantErr      bool
@@ -251,7 +251,7 @@ func TestVenafi_RetrieveCertificate(t *testing.T) {
 	}
 	tests := []struct {
 		name        string
-		vcertClient connector
+		vcertClient vcertClient
 		args        args
 		wantErr     bool
 		checkFn     func(*testing.T, []byte, []byte)

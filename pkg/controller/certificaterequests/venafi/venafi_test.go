@@ -42,9 +42,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-	internalvenafifake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi/client"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi/client/api"
+	internalvenafifake "github.com/jetstack/cert-manager/pkg/internal/venafi/client/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
@@ -116,6 +116,7 @@ func TestSign(t *testing.T) {
 	tppIssuer := gen.IssuerFrom(baseIssuer,
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			TPP: &cmapi.VenafiTPP{
+				URL: "https://tpp.example.com/vedsdk/",
 				CredentialsRef: cmmeta.LocalObjectReference{
 					Name: tppSecret.Name,
 				},
@@ -233,7 +234,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal SecretMissing Required secret resource not found: secret "test-tpp-secret" not found`,
+					`Normal SecretMissing Required secret resource not found: secret not found: "test-tpp-secret"`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -245,7 +246,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Required secret resource not found: secret "test-tpp-secret" not found`,
+								Message:            `Required secret resource not found: secret not found: "test-tpp-secret"`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -259,7 +260,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to authenticate venafi client for signing: failed to get secret: this is a network error`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -271,7 +272,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								Message:            "Failed to authenticate venafi client for signing: failed to get secret: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -287,7 +288,7 @@ func TestSign(t *testing.T) {
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal SecretMissing Required secret resource not found: secret "test-cloud-secret" not found`,
+					`Normal SecretMissing Required secret resource not found: secret not found: "test-cloud-secret"`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -299,7 +300,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Required secret resource not found: secret "test-cloud-secret" not found`,
+								Message:            `Required secret resource not found: secret not found: "test-cloud-secret"`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -307,12 +308,12 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"cloud: if fail to build client based on secret lister transient error then return err and set pending": {
+		"cloud: if fail to authenticate based on secret lister transient error then return err and set pending": {
 			certificateRequest: cloudCR.DeepCopy(),
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to authenticate venafi client for signing: failed to get secret: this is a network error`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -324,7 +325,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								Message:            "Failed to authenticate venafi client for signing: failed to get secret: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -405,9 +406,8 @@ func TestSign(t *testing.T) {
 					)),
 				},
 			},
-			fakeSecretLister: failGetSecretLister,
-			fakeClient:       clientReturnsPending,
-			expectedErr:      true,
+			fakeClient:  clientReturnsPending,
+			expectedErr: true,
 		},
 		"cloud: if sign returns pending error then set pending and return err": {
 			certificateRequest: cloudCR.DeepCopy(),
@@ -749,15 +749,28 @@ func runTest(t *testing.T, test testT) {
 
 	v := NewVenafi(test.builder.Context)
 
-	if test.fakeSecretLister != nil {
-		v.secretsLister = test.fakeSecretLister
-	}
-
-	if test.fakeClient != nil {
-		v.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
-			issuer cmapi.GenericIssuer) (client.Interface, error) {
+	switch {
+	case test.fakeClient != nil:
+		if test.fakeClient.AuthenticateFn == nil {
+			test.fakeClient.AuthenticateFn = func() error {
+				return nil
+			}
+		}
+		v.clientBuilder = func(_ context.Context, _ cmapi.GenericIssuer) (client.Interface, error) {
 			return test.fakeClient, nil
 		}
+	case test.fakeSecretLister != nil:
+		v.clientBuilder = client.BuilderFromSecretClients(
+			test.fakeSecretLister,
+			test.builder.FakeKubeClient().CoreV1(),
+			test.builder.IssuerOptions,
+		)
+	default:
+		v.clientBuilder = client.BuilderFromSecretClients(
+			test.builder.FakeKubeInformerFactory().Core().V1().Secrets().Lister(),
+			test.builder.FakeKubeClient().CoreV1(),
+			test.builder.IssuerOptions,
+		)
 	}
 
 	controller := certificaterequests.New(apiutil.IssuerVenafi, v)

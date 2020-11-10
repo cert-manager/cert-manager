@@ -14,6 +14,8 @@ filegroup(
         "//pkg/internal/apis/certmanager:all-srcs",
         "//pkg/internal/apis/meta:all-srcs",
         "//pkg/internal/vault:all-srcs",
+        "//pkg/internal/venafi/client:all-srcs",
+        "//pkg/internal/venafi/defaults:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

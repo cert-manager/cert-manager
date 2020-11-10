@@ -19,13 +19,11 @@ package venafi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
-
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -33,9 +31,9 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
+	venaficlient "github.com/jetstack/cert-manager/pkg/internal/venafi/client"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi/client/api"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
-	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -44,12 +42,10 @@ const (
 )
 
 type Venafi struct {
-	issuerOptions controllerpkg.IssuerOptions
-	secretsLister corelisters.SecretLister
-	reporter      *crutil.Reporter
-	cmClient      clientset.Interface
+	reporter *crutil.Reporter
+	cmClient clientset.Interface
 
-	clientBuilder venaficlient.VenafiClientBuilder
+	clientBuilder venaficlient.Builder
 }
 
 func init() {
@@ -63,11 +59,13 @@ func init() {
 
 func NewVenafi(ctx *controllerpkg.Context) *Venafi {
 	return &Venafi{
-		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
-		clientBuilder: venaficlient.New,
-		cmClient:      ctx.CMClient,
+		reporter: crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		clientBuilder: venaficlient.BuilderFromSecretClients(
+			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+			ctx.Client.CoreV1(),
+			ctx.IssuerOptions,
+		),
+		cmClient: ctx.CMClient,
 	}
 }
 
@@ -75,23 +73,25 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
-	client, err := v.clientBuilder(v.issuerOptions.ResourceNamespace(issuerObj), v.secretsLister, issuerObj)
-	if k8sErrors.IsNotFound(err) {
-		message := "Required secret resource not found"
-
-		v.reporter.Pending(cr, err, "SecretMissing", message)
-		log.Error(err, message)
-
-		return nil, nil
-	}
-
+	client, err := v.clientBuilder(ctx, issuerObj)
 	if err != nil {
 		message := "Failed to initialise venafi client for signing"
-
 		v.reporter.Pending(cr, err, "VenafiInitError", message)
 		log.Error(err, message)
-
 		return nil, err
+	}
+
+	if err := client.Authenticate(); err != nil {
+		if errors.Is(err, venaficlient.ErrSecretNotFound) {
+			message := "Required secret resource not found"
+			v.reporter.Pending(cr, err, "SecretMissing", message)
+			log.Error(err, message)
+			return nil, nil
+		}
+		message := "Failed to authenticate venafi client for signing"
+		v.reporter.Pending(cr, err, "VenafiInitError", message)
+		log.Error(err, message)
+		return nil, fmt.Errorf("error while authenticating: %v", err)
 	}
 
 	var customFields []api.CustomField
