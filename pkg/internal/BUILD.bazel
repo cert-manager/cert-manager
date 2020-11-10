@@ -16,6 +16,7 @@ filegroup(
         "//pkg/internal/vault:all-srcs",
         "//pkg/internal/venafi/client:all-srcs",
         "//pkg/internal/venafi/defaults:all-srcs",
+        "//pkg/internal/venafi/genericissuer:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
