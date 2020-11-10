@@ -258,6 +258,13 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
+	vaultIssuer := v.issuer.GetSpec().Vault
+	if vaultIssuer.Namespace != "" {
+		vaultReqHeaders := http.Header{}
+		vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+		request.Headers = vaultReqHeaders
+	}
+
 	resp, err := client.RawRequest(request)
 	if err != nil {
 		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
