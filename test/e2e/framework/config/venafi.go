@@ -18,7 +18,11 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"strings"
+
+	"k8s.io/kube-openapi/pkg/util/sets"
 )
 
 // Venafi global configuration for Venafi TPP/Cloud instances
@@ -28,11 +32,11 @@ type Venafi struct {
 }
 
 type VenafiTPPConfiguration struct {
-	URL         string
-	Zone        string
-	Username    string
-	Password    string
-	AccessToken string
+	URL      string
+	Zone     string
+	Username string
+	Password string
+	UseOauth bool
 }
 
 type VenafiCloudConfiguration struct {
@@ -54,10 +58,39 @@ func (v *VenafiTPPConfiguration) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&v.Zone, "global.venafi-tpp-zone", os.Getenv("VENAFI_TPP_ZONE"), "Zone to use during Venafi TPP end-to-end tests")
 	fs.StringVar(&v.Username, "global.venafi-tpp-username", os.Getenv("VENAFI_TPP_USERNAME"), "Username to use when authenticating with the Venafi TPP instance")
 	fs.StringVar(&v.Password, "global.venafi-tpp-password", os.Getenv("VENAFI_TPP_PASSWORD"), "Password to use when authenticating with the Venafi TPP instance")
-	fs.StringVar(&v.AccessToken, "global.venafi-tpp-access-token", os.Getenv("VENAFI_TPP_ACCESS_TOKEN"), "Access token to use when authenticating with the Venafi TPP instance")
+	fs.BoolVar(&v.UseOauth, "global.venafi-tpp-use-oauth", os.Getenv("VENAFI_TPP_USE_OAUTH") != "", "Use Oauth rather than APIKey when connecting to the TPP API")
 }
 
-func (v *VenafiTPPConfiguration) Validate() []error {
+func (v *VenafiTPPConfiguration) Validate() (errors []error) {
+	expected := sets.NewString()
+	supplied := sets.NewString()
+
+	check := func(k, v string) {
+		expected.Insert(k)
+		if v != "" {
+			supplied.Insert(k)
+		}
+	}
+	check("URL", v.URL)
+	check("ZONE", v.Zone)
+	check("USERNAME", v.Username)
+	check("PASSWORD", v.Password)
+
+	// It is valid to omit all TPP configuration.
+	// The tests that use the TPP addon will be skipped in this case.
+	if supplied.Len() == 0 {
+		return nil
+	}
+
+	// All or nothing. If any TPP configuration is supplied,
+	// check that all configuration is present.
+	missing := expected.Difference(supplied)
+	if missing.Len() > 0 {
+		return []error{
+			fmt.Errorf("missing configuration: VENAFI_TPP_[%s]", strings.Join(missing.List(), ",")),
+		}
+	}
+
 	return nil
 }
 

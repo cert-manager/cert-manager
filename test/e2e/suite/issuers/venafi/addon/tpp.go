@@ -18,8 +18,11 @@ package addon
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 
+	"github.com/Venafi/vcert/v4/pkg/endpoint"
+	"github.com/Venafi/vcert/v4/pkg/venafi/tpp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -58,35 +61,48 @@ func (v *VenafiTPP) Setup(cfg *config.Config) error {
 	}
 
 	if v.config.Addons.Venafi.TPP.URL == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi TPP URL must be set"))
-	}
-	if v.config.Addons.Venafi.TPP.Zone == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi TPP Zone must be set"))
-	}
-
-	if v.config.Addons.Venafi.TPP.AccessToken == "" {
-		if v.config.Addons.Venafi.TPP.Username == "" {
-			return errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing username"))
-		}
-		if v.config.Addons.Venafi.TPP.Password == "" {
-			return errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing password"))
-		}
+		return errors.NewSkip(fmt.Errorf("VENAFI_TPP_URL must be set"))
 	}
 
 	return nil
 }
 
 func (v *VenafiTPP) Provision() error {
+	data := map[string]string{}
+
+	if v.config.Addons.Venafi.TPP.UseOauth {
+		var emptyTrustCertPool *x509.CertPool
+		c, err := tpp.NewConnector(
+			v.config.Addons.Venafi.TPP.URL,
+			v.config.Addons.Venafi.TPP.Zone,
+			false,
+			emptyTrustCertPool,
+		)
+		if err != nil {
+			return fmt.Errorf("error creating TPP client: %v", err)
+		}
+		resp, err := c.GetRefreshToken(&endpoint.Authentication{
+			User:     v.config.Addons.Venafi.TPP.Username,
+			Password: v.config.Addons.Venafi.TPP.Password,
+			ClientId: "cert-manager",
+			Scope:    "certificate:manage,revoke",
+		})
+		if err != nil {
+			return fmt.Errorf("error getting refresh token: %v", err)
+		}
+		// data["access-token"] = resp.Access_token
+		// data["expires"] = strconv.Itoa(resp.Expires)
+		data["refresh-token"] = resp.Refresh_token
+	} else {
+		data["username"] = v.config.Addons.Venafi.TPP.Username
+		data["password"] = v.config.Addons.Venafi.TPP.Password
+	}
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-e2e-venafi-",
 			Namespace:    v.Namespace,
 		},
-		Data: map[string][]byte{
-			"username":     []byte(v.config.Addons.Venafi.TPP.Username),
-			"password":     []byte(v.config.Addons.Venafi.TPP.Password),
-			"access-token": []byte(v.config.Addons.Venafi.TPP.AccessToken),
-		},
+		StringData: data,
 	}
 
 	s, err := v.Base.Details().KubeClient.CoreV1().Secrets(v.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
