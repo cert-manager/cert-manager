@@ -39,8 +39,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
+	venaficlusterissuercontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers/venafi"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
+	venafiissuercontroller "github.com/jetstack/cert-manager/pkg/controller/issuers/venafi"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -154,6 +156,9 @@ var (
 		keymanager.ControllerName,
 		requestmanager.ControllerName,
 		readiness.ControllerName,
+		// standalone issuer controllers
+		venafiissuercontroller.ControllerName,
+		venaficlusterissuercontroller.ControllerName,
 	}
 )
 
