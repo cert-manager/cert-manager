@@ -110,16 +110,8 @@ func (v *Vault) Setup(ctx context.Context) error {
 		return err
 	}
 
-	health, err := client.Sys().Health()
-	if err != nil {
-		s := messageVaultHealthCheckFailed + err.Error()
-		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
-		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, s)
-		return err
-	}
-
-	if !health.Initialized || health.Sealed {
-		logf.V(logf.WarnLevel).Infof("%s: %s: health: %v", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, health)
+	if err := client.IsVaultInitializedAndUnsealed(); err != nil {
+		logf.V(logf.WarnLevel).Infof("%s: %s: error: %s", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, err.Error())
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageVaultStatusVerificationFailed)
 		return fmt.Errorf(messageVaultStatusVerificationFailed)
 	}

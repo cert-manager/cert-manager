@@ -42,6 +42,7 @@ type VaultClientBuilder func(namespace string, secretsLister corelisters.SecretL
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
 	Sys() *vault.Sys
+	IsVaultInitializedAndUnsealed() error
 }
 
 type Client interface {
@@ -372,4 +373,18 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 	}
 
 	return []byte(strings.Join(crtPems, "\n")), caPem, nil
+}
+
+func (v *Vault) IsVaultInitializedAndUnsealed() error {
+	healthURL := path.Join("/v1", "sys", "health")
+	heatlhRequest := v.client.NewRequest("GET", healthURL)
+	healthResp, err := v.client.RawRequest(heatlhRequest)
+	// 429 = if unsealed and standby
+	// 472 = if disaster recovery mode replication secondary and active
+	// 473 = if performance standby
+	if err != nil && healthResp.StatusCode != 429 && healthResp.StatusCode != 472 && healthResp.StatusCode != 473 {
+		return err
+	}
+	defer healthResp.Body.Close()
+	return nil
 }
