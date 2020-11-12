@@ -138,7 +138,7 @@ func TestMetricsController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Should expose that Certificate as unkown with no expiry
+	// Should expose that Certificate as unknown with no expiry
 	waitForMetrics(`# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 # TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="testns"} 0

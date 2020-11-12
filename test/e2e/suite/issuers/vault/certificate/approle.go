@@ -246,7 +246,7 @@ func runVaultAppRoleTests(issuerKind string) {
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Vault substract 30 seconds to the NotBefore date.
+			// Vault subtract 30 seconds to the NotBefore date.
 			f.CertificateDurationValid(cert, v.expectedDuration, time.Second*30)
 		})
 	}

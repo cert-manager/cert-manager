@@ -57,7 +57,7 @@ const (
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
 
 // This controller observes the state of the certificate's 'Issuing' condition,
-// which will then copy the singed certificates and private key to the target
+// which will then copy the signed certificates and private key to the target
 // Secret resource.
 type controller struct {
 	certificateLister        cmlisters.CertificateLister

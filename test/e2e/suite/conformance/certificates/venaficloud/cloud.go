@@ -40,7 +40,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.DurationFeature,
 		// Venafi Cloud has no ECDSA support
 		featureset.ECDSAFeature,
-		// Alternate SANS are currently not suppored in Venafi Cloud
+		// Alternate SANS are currently not supported in Venafi Cloud
 		featureset.EmailSANsFeature,
 		featureset.IPAddressFeature,
 		featureset.URISANsFeature,

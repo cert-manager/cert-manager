@@ -85,7 +85,7 @@ var checkResolvConfServersTests = []struct {
 	defaults []string
 }{
 	{"testdata/resolv.conf.1", []string{"10.200.3.249:53", "10.200.3.250:5353", "[2001:4860:4860::8844]:53", "[10.0.0.1]:5353"}, []string{"127.0.0.1:53"}},
-	{"testdata/resolv.conf.nonexistant", []string{"127.0.0.1:53"}, []string{"127.0.0.1:53"}},
+	{"testdata/resolv.conf.nonexistent", []string{"127.0.0.1:53"}, []string{"127.0.0.1:53"}},
 }
 
 func TestMatchCAA(t *testing.T) {
@@ -265,7 +265,7 @@ func TestValidateCAA(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
-	// now ask, expecting a CA that wont match
+	// now ask, expecting a CA that won't match
 	err = ValidateCAA("www.google.com", []string{"daniel.homebrew.ca"}, false, RecursiveNameservers)
 	if err == nil {
 		t.Fatalf("expected err, got success")

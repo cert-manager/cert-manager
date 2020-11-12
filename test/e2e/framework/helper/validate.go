@@ -70,7 +70,7 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 	return out
 }
 
-// ValidateCertificate retreives the issued certificate and runs all validation functions
+// ValidateCertificate retrieves the issued certificate and runs all validation functions
 func (h *Helper) ValidateCertificate(ns, name string, validations ...ValidationFunc) error {
 	if len(validations) == 0 {
 		validations = h.DefaultValidationSet()

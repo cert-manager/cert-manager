@@ -81,7 +81,7 @@ echo "Running 'cluster up'"
 # Set kubeconfig to be sysadmin
 "${OC3}" login -u system:admin
 
-# Disable restrictions for our test dependancies
+# Disable restrictions for our test dependencies
 "${OC3}" adm policy add-scc-to-group privileged system:authenticated
 
 # Replace kube-dns with our patched CoreDNS

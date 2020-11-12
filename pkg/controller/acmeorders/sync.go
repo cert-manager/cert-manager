@@ -494,14 +494,14 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 
 				log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Found alternative ACME bundle")
 				if cert.Issuer.CommonName == issuer.GetSpec().ACME.PreferredChain {
-					// if the issuer's CN matched the preffered chain it means this bundle is
+					// if the issuer's CN matched the preferred chain it means this bundle is
 					// signed by the requested chain
 					return c.storeCertificateOnStatus(ctx, o, altBundle)
 				}
 			}
 		}
 		// if no match is found we return to the actual cert
-		// it is a *prefered* chain after all
+		// it is a *preferred* chain after all
 	}
 
 	return c.storeCertificateOnStatus(ctx, o, certSlice)

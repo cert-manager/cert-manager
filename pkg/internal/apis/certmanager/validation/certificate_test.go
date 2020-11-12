@@ -415,17 +415,17 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
-		"invalid certificate with nonexistant keyusage": {
+		"invalid certificate with nonexistent keyusage": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
-					Usages:     []internalcmapi.KeyUsage{"nonexistant"},
+					Usages:     []internalcmapi.KeyUsage{"nonexistent"},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("usages").Index(0), internalcmapi.KeyUsage("nonexistant"), "unknown keyusage"),
+				field.Invalid(fldPath.Child("usages").Index(0), internalcmapi.KeyUsage("nonexistent"), "unknown keyusage"),
 			},
 		},
 		"valid certificate with only URI SAN name": {

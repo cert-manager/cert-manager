@@ -428,7 +428,7 @@ be 'invalid' and vice-versa).
 
 ### Refactoring
 
-There will be some significant refactoring work required to accomodate this change.
+There will be some significant refactoring work required to accommodate this change.
 Notably, the ACME specific client handling in the `pkg/issuer/acme` directory
 will need breaking out into a shared package so that the new Order and Challenge
 controllers can re-use this code.
