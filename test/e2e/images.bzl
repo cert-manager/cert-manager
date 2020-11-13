@@ -22,8 +22,8 @@ def install():
     ## field in this rule
     go_repository(
         name = "org_letsencrypt_pebble",
-        commit = "295d9c1182f27616cd91770f5e535e85a37e2cb9",
-        remote = "https://github.com/letsencrypt/pebble",
+        commit = "110bab13a7962b2c2a9653084a89bd5bce62f500", # Adds a blocklist feature
+        remote = "https://github.com/meyskens/pebble",
         vcs = "git",
         importpath = "github.com/letsencrypt/pebble",
         build_external = "vendored",
