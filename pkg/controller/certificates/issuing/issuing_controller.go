@@ -225,6 +225,17 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	req := reqs[0]
 	log = logf.WithResource(log, req)
 
+	// Verify the CSR options match what is requested in certificate.spec.
+	// If there are violations in the spec, then the requestmanager will handle this.
+	requestViolations, err := certificates.RequestMatchesSpec(req, crt.Spec)
+	if err != nil {
+		return err
+	}
+	if len(requestViolations) > 0 {
+		log.V(logf.DebugLevel).Info("CertificateRequest does not match Certificate, waiting for keymanager controller")
+		return nil
+	}
+
 	cond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
 	if cond == nil {
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
@@ -235,17 +246,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// and set the Issuing status condition to False with reason.
 	if cond.Reason == cmapi.CertificateRequestReasonFailed {
 		return c.failIssueCertificate(ctx, log, crt, req)
-	}
-
-	// Verify the CSR options match what is requested in certificate.spec.
-	// If there are violations in the spec, then the requestmanager will handle this.
-	requestViolations, err := certificates.RequestMatchesSpec(req, crt.Spec)
-	if err != nil {
-		return err
-	}
-	if len(requestViolations) > 0 {
-		log.V(logf.DebugLevel).Info("CertificateRequest does not match Certificate, waiting for keymanager controller")
-		return nil
 	}
 
 	// If public key does not match, do nothing (requestmanager will handle this).
