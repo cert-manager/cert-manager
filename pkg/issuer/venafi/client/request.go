@@ -135,12 +135,13 @@ func (v *Venafi) buildVReq(csrPEM []byte, duration time.Duration, customFields [
 func convertCustomFieldsToVcert(customFields []api.CustomField) ([]certificate.CustomField, error) {
 	var out []certificate.CustomField
 	if len(customFields) > 0 {
+	Loop:
 		for _, field := range customFields {
 			var fieldType certificate.CustomFieldType
 			switch field.Type {
 			case api.CustomFieldTypePlain, "":
 				fieldType = certificate.CustomFieldPlain
-				break
+				break Loop
 			default:
 				return nil, ErrCustomFieldsType{Type: field.Type}
 			}
