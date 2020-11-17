@@ -29,12 +29,13 @@ func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 
 	// According to the spec badNonce is urn:ietf:params:acme:error:badNonce.
 	// However, we can not use the request body in here as it is closed already.
-	// So we're using it's status code instead: 400
+	// So we're using its status code instead: 400
 	if resp.StatusCode == http.StatusBadRequest {
 		// don't retry more than 6 times, if we get 6 nonce mismatches something is quite wrong
 		if n > 5 {
 			return -1
-		} else if n < 1 {
+		}
+		if n < 1 {
 			// n is used for the backoff time below
 			n = 1
 		}
