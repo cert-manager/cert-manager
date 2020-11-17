@@ -91,7 +91,7 @@ type ACMEIssuer struct {
 	// like Let's Encrypt. If set to true when the ACME server does not support
 	// it it will create an error on the Order.
 	// Defaults to false.
-	RequestDuration bool `json:"requestDuration,omitempty"`
+	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME

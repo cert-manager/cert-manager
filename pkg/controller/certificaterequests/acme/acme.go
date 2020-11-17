@@ -105,7 +105,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 	}
 
 	// If we fail to build the order we have to hard fail.
-	expectedOrder, err := buildOrder(cr, csr, issuer)
+	expectedOrder, err := buildOrder(cr, csr, issuer.GetSpec().ACME.EnableDurationFeature)
 	if err != nil {
 		message := "Failed to build order"
 
@@ -199,7 +199,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, issuer v1.GenericIssuer) (*cmacme.Order, error) {
+func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool) (*cmacme.Order, error) {
 	var ipAddresses []string
 	for _, ip := range csr.IPAddresses {
 		ipAddresses = append(ipAddresses, ip.String())
@@ -218,7 +218,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, issuer 
 		IPAddresses: ipAddresses,
 	}
 
-	if issuer.GetSpec().ACME.RequestDuration {
+	if enableDurationFeature {
 		spec.Duration = cr.Spec.Duration
 	}
 

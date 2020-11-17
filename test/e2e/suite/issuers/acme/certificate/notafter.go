@@ -21,19 +21,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", func() {
@@ -50,8 +51,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 
 	BeforeEach(func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
-		// Enable NotAfter feature
-		acmeIssuer.Spec.ACME.RequestDuration = true
+		// Enable Duration feature to set NotAfter
+		acmeIssuer.Spec.ACME.EnableDurationFeature = true
 		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
@@ -143,7 +144,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 		crt, err := pki.DecodeX509CertificateBytes(crtPEM)
 		Expect(err).NotTo(HaveOccurred(), "failed to get decode signed certificate data")
 
-		// checking losely to tot hit too many timing issues as the date is defined in the controller
+		// checking loosely to not hit too many timing issues as the date is defined in the controller
+		// pebble issues a 5 year cert by default
 		if crt.NotAfter.After(time.Now().Add(time.Hour)) {
 			Fail(fmt.Sprintf("Certificate has a NotAfter time after more than 1 hour (requested duration), got %s, current time %s", crt.NotAfter.String(), time.Now().String()))
 		}
