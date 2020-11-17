@@ -447,6 +447,34 @@ func TestSign(t *testing.T) {
 			},
 		},
 
+		"if the order is in Valid state but Certificate has not yet been populated": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				ExpectedEvents: []string{
+					"Normal OrderPending Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1733622556",
+				},
+				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
+					gen.SetOrderState(cmacme.Valid),
+				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1733622556",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+		},
+
 		"if the order is in Valid state then return the certificate as response": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{

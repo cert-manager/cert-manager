@@ -176,6 +176,15 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 		return nil, nil
 	}
 
+	if len(order.Status.Certificate) == 0 {
+		a.reporter.Pending(cr, nil, "OrderPending",
+			fmt.Sprintf("Waiting for order-controller to add certificate data to Order %s/%s",
+				expectedOrder.Namespace, order.Name))
+
+		log.V(logf.DebugLevel).Info("Order controller has not added certificate data to the Order, waiting...")
+		return nil, nil
+	}
+
 	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
 	x509Cert, err := pki.DecodeX509CertificateBytes(order.Status.Certificate)
 	if errors.IsInvalidData(err) {
