@@ -63,7 +63,7 @@ func TestRetryBackoff(t *testing.T) {
 				resp: &http.Response{StatusCode: http.StatusBadRequest},
 			},
 			validdateOutput: func(duration time.Duration) bool {
-				return duration > 0
+				return duration > 5
 			},
 		},
 		{

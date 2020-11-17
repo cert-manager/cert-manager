@@ -23,39 +23,39 @@ import (
 	"time"
 )
 
-// RetryBackoff is the ACME client RetryBackoff that does not retry
-// all retries will be handled by cert-manager
+const (
+	maxDelay   = 3 * time.Second
+	maxRetries = 5
+)
+
+// RetryBackoff is the ACME client RetryBackoff which is modified
+// to act upon badNonce errors. all other retries will be handled by cert-manager.
+// Since we cannot check the exact error this is best effort.
 func RetryBackoff(n int, r *http.Request, resp *http.Response) time.Duration {
 
 	// According to the spec badNonce is urn:ietf:params:acme:error:badNonce.
 	// However, we can not use the request body in here as it is closed already.
 	// So we're using its status code instead: 400
-	if resp.StatusCode == http.StatusBadRequest {
-		// don't retry more than 6 times, if we get 6 nonce mismatches something is quite wrong
-		if n > 5 {
-			return -1
-		}
-		if n < 1 {
-			// n is used for the backoff time below
-			n = 1
-		}
-
-		var jitter time.Duration
-		if x, err := rand.Int(rand.Reader, big.NewInt(1000)); err == nil {
-			// Set the minimum to 1ms to avoid a case where
-			// an invalid Retry-After value is parsed into 0 below,
-			// resulting in the 0 returned value which would unintentionally
-			// stop the retries.
-			jitter = (1 + time.Duration(x.Int64())) * time.Millisecond
-		}
-
-		d := time.Duration(1<<uint(n-1))*time.Second + jitter
-		if d > 3*time.Second {
-			return 3 * time.Second
-		}
-		return d
+	if resp.StatusCode != http.StatusBadRequest {
+		return -1
 	}
 
-	// do not retry any non badNonce errors
-	return -1
+	// don't retry more than 6 times, if we get 6 nonce mismatches something is quite wrong
+	if n > maxRetries {
+		return -1
+	} else if n < 1 {
+		// n is used for the backoff time below
+		n = 1
+	}
+
+	var jitter time.Duration
+	if x, err := rand.Int(rand.Reader, big.NewInt(1000)); err == nil {
+		jitter = (1 + time.Duration(x.Int64())) * time.Millisecond
+	}
+
+	d := time.Duration(1<<uint(n-1))*time.Second + jitter
+	if d > maxDelay {
+		return maxDelay
+	}
+	return d
 }
