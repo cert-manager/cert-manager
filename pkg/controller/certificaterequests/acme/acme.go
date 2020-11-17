@@ -165,37 +165,38 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 		return nil, nil
 	}
 
-	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
-	if order.Status.State == cmacme.Valid {
-		x509Cert, err := pki.DecodeX509CertificateBytes(order.Status.Certificate)
-		if errors.IsInvalidData(err) {
-			log.Error(err, "failed to decode x509 certificate data on Order resource")
-			return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
-		}
-		ok, err := pki.PublicKeyMatchesCertificate(csr.PublicKey, x509Cert)
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			log.Error(err, "failed to decode x509 certificate data on Order resource, recreating...")
-			return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
-		}
+	if order.Status.State != cmacme.Valid {
+		// We update here to just pending while we wait for the order to be resolved.
+		a.reporter.Pending(cr, nil, "OrderPending",
+			fmt.Sprintf("Waiting on certificate issuance from order %s/%s: %q",
+				expectedOrder.Namespace, order.Name, order.Status.State))
 
-		log.V(logf.InfoLevel).Info("certificate issued")
+		log.V(logf.DebugLevel).Info("acme Order resource is not in a ready state, waiting...")
 
-		return &issuerpkg.IssueResponse{
-			Certificate: order.Status.Certificate,
-		}, nil
+		return nil, nil
 	}
 
-	// We update here to just pending while we wait for the order to be resolved.
-	a.reporter.Pending(cr, nil, "OrderPending",
-		fmt.Sprintf("Waiting on certificate issuance from order %s/%s: %q",
-			expectedOrder.Namespace, order.Name, order.Status.State))
+	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
+	x509Cert, err := pki.DecodeX509CertificateBytes(order.Status.Certificate)
+	if errors.IsInvalidData(err) {
+		log.Error(err, "failed to decode x509 certificate data on Order resource")
+		return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
+	}
+	ok, err := pki.PublicKeyMatchesCertificate(csr.PublicKey, x509Cert)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		log.Error(err, "failed to decode x509 certificate data on Order resource, recreating...")
+		return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
+	}
 
-	log.V(logf.DebugLevel).Info("acme Order resource is not in a ready state, waiting...")
+	log.V(logf.InfoLevel).Info("certificate issued")
 
-	return nil, nil
+	return &issuerpkg.IssueResponse{
+		Certificate: order.Status.Certificate,
+	}, nil
+
 }
 
 // Build order. If we error here it is a terminating failure.
