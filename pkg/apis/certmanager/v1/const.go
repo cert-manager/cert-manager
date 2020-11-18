@@ -28,7 +28,7 @@ const (
 	// minimum certificate duration before certificate expiration
 	MinimumRenewBefore = time.Minute * 5
 
-	// Default duration before certificate expiration if  Issuer.spec.renewBefore is not set
+	// Default duration before certificate expiration if Certificate.Spec.RenewBefore is not set.
 	DefaultRenewBefore = time.Hour * 24 * 30
 )
 
