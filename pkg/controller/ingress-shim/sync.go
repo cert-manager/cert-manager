@@ -156,12 +156,8 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 			},
 		}
 
-		err = c.setIssuerSpecificConfig(crt, ing, tls)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		c.setCommonName(crt, ing)
+		setIssuerSpecificConfig(crt, ing)
+		setCommonName(crt, ing)
 
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
@@ -188,10 +184,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 
 			updateCrt.Spec = crt.Spec
 			updateCrt.Labels = crt.Labels
-			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
-			if err != nil {
-				return nil, nil, err
-			}
+			setIssuerSpecificConfig(updateCrt, ing)
 			updateCrts = append(updateCrts, updateCrt)
 		} else {
 			newCrts = append(newCrts, crt)
@@ -273,7 +266,7 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 	return false
 }
 
-func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress, tls networkingv1beta1.IngressTLS) error {
+func setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress) {
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
@@ -299,11 +292,9 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networ
 		}
 		crt.Annotations[cmacme.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
 	}
-
-	return nil
 }
 
-func (c *controller) setCommonName(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress) {
+func setCommonName(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress) {
 	// if annotation is set use that as CN
 	if ing.Annotations != nil && ing.Annotations[cmapi.CommonNameAnnotationKey] != "" {
 		crt.Spec.CommonName = ing.Annotations[cmapi.CommonNameAnnotationKey]
