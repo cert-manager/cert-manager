@@ -157,7 +157,9 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 		}
 
 		setIssuerSpecificConfig(crt, ing)
-		setCommonName(crt, ing)
+		if err := translateIngressAnnotations(crt, ing.Annotations); err != nil {
+			return nil, nil, err
+		}
 
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry

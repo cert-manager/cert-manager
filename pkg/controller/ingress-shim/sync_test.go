@@ -960,6 +960,32 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:   "Failure to translateIngressAnnotations",
+			Issuer: acmeIssuer,
+			Ingress: &networkingv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IssuerKindAnnotationKey:        "Issuer",
+						cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+						cmapi.RenewBeforeAnnotationKey:       "invalid renew before value",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			Err: true,
+		},
 	}
 	testFn := func(test testT) func(t *testing.T) {
 		return func(t *testing.T) {

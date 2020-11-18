@@ -30,6 +30,9 @@ const (
 	// Annotation key for certificate common name.
 	CommonNameAnnotationKey = "cert-manager.io/common-name"
 
+	// Annotation key for certificate renewBefore.
+	RenewBeforeAnnotationKey = "cert-manager.io/renew-before"
+
 	// Annotation key the 'name' of the Issuer resource.
 	IssuerNameAnnotationKey = "cert-manager.io/issuer-name"
 
