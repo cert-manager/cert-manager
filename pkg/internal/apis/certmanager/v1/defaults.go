@@ -17,9 +17,34 @@ limitations under the License.
 package v1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+func SetDefaults_CertificateSpec(o *cmapi.CertificateSpec) {
+	if o == nil {
+		return
+	}
+	setDefaultRenewBefore(o)
+}
+
+func setDefaultRenewBefore(o *cmapi.CertificateSpec) {
+	if o.RenewBefore != nil {
+		return
+	}
+	if o.Duration == nil {
+		o.RenewBefore = &metav1.Duration{Duration: cmapi.DefaultRenewBefore}
+		return
+	}
+	renewBefore := o.Duration.Duration / 3
+	if renewBefore < cmapi.MinimumRenewBefore {
+		renewBefore = cmapi.MinimumRenewBefore
+	}
+	o.RenewBefore = &metav1.Duration{Duration: renewBefore}
 }
