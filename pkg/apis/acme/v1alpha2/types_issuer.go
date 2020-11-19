@@ -463,10 +463,10 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	Environment AzureDNSEnvironment `json:"environment,omitempty"`
 
 	// +optional
-	UseUserManagedIdentity bool `json:"useUserManagedIdentity"`
+	UseUserManagedIdentity bool `json:"useUserManagedIdentity,omitempty"`
 
 	// +optional
-	UserManagedIdentityID string `json:"userManagedIdentityID"`
+	UserManagedIdentityID string `json:"userManagedIdentityID,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud
