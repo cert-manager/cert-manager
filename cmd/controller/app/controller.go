@@ -230,7 +230,6 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
-			RenewBeforeExpiryDuration:       opts.RenewBeforeExpiryDuration,
 		},
 		IngressShimOptions: controller.IngressShimOptions{
 			DefaultIssuerName:                 opts.DefaultIssuerName,
@@ -239,7 +238,8 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
 		},
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef: opts.EnableCertificateOwnerRef,
+			EnableOwnerRef:            opts.EnableCertificateOwnerRef,
+			RenewBeforeExpiryDuration: opts.RenewBeforeExpiryDuration,
 		},
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,

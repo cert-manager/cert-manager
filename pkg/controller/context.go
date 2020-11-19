@@ -91,11 +91,6 @@ type IssuerOptions struct {
 	// IssuerAmbientCredentials controls whether an issuer should pick up ambient
 	// credentials, such as those from metadata services, to construct clients.
 	IssuerAmbientCredentials bool
-
-	// RenewBeforeExpiryDuration is the default 'renew before expiry' time for Certificates.
-	// Once a certificate is within this duration until expiry, a new Certificate
-	// will be attempted to be issued.
-	RenewBeforeExpiryDuration time.Duration
 }
 
 type ACMEOptions struct {
@@ -143,6 +138,10 @@ type CertificateOptions struct {
 	// EnableOwnerRef controls whether the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
 	EnableOwnerRef bool
+	// RenewBeforeExpiryDuration is the default 'renew before expiry' time for Certificates.
+	// Once a certificate is within this duration until expiry, a new Certificate
+	// will be attempted to be issued.
+	RenewBeforeExpiryDuration time.Duration
 }
 
 type SchedulerOptions struct {
