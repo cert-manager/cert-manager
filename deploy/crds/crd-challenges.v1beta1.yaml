@@ -213,6 +213,10 @@ spec:
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
                               type: string
+                            useUserManagedIdentity:
+                              type: boolean
+                            userManagedIdentityID:
+                              type: string
                         clouddns:
                           description: Use the Google Cloud DNS API to manage DNS01 challenge records.
                           type: object
@@ -1020,6 +1024,10 @@ spec:
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
+                              type: string
+                            useUserManagedIdentity:
+                              type: boolean
+                            userManagedIdentityId:
                               type: string
                         clouddns:
                           description: Use the Google Cloud DNS API to manage DNS01 challenge records.
@@ -1830,6 +1838,10 @@ spec:
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
                               type: string
+                            useUserManagedIdentity:
+                              type: boolean
+                            userManagedIdentityId:
+                              type: string
                         cloudDNS:
                           description: Use the Google Cloud DNS API to manage DNS01 challenge records.
                           type: object
@@ -2638,6 +2650,10 @@ spec:
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
+                              type: string
+                            useUserManagedIdentity:
+                              type: boolean
+                            userManagedIdentityID:
                               type: string
                         cloudDNS:
                           description: Use the Google Cloud DNS API to manage DNS01 challenge records.

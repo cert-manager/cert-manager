@@ -802,6 +802,8 @@ func autoConvert_v1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01Provi
 	out.ResourceGroupName = in.ResourceGroupName
 	out.HostedZoneName = in.HostedZoneName
 	out.Environment = acme.AzureDNSEnvironment(in.Environment)
+	out.UseUserManagedIdentity = in.UseUserManagedIdentity
+	out.UserManagedIdentityID = in.UserManagedIdentityID
 	return nil
 }
 
@@ -818,6 +820,8 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1_ACMEIssuerDNS01Provi
 	out.ResourceGroupName = in.ResourceGroupName
 	out.HostedZoneName = in.HostedZoneName
 	out.Environment = v1.AzureDNSEnvironment(in.Environment)
+	out.UseUserManagedIdentity = in.UseUserManagedIdentity
+	out.UserManagedIdentityID = in.UserManagedIdentityID
 	return nil
 }
 

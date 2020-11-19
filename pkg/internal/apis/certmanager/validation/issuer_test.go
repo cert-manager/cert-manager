@@ -734,6 +734,17 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
+		"user assigned identity not supplied": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					UseUserAssignedID: true,
+					UserAssignedID:    "",
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"),
+			},
+		},
 		"missing akamai config": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{},

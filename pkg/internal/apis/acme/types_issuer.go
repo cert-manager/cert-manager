@@ -402,9 +402,9 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	Environment AzureDNSEnvironment
 
-	UseUserAssignedID bool
+	UseUserManagedIdentity bool
 
-	UserAssignedID string
+	UserManagedIdentityID string
 }
 
 type AzureDNSEnvironment string

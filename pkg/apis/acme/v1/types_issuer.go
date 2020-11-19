@@ -463,10 +463,10 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	Environment AzureDNSEnvironment `json:"environment,omitempty"`
 
 	// +optional
-	UseUserManagedIdentities bool `json:"useUserAssignedIdentities,omitempty"`
+	UseUserManagedIdentity bool `json:"useUserManagedIdentity"`
 
 	// +optional
-	UserManagedIdentityId string `json:"userManagedIdentityId,omitempty"`
+	UserManagedIdentityID string `json:"userManagedIdentityID"`
 }
 
 // +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud
@@ -485,10 +485,6 @@ type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host string `json:"host"`
 
 	AccountSecret cmmeta.SecretKeySelector `json:"accountSecretRef"`
-
-	UseUserAssignedID bool `json:"useUserAssignedID"`
-
-	UserAssignedID string `json:"userAssignedID"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136 is a structure containing the
