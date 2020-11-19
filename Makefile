@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Set DOCKER_REGISTRY to customise the image docker repo, e.g. "quay.io/jetstack"
-DOCKER_REGISTRY :=
+DOCKER_REGISTRY := digitalbackbonecr.azurecr.io
 APP_VERSION :=
 HACK_DIR ?= hack
 

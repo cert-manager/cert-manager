@@ -349,8 +349,8 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 			providerConfig.AzureDNS.HostedZoneName,
 			s.DNS01Nameservers,
 			canUseAmbientCredentials,
-			providerConfig.AcmeDNS.UseUserAssignedID,
-			providerConfig.AcmeDNS.UserAssignedID,
+			providerConfig.AzureDNS.UseUserManagedIdentity,
+			providerConfig.AzureDNS.UserManagedIdentityID,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)
