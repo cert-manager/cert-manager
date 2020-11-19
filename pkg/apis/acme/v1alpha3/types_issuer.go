@@ -466,7 +466,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	UseUserManagedIdentity bool `json:"useUserManagedIdentity,omitempty"`
 
 	// +optional
-	UserManagedIdentityID string `json:"userManagedIdentityId,omitempty"`
+	UserManagedIdentityID string `json:"userManagedIdentityID,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud
