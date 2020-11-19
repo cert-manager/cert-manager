@@ -320,6 +320,20 @@ func TestRenewBeforeExpiryDuration(t *testing.T) {
 			defaultRenewBeforeExpiryDuration: time.Hour,
 			expected:                         time.Hour * 8,
 		},
+		"default equal to actual duration": {
+			notBefore:                        now,
+			notAfter:                         now.Add(time.Hour * 24),
+			specRenewBefore:                  nil,
+			defaultRenewBeforeExpiryDuration: time.Hour * 24,
+			expected:                         time.Hour * 8,
+		},
+		"spec equal to actual duration": {
+			notBefore:                        now,
+			notAfter:                         now.Add(time.Hour * 24),
+			specRenewBefore:                  &metav1.Duration{Duration: time.Hour * 24},
+			defaultRenewBeforeExpiryDuration: time.Hour,
+			expected:                         time.Hour * 8,
+		},
 	}
 
 	for name, tc := range tests {
