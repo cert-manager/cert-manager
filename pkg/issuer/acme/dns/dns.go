@@ -60,7 +60,7 @@ type dnsProviderConstructors struct {
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
-	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool) (*azuredns.DNSProvider, error)
+	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, useUserAssignedID bool, userAssignedID string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
@@ -338,6 +338,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 			}
 			secret = string(clientSecretBytes)
 		}
+
 		impl, err = s.dnsProviderConstructors.azureDNS(
 			string(providerConfig.AzureDNS.Environment),
 			providerConfig.AzureDNS.ClientID,
@@ -348,6 +349,8 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 			providerConfig.AzureDNS.HostedZoneName,
 			s.DNS01Nameservers,
 			canUseAmbientCredentials,
+			providerConfig.AcmeDNS.UseUserAssignedID,
+			providerConfig.AcmeDNS.UserAssignedID,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)

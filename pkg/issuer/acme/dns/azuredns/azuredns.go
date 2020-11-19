@@ -39,7 +39,7 @@ type DNSProvider struct {
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool) (*DNSProvider, error) {
+func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, useUserAssignedIdentities bool, userAssignedIdentityId string) (*DNSProvider, error) {
 	env := azure.PublicCloud
 	if environment != "" {
 		var err error
@@ -49,7 +49,7 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		}
 	}
 
-	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient)
+	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient, useUserAssignedIdentities, userAssignedIdentityId)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,20 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}, nil
 }
 
-func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool) (*adal.ServicePrincipalToken, error) {
+func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool, useUserAssignedID bool, userAssignedID string) (*adal.ServicePrincipalToken, error) {
+	if useUserAssignedID {
+		logf.Log.V(logf.InfoLevel).Info("authenticating using azure user-assigned identity")
+		msiEndpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
+		}
+		spt, err := adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, env.ServiceManagementEndpoint, userAssignedID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+		}
+		return spt, nil
+	}
+
 	if clientID != "" {
 		logf.Log.V(logf.InfoLevel).Info("azuredns authenticating with clientID and secret key")
 		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)

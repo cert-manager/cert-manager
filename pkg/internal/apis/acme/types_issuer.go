@@ -401,6 +401,10 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	HostedZoneName string
 
 	Environment AzureDNSEnvironment
+
+	UseUserAssignedID bool
+
+	UserAssignedID string
 }
 
 type AzureDNSEnvironment string
