@@ -21,7 +21,7 @@ data:
           "kid-1": "a2lkLXNlY3JldC0x",
           "kid-2": "a2lkLXNlY3JldC0y"
         },
-        "blockList": ["google.com"]
+        "domainBlocklist": ["google.com"]
       }
     }
   cert.pem: |
