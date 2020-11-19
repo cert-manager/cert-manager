@@ -1027,7 +1027,7 @@ spec:
                               type: string
                             useUserManagedIdentity:
                               type: boolean
-                            userManagedIdentityId:
+                            userManagedIdentityID:
                               type: string
                         clouddns:
                           description: Use the Google Cloud DNS API to manage DNS01 challenge records.
@@ -1840,7 +1840,7 @@ spec:
                               type: string
                             useUserManagedIdentity:
                               type: boolean
-                            userManagedIdentityId:
+                            userManagedIdentityID:
                               type: string
                         cloudDNS:
                           description: Use the Google Cloud DNS API to manage DNS01 challenge records.
