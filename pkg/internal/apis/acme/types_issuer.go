@@ -46,7 +46,7 @@ type ACMEIssuer struct {
 	// endpoint.
 	// For example, for Let's Encrypt's DST crosssign you would use:
 	// "DST Root CA X3" or "ISRG Root X1" for the newer Let's Encrypt root CA.
-	PreferredChain string `json:"preferredChain"`
+	PreferredChain string
 
 	// Enables or disables validation of the ACME server TLS certificate.
 	// If true, requests to the ACME server will not have their TLS certificate
@@ -83,15 +83,14 @@ type ACMEIssuer struct {
 	// If false, the cert-manager system will generate a new ACME account key
 	// for the Issuer.
 	// Defaults to false.
-	// +optional
-	DisableAccountKeyGeneration bool `json:"disableAccountKeyGeneration,omitempty"`
+	DisableAccountKeyGeneration bool
 
 	// Enables requesting a Not After date on certificates that matches the
 	// duration of the certificate. This is not supported by all ACME servers
 	// like Let's Encrypt. If set to true when the ACME server does not support
 	// it it will create an error on the Order.
 	// Defaults to false.
-	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
+	EnableDurationFeature bool
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME
