@@ -121,7 +121,8 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when finding Secret %q: %w\n", args[0], err)
 	}
 
-	output, err := DescribeCertificate(secret.Data[corev1.TLSCertKey])
+	// TODO: use cmmeta
+	output, err := DescribeCertificate(secret.Data[corev1.TLSCertKey], secret.Data["ca.crt"])
 	if err != nil {
 		return fmt.Errorf("error when describing Secret %q: %w\n", args[0], err)
 	}
