@@ -153,27 +153,24 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// check if we have had a recent failure, and if so do not trigger a
-	// re-issuance immediately
-	if crt.Status.LastFailureTime != nil {
-		now := c.clock.Now()
-		retryAfter := crt.Status.LastFailureTime.Add(retryAfterLastFailure)
-		if now.Before(retryAfter) {
-			log.V(logf.InfoLevel).Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_after", retryAfter)
-			c.scheduleRecheckOfCertificateIfRequired(log, key, retryAfter.Sub(now))
-			return nil
-		}
+	input, err := c.gatherer.DataForCertificate(ctx, crt)
+	if err != nil {
+		return err
+	}
+
+	// Back off from re-issuing immediately when the certificate has been
+	// in failing mode for less than 1 hour.
+	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate)
+	if backoff {
+		log.V(logf.InfoLevel).Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_delay", delay)
+		c.scheduleRecheckOfCertificateIfRequired(log, key, delay)
+		return nil
 	}
 
 	if crt.Status.RenewalTime != nil {
 		// ensure a resync is scheduled in the future so that we re-check
 		// Certificate resources and trigger them near expiry time
 		c.scheduleRecheckOfCertificateIfRequired(log, key, crt.Status.RenewalTime.Time.Sub(c.clock.Now()))
-	}
-
-	input, err := c.gatherer.DataForCertificate(ctx, crt)
-	if err != nil {
-		return err
 	}
 
 	reason, message, reissue := c.policyChain.Evaluate(input)
@@ -191,6 +188,23 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	c.recorder.Event(crt, corev1.EventTypeNormal, "Issuing", message)
 
 	return nil
+}
+
+// shouldBackoffReissuingOnFailure tells us if we should back off from
+// reissuing the certificate and for how much time.
+func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate) (backoff bool, delay time.Duration) {
+	if crt.Status.LastFailureTime == nil {
+		return false, 0
+	}
+
+	now := c.Now()
+	durationSinceFailure := now.Sub(crt.Status.LastFailureTime.Time)
+	if durationSinceFailure > retryAfterLastFailure {
+		log.V(logf.ExtendedInfoLevel).WithValues("since_failure", durationSinceFailure).Info("Certificate has been in failure mode long enough, no need to back off")
+		return false, 0
+	}
+
+	return true, retryAfterLastFailure - durationSinceFailure
 }
 
 // scheduleRecheckOfCertificateIfRequired will schedule the resource with the
