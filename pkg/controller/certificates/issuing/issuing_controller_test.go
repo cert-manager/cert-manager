@@ -174,6 +174,38 @@ func TestIssuingController(t *testing.T) {
 			expectedErr: false,
 		},
 
+		"if certificate is in Issuing state, one CertificateRequest, but has failed and does not match the certificate spec, do nothing": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					issuingCert.DeepCopy(),
+					gen.CertificateRequestFrom(createCertificateRequestOrPanic(gen.CertificateFrom(issuingCert,
+						gen.SetCertificateDNSNames("foo.com"), // Mismatch since the cert has "example.com"
+					)), gen.AddCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+					}), gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+						Type:    cmapi.CertificateRequestConditionReady,
+						Status:  cmmeta.ConditionFalse,
+						Reason:  cmapi.CertificateRequestReasonFailed,
+						Message: "The certificate request failed because of reasons",
+					})),
+				},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+			},
+			expectedErr: false,
+		},
+
 		"if certificate is in Issuing state, one CertificateRequest, but has failed, set failed state and log event": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
@@ -931,4 +963,15 @@ func TestIssuingController(t *testing.T) {
 			test.builder.CheckAndFinish(err)
 		})
 	}
+}
+
+// We don't need to full bundle, just a simple CertificateRequest. We don't
+// use MustCreateCryptoBundle since it requires *testing.T which we don't
+// want to bother with: a panic is fine here.
+func createCertificateRequestOrPanic(crt *cmapi.Certificate) *cmapi.CertificateRequest {
+	bundle, err := internaltest.CreateCryptoBundle(crt, fakeclock.NewFakeClock(time.Now()))
+	if err != nil {
+		panic(err)
+	}
+	return bundle.CertificateRequest
 }
