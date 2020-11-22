@@ -27,6 +27,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	pprof "net/http/pprof"
 	"time"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -134,7 +135,7 @@ func New(log logr.Logger) *Metrics {
 }
 
 // Start will register the Prometheu metrics, and start the Prometheus server
-func (m *Metrics) Start(listenAddress string) (*http.Server, error) {
+func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, error) {
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
@@ -143,6 +144,13 @@ func (m *Metrics) Start(listenAddress string) (*http.Server, error) {
 
 	router := mux.NewRouter()
 	router.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	if enablePprof {
+		router.HandleFunc("/debug/pprof/", pprof.Index)
+		router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
 
 	ln, err := net.Listen("tcp", listenAddress)
 	if err != nil {
