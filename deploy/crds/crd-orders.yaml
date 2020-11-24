@@ -82,6 +82,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array
@@ -236,6 +239,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array
@@ -387,6 +393,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array
@@ -542,6 +551,9 @@ spec:
                   type: array
                   items:
                     type: string
+                duration:
+                  description: Duration is the duration for the not after date for the requested certificate. this is set on order creation as pe the ACME spec.
+                  type: string
                 ipAddresses:
                   description: IPAddresses is a list of IP addresses that should be included as part of the Order validation process. This field must match the corresponding field on the DER encoded CSR.
                   type: array

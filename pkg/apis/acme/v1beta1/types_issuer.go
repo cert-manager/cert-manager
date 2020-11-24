@@ -93,6 +93,14 @@ type ACMEIssuer struct {
 	// Defaults to false.
 	// +optional
 	DisableAccountKeyGeneration bool `json:"disableAccountKeyGeneration,omitempty"`
+
+	// Enables requesting a Not After date on certificates that matches the
+	// duration of the certificate. This is not supported by all ACME servers
+	// like Let's Encrypt. If set to true when the ACME server does not support
+	// it it will create an error on the Order.
+	// Defaults to false.
+	// +optional
+	EnableDurationFeature bool `json:"enableDurationFeature,omitempty"`
 }
 
 // ACMEExternalAccountBinding is a reference to a CA external account of the ACME

@@ -70,6 +70,10 @@ type OrderSpec struct {
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
 	IPAddresses []string
+
+	// Duration is the duration for the not after date for the requested certificate.
+	// this is set on order creation as pe the ACME spec.
+	Duration *metav1.Duration
 }
 
 type OrderStatus struct {

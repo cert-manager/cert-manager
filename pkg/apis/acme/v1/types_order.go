@@ -69,7 +69,7 @@ type OrderSpec struct {
 	// DNSNames is a list of DNS names that should be included as part of the Order
 	// validation process.
 	// This field must match the corresponding field on the DER encoded CSR.
-	//+optonal
+	//+optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// IPAddresses is a list of IP addresses that should be included as part of the Order
@@ -77,6 +77,11 @@ type OrderSpec struct {
 	// This field must match the corresponding field on the DER encoded CSR.
 	// +optional
 	IPAddresses []string `json:"ipAddresses,omitempty"`
+
+	// Duration is the duration for the not after date for the requested certificate.
+	// this is set on order creation as pe the ACME spec.
+	// +optional
+	Duration *metav1.Duration `json:"duration,omitempty"`
 }
 
 type OrderStatus struct {

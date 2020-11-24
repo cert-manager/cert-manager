@@ -105,7 +105,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 	}
 
 	// If we fail to build the order we have to hard fail.
-	expectedOrder, err := buildOrder(cr, csr)
+	expectedOrder, err := buildOrder(cr, csr, issuer.GetSpec().ACME.EnableDurationFeature)
 	if err != nil {
 		message := "Failed to build order"
 
@@ -199,7 +199,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
+func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool) (*cmacme.Order, error) {
 	var ipAddresses []string
 	for _, ip := range csr.IPAddresses {
 		ipAddresses = append(ipAddresses, ip.String())
@@ -218,8 +218,12 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest) (*cmacm
 		IPAddresses: ipAddresses,
 	}
 
+	if enableDurationFeature {
+		spec.Duration = cr.Spec.Duration
+	}
+
 	computeNameSpec := spec.DeepCopy()
-	// create a deep copy of the OrderSpec so we can overwrite the Request field
+	// create a deep copy of the OrderSpec so we can overwrite the Request and NotAfter field
 	computeNameSpec.Request = nil
 	name, err := apiutil.ComputeName(cr.Name, computeNameSpec)
 	if err != nil {

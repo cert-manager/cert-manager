@@ -25,6 +25,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"net"
+	"reflect"
 	"testing"
 	"time"
 
@@ -37,6 +38,7 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
@@ -148,12 +150,12 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 	ipBaseCR := gen.CertificateRequestFrom(baseCR, gen.SetCertificateRequestCSR(ipCSRPEM))
-	ipBaseOrder, err := buildOrder(ipBaseCR, ipCSR)
+	ipBaseOrder, err := buildOrder(ipBaseCR, ipCSR, baseIssuer.GetSpec().ACME.EnableDurationFeature)
 	if err != nil {
 		t.Fatalf("failed to build order during testing: %s", err)
 	}
 
-	baseOrder, err := buildOrder(baseCR, csr)
+	baseOrder, err := buildOrder(baseCR, csr, baseIssuer.GetSpec().ACME.EnableDurationFeature)
 	if err != nil {
 		t.Fatalf("failed to build order during testing: %s", err)
 	}
@@ -517,4 +519,78 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	test.builder.CheckAndFinish(err)
+}
+
+func Test_buildOrder(t *testing.T) {
+	sk, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csrPEM := generateCSR(t, sk, "example.com", "example.com")
+	csr, err := pki.DecodeX509CertificateRequestBytes(csrPEM)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cr := gen.CertificateRequest("test", gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}), gen.SetCertificateRequestCSR(csrPEM))
+	type args struct {
+		cr                    *v1.CertificateRequest
+		csr                   *x509.CertificateRequest
+		enableDurationFeature bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *cmacme.Order
+		wantErr bool
+	}{
+		{
+			name: "Normal building of order",
+			args: args{
+				cr:                    cr,
+				csr:                   csr,
+				enableDurationFeature: false,
+			},
+			want: &cmacme.Order{
+				Spec: cmacme.OrderSpec{
+					Request:    csrPEM,
+					CommonName: "example.com",
+					DNSNames:   []string{"example.com"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Building with enableDurationFeature",
+			args: args{
+				cr:                    cr,
+				csr:                   csr,
+				enableDurationFeature: true,
+			},
+			want: &cmacme.Order{
+				Spec: cmacme.OrderSpec{
+					Request:    csrPEM,
+					CommonName: "example.com",
+					DNSNames:   []string{"example.com"},
+					Duration:   &metav1.Duration{Duration: time.Hour},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := buildOrder(tt.args.cr, tt.args.csr, tt.args.enableDurationFeature)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("buildOrder() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			// for the current purpose we only test the spec
+			if !reflect.DeepEqual(got.Spec, tt.want.Spec) {
+				t.Errorf("buildOrder() got = %v, want %v", got.Spec, tt.want.Spec)
+			}
+		})
+	}
 }
