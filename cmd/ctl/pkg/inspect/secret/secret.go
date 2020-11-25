@@ -18,12 +18,16 @@ package secret
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
-
-	corev1 "k8s.io/api/core/v1"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
@@ -31,7 +35,47 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
+
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
+
+const validForTemplate = `Valid for:
+	DNS Names: %s
+	URIs: %s
+	IP Addresses: %s
+	Email Addresses: %s
+	Usages: %s`
+
+const validityPeriodTemplate = `Validity period:
+	Not Before: %s
+	Not After: %s`
+
+const issuedByTemplate = `Issued By:
+	Common Name		%s
+	Organization		%s
+	OrganizationalUnit	%s
+	Country: 		%s`
+
+const issuedForTemplate = `Issued For:
+	Common Name		%s
+	Organization		%s
+	OrganizationalUnit	%s
+	Country: 		%s`
+
+const certificateTemplate = `Certificate:
+	Signing Algorithm:	%s
+	Public Key Algorithm: 	%s
+	Serial Number:	%s
+	Fingerprints: 	%s
+	Is a CA certificate: %v
+	CRL:	%s
+	OCSP:	%s`
+
+const debuggingTemplate = `Debugging:
+	Trusted by this computer:	%s
+	CRL Status:	%s
+	OCSP Status:	%s`
 
 var (
 	long = templates.LongDesc(i18n.T(`
@@ -122,11 +166,166 @@ func (o *Options) Run(args []string) error {
 	}
 
 	// TODO: use cmmeta
-	output, err := DescribeCertificate(secret.Data[corev1.TLSCertKey], secret.Data["ca.crt"])
-	if err != nil {
-		return fmt.Errorf("error when describing Secret %q: %w\n", args[0], err)
+
+	certData := secret.Data[corev1.TLSCertKey]
+	certs, err2 := splitPEMs(certData)
+	if err2 != nil {
+		return err2
 	}
-	fmt.Println(output)
+
+	if len(certs) < 1 {
+		return errors.New("no PEM data found in secret")
+	}
+
+	// we only want to inspect the leaf
+	x509Cert, err := pki.DecodeX509CertificateBytes(certs[0])
+	if err != nil {
+		return fmt.Errorf("error when parsing 'tls.crt': %w", err)
+	}
+
+	intermediates := [][]byte(nil)
+	if len(certs) > 1 {
+		intermediates = certs[1:]
+	}
+
+	out := []string{
+		describeValidFor(x509Cert),
+		describeValidityPeriod(x509Cert),
+		describeIssuedBy(x509Cert),
+		describeIssuedFor(x509Cert),
+		describeCertificate(x509Cert),
+		describeDebugging(x509Cert, intermediates, secret.Data[cmmeta.TLSCAKey]),
+	}
+
+	fmt.Println(strings.Join(out, "\n\n"))
 
 	return nil
+}
+
+func describeValidFor(cert *x509.Certificate) string {
+	return fmt.Sprintf(validForTemplate,
+		printSlice(cert.DNSNames),
+		printSlice(pki.URLsToString(cert.URIs)),
+		printSlice(pki.IPAddressesToString(cert.IPAddresses)),
+		printSlice(cert.EmailAddresses),
+		printKeyUsage(pki.BuildCertManagerKeyUsages(cert.KeyUsage, cert.ExtKeyUsage)),
+	)
+}
+
+func describeValidityPeriod(cert *x509.Certificate) string {
+	return fmt.Sprintf(validityPeriodTemplate,
+		cert.NotBefore.Format(time.RFC1123),
+		cert.NotAfter.Format(time.RFC1123),
+	)
+}
+
+func describeIssuedBy(cert *x509.Certificate) string {
+	return fmt.Sprintf(issuedByTemplate,
+		printOrNone(cert.Issuer.CommonName),
+		printSliceOrOne(cert.Issuer.Organization),
+		printSliceOrOne(cert.Issuer.OrganizationalUnit),
+		printSliceOrOne(cert.Issuer.Country),
+	)
+}
+
+func describeIssuedFor(cert *x509.Certificate) string {
+	return fmt.Sprintf(issuedForTemplate,
+		printOrNone(cert.Subject.CommonName),
+		printSliceOrOne(cert.Subject.Organization),
+		printSliceOrOne(cert.Subject.OrganizationalUnit),
+		printSliceOrOne(cert.Subject.Country),
+	)
+}
+
+func describeCertificate(cert *x509.Certificate) string {
+	return fmt.Sprintf(certificateTemplate,
+		cert.SignatureAlgorithm.String(),
+		cert.PublicKeyAlgorithm.String(),
+		cert.SerialNumber.String(),
+		fingerprintCert(cert),
+		cert.IsCA,
+		printSliceOrOne(cert.CRLDistributionPoints),
+		printSliceOrOne(cert.OCSPServer),
+	)
+}
+
+func describeDebugging(cert *x509.Certificate, intermediates [][]byte, ca []byte) string {
+	return fmt.Sprintf(debuggingTemplate,
+		describeTrusted(cert, intermediates),
+		describeCRL(cert),
+		describeOCSP(cert, intermediates, ca),
+	)
+}
+
+func describeCRL(cert *x509.Certificate) string {
+	if len(cert.CRLDistributionPoints) < 1 {
+		return "No CRL endpoints set"
+	}
+
+	hasChecked := false
+	for _, crlURL := range cert.CRLDistributionPoints {
+		u, err := url.Parse(crlURL)
+		if err != nil {
+			continue // not a valid URL
+		}
+		if u.Scheme != "ldap" && u.Scheme != "https" {
+			continue
+		}
+
+		valid, err := checkCRLValidCert(cert, crlURL)
+		if err != nil {
+			return fmt.Sprintf("Cannot check CRL: %s", err.Error())
+		}
+		if !valid {
+			return fmt.Sprintf("Revoked by %s", crlURL)
+		}
+	}
+
+	if !hasChecked {
+		return "No CRL endpoints we support found"
+	}
+
+	return "Valid"
+}
+
+func describeOCSP(cert *x509.Certificate, intermediates [][]byte, ca []byte) string {
+	if len(ca) > 1 {
+		intermediates = append([][]byte{ca}, intermediates...)
+	}
+	if len(intermediates) < 1 {
+		return "Cannot check OCSP, does not have a CA or intermediate certificate provided"
+	}
+	issuerCert, err := pki.DecodeX509CertificateBytes(intermediates[len(intermediates)-1])
+	if err != nil {
+		return fmt.Sprintf("Cannot parse intermediate certificate: %s", err.Error())
+	}
+
+	valid, err := checkOCSPValidCert(cert, issuerCert)
+	if err != nil {
+		return fmt.Sprintf("Cannot check OCSP: %s", err.Error())
+	}
+
+	if !valid {
+		return "Marked as revoked"
+	}
+
+	return "valid"
+}
+
+func describeTrusted(cert *x509.Certificate, intermediates [][]byte) string {
+	systemPool, err := x509.SystemCertPool()
+	for _, intermediate := range intermediates {
+		systemPool.AppendCertsFromPEM(intermediate)
+	}
+	if err != nil {
+		return fmt.Sprintf("error loading system CA trusts: %s", err.Error())
+	}
+	_, err = cert.Verify(x509.VerifyOptions{
+		Roots:       systemPool,
+		CurrentTime: time.Now(),
+	})
+	if err == nil {
+		return "yes"
+	}
+	return fmt.Sprintf("no: %s", err.Error())
 }
