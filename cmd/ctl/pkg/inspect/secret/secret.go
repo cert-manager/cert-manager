@@ -165,27 +165,24 @@ func (o *Options) Run(args []string) error {
 		return fmt.Errorf("error when finding Secret %q: %w\n", args[0], err)
 	}
 
-	// TODO: use cmmeta
-
 	certData := secret.Data[corev1.TLSCertKey]
-	certs, err2 := splitPEMs(certData)
-	if err2 != nil {
-		return err2
+	certs, err := splitPEMs(certData)
+	if err != nil {
+		return err
 	}
-
 	if len(certs) < 1 {
 		return errors.New("no PEM data found in secret")
-	}
-
-	// we only want to inspect the leaf
-	x509Cert, err := pki.DecodeX509CertificateBytes(certs[0])
-	if err != nil {
-		return fmt.Errorf("error when parsing 'tls.crt': %w", err)
 	}
 
 	intermediates := [][]byte(nil)
 	if len(certs) > 1 {
 		intermediates = certs[1:]
+	}
+
+	// we only want to inspect the leaf certificate
+	x509Cert, err := pki.DecodeX509CertificateBytes(certs[0])
+	if err != nil {
+		return fmt.Errorf("error when parsing 'tls.crt': %w", err)
 	}
 
 	out := []string{
@@ -272,6 +269,7 @@ func describeCRL(cert *x509.Certificate) string {
 			continue
 		}
 
+		hasChecked = true
 		valid, err := checkCRLValidCert(cert, crlURL)
 		if err != nil {
 			return fmt.Sprintf("Cannot check CRL: %s", err.Error())
@@ -314,11 +312,11 @@ func describeOCSP(cert *x509.Certificate, intermediates [][]byte, ca []byte) str
 
 func describeTrusted(cert *x509.Certificate, intermediates [][]byte) string {
 	systemPool, err := x509.SystemCertPool()
+	if err != nil {
+		return fmt.Sprintf("Error getting system CA store: %s", err.Error())
+	}
 	for _, intermediate := range intermediates {
 		systemPool.AppendCertsFromPEM(intermediate)
-	}
-	if err != nil {
-		return fmt.Sprintf("error loading system CA trusts: %s", err.Error())
 	}
 	_, err = cert.Verify(x509.VerifyOptions{
 		Roots:       systemPool,
