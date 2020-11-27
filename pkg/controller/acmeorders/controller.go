@@ -52,7 +52,7 @@ type controller struct {
 	secretLister        corelisters.SecretLister
 
 	// used for testing
-	clock clock.Clock
+	clock.Clock
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
 	// clientset used to update cert-manager API resources

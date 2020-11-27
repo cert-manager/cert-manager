@@ -18,469 +18,298 @@ package secret
 
 import (
 	"crypto/x509"
-	"errors"
-	"math/big"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclock "k8s.io/utils/clock/testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-func TestFormatStringSlice(t *testing.T) {
-	tests := map[string]struct {
-		slice     []string
-		expOutput string
-	}{
-		// Newlines are part of the expected output
-		"Empty slice returns empty string": {
-			slice:     []string{},
-			expOutput: ``,
-		},
-		"Slice with one element returns string with one line": {
-			slice: []string{"hello"},
-			expOutput: `- hello
-`,
-		},
-		"Slice with multiple elements returns string with multiple lines": {
-			slice: []string{"hello", "World", "another line"},
-			expOutput: `- hello
-- World
-- another line
-`,
-		},
-	}
+const testCert = `-----BEGIN CERTIFICATE-----
+MIIDCTCCAfGgAwIBAgIQZcMA0zmHAF59XPwyJ5isYTANBgkqhkiG9w0BAQsFADBF
+MQswCQYDVQQGEwJCRTENMAsGA1UEChMEY25jZjEVMBMGA1UECxMMY2VydC1tYW5h
+Z2VyMRAwDgYDVQQDEwd0ZXN0LWNhMB4XDTIwMTEyNjEwMTU1NVoXDTIxMDIyNDEw
+MTU1NVowRzELMAkGA1UEBhMCQkUxDTALBgNVBAoTBGNuY2YxFTATBgNVBAsTDGNl
+cnQtbWFuYWdlcjESMBAGA1UEAxMJVGVzdCBDZXJ0MFkwEwYHKoZIzj0CAQYIKoZI
+zj0DAQcDQgAEyyZL+5lqdsHGAu/LskCzH7hxuHNcDL94P7hejBDdWo8qfYgJCv2P
+yuRG2gCWeUbJdxQxwejjTDQGgsREZYU1YqOBvTCBujAOBgNVHQ8BAf8EBAMCBaAw
+IwYDVR0lBBwwGgYEVR0lAAYIKwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQC
+MAAwHwYDVR0jBBgwFoAUWfIOb7hiqgkyiKGsljHW4kVJeEMwVAYDVR0RBE0wS4IR
+Y2VydC1tYW5hZ2VyLnRlc3SBFHRlc3RAY2VydC1tYW5hZ2VyLmlvhwQKAAABhhpz
+cGlmZmU6Ly9jZXJ0LW1hbmFnZXIudGVzdDANBgkqhkiG9w0BAQsFAAOCAQEAscxM
+8Kkaq2KePyiMyboyYLnaWdS+V5XIB15gsseXN2wcuWyX74WsKRfuwD2KrDenaaOc
+ziMelxT3HlEOT/efmZlwP2CvTYvOKNEoLnH4RnehpVSPcrkP4mVCJ3Rnk1g5XZO3
+OJ8wRLEjZxDOTBllEE6LH4BTNJZX8Dt1wUwaJdMwZvYOWM0570Pv1O59qRggV/we
+EpFEF9AeUM7wopJCgwNgN8Eh28RVVjL78ZlTEw3pQrPqWUnz9uyx7guumP7D+Y0D
+smSH8yw3PNftw5kD2ORK3EnkRtZcZIl0O/C6RiNLxBT/GR1opQpQGWlPBjtVOZlq
+JuuLwYEHo8JSNLGsUQ==
+-----END CERTIFICATE-----
+`
 
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			if actualOutput := formatStringSlice(test.slice); actualOutput != test.expOutput {
-				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
-			}
-		})
-	}
-}
-
-func TestCRInfoString(t *testing.T) {
-	tests := map[string]struct {
-		cr        *cmapi.CertificateRequest
-		err       error
-		expOutput string
-	}{
-		// Newlines are part of the expected output
-		"Nil pointer output correct": {
-			cr:  nil,
-			err: errors.New("No CertificateRequest found for this Certificate\n"),
-			expOutput: `No CertificateRequest found for this Certificate
-`,
-		},
-		"CR with no condition output correct": {
-			cr: &cmapi.CertificateRequest{Status: cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{}}},
-			expOutput: `CertificateRequest:
-  Name: 
-  Namespace: 
-  Conditions:
-    No Conditions set
-  Events:  <none>
-`,
-		},
-		"CR with conditions output correct": {
-			cr: &cmapi.CertificateRequest{
-				Status: cmapi.CertificateRequestStatus{
-					Conditions: []cmapi.CertificateRequestCondition{
-						{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Message: "example"},
-					}}},
-			expOutput: `CertificateRequest:
-  Name: 
-  Namespace: 
-  Conditions:
-    Ready: True, Reason: , Message: example
-  Events:  <none>
-`,
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actualOutput := (&CertificateStatus{}).withCR(test.cr, nil, test.err).CRStatus.String()
-			if strings.TrimSpace(actualOutput) != strings.TrimSpace(test.expOutput) {
-				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
-			}
-		})
-	}
-}
-
-func TestKeyUsageToString(t *testing.T) {
-	tests := map[string]struct {
-		usage     x509.KeyUsage
-		expOutput string
-	}{
-		"no key usage set": {
-			usage:     x509.KeyUsage(0),
-			expOutput: "",
-		},
-		"key usage Digital Signature": {
-			usage:     x509.KeyUsageDigitalSignature,
-			expOutput: "Digital Signature",
-		},
-		"key usage Digital Signature and Data Encipherment": {
-			usage:     x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment,
-			expOutput: "Digital Signature, Data Encipherment",
-		},
-		"key usage with three usages is ordered": {
-			usage:     x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment | x509.KeyUsageContentCommitment,
-			expOutput: "Digital Signature, Content Commitment, Data Encipherment",
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			if actualOutput := keyUsageToString(test.usage); actualOutput != test.expOutput {
-				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
-			}
-		})
-	}
-}
-
-func TestExtKeyUsageToString(t *testing.T) {
-	tests := map[string]struct {
-		extUsage       []x509.ExtKeyUsage
-		expOutput      string
-		expError       bool
-		expErrorOutput string
-	}{
-		"no extended key usage": {
-			extUsage:  []x509.ExtKeyUsage{},
-			expOutput: "",
-		},
-		"extended key usage Any": {
-			extUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
-			expOutput: "Any",
-		},
-		"multiple extended key usages": {
-			extUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageEmailProtection},
-			expOutput: "Client Authentication, Email Protection",
-		},
-		"undefined extended key usage": {
-			extUsage:       []x509.ExtKeyUsage{x509.ExtKeyUsage(42)},
-			expOutput:      "",
-			expError:       true,
-			expErrorOutput: "error when converting Extended Usages to string: encountered unknown Extended Usage with code 42",
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			actualOutput, err := extKeyUsageToString(test.extUsage)
-			if err != nil {
-				if !test.expError || test.expErrorOutput != err.Error() {
-					t.Errorf("got unexpected error. This test expects an error: %t. expected error: %q, actual error: %q",
-						test.expError, test.expErrorOutput, err.Error())
-				}
-			} else if test.expError {
-				t.Errorf("expects error: %q, but did not get any", test.expErrorOutput)
-			}
-			if actualOutput != test.expOutput {
-				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
-			}
-		})
-	}
-}
-
-func TestStatusFromResources(t *testing.T) {
-	timestamp, err := time.Parse(time.RFC3339, "2020-09-16T09:26:18Z")
+func MustParseCertificate(t *testing.T, certData string) *x509.Certificate {
+	x509Cert, err := pki.DecodeX509CertificateBytes([]byte(certData))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("error when parsing crt: %v", err)
 	}
 
-	tlsCrt := []byte(`-----BEGIN CERTIFICATE-----
-MIICyTCCAbGgAwIBAgIRAOL4jtyULBSEYyGdqQn9YzowDQYJKoZIhvcNAQELBQAw
-DzENMAsGA1UEAxMEdGVzdDAeFw0yMDA3MzAxNjExNDNaFw0yMDEwMjgxNjExNDNa
-MA8xDTALBgNVBAMTBHRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
-AQDdfNmjh5ag7f6U1hj1OAx/dEN9kQzPsSlBMXGb/Ho4k5iegrFd6w8JkYdCthFv
-lfg3bIhw5tCKaw1o57HnWKBKKGt7XpeIu1mEcv8pveMIPO7TZ4+oElgX880NfJmL
-DkjEcctEo/+FurudO1aEbNfbNWpzudYKj7gGtYshBytqaYt4/APqWARJBFCYVVys
-wexZ0fLi5cBD8H1bQ1Ec3OCr5Mrq9thAGkj+rVlgYR0AZVGa9+SCOj27t6YCmyzR
-AJSEQ35v58Zfxp5tNyYd6wcAswJ9YipnUXvwahF95PNlRmMhp3Eo15m9FxehcVXU
-BOfxykMwZN7onMhuHiiwiB+NAgMBAAGjIDAeMA4GA1UdDwEB/wQEAwIFoDAMBgNV
-HRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQALrnldWjTBTvV5WKapUHUG0rhA
-vp2Cf+5FsPw8vKScXp4L+wKGdPOjhHz6NOiw5wu8A0HxlVUFawRpagkjFkeTL78O
-9ghBHLiqn9xNPIKC6ID3WpnN5terwQxQeO/M54sVMslUWCcZm9Pu4Eb//2e6wEdu
-eMmpfeISQmCsBC1CTmpxUjeUg5DEQ0X1TQykXq+bG2iso6RYPxZTFTHJFzXiDYEc
-/X7H+bOmpo/dMrXapwfvp2gD+BEq96iVpf/DBzGYNs/657LAHJ4YtxtAZCa1CK9G
-MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
------END CERTIFICATE-----`)
+	return x509Cert
+}
 
-	serialNum, _ := new(big.Int).SetString("301696114246524167282555582613204853562", 10)
-	ns := "ns1"
-	dummyEventList := &corev1.EventList{
-		Items: []corev1.Event{{
-			Type:    "type",
-			Reason:  "reason",
-			Message: "message",
-		}},
-	}
-
-	tests := map[string]struct {
-		inputData *Data
-		expOutput *CertificateStatus
+func Test_describeCRL(t *testing.T) {
+	tests := []struct {
+		name string
+		cert *x509.Certificate
+		want string
 	}{
-		"Correct information extracted from Certificate resource": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns),
-					gen.SetCertificateNotAfter(metav1.Time{Time: timestamp}),
-					gen.SetCertificateNotBefore(metav1.Time{Time: timestamp}),
-					gen.SetCertificateRenewalTIme(metav1.Time{Time: timestamp}),
-					gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
-						Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}),
-					gen.SetCertificateDNSNames("example.com"),
-				),
-				CrtEvents: dummyEventList,
-			},
-			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady,
-					Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}},
-				DNSNames:    []string{"example.com"},
-				Events:      dummyEventList,
-				NotBefore:   &metav1.Time{Time: timestamp},
-				NotAfter:    &metav1.Time{Time: timestamp},
-				RenewalTime: &metav1.Time{Time: timestamp},
-			},
-		},
-		"Issuer correctly with Kind Issuer": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns)),
-				Issuer:       gen.Issuer("test-issuer"),
-				IssuerKind:   "Issuer",
-				IssuerError:  nil,
-				IssuerEvents: dummyEventList,
-			},
-			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				IssuerStatus: &IssuerStatus{
-					Name:   "test-issuer",
-					Kind:   "Issuer",
-					Events: dummyEventList,
-				},
-			},
-		},
-		"Issuer correctly with Kind ClusterIssuer": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns)),
-				Issuer:       gen.Issuer("test-clusterissuer"),
-				IssuerKind:   "ClusterIssuer",
-				IssuerError:  nil,
-				IssuerEvents: dummyEventList,
-			},
-			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				IssuerStatus: &IssuerStatus{
-					Name:   "test-clusterissuer",
-					Kind:   "ClusterIssuer",
-					Events: dummyEventList,
-				},
-			},
-		},
-		"Correct information extracted from Secret resource": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns)),
-				Secret: gen.Secret("existing-tls-secret",
-					gen.SetSecretNamespace(ns),
-					gen.SetSecretData(map[string][]byte{"tls.crt": tlsCrt})),
-				SecretError:  nil,
-				SecretEvents: dummyEventList,
-			},
-			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				SecretStatus: &SecretStatus{
-					Error:              nil,
-					Name:               "existing-tls-secret",
-					IssuerCountry:      nil,
-					IssuerOrganisation: nil,
-					IssuerCommonName:   "test",
-					KeyUsage:           x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-					ExtKeyUsage:        nil,
-					PublicKeyAlgorithm: x509.RSA,
-					SignatureAlgorithm: x509.SHA256WithRSA,
-					SubjectKeyId:       nil,
-					AuthorityKeyId:     nil,
-					SerialNumber:       serialNum,
-					Events:             dummyEventList,
-				},
-			},
-		},
-		"Correct information extracted from CR resource": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns)),
-				Req: gen.CertificateRequest("test-req",
-					gen.SetCertificateRequestNamespace(ns),
-					gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "Pending", Message: "Waiting on certificate issuance from order default/example-order: \"pending\""})),
-				ReqError:  nil,
-				ReqEvents: dummyEventList,
-			},
-			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				CRStatus: &CRStatus{
-					Error:      nil,
-					Name:       "test-req",
-					Namespace:  ns,
-					Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "Pending", Message: "Waiting on certificate issuance from order default/example-order: \"pending\""}},
-					Events:     dummyEventList,
-				},
-			},
-		},
-		"Correct information extracted from Order resource": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns)),
-				Order: &cmacme.Order{
-					TypeMeta:   metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{Name: "example-order", Namespace: ns},
-					Spec:       cmacme.OrderSpec{Request: []byte("dummyCSR"), DNSNames: []string{"www.example.com"}},
-					Status:     cmacme.OrderStatus{},
-				},
-				OrderError: nil,
-			},
-			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				OrderStatus: &OrderStatus{
-					Error:          nil,
-					Name:           "example-order",
-					State:          "",
-					Reason:         "",
-					Authorizations: nil,
-					FailureTime:    nil,
-				},
-			},
-		},
-		"Correct information extracted from Challenge resources": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns)),
-				Challenges: []*cmacme.Challenge{
-					{
-						TypeMeta:   metav1.TypeMeta{},
-						ObjectMeta: metav1.ObjectMeta{Name: "test-challenge1", Namespace: ns},
-						Spec: cmacme.ChallengeSpec{
-							Type:  "HTTP-01",
-							Token: "token",
-							Key:   "key",
-						},
-						Status: cmacme.ChallengeStatus{
-							Processing: false,
-							Presented:  false,
-							Reason:     "reason",
-							State:      "state",
-						},
-					},
-					{
-						TypeMeta:   metav1.TypeMeta{},
-						ObjectMeta: metav1.ObjectMeta{Name: "test-challenge2", Namespace: ns},
-						Spec: cmacme.ChallengeSpec{
-							Type:  "HTTP-01",
-							Token: "token",
-							Key:   "key",
-						},
-						Status: cmacme.ChallengeStatus{
-							Processing: false,
-							Presented:  false,
-							Reason:     "reason",
-							State:      "state",
-						},
-					},
-				},
-				ChallengeErr: nil,
-			},
-			expOutput: &CertificateStatus{
-				Name:         "test-crt",
-				Namespace:    ns,
-				CreationTime: metav1.Time{},
-				ChallengeStatusList: &ChallengeStatusList{
-					ChallengeStatuses: []*ChallengeStatus{
-						{
-							Name:       "test-challenge1",
-							Type:       "HTTP-01",
-							Token:      "token",
-							Key:        "key",
-							State:      "state",
-							Reason:     "reason",
-							Processing: false,
-							Presented:  false,
-						},
-						{
-							Name:       "test-challenge2",
-							Type:       "HTTP-01",
-							Token:      "token",
-							Key:        "key",
-							State:      "state",
-							Reason:     "reason",
-							Processing: false,
-							Presented:  false,
-						},
-					},
-				},
-			},
-		},
-		"When error, ignore rest of the info about the resource": {
-			inputData: &Data{
-				Certificate: gen.Certificate("test-crt",
-					gen.SetCertificateNamespace(ns)),
-				CrtEvents:    nil,
-				Issuer:       gen.Issuer("test-issuer"),
-				IssuerKind:   "",
-				IssuerError:  errors.New("dummy error"),
-				IssuerEvents: dummyEventList,
-				Secret:       gen.Secret("test-secret"),
-				SecretError:  errors.New("dummy error"),
-				SecretEvents: dummyEventList,
-				Req:          gen.CertificateRequest("test-req"),
-				ReqError:     errors.New("dummy error"),
-				ReqEvents:    dummyEventList,
-				Order: &cmacme.Order{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-order"},
-				},
-				OrderError:   errors.New("dummy error"),
-				Challenges:   []*cmacme.Challenge{{ObjectMeta: metav1.ObjectMeta{Name: "test-challenge"}}},
-				ChallengeErr: errors.New("dummy error"),
-			},
-			expOutput: &CertificateStatus{
-				Name:                "test-crt",
-				Namespace:           ns,
-				CreationTime:        metav1.Time{},
-				IssuerStatus:        &IssuerStatus{Error: errors.New("dummy error")},
-				SecretStatus:        &SecretStatus{Error: errors.New("dummy error")},
-				CRStatus:            &CRStatus{Error: errors.New("dummy error")},
-				OrderStatus:         &OrderStatus{Error: errors.New("dummy error")},
-				ChallengeStatusList: &ChallengeStatusList{Error: errors.New("dummy error")},
-			},
+		{
+			name: "Print cert without CRL",
+			cert: MustParseCertificate(t, testCert),
+			want: "No CRL endpoints set",
 		},
 	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := StatusFromResources(test.inputData)
-			assert.Equal(t, test.expOutput, got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeCRL(tt.cert); got != tt.want {
+				t.Errorf("describeCRL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeCertificate(t *testing.T) {
+	tests := []struct {
+		name string
+		cert *x509.Certificate
+		want string
+	}{
+		{
+			name: "Describe test certificate",
+			cert: MustParseCertificate(t, testCert),
+			want: `Certificate:
+	Signing Algorithm:	SHA256-RSA
+	Public Key Algorithm: 	ECDSA
+	Serial Number:	318510152735780923476564623737462169902
+	Fingerprints: 	7A:E1:78:65:17:68:70:74:BD:69:80:4B:0F:C7:6B:C6:2E:B1:55:20:B6:78:51:8F:67:BB:47:BC:25:0E:99:1C
+	Is a CA certificate: false
+	CRL:	<none>
+	OCSP:	<none>`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeCertificate(tt.cert); got != tt.want {
+				t.Errorf("describeCertificate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeDebugging(t *testing.T) {
+	type args struct {
+		cert          *x509.Certificate
+		intermediates [][]byte
+		ca            []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Debug test cert without trusting CA",
+			args: args{
+				cert:          MustParseCertificate(t, testCert),
+				intermediates: nil,
+				ca:            nil,
+			},
+			want: `Debugging:
+	Trusted by this computer:	no: x509: certificate signed by unknown authority
+	CRL Status:	No CRL endpoints set
+	OCSP Status:	Cannot check OCSP, does not have a CA or intermediate certificate provided`,
+		},
+		// TODO: add fake clock and test with trusting CA
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeDebugging(tt.args.cert, tt.args.intermediates, tt.args.ca); got != tt.want {
+				t.Errorf("describeDebugging() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeIssuedBy(t *testing.T) {
+	tests := []struct {
+		name string
+		cert *x509.Certificate
+		want string
+	}{
+		{
+			name: "Describe test certificate",
+			cert: MustParseCertificate(t, testCert),
+			want: `Issued By:
+	Common Name		test-ca
+	Organization		cncf
+	OrganizationalUnit	cert-manager
+	Country: 		BE`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeIssuedBy(tt.cert); got != tt.want {
+				t.Errorf("describeIssuedBy() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeIssuedFor(t *testing.T) {
+	tests := []struct {
+		name string
+		cert *x509.Certificate
+		want string
+	}{
+		{
+			name: "Describe test cert",
+			cert: MustParseCertificate(t, testCert),
+			want: `Issued For:
+	Common Name		Test Cert
+	Organization		cncf
+	OrganizationalUnit	cert-manager
+	Country: 		BE`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeIssuedFor(tt.cert); got != tt.want {
+				t.Errorf("describeIssuedFor() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeOCSP(t *testing.T) {
+	type args struct {
+		cert          *x509.Certificate
+		intermediates [][]byte
+		ca            []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Describe cert with no OCSP",
+			args: args{
+				cert: MustParseCertificate(t, testCert),
+			},
+			want: "Cannot check OCSP, does not have a CA or intermediate certificate provided",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeOCSP(tt.args.cert, tt.args.intermediates, tt.args.ca); got != tt.want {
+				t.Errorf("describeOCSP() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeTrusted(t *testing.T) {
+	// set clock to when our test cert was trusted
+	t1, _ := time.Parse("Thu, 27 Nov 2020 10:00:00 UTC", time.RFC1123)
+	clock = fakeclock.NewFakeClock(t1)
+	type args struct {
+		cert          *x509.Certificate
+		intermediates [][]byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Describe test certificate",
+			args: args{
+				cert:          MustParseCertificate(t, testCert),
+				intermediates: nil,
+			},
+			want: "no: x509: certificate signed by unknown authority",
+		},
+		{
+			name: "Describe test certificate with adding it to the trust store",
+			args: args{
+				cert:          MustParseCertificate(t, testCert),
+				intermediates: [][]byte{[]byte(testCert)},
+			},
+			want: "yes",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeTrusted(tt.args.cert, tt.args.intermediates); got != tt.want {
+				t.Errorf("describeTrusted() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeValidFor(t *testing.T) {
+	tests := []struct {
+		name string
+		cert *x509.Certificate
+		want string
+	}{
+		{
+			name: "Describe test certificate",
+			cert: MustParseCertificate(t, testCert),
+			want: `Valid for:
+	DNS Names: 
+		- cert-manager.test
+	URIs: 
+		- spiffe://cert-manager.test
+	IP Addresses: 
+		- 10.0.0.1
+	Email Addresses: 
+		- test@cert-manager.io
+	Usages: 
+		- digital signature
+		- key encipherment
+		- any
+		- server auth
+		- client auth`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeValidFor(tt.cert); got != tt.want {
+				t.Errorf("describeValidFor() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_describeValidityPeriod(t *testing.T) {
+	tests := []struct {
+		name string
+		cert *x509.Certificate
+		want string
+	}{
+		{
+			name: "Describe test certificate",
+			cert: MustParseCertificate(t, testCert),
+			want: `Validity period:
+	Not Before: Thu, 26 Nov 2020 10:15:55 UTC
+	Not After: Wed, 24 Feb 2021 10:15:55 UTC`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := describeValidityPeriod(tt.cert); got != tt.want {
+				t.Errorf("describeValidityPeriod() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

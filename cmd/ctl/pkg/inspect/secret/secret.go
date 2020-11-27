@@ -27,6 +27,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -35,10 +37,10 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
-
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	k8sclock "k8s.io/utils/clock"
 )
+
+var clock k8sclock.Clock = k8sclock.RealClock{}
 
 const validForTemplate = `Valid for:
 	DNS Names: %s
@@ -320,7 +322,7 @@ func describeTrusted(cert *x509.Certificate, intermediates [][]byte) string {
 	}
 	_, err = cert.Verify(x509.VerifyOptions{
 		Roots:       systemPool,
-		CurrentTime: time.Now(),
+		CurrentTime: clock.Now(),
 	})
 	if err == nil {
 		return "yes"

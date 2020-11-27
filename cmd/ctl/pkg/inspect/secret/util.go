@@ -19,6 +19,9 @@ import (
 )
 
 func fingerprintCert(cert *x509.Certificate) string {
+	if cert == nil {
+		return ""
+	}
 	fingerprint := sha256.Sum256(cert.Raw)
 
 	var buf bytes.Buffer
@@ -120,7 +123,7 @@ func printSliceOrOne(in []string) string {
 		return in[0]
 	}
 
-	return "\n\t\t- " + strings.Trim(strings.Join(in, "\n\t\t- "), " ")
+	return printSlice(in)
 }
 
 func printOrNone(in string) string {
@@ -159,7 +162,6 @@ func splitPEMs(certData []byte) ([][]byte, error) {
 				return nil, fmt.Errorf("error when reencoding PEM: %s", err)
 			}
 			certs = append(certs, buf.Bytes())
-
 		}
 		certData = rest
 	}
