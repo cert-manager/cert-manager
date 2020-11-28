@@ -341,7 +341,7 @@ func (v *Vault) Sys() *vault.Sys {
 	return v.client.Sys()
 }
 
-func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) (cert []byte, ca []byte, err error) {
+func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {
 	parsedBundle, err := certutil.ParsePKIMap(secret.Data)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
