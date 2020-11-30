@@ -12,6 +12,7 @@ package route53
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -81,6 +82,7 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 		sessionOpts.Config.Credentials = credentials.NewStaticCredentials(d.AccessKeyID, d.SecretAccessKey, "")
 		// also disable 'ambient' region sources
 		sessionOpts.SharedConfigState = session.SharedConfigDisable
+		sessionOpts.Config.HTTPClient = http.DefaultClient
 	}
 
 	sess, err := session.NewSessionWithOptions(sessionOpts)
@@ -205,7 +207,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("Failed to change Route 53 record set: %v", err)
+		return fmt.Errorf("Failed to change Route 53 record set: %v", removeReqID(err))
 
 	}
 
@@ -217,7 +219,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 		}
 		resp, err := r.client.GetChange(reqParams)
 		if err != nil {
-			return false, fmt.Errorf("Failed to query Route 53 change status: %v", err)
+			return false, fmt.Errorf("Failed to query Route 53 change status: %v", removeReqID(err))
 		}
 		if *resp.ChangeInfo.Status == route53.ChangeStatusInsync {
 			return true, nil
@@ -242,7 +244,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	}
 	resp, err := r.client.ListHostedZonesByName(reqParams)
 	if err != nil {
-		return "", err
+		return "", removeReqID(err)
 	}
 
 	zoneToID := make(map[string]string)
@@ -281,4 +283,25 @@ func newTXTRecordSet(fqdn, value string, ttl int) *route53.ResourceRecordSet {
 			{Value: aws.String(value)},
 		},
 	}
+}
+
+// The aws-sdk-go library appends a request id to its error messages. We
+// want our error messages to be the same when the cause is the same to
+// avoid spurious challenge updates.
+//
+// The given error must not be nil. This function must be called everywhere
+// we have a non-nil error coming from an aws-sdk-go func.
+func removeReqID(err error) error {
+	// NOTE(mael): I first tried to unwrap the RequestFailure to get rid of
+	// this request id. But the concrete type requestFailure is private, so
+	// I can't unwrap it. Instead, I recreate a new awserr.baseError. It's
+	// also a awserr.Error except it doesn't have the request id.
+	//
+	// Also note that we do not give the origErr to awserr.New. If we did,
+	// err.Error() would show the origErr, which we don't want since it
+	// contains a request id.
+	if e, ok := err.(awserr.RequestFailure); ok {
+		return awserr.New(e.Code(), e.Message(), nil)
+	}
+	return err
 }

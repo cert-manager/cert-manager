@@ -9,6 +9,7 @@ this directory.
 package route53
 
 import (
+	"errors"
 	"fmt"
 	"net/http/httptest"
 	"os"
@@ -17,6 +18,7 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -283,4 +285,39 @@ func makeMockSessionProvider(defaultSTSProvider func(sess *session.Session) stsi
 		StsProvider:     defaultSTSProvider,
 		log:             logf.Log.WithName("route53-session"),
 	}, nil
+}
+
+func Test_removeReqID(t *testing.T) {
+	tests := []struct {
+		name    string
+		err     error
+		wantErr error
+	}{
+		{
+			name:    "should remove the request id and the origin error",
+			err:     awserr.NewRequestFailure(awserr.New("foo", "bar", nil), 400, "SOMEREQUESTID"),
+			wantErr: awserr.New("foo", "bar", nil),
+		},
+		{
+			name:    "should do nothing if no request id is set",
+			err:     awserr.New("foo", "bar", nil),
+			wantErr: awserr.New("foo", "bar", nil),
+		},
+		{
+			name:    "should do nothing if the error is not an aws error",
+			err:     errors.New("foo"),
+			wantErr: errors.New("foo"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := removeReqID(tt.err)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr.Error(), err.Error())
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }
