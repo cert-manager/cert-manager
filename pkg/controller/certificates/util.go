@@ -264,13 +264,13 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 
 // RenewBeforeExpiryDuration will return the amount of time before the given
 // NotAfter time that the certificate should be renewed.
-func RenewBeforeExpiryDuration(notBefore, notAfter time.Time, specRenewBefore *metav1.Duration) time.Duration {
-	renewBefore := cmapi.DefaultRenewBefore
+func RenewBeforeExpiryDuration(notBefore, notAfter time.Time, specRenewBefore *metav1.Duration, defaultRenewBeforeExpiryDuration time.Duration) time.Duration {
+	renewBefore := defaultRenewBeforeExpiryDuration
 	if specRenewBefore != nil {
 		renewBefore = specRenewBefore.Duration
 	}
 	actualDuration := notAfter.Sub(notBefore)
-	if renewBefore > actualDuration {
+	if renewBefore >= actualDuration {
 		renewBefore = actualDuration / 3
 	}
 	return renewBefore

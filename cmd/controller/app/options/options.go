@@ -249,6 +249,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The default 'renew before expiry' time for Certificates. "+
 		"Once a certificate is within this duration until expiry, a new Certificate "+
 		"will be attempted to be issued.")
+	fs.MarkDeprecated("renew-before-expiry-duration", "Deprecated. Please set the Certificate.Spec.RenewBefore field.")
 	fs.StringSliceVar(&s.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", defaultAutoCertificateAnnotations, ""+
 		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
 

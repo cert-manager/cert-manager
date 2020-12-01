@@ -58,12 +58,13 @@ var PolicyChain = policies.Chain{
 
 type controller struct {
 	// the policies to use to define readiness - named here to make testing simpler
-	policyChain              policies.Chain
-	certificateLister        cmlisters.CertificateLister
-	certificateRequestLister cmlisters.CertificateRequestLister
-	secretLister             corelisters.SecretLister
-	client                   cmclient.Interface
-	gatherer                 *policies.Gatherer
+	policyChain                      policies.Chain
+	certificateLister                cmlisters.CertificateLister
+	certificateRequestLister         cmlisters.CertificateRequestLister
+	secretLister                     corelisters.SecretLister
+	client                           cmclient.Interface
+	gatherer                         *policies.Gatherer
+	defaultRenewBeforeExpiryDuration time.Duration
 }
 
 func NewController(
@@ -72,6 +73,7 @@ func NewController(
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	chain policies.Chain,
+	defaultRenewBeforeExpiryDuration time.Duration,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -112,6 +114,7 @@ func NewController(
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
 		},
+		defaultRenewBeforeExpiryDuration: defaultRenewBeforeExpiryDuration,
 	}, queue, mustSync
 }
 
@@ -161,7 +164,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		crt.Status.NotAfter = &notAfter
 		// calculate how long before the certificate expiry time the certificate
 		// should be renewed
-		renewBefore := certificates.RenewBeforeExpiryDuration(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, crt.Spec.RenewBefore)
+		renewBefore := certificates.RenewBeforeExpiryDuration(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, crt.Spec.RenewBefore, c.defaultRenewBeforeExpiryDuration)
 		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
 		crt.Status.RenewalTime = &renewalTime
 	default:
@@ -212,6 +215,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		PolicyChain,
+		ctx.CertificateOptions.RenewBeforeExpiryDuration,
 	)
 	c.controller = ctrl
 
