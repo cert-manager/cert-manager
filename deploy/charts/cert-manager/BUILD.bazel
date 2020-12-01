@@ -16,7 +16,7 @@ pkg_tar(
 
 helm_pkg(
     name = "cert-manager",
-    srcs = ["//deploy/crds:templates"],
+    srcs = ["//deploy/crds:templated_files"],
     chart_name = "cert-manager",
     chart_yaml = ":Chart.yaml",
     readme_file = ":README.md",
