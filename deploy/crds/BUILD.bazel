@@ -1,11 +1,6 @@
 load("//build:helm.bzl", "helm_pkg", "helm_tmpl")
 load("//build:files.bzl", "concat_files")
 
-variants = {
-    "regular": {},
-    "legacy": {},
-}
-
 crds = [
     "certificaterequests",
     "certificates",
@@ -17,36 +12,9 @@ crds = [
 
 # A single file containing all the CRD templates concatenated together
 concat_files(
-    name = "templates.regular",
+    name = "templates",
     srcs = [":crd-%s.yaml" % crd for crd in crds],
     separator = "---",
-    visibility = ["//visibility:public"],
-)
-
-# A single file containing all the CRD templates concatenated together
-concat_files(
-    name = "templates.v1beta1",
-    srcs = [":crd-%s.v1beta1.yaml" % crd for crd in crds],
-    separator = "---",
-    visibility = ["//visibility:public"],
-)
-
-# Create a 'legacy' template by running the templates through filter-crd target
-genrule(
-    name = "templates.legacy",
-    srcs = [
-        ":templates.v1beta1",
-    ],
-    outs = ["templates.legacy.out"],
-    cmd = " ".join([
-        "$(location //hack/filter-crd)",
-        "-variant=cert-manager-legacy",
-        "$(location :templates.v1beta1)",
-        "> $@",
-    ]),
-    tools = [
-        "//hack/filter-crd",
-    ],
     visibility = ["//visibility:public"],
 )
 
@@ -73,13 +41,13 @@ genrule(
 
 # Run 'helm template' against the chart containing only the CRDs that is
 # constructed in the above 'helm_pkg' rule.
-[helm_tmpl(
-    name = "crds.%s" % variant,
-    helm_pkg = ":package.%s" % variant,
+helm_tmpl(
+    name = "crds" %,
+    helm_pkg = ":package",
     release_name = "cert-manager",
     release_namespace = "cert-manager",
     visibility = ["//visibility:public"],
-) for (variant, meta) in variants.items()]
+)
 
 [helm_pkg(
     name = "crd-%s.package" % crd,

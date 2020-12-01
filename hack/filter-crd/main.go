@@ -21,15 +21,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strings"
 
 	"gopkg.in/yaml.v2"
 )
 
 var removeKeys = []string{}
-var retainElementForValue = map[string]string{}
-var singleCRDVersion = false
 
 func main() {
 	loadVariant()
@@ -54,34 +51,6 @@ func main() {
 		}
 
 		checkChain(d, []string{})
-
-		if singleCRDVersion {
-			spec, ok := d["spec"].(map[interface{}]interface{})
-			if !ok {
-				log.Fatal("Cannot read spec of CRD")
-			}
-			versions, ok := spec["versions"].([]interface{})
-			if !ok {
-				log.Fatal("Cannot read versions of CRD")
-			}
-			if len(versions) == 0 {
-				log.Fatal("CRD versions length is 0")
-			}
-			if len(versions) > 1 {
-				log.Fatal("Multiple CRD versions found while 1 is expected")
-			}
-			versionInfo, ok := versions[0].(map[interface{}]interface{})
-			if !ok {
-				log.Fatal("Cannot read version of CRD")
-			}
-
-			// move the schema to the root of the CRD as we only have 1 version specified
-			if validations, exists := versionInfo["schema"]; exists {
-				spec["validation"] = validations
-				delete(versionInfo, "schema")
-			}
-
-		}
 
 		fileOut, err := yaml.Marshal(d)
 		if err != nil {
@@ -132,10 +101,6 @@ func checkSliceChain(s []interface{}, chain []string) []interface{} {
 						}
 					}
 
-					if value, ok := retainElementForValue[strings.Join(chain, "/")]; ok && value != v.(string) {
-						s = removeFromSlice(s, d)
-					}
-
 					if value, ok := v.(map[interface{}]interface{}); ok {
 						checkChain(value, chain)
 					}
@@ -152,46 +117,12 @@ func checkSliceChain(s []interface{}, chain []string) []interface{} {
 	return s
 }
 
-func removeFromSlice(s []interface{}, d map[interface{}]interface{}) []interface{} {
-	newSlice := []interface{}{}
-
-	for _, sliceVal := range s {
-		if !reflect.DeepEqual(sliceVal, d) {
-			newSlice = append(newSlice, sliceVal)
-		}
-	}
-
-	s = newSlice
-	return s
-}
-
 func loadVariant() {
 	variant := ""
 	flag.StringVar(&variant, "variant", "", "variant of remove rules")
 	flag.Parse()
 
-	if variant == "cert-manager-legacy" {
-		// These are the keys that the script will remove for OpenShift 3 and older Kubernetes compatibility
-		removeKeys = []string{
-			"spec/preserveUnknownFields",
-			"spec/validation/openAPIV3Schema/type",
-			"spec/versions/[]/schema/openAPIV3Schema/type",
-			"spec/conversion",
-			// This field exists on the Issuer and ClusterIssuer CRD
-			"spec/validation/openAPIV3Schema/properties/spec/properties/acme/properties/solvers/items/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields",
-			"spec/versions/[]/schema/openAPIV3Schema/properties/spec/properties/acme/properties/solvers/items/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields",
-			// This field exists on the Challenge CRD
-			"spec/validation/openAPIV3Schema/properties/spec/properties/solver/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields",
-			"spec/versions/[]/schema/openAPIV3Schema/properties/spec/properties/solver/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields",
-		}
-
-		// only retain the `v1` version in the CRD
-		retainElementForValue = map[string]string{
-			"spec/versions/[]/name": "v1",
-		}
-
-		singleCRDVersion = true
-	} else if variant == "no-helm" {
+	if variant == "no-helm" {
 		removeKeys = []string{
 			"metadata/labels/app.kubernetes.io/managed-by",
 			"metadata/labels/helm.sh/chart",

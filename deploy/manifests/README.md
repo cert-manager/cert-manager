@@ -21,8 +21,6 @@ To build the manifests, run:
 
 ```bash
 $ bazel build //deploy/manifests:cert-manager.yaml
-# Alternatively, build the legacy variant with:
-$ bazel build //deploy/manifests:cert-manager-legacy.yaml
 ```
 
 This will generate the static deployment manifests at
