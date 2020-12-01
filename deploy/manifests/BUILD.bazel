@@ -7,12 +7,13 @@ load("//build:helm.bzl", "helm_tmpl")
 load("//build:licensing.bzl", "licensed_file")
 
 RELEASE_NAME = "cert-manager"
+
 RELEASE_NAMESPACE = "cert-manager"
 
 genrule(
     name = "crds.nohelm.yaml",
     srcs = [
-        "//deploy/crds:crds",
+        "//deploy/crds",
     ],
     outs = ["crds.nohelm.out"],
     cmd = " ".join([
@@ -42,7 +43,7 @@ licensed_file(
 genrule(
     name = "unlicensed",
     srcs = [
-        "//deploy/crds:crds",
+        "//deploy/crds",
         "01-namespace.yaml",
         "%s.manifests" % name,
     ],
@@ -81,8 +82,9 @@ licensed_file(
 
 pkg_tar(
     name = "manifests",
-    srcs = [":manifests.yaml"] +
-           [":crds.yaml"],
+    srcs = [":manifests.yaml"] + [
+        ":crds.yaml",
+    ],
     extension = "tar.gz",
     mode = "0644",
     package_dir = "manifests",

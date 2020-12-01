@@ -42,7 +42,7 @@ concat_files(
 # Run 'helm template' against the chart containing only the CRDs that is
 # constructed in the above 'helm_pkg' rule.
 helm_tmpl(
-    name = "crds" %,
+    name = "crds",
     helm_pkg = ":package",
     release_name = "cert-manager",
     release_namespace = "cert-manager",
