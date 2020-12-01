@@ -37,7 +37,8 @@ import (
 const (
 	// pkcs12SecretKey is the name of the data entry in the Secret resource
 	// used to store the p12 file.
-	pkcs12SecretKey = "keystore.p12"
+	pkcs12SecretKey     = "keystore.p12"
+	pkcs12TruststoreKey = "truststore.p12"
 
 	// jksSecretKey is the name of the data entry in the Secret resource
 	// used to store the jks file.
@@ -76,6 +77,20 @@ func encodePKCS12Keystore(password string, rawKey []byte, certPem []byte, caPem 
 		return nil, err
 	}
 	return keystoreData, nil
+}
+
+func encodePKCS12Truststore(password string, caPem []byte) ([]byte, error) {
+	ca, err := pki.DecodeX509CertificateBytes(caPem)
+	if err != nil {
+		return nil, err
+	}
+
+	var cas = []*x509.Certificate{ca}
+	truststoreData, err := pkcs12.EncodeTrustStore(rand.Reader, cas, password)
+	if err != nil {
+		return nil, err
+	}
+	return truststoreData, nil
 }
 
 func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {

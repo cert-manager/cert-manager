@@ -344,3 +344,41 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 		}
 	})
 }
+
+func TestEncodePKCS12Truststore(t *testing.T) {
+	tests := map[string]struct {
+		password		string
+		caPEM			[]byte
+		verify			func(t *testing.T, caPEM []byte, out []byte, err error)
+		run				func(t testing.T)
+	}{
+		"encode a PKCS12 bundle for a CA": {
+			password: "password",
+			caPEM: mustSelfSignCertificate(t, nil),
+			verify: func(t *testing.T, caPEM []byte, out []byte, err error) {
+				if err != nil {
+					t.Errorf("expected no error but got: %v", err)
+				}
+				certs, err := pkcs12.DecodeTrustStore(out, "password")
+				if err != nil {
+					t.Errorf("error decoding truststore: %v", err)
+					return
+				}
+				if certs == nil {
+					t.Errorf("no certificates found in truststore")
+				}
+				if assert.Len(t, certs, 1, "Trusted CA certificates should include 1 entry") {
+					ca, err := pki.DecodeX509CertificateBytes(caPEM)
+					require.NoError(t, err)
+					assert.Equal(t, ca.Signature, certs[0].Signature, "Trusted CA certificate signature does not match")
+				}
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			out, err := encodePKCS12Truststore(test.password, test.caPEM)
+			test.verify(t, test.caPEM, out, err)
+		})
+	}
+}

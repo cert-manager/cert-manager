@@ -154,8 +154,18 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 			}
 			// always overwrite the keystore entry for now
 			secret.Data[pkcs12SecretKey] = keystoreData
+
+			if len(data.CA) > 0 {
+				truststoreData, err := encodePKCS12Truststore(string(pw), data.CA)
+				if err != nil {
+					return fmt.Errorf("error encoding PKCS12 trust store bundle: %w", err)
+				}
+				// always overwrite the truststore entry
+				secret.Data[pkcs12TruststoreKey] = truststoreData
+			}
 		} else {
 			delete(secret.Data, pkcs12SecretKey)
+			delete(secret.Data, pkcs12TruststoreKey)
 		}
 
 		// Handle the experimental JKS support
