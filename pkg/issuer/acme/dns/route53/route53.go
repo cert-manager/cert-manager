@@ -12,7 +12,6 @@ package route53
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -82,7 +81,6 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 		sessionOpts.Config.Credentials = credentials.NewStaticCredentials(d.AccessKeyID, d.SecretAccessKey, "")
 		// also disable 'ambient' region sources
 		sessionOpts.SharedConfigState = session.SharedConfigDisable
-		sessionOpts.Config.HTTPClient = http.DefaultClient
 	}
 
 	sess, err := session.NewSessionWithOptions(sessionOpts)
