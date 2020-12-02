@@ -1,9 +1,16 @@
 package(default_visibility = ["//visibility:public"])
 
+genrule(
+   name = "crds",
+   srcs = ["//deploy/crds:templates"],
+   outs = ["crds.yaml"],
+   cmd = "cp $< $@",
+)
+
 filegroup(
     name = "chart-srcs",
     srcs = [
-        "//deploy/crds:templates",
+        ":crds",
     ] + glob(
         [
             "*.yaml",
