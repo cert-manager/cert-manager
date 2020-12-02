@@ -83,8 +83,8 @@ licensed_file(
 pkg_tar(
     name = "manifests",
     srcs = [
-        ":manifests.helm",
         ":crds.yaml",
+        ":manifests.helm",
     ],
     extension = "tar.gz",
     mode = "0644",
