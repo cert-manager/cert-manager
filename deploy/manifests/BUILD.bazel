@@ -29,7 +29,7 @@ genrule(
 )
 
 helm_tmpl(
-    name = "manifests",
+    name = "manifests.helm",
     helm_pkg = "//deploy/charts/cert-manager",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
@@ -45,7 +45,7 @@ genrule(
     srcs = [
         "//deploy/crds",
         "01-namespace.yaml",
-        "manifests",
+        "manifests.helm",
     ],
     outs = ["unlicensed.yaml"],
     cmd = " ".join([
@@ -82,7 +82,8 @@ licensed_file(
 
 pkg_tar(
     name = "manifests",
-    srcs = [":manifests.yaml"] + [
+    srcs = [
+        ":manifests.helm",
         ":crds.yaml",
     ],
     extension = "tar.gz",
