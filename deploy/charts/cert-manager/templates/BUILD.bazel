@@ -2,14 +2,13 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "chart-srcs",
-    srcs = [
-        "crds.yaml",
-    ] + glob(
+    srcs = glob(
         [
             "*.yaml",
             "*.txt",
         ],
     ),
+    visibility = ["//visibility:public"],
 )
 
 filegroup(
