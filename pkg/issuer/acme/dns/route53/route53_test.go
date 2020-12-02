@@ -9,6 +9,7 @@ this directory.
 package route53
 
 import (
+	"errors"
 	"fmt"
 	"net/http/httptest"
 	"os"
@@ -17,12 +18,14 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -111,6 +114,7 @@ func TestRoute53Present(t *testing.T) {
 		"/2013-04-01/hostedzone/ABCDEFG/rrset/": MockResponse{StatusCode: 200, Body: ChangeResourceRecordSetsResponse},
 		"/2013-04-01/hostedzone/HIJKLMN/rrset/": MockResponse{StatusCode: 200, Body: ChangeResourceRecordSetsResponse},
 		"/2013-04-01/change/123456":             MockResponse{StatusCode: 200, Body: GetChangeResponse},
+		"/2013-04-01/hostedzone/OPQRSTU/rrset/": MockResponse{StatusCode: 403, Body: ChangeResourceRecordSets403Response},
 	}
 
 	ts := newMockServer(t, mockResponses)
@@ -136,6 +140,13 @@ func TestRoute53Present(t *testing.T) {
 	nonExistentDomain := "baz.com"
 	err = provider.Present(nonExistentDomain, nonExistentDomain+".", keyAuth)
 	assert.Error(t, err, "Expected Present to return an error")
+
+	// This test case makes sure that the request id has been properly
+	// stripped off. It has to be stripped because it changes on every
+	// request which causes spurious challenge updates.
+	err = provider.Present("bar.example.com", "bar.example.com.", keyAuth)
+	require.Error(t, err, "Expected Present to return an error")
+	assert.Equal(t, `Failed to change Route 53 record set: AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
 }
 
 func TestAssumeRole(t *testing.T) {
@@ -274,4 +285,39 @@ func makeMockSessionProvider(defaultSTSProvider func(sess *session.Session) stsi
 		StsProvider:     defaultSTSProvider,
 		log:             logf.Log.WithName("route53-session"),
 	}, nil
+}
+
+func Test_removeReqID(t *testing.T) {
+	tests := []struct {
+		name    string
+		err     error
+		wantErr error
+	}{
+		{
+			name:    "should remove the request id and the origin error",
+			err:     awserr.NewRequestFailure(awserr.New("foo", "bar", nil), 400, "SOMEREQUESTID"),
+			wantErr: awserr.New("foo", "bar", nil),
+		},
+		{
+			name:    "should do nothing if no request id is set",
+			err:     awserr.New("foo", "bar", nil),
+			wantErr: awserr.New("foo", "bar", nil),
+		},
+		{
+			name:    "should do nothing if the error is not an aws error",
+			err:     errors.New("foo"),
+			wantErr: errors.New("foo"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := removeReqID(tt.err)
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr.Error(), err.Error())
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }

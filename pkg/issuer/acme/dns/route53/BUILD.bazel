@@ -33,6 +33,7 @@ go_test(
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//pkg/logs:go_default_library",
         "@com_github_aws_aws_sdk_go//aws:go_default_library",
+        "@com_github_aws_aws_sdk_go//aws/awserr:go_default_library",
         "@com_github_aws_aws_sdk_go//aws/credentials:go_default_library",
         "@com_github_aws_aws_sdk_go//aws/session:go_default_library",
         "@com_github_aws_aws_sdk_go//service/route53:go_default_library",
