@@ -45,7 +45,7 @@ genrule(
     srcs = [
         "//deploy/crds",
         "01-namespace.yaml",
-        "%s.manifests" % name,
+        "manifests",
     ],
     outs = ["unlicensed.yaml"],
     cmd = " ".join([

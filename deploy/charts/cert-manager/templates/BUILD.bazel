@@ -10,7 +10,7 @@ filegroup(
             "*.txt",
         ],
     ),
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
 )
 
 filegroup(
