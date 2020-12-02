@@ -52,7 +52,7 @@ genrule(
         "cat",
         "$(location //deploy/crds:crds)",
         "$(location 01-namespace.yaml)",
-        "$(location manifests)",
+        "$(location manifests.helm)",
         "> $@",
     ]),
 )
