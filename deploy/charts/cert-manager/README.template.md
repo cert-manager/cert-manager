@@ -19,7 +19,7 @@ Before installing the chart, you must first install the cert-manager CustomResou
 This is performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed custom resources.
 
 ```bash
-$ kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
+$ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
 ```
 
 To install the chart with the release name `my-release`:
