@@ -132,22 +132,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
-	parsedBundle, err := certutil.ParsePKIMap(vaultResult.Data)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
-	}
-
-	bundle, err := parsedBundle.ToCertBundle()
-	if err != nil {
-		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
-	}
-
-	var caPem []byte = nil
-	if len(bundle.CAChain) > 0 {
-		caPem = []byte(bundle.CAChain[0])
-	}
-
-	return []byte(bundle.ToPEMBundle()), caPem, nil
+	return extractCertificatesFromVaultCertificateSecret(&vaultResult)
 }
 
 func (v *Vault) setToken(client Client) error {
@@ -354,4 +339,30 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 func (v *Vault) Sys() *vault.Sys {
 	return v.client.Sys()
+}
+
+func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]byte, []byte, error) {
+	parsedBundle, err := certutil.ParsePKIMap(secret.Data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
+	}
+
+	bundle, err := parsedBundle.ToCertBundle()
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
+	}
+
+	var caPem []byte
+	if len(bundle.CAChain) > 0 {
+		caPem = []byte(bundle.CAChain[len(bundle.CAChain)-1])
+	} else {
+		caPem = []byte(bundle.IssuingCA)
+	}
+
+	crtPems := []string{bundle.Certificate}
+	if len(bundle.CAChain) > 1 {
+		crtPems = append(crtPems, bundle.CAChain[0:len(bundle.CAChain)-1]...)
+	}
+
+	return []byte(strings.Join(crtPems, "\n")), caPem, nil
 }
