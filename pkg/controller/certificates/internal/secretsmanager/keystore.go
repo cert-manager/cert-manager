@@ -72,11 +72,7 @@ func encodePKCS12Keystore(password string, rawKey []byte, certPem []byte, caPem 
 	if len(certs) > 1 {
 		cas = append(certs[1:], cas...)
 	}
-	keystoreData, err := pkcs12.Encode(rand.Reader, key, certs[0], cas, password)
-	if err != nil {
-		return nil, err
-	}
-	return keystoreData, nil
+	return pkcs12.Encode(rand.Reader, key, certs[0], cas, password)
 }
 
 func encodePKCS12Truststore(password string, caPem []byte) ([]byte, error) {
@@ -86,11 +82,7 @@ func encodePKCS12Truststore(password string, caPem []byte) ([]byte, error) {
 	}
 
 	var cas = []*x509.Certificate{ca}
-	truststoreData, err := pkcs12.EncodeTrustStore(rand.Reader, cas, password)
-	if err != nil {
-		return nil, err
-	}
-	return truststoreData, nil
+	return pkcs12.EncodeTrustStore(rand.Reader, cas, password)
 }
 
 func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []byte) ([]byte, error) {
