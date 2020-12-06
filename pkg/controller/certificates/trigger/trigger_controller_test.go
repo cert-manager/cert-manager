@@ -482,6 +482,18 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 			wantBackoff: false,
 			wantDelay:   0,
 		},
+		{
+			name: "needs to back off from reissuing for the maximum of 1 hour when failure just happened",
+			givenCert: gen.Certificate("test",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("test-uid"),
+				gen.SetCertificateDNSNames("example2.com"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
+			),
+			wantBackoff: true,
+			wantDelay:   1 * time.Hour,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
