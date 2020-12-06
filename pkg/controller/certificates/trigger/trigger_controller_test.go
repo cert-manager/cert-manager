@@ -429,7 +429,7 @@ func buildTestPolicyChain(t *testing.T, funcs ...policyFuncBuilder) policies.Cha
 }
 
 func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
-	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.Local))
+	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.UTC))
 	tests := []struct {
 		name        string
 		givenCert   *cmapi.Certificate
@@ -469,6 +469,18 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 			),
 			wantBackoff: true,
 			wantDelay:   1 * time.Minute,
+		},
+		{
+			name: "no need to back off from reissuing when the failure happened exactly an hour ago",
+			givenCert: gen.Certificate("test",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("test-uid"),
+				gen.SetCertificateDNSNames("example2.com"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-60*time.Minute))),
+			),
+			wantBackoff: false,
+			wantDelay:   0,
 		},
 	}
 	for _, tt := range tests {
