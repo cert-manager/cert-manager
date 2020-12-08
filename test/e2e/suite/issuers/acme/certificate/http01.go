@@ -293,7 +293,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
-		ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+		ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating an Ingress with the issuer name annotation set")
