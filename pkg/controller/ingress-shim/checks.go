@@ -19,21 +19,21 @@ package controller
 import (
 	"fmt"
 
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
-func (c *controller) ingressesForCertificate(crt *v1.Certificate) ([]*extv1beta1.Ingress, error) {
+func (c *controller) ingressesForCertificate(crt *v1.Certificate) ([]*networkingv1beta1.Ingress, error) {
 	ings, err := c.ingressLister.List(labels.NewSelector())
 
 	if err != nil {
 		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
-	var affected []*extv1beta1.Ingress
+	var affected []*networkingv1beta1.Ingress
 	for _, ing := range ings {
 		if crt.Namespace != ing.Namespace {
 			continue

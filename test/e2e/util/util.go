@@ -30,7 +30,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -379,28 +379,28 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
-func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *extv1beta1.Ingress {
-	return &extv1beta1.Ingress{
+func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1beta1.Ingress {
+	return &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Annotations: annotations,
 		},
-		Spec: extv1beta1.IngressSpec{
-			TLS: []extv1beta1.IngressTLS{
+		Spec: networkingv1beta1.IngressSpec{
+			TLS: []networkingv1beta1.IngressTLS{
 				{
 					Hosts:      dnsNames,
 					SecretName: secretName,
 				},
 			},
-			Rules: []extv1beta1.IngressRule{
+			Rules: []networkingv1beta1.IngressRule{
 				{
 					Host: dnsNames[0],
-					IngressRuleValue: extv1beta1.IngressRuleValue{
-						HTTP: &extv1beta1.HTTPIngressRuleValue{
-							Paths: []extv1beta1.HTTPIngressPath{
+					IngressRuleValue: networkingv1beta1.IngressRuleValue{
+						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+							Paths: []networkingv1beta1.HTTPIngressPath{
 								{
 									Path: "/",
-									Backend: extv1beta1.IngressBackend{
+									Backend: networkingv1beta1.IngressBackend{
 										ServiceName: "dummy-service",
 										ServicePort: intstr.FromInt(80),
 									},

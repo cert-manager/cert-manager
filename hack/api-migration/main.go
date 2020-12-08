@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	networkingv1beta "k8s.io/api/extensions/v1beta1"
+	networkingv1beta "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
@@ -84,7 +84,7 @@ var cmd = &cobra.Command{
 			return err
 		}
 
-		ingList, err := client.ExtensionsV1beta1().Ingresses("").List(context.TODO(), metav1.ListOptions{})
+		ingList, err := client.NetworkingV1beta1().Ingresses("").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return err
 		}

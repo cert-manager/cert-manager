@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"testing"
 
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
@@ -85,7 +85,7 @@ func TestSync(t *testing.T) {
 		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	type testT struct {
 		Name                string
-		Ingress             *extv1beta1.Ingress
+		Ingress             *networkingv1beta1.Ingress
 		Issuer              cmapi.GenericIssuer
 		IssuerLister        []runtime.Object
 		ClusterIssuerLister []runtime.Object
@@ -103,7 +103,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single Certificate for an ingress with a single valid TLS entry and common-name annotation",
 			Issuer: acmeClusterIssuer,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -116,8 +116,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -152,7 +152,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
 			Issuer: acmeClusterIssuer,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -165,8 +165,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -204,7 +204,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "create a Certificate with the HTTP01 name override if the given ingress uses http01 annotations",
 			Issuer: gen.Issuer(acmeIssuer.Name),
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -217,8 +217,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -256,7 +256,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
 			Issuer: acmeClusterIssuer,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -265,8 +265,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -297,7 +297,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
 			Issuer: acmeClusterIssuer,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -307,8 +307,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -339,7 +339,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a certificate ingress class",
 			Issuer: acmeClusterIssuer,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -350,8 +350,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -385,7 +385,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "edit-in-place set to false should not trigger editing the ingress in-place",
 			Issuer: acmeClusterIssuer,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -396,8 +396,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -429,7 +429,7 @@ func TestSync(t *testing.T) {
 			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry",
 			Issuer: acmeClusterIssuer,
 			Err:    true,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -438,8 +438,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -474,7 +474,7 @@ func TestSync(t *testing.T) {
 			DefaultIssuerKind:   "ClusterIssuer",
 			DefaultIssuerGroup:  "cert-manager.io",
 			ClusterIssuerLister: []runtime.Object{clusterIssuer},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -483,8 +483,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com", "www.example.com"},
 							SecretName: "example-com-tls",
@@ -518,7 +518,7 @@ func TestSync(t *testing.T) {
 			IssuerLister:   []runtime.Object{acmeIssuer},
 			Err:            true,
 			ExpectedEvents: []string{`Warning BadConfig Secret "example-com-tls" for ingress TLS has no hosts specified`},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -527,8 +527,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							SecretName: "example-com-tls",
 						},
@@ -541,7 +541,7 @@ func TestSync(t *testing.T) {
 			Issuer:         acmeIssuer,
 			Err:            true,
 			ExpectedEvents: []string{`Warning BadConfig TLS entry 0 for hosts [example.com] must specify a secretName`},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -550,8 +550,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts: []string{"example.com"},
 						},
@@ -563,7 +563,7 @@ func TestSync(t *testing.T) {
 		{
 			Name: "should error if the specified issuer is not found",
 			Err:  true,
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -578,7 +578,7 @@ func TestSync(t *testing.T) {
 			Name:         "should not return any certificates if a correct Certificate already exists",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -587,8 +587,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com"},
 							SecretName: "existing-crt",
@@ -621,7 +621,7 @@ func TestSync(t *testing.T) {
 			Name:         "should update a certificate if an incorrect Certificate exists",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -630,8 +630,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com"},
 							SecretName: "existing-crt",
@@ -669,7 +669,7 @@ func TestSync(t *testing.T) {
 			Name:         "should update an existing Certificate resource with new labels if they do not match those specified on the Ingress",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -681,8 +681,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com"},
 							SecretName: "cert-secret-name",
@@ -737,7 +737,7 @@ func TestSync(t *testing.T) {
 			Name:         "should not update certificate if it does not belong to any ingress",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -747,8 +747,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com"},
 							SecretName: "existing-crt",
@@ -778,7 +778,7 @@ func TestSync(t *testing.T) {
 			Name:         "should not update certificate if it does not belong to the ingress",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -788,8 +788,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com"},
 							SecretName: "existing-crt",
@@ -819,7 +819,7 @@ func TestSync(t *testing.T) {
 			Name:         "should delete a Certificate if its SecretName is not present in the ingress",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -869,7 +869,7 @@ func TestSync(t *testing.T) {
 			Name:         "should update a Certificate if is contains a Common Name that is not defined on the ingress annotations",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -880,8 +880,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com"},
 							SecretName: "example-com-tls",
@@ -935,7 +935,7 @@ func TestSync(t *testing.T) {
 			ExpectedEvents: []string{
 				`Warning BadConfig Duplicate TLS entry for secretName "example-com-tls"`,
 			},
-			Ingress: &extv1beta1.Ingress{
+			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -946,8 +946,8 @@ func TestSync(t *testing.T) {
 					},
 					UID: types.UID("ingress-name"),
 				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
 						{
 							Hosts:      []string{"example.com"},
 							SecretName: "example-com-tls",
@@ -1053,7 +1053,7 @@ func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cm
 
 func TestIssuerForIngress(t *testing.T) {
 	type testT struct {
-		Ingress       *extv1beta1.Ingress
+		Ingress       *networkingv1beta1.Ingress
 		DefaultName   string
 		DefaultKind   string
 		DefaultGroup  string
@@ -1154,8 +1154,8 @@ func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerRefe
 	}
 }
 
-func buildIngress(name, namespace string, annotations map[string]string) *extv1beta1.Ingress {
-	return &extv1beta1.Ingress{
+func buildIngress(name, namespace string, annotations map[string]string) *networkingv1beta1.Ingress {
+	return &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Namespace:   namespace,

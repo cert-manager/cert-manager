@@ -24,7 +24,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
-	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
+	networkinglisters "k8s.io/client-go/listers/networking/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -58,7 +58,7 @@ type controller struct {
 	cmClient clientset.Interface
 	recorder record.EventRecorder
 
-	ingressLister       extlisters.IngressLister
+	ingressLister       networkinglisters.IngressLister
 	certificateLister   cmlisters.CertificateLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
@@ -78,7 +78,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	ingressInformer := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
+	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
 	certificatesInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	// build a list of InformerSynced functions that will be returned by the Register method.

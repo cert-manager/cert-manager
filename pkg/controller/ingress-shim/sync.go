@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -38,9 +38,9 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
-var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
+var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
-func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
+func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) error {
 	log := logf.WithResource(logf.FromContext(ctx), ing)
 	ctx = logf.NewContext(ctx, log)
 
@@ -105,7 +105,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	return nil
 }
 
-func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
+func (c *controller) validateIngress(ing *networkingv1beta1.Ingress) []error {
 	var errs []error
 	namedSecrets := make(map[string]int)
 	for i, tls := range ing.Spec.TLS {
@@ -126,7 +126,7 @@ func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	return errs
 }
 
-func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingress,
+func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1beta1.Ingress,
 	issuerName, issuerKind, issuerGroup string) (new, update []*cmapi.Certificate, _ error) {
 	log := logs.FromContext(ctx)
 
@@ -200,7 +200,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 	return newCrts, updateCrts, nil
 }
 
-func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*cmapi.Certificate, error) {
+func (c *controller) findUnrequiredCertificates(ing *networkingv1beta1.Ingress) ([]*cmapi.Certificate, error) {
 	var unrequired []*cmapi.Certificate
 	// TODO: investigate selector which filters for certificates controlled by the ingress
 	crts, err := c.certificateLister.Certificates(ing.Namespace).List(labels.Everything())
@@ -217,7 +217,7 @@ func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*cma
 	return unrequired, nil
 }
 
-func isUnrequiredCertificate(crt *cmapi.Certificate, ing *extv1beta1.Ingress) bool {
+func isUnrequiredCertificate(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress) bool {
 	if !metav1.IsControlledBy(crt, ing) {
 		return false
 	}
@@ -273,7 +273,7 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 	return false
 }
 
-func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
+func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress, tls networkingv1beta1.IngressTLS) error {
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
@@ -303,7 +303,7 @@ func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1b
 	return nil
 }
 
-func (c *controller) setCommonName(crt *cmapi.Certificate, ing *extv1beta1.Ingress) {
+func (c *controller) setCommonName(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress) {
 	// if annotation is set use that as CN
 	if ing.Annotations != nil && ing.Annotations[cmapi.CommonNameAnnotationKey] != "" {
 		crt.Spec.CommonName = ing.Annotations[cmapi.CommonNameAnnotationKey]
@@ -312,7 +312,7 @@ func (c *controller) setCommonName(crt *cmapi.Certificate, ing *extv1beta1.Ingre
 
 // shouldSync returns true if this ingress should have a Certificate resource
 // created for it
-func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bool {
+func shouldSync(ing *networkingv1beta1.Ingress, autoCertificateAnnotations []string) bool {
 	annotations := ing.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -336,7 +336,7 @@ func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bo
 // issuerForIngress will determine the issuer that should be specified on a
 // Certificate created for the given Ingress resource. If one is not set, the
 // default issuer given to the controller will be used.
-func (c *controller) issuerForIngress(ing *extv1beta1.Ingress) (name, kind, group string, err error) {
+func (c *controller) issuerForIngress(ing *networkingv1beta1.Ingress) (name, kind, group string, err error) {
 	var errs []string
 
 	name = c.defaults.issuerName
