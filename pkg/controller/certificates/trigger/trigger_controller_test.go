@@ -26,17 +26,20 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	logtest "github.com/go-logr/logr/testing"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/test/unit/gen"
+	"github.com/stretchr/testify/assert"
 )
 
 // policyFuncBuilder wraps a policies.Func to allow injecting a testing.T
 type policyFuncBuilder func(t *testing.T) policies.Func
 
-func TestProcessItem(t *testing.T) {
+func Test_controller_ProcessItem(t *testing.T) {
 	// now time is the current time at the start of the test (the clock is fixed)
 	now := time.Now()
 	metaNow := metav1.NewTime(now)
@@ -423,4 +426,80 @@ func buildTestPolicyChain(t *testing.T, funcs ...policyFuncBuilder) policies.Cha
 		c = append(c, f(t))
 	}
 	return c
+}
+
+func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
+	clock := fakeclock.NewFakeClock(time.Date(2020, 11, 20, 16, 05, 00, 0000, time.UTC))
+	tests := []struct {
+		name        string
+		givenCert   *cmapi.Certificate
+		wantBackoff bool
+		wantDelay   time.Duration
+	}{
+		{
+			name: "no need to back off from reissuing when there is no previous failure",
+			givenCert: gen.Certificate("test",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("test-uid"),
+				gen.SetCertificateDNSNames("example2.com"),
+				gen.SetCertificateRevision(1),
+				// LastFailureTime is not set here.
+			),
+			wantBackoff: false,
+		},
+		{
+			name: "no need to back off from reissuing when the failure is more than an hour ago, reissuance can happen now",
+			givenCert: gen.Certificate("test",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("test-uid"),
+				gen.SetCertificateDNSNames("example2.com"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-61*time.Minute))),
+			),
+			wantBackoff: false,
+		},
+		{
+			name: "needs to back off from reissuing when the failure happened less than an hour ago",
+			givenCert: gen.Certificate("test",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("test-uid"),
+				gen.SetCertificateDNSNames("example2.com"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-59*time.Minute))),
+			),
+			wantBackoff: true,
+			wantDelay:   1 * time.Minute,
+		},
+		{
+			name: "no need to back off from reissuing when the failure happened exactly an hour ago",
+			givenCert: gen.Certificate("test",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("test-uid"),
+				gen.SetCertificateDNSNames("example2.com"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now().Add(-60*time.Minute))),
+			),
+			wantBackoff: false,
+			wantDelay:   0,
+		},
+		{
+			name: "needs to back off from reissuing for the maximum of 1 hour when failure just happened",
+			givenCert: gen.Certificate("test",
+				gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("test-uid"),
+				gen.SetCertificateDNSNames("example2.com"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateLastFailureTime(metav1.NewTime(clock.Now())),
+			),
+			wantBackoff: true,
+			wantDelay:   1 * time.Hour,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotBackoff, gotDelay := shouldBackoffReissuingOnFailure(logtest.TestLogger{T: t}, clock, tt.givenCert)
+			assert.Equal(t, tt.wantBackoff, gotBackoff)
+			assert.Equal(t, tt.wantDelay, gotDelay)
+		})
+	}
 }
