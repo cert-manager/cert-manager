@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
+	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	v2 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 	testval "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation"
 )
 
