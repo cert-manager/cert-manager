@@ -347,14 +347,14 @@ func TestEncodePKCS12Keystore(t *testing.T) {
 
 func TestEncodePKCS12Truststore(t *testing.T) {
 	tests := map[string]struct {
-		password		string
-		caPEM			[]byte
-		verify			func(t *testing.T, caPEM []byte, out []byte, err error)
-		run				func(t testing.T)
+		password string
+		caPEM    []byte
+		verify   func(t *testing.T, caPEM []byte, out []byte, err error)
+		run      func(t testing.T)
 	}{
 		"encode a PKCS12 bundle for a CA": {
 			password: "password",
-			caPEM: mustSelfSignCertificate(t, nil),
+			caPEM:    mustSelfSignCertificate(t, nil),
 			verify: func(t *testing.T, caPEM []byte, out []byte, err error) {
 				if err != nil {
 					t.Errorf("expected no error but got: %v", err)

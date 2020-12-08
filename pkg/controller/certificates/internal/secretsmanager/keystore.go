@@ -37,12 +37,14 @@ import (
 const (
 	// pkcs12SecretKey is the name of the data entry in the Secret resource
 	// used to store the p12 file.
-	pkcs12SecretKey     = "keystore.p12"
+	pkcs12SecretKey = "keystore.p12"
+	// Data Entry Name in the Secret resource for PKCS12 containing Certificate Authority
 	pkcs12TruststoreKey = "truststore.p12"
 
 	// jksSecretKey is the name of the data entry in the Secret resource
 	// used to store the jks file.
-	jksSecretKey     = "keystore.jks"
+	jksSecretKey = "keystore.jks"
+	// Data Entry Name in the Secret resource for JKS containing Certificate Authority
 	jksTruststoreKey = "truststore.jks"
 )
 
