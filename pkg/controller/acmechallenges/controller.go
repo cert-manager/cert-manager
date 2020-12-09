@@ -96,7 +96,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// cache when managing pod/service/ingress resources
 	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
 	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
-	ingressInformer := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
+	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
