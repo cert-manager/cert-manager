@@ -132,17 +132,6 @@ genrule(
 )
 
 genrule(
-    name = "fetch_kind_legacy",
-    srcs = select({
-        ":darwin": ["@kind_legacy_darwin//file"],
-        ":k8": ["@kind_legacy_linux//file"],
-    }),
-    outs = ["kind_legacy"],
-    cmd = "cp $(SRCS) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
     name = "fetch_controller-gen",
     srcs = ["@io_k8s_sigs_controller_tools//cmd/controller-gen"],
     outs = ["controller-gen"],
