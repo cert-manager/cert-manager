@@ -52,7 +52,6 @@ echo "kind image details:"
 echo "  repo:    ${KIND_IMAGE_REPO}"
 echo "  sha256:  ${KIND_IMAGE_SHA}"
 echo "  version: ${K8S_VERSION}"
-echo "  config:  ${KIND_IMAGE_CONFIG}"
 
 if $KIND_BIN get clusters | grep "^$KIND_CLUSTER_NAME\$" &>/dev/null; then
   echo "Existing cluster '$KIND_CLUSTER_NAME' found, skipping creating cluster..."
