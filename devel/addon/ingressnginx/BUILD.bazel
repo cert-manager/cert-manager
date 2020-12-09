@@ -3,8 +3,7 @@ load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 container_bundle(
     name = "bundle",
     images = {
-        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.33.0": "@io_kubernetes_ingress-nginx//image",
-        "k8s.gcr.io/defaultbackend-amd64:bazel": "@io_gcr_k8s_defaultbackend//image",
+        "k8s.gcr.io/ingress-nginx/controller:v0.41.2@sha256:1f4f402b9c14f3ae92b11ada1dfe9893a88f0faeb0b2f4b903e2c67a0c3bf0de": "@io_kubernetes_ingress-nginx//image",
     },
     tags = ["manual"],
 )
