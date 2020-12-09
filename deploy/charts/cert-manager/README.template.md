@@ -19,15 +19,8 @@ Before installing the chart, you must first install the cert-manager CustomResou
 This is performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed custom resources.
 
 ```bash
-# Kubernetes 1.15+
-$ kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-
-# Kubernetes <1.15
-$ kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager-legacy.crds.yaml
+$ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
 ```
-
-> **Note**: If you're using a Kubernetes version below `v1.15` you will need to install the legacy version of the custom resource definitions.
-> This version does not have API version conversion enabled and only supports `cert-manager.io/v1` API resources.
 
 To install the chart with the release name `my-release`:
 
@@ -72,11 +65,7 @@ If you want to completely uninstall cert-manager from your cluster, you will als
 delete the previously installed CustomResourceDefinition resources:
 
 ```console
-# Kubernetes 1.15+
 $ kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-
-# Kubernetes <1.15
-$ kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager-legacy.crds.yaml
 ```
 
 ## Configuration

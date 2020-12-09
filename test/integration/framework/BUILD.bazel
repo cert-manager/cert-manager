@@ -8,7 +8,7 @@ go_library(
         "paths.go",
     ],
     data = [
-        "//deploy/crds:crds.regular.yaml",
+        "//deploy/crds:crds.yaml",
         "//hack/bin:com_coreos_etcd",
         "//hack/bin:io_kubernetes_kube-apiserver",
         "//hack/bin:kubectl",

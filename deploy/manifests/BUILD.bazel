@@ -10,104 +10,82 @@ RELEASE_NAME = "cert-manager"
 
 RELEASE_NAMESPACE = "cert-manager"
 
-VARIANTS = {
-    "cert-manager": {
-        "crd_variant": "regular",
-        "additional_api_versions": "",
-        "values": {
-            "installCRDs": "false",
-        },
-    },
-    "cert-manager-legacy": {
-        "crd_variant": "legacy",
-        # This following line tells Helm that we need to use v1beta1 webhooks
-        # When using helm template the API versions are determined for the version
-        # helm was compiled with, there is no way to remove any from this list
-        # the following hack adds an API version which we then can use to force
-        # the template engine to use v1beta1 webhooks.
-        "additional_api_versions": "hacking-helm.i-wish-this-wasnt-required.cert-manager.io/force-v1beta1-webhooks",
-        "values": {
-            "installCRDs": "false",
-        },
-    },
-}
-
-[genrule(
-    name = "%s.nohelm.crds.yaml" % name,
+genrule(
+    name = "crds.nohelm.yaml",
     srcs = [
-        "//deploy/crds:crds.%s" % meta["crd_variant"],
+        "//deploy/crds",
     ],
-    outs = ["%s.crds.nohelm.out" % name],
+    outs = ["crds.nohelm.out"],
     cmd = " ".join([
         "$(location //hack/filter-crd)",
         "-variant=no-helm",
-        "$(location //deploy/crds:crds.%s)" % meta["crd_variant"],
+        "$(location //deploy/crds:crds)",
         "> $@",
     ]),
     tools = [
         "//hack/filter-crd",
     ],
     visibility = ["//visibility:public"],
-) for (name, meta) in VARIANTS.items()]
+)
 
-[helm_tmpl(
-    name = "%s.manifests" % name,
-    additional_api_versions = meta["additional_api_versions"],
+helm_tmpl(
+    name = "manifests.helm",
     helm_pkg = "//deploy/charts/cert-manager",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
-    values = meta["values"],
-) for (name, meta) in VARIANTS.items()]
+)
 
-[licensed_file(
-    name = "%s.crds.yaml" % name,
-    src = ":%s.nohelm.crds.yaml" % name,
-) for (name, meta) in VARIANTS.items()]
+licensed_file(
+    name = "crds.yaml",
+    src = ":crds.nohelm.yaml",
+)
 
-[genrule(
-    name = "%s.unlicensed" % name,
+genrule(
+    name = "unlicensed",
     srcs = [
-        "//deploy/crds:crds.%s" % meta["crd_variant"],
+        "//deploy/crds",
         "01-namespace.yaml",
-        "%s.manifests" % name,
+        "manifests.helm",
     ],
-    outs = ["%s.unlicensed.yaml" % name],
+    outs = ["unlicensed.yaml"],
     cmd = " ".join([
         "cat",
-        "$(location //deploy/crds:crds.%s)" % meta["crd_variant"],
+        "$(location //deploy/crds:crds)",
         "$(location 01-namespace.yaml)",
-        "$(location %s.manifests)" % name,
+        "$(location manifests.helm)",
         "> $@",
     ]),
-) for (name, meta) in VARIANTS.items()]
+)
 
-[genrule(
-    name = "%s.unlicensed.nohelm" % name,
+genrule(
+    name = "unlicensed.nohelm",
     srcs = [
-        ":%s.unlicensed" % name,
+        ":unlicensed",
     ],
-    outs = ["%s.unlicensed.nohelm.yaml" % name],
+    outs = ["unlicensed.nohelm.yaml"],
     cmd = " ".join([
         "$(location //hack/filter-crd)",
         "-variant=no-helm",
-        "$(location :%s.unlicensed)" % name,
+        "$(location :unlicensed)",
         "> $@",
     ]),
     tools = [
         "//hack/filter-crd",
     ],
     visibility = ["//visibility:public"],
-) for (name, meta) in VARIANTS.items()]
+)
 
-[licensed_file(
-    name = "%s.yaml" % name,
-    src = "%s.unlicensed.nohelm" % name,
-) for (name, meta) in VARIANTS.items()]
+licensed_file(
+    name = "manifests.yaml",
+    src = "unlicensed.nohelm",
+)
 
 pkg_tar(
     name = "manifests",
-    srcs = [":%s.yaml" % name for name in VARIANTS.keys()] +
-           [":%s.crds.yaml" % name for name in VARIANTS.keys()],
+    srcs = [
+        ":crds.yaml",
+        ":manifests.helm",
+    ],
     extension = "tar.gz",
     mode = "0644",
     package_dir = "manifests",

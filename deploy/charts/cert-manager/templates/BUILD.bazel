@@ -1,40 +1,23 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//build:files.bzl", "modify_file")
-
-modify_file(
+genrule(
     name = "crds",
-    src = "//deploy/crds:templates.regular",
-    out = "crds.yaml",
-    prefix = """{{- if (semverCompare ">=1.16-0" .Capabilities.KubeVersion.GitVersion) }}
-{{- if .Values.installCRDs }}""",
-    suffix = """{{- end }}
-{{- end }}""",
-    visibility = ["//visibility:private"],
-)
-
-modify_file(
-    name = "crds.legacy",
-    src = "//deploy/crds:templates.legacy",
-    out = "crds.legacy.yaml",
-    prefix = """{{- if (semverCompare "<1.16-0" .Capabilities.KubeVersion.GitVersion) }}
-{{- if .Values.installCRDs }}""",
-    suffix = """{{- end }}
-{{- end }}""",
-    visibility = ["//visibility:private"],
+    srcs = ["//deploy/crds:templates"],
+    outs = ["crds.yaml"],
+    cmd = "cp $< $@",
 )
 
 filegroup(
     name = "chart-srcs",
     srcs = [
-        "crds.yaml",
-        "crds.legacy.yaml",
+        ":crds",
     ] + glob(
         [
             "*.yaml",
             "*.txt",
         ],
     ),
+    visibility = ["//visibility:public"],
 )
 
 filegroup(
