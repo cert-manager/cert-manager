@@ -32,43 +32,17 @@ KIND_BIN="${KIND}"
 
 # Compute the details of the kind image to use
 export KIND_IMAGE_SHA=""
-export KIND_IMAGE_CONFIG=""
-if [[ "$K8S_VERSION" =~ 1\.11 ]]; then
-  KIND_BIN="${KIND_LEGACY}"
-  # v1.11.10 @ sha256:e6f3dade95b7cb74081c5b9f3291aaaa6026a90a977e0b990778b6adc9ea6248
-  KIND_IMAGE_SHA="sha256:e6f3dade95b7cb74081c5b9f3291aaaa6026a90a977e0b990778b6adc9ea6248"
-  KIND_IMAGE_CONFIG="v1alpha2"
-elif [[ "$K8S_VERSION" =~ 1\.12 ]]; then
-  # v1.12.10@sha256:faeb82453af2f9373447bb63f50bae02b8020968e0889c7fa308e19b348916cb
-  KIND_IMAGE_SHA="sha256:faeb82453af2f9373447bb63f50bae02b8020968e0889c7fa308e19b348916cb"
-  KIND_IMAGE_CONFIG="v1alpha3"
-elif [[ "$K8S_VERSION" =~ 1\.13 ]] ; then
-  # v1.13.12@sha256:214476f1514e47fe3f6f54d0f9e24cfb1e4cda449529791286c7161b7f9c08e7
-  KIND_IMAGE_SHA="sha256:214476f1514e47fe3f6f54d0f9e24cfb1e4cda449529791286c7161b7f9c08e7"
-  KIND_IMAGE_CONFIG="v1beta1"
-elif [[ "$K8S_VERSION" =~ 1\.14 ]] ; then
-  # v1.14.10@sha256:6cd43ff41ae9f02bb46c8f455d5323819aec858b99534a290517ebc181b443c6
-  KIND_IMAGE_SHA="sha256:6cd43ff41ae9f02bb46c8f455d5323819aec858b99534a290517ebc181b443c6"
-  KIND_IMAGE_CONFIG="v1beta1"
-elif [[ "$K8S_VERSION" =~ 1\.15 ]] ; then
-  # v1.15.11@sha256:6cc31f3533deb138792db2c7d1ffc36f7456a06f1db5556ad3b6927641016f50
-  KIND_IMAGE_SHA="sha256:6cc31f3533deb138792db2c7d1ffc36f7456a06f1db5556ad3b6927641016f50"
-  KIND_IMAGE_CONFIG="v1beta2"
-elif [[ "$K8S_VERSION" =~ 1\.16 ]] ; then
+if [[ "$K8S_VERSION" =~ 1\.16 ]] ; then
   # v1.16.9@sha256:7175872357bc85847ec4b1aba46ed1d12fa054c83ac7a8a11f5c268957fd5765
   KIND_IMAGE_SHA="sha256:7175872357bc85847ec4b1aba46ed1d12fa054c83ac7a8a11f5c268957fd5765"
-  KIND_IMAGE_CONFIG="v1beta2"
 elif [[ "$K8S_VERSION" =~ 1\.17 ]] ; then
   # v1.17.5@sha256:ab3f9e6ec5ad8840eeb1f76c89bb7948c77bbf76bcebe1a8b59790b8ae9a283a
   KIND_IMAGE_SHA="sha256:ab3f9e6ec5ad8840eeb1f76c89bb7948c77bbf76bcebe1a8b59790b8ae9a283a"
-  KIND_IMAGE_CONFIG="v1beta2"
 elif [[ "$K8S_VERSION" =~ 1\.18 ]] ; then
   # v1.18.2@sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f
   KIND_IMAGE_SHA="sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f"
-  KIND_IMAGE_CONFIG="v1beta2"
 elif [[ "$K8S_VERSION" =~ 1\.19 ]] ; then
   KIND_IMAGE_SHA="sha256:6a6e4d588db3c2873652f382465eeadc2644562a64659a1da4db73d3beaa8848"
-  KIND_IMAGE_CONFIG="v1beta2"
 else
   echo "Unrecognised Kubernetes version '${K8S_VERSION}'! Aborting..."
   exit 1
@@ -87,7 +61,7 @@ fi
 
 # Create the kind cluster
 $KIND_BIN create cluster \
-  --config "${SCRIPT_ROOT}/config/${KIND_IMAGE_CONFIG}.yaml" \
+  --config "${SCRIPT_ROOT}/config/v1beta2.yaml" \
   --image "${KIND_IMAGE}" \
   --name "${KIND_CLUSTER_NAME}"
 
