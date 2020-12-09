@@ -122,6 +122,10 @@ func loadVariant() {
 	flag.StringVar(&variant, "variant", "", "variant of remove rules")
 	flag.Parse()
 
+	// filter-crd is also able to be used without variant which should produce the same output again
+	// this section used to have multiple variants for legacy releases, this has been removed now
+	// TODO: ultimately we should find a we should find a way to remove the Helm specific labels
+	// without using this hack
 	if variant == "no-helm" {
 		removeKeys = []string{
 			"metadata/labels/app.kubernetes.io/managed-by",
