@@ -65,11 +65,7 @@ If you want to completely uninstall cert-manager from your cluster, you will als
 delete the previously installed CustomResourceDefinition resources:
 
 ```console
-# Kubernetes 1.15+
 $ kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-
-# Kubernetes <1.15
-$ kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager-legacy.crds.yaml
 ```
 
 ## Configuration
