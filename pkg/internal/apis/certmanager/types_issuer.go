@@ -249,6 +249,10 @@ type CAIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set, certificates will be issued without distribution points set.
 	CRLDistributionPoints []string
+
+	// The OCSP server is an X.509 v3 extension that defines the url of the OCSP responder.
+	// The OCSP responder can be queried for the revocation status of an issued certificate.
+	OCSPServer []string
 }
 
 // IssuerStatus contains status information about an Issuer

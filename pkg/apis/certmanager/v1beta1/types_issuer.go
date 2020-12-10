@@ -275,6 +275,12 @@ type CAIssuer struct {
 	// If not set, certificates will be issued without distribution points set.
 	// +optional
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
+
+	// The OCSP server is an X.509 v3 extension that defines the url of the OCSP responder.
+	// The OCSP responder can be queried for the revocation status of an issued certificate.
+	// If not set the certificate wil be issued without the OCSP server set.
+	// +optional
+	OCSPServer []string `json:"ocspServer,omitempty"`
 }
 
 // IssuerStatus contains status information about an Issuer
