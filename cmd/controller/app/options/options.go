@@ -90,6 +90,9 @@ type ControllerOptions struct {
 	// The host and port address, separated by a ':', that the Prometheus server
 	// should expose metrics on.
 	MetricsListenAddress string
+	// EnablePprof controls whether net/http/pprof handlers are registered with
+	// the HTTP listener.
+	EnablePprof bool
 
 	DNS01CheckRetryPeriod time.Duration
 }
@@ -182,6 +185,7 @@ func NewControllerOptions() *ControllerOptions {
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
+		EnablePprof:                       false,
 	}
 }
 
@@ -286,6 +290,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")
+	fs.BoolVar(&s.EnablePprof, "enable-profiling", false, ""+
+		"Enable profiling for controller.")
 }
 
 func (o *ControllerOptions) Validate() error {

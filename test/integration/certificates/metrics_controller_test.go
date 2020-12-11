@@ -51,7 +51,7 @@ func TestMetricsController(t *testing.T) {
 	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
 	metricsHandler := metrics.New(logf.Log)
-	server, err := metricsHandler.Start("127.0.0.1:0")
+	server, err := metricsHandler.Start("127.0.0.1:0", false)
 	if err != nil {
 		t.Fatal(err)
 	}

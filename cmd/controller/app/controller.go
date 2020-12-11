@@ -69,7 +69,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		os.Exit(1)
 	}
 
-	metricsServer, err := ctx.Metrics.Start(opts.MetricsListenAddress)
+	metricsServer, err := ctx.Metrics.Start(opts.MetricsListenAddress, opts.EnablePprof)
 	if err != nil {
 		log.Error(err, "failed to listen on prometheus address", "address", opts.MetricsListenAddress)
 		os.Exit(1)

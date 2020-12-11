@@ -21,7 +21,6 @@ require (
 	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/google/gofuzz v1.2.0
-	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/hashicorp/vault/sdk v0.1.13
 	github.com/kr/pretty v0.2.1

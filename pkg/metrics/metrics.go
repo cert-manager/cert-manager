@@ -32,11 +32,12 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
 
 const (
@@ -134,15 +135,18 @@ func New(log logr.Logger) *Metrics {
 }
 
 // Start will register the Prometheu metrics, and start the Prometheus server
-func (m *Metrics) Start(listenAddress string) (*http.Server, error) {
+func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, error) {
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 
-	router := mux.NewRouter()
-	router.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	if enablePprof {
+		profiling.Install(mux)
+	}
 
 	ln, err := net.Listen("tcp", listenAddress)
 	if err != nil {
@@ -154,7 +158,7 @@ func (m *Metrics) Start(listenAddress string) (*http.Server, error) {
 		ReadTimeout:    prometheusMetricsServerReadTimeout,
 		WriteTimeout:   prometheusMetricsServerWriteTimeout,
 		MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
-		Handler:        router,
+		Handler:        mux,
 	}
 
 	go func() {
