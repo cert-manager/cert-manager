@@ -27,17 +27,17 @@ import (
 	"context"
 	"net"
 	"net/http"
-	pprof "net/http/pprof"
 	"time"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
 
 const (
@@ -142,14 +142,10 @@ func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, e
 	m.registry.MustRegister(m.acmeClientRequestCount)
 	m.registry.MustRegister(m.controllerSyncCallCount)
 
-	router := mux.NewRouter()
-	router.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
 	if enablePprof {
-		router.HandleFunc("/debug/pprof/", pprof.Index)
-		router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-		router.HandleFunc("/debug/pprof/profile", pprof.Profile)
-		router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-		router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		profiling.Install(mux)
 	}
 
 	ln, err := net.Listen("tcp", listenAddress)
@@ -162,7 +158,7 @@ func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, e
 		ReadTimeout:    prometheusMetricsServerReadTimeout,
 		WriteTimeout:   prometheusMetricsServerWriteTimeout,
 		MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
-		Handler:        router,
+		Handler:        mux,
 	}
 
 	go func() {
