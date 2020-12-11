@@ -28,10 +28,8 @@ import (
 
 	"github.com/go-logr/logr"
 	admissionv1 "k8s.io/api/admission/v1"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,7 +41,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
-	"github.com/jetstack/cert-manager/pkg/webhook/server/util"
 )
 
 var (
@@ -55,7 +52,6 @@ var (
 
 func init() {
 	apiextensionsinstall.Install(defaultScheme)
-	admissionv1beta1.AddToScheme(defaultScheme)
 	admissionv1.AddToScheme(defaultScheme)
 
 	// we need to add the options to empty v1
@@ -291,74 +287,38 @@ func (s *Server) scheme() *runtime.Scheme {
 }
 
 func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
-	outputVersion := admissionv1.SchemeGroupVersion
-	review, isV1 := obj.(*admissionv1.AdmissionReview)
-	if !isV1 {
-		outputVersion = admissionv1beta1.SchemeGroupVersion
-		reviewv1beta1, isv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
-		if !isv1beta1 {
-			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
-		}
-		review = &admissionv1.AdmissionReview{}
-		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
+	review, ok := obj.(*admissionv1.AdmissionReview)
+	if !ok {
+		return nil, errors.New("request is not of type apiextensions v1")
 	}
 	resp := s.ValidationWebhook.Validate(review.Request)
 	review.Response = resp
 
-	// reply v1
-	if outputVersion.Version == admissionv1.SchemeGroupVersion.Version {
-		return review, nil
-	}
-
-	// reply v1beta1
-	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
-	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
-	return reviewv1beta1, nil
+	return review, nil
 }
 
 func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
-	outputVersion := admissionv1.SchemeGroupVersion
-	review, isV1 := obj.(*admissionv1.AdmissionReview)
-	if !isV1 {
-		outputVersion = admissionv1beta1.SchemeGroupVersion
-		reviewv1beta1, isv1beta1 := obj.(*admissionv1beta1.AdmissionReview)
-		if !isv1beta1 {
-			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
-		}
-		review = &admissionv1.AdmissionReview{}
-		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
+	review, isAdmissions := obj.(*admissionv1.AdmissionReview)
+	if !isAdmissions {
+		return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 	}
+
 	resp := s.MutationWebhook.Mutate(review.Request)
 	review.Response = resp
 
-	// reply v1
-	if outputVersion.Version == admissionv1.SchemeGroupVersion.Version {
-		return review, nil
-	}
-
-	// reply v1beta1
-	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
-	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
-	return reviewv1beta1, nil
+	return review, nil
 }
 
 func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
-	switch review := obj.(type) {
-	case *apiextensionsv1.ConversionReview:
-		if review.Request == nil {
-			return nil, errors.New("review.request was nil")
-		}
-		review.Response = s.ConversionWebhook.ConvertV1(review.Request)
-		return review, nil
-	case *apiextensionsv1beta1.ConversionReview:
-		if review.Request == nil {
-			return nil, errors.New("review.request was nil")
-		}
-		review.Response = s.ConversionWebhook.ConvertV1Beta1(review.Request)
-		return review, nil
-	default:
+	review, ok := obj.(*apiextensionsv1.ConversionReview)
+	if !ok {
 		return nil, fmt.Errorf("unsupported conversion review type: %T", review)
 	}
+	if review.Request == nil {
+		return nil, errors.New("review.request was nil")
+	}
+	review.Response = s.ConversionWebhook.ConvertV1(review.Request)
+	return review, nil
 }
 
 func (s *Server) handle(inner func(runtime.Object) (runtime.Object, error)) func(w http.ResponseWriter, req *http.Request) {

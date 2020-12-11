@@ -34,7 +34,7 @@ webhooks:
         resources:
           - "*/*"
     {{- if $isV1AdmissionRegistration }}
-    admissionReviewVersions: ["v1", "v1beta1"]
+    admissionReviewVersions: ["v1"]
     timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
     {{- end }}
     failurePolicy: Fail

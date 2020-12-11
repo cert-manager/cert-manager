@@ -29,7 +29,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
 func TestConvertV1TestType(t *testing.T) {
@@ -234,13 +233,13 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 	c := NewSchemeBackedConverter(log, scheme)
 
 	type conversionTestT struct {
-		inputRequest     apiextensionsv1beta1.ConversionRequest
-		expectedResponse apiextensionsv1beta1.ConversionResponse
+		inputRequest     apiextensionsv1.ConversionRequest
+		expectedResponse apiextensionsv1.ConversionResponse
 	}
 
 	tests := map[string]conversionTestT{
 		"correctly handles requests with multiple input items": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects: []runtime.RawExtension{
 					{
@@ -271,7 +270,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -288,11 +287,11 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 			},
 		},
 		"succeeds when handling requests with no input items": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects:           []runtime.RawExtension{},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -300,12 +299,12 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 			},
 		},
 		"copies across request UID to the response field": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects:           []runtime.RawExtension{},
 				UID:               types.UID("abc"),
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -314,7 +313,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 			},
 		},
 		"converts from v1 to v1 without applying defaults": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v1",
 				Objects: []runtime.RawExtension{
 					{
@@ -332,7 +331,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -345,7 +344,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 			},
 		},
 		"converts from v1 to v2 without applying defaults": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v2",
 				Objects: []runtime.RawExtension{
 					{
@@ -363,7 +362,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -376,7 +375,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 			},
 		},
 		"converts from v1 to v2": {
-			inputRequest: apiextensionsv1beta1.ConversionRequest{
+			inputRequest: apiextensionsv1.ConversionRequest{
 				DesiredAPIVersion: testgroup.GroupName + "/v2",
 				Objects: []runtime.RawExtension{
 					{
@@ -396,7 +395,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 					},
 				},
 			},
-			expectedResponse: apiextensionsv1beta1.ConversionResponse{
+			expectedResponse: apiextensionsv1.ConversionResponse{
 				Result: metav1.Status{
 					Status: metav1.StatusSuccess,
 				},
@@ -412,7 +411,7 @@ func TestConvertV1Beta1TestType(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			resp := c.ConvertV1Beta1(&test.inputRequest)
+			resp := c.ConvertV1(&test.inputRequest)
 			if !reflect.DeepEqual(&test.expectedResponse, resp) {
 				t.Errorf("Response was not as expected: %v", diff.ObjectGoPrintSideBySide(&test.expectedResponse, resp))
 			}
