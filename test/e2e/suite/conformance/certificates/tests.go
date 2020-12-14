@@ -493,7 +493,7 @@ func (s *Suite) Define() {
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
 		s.it(f, "should issue a basic certificate for a single distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
-			ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 
 			name := "testcert-ingress"
 			secretName := "testcert-ingress-tls"
@@ -523,7 +523,7 @@ func (s *Suite) Define() {
 		}, featureset.OnlySAN)
 
 		s.it(f, "should issue a basic certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
-			ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 
 			name := "testcert-ingress"
 			secretName := "testcert-ingress-tls"

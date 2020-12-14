@@ -31,7 +31,7 @@ import (
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
+	networkingv1beta1listers "k8s.io/client-go/listers/networking/v1beta1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -59,7 +59,7 @@ type Solver struct {
 
 	podLister     corev1listers.PodLister
 	serviceLister corev1listers.ServiceLister
-	ingressLister extv1beta1listers.IngressLister
+	ingressLister networkingv1beta1listers.IngressLister
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -74,7 +74,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 		Context:          ctx,
 		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
 		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
+		ingressLister:    ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
 		testReachability: testReachability,
 		requiredPasses:   5,
 	}

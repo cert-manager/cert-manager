@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -177,7 +177,7 @@ func TestCleanupIngresses(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
 				createdIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
-				ing, err := s.Builder.FakeKubeClient().ExtensionsV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), createdIngress.Name, metav1.GetOptions{})
+				ing, err := s.Builder.FakeKubeClient().NetworkingV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), createdIngress.Name, metav1.GetOptions{})
 				if err != nil && !apierrors.IsNotFound(err) {
 					t.Errorf("error when getting test ingress, expected 'not found' but got: %v", err)
 				}
@@ -211,7 +211,7 @@ func TestCleanupIngresses(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
 				createdIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
-				_, err := s.Builder.FakeKubeClient().ExtensionsV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), createdIngress.Name, metav1.GetOptions{})
+				_, err := s.Builder.FakeKubeClient().NetworkingV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), createdIngress.Name, metav1.GetOptions{})
 				if apierrors.IsNotFound(err) {
 					t.Errorf("expected ingress resource %q to not be deleted, but it was deleted", createdIngress.Name)
 				}
@@ -278,7 +278,7 @@ func TestCleanupIngresses(t *testing.T) {
 				expectedIng := s.KubeObjects[0].(*v1beta1.Ingress).DeepCopy()
 				expectedIng.Spec.Rules = nil
 
-				actualIng, err := s.Builder.FakeKubeClient().ExtensionsV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), expectedIng.Name, metav1.GetOptions{})
+				actualIng, err := s.Builder.FakeKubeClient().NetworkingV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), expectedIng.Name, metav1.GetOptions{})
 				if apierrors.IsNotFound(err) {
 					t.Errorf("expected ingress resource %q to not be deleted, but it was deleted", expectedIng.Name)
 				}
@@ -365,7 +365,7 @@ func TestCleanupIngresses(t *testing.T) {
 				expectedIng := s.KubeObjects[0].(*v1beta1.Ingress).DeepCopy()
 				expectedIng.Spec.Rules = []v1beta1.IngressRule{expectedIng.Spec.Rules[1]}
 
-				actualIng, err := s.Builder.FakeKubeClient().ExtensionsV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), expectedIng.Name, metav1.GetOptions{})
+				actualIng, err := s.Builder.FakeKubeClient().NetworkingV1beta1().Ingresses(s.Challenge.Namespace).Get(context.TODO(), expectedIng.Name, metav1.GetOptions{})
 				if apierrors.IsNotFound(err) {
 					t.Errorf("expected ingress resource %q to not be deleted, but it was deleted", expectedIng.Name)
 				}

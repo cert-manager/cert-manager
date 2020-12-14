@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	ext "k8s.io/api/extensions/v1beta1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -293,7 +293,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
-		ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+		ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating an Ingress with the issuer name annotation set")
@@ -351,8 +351,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
 		// using the TLS secret that we just got from the self-sign
-		ingress := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
-		_, err = ingress.Create(context.TODO(), &ext.Ingress{
+		ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+		_, err = ingress.Create(context.TODO(), &networkingv1beta1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fixedIngressName,
 				Annotations: map[string]string{
@@ -360,22 +360,22 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					"kubernetes.io/ingress.class":                    "nginx",
 				},
 			},
-			Spec: ext.IngressSpec{
-				TLS: []ext.IngressTLS{
+			Spec: networkingv1beta1.IngressSpec{
+				TLS: []networkingv1beta1.IngressTLS{
 					{
 						Hosts:      []string{acmeIngressDomain},
 						SecretName: secretname,
 					},
 				},
-				Rules: []ext.IngressRule{
+				Rules: []networkingv1beta1.IngressRule{
 					{
 						Host: acmeIngressDomain,
-						IngressRuleValue: ext.IngressRuleValue{
-							HTTP: &ext.HTTPIngressRuleValue{
-								Paths: []ext.HTTPIngressPath{
+						IngressRuleValue: networkingv1beta1.IngressRuleValue{
+							HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+								Paths: []networkingv1beta1.HTTPIngressPath{
 									{
 										Path: "/",
-										Backend: ext.IngressBackend{
+										Backend: networkingv1beta1.IngressBackend{
 											ServiceName: "doesnotexist",
 											ServicePort: intstr.FromInt(443),
 										},
