@@ -54,6 +54,9 @@ echo "Installing ingress-nginx into the cluster..."
 echo "Loading vault into the cluster..."
 "${SCRIPT_ROOT}/addon/vault/install.sh" &
 
+echo "Installing sample-external-issuer into the cluster..."
+"${SCRIPT_ROOT}/addon/sample-external-issuer/install.sh" &
+
 # Wait for all background jobs to finish and exit with non-zero if any of them fail
 # See https://stackoverflow.com/a/515170/919436
 for job in $(jobs -p); do

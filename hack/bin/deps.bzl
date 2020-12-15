@@ -25,6 +25,7 @@ def install():
     install_kubectl()
     install_oc3()
     install_kind()
+    install_kustomize()
 
     # Install golang.org/x/build as kubernetes/repo-infra requires it for the
     # build-tar bazel target.
@@ -62,6 +63,38 @@ filegroup(
     name = "file",
     srcs = [
         "staticcheck/staticcheck",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+    )
+
+# Kustomize
+def install_kustomize():
+    http_archive(
+        name = "kustomize_linux",
+        sha256 = "175938206f23956ec18dac3da0816ea5b5b485a8493a839da278faac82e3c303",
+        urls = ["https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v3.8.8/kustomize_v3.8.8_linux_amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "kustomize",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+    )
+
+    http_archive(
+        name = "kustomize_osx",
+        sha256 = "561a28e5d705af3fd4d683e5059002a76d390737ee19fd5b64ef5bfe8cfa4541",
+        urls = ["https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v3.8.8/kustomize_v3.8.8_darwin_amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "kustomize",
     ],
     visibility = ["//visibility:public"],
 )
@@ -233,3 +266,4 @@ def install_kind():
         sha256 = "781c3db479b805d161b7c2c7a31896d1a504b583ebfcce8fcd49538c684d96bc",
         urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.8.1/kind-linux-amd64"],
     )
+
