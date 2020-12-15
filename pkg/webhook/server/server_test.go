@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	testingcmlogs "github.com/jetstack/cert-manager/pkg/logs/testing"
@@ -42,12 +41,6 @@ func TestConvert(t *testing.T) {
 			err:  "unsupported conversion review type: *v1.CustomResourceDefinition",
 		},
 		{
-			name: "v1beta1 conversion review",
-			in: &apiextensionsv1beta1.ConversionReview{
-				Request: &apiextensionsv1beta1.ConversionRequest{},
-			},
-		},
-		{
 			name: "v1 conversion review",
 			in: &apiextensionsv1.ConversionReview{
 				Request: &apiextensionsv1.ConversionRequest{},
@@ -56,11 +49,6 @@ func TestConvert(t *testing.T) {
 		{
 			name: "v1 conversion review with nil Request",
 			in:   &apiextensionsv1.ConversionReview{},
-			err:  "review.request was nil",
-		},
-		{
-			name: "v1beta1 conversion review with nil Request",
-			in:   &apiextensionsv1beta1.ConversionReview{},
 			err:  "review.request was nil",
 		},
 	}

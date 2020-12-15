@@ -312,7 +312,7 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
 	review, ok := obj.(*apiextensionsv1.ConversionReview)
 	if !ok {
-		return nil, fmt.Errorf("unsupported conversion review type: %T", review)
+		return nil, fmt.Errorf("unsupported conversion review type: %T", obj)
 	}
 	if review.Request == nil {
 		return nil, errors.New("review.request was nil")
