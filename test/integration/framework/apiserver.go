@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -127,6 +127,7 @@ func patchCRDConversion(crds []*v1.CustomResourceDefinition, url string, caPEM [
 		crd.Spec.Conversion.Webhook.ClientConfig.URL = &url
 		crd.Spec.Conversion.Webhook.ClientConfig.CABundle = caPEM
 		crd.Spec.Conversion.Webhook.ClientConfig.Service = nil
+		crd.Spec.Conversion.Webhook.ConversionReviewVersions = []string{"v1"}
 	}
 }
 
@@ -197,27 +198,28 @@ func crdsToRuntimeObjects(in []*v1.CustomResourceDefinition) []runtime.Object {
 }
 
 func getValidatingWebhookConfig(url string, caPEM []byte) runtime.Object {
-	failurePolicy := admissionregistrationv1beta1.Fail
-	sideEffects := admissionregistrationv1beta1.SideEffectClassNone
+	failurePolicy := admissionregistrationv1.Fail
+	sideEffects := admissionregistrationv1.SideEffectClassNone
 	validateURL := fmt.Sprintf("%s/validate", url)
-	webhook := admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+	webhook := admissionregistrationv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cert-manager-webhook",
 		},
-		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{
+		Webhooks: []admissionregistrationv1.ValidatingWebhook{
 			{
 				Name: "webhook.cert-manager.io",
-				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+				ClientConfig: admissionregistrationv1.WebhookClientConfig{
 					URL:      &validateURL,
 					CABundle: caPEM,
 				},
-				Rules: []admissionregistrationv1beta1.RuleWithOperations{
+				AdmissionReviewVersions: []string{"v1"},
+				Rules: []admissionregistrationv1.RuleWithOperations{
 					{
-						Operations: []admissionregistrationv1beta1.OperationType{
-							admissionregistrationv1beta1.Create,
-							admissionregistrationv1beta1.Update,
+						Operations: []admissionregistrationv1.OperationType{
+							admissionregistrationv1.Create,
+							admissionregistrationv1.Update,
 						},
-						Rule: admissionregistrationv1beta1.Rule{
+						Rule: admissionregistrationv1.Rule{
 							APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
 							APIVersions: []string{"*"},
 							Resources:   []string{"*/*"},
@@ -234,27 +236,28 @@ func getValidatingWebhookConfig(url string, caPEM []byte) runtime.Object {
 }
 
 func getMutatingWebhookConfig(url string, caPEM []byte) runtime.Object {
-	failurePolicy := admissionregistrationv1beta1.Fail
-	sideEffects := admissionregistrationv1beta1.SideEffectClassNone
+	failurePolicy := admissionregistrationv1.Fail
+	sideEffects := admissionregistrationv1.SideEffectClassNone
 	validateURL := fmt.Sprintf("%s/mutate", url)
-	webhook := admissionregistrationv1beta1.MutatingWebhookConfiguration{
+	webhook := admissionregistrationv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cert-manager-webhook",
 		},
-		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{
+		Webhooks: []admissionregistrationv1.MutatingWebhook{
 			{
 				Name: "webhook.cert-manager.io",
-				ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
+				ClientConfig: admissionregistrationv1.WebhookClientConfig{
 					URL:      &validateURL,
 					CABundle: caPEM,
 				},
-				Rules: []admissionregistrationv1beta1.RuleWithOperations{
+				AdmissionReviewVersions: []string{"v1"},
+				Rules: []admissionregistrationv1.RuleWithOperations{
 					{
-						Operations: []admissionregistrationv1beta1.OperationType{
-							admissionregistrationv1beta1.Create,
-							admissionregistrationv1beta1.Update,
+						Operations: []admissionregistrationv1.OperationType{
+							admissionregistrationv1.Create,
+							admissionregistrationv1.Update,
 						},
-						Rule: admissionregistrationv1beta1.Rule{
+						Rule: admissionregistrationv1.Rule{
 							APIGroups:   []string{"cert-manager.io", "acme.cert-manager.io"},
 							APIVersions: []string{"*"},
 							Resources:   []string{"*/*"},
