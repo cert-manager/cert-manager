@@ -37,7 +37,6 @@ import (
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -185,23 +184,20 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 		return nil, nil
 	}
 
-	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
 	x509Cert, err := pki.DecodeX509CertificateBytes(order.Status.Certificate)
-	if errors.IsInvalidData(err) {
-		log.Error(err, "failed to decode x509 certificate data on Order resource")
+	if err != nil {
+		log.Error(err, "failed to decode x509 certificate data on Order resource.")
 		return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
 	}
-	ok, err := pki.PublicKeyMatchesCertificate(csr.PublicKey, x509Cert)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		log.Error(err, "failed to decode x509 certificate data on Order resource, recreating...")
+
+	if ok, err := pki.PublicKeyMatchesCertificate(csr.PublicKey, x509Cert); err != nil || !ok {
+		log.Error(err, "The public key in Order.Status.Certificate does not match the public key in CertificateRequest.Spec.Request. Deleting the order.")
 		return nil, a.acmeClientV.Orders(order.Namespace).Delete(context.TODO(), order.Name, metav1.DeleteOptions{})
 	}
 
 	log.V(logf.InfoLevel).Info("certificate issued")
 
+	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
 	return &issuerpkg.IssueResponse{
 		Certificate: order.Status.Certificate,
 	}, nil
