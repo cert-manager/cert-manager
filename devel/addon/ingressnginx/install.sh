@@ -53,7 +53,7 @@ helm upgrade \
     --wait \
     --version 3.15.2 \
     --namespace "${NAMESPACE}" \
-    --set controller.image.digest="" \ # the bazel require_image changes the digest, disabling it in this test
+    --set controller.image.digest="" \
     --set controller.image.pullPolicy=Never \
     --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \
