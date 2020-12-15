@@ -38,7 +38,7 @@ RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 # Require helm available on PATH
 check_tool kubectl
 check_tool helm
-require_image "k8s.gcr.io/ingress-nginx/controller:v0.41.2@sha256:1f4f402b9c14f3ae92b11ada1dfe9893a88f0faeb0b2f4b903e2c67a0c3bf0de" "//devel/addon/ingressnginx:bundle"
+require_image "k8s.gcr.io/ingress-nginx/controller:v0.41.2" "//devel/addon/ingressnginx:bundle"
 
 # Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
@@ -53,6 +53,7 @@ helm upgrade \
     --wait \
     --version 3.15.2 \
     --namespace "${NAMESPACE}" \
+    --set controller.image.digest="" \ # the bazel require_image changes the digest, disabling it in this test
     --set controller.image.pullPolicy=Never \
     --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \
