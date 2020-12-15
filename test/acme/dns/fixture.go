@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2020 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ package dns
 import (
 	"flag"
 	"fmt"
-	"k8s.io/client-go/kubernetes"
 	"sync"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/client-go/rest"
