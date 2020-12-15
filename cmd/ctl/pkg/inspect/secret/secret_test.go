@@ -89,7 +89,7 @@ func Test_describeCertificate(t *testing.T) {
 			want: `Certificate:
 	Signing Algorithm:	SHA256-RSA
 	Public Key Algorithm: 	ECDSA
-	Serial Number:	318510152735780923476564623737462169902
+	Serial Number:	135264542196636937349115151139823201377
 	Fingerprints: 	A9:4D:28:6F:1E:78:4A:72:C7:38:01:7C:31:CC:42:09:C7:46:9C:6A:26:C5:71:1A:F1:35:11:6E:BA:C3:BA:5A
 	Is a CA certificate: false
 	CRL:	<none>
@@ -275,7 +275,7 @@ func Test_describeValidFor(t *testing.T) {
 	Email Addresses: 
 		- test@cert-manager.io
 	Usages: 
-		- signing
+		- digital signature
 		- key encipherment
 		- any
 		- server auth

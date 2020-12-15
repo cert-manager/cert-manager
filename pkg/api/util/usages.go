@@ -91,6 +91,9 @@ func ExtKeyUsageStrings(usage []x509.ExtKeyUsage) []cmapi.KeyUsage {
 // keyUsageString returns the cmapi.KeyUsage and "unknown" if not found
 func keyUsageString(usage x509.KeyUsage) cmapi.KeyUsage {
 	for k, v := range keyUsages {
+		if usage == x509.KeyUsageDigitalSignature {
+			return cmapi.UsageDigitalSignature // we have KeyUsageDigitalSignature twice in our array, we should be consistent when parsing
+		}
 		if usage == v {
 			return k
 		}
