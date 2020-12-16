@@ -522,19 +522,23 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a basic certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a basic certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
 			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 
 			name := "testcert-ingress"
 			secretName := "testcert-ingress-tls"
 			domain := s.newDomain()
+			duration := time.Hour * 999
+			renewBefore := time.Hour * 111
 
-			By("Creating an Ingress with the issuer name annotation set")
+			By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
 			ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
 				"cert-manager.io/issuer":       issuerRef.Name,
 				"cert-manager.io/issuer-kind":  issuerRef.Kind,
 				"cert-manager.io/issuer-group": issuerRef.Group,
 				"cert-manager.io/common-name":  domain,
+				"cert-manager.io/duration":     duration.String(),
+				"cert-manager.io/renew-before": renewBefore.String(),
 			}, domain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -549,6 +553,22 @@ func (s *Suite) Define() {
 			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
+			// Verify that the ingres-shim has translated all the supplied
+			// annotations into equivalent Certificate field values
+			By("Validating the created Certificate")
+			err = f.Helper().ValidateCertificate(
+				f.Namespace.Name, certName,
+				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
+					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
+					Expect(certificate.Spec.CommonName).To(Equal(domain))
+					Expect(certificate.Spec.Duration.Duration).To(Equal(duration))
+					Expect(certificate.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+					return nil
+				},
+			)
+
+			// Verify that the issuer has preserved all the Certificate values
+			// in the signed certificate
 			By("Validating the issued Certificate...")
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
