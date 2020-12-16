@@ -17,4 +17,4 @@ limitations under the License.
 package util
 
 // CertManagerUserAgent is the user agent that http clients in this codebase should use
-var CertManagerUserAgent = "jetstack-cert-manager/" + version()
+var CertManagerUserAgent = "cert-manager/" + version()

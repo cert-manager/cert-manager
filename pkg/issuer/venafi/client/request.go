@@ -165,7 +165,7 @@ func newVRequest(cert *x509.Certificate) *certificate.Request {
 	req.CustomFields = []certificate.CustomField{
 		{
 			Type:  certificate.CustomFieldOrigin,
-			Value: "Jetstack cert-manager",
+			Value: "cert-manager",
 		},
 	}
 	return req
