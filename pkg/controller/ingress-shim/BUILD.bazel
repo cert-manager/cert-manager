@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "checks.go",
         "controller.go",
+        "helper.go",
         "sync.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/controller/ingress-shim",
@@ -36,7 +37,10 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["sync_test.go"],
+    srcs = [
+        "helper_test.go",
+        "sync_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",
@@ -44,6 +48,7 @@ go_test(
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//networking/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
