@@ -40,6 +40,7 @@ func TestTranslateIngressAnnotations(t *testing.T) {
 	validAnnotations := func() map[string]string {
 		return map[string]string{
 			cmapi.CommonNameAnnotationKey:  "www.example.com",
+			cmapi.DurationAnnotationKey:    "168h", // 1 week
 			cmapi.RenewBeforeAnnotationKey: "24h",
 		}
 	}
@@ -50,6 +51,7 @@ func TestTranslateIngressAnnotations(t *testing.T) {
 			annotations: validAnnotations(),
 			check: func(a *assert.Assertions, crt *cmapi.Certificate) {
 				a.Equal("www.example.com", crt.Spec.CommonName)
+				a.Equal(&metav1.Duration{Duration: time.Hour * 24 * 7}, crt.Spec.Duration)
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
 			},
 		},
@@ -65,6 +67,14 @@ func TestTranslateIngressAnnotations(t *testing.T) {
 			crt:           nil,
 			annotations:   validAnnotations(),
 			expectedError: errNilCertificate,
+		},
+		"bad duration": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.DurationAnnotationKey] = "an un-parsable duration string"
+			},
+			expectedError: errInvalidIngressAnnotation,
 		},
 		"bad renewBefore": {
 			crt:         gen.Certificate("example-cert"),

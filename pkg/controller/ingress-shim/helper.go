@@ -38,6 +38,13 @@ func translateIngressAnnotations(crt *cmapi.Certificate, annotations map[string]
 	if commonName, found := annotations[cmapi.CommonNameAnnotationKey]; found {
 		crt.Spec.CommonName = commonName
 	}
+	if duration, found := annotations[cmapi.DurationAnnotationKey]; found {
+		duration, err := time.ParseDuration(duration)
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
+		}
+		crt.Spec.Duration = &metav1.Duration{Duration: duration}
+	}
 	if renewBefore, found := annotations[cmapi.RenewBeforeAnnotationKey]; found {
 		duration, err := time.ParseDuration(renewBefore)
 		if err != nil {
