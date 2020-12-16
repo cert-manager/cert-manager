@@ -33,9 +33,6 @@ webhooks:
     # Only include 'sideEffects' field in Kubernetes 1.12+
     sideEffects: None
     clientConfig:
-      # Set caBundle to empty to avoid https://github.com/kubernetes/kubernetes/pull/70138
-      # in Kubernetes 1.12 and below.
-      caBundle: ""
       service:
         name: {{ template "webhook.fullname" . }}
         namespace: {{ .Release.Namespace | quote }}
