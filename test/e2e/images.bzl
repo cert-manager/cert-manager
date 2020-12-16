@@ -37,20 +37,10 @@ def install():
     ## 'tag' field in this rule
     container_pull(
         name = "io_kubernetes_ingress-nginx",
-        registry = "quay.io",
-        repository = "kubernetes-ingress-controller/nginx-ingress-controller",
-        tag = "0.33.0",
-        # For some reason, the suggested sha256 returns an error when fetched from
-        # quay.io by digest.
-        # digest = "sha256:f7f08fdbbeddaf3179829c662da360a3feac1ecf8c4b1305949fffd8c8f59879",
-    )
-
-    container_pull(
-        name = "io_gcr_k8s_defaultbackend",
         registry = "k8s.gcr.io",
-        repository = "defaultbackend-amd64",
-        tag = "1.5",
-        digest = "sha256:4dc5e07c8ca4e23bddb3153737d7b8c556e5fb2f29c4558b7cd6e6df99c512c7",
+        repository = "ingress-nginx/controller",
+        tag = "v0.41.2",
+        digest = "sha256:e11b7d264cac4cfc7566b78bb150c94168ea4612a4e9769ca549eb03469db906",
     )
 
     ## Fetch vault for use during e2e tests

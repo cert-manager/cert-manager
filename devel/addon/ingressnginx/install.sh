@@ -38,8 +38,7 @@ RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 # Require helm available on PATH
 check_tool kubectl
 check_tool helm
-require_image "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.33.0" "//devel/addon/ingressnginx:bundle"
-require_image "k8s.gcr.io/defaultbackend-amd64:bazel" "//devel/addon/ingressnginx:bundle"
+require_image "k8s.gcr.io/ingress-nginx/controller:v0.41.2" "//devel/addon/ingressnginx:bundle"
 
 # Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
@@ -52,18 +51,14 @@ helm repo update
 helm upgrade \
     --install \
     --wait \
-    --version 2.9.0 \
+    --version 3.15.2 \
     --namespace "${NAMESPACE}" \
-    --set controller.image.tag=0.33.0 \
+    --set controller.image.digest="" \
     --set controller.image.pullPolicy=Never \
-    --set defaultBackend.image.tag=bazel \
-    --set defaultBackend.image.pullPolicy=Never \
     --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \
     --set controller.config.no-tls-redirect-locations="" \
     --set admissionWebhooks.enabled=false \
     --set controller.admissionWebhooks.enabled=false \
-    --set controller.image.runAsUser="" \
-    --set controller.defaultBackend.runAsUser="" \
     "$RELEASE_NAME" \
     ingress-nginx/ingress-nginx
