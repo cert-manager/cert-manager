@@ -272,7 +272,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//hack/api-migration:all-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
         "//hack/build:all-srcs",
