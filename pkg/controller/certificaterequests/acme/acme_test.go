@@ -144,6 +144,18 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Another version of Key, CSR and Cert where the only difference is the signer key value.
+	// For use in testing the PublicKeyMatchesCertificate check of the controller.
+	sk2, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	template2, err := pki.GenerateTemplateFromCSRPEM(generateCSR(t, sk2, "example.com", "example.com", "foo.com"), time.Hour, false)
+	certPEM2, _, err := pki.SignCSRTemplate([]*x509.Certificate{template}, sk, template2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ipCSRPEM := generateCSRWithIPs(t, sk, "10.0.0.1", nil, []string{"10.0.0.1"})
 	ipCSR, err := pki.DecodeX509CertificateRequestBytes(ipCSRPEM)
 	if err != nil {
@@ -442,6 +454,68 @@ func TestSign(t *testing.T) {
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
+					)),
+				},
+			},
+		},
+
+		"if the order is in Valid state but Certificate has not yet been populated": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				ExpectedEvents: []string{
+					"Normal OrderPending Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1733622556",
+				},
+				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
+					gen.SetOrderState(cmacme.Valid),
+				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1733622556",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
+		},
+
+		"if the order is in Valid state but the certificate is badly formed": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
+					gen.SetOrderState(cmacme.Valid),
+					gen.SetOrderCertificate([]byte("bad certificate bytes")),
+				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewDeleteAction(
+						cmacme.SchemeGroupVersion.WithResource("orders"),
+						gen.DefaultTestNamespace,
+						baseOrder.Name,
+					)),
+				},
+			},
+		},
+
+		"if the order is in Valid state but the certificate has wrong public key": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
+					gen.SetOrderState(cmacme.Valid),
+					gen.SetOrderCertificate(certPEM2),
+				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewDeleteAction(
+						cmacme.SchemeGroupVersion.WithResource("orders"),
+						gen.DefaultTestNamespace,
+						baseOrder.Name,
 					)),
 				},
 			},
