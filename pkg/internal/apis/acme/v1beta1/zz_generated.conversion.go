@@ -659,6 +659,7 @@ func autoConvert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountB
 		return err
 	}
 	out.KeyAlgorithm = acme.HMACKeyAlgorithm(in.KeyAlgorithm)
+	out.DisableAccountKeyRegistration = in.DisableAccountKeyRegistration
 	return nil
 }
 
@@ -674,6 +675,7 @@ func autoConvert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountB
 		return err
 	}
 	out.KeyAlgorithm = v1beta1.HMACKeyAlgorithm(in.KeyAlgorithm)
+	out.DisableAccountKeyRegistration = in.DisableAccountKeyRegistration
 	return nil
 }
 
