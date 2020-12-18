@@ -97,6 +97,7 @@ type ControllerOptions struct {
 	DNS01CheckRetryPeriod time.Duration
 
 	// Maximum number of challenges that can be scheduled with a single call to the scheduler.
+	// This provides a very crude rate limit on how many challenges will be scheduled.
 	MaxChallengesPerSchedule int
 }
 
@@ -300,7 +301,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Enable profiling for controller.")
 
 	fs.IntVar(&s.MaxChallengesPerSchedule, "max-challenges-per-schedule", defaultMaxChallengesPerSchedule, ""+
-		"The maximum number of challenges that can be scheduled with a single call to the scheduler.")
+		"The maximum number of challenges that can be scheduled with a single call to the scheduler. "+
+		"This provides a very crude rate limit on how many challenges will be scheduled")
 }
 
 func (o *ControllerOptions) Validate() error {
