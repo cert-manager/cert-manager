@@ -53,7 +53,6 @@ help:
 	# webhook            - build a binary of the 'webhook'
 	# acmesolver         - build a binary of the 'acmesolver'
 	# e2e_test           - builds and runs end-to-end tests.
-	#                      NOTE: you probably want to execute ./hack/ci/run-e2e-kind.sh instead of this target
 	# images             - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push        - pushes docker images to the target registry
 	#
