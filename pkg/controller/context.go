@@ -124,6 +124,13 @@ type ACMEOptions struct {
 
 	// DNS01CheckRetryPeriod is the time the controller should wait between checking if a ACME dns entry exists.
 	DNS01CheckRetryPeriod time.Duration
+
+	// MaxChallengesPerSchedule is the maximum number of challenges that can be
+	// scheduled with a single call to the scheduler.
+	// This provides a very crude rate limit on how many challenges we will schedule
+	// per second. It may be better to remove this altogether in favour of some
+	// other method of rate limiting creations.
+	MaxChallengesPerSchedule int
 }
 
 type IngressShimOptions struct {

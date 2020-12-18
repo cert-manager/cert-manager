@@ -225,6 +225,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			DNS01Nameservers:                  nameservers,
 			AccountRegistry:                   acmeAccountRegistry,
 			DNS01CheckRetryPeriod:             opts.DNS01CheckRetryPeriod,
+			MaxChallengesPerSchedule:          opts.MaxChallengesPerSchedule,
 		},
 		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,

@@ -95,6 +95,9 @@ type ControllerOptions struct {
 	EnablePprof bool
 
 	DNS01CheckRetryPeriod time.Duration
+
+	// Maximum number of challenges that can be scheduled with a single call to the scheduler.
+	MaxChallengesPerSchedule int
 }
 
 const (
@@ -128,6 +131,8 @@ const (
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
+
+	defaultMaxChallengesPerSchedule = 20
 )
 
 var (
@@ -185,6 +190,7 @@ func NewControllerOptions() *ControllerOptions {
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
+		MaxChallengesPerSchedule:          defaultMaxChallengesPerSchedule,
 		EnablePprof:                       false,
 	}
 }
@@ -292,6 +298,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The host and port that the metrics endpoint should listen on.")
 	fs.BoolVar(&s.EnablePprof, "enable-profiling", false, ""+
 		"Enable profiling for controller.")
+
+	fs.IntVar(&s.MaxChallengesPerSchedule, "max-challenges-per-schedule", defaultMaxChallengesPerSchedule, ""+
+		"The maximum number of challenges that can be scheduled with a single call to the scheduler.")
 }
 
 func (o *ControllerOptions) Validate() error {
@@ -320,6 +329,10 @@ func (o *ControllerOptions) Validate() error {
 		if err != nil {
 			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
 		}
+	}
+
+	if o.MaxChallengesPerSchedule <= 0 {
+		return fmt.Errorf("invalid value for max-challenges-per-schedule: %v must be higher than or equal to 1", o.MaxChallengesPerSchedule)
 	}
 
 	return nil

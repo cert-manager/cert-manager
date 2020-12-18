@@ -79,6 +79,10 @@ type controller struct {
 	dns01Nameservers []string
 
 	DNS01CheckRetryPeriod time.Duration
+
+	// maximum number of challenges that can be
+	// scheduled with a single call to the scheduler.
+	maxChallengesPerSchedule int
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
@@ -140,17 +144,9 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// read options from context
 	c.dns01Nameservers = ctx.ACMEOptions.DNS01Nameservers
 	c.DNS01CheckRetryPeriod = ctx.ACMEOptions.DNS01CheckRetryPeriod
-
+	c.maxChallengesPerSchedule = ctx.ACMEOptions.MaxChallengesPerSchedule
 	return c.queue, mustSync, nil
 }
-
-// MaxChallengesPerSchedule is the maximum number of challenges that can be
-// scheduled with a single call to the scheduler.
-// This provides a very crude rate limit on how many challenges we will schedule
-// per second. It may be better to remove this altogether in favour of some
-// other method of rate limiting creations.
-// TODO: make this configurable
-const MaxChallengesPerSchedule = 20
 
 // runScheduler will execute the scheduler's ScheduleN function to determine
 // which, if any, challenges should be rescheduled.
@@ -159,7 +155,7 @@ const MaxChallengesPerSchedule = 20
 func (c *controller) runScheduler(ctx context.Context) {
 	log := logf.FromContext(ctx, "scheduler")
 
-	toSchedule, err := c.scheduler.ScheduleN(MaxChallengesPerSchedule)
+	toSchedule, err := c.scheduler.ScheduleN(c.maxChallengesPerSchedule)
 	if err != nil {
 		log.Error(err, "error determining set of challenges that should be scheduled for processing")
 		return
