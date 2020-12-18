@@ -19,8 +19,6 @@ package acmechallenges
 import (
 	"context"
 	"fmt"
-	"reflect"
-
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,8 +66,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 	}
 
 	defer func() {
-		// TODO: replace with more efficient comparison
-		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
+		if oldChal.Status.Equals(ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
 		_, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})

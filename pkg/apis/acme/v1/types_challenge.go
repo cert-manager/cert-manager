@@ -144,3 +144,19 @@ type ChallengeStatus struct {
 	// +optional
 	State State `json:"state,omitempty"`
 }
+
+// Equals returns true if the provided ChallengeStatus value matches that of the ChallengeStatus being called.
+func (in ChallengeStatus) Equals(cmp ChallengeStatus) bool {
+	switch {
+	case in.Presented != cmp.Presented:
+		return false
+	case in.Processing != cmp.Processing:
+		return false
+	case in.State != cmp.State:
+		return false
+	case in.Reason != cmp.Reason:
+		return false
+	default:
+		return true
+	}
+}

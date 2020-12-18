@@ -22,8 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"reflect"
-
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -47,11 +45,11 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	o = o.DeepCopy()
 
 	defer func() {
-		// TODO: replace with more efficient comparison
-		if reflect.DeepEqual(oldOrder.Status, o.Status) {
+		if oldOrder.Status.Equals(o.Status) {
 			dbg.Info("skipping updating resource as new status == existing status")
 			return
 		}
+
 		log.V(logf.DebugLevel).Info("updating Order resource status")
 		_, updateErr := c.cmClient.AcmeV1().Orders(o.Namespace).UpdateStatus(context.TODO(), o, metav1.UpdateOptions{})
 		if updateErr != nil {

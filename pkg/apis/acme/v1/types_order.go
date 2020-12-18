@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"bytes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -126,6 +127,35 @@ type OrderStatus struct {
 	FailureTime *metav1.Time `json:"failureTime,omitempty"`
 }
 
+// Equals returns true if the provided OrderStatus value matches that of the OrderStatus being called.
+func (in OrderStatus) Equals(cmp OrderStatus) bool {
+	switch {
+	case in.Reason != cmp.Reason:
+		return false
+	case !bytes.Equal(in.Certificate, cmp.Certificate):
+		return false
+	case in.URL != cmp.URL:
+		return false
+	case in.FinalizeURL != cmp.FinalizeURL:
+		return false
+	case in.State != cmp.State:
+		return false
+	case !in.FailureTime.Equal(cmp.FailureTime):
+		return false
+	case len(in.Authorizations) != len(cmp.Authorizations):
+		return false
+	default:
+		for i, oldAuthorization := range in.Authorizations {
+			newAuthorization := cmp.Authorizations[i]
+			if !oldAuthorization.Equals(newAuthorization) {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
 // ACMEAuthorization contains data returned from the ACME server on an
 // authorization that must be completed in order validate a DNS name on an ACME
 // Order resource.
@@ -164,6 +194,35 @@ type ACMEAuthorization struct {
 	Challenges []ACMEChallenge `json:"challenges,omitempty"`
 }
 
+// Equals returns true if the provided ACMEAuthorization value matches that of the ACMEAuthorization being called.
+func (in ACMEAuthorization) Equals(cmp ACMEAuthorization) bool {
+	switch {
+	case in.URL != cmp.URL:
+		return false
+	case in.Identifier != cmp.Identifier:
+		return false
+	case in.InitialState != cmp.InitialState:
+		return false
+	case in.Wildcard == nil && cmp.Wildcard != nil:
+		return false
+	case in.Wildcard != nil && cmp.Wildcard == nil:
+		return false
+	case (in.Wildcard != nil && cmp.Wildcard != nil) && *in.Wildcard != *cmp.Wildcard:
+		return false
+	case len(in.Challenges) != len(cmp.Challenges):
+		return false
+	default:
+		for i, oldChallenge := range in.Challenges {
+			newChallenge := cmp.Challenges[i]
+			if !oldChallenge.Equals(newChallenge) {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
 // Challenge specifies a challenge offered by the ACME server for an Order.
 // An appropriate Challenge resource can be created to perform the ACME
 // challenge process.
@@ -182,6 +241,20 @@ type ACMEChallenge struct {
 	// Only 'http-01' and 'dns-01' are supported by cert-manager, other values
 	// will be ignored.
 	Type string `json:"type"`
+}
+
+// Equals returns true if the provided ACMEChallenge value matches that of the ACMEChallenge being called.
+func (in ACMEChallenge) Equals(cmp ACMEChallenge) bool {
+	switch {
+	case in.URL != cmp.URL:
+		return false
+	case in.Token != cmp.Token:
+		return false
+	case in.Type != cmp.Type:
+		return false
+	default:
+		return true
+	}
 }
 
 // State represents the state of an ACME resource, such as an Order.
