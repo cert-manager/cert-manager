@@ -324,8 +324,8 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAcco
 	}
 
 	acc, err := cl.Register(ctx, acc, acmeapi.AcceptTOS)
-	// If the account already exists, fetch the Account object and return.
-	if err == acmeapi.ErrAccountAlreadyExists {
+	// If the account already exists or account key generation is disabled, fetch the Account object and return.
+	if err == acmeapi.ErrAccountAlreadyExists || a.issuer.GetSpec().ACME.DisableAccountKeyGeneration {
 		return cl.GetReg(ctx, "")
 	}
 	if err != nil {
