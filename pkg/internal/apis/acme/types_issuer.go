@@ -111,6 +111,12 @@ type ACMEExternalAccountBinding struct {
 	// keyAlgorithm is the MAC key algorithm that the key is used for.
 	// Valid values are "HS256", "HS384" and "HS512".
 	KeyAlgorithm HMACKeyAlgorithm
+
+	// disableAccountKeyRegistration disables registering a new ACME External Account
+	// with the CA. If true, the issuer will only attempt to retrieve an existing account
+	// associated with the Account Key.
+	// Defaults to false.
+	DisableAccountKeyRegistration bool `json:"disableAccountKeyRegistration"`
 }
 
 // HMACKeyAlgorithm is the name of a key algorithm used for HMAC encryption

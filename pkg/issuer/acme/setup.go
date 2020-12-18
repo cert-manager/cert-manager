@@ -181,7 +181,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 	}
 
 	var eabAccount *acmeapi.ExternalAccountBinding
-	if eabObj := a.issuer.GetSpec().ACME.ExternalAccountBinding; eabObj != nil {
+	eabObj := a.issuer.GetSpec().ACME.ExternalAccountBinding
+	if eabObj != nil {
 		eabKey, err := a.getEABKey(ns)
 		switch {
 		// Do not re-try if we fail to get the MAC key as it does not exist at the reference.
@@ -210,32 +211,41 @@ func (a *Acme) Setup(ctx context.Context) error {
 		}
 	}
 
-	// registerAccount will also verify the account exists if it already
-	// exists.
-	account, err := a.registerAccount(ctx, cl, eabAccount)
-	if err != nil {
-		s := messageAccountVerificationFailed + err.Error()
-		log.Error(err, "failed to verify ACME account")
-		a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountVerificationFailed, s)
-		apiutil.SetIssuerCondition(a.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
-
-		acmeErr, ok := err.(*acmeapi.Error)
-		// If this is not an ACME error, we will simply return it and retry later
-		if !ok {
+	var account *acmeapi.Account
+	if eabObj.DisableAccountKeyRegistration {
+		// attempt to retrieve an existing account
+		account, err = cl.GetReg(ctx, "")
+		if err != nil {
 			return err
 		}
+	} else {
+		// registerAccount will also verify the account exists if it already
+		// exists.
+		account, err = a.registerAccount(ctx, cl, eabAccount)
+		if err != nil {
+			s := messageAccountVerificationFailed + err.Error()
+			log.Error(err, "failed to verify ACME account")
+			a.recorder.Event(a.issuer, corev1.EventTypeWarning, errorAccountVerificationFailed, s)
+			apiutil.SetIssuerCondition(a.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
 
-		// If the status code is 400 (BadRequest), we will *not* retry this registration
-		// as it implies that something about the request (i.e. email address or private key)
-		// is invalid.
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.Error(acmeErr, "skipping retrying account registration as a "+
-				"BadRequest response was returned from the ACME server")
-			return nil
+			acmeErr, ok := err.(*acmeapi.Error)
+			// If this is not an ACME error, we will simply return it and retry later
+			if !ok {
+				return err
+			}
+
+			// If the status code is 400 (BadRequest), we will *not* retry this registration
+			// as it implies that something about the request (i.e. email address or private key)
+			// is invalid.
+			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+				log.Error(acmeErr, "skipping retrying account registration as a "+
+					"BadRequest response was returned from the ACME server")
+				return nil
+			}
+
+			// Otherwise if we receive anything other than a 400, we will retry.
+			return err
 		}
-
-		// Otherwise if we receive anything other than a 400, we will retry.
-		return err
 	}
 
 	// if we got an account successfully, we must check if the registered
@@ -324,8 +334,8 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAcco
 	}
 
 	acc, err := cl.Register(ctx, acc, acmeapi.AcceptTOS)
-	// If the account already exists or account key generation is disabled, fetch the Account object and return.
-	if err == acmeapi.ErrAccountAlreadyExists || a.issuer.GetSpec().ACME.DisableAccountKeyGeneration {
+	// If the account already exists, fetch the Account object and return.
+	if err == acmeapi.ErrAccountAlreadyExists {
 		return cl.GetReg(ctx, "")
 	}
 	if err != nil {
