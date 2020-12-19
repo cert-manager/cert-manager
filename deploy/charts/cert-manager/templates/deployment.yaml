@@ -86,7 +86,18 @@ spec:
         {{- else }}
           - --cluster-resource-namespace=$(POD_NAMESPACE)
         {{- end }}
-          - --leader-election-namespace={{ .Values.global.leaderElection.namespace }}
+        {{- with .Values.global.leaderElection }}
+          - --leader-election-namespace={{ .namespace }}
+        {{- if .leaseDuration }}
+          - --leader-election-lease-duration={{ .leaseDuration }}
+        {{- end }}
+        {{- if .renewDeadline }}
+          - --leader-election-renew-deadline={{ .renewDeadline }}
+        {{- end }}
+        {{- if .retryPeriod }}
+          - --leader-election-retry-period={{ .retryPeriod }}
+        {{- end }}
+        {{- end }}
         {{- if .Values.extraArgs }}
 {{ toYaml .Values.extraArgs | indent 10 }}
         {{- end }}
