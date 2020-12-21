@@ -61,7 +61,18 @@ spec:
           {{- if .Values.global.logLevel }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
-          - --leader-election-namespace={{ .Values.global.leaderElection.namespace }}
+          {{- with .Values.global.leaderElection }}
+          - --leader-election-namespace={{ .namespace }}
+          {{- if .leaseDuration }}
+          - --leader-election-lease-duration={{ .leaseDuration }}
+          {{- end }}
+          {{- if .renewDeadline }}
+          - --leader-election-renew-deadline={{ .renewDeadline }}
+          {{- end }}
+          {{- if .retryPeriod }}
+          - --leader-election-retry-period={{ .retryPeriod }}
+          {{- end }}
+          {{- end }}
           {{- if .Values.cainjector.extraArgs }}
 {{ toYaml .Values.cainjector.extraArgs | indent 10 }}
           {{- end }}

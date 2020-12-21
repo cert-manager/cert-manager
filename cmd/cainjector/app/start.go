@@ -39,6 +39,9 @@ type InjectorControllerOptions struct {
 	Namespace               string
 	LeaderElect             bool
 	LeaderElectionNamespace string
+	LeaseDuration           time.Duration
+	RenewDeadline           time.Duration
+	RetryPeriod             time.Duration
 
 	StdOut io.Writer
 	StdErr io.Writer
@@ -58,6 +61,19 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.LeaderElectionNamespace, "leader-election-namespace", "", ""+
 		"Namespace used to perform leader election (defaults to controller's namespace). "+
 		"Only used if leader election is enabled")
+	fs.DurationVar(&o.LeaseDuration, "leader-election-lease-duration", 15*time.Second, ""+
+		"The duration that non-leader candidates will wait after observing a leadership "+
+		"renewal until attempting to acquire leadership of a led but unrenewed leader "+
+		"slot. This is effectively the maximum duration that a leader can be stopped "+
+		"before it is replaced by another candidate. This is only applicable if leader "+
+		"election is enabled.")
+	fs.DurationVar(&o.RenewDeadline, "leader-election-renew-deadline", 10*time.Second, ""+
+		"The interval between attempts by the acting master to renew a leadership slot "+
+		"before it stops leading. This must be less than or equal to the lease duration. "+
+		"This is only applicable if leader election is enabled.")
+	fs.DurationVar(&o.RetryPeriod, "leader-election-retry-period", 2*time.Second, ""+
+		"The duration the clients should wait between attempting acquisition and renewal "+
+		"of a leadership. This is only applicable if leader election is enabled.")
 }
 
 func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOptions {
@@ -106,6 +122,9 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		LeaderElection:          o.LeaderElect,
 		LeaderElectionNamespace: o.LeaderElectionNamespace,
 		LeaderElectionID:        "cert-manager-cainjector-leader-election",
+		LeaseDuration:           &o.LeaseDuration,
+		RenewDeadline:           &o.RenewDeadline,
+		RetryPeriod:             &o.RetryPeriod,
 		MetricsBindAddress:      "0",
 	})
 	if err != nil {
