@@ -66,31 +66,41 @@ func getNameservers(path string, defaults []string) []string {
 	return systemNameservers
 }
 
-// Update FQDN with CNAME if any
-func updateDomainWithCName(r *dns.Msg, fqdn string) string {
-	for _, rr := range r.Answer {
-		if cn, ok := rr.(*dns.CNAME); ok {
-			if cn.Hdr.Name == fqdn {
-				logf.V(logf.DebugLevel).Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
-				fqdn = cn.Target
-				break
+// Update FQDN with CNAME if any, it will follow CNAME records till it hits a non-CNAME.
+// this will error if there is a recursive CNAME in the chain
+func updateDomainWithCName(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
+	r, err := DNSQuery(fqdn, dns.TypeCNAME, nameservers, true)
+	if err == nil && r.Rcode == dns.RcodeSuccess {
+		for _, rr := range r.Answer {
+			if cn, ok := rr.(*dns.CNAME); ok {
+				if cn.Hdr.Name == fqdn {
+					logf.V(logf.DebugLevel).Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
+
+					// check if we were here before to prevent recursive records causing issues
+					for _, fqdnInChain := range fqdnChain {
+						if cn.Target == fqdnInChain {
+							return "", fmt.Errorf("Found recursive CNAME record to %q when looking up %q", cn.Target, fqdn)
+						}
+					}
+					return updateDomainWithCName(cn.Target, nameservers, append(fqdnChain, fqdn)...)
+				}
 			}
 		}
+	} else if err != nil {
+		return "", err
 	}
 
-	return fqdn
+	return fqdn, nil
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
 func checkDNSPropagation(fqdn, value string, nameservers []string,
 	useAuthoritative bool) (bool, error) {
-	// Initial attempt to resolve at the recursive NS
-	r, err := DNSQuery(fqdn, dns.TypeTXT, nameservers, true)
+
+	var err error
+	fqdn, err = updateDomainWithCName(fqdn, nameservers)
 	if err != nil {
 		return false, err
-	}
-	if r.Rcode == dns.RcodeSuccess {
-		fqdn = updateDomainWithCName(r, fqdn)
 	}
 
 	if !useAuthoritative {
@@ -214,7 +224,10 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 					dns.RcodeToString[msg.Rcode], domain)
 			}
 			oldQuery := queryDomain
-			queryDomain = updateDomainWithCName(msg, queryDomain)
+			queryDomain, err := updateDomainWithCName(queryDomain, nameservers)
+			if err != nil {
+				return err
+			}
 			if queryDomain == oldQuery {
 				break
 			}
