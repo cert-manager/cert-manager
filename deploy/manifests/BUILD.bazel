@@ -36,7 +36,7 @@ helm_tmpl(
 )
 
 licensed_file(
-    name = "crds.yaml",
+    name = "cert-manager.crds.yaml",
     src = ":crds.nohelm.yaml",
 )
 
@@ -76,15 +76,15 @@ genrule(
 )
 
 licensed_file(
-    name = "manifests.yaml",
+    name = "cert-manager.yaml",
     src = "unlicensed.nohelm",
 )
 
 pkg_tar(
     name = "manifests",
     srcs = [
-        ":crds.yaml",
-        ":manifests.helm",
+        ":cert-manager.crds.yaml",
+        ":cert-manager.yaml",
     ],
     extension = "tar.gz",
     mode = "0644",
