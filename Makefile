@@ -17,20 +17,10 @@ DOCKER_REGISTRY :=
 APP_VERSION :=
 HACK_DIR ?= hack
 
-SKIP_GLOBALS := false
-# Skip Venafi tests whilst there are issues with the TPP server
-GINKGO_SKIP := Venafi
-GINKGO_FOCUS :=
-
-## e2e test vars
-KUBECTL ?= kubectl
-KUBECONFIG ?= $$HOME/.kube/config
-FLAKE_ATTEMPTS ?= 1
-
 # Get a list of all binaries to be built
 CMDS := $(shell find ./cmd/ -maxdepth 1 -type d -exec basename {} \; | grep -v cmd)
 
-.PHONY: help build verify push $(CMDS) e2e_test images images_push \
+.PHONY: help build verify push $(CMDS) images images_push \
 	verify_deps verify_chart
 
 help:
@@ -52,8 +42,6 @@ help:
 	# cainjector         - build a binary of the 'cainjector'
 	# webhook            - build a binary of the 'webhook'
 	# acmesolver         - build a binary of the 'acmesolver'
-	# e2e_test           - builds and runs end-to-end tests.
-	#                      NOTE: you probably want to execute ./hack/ci/run-e2e-kind.sh instead of this target
 	# images             - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push        - pushes docker images to the target registry
 	#
