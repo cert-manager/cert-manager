@@ -22,11 +22,15 @@ import (
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,
 	useAuthoritative bool) (bool, error)
+type dnsQueryFunc func(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error)
 
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
 	// the DNS challenge is ready.
 	PreCheckDNS preCheckDNSFunc = checkDNSPropagation
+
+	// dnsQuery is used to be able to mock DNSQuery
+	dnsQuery dnsQueryFunc = DNSQuery
 
 	fqdnToZoneLock sync.RWMutex
 	fqdnToZone     = map[string]string{}
@@ -69,7 +73,7 @@ func getNameservers(path string, defaults []string) []string {
 // Update FQDN with CNAME if any, it will follow CNAME records till it hits a non-CNAME.
 // this will error if there is a recursive CNAME in the chain
 func updateDomainWithCName(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
-	r, err := DNSQuery(fqdn, dns.TypeCNAME, nameservers, true)
+	r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
 	if err == nil && r.Rcode == dns.RcodeSuccess {
 		for _, rr := range r.Answer {
 			if cn, ok := rr.(*dns.CNAME); ok {
