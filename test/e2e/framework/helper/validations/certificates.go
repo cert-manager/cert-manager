@@ -277,11 +277,6 @@ func ExpectEmailsToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) 
 
 // ExpectCorrectTrustChain checks if the cert is signed by the root CA if one is provided
 func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secret) error {
-	// if we don't know the root CA we will skip this tests and return no errors.
-	if secret.Data[cmmeta.TLSCAKey] == nil {
-		return nil
-	}
-
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
 		return err
