@@ -101,6 +101,12 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
 								},
+								Labels: map[string]string{
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
+								},
 								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle.Certificate, certificateGvk)},
 							},
 							Data: map[string][]byte{
@@ -116,7 +122,7 @@ func TestSecretsManager(t *testing.T) {
 			expectedErr: false,
 		},
 
-		"if secret does exist, update existing Secret and leave custom annotations, with owner enabled": {
+		"if secret does exist, update existing Secret and leave custom annotations/labels, with owner enabled": {
 			certificate: exampleBundle.Certificate,
 			certificateOptions: controllerpkg.CertificateOptions{
 				EnableOwnerRef: true,
@@ -130,6 +136,9 @@ func TestSecretsManager(t *testing.T) {
 							Name:      "output",
 							Annotations: map[string]string{
 								"my-custom": "annotation",
+							},
+							Labels: map[string]string{
+								"my-custom": "label",
 							},
 						},
 						Data: map[string][]byte{
@@ -160,6 +169,14 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
+								},
+								Labels: map[string]string{
+									"my-custom": "label",
+
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
 								},
 								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(exampleBundle.Certificate, certificateGvk)},
 							},
@@ -203,6 +220,12 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
 								},
+								Labels: map[string]string{
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
+								},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.CertBytes,
@@ -217,7 +240,7 @@ func TestSecretsManager(t *testing.T) {
 			expectedErr: false,
 		},
 
-		"if secret does exist, update existing Secret and leave custom annotations, with owner disabled.": {
+		"if secret does exist, update existing Secret and leave custom annotations/labels, with owner disabled.": {
 			certificate: exampleBundle.Certificate,
 			certificateOptions: controllerpkg.CertificateOptions{
 				EnableOwnerRef: false,
@@ -231,6 +254,9 @@ func TestSecretsManager(t *testing.T) {
 							Name:      "output",
 							Annotations: map[string]string{
 								"my-custom": "annotation",
+							},
+							Labels: map[string]string{
+								"my-custom": "label",
 							},
 						},
 						Data: map[string][]byte{
@@ -261,6 +287,14 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.AltNamesAnnotationKey:   strings.Join(exampleBundle.Cert.DNSNames, ","),
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(exampleBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(exampleBundle.Cert.URIs), ","),
+								},
+								Labels: map[string]string{
+									"my-custom": "label",
+
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
 								},
 							},
 							Data: map[string][]byte{

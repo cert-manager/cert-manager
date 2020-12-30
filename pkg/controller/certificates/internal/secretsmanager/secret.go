@@ -236,5 +236,14 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Annotations[cmapi.URISANAnnotationKey] = strings.Join(utilpki.URLsToString(x509Cert.URIs), ",")
 	}
 
+	if secret.Labels == nil {
+		secret.Labels = make(map[string]string)
+	}
+
+	secret.Labels[cmapi.CertificateNameKey] = crt.Name
+	secret.Labels[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+	secret.Labels[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
+	secret.Labels[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
+
 	return nil
 }
