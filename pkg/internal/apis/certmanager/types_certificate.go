@@ -63,12 +63,12 @@ type PrivateKeyEncoding string
 
 const (
 	// PKCS1 key encoding will produce PEM files that include the type of
-	// private key as part of the PEM header, e.g. "BEGIN RSA PRIVATE KEY".
+	// private key as part of the PEM header, e.g. `BEGIN RSA PRIVATE KEY`.
 	// If the keyAlgorithm is set to 'ECDSA', this will produce private keys
-	// that use the "BEGIN EC PRIVATE KEY" header.
+	// that use the `BEGIN EC PRIVATE KEY` header.
 	PKCS1 PrivateKeyEncoding = "PKCS1"
 
-	// PKCS8 key encoding will produce PEM files with the "BEGIN PRIVATE KEY"
+	// PKCS8 key encoding will produce PEM files with the `BEGIN PRIVATE KEY`
 	// header. It encodes the keyAlgorithm of the private key as part of the
 	// DER encoded PEM block.
 	PKCS8 PrivateKeyEncoding = "PKCS8"
@@ -125,11 +125,11 @@ type CertificateSpec struct {
 	Keystores *CertificateKeystores
 
 	// IssuerRef is a reference to the issuer for this certificate.
-	// If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
+	// If the `kind` field is not set, or set to `Issuer`, an Issuer resource
 	// with the given name in the same namespace as the Certificate will be used.
-	// If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the
+	// If the `kind` field is set to `ClusterIssuer`, a ClusterIssuer with the
 	// provided name will be used.
-	// The 'name' field in this stanza is required at all times.
+	// The `name` field in this stanza is required at all times.
 	IssuerRef cmmeta.ObjectReference
 
 	// IsCA will mark this Certificate as valid for certificate signing.
@@ -154,27 +154,27 @@ type CertificateSpec struct {
 type CertificatePrivateKey struct {
 	// RotationPolicy controls how private keys should be regenerated when a
 	// re-issuance is being processed.
-	// If set to Never, a private key will only be generated if one does not
+	// If set to `Never`, a private key will only be generated if one does not
 	// already exist in the target `spec.secretName`. If one does exists but it
 	// does not have the correct algorithm or size, a warning will be raised
 	// to await user intervention.
-	// If set to Always, a private key matching the specified requirements
+	// If set to `Always`, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
-	// Default is 'Never' for backward compatibility.
+	// Default is `Never` for backward compatibility.
 	RotationPolicy PrivateKeyRotationPolicy
 
 	// The private key cryptography standards (PKCS) encoding for this
 	// certificate's private key to be encoded in.
-	// If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1
+	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
-	// Defaults to PKCS#1 if not specified.
+	// Defaults to `PKCS1` if not specified.
 	Encoding PrivateKeyEncoding
 
 	// Algorithm is the private key algorithm of the corresponding private key
-	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
+	// for this certificate. If provided, allowed values are either `RSA` or `ECDSA`
 	// If `algorithm` is specified and `size` is not provided,
-	// key size of 256 will be used for "ecdsa" key algorithm and
-	// key size of 2048 will be used for "rsa" key algorithm.
+	// key size of `256` will be used for `ECDSA` key algorithm and
+	// key size of `2048` will be used for `RSA` key algorithm.
 	Algorithm PrivateKeyAlgorithm
 
 	// Size is the key bit size of the corresponding private key for this certificate.
@@ -317,10 +317,10 @@ type CertificateStatus struct {
 
 // CertificateCondition contains condition information for an Certificate.
 type CertificateCondition struct {
-	// Type of the condition, known values are ('Ready', `Issuing`).
+	// Type of the condition, known values are (`Ready`, `Issuing`).
 	Type CertificateConditionType
 
-	// Status of the condition, one of ('True', 'False', 'Unknown').
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
 	Status cmmeta.ConditionStatus
 
 	// LastTransitionTime is the timestamp corresponding to the last status

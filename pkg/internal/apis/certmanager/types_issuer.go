@@ -265,10 +265,10 @@ type IssuerStatus struct {
 
 // IssuerCondition contains condition information for an Issuer.
 type IssuerCondition struct {
-	// Type of the condition, known values are ('Ready').
+	// Type of the condition, known values are (`Ready`).
 	Type IssuerConditionType
 
-	// Status of the condition, one of ('True', 'False', 'Unknown').
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
 	Status cmmeta.ConditionStatus
 
 	// LastTransitionTime is the timestamp corresponding to the last status

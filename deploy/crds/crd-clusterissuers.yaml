@@ -1048,14 +1048,14 @@ spec:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready').
+                        description: Type of the condition, known values are (`Ready`).
                         type: string
       served: true
       storage: false
@@ -2077,14 +2077,14 @@ spec:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready').
+                        description: Type of the condition, known values are (`Ready`).
                         type: string
       served: true
       storage: false
@@ -3108,14 +3108,14 @@ spec:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready').
+                        description: Type of the condition, known values are (`Ready`).
                         type: string
       served: true
       storage: false
@@ -4139,14 +4139,14 @@ spec:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready').
+                        description: Type of the condition, known values are (`Ready`).
                         type: string
       served: true
       storage: true
