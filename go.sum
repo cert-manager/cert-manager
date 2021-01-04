@@ -14,6 +14,7 @@ cloud.google.com/go/firestore v1.1.0/go.mod h1:ulACoGHTpvq5r8rxGJ4ddJZBZqakUQqCl
 cloud.google.com/go/pubsub v1.0.1/go.mod h1:R0Gpsv3s54REJCy4fxDixWD93lHJMoZTyQ2kNxGRt3I=
 cloud.google.com/go/storage v1.0.0/go.mod h1:IhtSnM/ZTZV8YYJWCY8RULGVqBDmpoyjwiyrjsg+URw=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
+git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d/go.mod h1:n26Twiii5jhkMC+Ocz/s8R73cBBcXRIwyTqQ+6bOZGo=
 github.com/Azure/azure-sdk-for-go v46.3.0+incompatible h1:m4oQOm3HXtQh2Ipata+pLSS1kGUD/7ikkvNq81XM/7s=
 github.com/Azure/azure-sdk-for-go v46.3.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 h1:w+iIsaOQNcT7OZ575w+acHgRric5iCyQh+xv+KJ4HB8=

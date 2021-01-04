@@ -39,6 +39,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/hetzner"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -63,6 +64,7 @@ type dnsProviderConstructors struct {
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	hetzner      func(token string, dns01Nameservers []string) (*hetzner.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -279,6 +281,19 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey, apiToken, s.DNS01Nameservers)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
+		}
+	case providerConfig.Hetzner != nil:
+		dbg.Info("preparing to create Hetzner provider")
+		apiTokenSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Hetzner.Token.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error getting hetzner token: %s", err)
+		}
+
+		apiToken := string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key])
+
+		impl, err = s.dnsProviderConstructors.hetzner(strings.TrimSpace(apiToken), s.DNS01Nameservers)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating hetzner challenge solver: %s", err.Error())
 		}
 	case providerConfig.DigitalOcean != nil:
 		dbg.Info("preparing to create DigitalOcean provider")

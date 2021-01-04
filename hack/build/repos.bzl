@@ -354,6 +354,14 @@ def go_repositories():
         version = "v3.2.0+incompatible",
     )
     go_repository(
+        name = "org_blindage_git_21h_hcloud_dns",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "git.blindage.org/21h/hcloud-dns",
+        sum = "h1:IMElzMUpO1dVR8qjSg53+5vDkOLzMbhJt4yTAq7NGCQ=",
+        version = "v0.0.0-20200807003420-f768ffe03f8d",
+    )
+    go_repository(
         name = "com_github_digitalocean_godo",
         build_file_generation = "on",
         build_file_proto_mode = "disable",

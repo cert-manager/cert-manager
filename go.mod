@@ -64,4 +64,5 @@ require (
 	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200830195227-52f69702a001
+	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 )

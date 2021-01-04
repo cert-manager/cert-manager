@@ -334,6 +334,10 @@ type ACMEChallengeSolverDNS01 struct {
 
 	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
 	// +optional
+	Hetzner *ACMEIssuerDNS01ProviderHetzner `json:"digitalocean,omitempty"`
+
+	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
+	// +optional
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
 
 	// Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage
@@ -411,6 +415,12 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 	// API token used to authenticate with Cloudflare.
 	// +optional
 	APIToken *cmmeta.SecretKeySelector `json:"apiTokenSecretRef,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderHetzner is a structure containing the DNS
+// configuration for DigitalOcean Domains
+type ACMEIssuerDNS01ProviderHetzner struct {
+	Token cmmeta.SecretKeySelector `json:"tokenSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderDigitalOcean is a structure containing the DNS
