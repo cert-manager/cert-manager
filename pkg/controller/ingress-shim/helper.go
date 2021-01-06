@@ -19,7 +19,10 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
+
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -51,6 +54,19 @@ func translateIngressAnnotations(crt *cmapi.Certificate, annotations map[string]
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, err)
 		}
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
+	}
+	if usages, found := annotations[cmapi.UsagesAnnotationKey]; found {
+		newUsages := []cmapi.KeyUsage{}
+		for _, usageName := range strings.Split(usages, ",") {
+			usage := cmapi.KeyUsage(strings.Trim(usageName, " "))
+			_, isKU := apiutil.KeyUsageType(usage)
+			_, isEKU := apiutil.ExtKeyUsageType(usage)
+			if !isKU && !isEKU {
+				return fmt.Errorf("%w %q: invalid key usage name %q", errInvalidIngressAnnotation, cmapi.UsagesAnnotationKey, usageName)
+			}
+			newUsages = append(newUsages, usage)
+		}
+		crt.Spec.Usages = newUsages
 	}
 	return nil
 }
