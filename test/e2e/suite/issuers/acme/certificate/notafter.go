@@ -32,6 +32,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -48,6 +49,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 	// with a challenge solve.
 	// To utilise this solver, add the 'testing.cert-manager.io/fixed-ingress: "true"' label.
 	fixedIngressName := "testingress"
+
+	// ACME Issuer does not return a ca.crt. See:
+	// https://github.com/jetstack/cert-manager/issues/1571
+	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
@@ -134,7 +140,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
 		sec, err := f.Helper().WaitForSecretCertificateData(f.Namespace.Name, certificateSecretName, time.Minute*5)

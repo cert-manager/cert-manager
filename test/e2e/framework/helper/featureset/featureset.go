@@ -126,4 +126,8 @@ const (
 	// OnlySAN denotes whether the target issuer is able to sign certificates
 	// with only SANs set
 	OnlySAN = "OnlySAN"
+
+	// SaveCAToSecret denotes whether the target issuer returns a CA
+	// certificate which can be stored in the CA.crt field of the Secret.
+	SaveCAToSecret = "SaveCAToSecret"
 )

@@ -55,6 +55,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.CommonNameFeature,
 		featureset.KeyUsagesFeature,
 		featureset.EmailSANsFeature,
+		featureset.SaveCAToSecret,
 	)
 
 	// unsupportedDNS01Features is a list of features that are not supported by the ACME
@@ -66,6 +67,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.CommonNameFeature,
 		featureset.KeyUsagesFeature,
 		featureset.EmailSANsFeature,
+		featureset.SaveCAToSecret,
 	)
 
 	provisionerHTTP01 := &acmeIssuerProvisioner{
