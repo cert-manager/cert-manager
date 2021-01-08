@@ -10,6 +10,7 @@ go_library(
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",
+        "@com_github_kr_pretty//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
     ],
 )

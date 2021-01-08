@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"fmt"
 
+	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -298,7 +299,13 @@ func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secr
 	}
 
 	if _, err := cert.Verify(opts); err != nil {
-		return err
+		return fmt.Errorf(
+			"verify error. CERT:\n%s\nROOTS\n%s\nINTERMEDIATES\n%v\nERROR\n%s\n",
+			pretty.Sprint(cert),
+			pretty.Sprint(rootCertPool),
+			pretty.Sprint(intermediateCertPool),
+			err,
+		)
 	}
 
 	return nil
