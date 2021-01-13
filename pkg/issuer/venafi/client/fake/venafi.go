@@ -25,6 +25,8 @@ import (
 )
 
 type Venafi struct {
+	AuthenticateFn          func() error
+	RotateCredentialsFn     func() error
 	PingFn                  func() error
 	RequestCertificateFn    func(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
 	RetrieveCertificateFn   func(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
@@ -33,6 +35,14 @@ type Venafi struct {
 
 func (v *Venafi) Ping() error {
 	return v.PingFn()
+}
+
+func (v *Venafi) Authenticate() error {
+	return v.AuthenticateFn()
+}
+
+func (v *Venafi) RotateCredentials() error {
+	return v.RotateCredentialsFn()
 }
 
 func (v *Venafi) RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error) {

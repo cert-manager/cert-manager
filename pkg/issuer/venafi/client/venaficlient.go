@@ -17,6 +17,7 @@ limitations under the License.
 package client
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -37,11 +38,18 @@ const (
 	defaultAPIKeyKey = "api-key"
 )
 
+var (
+	ErrAccessTokenExpired = errors.New("access-token expired")
+	ErrAccessTokenMissing = errors.New("access-token missing")
+)
+
 type VenafiClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
 	issuer cmapi.GenericIssuer) (Interface, error)
 
 // Interface implements a Venafi client
 type Interface interface {
+	Authenticate() error
+	RotateCredentials() error
 	RequestCertificate(csrPEM []byte, duration time.Duration, customFields []api.CustomField) (string, error)
 	RetrieveCertificate(pickupID string, csrPEM []byte, duration time.Duration, customFields []api.CustomField) ([]byte, error)
 	Ping() error
@@ -157,4 +165,12 @@ func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 
 func (v *Venafi) SetClient(client endpoint.Connector) {
 	v.vcertClient = client
+}
+
+func (v *Venafi) Authenticate() error {
+	return nil
+}
+
+func (v *Venafi) RotateCredentials() error {
+	return nil
 }
