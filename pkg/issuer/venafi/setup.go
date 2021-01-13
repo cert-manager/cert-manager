@@ -18,13 +18,25 @@ package venafi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	corev1 "k8s.io/api/core/v1"
+)
+
+const (
+	reasonCredentialsNeedRotating          = "CredentialsNeedRotating"
+	reasonCredentialsRotatedReauthenticate = "CredentialsRotatedReauthenticate"
+)
+
+var (
+	errAuthenticate      = errors.New("authentication error")
+	errRotateCredentials = errors.New("rotatecredentials error")
 )
 
 func (v *Venafi) Setup(ctx context.Context) (err error) {
@@ -41,6 +53,36 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("error building client: %v", err)
 	}
+
+	readyCondition := apiutil.GetIssuerCondition(v.issuer, cmapi.IssuerConditionReady)
+	if readyCondition != nil && readyCondition.Reason == reasonCredentialsNeedRotating {
+		if err := client.RotateCredentials(); err != nil {
+			return fmt.Errorf("%w: %v", errRotateCredentials, err)
+		}
+		apiutil.SetIssuerCondition(
+			v.issuer,
+			cmapi.IssuerConditionReady,
+			cmmeta.ConditionFalse,
+			reasonCredentialsRotatedReauthenticate,
+			"OAuth credentials have been updated. Please wait for Issuer to re-authenticate.",
+		)
+		return nil
+	}
+
+	if err := client.Authenticate(); err != nil {
+		if !errors.Is(err, venaficlient.ErrAccessTokenExpired) && !errors.Is(err, venaficlient.ErrAccessTokenMissing) {
+			return fmt.Errorf("%w: %v", errAuthenticate, err)
+		}
+		apiutil.SetIssuerCondition(
+			v.issuer,
+			cmapi.IssuerConditionReady,
+			cmmeta.ConditionFalse,
+			reasonCredentialsNeedRotating,
+			err.Error(),
+		)
+		return nil
+	}
+
 	err = client.Ping()
 	if err != nil {
 		return fmt.Errorf("error pinging Venafi API: %v", err)

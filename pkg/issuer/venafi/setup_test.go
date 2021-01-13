@@ -26,6 +26,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
@@ -42,9 +43,45 @@ func TestSetup(t *testing.T) {
 		return nil, errors.New("this is an error")
 	}
 
+	failingAuthenticateClient := func(string, corelisters.SecretLister,
+		cmapi.GenericIssuer) (client.Interface, error) {
+		return &internalvenafifake.Venafi{
+			AuthenticateFn: func() error {
+				return errors.New("simulated error")
+			},
+			PingFn: func() error {
+				return nil
+			},
+		}, nil
+	}
+
+	expiredTokenClient := func(string, corelisters.SecretLister,
+		cmapi.GenericIssuer) (client.Interface, error) {
+		return &internalvenafifake.Venafi{
+			AuthenticateFn: func() error {
+				return client.ErrAccessTokenExpired
+			},
+			PingFn: func() error {
+				return nil
+			},
+		}, nil
+	}
+
+	failingRotateCredentialsClient := func(string, corelisters.SecretLister,
+		cmapi.GenericIssuer) (client.Interface, error) {
+		return &internalvenafifake.Venafi{
+			RotateCredentialsFn: func() error {
+				return errors.New("simulated error")
+			},
+		}, nil
+	}
+
 	failingPingClient := func(string, corelisters.SecretLister,
 		cmapi.GenericIssuer) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
+			AuthenticateFn: func() error {
+				return nil
+			},
 			PingFn: func() error {
 				return errors.New("this is a ping error")
 			},
@@ -54,6 +91,12 @@ func TestSetup(t *testing.T) {
 	pingClient := func(string, corelisters.SecretLister,
 		cmapi.GenericIssuer) (client.Interface, error) {
 		return &internalvenafifake.Venafi{
+			AuthenticateFn: func() error {
+				return nil
+			},
+			RotateCredentialsFn: func() error {
+				return nil
+			},
 			PingFn: func() error {
 				return nil
 			},
@@ -69,6 +112,66 @@ func TestSetup(t *testing.T) {
 				Reason:  "ErrorSetup",
 				Message: "Failed to setup Venafi issuer: error building client: this is an error",
 				Status:  "False",
+			},
+		},
+
+		"if authenticate fails then should error": {
+			clientBuilder: failingAuthenticateClient,
+			iss:           baseIssuer.DeepCopy(),
+			expectedErr:   true,
+			expectedCondition: &cmapi.IssuerCondition{
+				Reason:  "ErrorSetup",
+				Message: "Failed to setup Venafi issuer: authentication error: simulated error",
+				Status:  "False",
+			},
+		},
+
+		"if authenticate fails with token expired error then should set rotate condition": {
+			clientBuilder: expiredTokenClient,
+			iss:           baseIssuer.DeepCopy(),
+			expectedErr:   false,
+			expectedCondition: &cmapi.IssuerCondition{
+				Reason:  reasonCredentialsNeedRotating,
+				Message: client.ErrAccessTokenExpired.Error(),
+				Status:  "False",
+			},
+		},
+
+		"if the rotate condition is set then should rotate credentials": {
+			clientBuilder: pingClient,
+			iss: gen.Issuer(
+				"test-issuer",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:    cmapi.IssuerConditionReady,
+					Status:  cmmeta.ConditionFalse,
+					Reason:  reasonCredentialsNeedRotating,
+					Message: client.ErrAccessTokenExpired.Error(),
+				}),
+			),
+			expectedErr: false,
+			expectedCondition: &cmapi.IssuerCondition{
+				Reason:  reasonCredentialsRotatedReauthenticate,
+				Message: "OAuth credentials have been updated. Please wait for Issuer to re-authenticate.",
+				Status:  cmmeta.ConditionFalse,
+			},
+		},
+
+		"if the rotate credentials fails then should error": {
+			clientBuilder: failingRotateCredentialsClient,
+			iss: gen.Issuer(
+				"test-issuer",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:    cmapi.IssuerConditionReady,
+					Status:  cmmeta.ConditionFalse,
+					Reason:  reasonCredentialsNeedRotating,
+					Message: client.ErrAccessTokenExpired.Error(),
+				}),
+			),
+			expectedErr: true,
+			expectedCondition: &cmapi.IssuerCondition{
+				Reason:  "ErrorSetup",
+				Message: "Failed to setup Venafi issuer: rotatecredentials error: simulated error",
+				Status:  cmmeta.ConditionFalse,
 			},
 		},
 
