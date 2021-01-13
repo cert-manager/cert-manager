@@ -46,6 +46,21 @@ func IssuerHasCondition(i cmapi.GenericIssuer, c cmapi.IssuerCondition) bool {
 	return false
 }
 
+// GetIssuerCondition will return a condition if there is one with the sepcified type,
+// else it will return nil.
+func GetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditionType) *cmapi.IssuerCondition {
+	if i == nil {
+		return nil
+	}
+	existingConditions := i.GetStatus().Conditions
+	for _, cond := range existingConditions {
+		if conditionType == cond.Type {
+			return &cond
+		}
+	}
+	return nil
+}
+
 // SetIssuerCondition will set a 'condition' on the given GenericIssuer.
 // - If no condition of the same type already exists, the condition will be
 //   inserted with the LastTransitionTime set to the current time.
