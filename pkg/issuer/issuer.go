@@ -18,6 +18,15 @@ package issuer
 
 import (
 	"context"
+	"time"
+)
+
+const (
+	// ResyncPeriod defines how frequently Issuers and ClusterIssuers will be
+	// reconciled.
+	// This ensures that Issuer.Status (in particular the Ready condition) is
+	// kept up-to-date.
+	ResyncPeriod = time.Second * 30
 )
 
 type Interface interface {

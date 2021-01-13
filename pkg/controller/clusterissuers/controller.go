@@ -85,7 +85,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.secretLister = secretInformer.Lister()
 
 	// register handler functions
-	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+	clusterIssuerInformer.Informer().AddEventHandlerWithResyncPeriod(&controllerpkg.QueuingEventHandler{Queue: c.queue}, issuer.ResyncPeriod)
 	secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.secretDeleted})
 
 	// instantiate additional helpers used by this controller

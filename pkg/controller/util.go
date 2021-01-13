@@ -102,9 +102,6 @@ func (q *QueuingEventHandler) OnAdd(obj interface{}) {
 }
 
 func (q *QueuingEventHandler) OnUpdate(old, new interface{}) {
-	if reflect.DeepEqual(old, new) {
-		return
-	}
 	q.Enqueue(new)
 }
 
