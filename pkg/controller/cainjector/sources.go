@@ -104,7 +104,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	certName := splitNamespacedName(certNameRaw)
 	log = log.WithValues("certificate", certName)
 	if certName.Namespace == "" {
-		log.Error(nil, "invalid certificate name")
+		log.Error(nil, "invalid certificate name; needs a namespace/ prefix")
 		// don't return an error, requeuing won't help till this is changed
 		return nil, nil
 	}
