@@ -377,8 +377,8 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	healthURL := path.Join("/v1", "sys", "health")
-	heatlhRequest := v.client.NewRequest("GET", healthURL)
-	healthResp, err := v.client.RawRequest(heatlhRequest)
+	healthRequest := v.client.NewRequest("GET", healthURL)
+	healthResp, err := v.client.RawRequest(healthRequest)
 	// 429 = if unsealed and standby
 	// 472 = if disaster recovery mode replication secondary and active
 	// 473 = if performance standby
