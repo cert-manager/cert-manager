@@ -111,9 +111,13 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 	request := v.client.NewRequest("POST", url)
 
 	if vaultIssuer.Namespace != "" {
-		vaultReqHeaders := http.Header{}
-		vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		request.Headers = vaultReqHeaders
+		if request.Headers != nil {
+			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+		} else {
+			vaultReqHeaders := http.Header{}
+			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+			request.Headers = vaultReqHeaders
+		}
 	}
 
 	if err := request.SetJSONBody(parameters); err != nil {
@@ -261,9 +265,13 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 
 	vaultIssuer := v.issuer.GetSpec().Vault
 	if vaultIssuer.Namespace != "" {
-		vaultReqHeaders := http.Header{}
-		vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		request.Headers = vaultReqHeaders
+		if request.Headers != nil {
+			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+		} else {
+			vaultReqHeaders := http.Header{}
+			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+			request.Headers = vaultReqHeaders
+		}
 	}
 
 	resp, err := client.RawRequest(request)
