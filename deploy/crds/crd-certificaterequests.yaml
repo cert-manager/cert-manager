@@ -20,6 +20,9 @@ spec:
       - cr
       - crs
     singular: certificaterequest
+    categories:
+      - all
+      - cert-manager
   scope: Namespaced
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.

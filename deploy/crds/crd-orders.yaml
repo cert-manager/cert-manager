@@ -17,6 +17,10 @@ spec:
     listKind: OrderList
     plural: orders
     singular: order
+    categories:
+      - all
+      - cert-manager
+      - acme
   scope: Namespaced
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
