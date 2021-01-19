@@ -18,6 +18,7 @@ package secret
 
 import (
 	"crypto/x509"
+	"strings"
 	"testing"
 	"time"
 
@@ -71,7 +72,7 @@ func Test_describeCRL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeCRL(tt.cert); got != tt.want {
-				t.Errorf("describeCRL() = %v, want %v", got, tt.want)
+				t.Errorf("describeCRL() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -99,7 +100,7 @@ func Test_describeCertificate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeCertificate(tt.cert); got != tt.want {
-				t.Errorf("describeCertificate() = %v, want %v", got, tt.want)
+				t.Errorf("describeCertificate() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -133,7 +134,7 @@ func Test_describeDebugging(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeDebugging(tt.args.cert, tt.args.intermediates, tt.args.ca); got != tt.want {
-				t.Errorf("describeDebugging() = %v, want %v", got, tt.want)
+				t.Errorf("describeDebugging() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -149,16 +150,16 @@ func Test_describeIssuedBy(t *testing.T) {
 			name: "Describe test certificate",
 			cert: MustParseCertificate(t, testCert),
 			want: `Issued By:
-	Common Name		test-ca
-	Organization		cncf
-	OrganizationalUnit	cert-manager
-	Country: 		BE`,
+	Common Name:	test-ca
+	Organization:	test-ca
+	OrganizationalUnit:	cncf
+	Country:	BE`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeIssuedBy(tt.cert); got != tt.want {
-				t.Errorf("describeIssuedBy() = %v, want %v", got, tt.want)
+				t.Errorf("describeIssuedBy() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -174,16 +175,16 @@ func Test_describeIssuedFor(t *testing.T) {
 			name: "Describe test cert",
 			cert: MustParseCertificate(t, testCert),
 			want: `Issued For:
-	Common Name		Test Cert
-	Organization		cncf
-	OrganizationalUnit	cert-manager
-	Country: 		BE`,
+	Common Name:	Test Cert
+	Organization:	Test Cert
+	OrganizationalUnit:	cncf
+	Country:	BE`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeIssuedFor(tt.cert); got != tt.want {
-				t.Errorf("describeIssuedFor() = %v, want %v", got, tt.want)
+				t.Errorf("describeIssuedFor() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -211,7 +212,7 @@ func Test_describeOCSP(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeOCSP(tt.args.cert, tt.args.intermediates, tt.args.ca); got != tt.want {
-				t.Errorf("describeOCSP() = %v, want %v", got, tt.want)
+				t.Errorf("describeOCSP() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -250,7 +251,7 @@ func Test_describeTrusted(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeTrusted(tt.args.cert, tt.args.intermediates); got != tt.want {
-				t.Errorf("describeTrusted() = %v, want %v", got, tt.want)
+				t.Errorf("describeTrusted() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -285,7 +286,7 @@ func Test_describeValidFor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeValidFor(tt.cert); got != tt.want {
-				t.Errorf("describeValidFor() = %v, want %v", got, tt.want)
+				t.Errorf("describeValidFor() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
@@ -308,8 +309,15 @@ func Test_describeValidityPeriod(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := describeValidityPeriod(tt.cert); got != tt.want {
-				t.Errorf("describeValidityPeriod() = %v, want %v", got, tt.want)
+				t.Errorf("describeValidityPeriod() = %v, want %v", makeInvisibleVisible(got), makeInvisibleVisible(tt.want))
 			}
 		})
 	}
+}
+
+func makeInvisibleVisible(in string) string {
+	in = strings.Replace(in, "\n", "\\n\n", -1)
+	in = strings.Replace(in, "\t", "\\t", -1)
+
+	return in
 }

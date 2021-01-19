@@ -17,12 +17,14 @@ limitations under the License.
 package secret
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
 	"net/url"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -43,41 +45,41 @@ import (
 var clock k8sclock.Clock = k8sclock.RealClock{}
 
 const validForTemplate = `Valid for:
-	DNS Names: %s
-	URIs: %s
-	IP Addresses: %s
-	Email Addresses: %s
-	Usages: %s`
+	DNS Names: {{ .DNSNames }}
+	URIs: {{ .URIs }}
+	IP Addresses: {{ .IPAddresses }}
+	Email Addresses: {{ .EmailAddresses }}
+	Usages: {{ .KeyUsage }}`
 
 const validityPeriodTemplate = `Validity period:
-	Not Before: %s
-	Not After: %s`
+	Not Before: {{ .NotBefore }}
+	Not After: {{ .NotAfter }}`
 
 const issuedByTemplate = `Issued By:
-	Common Name		%s
-	Organization		%s
-	OrganizationalUnit	%s
-	Country: 		%s`
+	Common Name:	{{ .CommonName }}
+	Organization:	{{ .CommonName }}
+	OrganizationalUnit:	{{ .OrganizationalUnit }}
+	Country:	{{ .Country }}`
 
 const issuedForTemplate = `Issued For:
-	Common Name		%s
-	Organization		%s
-	OrganizationalUnit	%s
-	Country: 		%s`
+	Common Name:	{{ .CommonName }}
+	Organization:	{{ .CommonName }}
+	OrganizationalUnit:	{{ .OrganizationalUnit }}
+	Country:	{{ .Country }}`
 
 const certificateTemplate = `Certificate:
-	Signing Algorithm:	%s
-	Public Key Algorithm: 	%s
-	Serial Number:	%s
-	Fingerprints: 	%s
-	Is a CA certificate: %v
-	CRL:	%s
-	OCSP:	%s`
+	Signing Algorithm:	{{ .SigningAlgorithm }}
+	Public Key Algorithm: 	{{ .PublicKeyAlgorithm }}
+	Serial Number:	{{ .SerialNumber }}
+	Fingerprints: 	{{ .Fingerprints }}
+	Is a CA certificate: {{ .IsCACertificate }}
+	CRL:	{{ .CRL }}
+	OCSP:	{{ .OCSP }}`
 
 const debuggingTemplate = `Debugging:
-	Trusted by this computer:	%s
-	CRL Status:	%s
-	OCSP Status:	%s`
+	Trusted by this computer:	{{ .TrustedByThisComputer }}
+	CRL Status:	{{ .CRLStatus }}
+	OCSP Status:	{{ .OCSPStatus }}`
 
 var (
 	long = templates.LongDesc(i18n.T(`
@@ -202,58 +204,107 @@ func (o *Options) Run(args []string) error {
 }
 
 func describeValidFor(cert *x509.Certificate) string {
-	return fmt.Sprintf(validForTemplate,
-		printSlice(cert.DNSNames),
-		printSlice(pki.URLsToString(cert.URIs)),
-		printSlice(pki.IPAddressesToString(cert.IPAddresses)),
-		printSlice(cert.EmailAddresses),
-		printKeyUsage(pki.BuildCertManagerKeyUsages(cert.KeyUsage, cert.ExtKeyUsage)),
-	)
+	var b bytes.Buffer
+	template.Must(template.New("validForTemplate").Parse(validForTemplate)).Execute(&b, struct {
+		DNSNames       string
+		URIs           string
+		IPAddresses    string
+		EmailAddresses string
+		KeyUsage       string
+	}{
+		DNSNames:       printSlice(cert.DNSNames),
+		URIs:           printSlice(pki.URLsToString(cert.URIs)),
+		IPAddresses:    printSlice(pki.IPAddressesToString(cert.IPAddresses)),
+		EmailAddresses: printSlice(cert.EmailAddresses),
+		KeyUsage:       printKeyUsage(pki.BuildCertManagerKeyUsages(cert.KeyUsage, cert.ExtKeyUsage)),
+	})
+
+	return b.String()
 }
 
 func describeValidityPeriod(cert *x509.Certificate) string {
-	return fmt.Sprintf(validityPeriodTemplate,
-		cert.NotBefore.Format(time.RFC1123),
-		cert.NotAfter.Format(time.RFC1123),
-	)
+	var b bytes.Buffer
+	template.Must(template.New("validityPeriodTemplate").Parse(validityPeriodTemplate)).Execute(&b, struct {
+		NotBefore string
+		NotAfter  string
+	}{
+		NotBefore: cert.NotBefore.Format(time.RFC1123),
+		NotAfter:  cert.NotAfter.Format(time.RFC1123),
+	})
+
+	return b.String()
 }
 
 func describeIssuedBy(cert *x509.Certificate) string {
-	return fmt.Sprintf(issuedByTemplate,
-		printOrNone(cert.Issuer.CommonName),
-		printSliceOrOne(cert.Issuer.Organization),
-		printSliceOrOne(cert.Issuer.OrganizationalUnit),
-		printSliceOrOne(cert.Issuer.Country),
-	)
+	var b bytes.Buffer
+	template.Must(template.New("issuedByTemplate").Parse(issuedByTemplate)).Execute(&b, struct {
+		CommonName         string
+		Organization       string
+		OrganizationalUnit string
+		Country            string
+	}{
+		CommonName:         printOrNone(cert.Issuer.CommonName),
+		Organization:       printSliceOrOne(cert.Issuer.Organization),
+		OrganizationalUnit: printSliceOrOne(cert.Issuer.Organization),
+		Country:            printSliceOrOne(cert.Issuer.Country),
+	})
+
+	return b.String()
 }
 
 func describeIssuedFor(cert *x509.Certificate) string {
-	return fmt.Sprintf(issuedForTemplate,
-		printOrNone(cert.Subject.CommonName),
-		printSliceOrOne(cert.Subject.Organization),
-		printSliceOrOne(cert.Subject.OrganizationalUnit),
-		printSliceOrOne(cert.Subject.Country),
-	)
+	var b bytes.Buffer
+	template.Must(template.New("issuedForTemplate").Parse(issuedForTemplate)).Execute(&b, struct {
+		CommonName         string
+		Organization       string
+		OrganizationalUnit string
+		Country            string
+	}{
+		CommonName:         printOrNone(cert.Subject.CommonName),
+		Organization:       printSliceOrOne(cert.Subject.Organization),
+		OrganizationalUnit: printSliceOrOne(cert.Subject.Organization),
+		Country:            printSliceOrOne(cert.Subject.Country),
+	})
+
+	return b.String()
 }
 
 func describeCertificate(cert *x509.Certificate) string {
-	return fmt.Sprintf(certificateTemplate,
-		cert.SignatureAlgorithm.String(),
-		cert.PublicKeyAlgorithm.String(),
-		cert.SerialNumber.String(),
-		fingerprintCert(cert),
-		cert.IsCA,
-		printSliceOrOne(cert.CRLDistributionPoints),
-		printSliceOrOne(cert.OCSPServer),
-	)
+	var b bytes.Buffer
+	template.Must(template.New("certificateTemplate").Parse(certificateTemplate)).Execute(&b, struct {
+		SigningAlgorithm   string
+		PublicKeyAlgorithm string
+		SerialNumber       string
+		Fingerprints       string
+		IsCACertificate    bool
+		CRL                string
+		OCSP               string
+	}{
+		SigningAlgorithm:   cert.SignatureAlgorithm.String(),
+		PublicKeyAlgorithm: cert.PublicKeyAlgorithm.String(),
+		SerialNumber:       cert.SerialNumber.String(),
+		Fingerprints:       fingerprintCert(cert),
+		IsCACertificate:    cert.IsCA,
+		CRL:                printSliceOrOne(cert.CRLDistributionPoints),
+		OCSP:               printSliceOrOne(cert.OCSPServer),
+	})
+
+	return b.String()
 }
 
 func describeDebugging(cert *x509.Certificate, intermediates [][]byte, ca []byte) string {
-	return fmt.Sprintf(debuggingTemplate,
-		describeTrusted(cert, intermediates),
-		describeCRL(cert),
-		describeOCSP(cert, intermediates, ca),
-	)
+	var b bytes.Buffer
+	template.Must(template.New("debuggingTemplate").Parse(debuggingTemplate)).Execute(&b, struct {
+		TrustedByThisComputer string
+		CRLStatus             string
+		OCSPStatus            string
+	}{
+		TrustedByThisComputer: describeTrusted(cert, intermediates),
+		CRLStatus:             describeCRL(cert),
+		OCSPStatus:            describeOCSP(cert, intermediates, ca),
+	})
+
+	return b.String()
 }
 
 func describeCRL(cert *x509.Certificate) string {
