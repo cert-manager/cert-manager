@@ -26,9 +26,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -38,6 +35,9 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 	k8sclock "k8s.io/utils/clock"
+
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var clock k8sclock.Clock = k8sclock.RealClock{}
