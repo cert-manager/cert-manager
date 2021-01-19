@@ -26,15 +26,24 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["policies_test.go"],
+    srcs = [
+        "gatherer_test.go",
+        "policies_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/certificates/internal/test:go_default_library",
+        "//test/unit/listers:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_utils//clock/testing:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 
