@@ -316,7 +316,7 @@ func describeCRL(cert *x509.Certificate) string {
 	for _, crlURL := range cert.CRLDistributionPoints {
 		u, err := url.Parse(crlURL)
 		if err != nil {
-			continue // not a valid URL
+			return fmt.Sprintf("Invalid CRL URL: %v", err)
 		}
 		if u.Scheme != "ldap" && u.Scheme != "https" {
 			continue
