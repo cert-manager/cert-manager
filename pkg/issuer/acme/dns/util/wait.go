@@ -72,7 +72,7 @@ func getNameservers(path string, defaults []string) []string {
 
 // Update FQDN with CNAME if any, it will follow CNAME records till it hits a non-CNAME.
 // this will error if there is a recursive CNAME in the chain
-func followCNAME(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
+func updateDomainWithCName(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
 	r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
 	if err == nil && r.Rcode == dns.RcodeSuccess {
 		for _, rr := range r.Answer {
