@@ -72,7 +72,7 @@ func getNameservers(path string, defaults []string) []string {
 
 // Update FQDN with CNAME if any, it will follow CNAME records till it hits a non-CNAME.
 // this will error if there is a recursive CNAME in the chain
-func updateDomainWithCName(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
+func followCNAME(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
 	r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
 	if err == nil && r.Rcode == dns.RcodeSuccess {
 		for _, rr := range r.Answer {
@@ -83,7 +83,7 @@ func updateDomainWithCName(fqdn string, nameservers []string, fqdnChain ...strin
 					// check if we were here before to prevent recursive records causing issues
 					for _, fqdnInChain := range fqdnChain {
 						if cn.Target == fqdnInChain {
-							return "", fmt.Errorf("Found recursive CNAME record to %q when looking up %q", cn.Target, fqdn)
+							return "", fmt.Errorf("Found CNAME loop on %q when looking up %q", cn.Target, fqdn)
 						}
 					}
 					return updateDomainWithCName(cn.Target, nameservers, append(fqdnChain, fqdn)...)
@@ -230,7 +230,7 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 			oldQuery := queryDomain
 			queryDomain, err := updateDomainWithCName(queryDomain, nameservers)
 			if err != nil {
-				return err
+				return fmt.Errorf("while trying to follow CNAMEs for domain %s using nameservers %v: %w", queryDomain, nameservers, err)
 			}
 			if queryDomain == oldQuery {
 				break
