@@ -70,7 +70,7 @@ Joining this group will also invite you to the cert-manager development meetings
 
 ### Bi-weekly development meeting
 Once you have become a member, you should receive an invite to the bi-weekly development
-meeting, hosted on **Wednesdays at 5pm UK Time** on Zoom.us.
+meeting, hosted on **Wednesdays at 5pm UK Time** on Google Meet.
 
 Anyone is welcome to join these calls, even if just to ask questions.  
 Meeting notes are recorded in [Google docs](https://docs.google.com/document/d/1Tc5t6ylY9dhXAan1OjOoldeaoys1Yh4Ir710ATfBa5U).
