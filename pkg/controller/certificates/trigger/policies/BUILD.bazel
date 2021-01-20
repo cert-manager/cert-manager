@@ -35,6 +35,7 @@ go_test(
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/certificates/internal/test:go_default_library",
+        "//test/unit/gen:go_default_library",
         "//test/unit/listers:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
