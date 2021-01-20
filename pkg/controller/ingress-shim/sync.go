@@ -168,11 +168,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 					Kind:  issuerKind,
 					Group: issuerGroup,
 				},
-				Usages: []cmapi.KeyUsage{
-					cmapi.UsageDigitalSignature,
-					cmapi.UsageKeyEncipherment,
-					cmapi.UsageServerAuth, // default for web facing certificates as per https://support.apple.com/en-us/HT210176
-				},
+				Usages: append(cmapi.DefaultKeyUsages(), cmapi.UsageServerAuth), // default for web facing certificates as per https://support.apple.com/en-us/HT210176
 			},
 		}
 

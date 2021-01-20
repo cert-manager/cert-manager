@@ -22,10 +22,9 @@ import (
 	"strings"
 	"time"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
