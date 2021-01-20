@@ -94,7 +94,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 		return err
 	}
 
-	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, updateDomainWithCName(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 		return err
 	}
 
-	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, updateDomainWithCName(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	return slv.CleanUp(ch.Spec.DNSName, fqdn, ch.Spec.Key)
 }
 
-func updateDomainWithCName(strategy cmacme.CNAMEStrategy) bool {
+func followCNAME(strategy cmacme.CNAMEStrategy) bool {
 	if strategy == cmacme.FollowStrategy {
 		return true
 	}
@@ -390,7 +390,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1.GenericIssuer, ch *cmacme.Cha
 		return nil, nil, err
 	}
 
-	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, updateDomainWithCName(dns01Config.CNAMEStrategy), s.DNS01Nameservers...)
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(dns01Config.CNAMEStrategy), s.DNS01Nameservers...)
 	if err != nil {
 		return nil, nil, err
 	}
