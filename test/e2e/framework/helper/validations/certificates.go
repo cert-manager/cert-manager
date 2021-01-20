@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"fmt"
 
+	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -277,11 +278,6 @@ func ExpectEmailsToMatch(certificate *cmapi.Certificate, secret *corev1.Secret) 
 
 // ExpectCorrectTrustChain checks if the cert is signed by the root CA if one is provided
 func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secret) error {
-	// if we don't know the root CA we will skip this tests and return no errors.
-	if secret.Data[cmmeta.TLSCAKey] == nil {
-		return nil
-	}
-
 	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
 	if err != nil {
 		return err
@@ -303,7 +299,13 @@ func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secr
 	}
 
 	if _, err := cert.Verify(opts); err != nil {
-		return err
+		return fmt.Errorf(
+			"verify error. CERT:\n%s\nROOTS\n%s\nINTERMEDIATES\n%v\nERROR\n%s\n",
+			pretty.Sprint(cert),
+			pretty.Sprint(rootCertPool),
+			pretty.Sprint(intermediateCertPool),
+			err,
+		)
 	}
 
 	return nil

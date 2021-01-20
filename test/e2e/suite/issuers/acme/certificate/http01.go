@@ -35,6 +35,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
@@ -58,6 +59,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	// with a challenge solve.
 	// To utilise this solver, add the 'testing.cert-manager.io/fixed-ingress: "true"' label.
 	fixedIngressName := "testingress"
+
+	// ACME Issuer does not return a ca.crt. See:
+	// https://github.com/jetstack/cert-manager/issues/1571
+	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
@@ -140,7 +146,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -165,7 +171,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -192,7 +198,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -216,7 +222,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -241,7 +247,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Getting the latest version of the Certificate")
@@ -267,7 +273,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -311,7 +317,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -346,7 +352,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, dummycert)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, dummycert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
@@ -411,7 +417,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -465,7 +471,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -488,7 +494,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -512,7 +518,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -535,7 +541,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Getting the latest version of the Certificate")
@@ -559,7 +565,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

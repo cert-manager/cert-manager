@@ -33,15 +33,16 @@ type ValidationFunc func(certificate *cmapi.Certificate, secret *v1.Secret) erro
 func (h *Helper) DefaultValidationSet() []ValidationFunc {
 	return []ValidationFunc{
 		validations.Expect2Or3KeysInSecret,
-		validations.ExpectValidAnnotations,
-		validations.ExpectValidPrivateKeyData,
-		validations.ExpectValidCertificate,
 		validations.ExpectCertificateDNSNamesToMatch,
+		validations.ExpectCertificateOrganizationToMatch,
 		validations.ExpectCertificateURIsToMatch,
+		validations.ExpectCorrectTrustChain,
+		validations.ExpectEmailsToMatch,
+		validations.ExpectValidAnnotations,
+		validations.ExpectValidCertificate,
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
-		validations.ExpectEmailsToMatch,
-		validations.ExpectCorrectTrustChain,
+		validations.ExpectValidPrivateKeyData,
 	}
 }
 
@@ -49,14 +50,13 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 	// basics
 	out := []ValidationFunc{
 		validations.Expect2Or3KeysInSecret,
-		validations.ExpectValidAnnotations,
-		validations.ExpectValidPrivateKeyData,
-		validations.ExpectValidCertificate,
-		validations.ExpectCertificateOrganizationToMatch,
 		validations.ExpectCertificateDNSNamesToMatch,
+		validations.ExpectCertificateOrganizationToMatch,
+		validations.ExpectValidAnnotations,
+		validations.ExpectValidCertificate,
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
-		validations.ExpectCorrectTrustChain,
+		validations.ExpectValidPrivateKeyData,
 	}
 
 	if !fs.Contains(featureset.URISANsFeature) {
@@ -65,6 +65,10 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 
 	if !fs.Contains(featureset.EmailSANsFeature) {
 		out = append(out, validations.ExpectEmailsToMatch)
+	}
+
+	if !fs.Contains(featureset.SaveCAToSecret) {
+		out = append(out, validations.ExpectCorrectTrustChain)
 	}
 
 	return out

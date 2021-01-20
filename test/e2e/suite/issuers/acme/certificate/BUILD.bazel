@@ -20,6 +20,7 @@ go_library(
         "//pkg/util/pki:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/addon:go_default_library",
+        "//test/e2e/framework/helper/featureset:go_default_library",
         "//test/e2e/framework/log:go_default_library",
         "//test/e2e/framework/matcher:go_default_library",
         "//test/e2e/framework/util:go_default_library",
