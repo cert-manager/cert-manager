@@ -21,7 +21,6 @@ spec:
       - crs
     singular: certificaterequest
     categories:
-      - all
       - cert-manager
   scope: Namespaced
   conversion:

@@ -18,7 +18,6 @@ spec:
     plural: issuers
     singular: issuer
     categories:
-      - all
       - cert-manager
   scope: Namespaced
   conversion:

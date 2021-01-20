@@ -21,7 +21,6 @@ spec:
       - certs
     singular: certificate
     categories:
-      - all
       - cert-manager
   scope: Namespaced
   conversion:

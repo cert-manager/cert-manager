@@ -18,7 +18,6 @@ spec:
     plural: clusterissuers
     singular: clusterissuer
     categories:
-      - all
       - cert-manager
   scope: Cluster
   conversion:
