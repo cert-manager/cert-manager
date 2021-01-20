@@ -74,26 +74,27 @@ func getNameservers(path string, defaults []string) []string {
 // this will error if there is a recursive CNAME in the chain
 func updateDomainWithCName(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
 	r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
-	if err == nil && r.Rcode == dns.RcodeSuccess {
-		for _, rr := range r.Answer {
-			if cn, ok := rr.(*dns.CNAME); ok {
-				if cn.Hdr.Name == fqdn {
-					logf.V(logf.DebugLevel).Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
-
-					// check if we were here before to prevent recursive records causing issues
-					for _, fqdnInChain := range fqdnChain {
-						if cn.Target == fqdnInChain {
-							return "", fmt.Errorf("Found CNAME loop on %q when looking up %q", cn.Target, fqdn)
-						}
-					}
-					return updateDomainWithCName(cn.Target, nameservers, append(fqdnChain, fqdn)...)
-				}
-			}
-		}
-	} else if err != nil {
+	if err != nil {
 		return "", err
 	}
-
+	if r.Rcode != dns.RcodeSuccess {
+		return fqdn, err
+	}
+	for _, rr := range r.Answer {
+		cn, ok := rr.(*dns.CNAME)
+		if !ok || cn.Hdr.Name != fqdn {
+			continue
+		}
+		logf.V(logf.DebugLevel).Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
+		// check if we were here before to prevent recursive records causing issues
+		for _, fqdnInChain := range fqdnChain {
+			if cn.Target != fqdnInChain {
+				continue
+			}
+			return "", fmt.Errorf("Found recursive CNAME record to %q when looking up %q", cn.Target, fqdn)
+		}
+		return updateDomainWithCName(cn.Target, nameservers, append(fqdnChain, fqdn)...)
+	}
 	return fqdn, nil
 }
 
