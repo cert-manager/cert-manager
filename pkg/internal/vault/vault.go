@@ -110,15 +110,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 
 	request := v.client.NewRequest("POST", url)
 
-	if vaultIssuer.Namespace != "" {
-		if request.Headers != nil {
-			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		} else {
-			vaultReqHeaders := http.Header{}
-			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-			request.Headers = vaultReqHeaders
-		}
-	}
+	v.addVaultNamespaceToRequest(request)
 
 	if err := request.SetJSONBody(parameters); err != nil {
 		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
@@ -263,16 +255,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
-	vaultIssuer := v.issuer.GetSpec().Vault
-	if vaultIssuer.Namespace != "" {
-		if request.Headers != nil {
-			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		} else {
-			vaultReqHeaders := http.Header{}
-			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-			request.Headers = vaultReqHeaders
-		}
-	}
+	v.addVaultNamespaceToRequest(request)
 
 	resp, err := client.RawRequest(request)
 	if err != nil {
@@ -332,6 +315,8 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 	if err != nil {
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
+
+	v.addVaultNamespaceToRequest(request)
 
 	resp, err := client.RawRequest(request)
 	if err != nil {
@@ -395,4 +380,17 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	}
 	defer healthResp.Body.Close()
 	return nil
+}
+
+func (v *Vault) addVaultNamespaceToRequest(request *vault.Request) {
+	vaultIssuer := v.issuer.GetSpec().Vault
+	if vaultIssuer.Namespace != "" {
+		if request.Headers != nil {
+			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+		} else {
+			vaultReqHeaders := http.Header{}
+			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+			request.Headers = vaultReqHeaders
+		}
+	}
 }
