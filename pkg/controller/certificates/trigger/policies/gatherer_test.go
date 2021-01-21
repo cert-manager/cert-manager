@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -156,7 +155,7 @@ func TestDataForCertificate(t *testing.T) {
 				gen.SetCertificateRevision(1),
 			),
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(&v1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}, nil),
+				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}, nil),
 			),
 			mockListRequests: listers.CRList("default-unit-test-ns", "", []*cmapi.CertificateRequest{
 				gen.CertificateRequest("cr-1",
@@ -172,7 +171,7 @@ func TestDataForCertificate(t *testing.T) {
 					"cert-manager.io/certificate-revision": "1",
 				}),
 			),
-			wantSecret: &v1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}},
+			wantSecret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}},
 		},
 		"should return error when multiple certificaterequests found": {
 			givenCert: gen.Certificate("cert-1",
