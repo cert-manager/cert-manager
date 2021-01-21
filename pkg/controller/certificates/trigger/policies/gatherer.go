@@ -38,12 +38,44 @@ type Gatherer struct {
 	SecretLister             corelisters.SecretLister
 }
 
+// DataForCertificate returns the secret as well as the "current"
+// certificate request associated with the given certificate. It also
+// returns the given certificate as-is.
+//
+// The "current" certificate request designates the certificate request
+// that led to the current revision of the certificate. The "current"
+// certificate request is by definition in a ready state, and can be seen
+// as the source of information of the current certificate.
+//
+// This "current" certificate request is not to be confused with the "next"
+// certificate request that you might get by listing the CRs for the
+// certificate's revision+1; these "next" CRs might not be ready yet.
+//
+// We need the "current" certificate request because this CR contains the
+// "source of truth" of the current certificate, and getting the "current"
+// CR allows is to check whether the current certificate still matches the
+// already-issued certificate request.
+//
+// An error is returned when two certificate requests are found for the
+// couple (certificate's revision, certificate's uid). This function does
+// not return any apierrors.NewNotFound errors for either the secret or the
+// certificate request. Instead, if either the secret or the certificate
+// request is not found, the returned secret (respectively, certificate
+// request) is left nil.
 func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificate) (Input, error) {
 	log := logf.FromContext(ctx)
 	// Attempt to fetch the Secret being managed but tolerate NotFound errors.
 	secret, err := g.SecretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return Input{}, err
+	}
+
+	// There can't be any available "current" certificate request if the
+	// certificate's revision has not been set yet. That is due to the fact
+	// that the certificate's revision field stays nil until the first
+	// certificate request (revision "1") has become ready.
+	if crt.Status.Revision != nil {
+		return Input{Secret: secret, Certificate: crt}, nil
 	}
 
 	// Attempt to fetch the CertificateRequest resource for the current 'status.revision'.
