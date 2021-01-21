@@ -27,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -36,10 +35,10 @@ import (
 
 func TestDataForCertificate(t *testing.T) {
 	tests := map[string]struct {
-		name             string
-		mockSecretLister *listers.FakeSecretLister
-		mockListRequests func(t *testing.T) *listers.CertificateRequestListerMock
-		givenCert        *cmapi.Certificate
+		name               string
+		mockSecretLister   *listers.FakeSecretLister
+		mockRequestsLister func(*listers.CertificateRequestListerMock)
+		givenCert          *cmapi.Certificate
 
 		wantRequest *cmapi.CertificateRequest
 		wantSecret  *corev1.Secret
@@ -53,8 +52,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, apierrors.NewNotFound(cmapi.Resource("Secret"), "secret-1")),
 			),
-			mockListRequests: listers.CRNoop(),
-			wantSecret:       nil,
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
+			wantSecret:         nil,
 		},
 		"should return an error when getsecret returns an unexpect error that isnt not_found": {
 			givenCert: gen.Certificate("cert-1",
@@ -64,8 +63,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, fmt.Errorf("error that is not a not_found error")),
 			),
-			mockListRequests: listers.CRNoop(),
-			wantErr:          "error that is not a not_found error",
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
+			wantErr:            "error that is not a not_found error",
 		},
 		"the returned certificaterequest should stay nil when the list function returns nothing": {
 			givenCert: gen.Certificate("cert-1",
@@ -75,8 +74,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockListRequests: listers.CRNoop(),
-			wantRequest:      nil,
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
+			wantRequest:        nil,
 		},
 		"should find the certificaterequest that matches revision and owner": {
 			givenCert: gen.Certificate("cert-1",
@@ -87,23 +86,28 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockListRequests: listers.CRList("default-unit-test-ns", "", []*cmapi.CertificateRequest{
-				gen.CertificateRequest("cr-4",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-4")),
-					gen.AddCertificateRequestAnnotations(map[string]string{
-						"cert-manager.io/certificate-revision": "4",
-					}),
-				),
-				gen.CertificateRequest("cr-7",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-7")),
-					gen.AddCertificateRequestAnnotations(map[string]string{
-						"cert-manager.io/certificate-revision": "7",
-					}),
-				),
-				gen.CertificateRequest("cr-9",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-9")),
-				),
-			}, nil),
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+				mock.
+					CallCertificateRequests("default-unit-test-ns").
+					CallList("").
+					ReturnList([]*cmapi.CertificateRequest{
+						gen.CertificateRequest("cr-4",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-4")),
+							gen.AddCertificateRequestAnnotations(map[string]string{
+								"cert-manager.io/certificate-revision": "4",
+							}),
+						),
+						gen.CertificateRequest("cr-7",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-7")),
+							gen.AddCertificateRequestAnnotations(map[string]string{
+								"cert-manager.io/certificate-revision": "7",
+							}),
+						),
+						gen.CertificateRequest("cr-9",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-9")),
+						),
+					}, nil)
+			},
 			wantRequest: gen.CertificateRequest("cr-7",
 				gen.AddCertificateRequestOwnerReferences(refToCert("uid-7")),
 				gen.AddCertificateRequestAnnotations(map[string]string{
@@ -120,23 +124,28 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockListRequests: listers.CRList("default-unit-test-ns", "", []*cmapi.CertificateRequest{
-				gen.CertificateRequest("cr-1",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
-				),
-				gen.CertificateRequest("cr-2",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
-					gen.AddCertificateRequestAnnotations(map[string]string{
-						"cert-manager.io/certificate-revision": "42",
-					}),
-				),
-				gen.CertificateRequest("cr-3",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-42")),
-					gen.AddCertificateRequestAnnotations(map[string]string{
-						"cert-manager.io/certificate-revision": "1",
-					}),
-				),
-			}, nil),
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+				mock.
+					CallCertificateRequests("default-unit-test-ns").
+					CallList("").
+					ReturnList([]*cmapi.CertificateRequest{
+						gen.CertificateRequest("cr-1",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
+						),
+						gen.CertificateRequest("cr-2",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
+							gen.AddCertificateRequestAnnotations(map[string]string{
+								"cert-manager.io/certificate-revision": "42",
+							}),
+						),
+						gen.CertificateRequest("cr-3",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-42")),
+							gen.AddCertificateRequestAnnotations(map[string]string{
+								"cert-manager.io/certificate-revision": "1",
+							}),
+						),
+					}, nil)
+			},
 			wantRequest: nil,
 		},
 		"should not return any certificaterequest when certificate has no revision yet": {
@@ -146,8 +155,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockListRequests: listers.CRNoop(),
-			wantRequest:      nil,
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
+			wantRequest:        nil,
 		},
 		"should return the certificaterequest and secret and both found": {
 			givenCert: gen.Certificate("cert-1",
@@ -157,14 +166,19 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}, nil),
 			),
-			mockListRequests: listers.CRList("default-unit-test-ns", "", []*cmapi.CertificateRequest{
-				gen.CertificateRequest("cr-1",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
-					gen.AddCertificateRequestAnnotations(map[string]string{
-						"cert-manager.io/certificate-revision": "1",
-					}),
-				),
-			}, nil),
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+				mock.
+					CallCertificateRequests("default-unit-test-ns").
+					CallList("").
+					ReturnList([]*cmapi.CertificateRequest{
+						gen.CertificateRequest("cr-1",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
+							gen.AddCertificateRequestAnnotations(map[string]string{
+								"cert-manager.io/certificate-revision": "1",
+							}),
+						),
+					}, nil)
+			},
 			wantRequest: gen.CertificateRequest("cr-1",
 				gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
 				gen.AddCertificateRequestAnnotations(map[string]string{
@@ -182,20 +196,24 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockListRequests: listers.CRList("default-unit-test-ns", "", []*cmapi.CertificateRequest{
-				gen.CertificateRequest("cr-1",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
-					gen.AddCertificateRequestAnnotations(map[string]string{
-						"cert-manager.io/certificate-revision": "1",
-					}),
-				),
-				gen.CertificateRequest("cr-1",
-					gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
-					gen.AddCertificateRequestAnnotations(map[string]string{
-						"cert-manager.io/certificate-revision": "1",
-					}),
-				),
-			}, nil),
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+				mock.
+					CallCertificateRequests("default-unit-test-ns").
+					CallList("").
+					ReturnList([]*cmapi.CertificateRequest{
+						gen.CertificateRequest("cr-1",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
+							gen.AddCertificateRequestAnnotations(map[string]string{
+								"cert-manager.io/certificate-revision": "1",
+							}),
+						),
+						gen.CertificateRequest("cr-1",
+							gen.AddCertificateRequestOwnerReferences(refToCert("uid-1")),
+							gen.AddCertificateRequestAnnotations(map[string]string{
+								"cert-manager.io/certificate-revision": "1",
+							}),
+						)}, nil)
+			},
 			wantErr: "multiple CertificateRequest resources exist for the current revision, not triggering new issuance until requests have been cleaned up",
 		},
 		"should return error when the list func returns an error": {
@@ -207,14 +225,22 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockListRequests: listers.CRList("default-unit-test-ns", "", nil, fmt.Errorf("error that is not a not_found error")),
-			wantErr:          "error that is not a not_found error",
+			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+				mock.
+					CallCertificateRequests("default-unit-test-ns").
+					CallList("").
+					ReturnList(nil, fmt.Errorf("error that is not a not_found error"))
+			},
+			wantErr: "error that is not a not_found error",
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			mockLister := listers.MockCertificateRequestLister(t)
+			test.mockRequestsLister(mockLister)
+
 			g := &Gatherer{
-				CertificateRequestLister: test.mockListRequests(t),
+				CertificateRequestLister: mockLister,
 				SecretLister:             test.mockSecretLister,
 			}
 
@@ -234,14 +260,18 @@ func TestDataForCertificate(t *testing.T) {
 	}
 }
 
+// This ad-hoc func creates an owner reference for a certificate. The best
+// practice would be to use metav1.NewControllerRef, but that would require
+// us to duplicate the certificate... so we just let the certificate name
+// empty to work around that.
 func refToCert(ownedUID string) metav1.OwnerReference {
-	groupAndKind := cmapi.SchemeGroupVersion.WithKind("Certificate")
-	return metav1.OwnerReference{
-		// We don't care about the name of the certificate in these unit tests.
-		Name:       "",
-		UID:        types.UID(ownedUID),
-		Controller: pointer.BoolPtr(true),
-		Kind:       groupAndKind.Kind,
-		APIVersion: groupAndKind.Version,
-	}
+	// We don't care about the name of the certificate in these unit
+	// tests. The only thing we really care about is to have the right
+	// owner UID.
+	return *metav1.NewControllerRef(
+		gen.Certificate("",
+			gen.SetCertificateUID(types.UID(ownedUID)),
+		),
+		cmapi.SchemeGroupVersion.WithKind("Certificate"),
+	)
 }
