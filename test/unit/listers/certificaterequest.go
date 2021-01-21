@@ -111,7 +111,7 @@ func (mock *CertificateRequestListerNamespacedMock) ReturnList(returnList []*cma
 
 func (mock *CertificateRequestListerNamespacedMock) CallGet(expectName string) *CertificateRequestListerNamespacedMock {
 	mock.t.Cleanup(func() {
-		assert.True(mock.t, mock.gotListCalled, "lister.CertificateRequest().Get was expected to be called but was not called")
+		assert.True(mock.t, mock.gotGetCalled, "lister.CertificateRequest().Get was expected to be called but was not called")
 	})
 	mock.expectGetCalled = true
 	mock.expectGetName = expectName
