@@ -384,7 +384,7 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 
 func (v *Vault) addVaultNamespaceToRequest(request *vault.Request) {
 	vaultIssuer := v.issuer.GetSpec().Vault
-	if vaultIssuer.Namespace != "" {
+	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
 		if request.Headers != nil {
 			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
 		} else {
