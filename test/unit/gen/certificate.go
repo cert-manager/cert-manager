@@ -220,3 +220,14 @@ func AddCertificateLabels(labels map[string]string) CertificateModifier {
 		}
 	}
 }
+
+// CertificateRef creates an owner reference for a certificate without
+// having to give the full certificate.
+func CertificateRef(certName, ownedUID string) metav1.OwnerReference {
+	return *metav1.NewControllerRef(
+		Certificate(certName,
+			SetCertificateUID(types.UID(ownedUID)),
+		),
+		v1.SchemeGroupVersion.WithKind("Certificate"),
+	)
+}

@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -92,24 +91,24 @@ func TestDataForCertificate(t *testing.T) {
 					CallList("").
 					ReturnList([]*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-4",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-4")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-4")),
 							gen.AddCertificateRequestAnnotations(map[string]string{
 								"cert-manager.io/certificate-revision": "4",
 							}),
 						),
 						gen.CertificateRequest("cr-7",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-7")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-7")),
 							gen.AddCertificateRequestAnnotations(map[string]string{
 								"cert-manager.io/certificate-revision": "7",
 							}),
 						),
 						gen.CertificateRequest("cr-9",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-9")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-9")),
 						),
 					}, nil)
 			},
 			wantRequest: gen.CertificateRequest("cr-7",
-				gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-7")),
+				gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-7")),
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					"cert-manager.io/certificate-revision": "7",
 				}),
@@ -130,16 +129,16 @@ func TestDataForCertificate(t *testing.T) {
 					CallList("").
 					ReturnList([]*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-1")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
 						),
 						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-1")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
 							gen.AddCertificateRequestAnnotations(map[string]string{
 								"cert-manager.io/certificate-revision": "42",
 							}),
 						),
 						gen.CertificateRequest("cr-42",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-42", "uid-42")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-42", "uid-42")),
 							gen.AddCertificateRequestAnnotations(map[string]string{
 								"cert-manager.io/certificate-revision": "1",
 							}),
@@ -172,7 +171,7 @@ func TestDataForCertificate(t *testing.T) {
 					CallList("").
 					ReturnList([]*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-1")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
 							gen.AddCertificateRequestAnnotations(map[string]string{
 								"cert-manager.io/certificate-revision": "1",
 							}),
@@ -180,7 +179,7 @@ func TestDataForCertificate(t *testing.T) {
 					}, nil)
 			},
 			wantRequest: gen.CertificateRequest("cr-1",
-				gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-1")),
+				gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					"cert-manager.io/certificate-revision": "1",
 				}),
@@ -202,13 +201,13 @@ func TestDataForCertificate(t *testing.T) {
 					CallList("").
 					ReturnList([]*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-1")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
 							gen.AddCertificateRequestAnnotations(map[string]string{
 								"cert-manager.io/certificate-revision": "1",
 							}),
 						),
 						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(certRef("cert-1", "uid-1")),
+							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
 							gen.AddCertificateRequestAnnotations(map[string]string{
 								"cert-manager.io/certificate-revision": "1",
 							}),
@@ -258,16 +257,4 @@ func TestDataForCertificate(t *testing.T) {
 			assert.Equal(t, test.givenCert, got.Certificate, "input cert should always be equal to returned cert")
 		})
 	}
-}
-
-// This ad-hoc func creates an owner reference for a certificate. The best
-// practice would be to use metav1.NewControllerRef, but that would require
-// us to duplicate the certificate...
-func certRef(certName, ownedUID string) metav1.OwnerReference {
-	return *metav1.NewControllerRef(
-		gen.Certificate(certName,
-			gen.SetCertificateUID(types.UID(ownedUID)),
-		),
-		cmapi.SchemeGroupVersion.WithKind("Certificate"),
-	)
 }
