@@ -286,7 +286,7 @@ func TestValidateCAA(t *testing.T) {
 	}
 }
 
-func Test_updateDomainWithCName(t *testing.T) {
+func Test_followCNAMEs(t *testing.T) {
 	dnsQuery = func(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
 		msg := &dns.Msg{}
 		msg.Rcode = dns.RcodeSuccess
@@ -380,13 +380,13 @@ func Test_updateDomainWithCName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := updateDomainWithCName(tt.args.fqdn, tt.args.nameservers, tt.args.fqdnChain...)
+			got, err := followCNAMEs(tt.args.fqdn, tt.args.nameservers, tt.args.fqdnChain...)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("updateDomainWithCName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("followCNAMEs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("updateDomainWithCName() got = %v, want %v", got, tt.want)
+				t.Errorf("followCNAMEs() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
