@@ -62,3 +62,12 @@ def install():
         tag = "9.11.3-20190706",
         digest = "sha256:b8e84f9a9fe0c05c3a963606c3d0170622be9c5e8800431ffcaadb0c79a3ff75"
     )
+
+    ## Fetch sample-external-issuer for use during e2e tests
+    container_pull(
+        name = "io_ghcr_wallrj_sample-external-issuer_controller",
+        registry = "ghcr.io",
+        repository = "wallrj/sample-external-issuer/controller",
+        tag = "v0.0.0-30-gf333b9e",
+        digest = "sha256:609a12fca03554a186e516ef065b4152f02596fba697e3cc45f3593654c87a86"
+    )
