@@ -23,7 +23,7 @@ func DNS01LookupFQDN(domain string, followCNAME bool, nameservers ...string) (st
 	// Check if the domain has CNAME then return that
 	if followCNAME {
 		var err error
-		fqdn, err = updateDomainWithCName(fqdn, nameservers)
+		fqdn, err = followCNAMEs(fqdn, nameservers)
 		if err != nil {
 			return "", err
 		}
