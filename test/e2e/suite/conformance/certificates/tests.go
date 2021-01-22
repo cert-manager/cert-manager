@@ -17,6 +17,7 @@ limitations under the License.
 package certificates
 
 import (
+	"bytes"
 	"context"
 	"time"
 
@@ -573,5 +574,62 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		s.it(f, "should not re-issue a certificate on usages change", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{s.newDomain()},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Fetching content of the issued Certificate...")
+			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
+				Get(context.TODO(), testCertificate.Spec.SecretName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
+
+			sec = sec.DeepCopy()
+			crtPEM1 := sec.Data[corev1.TLSCertKey]
+
+			cert, err := f.Helper().CMClient.CertmanagerV1().Certificates(f.Namespace.Name).Get(ctx, "testcert", metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			cert.Spec.Usages = append(cmapi.DefaultKeyUsages(), cmapi.UsageServerAuth)
+			By("Updating usages on Certificate")
+			err = f.CRClient.Update(ctx, cert)
+			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for the Certificate to be ready (if test oks okay it already will be)...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Fetching content of the issued Certificate after change...")
+			sec, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
+				Get(context.TODO(), testCertificate.Spec.SecretName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
+
+			sec = sec.DeepCopy()
+			crtPEM2 := sec.Data[corev1.TLSCertKey]
+
+			if !bytes.Equal(crtPEM1, crtPEM2) {
+				Fail("Certificate changed when Certificate Key Usages got updated")
+			}
+
+		}, featureset.OnlySAN)
 	})
 }
