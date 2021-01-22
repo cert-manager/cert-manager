@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/labels"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -136,8 +135,7 @@ type CertificateRequestListerMock struct {
 func (mock *CertificateRequestListerMock) CertificateRequests(gotNamespace string) cmlist.CertificateRequestNamespaceLister {
 	mock.mu.Lock()
 	defer mock.mu.Unlock()
-	require.True(mock.t, mock.expectNamespaceCalled, curFuncName()+" not expected to be called")
-	require.False(mock.t, mock.gotNamespaceCalled, curFuncName()+" already called once before")
+	assertCanBeCalled(mock.t, mock.expectNamespaceCalled, mock.gotNamespaceCalled, curFuncName(), assert.CallerInfo())
 	assert.Equal(mock.t, mock.expectNamespace, gotNamespace)
 	mock.gotNamespaceCalled = true
 	return mock.returnNamespaceLister
@@ -146,8 +144,7 @@ func (mock *CertificateRequestListerMock) CertificateRequests(gotNamespace strin
 func (mock *CertificateRequestListerMock) List(gotLabel labels.Selector) (ret []*cmapi.CertificateRequest, err error) {
 	mock.mu.Lock()
 	defer mock.mu.Unlock()
-	require.True(mock.t, mock.expectListCalled, curFuncName()+" not expected to be called")
-	require.False(mock.t, mock.gotListCalled, curFuncName()+" already called once before")
+	assertCanBeCalled(mock.t, mock.expectListCalled, mock.gotListCalled, curFuncName(), assert.CallerInfo())
 	assert.Equal(mock.t, mock.expectListSelector, gotLabel.String())
 	mock.gotListCalled = true
 	return mock.returnList, mock.returnListErr
@@ -171,20 +168,18 @@ type CertificateRequestListerNamespacedMock struct {
 func (mock *CertificateRequestListerNamespacedMock) List(got labels.Selector) (ret []*cmapi.CertificateRequest, err error) {
 	mock.mu.Lock()
 	defer mock.mu.Unlock()
-	require.NotNil(mock.t, mock.expectListCalled, curFuncName()+" not expected to be called")
-	require.False(mock.t, mock.gotListCalled, curFuncName()+" already called once before")
-	assert.Equal(mock.t, mock.expectListSelector, got.String())
+	assertCanBeCalled(mock.t, mock.expectListCalled, mock.gotListCalled, curFuncName(), assert.CallerInfo())
 	mock.gotListCalled = true
+	assert.Equal(mock.t, mock.expectListSelector, got.String())
 	return mock.returnList, mock.returnListErr
 }
 
 func (mock *CertificateRequestListerNamespacedMock) Get(gotName string) (cr *cmapi.CertificateRequest, e error) {
 	mock.mu.Lock()
 	defer mock.mu.Unlock()
-	require.NotNil(mock.t, mock.expectGetCalled, curFuncName()+" not expected to be called")
-	require.False(mock.t, mock.gotGetCalled, curFuncName()+" already called once before")
-	assert.Equal(mock.t, mock.expectGetName, gotName)
+	assertCanBeCalled(mock.t, mock.expectGetCalled, mock.gotGetCalled, curFuncName(), assert.CallerInfo())
 	mock.gotGetCalled = true
+	assert.Equal(mock.t, mock.expectGetName, gotName)
 	return nil, nil
 }
 
@@ -196,6 +191,18 @@ func curFuncName() (fnName string) {
 	}
 
 	return runtime.FuncForPC(pc).Name()
+}
+
+func assertCanBeCalled(t *testing.T, expectCalled, gotCalled bool, funcName string, stackFrames []string) {
+	// No need to show the file:line of the caller of this function since
+	// it belongs to "testing framework".
+	stackFrames = stackFrames[1:]
+	if !expectCalled {
+		FailWithStack(t, stackFrames, funcName+" is not expected to be called but was called")
+	}
+	if gotCalled {
+		FailWithStack(t, stackFrames, funcName+" was expected to run once but was run twice")
+	}
 }
 
 // Since this func is meant to be called with t.Cleanup, the stack frame
@@ -220,12 +227,13 @@ func assertWasCalled(t *testing.T, funcWasCalled *bool, funcName string, stackFr
 		}
 
 		// No need to show the file:line of the caller of this function since
-		// it belongs to "testing code"; the user wants to know about their
-		// _test.go files, not the libraries around.
+		// it belongs to "testing frqmework".
 		FailWithStack(t, stackFrames[1:], funcName+" was expected to be called but was not called")
 	}
 }
 
+// FailWithStack does the same as assert.Fail except it gives you the
+// ability to give your own stack frames.
 func FailWithStack(t *testing.T, stackFrames []string, msg string) {
 	// The following is a vendored version of Testify's assert.Fail.
 	type labeledContent struct{ Label, Content string }
