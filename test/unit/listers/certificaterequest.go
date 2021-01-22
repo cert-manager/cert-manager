@@ -31,11 +31,15 @@ import (
 	cmlist "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 )
 
-// MockCertificateRequestLister allows you to create a mock lister. This
-// mock lister will make sure that the input parameters that the mock
-// functions will be called with match the expected input parameters that
-// you specified e.g., with CallList. The mock also makes sure the
-// function(s) expected are actually called (or not called, depending).
+// MockCertificateRequestLister allows you to create a mock certificate
+// requests lister. This mock lister does three things:
+//
+//  1. it checks that the function under test has made the call to the mocked
+//     function using the expected input arguments.
+//  2. it checks that the function under test actually called the mock as
+//     expected. Enforcing whether or not the call to the mock has been made
+//     allows us to make sure the expected input arguments have been checked.
+//  3. it returns the given "mocked" return values.
 //
 // For example:
 //
@@ -45,7 +49,7 @@ import (
 //       CallGet("certificate-1").
 //       ReturnGet(&cmapi.CertificateRequest{}, nil)
 //
-// will create a lister mock that expects the following call excatly once:
+// will create a lister mock that expects the following call exactly once:
 //
 //   lister.CertificateRequest("default").Get("certificate-1")
 //
