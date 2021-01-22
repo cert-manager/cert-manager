@@ -31,9 +31,23 @@ import (
 )
 
 type Input struct {
-	Certificate            *cmapi.Certificate
+	Certificate *cmapi.Certificate
+	Secret      *corev1.Secret
+
+	// The "current" certificate request designates the certificate request
+	// that led to the current revision of the certificate. The "current"
+	// certificate request is by definition in a ready state, and can be seen
+	// as the source of information of the current certificate.
+	//
+	// This "current" certificate request is not to be confused with the "next"
+	// certificate request that you might get by listing the CRs for the
+	// certificate's revision+1; these "next" CRs might not be ready yet.
+	//
+	// We need the "current" certificate request because this CR contains the
+	// "source of truth" of the current certificate, and getting the "current"
+	// CR allows is to check whether the current certificate still matches the
+	// already-issued certificate request.
 	CurrentRevisionRequest *cmapi.CertificateRequest
-	Secret                 *corev1.Secret
 }
 
 // A Func evaluates the given input data and decides whether a

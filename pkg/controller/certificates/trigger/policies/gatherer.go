@@ -74,7 +74,7 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 	// certificate's revision has not been set yet. That is due to the fact
 	// that the certificate's revision field stays nil until the first
 	// certificate request (revision "1") has become ready.
-	if crt.Status.Revision != nil {
+	if crt.Status.Revision == nil {
 		return Input{Secret: secret, Certificate: crt}, nil
 	}
 

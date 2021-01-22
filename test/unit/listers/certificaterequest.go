@@ -17,7 +17,10 @@ limitations under the License.
 package listers
 
 import (
+	"bufio"
+	"bytes"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -63,9 +66,7 @@ func MockCertificateRequestLister(t *testing.T) *CertificateRequestListerMock {
 // as detailed in
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
 func (mock *CertificateRequestListerMock) CallList(expectSelector string) *CertificateRequestListerMock {
-	mock.t.Cleanup(func() {
-		assert.True(mock.t, mock.gotListCalled, "lister.List was expected to be called but was not called")
-	})
+	mock.t.Cleanup(assertWasCalled(mock.t, &mock.gotListCalled, "lister.List", assert.CallerInfo()))
 	mock.expectListCalled = true
 	mock.expectListSelector = expectSelector
 	return mock
@@ -81,9 +82,7 @@ func (mock *CertificateRequestListerMock) ReturnList(returnList []*cmapi.Certifi
 // mock func. The return values of this mock function are already taken
 // care of.
 func (mock *CertificateRequestListerMock) CallCertificateRequests(expectNamespace string) *CertificateRequestListerNamespacedMock {
-	mock.t.Cleanup(func() {
-		assert.True(mock.t, mock.gotNamespaceCalled, "lister.CertificateRequests was expected to be called but was not called")
-	})
+	mock.t.Cleanup(assertWasCalled(mock.t, &mock.gotNamespaceCalled, "lister.CertificateRequests", assert.CallerInfo()))
 	mock.expectNamespaceCalled = true
 	mock.expectNamespace = expectNamespace
 	mock.returnNamespaceLister = &CertificateRequestListerNamespacedMock{t: mock.t}
@@ -95,9 +94,7 @@ func (mock *CertificateRequestListerMock) CallCertificateRequests(expectNamespac
 // as detailed in
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
 func (mock *CertificateRequestListerNamespacedMock) CallList(expectSelector string) *CertificateRequestListerNamespacedMock {
-	mock.t.Cleanup(func() {
-		assert.True(mock.t, mock.gotListCalled, "lister.CertificateRequest().List was expected to be called but was not called")
-	})
+	mock.t.Cleanup(assertWasCalled(mock.t, &mock.gotListCalled, "lister.CertificateRequest().List", assert.CallerInfo()))
 	mock.expectListCalled = true
 	mock.expectListSelector = expectSelector
 	return mock
@@ -110,9 +107,7 @@ func (mock *CertificateRequestListerNamespacedMock) ReturnList(returnList []*cma
 }
 
 func (mock *CertificateRequestListerNamespacedMock) CallGet(expectName string) *CertificateRequestListerNamespacedMock {
-	mock.t.Cleanup(func() {
-		assert.True(mock.t, mock.gotGetCalled, "lister.CertificateRequest().Get was expected to be called but was not called")
-	})
+	mock.t.Cleanup(assertWasCalled(mock.t, &mock.gotGetCalled, "lister.CertificateRequest().Get", assert.CallerInfo()))
 	mock.expectGetCalled = true
 	mock.expectGetName = expectName
 	return mock
@@ -193,12 +188,79 @@ func (mock *CertificateRequestListerNamespacedMock) Get(gotName string) (cr *cma
 	return nil, nil
 }
 
+// Returns the caller's function name with the full package import path.
 func curFuncName() (fnName string) {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
 		return "?"
 	}
 
-	fn := runtime.FuncForPC(pc)
-	return fn.Name()
+	return runtime.FuncForPC(pc).Name()
+}
+
+// Since this func is meant to be called with t.Cleanup, the stack frame
+// information about the source of the call is lost. Testify usually gives
+// us a useful file:line indication of where an assertion failed, and
+// t.Cleanup makes this stack trace unreadable with tons of testing.go
+// layers.
+//
+// Until Testify fixes this, we keep track of the caller information right
+// from the start with the stackFrames argument, and we use a patched
+// version of assert.Fail that can be given a stack frames.
+func assertWasCalled(t *testing.T, funcWasCalled *bool, funcName string, stackFrames []string) func() {
+	return func() {
+		// We pass this boolean by reference due to the fact that this
+		// assertion is meant to be called in t.Cleanup, which means we
+		// cannot pass by value. If we were to pass by value, we would
+		// obtain the boolean at the time if the call to t.Cleanup, not the
+		// boolean value that was modified throughout the test.
+		if *funcWasCalled {
+			// Happy case, the function that expected to be run was run.
+			return
+		}
+
+		// No need to show the file:line of the caller of this function since
+		// it belongs to "testing code"; the user wants to know about their
+		// _test.go files, not the libraries around.
+		FailWithStack(t, stackFrames[1:], funcName+" was expected to be called but was not called")
+	}
+}
+
+func FailWithStack(t *testing.T, stackFrames []string, msg string) {
+	// The following is a vendored version of Testify's assert.Fail.
+	type labeledContent struct{ Label, Content string }
+	content := []labeledContent{
+		{Label: "Error Trace", Content: strings.Join(stackFrames, "\n")},
+		{Label: "Error", Content: msg},
+		{Label: "Test", Content: t.Name()},
+	}
+
+	// Helper that re-wrap and indent the "content" fields of the above
+	// content array.
+	indentMessageLines := func(message string, longestLabelLen int) string {
+		buf := new(bytes.Buffer)
+		for i, scanner := 0, bufio.NewScanner(strings.NewReader(message)); scanner.Scan(); i++ {
+			if i != 0 {
+				buf.WriteString("\n\t" + strings.Repeat(" ", longestLabelLen+1) + "\t")
+			}
+			buf.WriteString(scanner.Text())
+		}
+		return buf.String()
+	}
+
+	longestLabelLen := 0
+	for _, v := range content {
+		if len(v.Label) > longestLabelLen {
+			longestLabelLen = len(v.Label)
+		}
+	}
+
+	// Turn the above content slice into a nicely formatted string that
+	// wraps and properly indented.
+	var output string
+	for _, v := range content {
+		output += "\t" + v.Label + ":" + strings.Repeat(" ", longestLabelLen-len(v.Label)) + "\t" + indentMessageLines(v.Content, longestLabelLen) + "\n"
+	}
+
+	t.Errorf("\n%s", ""+output)
 }
