@@ -35,14 +35,14 @@ import (
 
 func TestDataForCertificate(t *testing.T) {
 	tests := map[string]struct {
-		name               string
-		mockSecretLister   *listers.FakeSecretLister
-		mockRequestsLister func(*listers.CertificateRequestListerMock)
-		givenCert          *cmapi.Certificate
+		name             string
+		mockSecretLister *listers.FakeSecretLister
+		givenCert        *cmapi.Certificate
 
-		wantRequest *cmapi.CertificateRequest
-		wantSecret  *corev1.Secret
-		wantErr     string
+		wantRequestsListerCall func(*listers.CertificateRequestListerMock)
+		wantRequest            *cmapi.CertificateRequest
+		wantSecret             *corev1.Secret
+		wantErr                string
 	}{
 		"the returned secret should stay nil when it is not found": {
 			givenCert: gen.Certificate("cert-1",
@@ -52,8 +52,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, apierrors.NewNotFound(cmapi.Resource("Secret"), "secret-1")),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
-			wantSecret:         nil,
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {},
+			wantSecret:             nil,
 		},
 		"should return an error when getsecret returns an unexpect error that isnt not_found": {
 			givenCert: gen.Certificate("cert-1",
@@ -63,8 +63,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, fmt.Errorf("error that is not a not_found error")),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
-			wantErr:            "error that is not a not_found error",
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {},
+			wantErr:                "error that is not a not_found error",
 		},
 		"the returned certificaterequest should stay nil when the list function returns nothing": {
 			givenCert: gen.Certificate("cert-1",
@@ -74,8 +74,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
-			wantRequest:        nil,
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {},
+			wantRequest:            nil,
 		},
 		"should find the certificaterequest that matches revision and owner": {
 			givenCert: gen.Certificate("cert-1",
@@ -86,7 +86,7 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {
 				mock.
 					CallCertificateRequests("default-unit-test-ns").
 					CallList("").
@@ -124,7 +124,7 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {
 				mock.
 					CallCertificateRequests("default-unit-test-ns").
 					CallList("").
@@ -155,8 +155,8 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {},
-			wantRequest:        nil,
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {},
+			wantRequest:            nil,
 		},
 		"should return the certificaterequest and secret and both found": {
 			givenCert: gen.Certificate("cert-1",
@@ -166,7 +166,7 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}, nil),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {
 				mock.
 					CallCertificateRequests("default-unit-test-ns").
 					CallList("").
@@ -196,7 +196,7 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {
 				mock.
 					CallCertificateRequests("default-unit-test-ns").
 					CallList("").
@@ -225,7 +225,7 @@ func TestDataForCertificate(t *testing.T) {
 			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
 				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{}, nil),
 			),
-			mockRequestsLister: func(mock *listers.CertificateRequestListerMock) {
+			wantRequestsListerCall: func(mock *listers.CertificateRequestListerMock) {
 				mock.
 					CallCertificateRequests("default-unit-test-ns").
 					CallList("").
@@ -237,7 +237,7 @@ func TestDataForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			mockLister := listers.MockCertificateRequestLister(t)
-			test.mockRequestsLister(mockLister)
+			test.wantRequestsListerCall(mockLister)
 
 			g := &Gatherer{
 				CertificateRequestLister: mockLister,
