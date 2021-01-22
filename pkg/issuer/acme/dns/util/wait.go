@@ -86,7 +86,7 @@ func updateDomainWithCName(fqdn string, nameservers []string, fqdnChain ...strin
 			continue
 		}
 		logf.V(logf.DebugLevel).Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
-		// check if we were here before to prevent recursive records causing issues
+		// Check if we were here before to prevent loops in the chain of CNAME records.
 		for _, fqdnInChain := range fqdnChain {
 			if cn.Target != fqdnInChain {
 				continue
