@@ -317,7 +317,8 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					"foo":                     "bar",
 				}
 				resultingPod.Spec.NodeSelector = map[string]string{
-					"node": "selector",
+					"kubernetes.io/os": "linux",
+					"node":             "selector",
 				}
 				resultingPod.Spec.Tolerations = []corev1.Toleration{
 					{
