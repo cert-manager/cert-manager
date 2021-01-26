@@ -17,6 +17,7 @@ limitations under the License.
 package convert
 
 import (
+	"context"
 	"fmt"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -83,7 +84,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdConvert returns a cobra command for converting cert-manager resources
-func NewCmdConvert(ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdConvert(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{

@@ -75,9 +75,11 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 		ns1     = "testns-1"
 	)
 
+	ctx := context.TODO()
+
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns1}}
-	_, err := kubernetesCl.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	_, err := kubernetesCl.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +113,7 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 				InputFilename:    test.inputFile,
 				CertFileName:     test.certFilename,
 			}
-			err := opts.Run(test.inputArgs)
+			err := opts.Run(ctx, test.inputArgs)
 			if err != nil {
 				t.Fatal("failed to set up test to fail after writing private key to file and during creating CR")
 			}
@@ -120,14 +122,14 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 			// Now we try to create another CR with the same name, but storing the private key somewhere else
 			// This should break after writing private key to file and during creating CR
 			opts.KeyFilename = test.keyFilename
-			// Validating args and flags
+			// Validating args and flagscontext.TODO()
 			err = opts.Validate(test.inputArgs)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Run ctl create cr command with input options
-			err = opts.Run(test.inputArgs)
+			err = opts.Run(ctx, test.inputArgs)
 			if err != nil {
 				if !test.expRunErr {
 					t.Errorf("got unexpected error when trying to create CR: %v", err)
@@ -314,7 +316,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			}
 
 			// Run ctl create cr command with input options
-			err = opts.Run(test.inputArgs)
+			err = opts.Run(ctx, test.inputArgs)
 			if err != nil {
 				if !test.expRunErr {
 					t.Errorf("got unexpected error when trying to create CR: %v", err)

@@ -75,7 +75,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdRenew returns a cobra command for renewing Certificates
-func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdRenew(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "renew",
@@ -85,7 +85,7 @@ func NewCmdRenew(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory)
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Validate(cmd, args))
-			cmdutil.CheckErr(o.Run(args))
+			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
 
@@ -139,8 +139,7 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 }
 
 // Run executes renew command
-func (o *Options) Run(args []string) error {
-	ctx := context.TODO()
+func (o *Options) Run(ctx context.Context, args []string) error {
 
 	nss := []corev1.Namespace{{ObjectMeta: metav1.ObjectMeta{Name: o.Namespace}}}
 

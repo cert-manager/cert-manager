@@ -536,7 +536,7 @@ CertificateRequest:
 				Namespace:  test.inputNamespace,
 			}
 
-			err = opts.Run(test.inputArgs)
+			err = opts.Run(ctx, test.inputArgs)
 			if err != nil {
 				if !test.expErr {
 					t.Errorf("got unexpected error: %v", err)

@@ -17,6 +17,8 @@ limitations under the License.
 package inspect
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -24,14 +26,14 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/inspect/secret"
 )
 
-func NewCmdInspect(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdInspect(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	cmds := &cobra.Command{
 		Use:   "inspect",
 		Short: "Get details on certificate related resources",
 		Long:  `Get details on certificate related resources, e.g. secrets`,
 	}
 
-	cmds.AddCommand(secret.NewCmdInspectSecret(ioStreams, factory))
+	cmds.AddCommand(secret.NewCmdInspectSecret(ctx, ioStreams, factory))
 
 	return cmds
 }

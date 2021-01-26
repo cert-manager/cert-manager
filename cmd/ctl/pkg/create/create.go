@@ -17,6 +17,8 @@ limitations under the License.
 package create
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -24,14 +26,14 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
 )
 
-func NewCmdCreate(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdCreate(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	cmds := &cobra.Command{
 		Use:   "create",
 		Short: "Create cert-manager resources",
 		Long:  `Create cert-manager resources e.g. a CertificateRequest`,
 	}
 
-	cmds.AddCommand(certificaterequest.NewCmdCreateCR(ioStreams, factory))
+	cmds.AddCommand(certificaterequest.NewCmdCreateCR(ctx, ioStreams, factory))
 
 	return cmds
 }
