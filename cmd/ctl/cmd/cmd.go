@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -38,7 +39,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/version"
 )
 
-func NewCertManagerCtlCommand(in io.Reader, out, err io.Writer, stopCh <-chan struct{}) *cobra.Command {
+func NewCertManagerCtlCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.Command {
 	cmds := &cobra.Command{
 		Use:   "cert-manager",
 		Short: "cert-manager CLI tool to manage and configure cert-manager resources",
@@ -63,12 +64,12 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	}
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
-	cmds.AddCommand(version.NewCmdVersion(ioStreams))
-	cmds.AddCommand(convert.NewCmdConvert(ioStreams))
-	cmds.AddCommand(create.NewCmdCreate(ioStreams, factory))
-	cmds.AddCommand(renew.NewCmdRenew(ioStreams, factory))
-	cmds.AddCommand(status.NewCmdStatus(ioStreams, factory))
-	cmds.AddCommand(inspect.NewCmdInspect(ioStreams, factory))
+	cmds.AddCommand(version.NewCmdVersion(ctx, ioStreams))
+	cmds.AddCommand(convert.NewCmdConvert(ctx, ioStreams))
+	cmds.AddCommand(create.NewCmdCreate(ctx, ioStreams, factory))
+	cmds.AddCommand(renew.NewCmdRenew(ctx, ioStreams, factory))
+	cmds.AddCommand(status.NewCmdStatus(ctx, ioStreams, factory))
+	cmds.AddCommand(inspect.NewCmdInspect(ctx, ioStreams, factory))
 
 	return cmds
 }

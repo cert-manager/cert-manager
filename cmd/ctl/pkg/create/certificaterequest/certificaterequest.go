@@ -110,7 +110,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdCreateCR returns a cobra command for create CertificateRequest
-func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "certificaterequest",
@@ -121,7 +121,7 @@ func NewCmdCreateCR(ioStreams genericclioptions.IOStreams, factory cmdutil.Facto
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Complete(factory))
-			cmdutil.CheckErr(o.Run(args))
+			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
 	cmd.Flags().StringVar(&o.InputFilename, "from-certificate-file", o.InputFilename,
@@ -185,7 +185,7 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 }
 
 // Run executes create certificaterequest command
-func (o *Options) Run(args []string) error {
+func (o *Options) Run(ctx context.Context, args []string) error {
 	builder := new(resource.Builder)
 
 	// Read file as internal API version
@@ -262,7 +262,7 @@ func (o *Options) Run(args []string) error {
 	if ns == "" {
 		ns = o.CmdNamespace
 	}
-	req, err = o.CMClient.CertmanagerV1().CertificateRequests(ns).Create(context.TODO(), req, metav1.CreateOptions{})
+	req, err = o.CMClient.CertmanagerV1().CertificateRequests(ns).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating CertificateRequest: %w", err)
 	}
@@ -272,7 +272,7 @@ func (o *Options) Run(args []string) error {
 		fmt.Fprintf(o.ErrOut, "CertificateRequest %v in namespace %v has not been signed yet. Wait until it is signed...\n",
 			req.Name, req.Namespace)
 		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
-			req, err = o.CMClient.CertmanagerV1().CertificateRequests(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
+			req, err = o.CMClient.CertmanagerV1().CertificateRequests(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}

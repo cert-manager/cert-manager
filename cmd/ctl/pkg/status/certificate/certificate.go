@@ -89,7 +89,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdStatusCert returns a cobra command for status certificate
-func NewCmdStatusCert(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdStatusCert(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "certificate",
@@ -99,7 +99,7 @@ func NewCmdStatusCert(ioStreams genericclioptions.IOStreams, factory cmdutil.Fac
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Complete(factory))
-			cmdutil.CheckErr(o.Run(args))
+			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
 	return cmd
@@ -139,8 +139,8 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 }
 
 // Run executes status certificate command
-func (o *Options) Run(args []string) error {
-	data, err := o.GetResources(args[0])
+func (o *Options) Run(ctx context.Context, args []string) error {
+	data, err := o.GetResources(ctx, args[0])
 	if err != nil {
 		return err
 	}
@@ -157,9 +157,7 @@ func (o *Options) Run(args []string) error {
 // in a Data struct and returns it.
 // Returns error if error occurs when finding Certificate resource or while preparing to find other resources,
 // e.g. when creating clientSet
-func (o *Options) GetResources(crtName string) (*Data, error) {
-	ctx := context.TODO()
-
+func (o *Options) GetResources(ctx context.Context, crtName string) (*Data, error) {
 	clientSet, err := kubernetes.NewForConfig(o.RESTConfig)
 	if err != nil {
 		return nil, err

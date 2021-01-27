@@ -172,7 +172,7 @@ func TestCtlRenew(t *testing.T) {
 				IOStreams:  streams,
 			}
 
-			if err := cmd.Run(test.inputArgs); err != nil {
+			if err := cmd.Run(ctx, test.inputArgs); err != nil {
 				t.Fatal(err)
 			}
 

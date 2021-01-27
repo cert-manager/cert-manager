@@ -111,7 +111,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdInspectSecret returns a cobra command for status certificate
-func NewCmdInspectSecret(ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdInspectSecret(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "secret",
@@ -121,7 +121,7 @@ func NewCmdInspectSecret(ioStreams genericclioptions.IOStreams, factory cmdutil.
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Complete(factory))
-			cmdutil.CheckErr(o.Run(args))
+			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
 	return cmd
@@ -161,9 +161,7 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 }
 
 // Run executes status certificate command
-func (o *Options) Run(args []string) error {
-	ctx := context.TODO()
-
+func (o *Options) Run(ctx context.Context, args []string) error {
 	secret, err := o.clientSet.CoreV1().Secrets(o.Namespace).Get(ctx, args[0], metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error when finding Secret %q: %w\n", args[0], err)

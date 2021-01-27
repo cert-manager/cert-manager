@@ -8,6 +8,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//cmd/ctl/cmd:go_default_library",
+        "//pkg/util:go_default_library",
         "//pkg/util/cmd:go_default_library",
     ],
 )
