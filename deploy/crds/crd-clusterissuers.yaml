@@ -17,6 +17,8 @@ spec:
     listKind: ClusterIssuerList
     plural: clusterissuers
     singular: clusterissuer
+    categories:
+      - cert-manager
   scope: Cluster
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
