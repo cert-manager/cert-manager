@@ -26,6 +26,7 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/cainjector/app"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
@@ -37,12 +38,7 @@ func main() {
 	// Set up signal handlers and a cancellable context which gets cancelled on
 	// when either SIGINT or SIGTERM are received.
 	stopCh := utilcmd.SetupSignalHandler()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		<-stopCh
-		cancel()
-	}()
+	ctx := util.ContextWithStopCh(context.Background(), stopCh)
 
 	cmd := app.NewCommandStartInjectorController(ctx, os.Stdout, os.Stderr)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)

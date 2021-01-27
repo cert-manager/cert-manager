@@ -10,6 +10,7 @@ go_library(
     deps = [
         "//cmd/cainjector/app:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/util:go_default_library",
         "//pkg/util/cmd:go_default_library",
         "@io_k8s_sigs_controller_runtime//:go_default_library",
     ],
