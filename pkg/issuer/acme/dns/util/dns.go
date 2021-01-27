@@ -22,10 +22,8 @@ func DNS01LookupFQDN(domain string, followCNAME bool, nameservers ...string) (st
 
 	// Check if the domain has CNAME then return that
 	if followCNAME {
-		r, err := DNSQuery(fqdn, dns.TypeCNAME, nameservers, true)
-		if err == nil && r.Rcode == dns.RcodeSuccess {
-			fqdn = updateDomainWithCName(r, fqdn)
-		}
+		var err error
+		fqdn, err = followCNAMEs(fqdn, nameservers)
 		if err != nil {
 			return "", err
 		}

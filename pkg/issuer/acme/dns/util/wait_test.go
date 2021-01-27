@@ -9,6 +9,7 @@ this directory.
 package util
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -282,5 +283,111 @@ func TestValidateCAA(t *testing.T) {
 	err = ValidateCAA("www.example.org", []string{"daniel.homebrew.ca"}, false, RecursiveNameservers)
 	if err != nil {
 		t.Fatalf("expected err, got %s", err)
+	}
+}
+
+func Test_followCNAMEs(t *testing.T) {
+	dnsQuery = func(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
+		msg := &dns.Msg{}
+		msg.Rcode = dns.RcodeSuccess
+		switch fqdn {
+		case "test1.example.com":
+			msg.Answer = []dns.RR{
+				&dns.CNAME{
+					Target: "test2.example.com",
+				},
+			}
+		case "test2.example.com":
+			msg.Answer = []dns.RR{
+				&dns.CNAME{
+
+					Target: "test3.example.com",
+				},
+			}
+		case "recursive.example.com":
+			msg.Answer = []dns.RR{
+				&dns.CNAME{
+
+					Target: "recursive1.example.com",
+				},
+			}
+		case "recursive1.example.com":
+			msg.Answer = []dns.RR{
+				&dns.CNAME{
+					Target: "recursive.example.com",
+				},
+			}
+		case "error.example.com":
+			return nil, fmt.Errorf("Error while mocking resolve for %q", fqdn)
+		}
+
+		// inject fqdn in headers
+		for _, rr := range msg.Answer {
+			if cn, ok := rr.(*dns.CNAME); ok {
+				cn.Hdr = dns.RR_Header{
+					Name: fqdn,
+				}
+			}
+		}
+
+		return msg, nil
+	}
+	defer func() {
+		// restore the mock
+		dnsQuery = DNSQuery
+	}()
+	type args struct {
+		fqdn        string
+		nameservers []string
+		fqdnChain   []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Resolve CNAME 3 down",
+			args: args{
+				fqdn: "test1.example.com",
+			},
+			want:    "test3.example.com",
+			wantErr: false,
+		},
+		{
+			name: "Resolve CNAME 1 down",
+			args: args{
+				fqdn: "test3.example.com",
+			},
+			want:    "test3.example.com",
+			wantErr: false,
+		},
+		{
+			name: "Error when DNS fails",
+			args: args{
+				fqdn: "error.example.com",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Error on recursive CNAME",
+			args: args{
+				fqdn: "recursive.example.com",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := followCNAMEs(tt.args.fqdn, tt.args.nameservers, tt.args.fqdnChain...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("followCNAMEs() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("followCNAMEs() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
