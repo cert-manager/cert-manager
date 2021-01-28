@@ -1120,6 +1120,7 @@ func autoConvert_v1alpha3_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha3.Chall
 	out.Type = acme.ACMEChallengeType(in.Type)
 	out.Token = in.Token
 	out.Key = in.Key
+	out.PreHashKey = in.PreHashKey
 	if err := Convert_v1alpha3_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(&in.Solver, &out.Solver, s); err != nil {
 		return err
 	}
@@ -1138,6 +1139,7 @@ func autoConvert_acme_ChallengeSpec_To_v1alpha3_ChallengeSpec(in *acme.Challenge
 	out.Type = v1alpha3.ACMEChallengeType(in.Type)
 	out.Token = in.Token
 	out.Key = in.Key
+	out.PreHashKey = in.PreHashKey
 	if err := Convert_acme_ACMEChallengeSolver_To_v1alpha3_ACMEChallengeSolver(&in.Solver, &out.Solver, s); err != nil {
 		return err
 	}

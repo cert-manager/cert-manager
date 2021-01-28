@@ -71,6 +71,7 @@ spec:
                 - dnsName
                 - issuerRef
                 - key
+                - preHashKey
                 - solver
                 - token
                 - type
@@ -99,6 +100,9 @@ spec:
                       type: string
                 key:
                   description: 'Key is the ACME challenge key for this challenge For HTTP01 challenges, this is the value that must be responded with to complete the HTTP01 challenge in the format: `<private key JWK thumbprint>.<key from acme server for challenge>`. For DNS01 challenges, this is the base64 encoded SHA256 sum of the `<private key JWK thumbprint>.<key from acme server for challenge>` text that must be set as the TXT record content.'
+                  type: string
+                preHashKey:
+                  description: 'The ACME challenge key for this challenge, before hash. For both challenges, this is the key in the format : `<private key JWK thumbprint>.<key from acme server for challenge>`. without any hash or transformation. For HTTP01, this field correspond to the Key field.'
                   type: string
                 solver:
                   description: Solver contains the domain solving configuration that should be used to solve this challenge resource.
@@ -896,6 +900,7 @@ spec:
                 - dnsName
                 - issuerRef
                 - key
+                - preHashKey
                 - solver
                 - token
                 - type
@@ -924,6 +929,9 @@ spec:
                       type: string
                 key:
                   description: 'Key is the ACME challenge key for this challenge For HTTP01 challenges, this is the value that must be responded with to complete the HTTP01 challenge in the format: `<private key JWK thumbprint>.<key from acme server for challenge>`. For DNS01 challenges, this is the base64 encoded SHA256 sum of the `<private key JWK thumbprint>.<key from acme server for challenge>` text that must be set as the TXT record content.'
+                  type: string
+                preHashKey:
+                  description: 'The ACME challenge key for this challenge, before hash. For both challenges, this is the key in the format : `<private key JWK thumbprint>.<key from acme server for challenge>`. without any hash or transformation. For HTTP01, this field correspond to the Key field.'
                   type: string
                 solver:
                   description: Solver contains the domain solving configuration that should be used to solve this challenge resource.
@@ -1722,6 +1730,7 @@ spec:
                 - dnsName
                 - issuerRef
                 - key
+                - preHashKey
                 - solver
                 - token
                 - type
@@ -1750,6 +1759,9 @@ spec:
                       type: string
                 key:
                   description: 'The ACME challenge key for this challenge For HTTP01 challenges, this is the value that must be responded with to complete the HTTP01 challenge in the format: `<private key JWK thumbprint>.<key from acme server for challenge>`. For DNS01 challenges, this is the base64 encoded SHA256 sum of the `<private key JWK thumbprint>.<key from acme server for challenge>` text that must be set as the TXT record content.'
+                  type: string
+                preHashKey:
+                  description: 'The ACME challenge key for this challenge, before hash. For both challenges, this is the key in the format : `<private key JWK thumbprint>.<key from acme server for challenge>`. without any hash or transformation. For HTTP01, this field correspond to the Key field.'
                   type: string
                 solver:
                   description: Contains the domain solving configuration that should be used to solve this challenge resource.
@@ -2576,6 +2588,9 @@ spec:
                       type: string
                 key:
                   description: 'The ACME challenge key for this challenge For HTTP01 challenges, this is the value that must be responded with to complete the HTTP01 challenge in the format: `<private key JWK thumbprint>.<key from acme server for challenge>`. For DNS01 challenges, this is the base64 encoded SHA256 sum of the `<private key JWK thumbprint>.<key from acme server for challenge>` text that must be set as the TXT record content.'
+                  type: string
+                preHashKey:
+                  description: 'The ACME challenge key for this challenge, before hash. For both challenges, this is the key in the format : `<private key JWK thumbprint>.<key from acme server for challenge>`. without any hash or transformation. For HTTP01, this field correspond to the Key field.'
                   type: string
                 solver:
                   description: Contains the domain solving configuration that should be used to solve this challenge resource.
