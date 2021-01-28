@@ -60,6 +60,7 @@ func TestIssuingController(t *testing.T) {
 
 	baseCert := gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
+		gen.SetCertificateGeneration(3),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 		gen.SetCertificateDNSNames("example.com"),
@@ -72,8 +73,9 @@ func TestIssuingController(t *testing.T) {
 
 	issuingCert := gen.CertificateFrom(baseCert.DeepCopy(),
 		gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
-			Type:   cmapi.CertificateConditionIssuing,
-			Status: cmmeta.ConditionTrue,
+			Type:               cmapi.CertificateConditionIssuing,
+			Status:             cmmeta.ConditionTrue,
+			ObservedGeneration: 3,
 		}),
 	)
 
@@ -250,6 +252,7 @@ func TestIssuingController(t *testing.T) {
 								Reason:             "Failed",
 								Message:            "The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
 								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
 						),
@@ -923,6 +926,7 @@ func TestIssuingController(t *testing.T) {
 								Reason:             "Failed",
 								Message:            "The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
 								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
 						),

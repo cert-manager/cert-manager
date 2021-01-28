@@ -99,12 +99,13 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"do nothing if Certificate already has 'Issuing' condition": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 				Status: cmapi.CertificateStatus{
 					Conditions: []cmapi.CertificateCondition{
 						{
-							Type:   cmapi.CertificateConditionIssuing,
-							Status: cmmeta.ConditionTrue,
+							Type:               cmapi.CertificateConditionIssuing,
+							Status:             cmmeta.ConditionTrue,
+							ObservedGeneration: 3,
 						},
 					},
 				},
@@ -112,7 +113,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"evaluate policy chain with only the Certificate if no Request or Secret exists": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 			},
 			chainShouldEvaluate: true,
 			policyFuncs: []policyFuncBuilder{
@@ -136,7 +137,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"evaluate policy chain with the Certificate and Secret if no Request exists": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 				},
@@ -166,7 +167,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"evaluate policy chain with the Certificate, Secret and Request if one exists": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 				},
@@ -213,7 +214,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"error if multiple owned CertificateRequest resources exist and have the same revision": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 				},
@@ -255,7 +256,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"should evaluate policy if no certificaterequest resource exists for the current revision": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "test-secret",
 				},
@@ -270,7 +271,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"should set the 'Issuing' status condition if the chain indicates an issuance is required": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 			},
 			chainShouldEvaluate:        true,
 			chainShouldTriggerIssuance: true,
@@ -282,12 +283,13 @@ func Test_controller_ProcessItem(t *testing.T) {
 					Reason:             forceTriggeredReason,
 					Message:            forceTriggeredMessage,
 					LastTransitionTime: &metaNow,
+					ObservedGeneration: 3,
 				},
 			},
 		},
 		"should not set the 'Issuing' status condition if the chain indicates an issuance is required if the last failure time is within the last hour": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 				Status: cmapi.CertificateStatus{
 					LastFailureTime: func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(-59 * time.Minute))),
 				},
@@ -297,7 +299,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		},
 		"should set the 'Issuing' status condition if the chain indicates an issuance is required if the last failure time is older than the last hour": {
 			certificate: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
+				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test", Generation: 3},
 				Status: cmapi.CertificateStatus{
 					LastFailureTime: func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(-61 * time.Minute))),
 				},
@@ -312,6 +314,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 					Reason:             forceTriggeredReason,
 					Message:            forceTriggeredMessage,
 					LastTransitionTime: &metaNow,
+					ObservedGeneration: 3,
 				},
 			},
 		},

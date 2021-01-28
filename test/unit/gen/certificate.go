@@ -198,6 +198,12 @@ func SetCertificateUID(uid types.UID) CertificateModifier {
 	}
 }
 
+func SetCertificateGeneration(gen int64) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Generation = gen
+	}
+}
+
 func AddCertificateAnnotations(annotations map[string]string) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		if crt.Annotations == nil {
