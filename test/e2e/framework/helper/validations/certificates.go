@@ -25,6 +25,7 @@ import (
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -306,6 +307,20 @@ func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secr
 			pretty.Sprint(intermediateCertPool),
 			err,
 		)
+	}
+
+	return nil
+}
+
+// ExpectConditionReadyObservedGeneration checks that the ObservedGeneration
+// field on the Ready condition which must be true, is set to the Generation of
+// the Certificate.
+func ExpectConditionReadyObservedGeneration(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	cond := apiutil.GetCertificateCondition(certificate, cmapi.CertificateConditionReady)
+
+	if cond.Status != cmmeta.ConditionTrue || cond.ObservedGeneration != certificate.Generation {
+		return fmt.Errorf("expected Certificate to have ready condition true, observedGeneration matching the Certificate generation, got=%+v",
+			cond)
 	}
 
 	return nil
