@@ -75,6 +75,9 @@ type ChallengeRequest struct {
 	// but some implementations hash the key themselves and need this version.
 	PreHashKey string `json:"preHashKey"`
 
+	// The ACME challenge token. Some implementations uses it.
+	Token string `json:"token"`
+
 	// ResourceNamespace is the namespace containing resources that are
 	// referenced in the providers config.
 	// If this request is solving for an Issuer resource, this will be the

@@ -97,6 +97,7 @@ func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *whapi.Challeng
 		DNSName:    "example.com",
 		Key:        key,
 		PreHashKey: preHashKey,
+		Token:      "some_token",
 	}
 }
 
