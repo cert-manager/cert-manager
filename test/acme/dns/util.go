@@ -18,6 +18,8 @@ package dns
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -81,6 +83,10 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 }
 
 func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *whapi.ChallengeRequest {
+	preHashKey := "123d=="
+	keyBytes := sha256.Sum256([]byte(preHashKey))
+	key := base64.RawURLEncoding.EncodeToString(keyBytes[:sha256.Size])
+
 	return &whapi.ChallengeRequest{
 		ResourceNamespace:       ns,
 		ResolvedFQDN:            f.resolvedFQDN,
@@ -88,8 +94,9 @@ func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *whapi.Challeng
 		AllowAmbientCredentials: f.allowAmbientCredentials,
 		Config:                  f.jsonConfig,
 		// TODO
-		DNSName: "example.com",
-		Key:     "123d==",
+		DNSName:    "example.com",
+		Key:        key,
+		PreHashKey: preHashKey,
 	}
 }
 

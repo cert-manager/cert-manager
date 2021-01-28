@@ -418,6 +418,8 @@ func (s *Solver) prepareChallengeRequest(issuer v1.GenericIssuer, ch *cmacme.Cha
 		AllowAmbientCredentials: canUseAmbientCredentials,
 		ResourceNamespace:       resourceNamespace,
 		Key:                     ch.Spec.Key,
+		PreHashKey:              ch.Spec.PreHashKey,
+		Token:                   ch.Spec.Token,
 		DNSName:                 ch.Spec.DNSName,
 		Config:                  &apiext.JSON{Raw: b},
 	}

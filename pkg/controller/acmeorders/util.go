@@ -281,6 +281,15 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		return nil, err
 	}
 
+	preHashKey := key
+	// if DNS01 challenge, also generate the non hashed (HTTP01) version of the key
+	if chType == cmacme.ACMEChallengeTypeDNS01 {
+		preHashKey, err = keyForChallenge(cl, selectedChallenge.Token, cmacme.ACMEChallengeTypeHTTP01)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// 4. handle overriding the HTTP01 ingress class and name fields using the
 	//    ACMECertificateHTTP01IngressNameOverride & Class annotations
 	if err := applyIngressParameterAnnotationOverrides(o, selectedSolver); err != nil {
@@ -295,6 +304,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		DNSName:          authz.Identifier,
 		Token:            selectedChallenge.Token,
 		Key:              key,
+		PreHashKey:       preHashKey,
 		// selectedSolver cannot be nil due to the check above.
 		Solver:    *selectedSolver,
 		Wildcard:  wc,

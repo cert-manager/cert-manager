@@ -70,6 +70,11 @@ type ChallengeRequest struct {
 	// ResolveFQDN.
 	Key string `json:"key"`
 
+	// The ACME challenge Key before hash
+	// This key should not end up as is in the TXT record
+	// but some implementations hash the key themselves and need this version.
+	PreHashKey string `json:"preHashKey"`
+
 	// ResourceNamespace is the namespace containing resources that are
 	// referenced in the providers config.
 	// If this request is solving for an Issuer resource, this will be the

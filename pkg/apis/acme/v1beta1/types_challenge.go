@@ -88,6 +88,13 @@ type ChallengeSpec struct {
 	// text that must be set as the TXT record content.
 	Key string `json:"key"`
 
+	// The ACME challenge key for this challenge, before hash.
+	// For both challenges, this is the key in the format :
+	// `<private key JWK thumbprint>.<key from acme server for challenge>`.
+	// without any hash or transformation.
+	// For HTTP01, this field correspond to the Key field.
+	PreHashKey string `json:"preHashKey"`
+
 	// Contains the domain solving configuration that should be used to
 	// solve this challenge resource.
 	Solver ACMEChallengeSolver `json:"solver"`
