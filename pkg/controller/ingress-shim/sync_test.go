@@ -513,11 +513,14 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:           "should return an error when no TLS hosts are specified",
-			Issuer:         acmeIssuer,
-			IssuerLister:   []runtime.Object{acmeIssuer},
-			Err:            true,
-			ExpectedEvents: []string{`Warning BadConfig Secret "example-com-tls" for ingress TLS has no hosts specified`},
+			Name:         "should skip an invalid TLS entry (no TLS hosts specified)",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			Err:          true,
+			ExpectedEvents: []string{
+				`Warning BadConfig TLS entry 0 is invalid: secret "example-com-tls-invalid" for ingress TLS has no hosts specified`,
+				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
+			},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -530,17 +533,43 @@ func TestSync(t *testing.T) {
 				Spec: networkingv1beta1.IngressSpec{
 					TLS: []networkingv1beta1.IngressTLS{
 						{
+							SecretName: "example-com-tls-invalid",
+						},
+						{
 							SecretName: "example-com-tls",
+							Hosts:      []string{"example.com", "www.example.com"},
+						},
+					},
+				},
+			},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
 						},
 					},
 				},
 			},
 		},
+
 		{
-			Name:           "should return an error when no TLS secret name is specified",
-			Issuer:         acmeIssuer,
-			Err:            true,
-			ExpectedEvents: []string{`Warning BadConfig TLS entry 0 for hosts [example.com] must specify a secretName`},
+			Name:         "should skip an invalid TLS entry (no TLS secret name specified)",
+			Issuer:       acmeIssuer,
+			Err:          true,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			ExpectedEvents: []string{
+				`Warning BadConfig TLS entry 0 is invalid: TLS entry for hosts [example.com] must specify a secretName`,
+				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
+			},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -555,10 +584,30 @@ func TestSync(t *testing.T) {
 						{
 							Hosts: []string{"example.com"},
 						},
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
 					},
 				},
 			},
-			IssuerLister: []runtime.Object{acmeIssuer},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
 		},
 		{
 			Name: "should error if the specified issuer is not found",

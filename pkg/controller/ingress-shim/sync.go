@@ -106,22 +106,30 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 }
 
 func (c *controller) validateIngress(ing *networkingv1beta1.Ingress) []error {
+	// check for duplicate values of networkingv1beta1.IngressTLS.SecretName
 	var errs []error
 	namedSecrets := make(map[string]int)
-	for i, tls := range ing.Spec.TLS {
-		namedSecrets[tls.SecretName] += 1
-		// validate the ingress TLS block
-		if len(tls.Hosts) == 0 {
-			errs = append(errs, fmt.Errorf("Secret %q for ingress TLS has no hosts specified", tls.SecretName))
-		}
-		if tls.SecretName == "" {
-			errs = append(errs, fmt.Errorf("TLS entry %d for hosts %v must specify a secretName", i, tls.Hosts))
-		}
+	for _, tls := range ing.Spec.TLS {
+		namedSecrets[tls.SecretName]++
 	}
+	// not doing this in the previous for-loop to avoid erroring more than once for the same SecretName
 	for name, n := range namedSecrets {
 		if n > 1 {
 			errs = append(errs, fmt.Errorf("Duplicate TLS entry for secretName %q", name))
 		}
+	}
+	return errs
+}
+
+func validateIngressTLSBlock(tlsBlock networkingv1beta1.IngressTLS) []error {
+	// unlikely that _both_ SecretName and Hosts would be empty, but still returning []error for consistency
+	var errs []error
+
+	if len(tlsBlock.Hosts) == 0 {
+		errs = append(errs, fmt.Errorf("secret %q for ingress TLS has no hosts specified", tlsBlock.SecretName))
+	}
+	if tlsBlock.SecretName == "" {
+		errs = append(errs, fmt.Errorf("TLS entry for hosts %v must specify a secretName", tlsBlock.Hosts))
 	}
 	return errs
 }
@@ -132,7 +140,14 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 
 	var newCrts []*cmapi.Certificate
 	var updateCrts []*cmapi.Certificate
-	for _, tls := range ing.Spec.TLS {
+	for i, tls := range ing.Spec.TLS {
+		errs := validateIngressTLSBlock(tls)
+		// if this tls entry is invalid, record an error event on Ingress object and continue to the next tls entry
+		if len(errs) > 0 {
+			errMsg := utilerrors.NewAggregate(errs).Error()
+			c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", fmt.Sprintf("TLS entry %d is invalid: %s", i, errMsg))
+			continue
+		}
 		existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(tls.SecretName)
 		if !apierrors.IsNotFound(err) && err != nil {
 			return nil, nil, err
