@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
+	"github.com/jetstack/cert-manager/cmd/kubectl-cert_manager/pkg/create/certificaterequest"
 	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"

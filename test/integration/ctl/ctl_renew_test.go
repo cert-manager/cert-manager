@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
+	"github.com/jetstack/cert-manager/cmd/kubectl-cert_manager/pkg/renew"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"

@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/reference"
 
-	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
+	statuscertcmd "github.com/jetstack/cert-manager/cmd/kubectl-cert_manager/pkg/status/certificate"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"

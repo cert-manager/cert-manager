@@ -30,7 +30,7 @@ import (
 	acmesolvercmd "github.com/jetstack/cert-manager/cmd/acmesolver/app"
 	cainjectorapp "github.com/jetstack/cert-manager/cmd/cainjector/app"
 	controllerapp "github.com/jetstack/cert-manager/cmd/controller/app"
-	ctlcmd "github.com/jetstack/cert-manager/cmd/ctl/cmd"
+	ctlcmd "github.com/jetstack/cert-manager/cmd/kubectl-cert_manager/cmd"
 	webhookcmd "github.com/jetstack/cert-manager/cmd/webhook/app"
 )
 
