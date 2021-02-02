@@ -428,7 +428,6 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry",
 			Issuer: acmeClusterIssuer,
-			Err:    true,
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -516,7 +515,6 @@ func TestSync(t *testing.T) {
 			Name:         "should skip an invalid TLS entry (no TLS hosts specified)",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Err:          true,
 			ExpectedEvents: []string{
 				`Warning BadConfig TLS entry 0 is invalid: secret "example-com-tls-invalid" for ingress TLS has no hosts specified`,
 				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
@@ -564,7 +562,6 @@ func TestSync(t *testing.T) {
 		{
 			Name:         "should skip an invalid TLS entry (no TLS secret name specified)",
 			Issuer:       acmeIssuer,
-			Err:          true,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			ExpectedEvents: []string{
 				`Warning BadConfig TLS entry 0 is invalid: TLS entry for hosts [example.com] must specify a secretName`,
@@ -611,7 +608,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name: "should error if the specified issuer is not found",
-			Err:  true,
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -1095,8 +1091,10 @@ func TestSync(t *testing.T) {
 			b.Start()
 
 			err := c.Sync(context.Background(), test.Ingress)
-			if err != nil && !test.Err {
-				t.Errorf("Expected no error, but got: %s", err)
+
+			// If test.Err == true, err should not be nil and vice versa
+			if test.Err == (err == nil) {
+				t.Errorf("Expected error: %v, but got: %v", test.Err, err)
 			}
 
 			if err := b.AllEventsCalled(); err != nil {
