@@ -50,7 +50,6 @@ genrule(
     outs = ["unlicensed.yaml"],
     cmd = " ".join([
         "cat",
-        "$(location //deploy/crds:crds)",
         "$(location 01-namespace.yaml)",
         "$(location manifests.helm)",
         "> $@",
