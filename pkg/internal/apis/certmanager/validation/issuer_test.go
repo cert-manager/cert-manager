@@ -368,8 +368,8 @@ func TestValidateIssuerSpec(t *testing.T) {
 			spec: &cmapi.IssuerSpec{
 				IssuerConfig: cmapi.IssuerConfig{
 					CA: &cmapi.CAIssuer{
-						SecretName: "valid",
-						OCSPServer: []string{"http://ocsp.int-x3.letsencrypt.org"},
+						SecretName:  "valid",
+						OCSPServers: []string{"http://ocsp.int-x3.letsencrypt.org"},
 					},
 				},
 			},
@@ -379,8 +379,8 @@ func TestValidateIssuerSpec(t *testing.T) {
 			spec: &cmapi.IssuerSpec{
 				IssuerConfig: cmapi.IssuerConfig{
 					CA: &cmapi.CAIssuer{
-						SecretName: "valid",
-						OCSPServer: []string{""},
+						SecretName:  "valid",
+						OCSPServers: []string{""},
 					},
 				},
 			},

@@ -35,8 +35,8 @@ func (in *CAIssuer) DeepCopyInto(out *CAIssuer) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.OCSPServer != nil {
-		in, out := &in.OCSPServer, &out.OCSPServer
+	if in.OCSPServers != nil {
+		in, out := &in.OCSPServers, &out.OCSPServers
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
