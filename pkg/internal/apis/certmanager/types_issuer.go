@@ -250,8 +250,9 @@ type CAIssuer struct {
 	// If not set, certificates will be issued without distribution points set.
 	CRLDistributionPoints []string
 
-	// The OCSP server is an X.509 v3 extension that defines the url of the OCSP responder.
+	// The OCSP server is an X.509 v3 extension that defines the URL of the OCSP responder.
 	// The OCSP responder can be queried for the revocation status of an issued certificate.
+	// For example, an OCSP server URL could be "http://ocsp.int-x3.letsencrypt.org".
 	OCSPServer []string
 }
 
