@@ -1,10 +1,14 @@
 package(default_visibility = ["//visibility:public"])
 
-genrule(
+load("//build:files.bzl", "modify_file")
+
+modify_file(
     name = "crds",
-    srcs = ["//deploy/crds:templates"],
-    outs = ["crds.yaml"],
-    cmd = "cp $< $@",
+    src = "//deploy/crds:templates",
+    out = "crds.yaml",
+    prefix = """{{- if .Values.installCRDs }}""",
+    suffix = """{{- end }}""",
+    visibility = ["//visibility:private"],
 )
 
 filegroup(
