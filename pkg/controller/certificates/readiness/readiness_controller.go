@@ -163,8 +163,15 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		crt.Status.NotBefore = &notBefore
 		crt.Status.NotAfter = &notAfter
 		// calculate how long before the certificate expiry time the certificate
-		// should be renewed
-		renewBefore := certificates.RenewBeforeExpiryDuration(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, crt.Spec.RenewBefore, c.defaultRenewBeforeExpiryDuration)
+		// should be renewed.
+		// TODO: This default should be applied by one of the API defaulting
+		// mechanisms: OpenAPI defaulting or defaulting webhook. See:
+		// https://github.com/jetstack/cert-manager/pull/3466
+		renewBefore := c.defaultRenewBeforeExpiryDuration
+		if crt.Spec.RenewBefore != nil {
+			renewBefore = crt.Spec.RenewBefore.Duration
+		}
+		renewBefore = certificates.AdjustRenewBeforeExpiryDuration(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, renewBefore)
 		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
 		crt.Status.RenewalTime = &renewalTime
 	default:

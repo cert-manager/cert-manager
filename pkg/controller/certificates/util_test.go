@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -282,57 +281,26 @@ func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
 	return pemData
 }
 
-func TestRenewBeforeExpiryDuration(t *testing.T) {
+func TestAdjustRenewBeforeExpiryDuration(t *testing.T) {
 	type testCase struct {
-		notBefore                        time.Time
-		notAfter                         time.Time
-		specRenewBefore                  *metav1.Duration
-		defaultRenewBeforeExpiryDuration time.Duration
-		expected                         time.Duration
+		notBefore       time.Time
+		notAfter        time.Time
+		specRenewBefore time.Duration
+		expected        time.Duration
 	}
 	now := time.Now()
 	tests := map[string]testCase{
-		"use default": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  nil,
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour,
-		},
-		"spec overrides default": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  &metav1.Duration{Duration: time.Hour * 2},
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour * 2,
-		},
-		"default larger than actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  nil,
-			defaultRenewBeforeExpiryDuration: time.Hour * 24 * 7,
-			expected:                         time.Hour * 8,
-		},
 		"spec larger than actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  &metav1.Duration{Duration: time.Hour * 24 * 7},
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour * 8,
-		},
-		"default equal to actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  nil,
-			defaultRenewBeforeExpiryDuration: time.Hour * 24,
-			expected:                         time.Hour * 8,
+			notBefore:       now,
+			notAfter:        now.Add(time.Hour * 24),
+			specRenewBefore: time.Hour * 24 * 7,
+			expected:        time.Hour * 8,
 		},
 		"spec equal to actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  &metav1.Duration{Duration: time.Hour * 24},
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour * 8,
+			notBefore:       now,
+			notAfter:        now.Add(time.Hour * 24),
+			specRenewBefore: time.Hour * 24,
+			expected:        time.Hour * 8,
 		},
 	}
 
@@ -341,7 +309,7 @@ func TestRenewBeforeExpiryDuration(t *testing.T) {
 			assert.Equal(
 				t,
 				tc.expected,
-				RenewBeforeExpiryDuration(tc.notBefore, tc.notAfter, tc.specRenewBefore, tc.defaultRenewBeforeExpiryDuration),
+				AdjustRenewBeforeExpiryDuration(tc.notBefore, tc.notAfter, tc.specRenewBefore),
 			)
 		})
 	}
