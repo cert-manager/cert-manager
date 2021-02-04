@@ -55,7 +55,7 @@ func translateIngressAnnotations(crt *cmapi.Certificate, annotations map[string]
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}
 	if usages, found := annotations[cmapi.UsagesAnnotationKey]; found {
-		newUsages := []cmapi.KeyUsage{}
+		var newUsages []cmapi.KeyUsage
 		for _, usageName := range strings.Split(usages, ",") {
 			usage := cmapi.KeyUsage(strings.Trim(usageName, " "))
 			_, isKU := apiutil.KeyUsageType(usage)
