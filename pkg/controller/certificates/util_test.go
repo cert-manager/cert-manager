@@ -281,36 +281,37 @@ func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
 	return pemData
 }
 
-func TestAdjustRenewBeforeExpiryDuration(t *testing.T) {
+func TestCalculateRenewalTime(t *testing.T) {
 	type testCase struct {
 		notBefore       time.Time
 		notAfter        time.Time
 		specRenewBefore time.Duration
-		expected        time.Duration
+		expected        time.Time
 	}
-	now := time.Now()
+
+	now := time.Date(2000, 6, 1, 0, 0, 0, 0, time.UTC)
+
 	tests := map[string]testCase{
-		"spec larger than actual duration": {
+		"renewBefore larger than actual duration": {
 			notBefore:       now,
 			notAfter:        now.Add(time.Hour * 24),
 			specRenewBefore: time.Hour * 24 * 7,
-			expected:        time.Hour * 8,
+			// Fall back to 2/3 of actual duration
+			expected: now.Add(time.Hour * 24 * 2 / 3),
 		},
-		"spec equal to actual duration": {
+		"renewBefore equal to actual duration": {
 			notBefore:       now,
 			notAfter:        now.Add(time.Hour * 24),
 			specRenewBefore: time.Hour * 24,
-			expected:        time.Hour * 8,
+			// Fall back to 2/3 of actual duration
+			expected: now.Add(time.Hour * 24 * 2 / 3),
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(
-				t,
-				tc.expected,
-				AdjustRenewBeforeExpiryDuration(tc.notBefore, tc.notAfter, tc.specRenewBefore),
-			)
+			actual := CalculateRenewalTime(tc.notBefore, tc.notAfter, tc.specRenewBefore)
+			assert.WithinDuration(t, tc.expected, actual, 0)
 		})
 	}
 }

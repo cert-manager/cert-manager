@@ -261,14 +261,14 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 	return b, nil
 }
 
-// AdjustBeforeExpiryDuration is used to calculate how soon to renew a
-// certificate. It takes the user preferred value, from the
-// Certificate.Spec.RenewBefore field, and adjusts that value if it is
-// incompatible with the duration of the actual signed certificate.
-func AdjustRenewBeforeExpiryDuration(notBefore, notAfter time.Time, renewBefore time.Duration) time.Duration {
+// CalculateRenewalTime is used to calculate when to renew a certificate. It
+// takes the user preferred renewBefore margin, from the
+// Certificate.Spec.RenewBefore field, and returns a possibly adjusted value
+// which is compatible with the duration of the actual signed certificate.
+func CalculateRenewalTime(notBefore, notAfter time.Time, renewBefore time.Duration) time.Time {
 	actualDuration := notAfter.Sub(notBefore)
 	if renewBefore >= actualDuration {
 		renewBefore = actualDuration / 3
 	}
-	return renewBefore
+	return notAfter.Add(-renewBefore)
 }

@@ -171,8 +171,9 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		if crt.Spec.RenewBefore != nil {
 			renewBefore = crt.Spec.RenewBefore.Duration
 		}
-		renewBefore = certificates.AdjustRenewBeforeExpiryDuration(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, renewBefore)
-		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
+		renewalTime := metav1.NewTime(
+			certificates.CalculateRenewalTime(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, renewBefore),
+		)
 		crt.Status.RenewalTime = &renewalTime
 	default:
 		// clear status fields if the secret does not have any data
