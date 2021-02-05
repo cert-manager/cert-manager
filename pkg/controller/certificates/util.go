@@ -270,5 +270,8 @@ func CalculateRenewalTime(notBefore, notAfter time.Time, renewBefore time.Durati
 	if renewBefore >= actualDuration {
 		renewBefore = actualDuration / 3
 	}
+	if renewBefore < cmapi.MinimumRenewBefore {
+		renewBefore = cmapi.MinimumRenewBefore
+	}
 	return notAfter.Add(-renewBefore)
 }

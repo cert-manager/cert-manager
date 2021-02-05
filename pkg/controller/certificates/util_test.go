@@ -306,6 +306,13 @@ func TestCalculateRenewalTime(t *testing.T) {
 			// Fall back to 2/3 of actual duration
 			expected: now.Add(time.Hour * 24 * 2 / 3),
 		},
+		"renewBefore less than MinimumRenewBefore": {
+			notBefore:       now,
+			notAfter:        now.Add(time.Hour * 24),
+			specRenewBefore: cmapi.MinimumRenewBefore - 1,
+			// Fall back to MinimumRenewBefore
+			expected: now.Add(time.Hour*24 - cmapi.MinimumRenewBefore),
+		},
 	}
 
 	for name, tc := range tests {
