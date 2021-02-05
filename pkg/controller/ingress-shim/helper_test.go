@@ -42,6 +42,7 @@ func TestTranslateIngressAnnotations(t *testing.T) {
 			cmapi.CommonNameAnnotationKey:  "www.example.com",
 			cmapi.DurationAnnotationKey:    "168h", // 1 week
 			cmapi.RenewBeforeAnnotationKey: "24h",
+			cmapi.UsagesAnnotationKey:      "server auth,signing",
 		}
 	}
 
@@ -53,6 +54,7 @@ func TestTranslateIngressAnnotations(t *testing.T) {
 				a.Equal("www.example.com", crt.Spec.CommonName)
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24 * 7}, crt.Spec.Duration)
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
+				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
 			},
 		},
 		"nil annotations": {
@@ -81,6 +83,22 @@ func TestTranslateIngressAnnotations(t *testing.T) {
 			annotations: validAnnotations(),
 			mutate: func(tc *testCase) {
 				tc.annotations[cmapi.RenewBeforeAnnotationKey] = "an un-parsable duration string"
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"bad usages": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.UsagesAnnotationKey] = "playing ping pong"
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"bad usage list": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.UsagesAnnotationKey] = "server auth,,signing"
 			},
 			expectedError: errInvalidIngressAnnotation,
 		},

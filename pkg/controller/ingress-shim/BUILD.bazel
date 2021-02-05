@@ -11,6 +11,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/controller/ingress-shim",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/api/util:go_default_library",
         "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",

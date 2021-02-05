@@ -168,6 +168,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 					Kind:  issuerKind,
 					Group: issuerGroup,
 				},
+				Usages: cmapi.DefaultKeyUsages(),
 			},
 		}
 
