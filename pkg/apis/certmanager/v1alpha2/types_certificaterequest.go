@@ -99,6 +99,24 @@ type CertificateRequestSpec struct {
 	// Defaults to `digital signature` and `key encipherment` if not specified.
 	// +optional
 	Usages []KeyUsage `json:"usages,omitempty"`
+
+	// Username contains the name of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	// +optional
+	Username string `json:"username,omitempty"`
+	// UID contains the uid of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	// +optional
+	UID string `json:"uid,omitempty"`
+	// Groups contains group membership of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	// +listType=atomic
+	// +optional
+	Groups []string `json:"groups,omitempty"`
+	// Extra contains extra attributes of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	// +optional
+	Extra map[string][]string `json:"extra,omitempty"`
 }
 
 // CertificateRequestStatus defines the observed state of CertificateRequest and

@@ -94,6 +94,19 @@ type CertificateRequestSpec struct {
 	// Usages is the set of x509 usages that are requested for the certificate.
 	// Defaults to `digital signature` and `key encipherment` if not specified.
 	Usages []KeyUsage
+
+	// Username contains the name of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	Username string
+	// UID contains the uid of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	UID string
+	// Groups contains group membership of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	Groups []string
+	// Extra contains extra attributes of the user that created the CertificateRequest.
+	// Populated by the cert-manager webhook on creation and immutable.
+	Extra map[string][]string
 }
 
 // CertificateRequestStatus defines the observed state of CertificateRequest and
