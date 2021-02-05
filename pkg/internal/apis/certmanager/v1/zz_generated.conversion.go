@@ -367,6 +367,7 @@ func RegisterConversions(s *runtime.Scheme) error {
 func autoConvert_v1_CAIssuer_To_certmanager_CAIssuer(in *v1.CAIssuer, out *certmanager.CAIssuer, s conversion.Scope) error {
 	out.SecretName = in.SecretName
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
+	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
 	return nil
 }
 
@@ -378,6 +379,7 @@ func Convert_v1_CAIssuer_To_certmanager_CAIssuer(in *v1.CAIssuer, out *certmanag
 func autoConvert_certmanager_CAIssuer_To_v1_CAIssuer(in *certmanager.CAIssuer, out *v1.CAIssuer, s conversion.Scope) error {
 	out.SecretName = in.SecretName
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
+	out.OCSPServers = *(*[]string)(unsafe.Pointer(&in.OCSPServers))
 	return nil
 }
 

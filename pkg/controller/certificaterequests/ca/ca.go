@@ -112,6 +112,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	}
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
+	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
 
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
