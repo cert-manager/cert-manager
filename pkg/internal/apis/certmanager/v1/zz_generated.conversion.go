@@ -629,6 +629,10 @@ func autoConvert_v1_CertificateRequestSpec_To_certmanager_CertificateRequestSpec
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
+	out.Username = in.Username
+	out.UID = in.UID
+	out.Groups = *(*[]string)(unsafe.Pointer(&in.Groups))
+	out.Extra = *(*map[string][]string)(unsafe.Pointer(&in.Extra))
 	return nil
 }
 
@@ -646,6 +650,10 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1_CertificateRequestSpec
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]v1.KeyUsage)(unsafe.Pointer(&in.Usages))
+	out.Username = in.Username
+	out.UID = in.UID
+	out.Groups = *(*[]string)(unsafe.Pointer(&in.Groups))
+	out.Extra = *(*map[string][]string)(unsafe.Pointer(&in.Extra))
 	return nil
 }
 
