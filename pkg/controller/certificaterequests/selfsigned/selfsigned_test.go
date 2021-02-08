@@ -354,38 +354,6 @@ func TestSign(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-		"a CertificateRequest with a bad CSR should fail": {
-			certificateRequest: gen.CertificateRequestFrom(baseCR,
-				gen.SetCertificateRequestCSR([]byte("this is a bad CSR")),
-			),
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{rsaKeySecret},
-				CertManagerObjects: []runtime.Object{gen.CertificateRequestFrom(baseCR,
-					gen.SetCertificateRequestCSR([]byte("this is a bad CSR")),
-				), baseIssuer},
-				ExpectedEvents: []string{
-					"Warning BadConfig Resource validation failed: spec.request: Invalid value: []byte{0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x43, 0x53, 0x52}: failed to decode csr: error decoding certificate request PEM block",
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestCSR([]byte("this is a bad CSR")),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Resource validation failed: spec.request: Invalid value: []byte{0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x43, 0x53, 0x52}: failed to decode csr: error decoding certificate request PEM block",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
-						),
-					)),
-				},
-			},
-		},
 		"a CSR that has not been signed with the same public key as the referenced private key should fail": {
 			certificateRequest: ecCR.DeepCopy(),
 			builder: &testpkg.Builder{

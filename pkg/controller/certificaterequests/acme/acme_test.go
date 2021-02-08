@@ -174,37 +174,6 @@ func TestSign(t *testing.T) {
 
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	tests := map[string]testT{
-		"a badly formed CSR should report failure": {
-			certificateRequest: gen.CertificateRequestFrom(baseCR,
-				gen.SetCertificateRequestCSR([]byte("a bad csr")),
-			),
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
-				ExpectedEvents: []string{
-					"Warning BadConfig Resource validation failed: spec.request: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestCSR([]byte("a bad csr")),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Resource validation failed: spec.request: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
-						),
-					)),
-				},
-			},
-		},
-
 		"if the common name is not present in the DNS names then should hard fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestCSR(csrPEMExampleNotPresent),

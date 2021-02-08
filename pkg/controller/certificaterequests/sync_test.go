@@ -294,35 +294,6 @@ func TestSync(t *testing.T) {
 				ExpectedEvents:  []string{},
 			},
 		},
-		"report failure if the CertificateRequest fails validation": {
-			certificateRequest: gen.CertificateRequestFrom(baseCR,
-				gen.SetCertificateRequestCSR([]byte("bad csr")),
-			),
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{baseCR, baseIssuer},
-				ExpectedEvents: []string{
-					"Warning BadConfig Resource validation failed: spec.request: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestCSR([]byte("bad csr")),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             "Failed",
-								Message:            "Resource validation failed: spec.request: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
-								LastTransitionTime: &nowMetaTime,
-							}),
-							gen.SetCertificateRequestFailureTime(nowMetaTime),
-						),
-					)),
-				},
-			},
-		},
 		"if the Certificate is already set in the status then return nil and no-op, regardless of condition": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestCertificate([]byte("a cert")),

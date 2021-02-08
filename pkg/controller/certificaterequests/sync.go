@@ -31,10 +31,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 var (
@@ -111,13 +109,6 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 	}
 
 	dbg.Info("validating CertificateRequest resource object")
-
-	el := webhook.ValidationRegistry.Validate(crCopy, internalapi.SchemeGroupVersion.WithKind("CertificateRequest"))
-	if len(el) > 0 {
-		c.reporter.Failed(crCopy, el.ToAggregate(), "BadConfig",
-			"Resource validation failed")
-		return nil
-	}
 
 	if len(crCopy.Status.Certificate) > 0 {
 		dbg.Info("certificate field is already set in status so skipping processing")
