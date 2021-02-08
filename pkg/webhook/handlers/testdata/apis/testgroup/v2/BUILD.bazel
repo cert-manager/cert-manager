@@ -18,6 +18,7 @@ go_library(
     deps = [
         "//pkg/internal/api/validation:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
+        "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/conversion:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",

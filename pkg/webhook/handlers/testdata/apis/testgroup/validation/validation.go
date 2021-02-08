@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -24,7 +25,7 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
 )
 
-func ValidateTestType(obj runtime.Object) field.ErrorList {
+func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	testType := obj.(*testgroup.TestType)
 	el := field.ErrorList{}
 	if testType.TestField == v1.TestFieldValueNotAllowed {
@@ -33,7 +34,7 @@ func ValidateTestType(obj runtime.Object) field.ErrorList {
 	return el
 }
 
-func ValidateTestTypeUpdate(oldObj, newObj runtime.Object) field.ErrorList {
+func ValidateTestTypeUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
 	old, ok := oldObj.(*testgroup.TestType)
 	new := newObj.(*testgroup.TestType)
 	// if oldObj is not set, the Update operation is always valid.
