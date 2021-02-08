@@ -23,11 +23,13 @@ import (
 
 	"github.com/mattbaird/jsonpatch"
 	admissionv1 "k8s.io/api/admission/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/diff"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 )
 
@@ -46,14 +48,21 @@ func responseForOperations(ops ...jsonpatch.JsonPatchOperation) []byte {
 
 func TestDefaultCertificate(t *testing.T) {
 	scheme := runtime.NewScheme()
+	registry := mutation.NewRegistry(scheme)
 	install.Install(scheme)
 
 	log := klogr.New()
-	c := NewSchemeBackedDefaulter(log, scheme)
+	c := NewSchemeBackedMutator(log, scheme, registry)
 	tests := map[string]admissionTestT{
 		"apply defaults to TestType": {
 			inputRequest: admissionv1.AdmissionRequest{
-				UID: types.UID("abc"),
+				UID:       types.UID("abc"),
+				Operation: admissionv1.Create,
+				RequestKind: &metav1.GroupVersionKind{
+					Group:   "testgroup.testing.cert-manager.io",
+					Version: "v1",
+					Kind:    "TestType",
+				},
 				Object: runtime.RawExtension{
 					Raw: []byte(`
 {
