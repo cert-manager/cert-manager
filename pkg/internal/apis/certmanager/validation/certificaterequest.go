@@ -20,33 +20,38 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
-
-	"github.com/jetstack/cert-manager/pkg/util"
-
 	"reflect"
 
 	"github.com/kr/pretty"
-
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment}
 
-func ValidateCertificateRequest(obj runtime.Object) field.ErrorList {
+func ValidateCertificateRequest(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	cr := obj.(*cmapi.CertificateRequest)
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), true)
 	return allErrs
 }
 
-func ValidateUpdateCertificateRequest(oldObj, obj runtime.Object) field.ErrorList {
-	cr := obj.(*cmapi.CertificateRequest)
-	// do not check the CSR content here not to break existing resources on upgrade
-	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), false)
-	return allErrs
+func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
+	oldCR, newCR := oldObj.(*cmapi.CertificateRequest), newObj.(*cmapi.CertificateRequest)
+
+	var el field.ErrorList
+	if !reflect.DeepEqual(oldCR.Annotations, newCR.Annotations) {
+		el = append(el, field.Forbidden(field.NewPath("metadata", "annotations"), "cannot change annotations after creation"))
+	}
+	if !reflect.DeepEqual(oldCR.Spec, newCR.Spec) {
+		el = append(el, field.Forbidden(field.NewPath("spec"), "cannot change spec after creation"))
+	}
+
+	return el
 }
 
 func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, validateCSRContent bool) field.ErrorList {
