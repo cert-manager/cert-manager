@@ -21,6 +21,7 @@ limitations under the License.
 package validation
 
 import (
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -34,8 +35,8 @@ type Registry struct {
 	validateUpdateRegister map[schema.GroupVersionKind]ValidateUpdateFunc
 }
 
-type ValidateFunc func(obj runtime.Object) field.ErrorList
-type ValidateUpdateFunc func(oldObj, obj runtime.Object) field.ErrorList
+type ValidateFunc func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList
+type ValidateUpdateFunc func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList
 
 // NewRegistry creates a new empty registry, backed by the provided Scheme.
 func NewRegistry(scheme *runtime.Scheme) *Registry {
@@ -92,7 +93,7 @@ func (r *Registry) AddValidateUpdateFunc(obj runtime.Object, fn ValidateUpdateFu
 // calling the validation functions.
 // Any validation functions registered for the objects internal API version
 // will be run against the object regardless of version.
-func (r *Registry) Validate(obj runtime.Object, requestVersion schema.GroupVersionKind) field.ErrorList {
+func (r *Registry) Validate(req *admissionv1.AdmissionRequest, obj runtime.Object, requestVersion schema.GroupVersionKind) field.ErrorList {
 	versioned, internal := r.lookupValidateFuncs(requestVersion)
 	if versioned == nil && internal == nil {
 		return nil
@@ -105,10 +106,10 @@ func (r *Registry) Validate(obj runtime.Object, requestVersion schema.GroupVersi
 
 	el := field.ErrorList{}
 	if versioned != nil {
-		el = append(el, versioned(targetObj)...)
+		el = append(el, versioned(req, targetObj)...)
 	}
 	if internal != nil {
-		el = append(el, internal(internalObj)...)
+		el = append(el, internal(req, internalObj)...)
 	}
 
 	return el
@@ -121,7 +122,7 @@ func (r *Registry) Validate(obj runtime.Object, requestVersion schema.GroupVersi
 // calling the validation functions.
 // Any validation functions registered for the objects internal API version
 // will be run against the object regardless of version.
-func (r *Registry) ValidateUpdate(oldObj, obj runtime.Object, requestVersion schema.GroupVersionKind) field.ErrorList {
+func (r *Registry) ValidateUpdate(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object, requestVersion schema.GroupVersionKind) field.ErrorList {
 	versioned, internal := r.lookupValidateUpdateFuncs(requestVersion)
 	if versioned == nil && internal == nil {
 		return nil
@@ -139,10 +140,10 @@ func (r *Registry) ValidateUpdate(oldObj, obj runtime.Object, requestVersion sch
 
 	el := field.ErrorList{}
 	if versioned != nil {
-		el = append(el, versioned(targetOldObj, targetObj)...)
+		el = append(el, versioned(req, targetOldObj, targetObj)...)
 	}
 	if internal != nil {
-		el = append(el, internal(internalOldObj, internalObj)...)
+		el = append(el, internal(req, internalOldObj, internalObj)...)
 	}
 
 	return el
@@ -169,8 +170,8 @@ func (r *Registry) appendValidate(gvk schema.GroupVersionKind, fn ValidateFunc) 
 		return
 	}
 
-	r.validateRegister[gvk] = func(obj runtime.Object) field.ErrorList {
-		return append(existing(obj), fn(obj)...)
+	r.validateRegister[gvk] = func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+		return append(existing(req, obj), fn(req, obj)...)
 	}
 }
 
@@ -181,8 +182,8 @@ func (r *Registry) appendValidateUpdate(gvk schema.GroupVersionKind, fn Validate
 		return
 	}
 
-	r.validateUpdateRegister[gvk] = func(oldObj, obj runtime.Object) field.ErrorList {
-		return append(existing(oldObj, obj), fn(oldObj, obj)...)
+	r.validateUpdateRegister[gvk] = func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
+		return append(existing(req, oldObj, obj), fn(req, oldObj, obj)...)
 	}
 }
 
