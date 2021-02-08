@@ -35,7 +35,7 @@ import (
 )
 
 var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logf.Log, webhook.Scheme, webhook.ValidationRegistry)
-var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logf.Log, webhook.Scheme)
+var mutationHook handlers.MutatingAdmissionHook = handlers.NewSchemeBackedMutator(logf.Log, webhook.Scheme, webhook.MutationRegistry)
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, webhook.Scheme)
 
 func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server.Server, error) {
