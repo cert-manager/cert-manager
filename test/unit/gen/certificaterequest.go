@@ -159,3 +159,21 @@ func SetCertificateRequestFailureTime(p metav1.Time) CertificateRequestModifier 
 		cr.Status.FailureTime = &p
 	}
 }
+
+func SetCertificateRequestTypeMeta(tm metav1.TypeMeta) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.TypeMeta = tm
+	}
+}
+
+func SetCertificateRequestUsername(username string) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.Spec.Username = username
+	}
+}
+
+func SetCertificateRequestGroups(groups []string) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.Spec.Groups = groups
+	}
+}
