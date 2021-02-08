@@ -487,7 +487,7 @@ func TestValidateCertificate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateCertificate(s.cfg)
+			errs := ValidateCertificate(nil, s.cfg)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
