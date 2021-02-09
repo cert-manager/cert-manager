@@ -161,10 +161,7 @@ type CertificateSpec struct {
 	// If `keyAlgorithm` is set to `ecdsa`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
 	// No other values are allowed.
-	// +kubebuilder:validation:ExclusiveMaximum=false
-	// +kubebuilder:validation:Maximum=8192
-	// +kubebuilder:validation:ExclusiveMinimum=false
-	// +kubebuilder:validation:Minimum=0
+	// Size validation is done by the validating webhook
 	// +optional
 	KeySize int `json:"keySize,omitempty"`
 
