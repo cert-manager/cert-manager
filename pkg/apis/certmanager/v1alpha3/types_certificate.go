@@ -161,12 +161,8 @@ type CertificateSpec struct {
 	// If `keyAlgorithm` is set to `ecdsa`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
 	// No other values are allowed.
-	// +kubebuilder:validation:ExclusiveMaximum=false
-	// +kubebuilder:validation:Maximum=8192
-	// +kubebuilder:validation:ExclusiveMinimum=false
-	// +kubebuilder:validation:Minimum=0
 	// +optional
-	KeySize int `json:"keySize,omitempty"`
+	KeySize int `json:"keySize,omitempty"` // Validated by webhook. Be mindful of adding OpenAPI validation- see https://github.com/jetstack/cert-manager/issues/3644 .
 
 	// KeyAlgorithm is the private key algorithm of the corresponding private key
 	// for this certificate. If provided, allowed values are either `rsa` or `ecdsa`

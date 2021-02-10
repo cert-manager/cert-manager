@@ -134,8 +134,6 @@ spec:
                 keySize:
                   description: KeySize is the key bit size of the corresponding private key for this certificate. If `keyAlgorithm` is set to `rsa`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `keyAlgorithm` is set to `ecdsa`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                   type: integer
-                  maximum: 8192
-                  minimum: 0
                 keystores:
                   description: Keystores configures additional keystore output formats stored in the `secretName` Secret resource.
                   type: object
@@ -431,8 +429,6 @@ spec:
                 keySize:
                   description: KeySize is the key bit size of the corresponding private key for this certificate. If `keyAlgorithm` is set to `rsa`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `keyAlgorithm` is set to `ecdsa`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                   type: integer
-                  maximum: 8192
-                  minimum: 0
                 keystores:
                   description: Keystores configures additional keystore output formats stored in the `secretName` Secret resource.
                   type: object
@@ -785,8 +781,6 @@ spec:
                     size:
                       description: Size is the key bit size of the corresponding private key for this certificate. If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                       type: integer
-                      maximum: 8192
-                      minimum: 0
                 renewBefore:
                   description: The amount of time before the currently issued certificate's `notAfter` time that cert-manager will begin to attempt to renew the certificate. If this value is greater than the total duration of the certificate (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
@@ -1084,8 +1078,6 @@ spec:
                     size:
                       description: Size is the key bit size of the corresponding private key for this certificate. If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                       type: integer
-                      maximum: 8192
-                      minimum: 0
                 renewBefore:
                   description: The amount of time before the currently issued certificate's `notAfter` time that cert-manager will begin to attempt to renew the certificate. If this value is greater than the total duration of the certificate (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
