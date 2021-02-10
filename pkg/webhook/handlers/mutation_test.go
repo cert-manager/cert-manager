@@ -52,7 +52,7 @@ func TestDefaultCertificate(t *testing.T) {
 	install.Install(scheme)
 
 	log := klogr.New()
-	c := NewSchemeBackedMutator(log, scheme, registry)
+	c := NewRegistryBackedMutator(log, scheme, registry)
 	tests := map[string]admissionTestT{
 		"apply defaults to TestType": {
 			inputRequest: admissionv1.AdmissionRequest{

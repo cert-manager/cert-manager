@@ -30,22 +30,22 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-type SchemeBackedMutator struct {
+type RegistryBackedMutator struct {
 	log      logr.Logger
 	decoder  runtime.Decoder
 	registry *mutation.Registry
 }
 
-func NewSchemeBackedMutator(log logr.Logger, scheme *runtime.Scheme, registry *mutation.Registry) *SchemeBackedMutator {
+func NewRegistryBackedMutator(log logr.Logger, scheme *runtime.Scheme, registry *mutation.Registry) *RegistryBackedMutator {
 	factory := serializer.NewCodecFactory(scheme)
-	return &SchemeBackedMutator{
+	return &RegistryBackedMutator{
 		log:      log,
 		decoder:  factory.UniversalDecoder(),
 		registry: registry,
 	}
 }
 
-func (c *SchemeBackedMutator) Mutate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+func (c *RegistryBackedMutator) Mutate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
 	status := &admissionv1.AdmissionResponse{}
 	status.UID = admissionSpec.UID
 
