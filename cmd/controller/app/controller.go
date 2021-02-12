@@ -217,6 +217,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		Metrics:                   metrics.New(log),
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
+			HTTP01SolverServiceAccount:        opts.ACMEHTTP01SolverServiceAccount,
 			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
 			HTTP01SolverResourceRequestMemory: HTTP01SolverResourceRequestMemory,
 			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,

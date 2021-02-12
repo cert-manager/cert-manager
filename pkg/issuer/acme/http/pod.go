@@ -167,7 +167,8 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyOnFailure,
+			RestartPolicy:      corev1.RestartPolicyOnFailure,
+			ServiceAccountName: s.ACMEOptions.HTTP01SolverServiceAccount,
 			Containers: []corev1.Container{
 				{
 					Name: "acmesolver",
