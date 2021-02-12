@@ -98,6 +98,10 @@ type ACMEOptions struct {
 	// challenges
 	HTTP01SolverImage string
 
+	// ACMEHTTP01SolverServiceAccount is the name of the service account to get
+	// the ACMEHTTP01SolverImage
+	HTTP01SolverServiceAccount string
+
 	// HTTP01SolverResourceRequestCPU defines the ACME pod's resource request CPU size
 	HTTP01SolverResourceRequestCPU resource.Quantity
 
