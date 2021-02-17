@@ -21,12 +21,15 @@ import (
 	"encoding/asn1"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/kr/pretty"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/apis/acme"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -44,11 +47,27 @@ func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, n
 	oldCR, newCR := oldObj.(*cmapi.CertificateRequest), newObj.(*cmapi.CertificateRequest)
 
 	var el field.ErrorList
-	if !reflect.DeepEqual(oldCR.Annotations, newCR.Annotations) {
-		el = append(el, field.Forbidden(field.NewPath("metadata", "annotations"), "cannot change annotations after creation"))
-	}
+
+	annotationField := field.NewPath("metadata", "annotations")
+	el = append(el, validateCertificateRequestAnnotations(oldCR, newCR, annotationField)...)
+	el = append(el, validateCertificateRequestAnnotations(newCR, oldCR, annotationField)...)
+
 	if !reflect.DeepEqual(oldCR.Spec, newCR.Spec) {
 		el = append(el, field.Forbidden(field.NewPath("spec"), "cannot change spec after creation"))
+	}
+
+	return el
+}
+
+func validateCertificateRequestAnnotations(objA, objB *cmapi.CertificateRequest, fieldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+	for k, v := range objA.Annotations {
+		if strings.HasPrefix(k, certmanager.GroupName) ||
+			strings.HasPrefix(k, acme.GroupName) {
+			if vnew, ok := objB.Annotations[k]; !ok || v != vnew {
+				el = append(el, field.Forbidden(fieldPath.Child(k), "cannot change cert-manager annotation after creation"))
+			}
+		}
 	}
 
 	return el
