@@ -36,6 +36,11 @@ const expiryMetadata = `
 	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 `
 
+const expiryRelativeMetadata = `
+	# HELP certmanager_certificate_expiration_timestamp_seconds_relative The relative time after which the certificate expires. Expressed in seconds.
+	# TYPE certmanager_certificate_expiration_timestamp_seconds_relative gauge
+`
+
 const readyMetadata = `
   # HELP certmanager_certificate_ready_status The ready status of the certificate.
   # TYPE certmanager_certificate_ready_status gauge
@@ -43,11 +48,13 @@ const readyMetadata = `
 
 func TestCertificateMetrics(t *testing.T) {
 	type testT struct {
-		crt                           *cmapi.Certificate
-		expectedExpiry, expectedReady string
+		crt                                                   *cmapi.Certificate
+		timeNow                                               time.Time
+		expectedExpiry, expectedRelativeExpiry, expectedReady string
 	}
 	tests := map[string]testT{
 		"certificate with expiry and ready status": {
+			timeNow: time.Unix(2208988804-100, 0),
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
 				gen.SetCertificateNotAfter(metav1.Time{
@@ -60,6 +67,9 @@ func TestCertificateMetrics(t *testing.T) {
 			),
 			expectedExpiry: `
 	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns"} 2.208988804e+09
+`,
+			expectedRelativeExpiry: `
+	certmanager_certificate_expiration_timestamp_seconds_relative{name="test-certificate",namespace="test-ns"} 100
 `,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
@@ -75,6 +85,9 @@ func TestCertificateMetrics(t *testing.T) {
 			expectedExpiry: `
 	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns"} 0
 `,
+			expectedRelativeExpiry: `
+	certmanager_certificate_expiration_timestamp_seconds_relative{name="test-certificate",namespace="test-ns"} 0
+`,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 0
@@ -83,6 +96,7 @@ func TestCertificateMetrics(t *testing.T) {
 		},
 
 		"certificate with expiry and status False should give an expiry and False status": {
+			timeNow: time.Unix(0, 0),
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
 				gen.SetCertificateNotAfter(metav1.Time{
@@ -96,6 +110,9 @@ func TestCertificateMetrics(t *testing.T) {
 			expectedExpiry: `
 	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns"} 100
 `,
+			expectedRelativeExpiry: `
+	certmanager_certificate_expiration_timestamp_seconds_relative{name="test-certificate",namespace="test-ns"} 100
+`,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 1
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 0
@@ -103,6 +120,7 @@ func TestCertificateMetrics(t *testing.T) {
 `,
 		},
 		"certificate with expiry and status Unknown should give an expiry and Unknown status": {
+			timeNow: time.Unix(100000, 0),
 			crt: gen.Certificate("test-certificate",
 				gen.SetCertificateNamespace("test-ns"),
 				gen.SetCertificateNotAfter(metav1.Time{
@@ -116,6 +134,9 @@ func TestCertificateMetrics(t *testing.T) {
 			expectedExpiry: `
 	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns"} 99999
 `,
+			expectedRelativeExpiry: `
+	certmanager_certificate_expiration_timestamp_seconds_relative{name="test-certificate",namespace="test-ns"} -1
+`,
 			expectedReady: `
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 0
@@ -126,11 +147,18 @@ func TestCertificateMetrics(t *testing.T) {
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
 			m := New(logtesting.TestLogger{T: t})
-			m.UpdateCertificate(context.TODO(), test.crt)
+			m.UpdateCertificate(context.TODO(), test.crt, test.timeNow)
 
 			if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
 				strings.NewReader(expiryMetadata+test.expectedExpiry),
 				"certmanager_certificate_expiration_timestamp_seconds",
+			); err != nil {
+				t.Errorf("unexpected collecting result:\n%s", err)
+			}
+
+			if err := testutil.CollectAndCompare(m.certificateExpiryTimeSecondsRelative,
+				strings.NewReader(expiryRelativeMetadata+test.expectedRelativeExpiry),
+				"certmanager_certificate_expiration_timestamp_seconds_relative",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
@@ -180,9 +208,10 @@ func TestCertificateCache(t *testing.T) {
 	)
 
 	// Observe all three Certificate metrics
-	m.UpdateCertificate(context.TODO(), crt1)
-	m.UpdateCertificate(context.TODO(), crt2)
-	m.UpdateCertificate(context.TODO(), crt3)
+	timeNow := time.Unix(50, 0)
+	m.UpdateCertificate(context.TODO(), crt1, timeNow)
+	m.UpdateCertificate(context.TODO(), crt2, timeNow)
+	m.UpdateCertificate(context.TODO(), crt3, timeNow)
 
 	// Check all three metrics exist
 	if err := testutil.CollectAndCompare(m.certificateReadyStatus,
@@ -211,6 +240,16 @@ func TestCertificateCache(t *testing.T) {
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
+	if err := testutil.CollectAndCompare(m.certificateExpiryTimeSecondsRelative,
+		strings.NewReader(expiryRelativeMetadata+`
+				certmanager_certificate_expiration_timestamp_seconds_relative{name="crt1",namespace="default-unit-test-ns"} 50
+				certmanager_certificate_expiration_timestamp_seconds_relative{name="crt2",namespace="default-unit-test-ns"} 150
+				certmanager_certificate_expiration_timestamp_seconds_relative{name="crt3",namespace="default-unit-test-ns"} 250
+`),
+		"certmanager_certificate_expiration_timestamp_seconds_relative",
+	); err != nil {
+		t.Errorf("unexpected collecting result:\n%s", err)
+	}
 
 	// Remove second certificate and check not exists
 	m.RemoveCertificate("default-unit-test-ns/crt2")
@@ -233,6 +272,15 @@ func TestCertificateCache(t *testing.T) {
         certmanager_certificate_expiration_timestamp_seconds{name="crt3",namespace="default-unit-test-ns"} 300
 `),
 		"certmanager_certificate_expiration_timestamp_seconds",
+	); err != nil {
+		t.Errorf("unexpected collecting result:\n%s", err)
+	}
+	if err := testutil.CollectAndCompare(m.certificateExpiryTimeSecondsRelative,
+		strings.NewReader(expiryRelativeMetadata+`
+				certmanager_certificate_expiration_timestamp_seconds_relative{name="crt1",namespace="default-unit-test-ns"} 50
+				certmanager_certificate_expiration_timestamp_seconds_relative{name="crt3",namespace="default-unit-test-ns"} 250
+`),
+		"certmanager_certificate_expiration_timestamp_seconds_relative",
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}

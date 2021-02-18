@@ -17,6 +17,7 @@ limitations under the License.
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
 // certificate_expiration_timestamp_seconds{name, namespace}
+// certificate_expiration_timestamp_seconds_relative{name, namespace}
 // certificate_ready_status{name, namespace, condition}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
@@ -55,11 +56,12 @@ type Metrics struct {
 	log      logr.Logger
 	registry *prometheus.Registry
 
-	certificateExpiryTimeSeconds     *prometheus.GaugeVec
-	certificateReadyStatus           *prometheus.GaugeVec
-	acmeClientRequestDurationSeconds *prometheus.SummaryVec
-	acmeClientRequestCount           *prometheus.CounterVec
-	controllerSyncCallCount          *prometheus.CounterVec
+	certificateExpiryTimeSeconds         *prometheus.GaugeVec
+	certificateExpiryTimeSecondsRelative *prometheus.GaugeVec
+	certificateReadyStatus               *prometheus.GaugeVec
+	acmeClientRequestDurationSeconds     *prometheus.SummaryVec
+	acmeClientRequestCount               *prometheus.CounterVec
+	controllerSyncCallCount              *prometheus.CounterVec
 }
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
@@ -71,6 +73,15 @@ func New(log logr.Logger) *Metrics {
 				Namespace: namespace,
 				Name:      "certificate_expiration_timestamp_seconds",
 				Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
+			},
+			[]string{"name", "namespace"},
+		)
+
+		certificateExpiryTimeSecondsRelative = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "certificate_expiration_timestamp_seconds_relative",
+				Help:      "The relative time after which the certificate expires. Expressed in seconds.",
 			},
 			[]string{"name", "namespace"},
 		)
@@ -124,11 +135,12 @@ func New(log logr.Logger) *Metrics {
 		log:      log.WithName("metrics"),
 		registry: prometheus.NewRegistry(),
 
-		certificateExpiryTimeSeconds:     certificateExpiryTimeSeconds,
-		certificateReadyStatus:           certificateReadyStatus,
-		acmeClientRequestCount:           acmeClientRequestCount,
-		acmeClientRequestDurationSeconds: acmeClientRequestDurationSeconds,
-		controllerSyncCallCount:          controllerSyncCallCount,
+		certificateExpiryTimeSeconds:         certificateExpiryTimeSeconds,
+		certificateExpiryTimeSecondsRelative: certificateExpiryTimeSecondsRelative,
+		certificateReadyStatus:               certificateReadyStatus,
+		acmeClientRequestCount:               acmeClientRequestCount,
+		acmeClientRequestDurationSeconds:     acmeClientRequestDurationSeconds,
+		controllerSyncCallCount:              controllerSyncCallCount,
 	}
 
 	return m
@@ -137,6 +149,7 @@ func New(log logr.Logger) *Metrics {
 // Start will register the Prometheus metrics, and start the Prometheus server
 func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, error) {
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
+	m.registry.MustRegister(m.certificateExpiryTimeSecondsRelative)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)

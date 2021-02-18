@@ -99,7 +99,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 
 	// Update that Certificates metrics
-	c.metrics.UpdateCertificate(ctx, crt)
+	c.metrics.UpdateCertificate(ctx, crt, time.Now())
 
 	return nil
 }

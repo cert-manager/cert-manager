@@ -17,6 +17,7 @@ limitations under the License.
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
 // certificate_expiration_timestamp_seconds{name, namespace}
+// certificate_expiration_timestamp_seconds_relative{name, namespace}
 // certificate_ready_status{name, namespace, condition}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
@@ -25,6 +26,7 @@ package metrics
 
 import (
 	"context"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/tools/cache"
@@ -36,7 +38,7 @@ import (
 
 // UpdateCertificate will update that Certificate metric with expiry and Ready
 // condition.
-func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate) {
+func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate, timeNow time.Time) {
 	key, err := cache.MetaNamespaceKeyFunc(crt)
 	if err != nil {
 		log := logf.WithRelatedResource(m.log, crt)
@@ -45,20 +47,25 @@ func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate)
 	}
 
 	m.updateCertificateStatus(key, crt)
-	m.updateCertificateExpiry(ctx, key, crt)
+	m.updateCertificateExpiry(ctx, key, crt, timeNow)
 }
 
 // updateCertificateExpiry updates the expiry time of a certificate
-func (m *Metrics) updateCertificateExpiry(ctx context.Context, key string, crt *cmapi.Certificate) {
+func (m *Metrics) updateCertificateExpiry(ctx context.Context, key string, crt *cmapi.Certificate, timeNow time.Time) {
 	expiryTime := 0.0
+	expiryTimeRelative := 0.0
 
 	if crt.Status.NotAfter != nil {
 		expiryTime = float64(crt.Status.NotAfter.Unix())
+		expiryTimeRelative = float64(crt.Status.NotAfter.Unix() - timeNow.Unix())
 	}
 
 	m.certificateExpiryTimeSeconds.With(prometheus.Labels{
 		"name":      crt.Name,
 		"namespace": crt.Namespace}).Set(expiryTime)
+	m.certificateExpiryTimeSecondsRelative.With(prometheus.Labels{
+		"name":      crt.Name,
+		"namespace": crt.Namespace}).Set(expiryTimeRelative)
 }
 
 // updateCertificateStatus will update the metric for that Certificate
@@ -100,6 +107,7 @@ func (m *Metrics) RemoveCertificate(key string) {
 	}
 
 	m.certificateExpiryTimeSeconds.DeleteLabelValues(name, namespace)
+	m.certificateExpiryTimeSecondsRelative.DeleteLabelValues(name, namespace)
 	for _, condition := range readyConditionStatuses {
 		m.certificateReadyStatus.DeleteLabelValues(name, namespace, string(condition))
 	}
