@@ -6,7 +6,6 @@ go_library(
         "certificaterequest.go",
         "order.go",
         "secret.go",
-        "util.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/unit/listers",
     visibility = ["//visibility:public"],
