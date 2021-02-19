@@ -273,36 +273,52 @@ func TestDataForCertificate(t *testing.T) {
 // (1) the lister.CertificateRequests(namespace) has been called with the
 // correct expected namespace and (2) lister.CertificateRequests(namespace)
 // has been called exactly once, which makes sure (1) was checked.
-func mockCertificateRequests(expNamespace string, innerLister func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister) func(*testing.T) *listers.FakeCertificateRequestLister {
+func mockCertificateRequests(expectNamespace string, innerLister func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister) func(*testing.T) *listers.FakeCertificateRequestLister {
 	return func(t *testing.T) *listers.FakeCertificateRequestLister {
 		f := expectCalled(t, 1)
 		return listers.
 			NewFakeCertificateRequestLister().
 			WithCertificateRequests(func(namespace string) cmlist.CertificateRequestNamespaceLister {
 				f()
-				assert.Equal(t, expNamespace, namespace)
+				assert.Equal(t, expectNamespace, namespace)
 				return innerLister(t)
 			})
 	}
 }
 
-// The returned function f is expected to be called expectedCount times.
-// Returns a friendly error with the location where f was created to help
-// the developer figure out where the error came from.
-func expectCalled(t *testing.T, expectedCount uint32) (f func()) {
-	// Debugging purposes: allows us to display where this function was
-	// called. The reason we need to to this is because t.Cleanup's stack
-	// does not contain the origin function, which makes it really hard to
-	// know where the assertion failed.
-	stack := grandparentStack(2)
+// Checks that a block was run a given number of times.
+//
+// To use expectCalled, call the returned f function inside the block that
+// is meant to be called expectedCount times. A friendly t.Error will be
+// shown with the "file:line" where f was created to help the developer
+// figure out where this expectCalled came from.
+//
+// Example, the following will pass:
+//
+//   f := expectCalled(t, 1)
+//   for {
+// 	     f()
+//       break
+//   }
+func expectCalled(t *testing.T, expectedCount int) (f func()) {
+	// The whereAmI is just meant to help the developer find where the
+	// "expected call" was supposed to happen. This is needed because the
+	// t.Error call is made from a t.Cleanup func. Since t.Cleanup's stack
+	// does not contain the location of where expectCalled() was called,
+	// the developer won't have any clue as to where this assertion failure
+	// really came from.
+	//
+	// We use the argument 2 (as opposed to 0) because we need to skip some
+	// useless stack frames. The developer does not care about the location
+	// of expectCalled() since it is "testing code"; the developer only
+	// cares about locations in their own test code.
+	whereAmI := whereAmI(2)
 
 	gotCount := uint32(0)
 	t.Cleanup(func() {
-		assert.Equal(t, int(expectedCount), int(atomic.LoadUint32(&gotCount)), "this func was expected to be called %d times but was called %d times. Stack:\n\t%s",
-			expectedCount,
-			gotCount,
-			strings.Join(stack, "\n\t"),
-		)
+		if uint32(expectedCount) != atomic.LoadUint32(&gotCount) {
+			t.Errorf("expectCalled: a function was expected to be called %d times but was called %d times at:\n\t%s", expectedCount, gotCount, whereAmI)
+		}
 	})
 	return func() {
 		atomic.AddUint32(&gotCount, 1)
@@ -312,25 +328,30 @@ func expectCalled(t *testing.T, expectedCount uint32) (f func()) {
 func expectNeverCalled() func(t *testing.T) *listers.FakeCertificateRequestLister {
 	return func(t *testing.T) *listers.FakeCertificateRequestLister {
 		f := expectCalled(t, 0)
-		return listers.NewFakeCertificateRequestLister().WithCertificateRequests(func(namespace string) cmlist.CertificateRequestNamespaceLister {
+		return listers.NewFakeCertificateRequestLister().WithCertificateRequests(func(_ string) cmlist.CertificateRequestNamespaceLister {
 			f()
 			return nil
 		})
 	}
 }
 
-// Returns the stack of the callers of the form "file.go:93". The N first
-// items are skipped. The stack stops as soon as it meets a function in
-// testing.go since we are not interested by those.
-func grandparentStack(skip int) []string {
-	var stack []string
+// Returns a string of the form:
+//
+//    "gatherer_test.go:93\n"                   ← parent
+//  + "\tgatherer_test.go:283\n"                ← grand-parent
+//  + "\tgatherer_test.go:300"                  ← grand-grand-parent
+//
+// The list stops as soon as the file "testing.go" is met. This is because
+// since we are not interested by the internals of the testing package.
+func whereAmI(skip int) string {
+	var fileAndLine []string
 	for i := skip; ; i++ {
 		_, file, line, ok := runtime.Caller(i)
 		file = filepath.Base(file)
 		if file == "testing.go" || !ok {
 			break
 		}
-		stack = append(stack, fmt.Sprintf("%s:%d", file, line))
+		fileAndLine = append(fileAndLine, fmt.Sprintf("%s:%d", file, line))
 	}
-	return stack
+	return strings.Join(fileAndLine, "\n\t")
 }
