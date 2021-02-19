@@ -22,5 +22,5 @@ import (
 )
 
 func TPPDescribe(name string, body func()) bool {
-	return framework.CertManagerDescribe("[Venafi] [TPP] "+name, body)
+	return framework.CertManagerDescribe("[Feature:Issuers:Venafi:TPP] "+name, body)
 }
