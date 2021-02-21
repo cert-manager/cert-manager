@@ -215,7 +215,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		PolicyChain,
-		ctx.CertificateOptions.RenewBeforeExpiryDuration,
+		cmapi.DefaultRenewBefore,
 	)
 	c.controller = ctrl
 
