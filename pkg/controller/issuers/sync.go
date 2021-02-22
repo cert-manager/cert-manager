@@ -59,5 +59,5 @@ func (c *Controller) updateIssuerStatus(ctx context.Context, old, new cmapi.Gene
 	if reflect.DeepEqual(old.GetStatus(), new.GetStatus()) {
 		return nil, nil
 	}
-	return internalissuers.Update(ctx, c.cmClient, new)
+	return internalissuers.UpdateStatus(ctx, c.cmClient, new)
 }

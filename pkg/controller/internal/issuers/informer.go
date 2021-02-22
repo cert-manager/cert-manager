@@ -22,7 +22,7 @@ import (
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1"
 )
 
-// TODO:
+// Informer is a generic informer which is backend by either an Issuer or ClusterIssuer informer
 type Informer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() Lister

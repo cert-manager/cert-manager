@@ -23,7 +23,6 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 )
 
-// TODO:
 // Lister is used to list issuers that are either Issuers or
 // ClusterIssuers.
 type Lister interface {

@@ -26,7 +26,8 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
-func Update(ctx context.Context, client cmclient.Interface, genericIssuer cmapi.GenericIssuer) (cmapi.GenericIssuer, error) {
+// UpdateStatus will update the status of the given GenericIssuer
+func UpdateStatus(ctx context.Context, client cmclient.Interface, genericIssuer cmapi.GenericIssuer) (cmapi.GenericIssuer, error) {
 	switch genericIssuer.GetKind() {
 	case cmapi.IssuerKind:
 		issuer, ok := genericIssuer.(*cmapi.Issuer)
