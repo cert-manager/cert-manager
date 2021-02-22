@@ -27,9 +27,32 @@ type GenericIssuer interface {
 	runtime.Object
 	metav1.Object
 
+	GetKind() string
 	GetObjectMeta() *metav1.ObjectMeta
 	GetSpec() *IssuerSpec
 	GetStatus() *IssuerStatus
+	Copy() GenericIssuer
+
+	SetStatus(status *IssuerStatus)
+}
+
+type IssuerResponse struct {
+	// Certificate is the certificate resource that should be stored in the
+	// target secret.
+	// It will only be set if the corresponding private key is also set on the
+	// IssuerResponse structure.
+	Certificate []byte
+
+	// PrivateKey is the private key that should be stored in the target secret.
+	// If set, the certificate and CA field will also be overwritten with the
+	// contents of the field.
+	// If Certificate is not set, the existing Certificate will be overwritten.
+	PrivateKey []byte
+
+	// CA is the CA certificate that should be stored in the target secret.
+	// This field should only be set if the private key field is set, similar
+	// to the Certificate field.
+	CA []byte
 }
 
 var _ GenericIssuer = &Issuer{}
@@ -44,11 +67,14 @@ func (c *ClusterIssuer) GetSpec() *IssuerSpec {
 func (c *ClusterIssuer) GetStatus() *IssuerStatus {
 	return &c.Status
 }
+func (c *ClusterIssuer) GetKind() string {
+	return ClusterIssuerKind
+}
 func (c *ClusterIssuer) SetSpec(spec IssuerSpec) {
 	c.Spec = spec
 }
-func (c *ClusterIssuer) SetStatus(status IssuerStatus) {
-	c.Status = status
+func (c *ClusterIssuer) SetStatus(status *IssuerStatus) {
+	c.Status = *status
 }
 func (c *ClusterIssuer) Copy() GenericIssuer {
 	return c.DeepCopy()
@@ -62,11 +88,14 @@ func (c *Issuer) GetSpec() *IssuerSpec {
 func (c *Issuer) GetStatus() *IssuerStatus {
 	return &c.Status
 }
+func (c *Issuer) GetKind() string {
+	return IssuerKind
+}
 func (c *Issuer) SetSpec(spec IssuerSpec) {
 	c.Spec = spec
 }
-func (c *Issuer) SetStatus(status IssuerStatus) {
-	c.Status = status
+func (c *Issuer) SetStatus(status *IssuerStatus) {
+	c.Status = *status
 }
 func (c *Issuer) Copy() GenericIssuer {
 	return c.DeepCopy()

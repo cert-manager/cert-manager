@@ -173,7 +173,7 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
 }
 
-// RemoteCertificateCondition will remove any condition with this condition type
+// RemoveCertificateCondition will remove any condition with this condition type
 func RemoveCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType) {
 	var updatedConditions []cmapi.CertificateCondition
 
