@@ -33,10 +33,10 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	networkingv1beta1listers "k8s.io/client-go/listers/networking/v1beta1"
 
+	"github.com/jetstack/cert-manager/pkg/acme/httpsolver"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
@@ -165,7 +165,7 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 	if k8snet.IsIPv6(net.ParseIP(url.Host)) {
 		url.Host = fmt.Sprintf("[%s]", url.Host)
 	}
-	url.Path = fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token)
+	url.Path = fmt.Sprintf("%s/%s", httpsolver.HTTPChallengePath, ch.Spec.Token)
 
 	return url
 }

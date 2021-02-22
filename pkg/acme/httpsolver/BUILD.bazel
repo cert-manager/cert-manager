@@ -6,7 +6,7 @@ go_library(
         "constants.go",
         "solver.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/acmechallenges/http/solver",
+    importpath = "github.com/jetstack/cert-manager/pkg/acme/httpsolver",
     visibility = ["//visibility:public"],
     deps = ["@com_github_go_logr_logr//:go_default_library"],
 )

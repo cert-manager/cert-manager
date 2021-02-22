@@ -21,13 +21,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/http/solver"
+	"github.com/jetstack/cert-manager/pkg/acme/httpsolver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
-	s := new(solver.HTTP01Solver)
+	s := new(httpsolver.HTTP01Solver)
 
 	cmd := &cobra.Command{
 		Use:   "acmesolver",

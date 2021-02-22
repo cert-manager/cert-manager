@@ -29,9 +29,9 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/jetstack/cert-manager/pkg/acme/httpsolver"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -361,5 +361,5 @@ func ingressPath(token, serviceName string) networkingv1beta1.HTTPIngressPath {
 }
 
 var solverPathFn = func(token string) string {
-	return fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token)
+	return fmt.Sprintf("%s/%s", httpsolver.HTTPChallengePath, token)
 }
