@@ -38,10 +38,10 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/fake"
+	internalissuers "github.com/jetstack/cert-manager/pkg/controller/internal/issuers"
+	internalissuersfake "github.com/jetstack/cert-manager/pkg/controller/internal/issuers/fake"
+	_ "github.com/jetstack/cert-manager/pkg/controller/issuers/selfsigned"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	issuerfake "github.com/jetstack/cert-manager/pkg/issuer/fake"
-	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -209,11 +209,9 @@ func TestSync(t *testing.T) {
 		},
 		"should return error to try again if there was a error getting issuer wasn't a not found error": {
 			certificateRequest: baseCR.DeepCopy(),
-			helper: &issuerfake.Helper{
-				GetGenericIssuerFunc: func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
-					return nil, errors.New("this is a network error")
-				},
-			},
+			issuerGetter: internalissuersfake.New().WithIssuer(func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
+				return nil, errors.New("this is a network error")
+			}),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR},
 				ExpectedEvents:     []string{},
@@ -336,7 +334,7 @@ func TestSync(t *testing.T) {
 		"if calling sign errors, we should not update condition and return error to retry": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR),
 			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 					return nil, errors.New("sign call returns error")
 				},
 			},
@@ -350,7 +348,7 @@ func TestSync(t *testing.T) {
 		"if calling sign returns nil, nil then we should return nil with no-op since the underlying issuer has probably set the condition to failed": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR),
 			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 					return nil, nil
 				},
 			},
@@ -364,8 +362,8 @@ func TestSync(t *testing.T) {
 		"if calling sign returns a response but the certificate is badly formed then we fail": {
 			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return &issuer.IssueResponse{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
+					return &cmapi.IssuerResponse{
 						Certificate: []byte("a bad certificate"),
 					}, nil
 				},
@@ -401,8 +399,8 @@ func TestSync(t *testing.T) {
 		"if calling sign returns a response with a valid RSA signed certificate then set condition Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return &issuer.IssueResponse{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
+					return &cmapi.IssuerResponse{
 						Certificate: certRSAPEM,
 					}, nil
 				},
@@ -434,8 +432,8 @@ func TestSync(t *testing.T) {
 		"if calling sign returns a response with an expired RSA certificate then set condition Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return &issuer.IssueResponse{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
+					return &cmapi.IssuerResponse{
 						Certificate: certRSAPEMExpired,
 					}, nil
 				},
@@ -467,8 +465,8 @@ func TestSync(t *testing.T) {
 		"if calling sign returns a response with a valid EC signed certificate then set condition Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return &issuer.IssueResponse{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
+					return &cmapi.IssuerResponse{
 						Certificate: certECPEM,
 					}, nil
 				},
@@ -500,8 +498,8 @@ func TestSync(t *testing.T) {
 		"if calling sign returns a response with an expired EC certificate then set condition Ready": {
 			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return &issuer.IssueResponse{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
+					return &cmapi.IssuerResponse{
 						Certificate: certECPEMExpired,
 					}, nil
 				},
@@ -544,7 +542,7 @@ type testT struct {
 	builder            *testpkg.Builder
 	issuerImpl         Issuer
 	certificateRequest *cmapi.CertificateRequest
-	helper             *issuerfake.Helper
+	issuerGetter       internalissuers.Getter
 	expectedErr        bool
 }
 
@@ -557,7 +555,7 @@ func runTest(t *testing.T, test testT) {
 
 	if test.issuerImpl == nil {
 		test.issuerImpl = &fake.Issuer{
-			FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+			FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 				return nil, errors.New("unexpected sign call")
 			},
 		}
@@ -566,8 +564,8 @@ func runTest(t *testing.T, test testT) {
 	c := New(util.IssuerSelfSigned, test.issuerImpl)
 	c.Register(test.builder.Context)
 
-	if test.helper != nil {
-		c.helper = test.helper
+	if test.issuerGetter != nil {
+		c.issuerGetter = test.issuerGetter
 	}
 
 	test.builder.Start()

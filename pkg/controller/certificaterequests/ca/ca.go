@@ -29,7 +29,6 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -70,7 +69,7 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 	}
 }
 
-func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	secretName := issuerObj.GetSpec().CA.SecretName
@@ -124,7 +123,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 
 	log.V(logf.DebugLevel).Info("certificate issued")
 
-	return &issuerpkg.IssueResponse{
+	return &cmapi.IssuerResponse{
 		Certificate: certPEM,
 		CA:          caPEM,
 	}, nil

@@ -34,9 +34,8 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
-	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi/api"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -50,7 +49,7 @@ type Venafi struct {
 	reporter      *crutil.Reporter
 	cmClient      clientset.Interface
 
-	clientBuilder venaficlient.VenafiClientBuilder
+	clientBuilder venafi.VenafiClientBuilder
 }
 
 func init() {
@@ -67,12 +66,12 @@ func NewVenafi(ctx *controllerpkg.Context) *Venafi {
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
-		clientBuilder: venaficlient.New,
+		clientBuilder: venafi.New,
 		cmClient:      ctx.CMClient,
 	}
 }
 
-func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
@@ -118,7 +117,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		if err != nil {
 			switch err.(type) {
 
-			case venaficlient.ErrCustomFieldsType:
+			case venafi.ErrCustomFieldsType:
 				v.reporter.Failed(cr, err, "CustomFieldsError", err.Error())
 				log.Error(err, err.Error())
 
@@ -175,7 +174,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		}
 		lastBlock = block
 	}
-	return &issuerpkg.IssueResponse{
+	return &cmapi.IssuerResponse{
 		Certificate: certPem,
 		CA:          pem.EncodeToMemory(lastBlock),
 	}, nil

@@ -42,9 +42,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-	internalvenafifake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi/api"
+	internalvenafifake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
@@ -222,7 +222,7 @@ func TestSign(t *testing.T) {
 
 	clientReturnsInvalidCustomFieldType := &internalvenafifake.Venafi{
 		RequestCertificateFn: func(csrPEM []byte, duration time.Duration, fields []api.CustomField) (string, error) {
-			return "", client.ErrCustomFieldsType{Type: fields[0].Type}
+			return "", venafi.ErrCustomFieldsType{Type: fields[0].Type}
 		},
 	}
 
@@ -758,7 +758,7 @@ func runTest(t *testing.T, test testT) {
 
 	if test.fakeClient != nil {
 		v.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
-			issuer cmapi.GenericIssuer) (client.Interface, error) {
+			issuer cmapi.GenericIssuer) (venafi.Interface, error) {
 			return test.fakeClient, nil
 		}
 	}

@@ -26,12 +26,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	internalissuers "github.com/jetstack/cert-manager/pkg/controller/internal/issuers"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -42,12 +42,10 @@ const (
 var keyFunc = controllerpkg.KeyFunc
 
 type Issuer interface {
-	Sign(context.Context, *v1.CertificateRequest, v1.GenericIssuer) (*issuer.IssueResponse, error)
+	Sign(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*cmapi.IssuerResponse, error)
 }
 
 type Controller struct {
-	helper issuer.Helper
-
 	// clientset used to update cert-manager API resources
 	cmClient cmclient.Interface
 
@@ -64,8 +62,8 @@ type Controller struct {
 	// the issuer kind to react to when a certificate request is synced
 	issuerType string
 
-	issuerLister        cmlisters.IssuerLister
-	clusterIssuerLister cmlisters.ClusterIssuerLister
+	// issuerGetter is used to obtain references to issuers, used by Sync()
+	issuerGetter internalissuers.Getter
 
 	// Extra informers that should be watched by this certificate request
 	// controller instance. These resources can be owned by certificate requests
@@ -109,8 +107,8 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// create a queue used to queue up items to be processed
 	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
-	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
-	c.issuerLister = issuerInformer.Lister()
+	// issuerGetter used to get generic issuer resources
+	c.issuerGetter = internalissuers.NewGetter(ctx.SharedInformerFactory.Certmanager().V1())
 
 	// obtain references to all the informers used by this controller
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
@@ -124,6 +122,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		extraInformersMustSync = append(extraInformersMustSync, i.HasSynced)
 	}
 
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	mustSync := append([]cache.InformerSynced{
 		certificateRequestInformer.Informer().HasSynced,
 		issuerInformer.Informer().HasSynced,
@@ -134,7 +133,6 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// register event handlers and obtain a lister for clusterissuers.
 	if ctx.Namespace == "" {
 		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
-		c.clusterIssuerLister = clusterIssuerInformer.Lister()
 		// register handler function for clusterissuer resources
 		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
 		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
@@ -155,7 +153,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	}
 
 	// create an issuer helper for reading generic issuers
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	//c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
 	// clock is used to set the FailureTime of failed CertificateRequests
 	c.clock = ctx.Clock

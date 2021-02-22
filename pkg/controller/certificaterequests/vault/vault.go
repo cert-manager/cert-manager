@@ -23,12 +23,11 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -62,7 +61,7 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 	}
 }
 
-func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v1.GenericIssuer) (*issuer.IssueResponse, error) {
+func (v *Vault) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
 
@@ -98,7 +97,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 
 	log.V(logf.DebugLevel).Info("certificate issued")
 
-	return &issuer.IssueResponse{
+	return &cmapi.IssuerResponse{
 		Certificate: certPem,
 		CA:          caPem,
 	}, nil

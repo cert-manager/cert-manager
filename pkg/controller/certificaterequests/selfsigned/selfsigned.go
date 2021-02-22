@@ -31,7 +31,6 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -72,7 +71,7 @@ func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 	}
 }
 
-func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*cmapi.IssuerResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
@@ -162,7 +161,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	log.V(logf.DebugLevel).Info("self signed certificate issued")
 
 	// We set the CA to the returned certificate here since this is self signed.
-	return &issuer.IssueResponse{
+	return &cmapi.IssuerResponse{
 		Certificate: certPem,
 		CA:          certPem,
 	}, nil
