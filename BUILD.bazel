@@ -81,7 +81,6 @@ filegroup(
         "//pkg/ctl:all-srcs",
         "//pkg/feature:all-srcs",
         "//pkg/internal:all-srcs",
-        "//pkg/issuer:all-srcs",
         "//pkg/logs:all-srcs",
         "//pkg/metrics:all-srcs",
         "//pkg/scheduler:all-srcs",
