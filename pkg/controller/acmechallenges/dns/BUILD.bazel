@@ -1,0 +1,83 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["dns.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/acme/webhook:go_default_library",
+        "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/controller/acmechallenges/dns/acmedns:go_default_library",
+        "//pkg/controller/acmechallenges/dns/akamai:go_default_library",
+        "//pkg/controller/acmechallenges/dns/azuredns:go_default_library",
+        "//pkg/controller/acmechallenges/dns/clouddns:go_default_library",
+        "//pkg/controller/acmechallenges/dns/cloudflare:go_default_library",
+        "//pkg/controller/acmechallenges/dns/digitalocean:go_default_library",
+        "//pkg/controller/acmechallenges/dns/rfc2136:go_default_library",
+        "//pkg/controller/acmechallenges/dns/route53:go_default_library",
+        "//pkg/controller/acmechallenges/dns/util:go_default_library",
+        "//pkg/controller/acmechallenges/dns/webhook:go_default_library",
+        "//pkg/logs:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_client_go//listers/core/v1:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "dns_test.go",
+        "util_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/controller/acmechallenges/dns/acmedns:go_default_library",
+        "//pkg/controller/acmechallenges/dns/azuredns:go_default_library",
+        "//pkg/controller/acmechallenges/dns/clouddns:go_default_library",
+        "//pkg/controller/acmechallenges/dns/cloudflare:go_default_library",
+        "//pkg/controller/acmechallenges/dns/digitalocean:go_default_library",
+        "//pkg/controller/acmechallenges/dns/route53:go_default_library",
+        "//pkg/controller/acmechallenges/dns/util:go_default_library",
+        "//pkg/controller/test:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/controller/acmechallenges/dns/acmedns:all-srcs",
+        "//pkg/controller/acmechallenges/dns/akamai:all-srcs",
+        "//pkg/controller/acmechallenges/dns/azuredns:all-srcs",
+        "//pkg/controller/acmechallenges/dns/clouddns:all-srcs",
+        "//pkg/controller/acmechallenges/dns/cloudflare:all-srcs",
+        "//pkg/controller/acmechallenges/dns/digitalocean:all-srcs",
+        "//pkg/controller/acmechallenges/dns/rfc2136:all-srcs",
+        "//pkg/controller/acmechallenges/dns/route53:all-srcs",
+        "//pkg/controller/acmechallenges/dns/util:all-srcs",
+        "//pkg/controller/acmechallenges/dns/webhook:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
