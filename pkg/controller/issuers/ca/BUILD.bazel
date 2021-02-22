@@ -1,0 +1,46 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["ca.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/issuers/ca",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/api/util:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/controller/issuers:go_default_library",
+        "//pkg/logs:go_default_library",
+        "//pkg/util/kube:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_client_go//listers/core/v1:go_default_library",
+        "@io_k8s_client_go//tools/record:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["ca_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+    ],
+)
