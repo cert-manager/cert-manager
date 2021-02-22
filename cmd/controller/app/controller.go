@@ -238,8 +238,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
 		},
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef:            opts.EnableCertificateOwnerRef,
-			RenewBeforeExpiryDuration: opts.RenewBeforeExpiryDuration,
+			EnableOwnerRef: opts.EnableCertificateOwnerRef,
 		},
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
