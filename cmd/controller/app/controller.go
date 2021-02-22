@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -43,8 +44,7 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	dnsutil "github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -87,7 +87,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}
 
 			// don't run clusterissuers controller if scoped to a single namespace
-			if ctx.Namespace != "" && n == clusterissuers.ControllerName {
+			if ctx.Namespace != "" && strings.HasPrefix(n, "ClusterIssuer") {
 				log.V(logf.InfoLevel).Info("not starting controller as cert-manager has been scoped to a single namespace")
 				continue
 			}

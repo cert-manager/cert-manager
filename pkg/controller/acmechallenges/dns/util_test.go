@@ -22,7 +22,6 @@ import (
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/clouddns"
@@ -30,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/digitalocean"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/util"
+	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 

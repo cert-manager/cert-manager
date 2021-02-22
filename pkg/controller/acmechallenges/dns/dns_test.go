@@ -29,10 +29,10 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/util"
+	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
 func newIssuer(name, namespace string) *v1.Issuer {
