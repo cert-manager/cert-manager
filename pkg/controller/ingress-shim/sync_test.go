@@ -86,7 +86,6 @@ func TestSync(t *testing.T) {
 	type testT struct {
 		Name                string
 		Ingress             *networkingv1beta1.Ingress
-		Issuer              cmapi.GenericIssuer
 		IssuerLister        []runtime.Object
 		ClusterIssuerLister []runtime.Object
 		CertificateLister   []runtime.Object
@@ -101,8 +100,7 @@ func TestSync(t *testing.T) {
 	}
 	tests := []testT{
 		{
-			Name:   "return a single Certificate for an ingress with a single valid TLS entry and common-name annotation",
-			Issuer: acmeClusterIssuer,
+			Name: "return a single Certificate for an ingress with a single valid TLS entry and common-name annotation",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -151,8 +149,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
-			Issuer: acmeClusterIssuer,
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -204,8 +201,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "create a Certificate with the HTTP01 name override if the given ingress uses http01 annotations",
-			Issuer: gen.Issuer(acmeIssuer.Name),
+			Name: "create a Certificate with the HTTP01 name override if the given ingress uses http01 annotations",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -257,8 +253,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
-			Issuer: acmeClusterIssuer,
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -299,8 +294,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
-			Issuer: acmeClusterIssuer,
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -342,8 +336,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a certificate ingress class",
-			Issuer: acmeClusterIssuer,
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a certificate ingress class",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -389,8 +382,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "edit-in-place set to false should not trigger editing the ingress in-place",
-			Issuer: acmeClusterIssuer,
+			Name: "edit-in-place set to false should not trigger editing the ingress in-place",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -433,8 +425,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry",
-			Issuer: acmeClusterIssuer,
+			Name: "return a single DNS01 Certificate for an ingress with a single valid TLS entry",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -476,7 +467,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:                "should return a basic certificate when no provider specific config is provided",
-			Issuer:              clusterIssuer,
 			DefaultIssuerName:   "issuer-name",
 			DefaultIssuerKind:   "ClusterIssuer",
 			DefaultIssuerGroup:  "cert-manager.io",
@@ -522,7 +512,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should skip an invalid TLS entry (no TLS hosts specified)",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			ExpectedEvents: []string{
 				`Warning BadConfig TLS entry 0 is invalid: secret "example-com-tls-invalid" for ingress TLS has no hosts specified`,
@@ -571,7 +560,6 @@ func TestSync(t *testing.T) {
 
 		{
 			Name:         "should skip an invalid TLS entry (no TLS secret name specified)",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			ExpectedEvents: []string{
 				`Warning BadConfig TLS entry 0 is invalid: TLS entry for hosts [example.com] must specify a secretName`,
@@ -632,7 +620,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should not return any certificates if a correct Certificate already exists",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -676,7 +663,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should update a certificate if an incorrect Certificate exists",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -725,7 +711,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should update an existing Certificate resource with new labels if they do not match those specified on the Ingress",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -795,7 +780,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should not update certificate if it does not belong to any ingress",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -837,7 +821,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should not update certificate if it does not belong to the ingress",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -879,7 +862,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should delete a Certificate if its SecretName is not present in the ingress",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -930,7 +912,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "should update a Certificate if is contains a Common Name that is not defined on the ingress annotations",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -995,7 +976,6 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name:         "if an ingress contains multiple tls entries that specify the same secretName, an error should be logged and no action taken",
-			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			ExpectedEvents: []string{
 				`Warning BadConfig Duplicate TLS entry for secretName "example-com-tls"`,
@@ -1026,8 +1006,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "Failure to translateIngressAnnotations",
-			Issuer: acmeIssuer,
+			Name: "Failure to translateIngressAnnotations",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -1052,8 +1031,7 @@ func TestSync(t *testing.T) {
 			Err: true,
 		},
 		{
-			Name:   "return a single Certificate for an ingress with a single valid TLS entry with common-name and keyusage annotation",
-			Issuer: acmeClusterIssuer,
+			Name: "return a single Certificate for an ingress with a single valid TLS entry with common-name and keyusage annotation",
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -1161,8 +1139,8 @@ func TestSync(t *testing.T) {
 					issuerGroup:                test.DefaultIssuerGroup,
 					autoCertificateAnnotations: []string{testAcmeTLSAnnotation},
 				},
-				helper: &fakeHelper{issuer: test.Issuer},
 			}
+
 			b.Start()
 
 			err := c.Sync(context.Background(), test.Ingress)

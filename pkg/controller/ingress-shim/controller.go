@@ -33,7 +33,6 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -63,7 +62,6 @@ type controller struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 
-	helper   issuer.Helper
 	defaults defaults
 }
 
@@ -107,7 +105,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 	certificatesInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.certificateDeleted})
 
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	c.kClient = ctx.Client
 	c.cmClient = ctx.CMClient
 	c.recorder = ctx.Recorder
