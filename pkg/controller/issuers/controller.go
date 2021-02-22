@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,108 +18,127 @@ package issuers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	internalissuers "github.com/jetstack/cert-manager/pkg/controller/internal/issuers"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-type controller struct {
-	issuerLister cmlisters.IssuerLister
-	secretLister corelisters.SecretLister
+// Issuer implements the actual issuer that backs a [Cluster]Issuer resource.
+type Issuer interface {
+	// Setup initialises the issuer. This may include registering accounts with
+	// a service, creating a CA and storing it somewhere, or verifying
+	// credentials and authorization with a remote server.
+	Setup(context.Context, cmapi.GenericIssuer) error
 
-	// maintain a reference to the workqueue for this controller
-	// so the handleOwnedResource method can enqueue resources
-	queue workqueue.RateLimitingInterface
+	// Implements is a func called to determine whether the given generic issuer
+	// implements the type that the Issuer controls. If returns true, this Issuer
+	// implements this generic issuer spec type.
+	Implements(cmapi.GenericIssuer) bool
+
+	// ReferencesSecret is a func called to determine whether the given secret is
+	// affected by the given issuer for this Issuer.
+	ReferencesSecret(cmapi.GenericIssuer, *corev1.Secret) bool
+}
+
+// Controller is the generic issuer controller that handles generic Issuer
+// resouces.
+type Controller struct {
+	name string
+	// Either Issuer or ClusterIssuer
+	issuerKind string
 
 	// logger to be used by this controller
 	log logr.Logger
 
+	// issuerBackend holds the actual backend implementation of the issuer
+	issuerBackend Issuer
+
+	// lister is a generic interface issuer lister for getting Issuer or Cluster
+	// Issuers
+	issuerLister internalissuers.Lister
+	secretLister corelisters.SecretLister
+
 	// clientset used to update cert-manager API resources
 	cmClient cmclient.Interface
 
-	// used to record Events about resources to the API
-	recorder record.EventRecorder
+	issuerInformer internalissuers.Informer
 
-	// issuerFactory is used to obtain a reference to the Issuer implementation
-	// for each ClusterIssuer resource
-	issuerFactory issuer.Factory
+	// maintain a reference to the workqueue for this controller so we can
+	// enqueue [Cluster]Issuers affected by other resources.
+	queue workqueue.RateLimitingInterface
+
+	issuerOptions controllerpkg.IssuerOptions
+
+	// Extra informers that should be watched by this issuer controller instance.
+	// These resources can be owned by [Cluster]Issuers that we resolve.
+	// TODO: introduce extra informers if issuers require more informers than
+	// just [Cluster]Issuers and secrets. For example, Vault Issuers using
+	// ServiceAccount authentication.
+	//extraInformers []cache.SharedIndexInformer
 }
 
-// Register registers and constructs the controller using the provided context.
-// It returns the workqueue to be used to enqueue items, a list of
-// InformerSynced functions that must be synced, or an error.
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func New(name, issuerKind string, issuerBackend Issuer) *Controller {
+	return &Controller{
+		name:          name,
+		issuerKind:    issuerKind,
+		issuerBackend: issuerBackend,
+	}
+}
+
+// Register will construct and register the Issuer and Cluster issuer
+// controller for the issuer backend defined.
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	// construct a new named logger to be reused throughout the controller
-	c.log = logf.FromContext(ctx.RootContext, ControllerName)
+	c.log = logf.FromContext(ctx.RootContext)
 
-	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
-
-	// obtain references to all the informers used by this controller
-	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
-	// build a list of InformerSynced functions that will be returned by the Register method.
-	// the controller will only begin processing items once all of these informers have synced.
-	mustSync := []cache.InformerSynced{
-		issuerInformer.Informer().HasSynced,
-		secretInformer.Informer().HasSynced,
+
+	// Add event handler for checking secrets that may effect [Cluster]issuers
+	c.secretLister = secretInformer.Lister()
+	secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.secretChecker})
+
+	switch c.issuerKind {
+	case cmapi.IssuerKind:
+		c.issuerInformer = internalissuers.NewIssuerInformer(
+			ctx.SharedInformerFactory.Certmanager().V1().Issuers())
+	case cmapi.ClusterIssuerKind:
+		c.issuerInformer = internalissuers.NewClusterIssuerInformer(
+			ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers())
+	default:
+		return nil, nil, fmt.Errorf("unrecognised issuer kind: %s", c.issuerKind)
 	}
 
-	// set all the references to the listers for used by the Sync function
-	c.issuerLister = issuerInformer.Lister()
-	c.secretLister = secretInformer.Lister()
+	c.issuerLister = c.issuerInformer.Lister()
 
-	// register handler functions
-	issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
-	secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.secretDeleted})
+	// build a list of InformerSynced functions that will be returned by the Register method.
+	// the controller will only begin processing items once all of these informers have synced.
+	mustSync := append([]cache.InformerSynced{
+		c.issuerInformer.Informer().HasSynced,
+		secretInformer.Informer().HasSynced,
+	})
 
-	// instantiate additional helpers used by this controller
-	c.issuerFactory = issuer.NewFactory(ctx)
+	c.issuerOptions = ctx.IssuerOptions
+
+	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), c.name)
 	c.cmClient = ctx.CMClient
-	c.recorder = ctx.Recorder
+	c.issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 
 	return c.queue, mustSync, nil
 }
 
-// TODO: replace with generic handleObjet function (like Navigator)
-func (c *controller) secretDeleted(obj interface{}) {
-	log := c.log.WithName("secretDeleted")
-
-	var secret *corev1.Secret
-	var ok bool
-	secret, ok = obj.(*corev1.Secret)
-	if !ok {
-		log.Error(nil, "object was not a secret object")
-		return
-	}
-	log = logf.WithResource(log, secret)
-	issuers, err := c.issuersForSecret(secret)
-	if err != nil {
-		log.Error(err, "error looking up issuers observing secret")
-		return
-	}
-	for _, iss := range issuers {
-		key, err := keyFunc(iss)
-		if err != nil {
-			log.Error(err, "error computing key for resource")
-			continue
-		}
-		c.queue.AddRateLimited(key)
-	}
-}
-
-func (c *controller) ProcessItem(ctx context.Context, key string) error {
+func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -127,13 +146,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	issuer, err := c.issuerLister.Issuers(namespace).Get(name)
+	issuer, err := c.issuerLister.Get(namespace, name)
+	if apierrors.IsNotFound(err) {
+		// issuer has been deleted so ignore
+		return nil
+	}
 	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "issuer in work queue no longer exists")
-			return nil
-		}
-
 		return err
 	}
 
@@ -141,16 +159,53 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return c.Sync(ctx, issuer)
 }
 
-var keyFunc = controllerpkg.KeyFunc
+// secretChecker will ensure that any issuer that has been effected by this
+// secret are enqueued
+func (c *Controller) secretChecker(obj interface{}) {
+	for _, key := range c.AffectedSecret(obj) {
+		c.queue.AddRateLimited(key)
+	}
+}
 
-const (
-	ControllerName = "issuers"
-)
+// AffectedSecret returns a list of keys which are affected by the given
+// secret
+func (c *Controller) AffectedSecret(obj interface{}) []string {
+	secret, ok := obj.(*corev1.Secret)
+	if !ok {
+		c.log.Error(nil, "secretChecker called with non Secret resource")
+		return nil
+	}
 
-func init() {
-	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		return controllerpkg.NewBuilder(ctx, ControllerName).
-			For(&controller{}).
-			Complete()
-	})
+	log := logf.WithResource(c.log, secret)
+
+	issuersToCheck, err := c.issuerLister.List(labels.NewSelector())
+	if err != nil {
+		log.Error(err, "error looking up Issuers observing secret")
+		return nil
+	}
+
+	var keys []string
+	for _, issuer := range issuersToCheck {
+		log := logf.WithResource(log, issuer)
+
+		// If the secret Namespace does not match the Issuer resource namespace then
+		// continue early.
+		if secret.Namespace != c.issuerOptions.ResourceNamespace(issuer) {
+			continue
+		}
+
+		// If the issuer backend is affected by this secret resource given the
+		// issuer, enqueue.
+		if c.issuerBackend.ReferencesSecret(issuer, secret) {
+			key, err := controllerpkg.KeyFunc(issuer)
+			if err != nil {
+				log.Error(err, "error computing key for resource")
+				continue
+			}
+
+			keys = append(keys, key)
+		}
+	}
+
+	return keys
 }

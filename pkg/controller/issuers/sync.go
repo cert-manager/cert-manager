@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,79 +18,46 @@ package issuers
 
 import (
 	"context"
-	"fmt"
 	"reflect"
-	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	internalissuers "github.com/jetstack/cert-manager/pkg/controller/internal/issuers"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 const (
 	errorInitIssuer = "ErrInitIssuer"
-	errorConfig     = "ConfigError"
-
-	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *controller) Sync(ctx context.Context, iss *v1.Issuer) (err error) {
+func (c *Controller) Sync(ctx context.Context, issuer cmapi.GenericIssuer) (err error) {
 	log := logf.FromContext(ctx)
+	dbg := log.V(logf.DebugLevel)
 
-	issuerCopy := iss.DeepCopy()
+	if !c.issuerBackend.Implements(issuer) {
+		dbg.Info("issuer spec type does not match issuer backend so skipping processing")
+		return nil
+	}
+
+	issuerCopy := issuer.Copy()
 	defer func() {
-		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
+		if _, saveErr := c.updateIssuerStatus(ctx, issuer, issuerCopy); saveErr != nil {
 			err = errors.NewAggregate([]error{saveErr, err})
 		}
 	}()
 
-	el := webhook.ValidationRegistry.Validate(issuerCopy, internalapi.SchemeGroupVersion.WithKind("Issuer"))
-	if len(el) > 0 {
-		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
-		apiutil.SetIssuerCondition(issuerCopy, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorConfig, msg)
-		return
-	}
-
-	// Remove existing ErrorConfig condition if it exists
-	for i, c := range issuerCopy.Status.Conditions {
-		if c.Type == v1.IssuerConditionReady {
-			if c.Reason == errorConfig && c.Status == cmmeta.ConditionFalse {
-				issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
-				break
-			}
-		}
-	}
-
-	i, err := c.issuerFactory.IssuerFor(issuerCopy)
-
-	if err != nil {
-		return err
-	}
-
-	// allow a maximum of 10s
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	defer cancel()
-	err = i.Setup(ctx)
-	if err != nil {
-		s := messageErrorInitIssuer + err.Error()
-		log.V(logf.WarnLevel).Info(s)
-		c.recorder.Event(issuerCopy, corev1.EventTypeWarning, errorInitIssuer, s)
+	if err := c.issuerBackend.Setup(ctx, issuerCopy); err != nil {
+		log.Error(err, errorInitIssuer)
 		return err
 	}
 
 	return nil
 }
 
-func (c *controller) updateIssuerStatus(old, new *v1.Issuer) (*v1.Issuer, error) {
-	if reflect.DeepEqual(old.Status, new.Status) {
+func (c *Controller) updateIssuerStatus(ctx context.Context, old, new cmapi.GenericIssuer) (cmapi.GenericIssuer, error) {
+	if reflect.DeepEqual(old.GetStatus(), new.GetStatus()) {
 		return nil, nil
 	}
-	return c.cmClient.CertmanagerV1().Issuers(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
+	return internalissuers.Update(ctx, c.cmClient, new)
 }
