@@ -34,16 +34,16 @@ import (
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/http"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
+	internalissuers "github.com/jetstack/cert-manager/pkg/controller/internal/issuers"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type controller struct {
-	// issuer helper is used to obtain references to issuers, used by Sync()
-	helper issuer.Helper
+	// issuerGetter is used to obtain references to issuers, used by Sync()
+	issuerGetter internalissuers.Getter
 
 	// used to fetch ACME clients used in the controller
 	accountRegistry accounts.Getter
@@ -124,7 +124,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// register handler functions
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	c.issuerGetter = internalissuers.NewGetter(ctx.SharedInformerFactory.Certmanager().V1())
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient

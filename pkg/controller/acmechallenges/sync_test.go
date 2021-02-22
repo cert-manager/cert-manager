@@ -31,7 +31,6 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -418,10 +417,6 @@ func runTest(t *testing.T, test testT) {
 
 	c := &controller{}
 	c.Register(test.builder.Context)
-	c.helper = issuer.NewHelper(
-		test.builder.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
-		test.builder.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
-	)
 	c.accountRegistry = &accountstest.FakeRegistry{
 		GetClientFunc: func(_ string) (acmecl.Interface, error) {
 			return test.acmeClient, nil

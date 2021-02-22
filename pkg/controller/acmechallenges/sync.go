@@ -31,8 +31,8 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	dnsutil "github.com/jetstack/cert-manager/pkg/controller/acmechallenges/dns/util"
 	"github.com/jetstack/cert-manager/pkg/feature"
-	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
@@ -84,7 +84,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		return nil
 	}
 
-	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
+	genericIssuer, err := c.issuerGetter.Issuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
 	}
@@ -267,7 +267,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 		return nil
 	}
 
-	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
+	genericIssuer, err := c.issuerGetter.Issuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
 	}
