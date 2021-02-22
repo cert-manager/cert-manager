@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
