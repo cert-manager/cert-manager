@@ -62,7 +62,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		dbg.Info("updated Order resource status successfully")
 	}()
 
-	genericIssuer, err := c.helper.GetGenericIssuer(o.Spec.IssuerRef, o.Namespace)
+	genericIssuer, err := c.issuerGetter.Issuer(o.Spec.IssuerRef, o.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", o.Spec.IssuerRef.Name, err)
 	}
