@@ -28,6 +28,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Input struct {
@@ -71,7 +72,7 @@ func (c Chain) Evaluate(input Input) (string, string, bool) {
 	return "", "", false
 }
 
-func NewTriggerPolicyChain(c clock.Clock) Chain {
+func NewTriggerPolicyChain(c clock.Clock, defaultRenewBeforeExpiryDuration time.Duration) Chain {
 	return Chain{
 		SecretDoesNotExist,
 		SecretIsMissingData,
@@ -79,7 +80,7 @@ func NewTriggerPolicyChain(c clock.Clock) Chain {
 		SecretPrivateKeyMatchesSpec,
 		SecretIssuerAnnotationsNotUpToDate,
 		CurrentCertificateRequestNotValidForSpec,
-		CurrentCertificateNearingExpiry(c),
+		CurrentCertificateNearingExpiry(c, defaultRenewBeforeExpiryDuration),
 	}
 }
 
@@ -193,14 +194,31 @@ func currentSecretValidForSpec(input Input) (string, string, bool) {
 	return "", "", false
 }
 
-func CurrentCertificateNearingExpiry(c clock.Clock) Func {
+// CurrentCertificateNearingExpiry returns a policy function that can be used to check whether
+// an x509 cert currently issued for a Certificate should be renewed
+func CurrentCertificateNearingExpiry(c clock.Clock, defaultRenewBeforeExpiryDuration time.Duration) Func {
+
 	return func(input Input) (string, string, bool) {
-		if input.Certificate.Status.RenewalTime == nil {
-			return "", "", false
+
+		// Determine if certificate is nearing expiry solely by looking at the actual cert if it exists
+		// We assume that at this point we have called policy functions that check that
+		// input.Secret and input.Secret.Data exists (SecretDoesNotExist and SecretHasData)
+		x509cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
+		if err != nil {
+			// This case should never happen as it should always be caught by the
+			// secretPublicKeysMatch function beforehand, but handle it just in case.
+			return "InvalidCertificate", fmt.Sprintf("Failed to decode stored certificate: %v", err), true
 		}
 
-		renewIn := input.Certificate.Status.RenewalTime.Time.Sub(c.Now())
+		notBefore := metav1.NewTime(x509cert.NotBefore)
+		notAfter := metav1.NewTime(x509cert.NotAfter)
+		crt := input.Certificate
+		renewBefore := certificates.RenewBeforeExpiryDuration(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, defaultRenewBeforeExpiryDuration)
+		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
+
+		renewIn := renewalTime.Time.Sub(c.Now())
 		if renewIn > 0 {
+			//renewal time is in future, no need to renew
 			return "", "", false
 		}
 
