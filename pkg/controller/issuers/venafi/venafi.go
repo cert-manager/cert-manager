@@ -56,6 +56,7 @@ type Venafi struct {
 
 func New(ctx *controller.Context) issuers.Issuer {
 	return &Venafi{
+		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		clientBuilder: venafi.New,
 		recorder:      ctx.Recorder,
