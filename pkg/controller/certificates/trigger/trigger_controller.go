@@ -244,7 +244,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
-		policies.NewTriggerPolicyChain(ctx.Clock),
+		policies.NewTriggerPolicyChain(ctx.Clock, ctx.CertificateOptions.RenewBeforeExpiryDuration),
 	)
 	c.controller = ctrl
 
