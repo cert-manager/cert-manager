@@ -151,6 +151,9 @@ func TestSign(t *testing.T) {
 		t.Fatal(err)
 	}
 	template2, err := pki.GenerateTemplateFromCSRPEM(generateCSR(t, sk2, "example.com", "example.com", "foo.com"), time.Hour, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	certPEM2, _, err := pki.SignCSRTemplate([]*x509.Certificate{template}, sk, template2)
 	if err != nil {
 		t.Fatal(err)
