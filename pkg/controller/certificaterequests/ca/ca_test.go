@@ -437,7 +437,10 @@ func TestCA_Sign(t *testing.T) {
 			))),
 			givenNamespace: "default",
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
-				assert.Equal(t, time.Now().UTC().Add(30*time.Minute), got.NotAfter)
+				// The notAfter field uses a precision of 1 second; the
+				// current time is truncated before adding the certificate
+				// request's duration value.
+				assert.Equal(t, time.Now().UTC().Truncate(1*time.Second).Add(30*time.Minute).String(), got.NotAfter.String())
 			},
 		},
 		"when the CertificateRequest has the isCA field set, it should appear on the signed ca": {
