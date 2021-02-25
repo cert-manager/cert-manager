@@ -50,7 +50,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 		"trigger issuance if Secret is missing": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			reason:      DoesNotExist,
-			message:     "Issuing certificate as Issuing certificate as Secret does not exist",
+			message:     "Issuing certificate as Secret does not exist",
 			reissue:     true,
 		},
 		"trigger issuance as Secret does not contain any data": {

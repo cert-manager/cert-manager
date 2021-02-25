@@ -31,7 +31,7 @@ go_test(
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/util/pki:go_default_library",
+        "//pkg/controller/certificates/internal/test:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_utils//clock/testing:go_default_library",
