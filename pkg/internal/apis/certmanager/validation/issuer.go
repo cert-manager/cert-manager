@@ -25,10 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	cmacme "github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
+	"github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager/validation/util"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
 )
 
 // Validation functions for cert-manager v1alpha2 Issuer types

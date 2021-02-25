@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type SchemeBackedDefaulter struct {

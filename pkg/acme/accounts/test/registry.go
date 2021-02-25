@@ -19,8 +19,8 @@ package test
 import (
 	"crypto/rsa"
 
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 // FakeRegistry implements the accounts.Registry interface using stub functions

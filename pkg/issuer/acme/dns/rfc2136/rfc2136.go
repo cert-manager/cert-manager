@@ -26,11 +26,11 @@ import (
 	"strings"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/miekg/dns"
 
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
+	"github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
 
 var defaultPort = "53"

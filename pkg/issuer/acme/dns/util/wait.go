@@ -17,7 +17,7 @@ import (
 
 	"github.com/miekg/dns"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,

@@ -28,13 +28,13 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cmacmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/issuer"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type controller struct {

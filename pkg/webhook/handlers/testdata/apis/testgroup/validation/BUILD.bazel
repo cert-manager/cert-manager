@@ -6,7 +6,7 @@ go_library(
         "register.go",
         "validation.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation",
+    importpath = "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/internal/api/validation:go_default_library",

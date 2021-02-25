@@ -30,14 +30,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	controllermetrics "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/test/integration/framework"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	controllermetrics "github.com/cert-manager/cert-manager/pkg/controller/certificates/metrics"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 // TestMetricscontoller performs a basic test to ensure that Certificates

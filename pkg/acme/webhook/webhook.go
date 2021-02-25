@@ -22,7 +22,7 @@ package webhook
 import (
 	restclient "k8s.io/client-go/rest"
 
-	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 )
 
 type Solver interface {

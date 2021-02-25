@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["challenge_payload.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/acme/webhook/registry/challengepayload",
+    importpath = "github.com/cert-manager/cert-manager/pkg/acme/webhook/registry/challengepayload",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/webhook:go_default_library",

@@ -21,7 +21,7 @@ import (
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/utils/pointer"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 )
 
 // Funcs returns the fuzzer functions for the apps api group.

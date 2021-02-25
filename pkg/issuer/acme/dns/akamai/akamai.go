@@ -31,9 +31,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	pkgutil "github.com/jetstack/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	pkgutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface

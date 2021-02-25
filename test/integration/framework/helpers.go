@@ -31,9 +31,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubectl/pkg/util/openapi"
 
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cminformers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 )
 
 func NewEventRecorder(t *testing.T) record.EventRecorder {

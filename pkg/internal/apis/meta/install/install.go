@@ -22,8 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/internal/apis/meta"
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta/v1"
 )
 
 // Install registers the API group and adds types to a scheme

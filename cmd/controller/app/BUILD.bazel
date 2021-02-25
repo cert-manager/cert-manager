@@ -6,7 +6,7 @@ go_library(
         "controller.go",
         "start.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/cmd/controller/app",
+    importpath = "github.com/cert-manager/cert-manager/cmd/controller/app",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/controller/app/options:go_default_library",

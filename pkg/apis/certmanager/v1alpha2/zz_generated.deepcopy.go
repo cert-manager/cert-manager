@@ -21,8 +21,8 @@ limitations under the License.
 package v1alpha2
 
 import (
-	acmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	acmev1alpha2 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1alpha2"
+	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )

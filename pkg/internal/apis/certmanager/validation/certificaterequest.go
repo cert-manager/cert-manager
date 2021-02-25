@@ -21,7 +21,7 @@ import (
 	"encoding/asn1"
 	"fmt"
 
-	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util"
 
 	"reflect"
 
@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment}

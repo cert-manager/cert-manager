@@ -21,7 +21,7 @@ limitations under the License.
 package acme
 
 import (
-	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	meta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

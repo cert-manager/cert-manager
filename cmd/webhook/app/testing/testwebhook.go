@@ -32,10 +32,10 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/jetstack/cert-manager/cmd/webhook/app"
-	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/cmd/webhook/app"
+	"github.com/cert-manager/cert-manager/cmd/webhook/app/options"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var log = logf.Log.WithName("webhook-server-test")

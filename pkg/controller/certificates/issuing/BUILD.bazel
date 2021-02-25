@@ -6,7 +6,7 @@ go_library(
         "issuing_controller.go",
         "temporary.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificates/issuing",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",

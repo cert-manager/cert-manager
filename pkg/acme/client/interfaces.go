@@ -19,7 +19,7 @@ package client
 import (
 	"context"
 
-	acmeutil "github.com/jetstack/cert-manager/pkg/acme/util"
+	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
 
 	"golang.org/x/crypto/acme"
 )

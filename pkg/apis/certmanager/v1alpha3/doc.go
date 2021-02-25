@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v1alpha3 is the v1alpha3 version of the API.
 // +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=github.com/jetstack/cert-manager/pkg/apis/certmanager
+// +k8s:conversion-gen=github.com/cert-manager/cert-manager/pkg/apis/certmanager
 // +k8s:openapi-gen=true
 // +k8s:defaulter-gen=TypeMeta
 // +groupName=cert-manager.io

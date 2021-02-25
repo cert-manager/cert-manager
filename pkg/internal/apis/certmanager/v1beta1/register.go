@@ -19,8 +19,8 @@ package v1beta1
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1beta1"
 )
 
 // SchemeGroupVersion is group version used to register these objects

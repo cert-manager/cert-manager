@@ -7,7 +7,7 @@ go_library(
         "setup.go",
         "vault.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/framework/addon/vault",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

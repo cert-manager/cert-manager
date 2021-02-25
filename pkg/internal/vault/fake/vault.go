@@ -22,7 +22,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type Vault struct {

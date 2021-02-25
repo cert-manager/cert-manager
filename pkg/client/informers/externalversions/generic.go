@@ -21,14 +21,14 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	v1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	v1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
-	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1alpha2 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1alpha2"
+	v1alpha3 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1alpha3"
+	v1beta1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1beta1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1alpha2 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1alpha2"
+	certmanagerv1alpha3 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1alpha3"
+	certmanagerv1beta1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

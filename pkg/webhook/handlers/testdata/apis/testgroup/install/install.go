@@ -22,11 +22,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
-	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	v2 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
-	testval "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation"
+	"github.com/cert-manager/cert-manager/pkg/internal/api/validation"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	v1 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	v2 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
+	testval "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation"
 )
 
 // Install registers the API group and adds types to a scheme

@@ -6,7 +6,7 @@ go_library(
         "config.go",
         "domains.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/util",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/framework/util",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

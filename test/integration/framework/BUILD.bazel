@@ -13,7 +13,7 @@ go_library(
         "//hack/bin:io_kubernetes_kube-apiserver",
         "//hack/bin:kubectl",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/integration/framework",
+    importpath = "github.com/cert-manager/cert-manager/test/integration/framework",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/webhook/app/testing:go_default_library",

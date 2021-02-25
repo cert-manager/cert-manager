@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["doc.go"],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/cloud",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/venafi/cloud",
     visibility = ["//visibility:public"],
     deps = ["//test/e2e/framework:go_default_library"],
 )

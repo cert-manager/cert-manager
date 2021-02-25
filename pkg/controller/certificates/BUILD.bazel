@@ -7,7 +7,7 @@ go_library(
         "listers.go",
         "util.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificates",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificates",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",

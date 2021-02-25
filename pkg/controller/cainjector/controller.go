@@ -31,8 +31,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // dropNotFound ignores the given error if it's a not-found error,

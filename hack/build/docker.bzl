@@ -26,7 +26,7 @@ cat <<EOF > "$@"
 package main
 import (
   "testing"
-  "github.com/jetstack/cert-manager/pkg/util/coverage"
+  "github.com/cert-manager/cert-manager/pkg/util/coverage"
 )
 func TestMain(m *testing.M) {
   // Get coverage running

@@ -27,7 +27,7 @@ import (
 	"github.com/go-logr/logr"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // FileCertificateSource provides certificate data for a golang HTTP server by

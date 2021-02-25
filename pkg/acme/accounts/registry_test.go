@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func TestRegistry_AddClient(t *testing.T) {

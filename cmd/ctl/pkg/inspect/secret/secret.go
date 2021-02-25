@@ -38,8 +38,8 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 	k8sclock "k8s.io/utils/clock"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var clock k8sclock.Clock = k8sclock.RealClock{}

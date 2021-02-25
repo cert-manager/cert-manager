@@ -19,7 +19,7 @@ package acme
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

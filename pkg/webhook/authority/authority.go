@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -44,9 +44,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // DynamicAuthority manages a certificate authority stored in a Secret resource

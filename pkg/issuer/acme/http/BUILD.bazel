@@ -8,7 +8,7 @@ go_library(
         "pod.go",
         "service.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/http",
+    importpath = "github.com/cert-manager/cert-manager/pkg/issuer/acme/http",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",

@@ -21,7 +21,7 @@ limitations under the License.
 package v2
 
 import (
-	testgroup "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	testgroup "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )

@@ -8,7 +8,7 @@ go_library(
         "notafter.go",
         "webhook.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/certificate",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/acme/certificate",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

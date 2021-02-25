@@ -32,8 +32,8 @@ import (
 	"strings"
 	"time"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {

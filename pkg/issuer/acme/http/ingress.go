@@ -29,10 +29,10 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // getIngressesForChallenge returns a list of Ingresses that were created to solve

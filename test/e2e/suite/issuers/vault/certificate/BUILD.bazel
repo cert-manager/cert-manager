@@ -6,7 +6,7 @@ go_library(
         "approle.go",
         "approle_custom_mount.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault/certificate",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/vault/certificate",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

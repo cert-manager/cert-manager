@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["registry.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/acme/accounts/test",
+    importpath = "github.com/cert-manager/cert-manager/pkg/acme/accounts/test",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/client:go_default_library",

@@ -1,4 +1,4 @@
-module github.com/jetstack/cert-manager
+module github.com/cert-manager/cert-manager
 
 go 1.15
 

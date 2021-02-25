@@ -4,7 +4,7 @@ container_bundle(
     name = "bundle",
     images = {
         # TODO: Move this image to quay.io
-        # https://github.com/jetstack/cert-manager/issues/3531
+        # https://github.com/cert-manager/cert-manager/issues/3531
         "ghcr.io/wallrj/sample-external-issuer/controller:v0.0.0-30-gf333b9e": "@io_ghcr_wallrj_sample-external-issuer_controller//image",
     },
     tags = ["manual"],

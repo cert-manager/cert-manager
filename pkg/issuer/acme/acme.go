@@ -23,12 +23,12 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/issuer"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
 )
 
 // Acme is an issuer for an ACME server. It can be used to register and obtain

@@ -25,10 +25,10 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	cmapiinternal "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/webhook"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/internal/api/validation"
+	cmapiinternal "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/webhook"
 )
 
 var (

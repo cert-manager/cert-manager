@@ -27,14 +27,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/pkg/webhook"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	internalapi "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/webhook"
 )
 
 var (

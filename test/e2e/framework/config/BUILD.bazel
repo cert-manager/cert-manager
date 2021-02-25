@@ -16,7 +16,7 @@ go_library(
         "tiller.go",
         "venafi.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/config",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/framework/config",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

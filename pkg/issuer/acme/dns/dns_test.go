@@ -25,14 +25,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 func newIssuer(name, namespace string) *v1.Issuer {

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"golang.org/x/sync/errgroup"
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"

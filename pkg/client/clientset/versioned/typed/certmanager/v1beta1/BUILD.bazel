@@ -11,7 +11,7 @@ go_library(
         "generated_expansion.go",
         "issuer.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1",
+    importpath = "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1beta1:go_default_library",

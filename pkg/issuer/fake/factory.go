@@ -17,8 +17,8 @@ limitations under the License.
 package fake
 
 import (
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 )
 
 type Factory struct {

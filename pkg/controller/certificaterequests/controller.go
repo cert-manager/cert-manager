@@ -26,13 +26,13 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

@@ -23,10 +23,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/util"
+	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
+	"github.com/cert-manager/cert-manager/test/e2e/util"
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -425,8 +425,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 	// (hitting around 70% failure rate). This is because when running this test
 	// will cause tiller install to fail, therefore making other tests to fail
 	// when running bother at the same time. We should find a way to make this test run in serial.
-	// https://github.com/jetstack/cert-manager/issues/2353
-	// https://github.com/jetstack/cert-manager/issues/2354
+	// https://github.com/cert-manager/cert-manager/issues/2353
+	// https://github.com/cert-manager/cert-manager/issues/2354
 	//injectorContext("api service", &injectableTest{
 	//	makeInjectable: func(namePrefix string) runtime.Object {
 	//		return &apireg.APIService{

@@ -31,12 +31,12 @@ import (
 	"k8s.io/klog/v2"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/inspect"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/version"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/convert"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/create"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/inspect"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/renew"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/status"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/version"
 )
 
 func NewCertManagerCtlCommand(ctx context.Context, in io.Reader, out, err io.Writer) *cobra.Command {

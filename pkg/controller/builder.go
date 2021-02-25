@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // Builder is used to build controllers that implement the queuingController

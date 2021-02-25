@@ -38,9 +38,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
-	"github.com/jetstack/cert-manager/pkg/api"
-	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
+	webhooktesting "github.com/cert-manager/cert-manager/cmd/webhook/app/testing"
+	"github.com/cert-manager/cert-manager/pkg/api"
+	apitesting "github.com/cert-manager/cert-manager/pkg/api/testing"
 )
 
 func init() {

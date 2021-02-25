@@ -12,7 +12,7 @@ go_library(
         "types_issuer.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager",
+    importpath = "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager",
     visibility = ["//pkg:__subpackages__"],
     deps = [
         "//pkg/apis/certmanager:go_default_library",

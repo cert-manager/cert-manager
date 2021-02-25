@@ -24,8 +24,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/digitalocean/godo"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"golang.org/x/oauth2"
 )
 

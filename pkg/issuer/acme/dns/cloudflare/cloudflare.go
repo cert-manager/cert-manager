@@ -20,8 +20,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	pkgutil "github.com/jetstack/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	pkgutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // CloudFlareAPIURL represents the API endpoint to call.

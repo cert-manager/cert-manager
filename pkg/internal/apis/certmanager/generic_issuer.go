@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	cmacme "github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
 )
 
 type GenericIssuer interface {

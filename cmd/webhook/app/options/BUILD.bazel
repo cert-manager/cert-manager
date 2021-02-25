@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["options.go"],
-    importpath = "github.com/jetstack/cert-manager/cmd/webhook/app/options",
+    importpath = "github.com/cert-manager/cert-manager/cmd/webhook/app/options",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_spf13_pflag//:go_default_library",

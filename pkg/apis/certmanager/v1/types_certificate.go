@@ -19,7 +19,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // +genclient
@@ -206,7 +206,7 @@ type CertificatePrivateKey struct {
 	// and will default to `256` if not specified.
 	// No other values are allowed.
 	// +optional
-	Size int `json:"size,omitempty"` // Validated by webhook. Be mindful of adding OpenAPI validation- see https://github.com/jetstack/cert-manager/issues/3644
+	Size int `json:"size,omitempty"` // Validated by webhook. Be mindful of adding OpenAPI validation- see https://github.com/cert-manager/cert-manager/issues/3644
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate

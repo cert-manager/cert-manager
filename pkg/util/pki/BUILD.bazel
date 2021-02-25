@@ -8,7 +8,7 @@ go_library(
         "keyusage.go",
         "parse.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/util/pki",
+    importpath = "github.com/cert-manager/cert-manager/pkg/util/pki",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",

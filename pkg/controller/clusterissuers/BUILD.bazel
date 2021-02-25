@@ -7,7 +7,7 @@ go_library(
         "controller.go",
         "sync.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/clusterissuers",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/clusterissuers",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",

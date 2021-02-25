@@ -6,7 +6,7 @@ go_library(
         "setup.go",
         "vault.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/issuer/vault",
+    importpath = "github.com/cert-manager/cert-manager/pkg/issuer/vault",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",

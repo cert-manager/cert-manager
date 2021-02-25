@@ -21,8 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	"github.com/cert-manager/cert-manager/pkg/internal/api/validation"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 )
 
 // SchemeGroupVersion is group version used to register these objects

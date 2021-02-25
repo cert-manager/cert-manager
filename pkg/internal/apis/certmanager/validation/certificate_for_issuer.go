@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
 )
 
 func ValidateCertificateForIssuer(crt *cmapi.Certificate, issuerObj cmapi.GenericIssuer) field.ErrorList {

@@ -5,7 +5,7 @@ load("//build:go_binary.bzl", "go_binary")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/jetstack/cert-manager/cmd/acmesolver",
+    importpath = "github.com/cert-manager/cert-manager/cmd/acmesolver",
     visibility = ["//visibility:private"],
     deps = [
         "//cmd/acmesolver/app:go_default_library",

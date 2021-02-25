@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	v1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	v1alpha3 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

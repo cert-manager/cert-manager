@@ -29,10 +29,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
-	"github.com/jetstack/cert-manager/pkg/webhook/authority"
-	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
-	"github.com/jetstack/cert-manager/test/integration/framework"
+	logtesting "github.com/cert-manager/cert-manager/pkg/logs/testing"
+	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
+	"github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
 // Ensure that when the source is running against an apiserver, it bootstraps

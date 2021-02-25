@@ -23,7 +23,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/status/certificate"
 )
 
 func NewCmdStatus(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {

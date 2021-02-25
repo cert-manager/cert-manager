@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
 
@@ -27,8 +27,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	pkgutil "github.com/jetstack/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	pkgutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 const (

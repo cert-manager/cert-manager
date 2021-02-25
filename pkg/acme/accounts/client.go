@@ -25,11 +25,11 @@ import (
 
 	acmeapi "golang.org/x/crypto/acme"
 
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	acmeutil "github.com/jetstack/cert-manager/pkg/acme/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/pkg/util"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	acmeutil "github.com/cert-manager/cert-manager/pkg/acme/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // NewClient will return a new ACME client.

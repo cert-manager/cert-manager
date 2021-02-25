@@ -8,7 +8,7 @@ go_library(
         "fake_challenge.go",
         "fake_order.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2/fake",
+    importpath = "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2/fake",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1alpha2:go_default_library",

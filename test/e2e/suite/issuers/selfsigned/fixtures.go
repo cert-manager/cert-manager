@@ -29,7 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var rootRSAKeySigner, rootECKeySigner crypto.Signer

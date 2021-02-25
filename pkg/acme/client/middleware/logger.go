@@ -23,8 +23,8 @@ import (
 	"github.com/go-logr/logr"
 	"golang.org/x/crypto/acme"
 
-	"github.com/jetstack/cert-manager/pkg/acme/client"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/acme/client"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

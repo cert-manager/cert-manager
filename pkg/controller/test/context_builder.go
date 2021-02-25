@@ -34,13 +34,13 @@ import (
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/pkg/util"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"
+	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 func init() {

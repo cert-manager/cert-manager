@@ -23,10 +23,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/internal/secretsmanager"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates/trigger/policies"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var temporaryCertificatePolicyChain = policies.Chain{

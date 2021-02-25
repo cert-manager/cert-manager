@@ -27,11 +27,11 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	cmlisters "github.com/cert-manager/cert-manager/pkg/client/listers/certmanager/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/issuer"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 type controller struct {

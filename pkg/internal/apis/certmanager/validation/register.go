@@ -17,8 +17,8 @@ limitations under the License.
 package validation
 
 import (
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/internal/api/validation"
+	cmapi "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
 )
 
 func AddToValidationRegistry(reg *validation.Registry) error {

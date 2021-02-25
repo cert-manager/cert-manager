@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	vaultinternal "github.com/cert-manager/cert-manager/pkg/internal/vault"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

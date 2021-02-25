@@ -25,14 +25,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
-	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/issuer"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 // Present the challenge value with the given solver.

@@ -25,10 +25,10 @@ import (
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/test/unit/gen"
-	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
+	testlisters "github.com/cert-manager/cert-manager/test/unit/listers"
 )
 
 func checkNoConfigReturned(t *testing.T, cnf *vcert.Config) {

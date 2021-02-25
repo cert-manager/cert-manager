@@ -27,7 +27,7 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"sigs.k8s.io/yaml"
 
-	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 // Options is a struct to support version command

@@ -28,13 +28,13 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	internaltest "github.com/cert-manager/cert-manager/pkg/controller/certificates/internal/test"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 var (

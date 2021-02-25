@@ -39,11 +39,11 @@ import (
 	ciphers "k8s.io/component-base/cli/flag"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/profiling"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
-	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
-	"github.com/jetstack/cert-manager/pkg/webhook/server/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util/profiling"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
+	servertls "github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
+	"github.com/cert-manager/cert-manager/pkg/webhook/server/util"
 )
 
 var (

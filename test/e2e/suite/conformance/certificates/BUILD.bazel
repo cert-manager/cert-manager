@@ -6,7 +6,7 @@ go_library(
         "suite.go",
         "tests.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",

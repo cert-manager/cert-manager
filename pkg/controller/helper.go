@@ -17,7 +17,7 @@ limitations under the License.
 package controller
 
 import (
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {

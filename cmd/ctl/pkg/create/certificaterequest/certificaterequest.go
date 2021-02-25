@@ -36,13 +36,13 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/util"
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	"github.com/jetstack/cert-manager/pkg/ctl"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/util"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	"github.com/cert-manager/cert-manager/pkg/ctl"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 var (

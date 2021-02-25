@@ -24,14 +24,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/webhook"
-	"github.com/jetstack/cert-manager/pkg/webhook/authority"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
-	"github.com/jetstack/cert-manager/pkg/webhook/server"
-	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
+	"github.com/cert-manager/cert-manager/cmd/webhook/app/options"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/webhook"
+	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
+	"github.com/cert-manager/cert-manager/pkg/webhook/server"
+	"github.com/cert-manager/cert-manager/pkg/webhook/server/tls"
 )
 
 var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logf.Log, webhook.Scheme, webhook.ValidationRegistry)

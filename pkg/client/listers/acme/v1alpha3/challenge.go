@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha3
 
 import (
-	v1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
+	v1alpha3 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1alpha3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"

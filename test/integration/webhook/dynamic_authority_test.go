@@ -31,10 +31,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
-	"github.com/jetstack/cert-manager/pkg/webhook/authority"
-	"github.com/jetstack/cert-manager/test/integration/framework"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	logtesting "github.com/cert-manager/cert-manager/pkg/logs/testing"
+	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
 // Tests for the dynamic authority functionality to ensure it properly handles

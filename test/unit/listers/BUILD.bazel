@@ -6,7 +6,7 @@ go_library(
         "order.go",
         "secret.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/unit/listers",
+    importpath = "github.com/cert-manager/cert-manager/test/unit/listers",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",

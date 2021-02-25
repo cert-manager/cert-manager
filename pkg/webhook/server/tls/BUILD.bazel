@@ -7,7 +7,7 @@ go_library(
         "file_source.go",
         "source.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook/server/tls",
+    importpath = "github.com/cert-manager/cert-manager/pkg/webhook/server/tls",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",

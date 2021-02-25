@@ -24,15 +24,15 @@ import (
 	"sync"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/pkg/webhook/authority"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/webhook/authority"
 )
 
 // DynamicSource provides certificate data for a golang HTTP server by

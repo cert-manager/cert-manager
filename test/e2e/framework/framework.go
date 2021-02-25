@@ -34,16 +34,16 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	certmgrscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/framework/config"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
-	"github.com/jetstack/cert-manager/test/e2e/framework/log"
-	"github.com/jetstack/cert-manager/test/e2e/framework/util"
-	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	certmgrscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/addon"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/config"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/helper"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/util"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/util/errors"
 )
 
 // TODO: this really should be done somewhere in cert-manager proper

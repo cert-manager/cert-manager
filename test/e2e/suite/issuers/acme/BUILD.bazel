@@ -6,7 +6,7 @@ go_library(
         "doc.go",
         "issuer.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/issuers/acme",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

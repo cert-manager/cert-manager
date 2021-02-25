@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/conversion"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 )
 
 func Convert_v2_TestType_To_testgroup_TestType(in *TestType, out *testgroup.TestType, s conversion.Scope) error {

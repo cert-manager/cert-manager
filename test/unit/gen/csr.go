@@ -25,7 +25,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 type CSRModifier func(*x509.CertificateRequest)

@@ -6,7 +6,7 @@ go_library(
         "certificate.go",
         "types.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate",
+    importpath = "github.com/cert-manager/cert-manager/cmd/ctl/pkg/status/certificate",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/ctl/pkg/status/util:go_default_library",

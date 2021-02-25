@@ -8,7 +8,7 @@ go_library(
         "helper.go",
         "sync.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/ingress-shim",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/ingress-shim",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",

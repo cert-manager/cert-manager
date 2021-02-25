@@ -106,33 +106,33 @@ No special actions are required as part of this release.
 
 ### General
 
-- Add DisableDeprecatedACMECertificates feature gate to disable the old deprecated ACME config format ([#1923](https://github.com/jetstack/cert-manager/pull/1923), [@munnerz](https://github.com/munnerz))
-- chart: fix formatting of values table in README.md ([#1936](https://github.com/jetstack/cert-manager/pull/1936), [@Starefossen](https://github.com/Starefossen))
-- Add internal API version and implement machinery for defaulting & conversion ([#2002](https://github.com/jetstack/cert-manager/pull/2002), [@munnerz](https://github.com/munnerz))
-- Fix concurrent map write panic in certificates controller ([#1980](https://github.com/jetstack/cert-manager/pull/1980), [@munnerz](https://github.com/munnerz))
-- cainjector: allow injecting CAs directly from Secret resources ([#1990](https://github.com/jetstack/cert-manager/pull/1990), [@munnerz](https://github.com/munnerz))
-- Mark 'spec' and 'status' as non-required fields in CRDs ([#1957](https://github.com/jetstack/cert-manager/pull/1957), [@munnerz](https://github.com/munnerz))
-- Add ability to specify key usages and extended key usages in certificates ([#1996](https://github.com/jetstack/cert-manager/pull/1996), [@stuart-warren](https://github.com/stuart-warren))
+- Add DisableDeprecatedACMECertificates feature gate to disable the old deprecated ACME config format ([#1923](https://github.com/cert-manager/cert-manager/pull/1923), [@munnerz](https://github.com/munnerz))
+- chart: fix formatting of values table in README.md ([#1936](https://github.com/cert-manager/cert-manager/pull/1936), [@Starefossen](https://github.com/Starefossen))
+- Add internal API version and implement machinery for defaulting & conversion ([#2002](https://github.com/cert-manager/cert-manager/pull/2002), [@munnerz](https://github.com/munnerz))
+- Fix concurrent map write panic in certificates controller ([#1980](https://github.com/cert-manager/cert-manager/pull/1980), [@munnerz](https://github.com/munnerz))
+- cainjector: allow injecting CAs directly from Secret resources ([#1990](https://github.com/cert-manager/cert-manager/pull/1990), [@munnerz](https://github.com/munnerz))
+- Mark 'spec' and 'status' as non-required fields in CRDs ([#1957](https://github.com/cert-manager/cert-manager/pull/1957), [@munnerz](https://github.com/munnerz))
+- Add ability to specify key usages and extended key usages in certificates ([#1996](https://github.com/cert-manager/cert-manager/pull/1996), [@stuart-warren](https://github.com/stuart-warren))
 
 ### ACME Issuer
 
-- Add option to assume role in Route53 DNS01 provider ([#1917](https://github.com/jetstack/cert-manager/pull/1917), [@moolen](https://github.com/moolen))
-- Fix documentation for AzureDNS service principal creation ([#1960](https://github.com/jetstack/cert-manager/pull/1960), [@elsesiy](https://github.com/elsesiy))
+- Add option to assume role in Route53 DNS01 provider ([#1917](https://github.com/cert-manager/cert-manager/pull/1917), [@moolen](https://github.com/moolen))
+- Fix documentation for AzureDNS service principal creation ([#1960](https://github.com/cert-manager/cert-manager/pull/1960), [@elsesiy](https://github.com/elsesiy))
 
 ### Webhook
 
-- Use dedicated controller for webhook TLS bootstrapping ([#1993](https://github.com/jetstack/cert-manager/pull/1993), [@munnerz](https://github.com/munnerz))
+- Use dedicated controller for webhook TLS bootstrapping ([#1993](https://github.com/cert-manager/cert-manager/pull/1993), [@munnerz](https://github.com/munnerz))
 
 ### CertificateRequest
 
-- Add ACME CertificateRequest controller implementation ([#1943](https://github.com/jetstack/cert-manager/pull/1943), [@JoshVanL](https://github.com/JoshVanL))
-- Add Vault CertificateRequest controller implementation ([#1934](https://github.com/jetstack/cert-manager/pull/1934), [@JoshVanL](https://github.com/JoshVanL))
-- Add SelfSigned CertificateRequest controller implementation ([#1906](https://github.com/jetstack/cert-manager/pull/1906), [@JoshVanL](https://github.com/JoshVanL))
-- Add Venafi CertificateRequest controller implementation ([#1968](https://github.com/jetstack/cert-manager/pull/1968), [@JoshVanL](https://github.com/JoshVanL))
-- Don't validate issuerRef.kind field if issuerRef.group is set in order to support out-of-tree Issuer types ([#1949](https://github.com/jetstack/cert-manager/pull/1949), [@munnerz](https://github.com/munnerz))
-- Adds CertificateRequest FailureTime. The Certificate controller will re-try failed CertificateRequests at least one hour after this failed time. ([#1979](https://github.com/jetstack/cert-manager/pull/1979), [@JoshVanL](https://github.com/JoshVanL))
+- Add ACME CertificateRequest controller implementation ([#1943](https://github.com/cert-manager/cert-manager/pull/1943), [@JoshVanL](https://github.com/JoshVanL))
+- Add Vault CertificateRequest controller implementation ([#1934](https://github.com/cert-manager/cert-manager/pull/1934), [@JoshVanL](https://github.com/JoshVanL))
+- Add SelfSigned CertificateRequest controller implementation ([#1906](https://github.com/cert-manager/cert-manager/pull/1906), [@JoshVanL](https://github.com/JoshVanL))
+- Add Venafi CertificateRequest controller implementation ([#1968](https://github.com/cert-manager/cert-manager/pull/1968), [@JoshVanL](https://github.com/JoshVanL))
+- Don't validate issuerRef.kind field if issuerRef.group is set in order to support out-of-tree Issuer types ([#1949](https://github.com/cert-manager/cert-manager/pull/1949), [@munnerz](https://github.com/munnerz))
+- Adds CertificateRequest FailureTime. The Certificate controller will re-try failed CertificateRequests at least one hour after this failed time. ([#1979](https://github.com/cert-manager/cert-manager/pull/1979), [@JoshVanL](https://github.com/JoshVanL))
 
 ### Monitoring
 
-- Added variable to specify custom namespace where to deploy ServiceMonitor resource ([#1970](https://github.com/jetstack/cert-manager/pull/1970), [@mogaal](https://github.com/mogaal))
-- helm: fix labels and add Service for Prometheus ServiceMonitor ([#1942](https://github.com/jetstack/cert-manager/pull/1942), [@Starefossen](https://github.com/Starefossen))
+- Added variable to specify custom namespace where to deploy ServiceMonitor resource ([#1970](https://github.com/cert-manager/cert-manager/pull/1970), [@mogaal](https://github.com/mogaal))
+- helm: fix labels and add Service for Prometheus ServiceMonitor ([#1942](https://github.com/cert-manager/cert-manager/pull/1942), [@Starefossen](https://github.com/Starefossen))

@@ -28,10 +28,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubectl/pkg/describe"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/status/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1beta1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 type CertificateStatus struct {

@@ -24,9 +24,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmacme "github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
+	cmapi "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 const (

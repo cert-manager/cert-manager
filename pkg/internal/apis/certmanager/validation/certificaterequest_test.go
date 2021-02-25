@@ -24,11 +24,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cminternal "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cminternal "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func TestValidateCertificateRequestSpec(t *testing.T) {

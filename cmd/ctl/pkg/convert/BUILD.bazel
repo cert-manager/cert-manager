@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["convert.go"],
-    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/convert",
+    importpath = "github.com/cert-manager/cert-manager/cmd/ctl/pkg/convert",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/ctl:go_default_library",

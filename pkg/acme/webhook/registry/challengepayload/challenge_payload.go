@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/registry/rest"
 
-	"github.com/jetstack/cert-manager/pkg/acme/webhook"
-	"github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 )
 
 type REST struct {

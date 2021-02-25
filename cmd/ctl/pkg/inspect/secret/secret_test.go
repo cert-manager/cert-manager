@@ -24,7 +24,7 @@ import (
 
 	fakeclock "k8s.io/utils/clock/testing"
 
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const testCert = `-----BEGIN CERTIFICATE-----

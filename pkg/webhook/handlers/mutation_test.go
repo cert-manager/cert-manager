@@ -28,7 +28,7 @@ import (
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/diff"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 )
 
 var (

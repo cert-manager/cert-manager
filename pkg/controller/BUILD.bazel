@@ -10,7 +10,7 @@ go_library(
         "register.go",
         "util.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/accounts:go_default_library",

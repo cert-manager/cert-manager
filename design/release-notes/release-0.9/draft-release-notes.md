@@ -55,7 +55,7 @@ This resource is going to enable out of tree, external issuer controllers to
 resolve requests. Other issuer implementations and details on how to develop an
 out of tree issuer will follow in later releases. You can read more on the
 motivations and road map in the [enhancement
-proposal](https://github.com/jetstack/cert-manager/blob/master/design/20190708.certificate-request-crd.md)
+proposal](https://github.com/cert-manager/cert-manager/blob/master/design/20190708.certificate-request-crd.md)
 or how this resource is used in the
 [docs](https://docs.cert-manager.io/en/release-0.9/reference/certificaterequests.html).
 
@@ -124,67 +124,67 @@ validate and so will be recreated. This should resume the order normally.
 
 ### General
 
-- Reduce cert-manager's RBAC permissions ([#1658](https://github.com/jetstack/cert-manager/pull/1658), [@munnerz](https://github.com/munnerz))
-- commented-out extraArg for enable-certificate-owner-ref ([#1828](https://github.com/jetstack/cert-manager/pull/1828), [@aegershman](https://github.com/aegershman))
-- Validate that Certificates in a namespace have unique `secretName` ([#1689](https://github.com/jetstack/cert-manager/pull/1689), [@cheukwing](https://github.com/cheukwing))
-- Feature addition: Support for PKCS&#35;8 keys. ([#1308](https://github.com/jetstack/cert-manager/pull/1308), [@Crystal-Chun](https://github.com/Crystal-Chun))
-- Add the removal of certificates when no longer required by the owner ingress ([#1705](https://github.com/jetstack/cert-manager/pull/1705), [@cheukwing](https://github.com/cheukwing))
-- Fix bug causing ECDSA certificates to be issued using 2048-bit RSA private keys ([#1757](https://github.com/jetstack/cert-manager/pull/1757), [@munnerz](https://github.com/munnerz))
-- Updated the labels in the helm charts to use the newer ones. ([#1769](https://github.com/jetstack/cert-manager/pull/1769), [@cpanato](https://github.com/cpanato))
-- Allow disabling issuing temporary certificates with feature flag `--feature-gates=IssueTemporaryCertificate=false` ([#1764](https://github.com/jetstack/cert-manager/pull/1764), [@gordonbondon](https://github.com/gordonbondon))
-- Switch to using distroless for base images ([#1663](https://github.com/jetstack/cert-manager/pull/1663), [@munnerz](https://github.com/munnerz))
-- Limit length for CommonName to 63 bytes ([#1818](https://github.com/jetstack/cert-manager/pull/1818), [@cheukwing](https://github.com/cheukwing))
+- Reduce cert-manager's RBAC permissions ([#1658](https://github.com/cert-manager/cert-manager/pull/1658), [@munnerz](https://github.com/munnerz))
+- commented-out extraArg for enable-certificate-owner-ref ([#1828](https://github.com/cert-manager/cert-manager/pull/1828), [@aegershman](https://github.com/aegershman))
+- Validate that Certificates in a namespace have unique `secretName` ([#1689](https://github.com/cert-manager/cert-manager/pull/1689), [@cheukwing](https://github.com/cheukwing))
+- Feature addition: Support for PKCS&#35;8 keys. ([#1308](https://github.com/cert-manager/cert-manager/pull/1308), [@Crystal-Chun](https://github.com/Crystal-Chun))
+- Add the removal of certificates when no longer required by the owner ingress ([#1705](https://github.com/cert-manager/cert-manager/pull/1705), [@cheukwing](https://github.com/cheukwing))
+- Fix bug causing ECDSA certificates to be issued using 2048-bit RSA private keys ([#1757](https://github.com/cert-manager/cert-manager/pull/1757), [@munnerz](https://github.com/munnerz))
+- Updated the labels in the helm charts to use the newer ones. ([#1769](https://github.com/cert-manager/cert-manager/pull/1769), [@cpanato](https://github.com/cpanato))
+- Allow disabling issuing temporary certificates with feature flag `--feature-gates=IssueTemporaryCertificate=false` ([#1764](https://github.com/cert-manager/cert-manager/pull/1764), [@gordonbondon](https://github.com/gordonbondon))
+- Switch to using distroless for base images ([#1663](https://github.com/cert-manager/cert-manager/pull/1663), [@munnerz](https://github.com/munnerz))
+- Limit length for CommonName to 63 bytes ([#1818](https://github.com/cert-manager/cert-manager/pull/1818), [@cheukwing](https://github.com/cheukwing))
 
 ### ACME Issuer
 
-- Properly encode the CSR field on Order resources as PEM data instead of DER ([#1884](https://github.com/jetstack/cert-manager/pull/1884), [@munnerz](https://github.com/munnerz))
-- Fire informational Event if an ACME solver cannot be chosen for a domain on an Order ([#1856](https://github.com/jetstack/cert-manager/pull/1856), [@munnerz](https://github.com/munnerz))
-- Fix bug with auto-generated Order names being longer than 63 characters ([#1765](https://github.com/jetstack/cert-manager/pull/1765), [@cheukwing](https://github.com/cheukwing))
-- Fix a panic when a misconfigured Issuer is used for HTTP01 challenge solving ([#1758](https://github.com/jetstack/cert-manager/pull/1758), [@munnerz](https://github.com/munnerz))
-- Fix a bug where the logic to select a solver would always return the last solver and may return the wrong kind of solver for the challenge that it returned. ([#1717](https://github.com/jetstack/cert-manager/pull/1717), [@dobesv](https://github.com/dobesv))
-- Fix indentation on ACME setup examples ([#1785](https://github.com/jetstack/cert-manager/pull/1785), [@lachlancooper](https://github.com/lachlancooper))
-- Fix a the logic to select the most specific solver from an issuer if multiple matched ([#1715](https://github.com/jetstack/cert-manager/pull/1715), [@dobesv](https://github.com/dobesv))
-- Adds support for `nodeSelector` and `tolerations` in `podTemplate.spec` ([#1803](https://github.com/jetstack/cert-manager/pull/1803), [@cheukwing](https://github.com/cheukwing))
-- support azure non-public regions ([#1830](https://github.com/jetstack/cert-manager/pull/1830), [@stuarthu](https://github.com/stuarthu))
-- Fix issue causing challenge controller to attempt to list Secrets across all namespaces even when --namespace is specified ([#1849](https://github.com/jetstack/cert-manager/pull/1849), [@munnerz](https://github.com/munnerz))
-- Adds the handling of updates to the `spec.acme.email` field in Issuers ([#1763](https://github.com/jetstack/cert-manager/pull/1763), [@cheukwing](https://github.com/cheukwing))
-- Fix issue with private managed-zone being picked in CloudDNS ([#1704](https://github.com/jetstack/cert-manager/pull/1704), [@cheukwing](https://github.com/cheukwing))
-- Expose pod template for the ACME issuer solver pod ([#1749](https://github.com/jetstack/cert-manager/pull/1749), [@JoshVanL](https://github.com/JoshVanL))
-- Ingress skips updating Certificate resource if already exists and not owned ([#1670](https://github.com/jetstack/cert-manager/pull/1670), [@cheukwing](https://github.com/cheukwing))
-- Add support for ACMEv2 POST-as-GET ([#1648](https://github.com/jetstack/cert-manager/pull/1648), [@munnerz](https://github.com/munnerz))
-- Fix incorrect handling of `issuewild` tag when verifying CAA ([#1777](https://github.com/jetstack/cert-manager/pull/1777), [@cheukwing](https://github.com/cheukwing))
-- Add support for selecting ACME challenge solver to use by specifying 'dnsZones' in the selector ([#1806](https://github.com/jetstack/cert-manager/pull/1806), [@munnerz](https://github.com/munnerz))
-- Use proxy environment variables in self-check request ([#1850](https://github.com/jetstack/cert-manager/pull/1850), [@kinolaev](https://github.com/kinolaev))
+- Properly encode the CSR field on Order resources as PEM data instead of DER ([#1884](https://github.com/cert-manager/cert-manager/pull/1884), [@munnerz](https://github.com/munnerz))
+- Fire informational Event if an ACME solver cannot be chosen for a domain on an Order ([#1856](https://github.com/cert-manager/cert-manager/pull/1856), [@munnerz](https://github.com/munnerz))
+- Fix bug with auto-generated Order names being longer than 63 characters ([#1765](https://github.com/cert-manager/cert-manager/pull/1765), [@cheukwing](https://github.com/cheukwing))
+- Fix a panic when a misconfigured Issuer is used for HTTP01 challenge solving ([#1758](https://github.com/cert-manager/cert-manager/pull/1758), [@munnerz](https://github.com/munnerz))
+- Fix a bug where the logic to select a solver would always return the last solver and may return the wrong kind of solver for the challenge that it returned. ([#1717](https://github.com/cert-manager/cert-manager/pull/1717), [@dobesv](https://github.com/dobesv))
+- Fix indentation on ACME setup examples ([#1785](https://github.com/cert-manager/cert-manager/pull/1785), [@lachlancooper](https://github.com/lachlancooper))
+- Fix a the logic to select the most specific solver from an issuer if multiple matched ([#1715](https://github.com/cert-manager/cert-manager/pull/1715), [@dobesv](https://github.com/dobesv))
+- Adds support for `nodeSelector` and `tolerations` in `podTemplate.spec` ([#1803](https://github.com/cert-manager/cert-manager/pull/1803), [@cheukwing](https://github.com/cheukwing))
+- support azure non-public regions ([#1830](https://github.com/cert-manager/cert-manager/pull/1830), [@stuarthu](https://github.com/stuarthu))
+- Fix issue causing challenge controller to attempt to list Secrets across all namespaces even when --namespace is specified ([#1849](https://github.com/cert-manager/cert-manager/pull/1849), [@munnerz](https://github.com/munnerz))
+- Adds the handling of updates to the `spec.acme.email` field in Issuers ([#1763](https://github.com/cert-manager/cert-manager/pull/1763), [@cheukwing](https://github.com/cheukwing))
+- Fix issue with private managed-zone being picked in CloudDNS ([#1704](https://github.com/cert-manager/cert-manager/pull/1704), [@cheukwing](https://github.com/cheukwing))
+- Expose pod template for the ACME issuer solver pod ([#1749](https://github.com/cert-manager/cert-manager/pull/1749), [@JoshVanL](https://github.com/JoshVanL))
+- Ingress skips updating Certificate resource if already exists and not owned ([#1670](https://github.com/cert-manager/cert-manager/pull/1670), [@cheukwing](https://github.com/cheukwing))
+- Add support for ACMEv2 POST-as-GET ([#1648](https://github.com/cert-manager/cert-manager/pull/1648), [@munnerz](https://github.com/munnerz))
+- Fix incorrect handling of `issuewild` tag when verifying CAA ([#1777](https://github.com/cert-manager/cert-manager/pull/1777), [@cheukwing](https://github.com/cheukwing))
+- Add support for selecting ACME challenge solver to use by specifying 'dnsZones' in the selector ([#1806](https://github.com/cert-manager/cert-manager/pull/1806), [@munnerz](https://github.com/munnerz))
+- Use proxy environment variables in self-check request ([#1850](https://github.com/cert-manager/cert-manager/pull/1850), [@kinolaev](https://github.com/kinolaev))
 
 ### Venafi Issuer
 
-- Venafi: use vCert v4.1.0 ([#1827](https://github.com/jetstack/cert-manager/pull/1827), [@munnerz](https://github.com/munnerz))
-- Bump Venafi vcert dependency to latest version ([#1754](https://github.com/jetstack/cert-manager/pull/1754), [@munnerz](https://github.com/munnerz))
+- Venafi: use vCert v4.1.0 ([#1827](https://github.com/cert-manager/cert-manager/pull/1827), [@munnerz](https://github.com/munnerz))
+- Bump Venafi vcert dependency to latest version ([#1754](https://github.com/cert-manager/cert-manager/pull/1754), [@munnerz](https://github.com/munnerz))
 
 ### Webhook
 
-- cert-manager-webhook secret exists in cert-manager ns ([#1791](https://github.com/jetstack/cert-manager/pull/1791), [@jetstack-bot](https://github.com/jetstack-bot))
-- Support CRD conversion webhooks in the CA injector controller. ([#1505](https://github.com/jetstack/cert-manager/pull/1505), [@DirectXMan12](https://github.com/DirectXMan12))
+- cert-manager-webhook secret exists in cert-manager ns ([#1791](https://github.com/cert-manager/cert-manager/pull/1791), [@jetstack-bot](https://github.com/jetstack-bot))
+- Support CRD conversion webhooks in the CA injector controller. ([#1505](https://github.com/cert-manager/cert-manager/pull/1505), [@DirectXMan12](https://github.com/DirectXMan12))
 
 ### CA Issuer
 
-- Adds CSR signing to CA issuer ([#1835](https://github.com/jetstack/cert-manager/pull/1835), [@JoshVanL](https://github.com/JoshVanL))
+- Adds CSR signing to CA issuer ([#1835](https://github.com/cert-manager/cert-manager/pull/1835), [@JoshVanL](https://github.com/JoshVanL))
 
 ### CertificateRequest
 
-- Adds CertificateRequest resource ([#1789](https://github.com/jetstack/cert-manager/pull/1789), [@JoshVanL](https://github.com/JoshVanL))
-- Adds CA issuer controller to resolve CertificateRequests where CA is the issuer reference ([#1836](https://github.com/jetstack/cert-manager/pull/1836), [@JoshVanL](https://github.com/JoshVanL))
-- Adds Sign interface to Issuers ([#1807](https://github.com/jetstack/cert-manager/pull/1807), [@JoshVanL](https://github.com/JoshVanL))
-- Adds `group` to `issuerRef` in `CertificateRequest` resources to distinguish resource ownership of incoming CertificateRequests so enabling full external issuer support.  ([#1860](https://github.com/jetstack/cert-manager/pull/1860), [@JoshVanL](https://github.com/JoshVanL))
+- Adds CertificateRequest resource ([#1789](https://github.com/cert-manager/cert-manager/pull/1789), [@JoshVanL](https://github.com/JoshVanL))
+- Adds CA issuer controller to resolve CertificateRequests where CA is the issuer reference ([#1836](https://github.com/cert-manager/cert-manager/pull/1836), [@JoshVanL](https://github.com/JoshVanL))
+- Adds Sign interface to Issuers ([#1807](https://github.com/cert-manager/cert-manager/pull/1807), [@JoshVanL](https://github.com/JoshVanL))
+- Adds `group` to `issuerRef` in `CertificateRequest` resources to distinguish resource ownership of incoming CertificateRequests so enabling full external issuer support.  ([#1860](https://github.com/cert-manager/cert-manager/pull/1860), [@JoshVanL](https://github.com/JoshVanL))
 
 ### Documentation
 
-- Adds Design and Proposals page to website docs ([#1876](https://github.com/jetstack/cert-manager/pull/1876), [@JoshVanL](https://github.com/JoshVanL))
-- Adds CertificateRequest proposal ([#1866](https://github.com/jetstack/cert-manager/pull/1866), [@JoshVanL](https://github.com/JoshVanL))
+- Adds Design and Proposals page to website docs ([#1876](https://github.com/cert-manager/cert-manager/pull/1876), [@JoshVanL](https://github.com/JoshVanL))
+- Adds CertificateRequest proposal ([#1866](https://github.com/cert-manager/cert-manager/pull/1866), [@JoshVanL](https://github.com/JoshVanL))
 
 ### Monitoring
 
-- Prometheus metrics for deleted Certificates are cleaned up ([#1681](https://github.com/jetstack/cert-manager/pull/1681), [@cheukwing](https://github.com/cheukwing))
-- Adds `ControllerSyncCallCount` prometheus metric to count sync calls from each controller ([#1692](https://github.com/jetstack/cert-manager/pull/1692), [@cheukwing](https://github.com/cheukwing))
-- Add support for Prometheus Operator ServiceMonitor object in Helm Chart ([#1761](https://github.com/jetstack/cert-manager/pull/1761), [@Starefossen](https://github.com/Starefossen))
-- Add Prometheus metrics for tracking Certificate readiness ([#1811](https://github.com/jetstack/cert-manager/pull/1811), [@cheukwing](https://github.com/cheukwing))
+- Prometheus metrics for deleted Certificates are cleaned up ([#1681](https://github.com/cert-manager/cert-manager/pull/1681), [@cheukwing](https://github.com/cheukwing))
+- Adds `ControllerSyncCallCount` prometheus metric to count sync calls from each controller ([#1692](https://github.com/cert-manager/cert-manager/pull/1692), [@cheukwing](https://github.com/cheukwing))
+- Add support for Prometheus Operator ServiceMonitor object in Helm Chart ([#1761](https://github.com/cert-manager/cert-manager/pull/1761), [@Starefossen](https://github.com/Starefossen))
+- Add Prometheus metrics for tracking Certificate readiness ([#1811](https://github.com/cert-manager/cert-manager/pull/1811), [@cheukwing](https://github.com/cheukwing))

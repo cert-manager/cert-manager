@@ -11,7 +11,7 @@ go_library(
         "zz_generated.deepcopy.go",
         "zz_generated.defaults.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1",
+    importpath = "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",

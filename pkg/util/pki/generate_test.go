@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func buildCertificateWithKeyParams(keyAlgo v1.PrivateKeyAlgorithm, keySize int) *v1.Certificate {

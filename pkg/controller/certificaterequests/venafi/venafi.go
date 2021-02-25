@@ -28,16 +28,16 @@ import (
 
 	"github.com/Venafi/vcert/v4/pkg/endpoint"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
-	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
-	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
-	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificaterequests"
+	crutil "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/util"
+	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
+	venaficlient "github.com/cert-manager/cert-manager/pkg/issuer/venafi/client"
+	"github.com/cert-manager/cert-manager/pkg/issuer/venafi/client/api"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

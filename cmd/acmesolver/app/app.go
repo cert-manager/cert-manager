@@ -21,9 +21,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {

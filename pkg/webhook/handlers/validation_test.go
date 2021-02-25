@@ -26,11 +26,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
-	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
-	v2 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
+	"github.com/cert-manager/cert-manager/pkg/internal/api/validation"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
+	v1 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	v2 "github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 )
 
 func TestRegistryBackedValidator(t *testing.T) {

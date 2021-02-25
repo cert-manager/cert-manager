@@ -16,7 +16,7 @@
 def version_x_defs(variant = None):
     # This should match the list of packages in kube::version::ldflag
     stamp_pkgs = [
-        "github.com/jetstack/cert-manager/pkg/util",
+        "github.com/cert-manager/cert-manager/pkg/util",
     ]
 
     # This should match the list of vars in kube::version::ldflags

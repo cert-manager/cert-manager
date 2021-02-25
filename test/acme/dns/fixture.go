@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/testing_frameworks/integration"
 
-	"github.com/jetstack/cert-manager/pkg/acme/webhook"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 )
 
 func init() {

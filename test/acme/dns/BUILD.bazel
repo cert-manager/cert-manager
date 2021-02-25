@@ -13,7 +13,7 @@ go_library(
         "//hack/bin:kube-apiserver",
         "//hack/bin:kubectl",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/acme/dns",
+    importpath = "github.com/cert-manager/cert-manager/test/acme/dns",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/webhook:go_default_library",

@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["factory_interfaces.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces",
+    importpath = "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/internalinterfaces",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/client/clientset/versioned:go_default_library",

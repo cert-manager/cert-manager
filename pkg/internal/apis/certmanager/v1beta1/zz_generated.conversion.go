@@ -23,12 +23,12 @@ package v1beta1
 import (
 	unsafe "unsafe"
 
-	acmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
-	v1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
-	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
-	certmanager "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	acmev1beta1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1beta1"
+	v1beta1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1beta1"
+	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	acme "github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
+	certmanager "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	meta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"

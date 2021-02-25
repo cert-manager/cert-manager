@@ -32,14 +32,14 @@ import (
 	"k8s.io/utils/diff"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/jetstack/cert-manager/pkg/api"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/integration/framework"
+	"github.com/cert-manager/cert-manager/pkg/api"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1alpha2"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1alpha3"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1beta1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
 )
 
 func generateCSR(t *testing.T) []byte {

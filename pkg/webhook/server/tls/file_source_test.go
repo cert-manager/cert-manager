@@ -27,9 +27,9 @@ import (
 	"testing"
 	"time"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	logtesting "github.com/cert-manager/cert-manager/pkg/logs/testing"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func TestFileSource_ReadsFile(t *testing.T) {

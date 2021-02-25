@@ -1,4 +1,4 @@
-# gazelle:prefix github.com/jetstack/cert-manager
+# gazelle:prefix github.com/cert-manager/cert-manager
 # gazelle:proto disable_global
 # gazelle:exclude docs/generated/reference/generate/json_swagger
 

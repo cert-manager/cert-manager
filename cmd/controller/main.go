@@ -20,9 +20,9 @@ import (
 	"flag"
 	"os"
 
-	"github.com/jetstack/cert-manager/cmd/controller/app"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
+	"github.com/cert-manager/cert-manager/cmd/controller/app"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilcmd "github.com/cert-manager/cert-manager/pkg/util/cmd"
 )
 
 func main() {

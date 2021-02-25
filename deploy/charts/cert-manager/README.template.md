@@ -19,7 +19,7 @@ Before installing the chart, you must first install the cert-manager CustomResou
 This is performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed custom resources.
 
 ```bash
-$ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
+$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
 ```
 
 To install the chart with the release name `my-release`:
@@ -65,7 +65,7 @@ If you want to completely uninstall cert-manager from your cluster, you will als
 delete the previously installed CustomResourceDefinition resources:
 
 ```console
-$ kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
+$ kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
 ```
 
 ## Configuration
@@ -182,8 +182,8 @@ Alternatively, a YAML file that specifies the values for the above parameters ca
 ```console
 $ helm install --name my-release -f values.yaml .
 ```
-> **Tip**: You can use the default [values.yaml](https://github.com/jetstack/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml)
+> **Tip**: You can use the default [values.yaml](https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml)
 
 ## Contributing
 
-This chart is maintained at [github.com/jetstack/cert-manager](https://github.com/jetstack/cert-manager/tree/master/deploy/charts/cert-manager).
+This chart is maintained at [github.com/cert-manager/cert-manager](https://github.com/cert-manager/cert-manager/tree/master/deploy/charts/cert-manager).

@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
+	"github.com/cert-manager/cert-manager/pkg/internal/api/validation"
 )
 
 type registryBackedValidator struct {

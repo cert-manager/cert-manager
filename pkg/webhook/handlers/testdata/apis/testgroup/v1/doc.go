@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +k8s:conversion-gen=github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup
+// +k8s:conversion-gen=github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup
 // +k8s:deepcopy-gen=package,register
 // +k8s:defaulter-gen=TypeMeta
 

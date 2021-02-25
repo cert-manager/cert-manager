@@ -7,7 +7,7 @@ go_library(
         "signal_posix.go",
         "signal_windows.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/util/cmd",
+    importpath = "github.com/cert-manager/cert-manager/pkg/util/cmd",
     visibility = ["//visibility:public"],
 )
 

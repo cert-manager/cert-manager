@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["addon.go"],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/addon/chart",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/framework/addon/chart",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3"
+	v1alpha3 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

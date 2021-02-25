@@ -29,16 +29,16 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/pkg/acme"
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	"github.com/jetstack/cert-manager/pkg/acme/client"
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/acme"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	"github.com/cert-manager/cert-manager/pkg/acme/client"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/util/errors"
+	"github.com/cert-manager/cert-manager/pkg/util/kube"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const (

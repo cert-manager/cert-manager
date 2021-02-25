@@ -19,7 +19,7 @@ package util
 import (
 	"fmt"
 
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
+	cmutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 func RandomSubdomain(domain string) string {

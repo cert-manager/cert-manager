@@ -19,11 +19,11 @@ limitations under the License.
 package certmanager
 
 import (
-	v1 "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1"
-	v1alpha2 "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha2"
-	v1alpha3 "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha3"
-	v1beta1 "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1beta1"
-	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/certmanager/v1"
+	v1alpha2 "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha2"
+	v1alpha3 "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha3"
+	v1beta1 "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/certmanager/v1beta1"
+	internalinterfaces "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

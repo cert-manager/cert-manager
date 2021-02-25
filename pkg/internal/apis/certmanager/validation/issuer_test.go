@@ -25,9 +25,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	cmacme "github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
+	cmapi "github.com/cert-manager/cert-manager/pkg/internal/apis/certmanager"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
 )
 
 var (

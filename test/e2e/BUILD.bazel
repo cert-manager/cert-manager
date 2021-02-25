@@ -14,7 +14,7 @@ genrule(
 go_library(
     name = "go_default_library",
     srcs = ["e2e.go"],
-    importpath = "github.com/jetstack/cert-manager/test/e2e",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

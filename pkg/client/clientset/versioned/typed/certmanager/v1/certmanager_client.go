@@ -19,8 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

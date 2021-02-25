@@ -19,8 +19,8 @@ package v1alpha2
 import (
 	"k8s.io/apimachinery/pkg/conversion"
 
-	"github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	"github.com/cert-manager/cert-manager/pkg/apis/acme/v1alpha2"
+	"github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
 )
 
 func Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {

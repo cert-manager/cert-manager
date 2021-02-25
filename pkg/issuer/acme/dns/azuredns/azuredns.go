@@ -23,8 +23,8 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // DNSProvider implements the util.ChallengeProvider interface

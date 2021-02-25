@@ -23,10 +23,10 @@ package v1alpha3
 import (
 	unsafe "unsafe"
 
-	v1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
-	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	v1alpha3 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1alpha3"
+	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	acme "github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
+	meta "github.com/cert-manager/cert-manager/pkg/internal/apis/meta"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -27,8 +27,8 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (*corev1.Service, error) {

@@ -7,7 +7,7 @@ go_library(
         "expansion_generated.go",
         "order.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2",
+    importpath = "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1alpha2",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1alpha2:go_default_library",

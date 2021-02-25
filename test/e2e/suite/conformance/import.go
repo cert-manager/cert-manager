@@ -17,12 +17,12 @@ limitations under the License.
 package conformance
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/acme"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/ca"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/external"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/selfsigned"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/vault"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/venafi"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/venaficloud"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/rbac"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates/acme"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates/ca"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates/external"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates/selfsigned"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates/vault"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates/venafi"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificates/venaficloud"
+	_ "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/rbac"
 )

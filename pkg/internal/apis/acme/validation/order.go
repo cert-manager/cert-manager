@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	cmacme "github.com/cert-manager/cert-manager/pkg/internal/apis/acme"
 )
 
 func ValidateOrderUpdate(oldObj, newObj runtime.Object) field.ErrorList {

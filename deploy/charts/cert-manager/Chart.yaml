@@ -4,7 +4,7 @@ name: cert-manager
 version: v0.1.0
 appVersion: v0.1.0
 description: A Helm chart for cert-manager
-home: https://github.com/jetstack/cert-manager
+home: https://github.com/cert-manager/cert-manager
 icon: https://raw.githubusercontent.com/jetstack/cert-manager/master/logo/logo.png
 keywords:
   - cert-manager
@@ -12,7 +12,7 @@ keywords:
   - letsencrypt
   - tls
 sources:
-  - https://github.com/jetstack/cert-manager
+  - https://github.com/cert-manager/cert-manager
 maintainers:
   - name: munnerz
     email: james@jetstack.io

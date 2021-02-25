@@ -25,8 +25,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/util/errors"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // SecretTLSKeyRef will decode a PKCS1/SEC1 (in effect, a RSA or ECDSA) private key stored in a

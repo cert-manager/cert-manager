@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // CertificateRequestRevision returns a predicate that used to filter

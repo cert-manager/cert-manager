@@ -17,7 +17,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -11,7 +11,7 @@ go_library(
         "secret.go",
         "validate.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/helper",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/framework/helper",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

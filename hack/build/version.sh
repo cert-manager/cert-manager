@@ -47,7 +47,7 @@ set -o pipefail
 #    KUBE_GIT_MAJOR - The major part of the version
 #    KUBE_GIT_MINOR - The minor component of the version
 
-export GO_PACKAGE="github.com/jetstack/cert-manager"
+export GO_PACKAGE="github.com/cert-manager/cert-manager"
 
 # Grovels through git to set a set of env variables.
 #

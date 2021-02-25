@@ -30,17 +30,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
-	"github.com/jetstack/cert-manager/test/e2e/framework/log"
-	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
-	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
-	"github.com/jetstack/cert-manager/test/e2e/util"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	cmutil "github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/log"
+	. "github.com/cert-manager/cert-manager/test/e2e/framework/matcher"
+	frameworkutil "github.com/cert-manager/cert-manager/test/e2e/framework/util"
+	"github.com/cert-manager/cert-manager/test/e2e/util"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 const testingACMEEmail = "e2e@cert-manager.io"
@@ -61,7 +61,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	fixedIngressName := "testingress"
 
 	// ACME Issuer does not return a ca.crt. See:
-	// https://github.com/jetstack/cert-manager/issues/1571
+	// https://github.com/cert-manager/cert-manager/issues/1571
 	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
 	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 

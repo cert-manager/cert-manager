@@ -24,9 +24,9 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 
-	"github.com/jetstack/cert-manager/pkg/acme/webhook"
-	"github.com/jetstack/cert-manager/pkg/acme/webhook/cmd/server"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd/server"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func RunWebhookServer(groupName string, hooks ...webhook.Solver) {

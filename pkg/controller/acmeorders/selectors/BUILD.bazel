@@ -8,7 +8,7 @@ go_library(
         "labels.go",
         "selector.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/acmeorders/selectors",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/acmeorders/selectors",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",

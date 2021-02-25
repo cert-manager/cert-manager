@@ -22,7 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 
-	"github.com/jetstack/cert-manager/pkg/util/errors"
+	"github.com/cert-manager/cert-manager/pkg/util/errors"
 )
 
 // DecodePrivateKeyBytes will decode a PEM encoded private key into a crypto.Signer.

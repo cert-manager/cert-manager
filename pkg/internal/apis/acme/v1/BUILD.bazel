@@ -9,7 +9,7 @@ go_library(
         "zz_generated.conversion.go",
         "zz_generated.defaults.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1",
+    importpath = "github.com/cert-manager/cert-manager/pkg/internal/apis/acme/v1",
     visibility = ["//pkg:__subpackages__"],
     deps = [
         "//pkg/apis/acme:go_default_library",

@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta"
 )
 
 // SchemeGroupVersion is group version used to register these objects

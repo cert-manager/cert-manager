@@ -38,7 +38,7 @@ trap cleanup EXIT
 git clone https://github.com/cert-manager/sample-external-issuer "${repo_dir}"
 
 # TODO: Move this image to quay.io
-# https://github.com/jetstack/cert-manager/issues/3531
+# https://github.com/cert-manager/cert-manager/issues/3531
 img="ghcr.io/wallrj/sample-external-issuer/controller:v0.0.0-30-gf333b9e"
 
 require_image "${img}" "//devel/addon/sample-external-issuer:bundle"

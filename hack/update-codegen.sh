@@ -31,7 +31,7 @@ else
   exit 0
 fi
 
-module_name="github.com/jetstack/cert-manager"
+module_name="github.com/cert-manager/cert-manager"
 
 # Generate deepcopy functions for all internal and external APIs
 deepcopy_inputs=(
@@ -115,7 +115,7 @@ ensure-in-gopath() {
 
   fake_gopath=$(mktemp -d -t codegen.gopath.XXXX)
 
-  fake_repopath=$fake_gopath/src/github.com/jetstack/cert-manager
+  fake_repopath=$fake_gopath/src/github.com/cert-manager/cert-manager
   mkdir -p "$fake_repopath"
   cp -R "$BUILD_WORKSPACE_DIRECTORY/." "$fake_repopath"
 

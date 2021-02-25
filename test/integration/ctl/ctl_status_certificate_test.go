@@ -36,16 +36,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/reference"
 
-	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	"github.com/jetstack/cert-manager/pkg/ctl"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/integration/framework"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	statuscertcmd "github.com/cert-manager/cert-manager/cmd/ctl/pkg/status/certificate"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	"github.com/cert-manager/cert-manager/pkg/ctl"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func generateCSR(t *testing.T) []byte {

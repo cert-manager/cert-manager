@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
 	"github.com/miekg/dns"

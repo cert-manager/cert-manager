@@ -33,12 +33,12 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	networkingv1beta1listers "k8s.io/client-go/listers/networking/v1beta1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	pkgutil "github.com/jetstack/cert-manager/pkg/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	pkgutil "github.com/cert-manager/cert-manager/pkg/util"
 )
 
 const (

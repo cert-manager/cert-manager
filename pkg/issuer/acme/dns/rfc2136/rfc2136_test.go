@@ -31,8 +31,8 @@ import (
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	testserver "github.com/jetstack/cert-manager/test/acme/dns/server"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	testserver "github.com/cert-manager/cert-manager/test/acme/dns/server"
 )
 
 var (

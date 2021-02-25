@@ -16,7 +16,7 @@ import (
 	"os"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/go-logr/logr"
 
@@ -25,7 +25,7 @@ import (
 	"google.golang.org/api/dns/v1"
 	"google.golang.org/api/option"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the DNSProvider interface.
