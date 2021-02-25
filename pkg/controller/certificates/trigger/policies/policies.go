@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//Package policies provides functionality to evaluate Certificate's state
 package policies
 
 import (
@@ -44,13 +45,13 @@ type Func func(Input) (reason, message string, reissue bool)
 type Chain []Func
 
 // Evaluate will evaluate the entire policy chain using the provided input.
-// As soon as a policy function indicates a re-issuance is required, the method
-// will return and not evaluate the rest of the chain.
+// As soon as it is discovered that the input violates one policy,
+// Evaluate will return and not evaluate the rest of the chain.
 func (c Chain) Evaluate(input Input) (string, string, bool) {
 	for _, policyFunc := range c {
-		reason, message, reissue := policyFunc(input)
-		if reissue {
-			return reason, message, reissue
+		reason, message, violationFound := policyFunc(input)
+		if violationFound {
+			return reason, message, violationFound
 		}
 	}
 	return "", "", false
@@ -59,83 +60,83 @@ func (c Chain) Evaluate(input Input) (string, string, bool) {
 func NewTriggerPolicyChain(c clock.Clock) Chain {
 	return Chain{
 		SecretDoesNotExist,
-		SecretHasData,
-		SecretPublicKeysMatch,
+		SecretIsMissingData,
+		SecretPublicKeysDiffer,
 		SecretPrivateKeyMatchesSpec,
-		SecretHasUpToDateIssuerAnnotations,
-		CurrentCertificateRequestValidForSpec,
+		SecretIssuerAnnotationsNotUpToDate,
+		CurrentCertificateRequestNotValidForSpec,
 		CurrentCertificateNearingExpiry(c),
 	}
 }
 
 func SecretDoesNotExist(input Input) (string, string, bool) {
 	if input.Secret == nil {
-		return "DoesNotExist", "Issuing certificate as Secret does not exist", true
+		return DoesNotExist, "Issuing certificate as Secret does not exist", true
 	}
 	return "", "", false
 }
 
-func SecretHasData(input Input) (string, string, bool) {
+func SecretIsMissingData(input Input) (string, string, bool) {
 	if input.Secret.Data == nil {
-		return "MissingData", "Issuing certificate as Secret does not contain any data", true
+		return MissingData, "Issuing certificate as Secret does not contain any data", true
 	}
 	pkData := input.Secret.Data[corev1.TLSPrivateKeyKey]
 	certData := input.Secret.Data[corev1.TLSCertKey]
 	if len(pkData) == 0 {
-		return "MissingData", "Issuing certificate as Secret does not contain a private key", true
+		return MissingData, "Issuing certificate as Secret does not contain a private key", true
 	}
 	if len(certData) == 0 {
-		return "MissingData", "Issuing certificate as Secret does not contain a certificate", true
+		return MissingData, "Issuing certificate as Secret does not contain a certificate", true
 	}
 	return "", "", false
 }
 
-func SecretPublicKeysMatch(input Input) (string, string, bool) {
+func SecretPublicKeysDiffer(input Input) (string, string, bool) {
 	pkData := input.Secret.Data[corev1.TLSPrivateKeyKey]
 	certData := input.Secret.Data[corev1.TLSCertKey]
 	// TODO: replace this with a generic decoder that can handle different
 	//  formats such as JKS, P12 etc (i.e. add proper support for keystores)
 	_, err := tls.X509KeyPair(certData, pkData)
 	if err != nil {
-		return "InvalidKeyPair", fmt.Sprintf("Issuing certificate as Secret contains an invalid key-pair: %v", err), true
+		return InvalidKeyPair, fmt.Sprintf("Issuing certificate as Secret contains an invalid key-pair: %v", err), true
 	}
 	return "", "", false
 }
 
 func SecretPrivateKeyMatchesSpec(input Input) (string, string, bool) {
 	if input.Secret.Data == nil || len(input.Secret.Data[corev1.TLSPrivateKeyKey]) == 0 {
-		return "SecretMismatch", fmt.Sprintf("Existing issued Secret does not contain private key data"), true
+		return SecretMismatch, fmt.Sprintf("Existing issued Secret does not contain private key data"), true
 	}
 
 	pkBytes := input.Secret.Data[corev1.TLSPrivateKeyKey]
 	pk, err := pki.DecodePrivateKeyBytes(pkBytes)
 	if err != nil {
-		return "SecretMismatch", fmt.Sprintf("Existing issued Secret contains invalid private key data: %v", err), true
+		return SecretMismatch, fmt.Sprintf("Existing issued Secret contains invalid private key data: %v", err), true
 	}
 
 	violations, err := certificates.PrivateKeyMatchesSpec(pk, input.Certificate.Spec)
 	if err != nil {
-		return "SecretMismatch", fmt.Sprintf("Failed to check private key is up to date: %v", err), true
+		return SecretMismatch, fmt.Sprintf("Failed to check private key is up to date: %v", err), true
 	}
 	if len(violations) > 0 {
-		return "SecretMismatch", fmt.Sprintf("Existing private key is not up to date for spec: %v", violations), true
+		return SecretMismatch, fmt.Sprintf("Existing private key is not up to date for spec: %v", violations), true
 	}
 	return "", "", false
 }
 
-func SecretHasUpToDateIssuerAnnotations(input Input) (string, string, bool) {
+func SecretIssuerAnnotationsNotUpToDate(input Input) (string, string, bool) {
 	name := input.Secret.Annotations[cmapi.IssuerNameAnnotationKey]
 	kind := input.Secret.Annotations[cmapi.IssuerKindAnnotationKey]
 	group := input.Secret.Annotations[cmapi.IssuerGroupAnnotationKey]
 	if name != input.Certificate.Spec.IssuerRef.Name ||
 		!issuerKindsEqual(kind, input.Certificate.Spec.IssuerRef.Kind) ||
 		!issuerGroupsEqual(group, input.Certificate.Spec.IssuerRef.Group) {
-		return "IncorrectIssuer", fmt.Sprintf("Issuing certificate as Secret was previously issued by %s", formatIssuerRef(name, kind, group)), true
+		return IncorrectIssuer, fmt.Sprintf("Issuing certificate as Secret was previously issued by %s", formatIssuerRef(name, kind, group)), true
 	}
 	return "", "", false
 }
 
-func CurrentCertificateRequestValidForSpec(input Input) (string, string, bool) {
+func CurrentCertificateRequestNotValidForSpec(input Input) (string, string, bool) {
 	if input.CurrentRevisionRequest == nil {
 		// Fallback to comparing the Certificate spec with the issued certificate.
 		// This case is encountered if the CertificateRequest that issued the current
@@ -153,7 +154,7 @@ func CurrentCertificateRequestValidForSpec(input Input) (string, string, bool) {
 		return "", "", false
 	}
 	if len(violations) > 0 {
-		return "RequestChanged", fmt.Sprintf("Fields on existing CertificateRequest resource not up to date: %v", violations), true
+		return RequestChanged, fmt.Sprintf("Fields on existing CertificateRequest resource not up to date: %v", violations), true
 	}
 
 	return "", "", false
@@ -172,7 +173,7 @@ func currentSecretValidForSpec(input Input) (string, string, bool) {
 	}
 
 	if len(violations) > 0 {
-		return "SecretMismatch", fmt.Sprintf("Existing issued Secret is not up to date for spec: %v", violations), true
+		return SecretMismatch, fmt.Sprintf("Existing issued Secret is not up to date for spec: %v", violations), true
 	}
 
 	return "", "", false
@@ -189,7 +190,7 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 			return "", "", false
 		}
 
-		return "Renewing", fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime), true
+		return Renewing, fmt.Sprintf("Renewing certificate as renewal was scheduled at %s", input.Certificate.Status.RenewalTime), true
 	}
 }
 
