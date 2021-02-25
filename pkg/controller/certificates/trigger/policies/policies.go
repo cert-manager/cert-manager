@@ -196,21 +196,23 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 
 // CurrentCertificateHasExpired is used exclusively to check if the current
 // issued certificate has actually expired rather than just nearing expiry.
-func CurrentCertificateHasExpired(input Input) (string, string, bool) {
-	certData := input.Secret.Data[corev1.TLSCertKey]
-	// TODO: replace this with a generic decoder that can handle different
-	//  formats such as JKS, P12 etc (i.e. add proper support for keystores)
-	cert, err := pki.DecodeX509CertificateBytes(certData)
-	if err != nil {
-		// This case should never happen as it should always be caught by the
-		// secretPublicKeysMatch function beforehand, but handle it just in case.
-		return "InvalidCertificate", fmt.Sprintf("Failed to decode stored certificate: %v", err), true
-	}
+func CurrentCertificateHasExpired(c clock.Clock) Func {
+	return func(input Input) (string, string, bool) {
+		certData := input.Secret.Data[corev1.TLSCertKey]
+		// TODO: replace this with a generic decoder that can handle different
+		//  formats such as JKS, P12 etc (i.e. add proper support for keystores)
+		cert, err := pki.DecodeX509CertificateBytes(certData)
+		if err != nil {
+			// This case should never happen as it should always be caught by the
+			// secretPublicKeysMatch function beforehand, but handle it just in case.
+			return "InvalidCertificate", fmt.Sprintf("Failed to decode stored certificate: %v", err), true
+		}
 
-	if time.Now().After(cert.NotAfter) {
-		return "Expired", fmt.Sprintf("Certificate expired on %s", cert.NotAfter.Format(time.RFC1123)), true
+		if c.Now().After(cert.NotAfter) {
+			return Expired, fmt.Sprintf("Certificate expired on %s", cert.NotAfter.Format(time.RFC1123)), true
+		}
+		return "", "", false
 	}
-	return "", "", false
 }
 
 func formatIssuerRef(name, kind, group string) string {
