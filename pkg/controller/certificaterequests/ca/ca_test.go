@@ -407,7 +407,6 @@ func TestCA_Sign(t *testing.T) {
 	rsaCSR := generateCSR(t, rsaPair)
 
 	tests := map[string]struct {
-		givenNamespace   string
 		givenCASecret    *corev1.Secret
 		givenCAIssuer    cmapi.GenericIssuer
 		givenCR          *cmapi.CertificateRequest
@@ -435,12 +434,11 @@ func TestCA_Sign(t *testing.T) {
 					IsCA:         true,
 				},
 			))),
-			givenNamespace: "default",
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
-				// The notAfter field uses a precision of 1 second; the
-				// current time is truncated before adding the certificate
-				// request's duration value.
-				assert.Equal(t, time.Now().UTC().Truncate(1*time.Second).Add(30*time.Minute).String(), got.NotAfter.String())
+				// The notAfter field uses a precision of 1 second. That's
+				// why we truncate the expected time.
+				expectNotAfter := time.Now().UTC().Truncate(1 * time.Second).Add(30 * time.Minute)
+				assert.Equalf(t, expectNotAfter, got.NotAfter, "time mismatch, expect='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
 			},
 		},
 		"when the CertificateRequest has the isCA field set, it should appear on the signed ca": {
@@ -462,7 +460,6 @@ func TestCA_Sign(t *testing.T) {
 					IsCA:         true,
 				},
 			))),
-			givenNamespace: "default",
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
 				assert.Equal(t, true, got.IsCA)
 			},
@@ -486,7 +483,6 @@ func TestCA_Sign(t *testing.T) {
 					IsCA:         true,
 				},
 			))),
-			givenNamespace: "default",
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
 				assert.Equal(t, []string{"http://ocsp-v3.example.org"}, got.OCSPServer)
 			},
@@ -511,7 +507,6 @@ func TestCA_Sign(t *testing.T) {
 					IsCA:         true,
 				},
 			))),
-			givenNamespace: "default",
 			assertSignedCert: func(t *testing.T, gotCA *x509.Certificate) {
 				assert.Equal(t, []string{"http://www.example.com/crl/test.crl"}, gotCA.CRLDistributionPoints)
 			},
