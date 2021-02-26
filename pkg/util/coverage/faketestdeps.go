@@ -52,3 +52,5 @@ func (fakeTestDeps) WriteHeapProfile(io.Writer) error {
 func (fakeTestDeps) WriteProfileTo(string, io.Writer, int) error {
 	return nil
 }
+
+func (fakeTestDeps) SetPanicOnExit0(bool) {}
