@@ -18,350 +18,172 @@ package policies
 
 import (
 	"context"
-	"fmt"
-	"path/filepath"
-	"runtime"
-	"strings"
-	"sync/atomic"
+	"flag"
 	"testing"
+	"time"
 
+	logtest "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
+	fakeclock "k8s.io/utils/clock/testing"
 
+	cmscheme "github.com/jetstack/cert-manager/pkg/api"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmlist "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
+	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	"github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 func TestDataForCertificate(t *testing.T) {
 	tests := map[string]struct {
-		mockSecretLister *listers.FakeSecretLister
-		givenCert        *cmapi.Certificate
-
-		mockCertificateRequestsLister func(*testing.T) *listers.FakeCertificateRequestLister
-		wantRequest                   *cmapi.CertificateRequest
-		wantSecret                    *corev1.Secret
-		wantErr                       string
+		builder     *testpkg.Builder
+		givenCert   *cmapi.Certificate
+		wantRequest *cmapi.CertificateRequest
+		wantSecret  *corev1.Secret
+		wantErr     string
 	}{
-		"the returned secret should stay nil when it is not found": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateUID("uid-1"),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(nil, apierrors.NewNotFound(cmapi.Resource("Secret"), "secret-1")),
-			),
-			mockCertificateRequestsLister: expectNeverCalled(),
-			wantSecret:                    nil,
-		},
-		"should return an error when getsecret returns an unexpect error that isnt not_found": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateUID("uid-1"),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(nil, fmt.Errorf("error that is not a not_found error")),
-			),
-			mockCertificateRequestsLister: expectNeverCalled(),
-			wantErr:                       "error that is not a not_found error",
-		},
-		"the returned certificaterequest should stay nil when the list function returns nothing": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateUID("uid-1"),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(nil, nil),
-			),
-			mockCertificateRequestsLister: expectNeverCalled(),
-			wantRequest:                   nil,
-		},
 		"should find the certificaterequest that matches revision and owner": {
-			givenCert: gen.Certificate("cert-1",
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateRequest("cr-4", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-4")),
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							"cert-manager.io/certificate-revision": "4",
+						}),
+					),
+					gen.CertificateRequest("cr-7", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-7")),
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							"cert-manager.io/certificate-revision": "7",
+						}),
+					),
+					gen.CertificateRequest("cr-9", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-9")),
+					),
+				},
+				ExpectedEvents: []string{},
+			},
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
 				gen.SetCertificateUID("uid-7"),
 				gen.SetCertificateSecretName("secret-1"),
 				gen.SetCertificateRevision(7),
 			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(nil, nil),
-			),
-			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				shouldCallOnce := expectCalled(t, 1)
-				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					shouldCallOnce()
-					return []*cmapi.CertificateRequest{
-						gen.CertificateRequest("cr-4",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-4")),
-							gen.AddCertificateRequestAnnotations(map[string]string{
-								"cert-manager.io/certificate-revision": "4",
-							}),
-						),
-						gen.CertificateRequest("cr-7",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-7")),
-							gen.AddCertificateRequestAnnotations(map[string]string{
-								"cert-manager.io/certificate-revision": "7",
-							}),
-						),
-						gen.CertificateRequest("cr-9",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-9")),
-						),
-					}, nil
-				})
-			}),
-			wantRequest: gen.CertificateRequest("cr-7",
+			wantRequest: gen.CertificateRequest("cr-7", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
 				gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-7")),
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					"cert-manager.io/certificate-revision": "7",
 				}),
 			),
 		},
-		"should return a nil certificaterequest when no match of revision or owner": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateUID("uid-1"),
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateRevision(1),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(nil, nil),
-			),
-			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				shouldCallOnce := expectCalled(t, 1)
-				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					shouldCallOnce()
-					return []*cmapi.CertificateRequest{
-						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-						),
-						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-							gen.AddCertificateRequestAnnotations(map[string]string{
-								"cert-manager.io/certificate-revision": "42",
-							}),
-						),
-						gen.CertificateRequest("cr-42",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-42", "uid-42")),
-							gen.AddCertificateRequestAnnotations(map[string]string{
-								"cert-manager.io/certificate-revision": "1",
-							}),
-						),
-					}, nil
-				})
-			}),
-			wantRequest: nil,
-		},
-		"should not return any certificaterequest when certificate has no revision yet": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateUID("uid-1"),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(nil, nil),
-			),
-			mockCertificateRequestsLister: expectNeverCalled(),
-			wantRequest:                   nil,
-		},
-		"should return the certificaterequest and secret and both found": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateUID("uid-1"),
-				gen.SetCertificateRevision(1),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}, nil),
-			),
-			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				callOnce := expectCalled(t, 1)
-				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					callOnce()
-					return []*cmapi.CertificateRequest{
-						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-							gen.AddCertificateRequestAnnotations(map[string]string{
-								"cert-manager.io/certificate-revision": "1",
-							}),
-						),
-					}, nil
-				})
-			}),
-			wantRequest: gen.CertificateRequest("cr-1",
-				gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-				gen.AddCertificateRequestAnnotations(map[string]string{
-					"cert-manager.io/certificate-revision": "1",
-				}),
-			),
-			wantSecret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}},
-		},
-		"should return error when multiple certificaterequests found": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateUID("uid-1"),
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateRevision(1),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(nil, nil),
-			),
-			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				shouldCallOnce := expectCalled(t, 1)
-				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					shouldCallOnce()
-					return []*cmapi.CertificateRequest{
-						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-							gen.AddCertificateRequestAnnotations(map[string]string{
-								"cert-manager.io/certificate-revision": "1",
-							}),
-						),
-						gen.CertificateRequest("cr-1",
-							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-							gen.AddCertificateRequestAnnotations(map[string]string{
-								"cert-manager.io/certificate-revision": "1",
-							}),
-						)}, nil
-				})
-			}),
-			wantErr: "multiple CertificateRequest resources exist for the current revision, not triggering new issuance until requests have been cleaned up",
-		},
-		"should return error when the list func returns an error": {
-			givenCert: gen.Certificate("cert-1",
-				gen.SetCertificateUID("uid-1"),
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateRevision(1),
-			),
-			mockSecretLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{}, nil),
-			),
-			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				shouldCallOnce := expectCalled(t, 1)
-				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					shouldCallOnce()
-					return nil, fmt.Errorf("error that is not a not_found error")
-				})
-			}),
-			wantErr: "error that is not a not_found error",
-		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			fakeClockStart, _ := time.Parse(time.RFC3339, "2021-01-02T15:04:05Z07:00")
+			log := logtest.TestLogger{T: t}
+			turnOnKlogIfVerboseTest(t)
+
+			test.builder.T = t
+			test.builder.Clock = fakeclock.NewFakeClock(fakeClockStart)
+
+			// In this test, we do not use Register(controller.Context).
+			// The Register(controller.Context) usually takes care of
+			// triggering the init() func in ./pkg/api/scheme.go. If we
+			// forget to have the init() func called, the apiVersion and
+			// kind fields on cert-manager objects are not automatically
+			// filled, which breaks the lister cache (i.e., the "indexer").
+			_ = cmscheme.Scheme
+
+			test.builder.Init()
+
+			// One weird behavior in client-go is that listers won't return
+			// anything if no event handler has been registered on this
+			// type's informer. This is because the "indexers" (i.e., the
+			// client-go cache) being lazily created. In our case, the
+			// indexer for the CR type only gets created if we register an
+			// event handler on the CR informer. And since we do not use
+			// the Register(controller.Context) in these lister-only unit
+			// tests, we "force" the creation of the indexer for the CR
+			// type by registering a fake handler.
+			test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {},
+			})
+
+			// Even though we are only relying on listers in this unit test
+			// and do not use the informer event handlers, we still need to
+			// start the informers since the listers would return nothing
+			// otherwise (see above comment).
+			test.builder.Start()
+
+			defer test.builder.CheckAndFinish()
+
+			// NOTE(mael): this unit test does not check whether or not the
+			// lister function has been called with the right namespace.
+			// Although the fake clientset does record the calls made
+			// ("actions"), it only records the calls made to the client
+			// itself and does not record actions for calls made to the
+			// listers. For example, the following will be properly
+			// recorded:
+			//
+			//    client.CertmanagerV1().CertificateRequests("ns").List
+			//
+			// On the contrary, the following example won't be recorded:
+			//
+			//    informer.Certmanager().V1().CertificateRequests().Lister().List
+			//
+			// Not being able to check the calls made to the lister causes
+			// to issues: (1) we cannot check that the lister was called
+			// using the right namespace, and (2) we cannot make sure that
+			// the lister was actually called (or not called).
+			//
+			// The problem with (1) is that when the lister returns an
+			// empty list, the empty list might be due to two different
+			// causes: either the lister is called with an unexpected
+			// namespace instead of the non-empty expected namespace, or
+			// the lister is called with the right namespace and the fake
+			// clientset behaved as expected. In order to avoid the
+			// inconsistancy, we do make sure to have the right input
+			// argument being called.
+			//
+			// The problem with (2) is that not knowing if the call was
+			// actually made or not prevents us from knowing whether the
+			// input argument (i.e., the namespace) is checked or not.
+
 			g := &Gatherer{
-				CertificateRequestLister: test.mockCertificateRequestsLister(t),
-				SecretLister:             test.mockSecretLister,
+				CertificateRequestLister: test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Lister(),
+				SecretLister:             test.builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 			}
 
-			got, gotErr := g.DataForCertificate(context.Background(), test.givenCert)
+			ctx := logf.NewContext(context.Background(), logf.WithResource(log, test.givenCert))
+			got, gotErr := g.DataForCertificate(ctx, test.givenCert)
 
 			if test.wantErr != "" {
-				assert.Error(t, gotErr)
-				assert.EqualError(t, gotErr, test.wantErr)
-				return
+				require.EqualError(t, gotErr, test.wantErr)
+			} else {
+				require.NoError(t, gotErr)
+
+				assert.Equal(t, test.givenCert, got.Certificate, "input cert should always be equal to returned cert")
+				assert.Equal(t, test.wantRequest, got.CurrentRevisionRequest)
+				assert.Equal(t, test.wantSecret, got.Secret)
 			}
-
-			require.NoError(t, gotErr)
-			assert.Equal(t, test.wantRequest, got.CurrentRevisionRequest)
-			assert.Equal(t, test.wantSecret, got.Secret)
-			assert.Equal(t, test.givenCert, got.Certificate, "input cert should always be equal to returned cert")
 		})
 	}
 }
 
-// Creates a mock CertificateRequestLister.
-//
-// We want to use a mock instead of a fake here: the mock makes sure that
-// (1) the lister.CertificateRequests(namespace) has been called with the
-// correct expected namespace and (2) lister.CertificateRequests(namespace)
-// has been called exactly once, which makes sure (1) was checked.
-func mockCertificateRequests(expectNamespace string, innerLister func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister) func(*testing.T) *listers.FakeCertificateRequestLister {
-	return func(t *testing.T) *listers.FakeCertificateRequestLister {
-		shouldCallOnce := expectCalled(t, 1)
-		return listers.
-			NewFakeCertificateRequestLister().
-			WithCertificateRequests(func(namespace string) cmlist.CertificateRequestNamespaceLister {
-				shouldCallOnce()
-				assert.Equal(t, expectNamespace, namespace)
-				return innerLister(t)
-			})
+// The logs are helpful for debugging client-go-related issues (informer
+// not starting...). This function passes the flag -v=4 to klog when the
+// tests are being run with -v. Otherwise, the default klog level is used.
+func turnOnKlogIfVerboseTest(t *testing.T) {
+	hasVerboseFlag := flag.Lookup("test.v").Value.String() == "true"
+	if !hasVerboseFlag {
+		return
 	}
-}
 
-// Checks that a block was run a given number of times.
-//
-// To use expectCalled, call the returned f function inside the block that
-// is meant to be called expectedCount times. A friendly t.Error will be
-// shown with the "file:line" where f was created to help the developer
-// figure out where this expectCalled came from.
-//
-// For example, the following will fail:
-//
-//   Test_never(t *testing.T) {
-//       expectNeverCalled := expectCalled(t, 0)
-//       defer expectNeverCalled()
-//   }
-//
-// The following will nondeterministically fail:
-//
-//   Test_once(t *testing.T) {
-//       expectOnce := expectCalled(t, 1)
-//       go func() {
-//           expectOnce()
-//       }
-//   }
-func expectCalled(t *testing.T, expectedCount int) (f func()) {
-	// The whereAmI is just meant to help the developer find where the
-	// "expected call" was supposed to happen. This is needed because the
-	// t.Error call is made from a t.Cleanup func. Since t.Cleanup's stack
-	// does not contain the location of where expectCalled() was called,
-	// the developer won't have any clue as to where this assertion failure
-	// really came from.
-	//
-	// We use the argument 2 (as opposed to 0) because we need to skip some
-	// useless stack frames. The developer does not care about the location
-	// of expectCalled() since it is "testing code"; the developer only
-	// cares about locations in their own test code.
-	whereAmI := whereAmI(2)
-
-	gotCount := uint32(0)
-	t.Cleanup(func() {
-		if uint32(expectedCount) != atomic.LoadUint32(&gotCount) {
-			t.Errorf("expectCalled: a function was expected to be called %d times but was called %d times at:\n\t%s", expectedCount, gotCount, whereAmI)
-		}
-	})
-	return func() {
-		atomic.AddUint32(&gotCount, 1)
-	}
-}
-
-func expectNeverCalled() func(t *testing.T) *listers.FakeCertificateRequestLister {
-	return func(t *testing.T) *listers.FakeCertificateRequestLister {
-		shouldNeverBeCalled := expectCalled(t, 0)
-		return listers.NewFakeCertificateRequestLister().WithCertificateRequests(func(_ string) cmlist.CertificateRequestNamespaceLister {
-			shouldNeverBeCalled()
-			return nil
-		})
-	}
-}
-
-// Useful to let the users know where a function was supposedly or not
-// supposed to be called. Returns a string that contains the locations of
-// the stack calls starting from the caller (unless some frames are
-// skipped) to the root of the stack.
-//
-//    "gatherer_test.go:93\n"                   ← parent
-//  + "\tgatherer_test.go:283\n"                ← grand-parent
-//  + "\tgatherer_test.go:300"                  ← grand-grand-parent
-//
-// The list stops as soon as the file "testing.go" is met. This is because
-// since we are not interested by the internals of the testing package.
-func whereAmI(skip int) string {
-	var fileAndLine []string
-	for i := skip; ; i++ {
-		_, file, line, ok := runtime.Caller(i)
-		file = filepath.Base(file)
-		if file == "testing.go" || !ok {
-			break
-		}
-		fileAndLine = append(fileAndLine, fmt.Sprintf("%s:%d", file, line))
-	}
-	return strings.Join(fileAndLine, "\n\t")
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
+	_ = klogFlags.Set("v", "4")
 }
