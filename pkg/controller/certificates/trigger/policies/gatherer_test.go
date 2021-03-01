@@ -92,9 +92,9 @@ func TestDataForCertificate(t *testing.T) {
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
 			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				f := expectCalled(t, 1)
+				shouldCallOnce := expectCalled(t, 1)
 				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					f()
+					shouldCallOnce()
 					return []*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-4",
 							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-4")),
@@ -131,9 +131,9 @@ func TestDataForCertificate(t *testing.T) {
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
 			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				f := expectCalled(t, 1)
+				shouldCallOnce := expectCalled(t, 1)
 				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					f()
+					shouldCallOnce()
 					return []*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-1",
 							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
@@ -174,9 +174,9 @@ func TestDataForCertificate(t *testing.T) {
 				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}, nil),
 			),
 			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				f := expectCalled(t, 1)
+				callOnce := expectCalled(t, 1)
 				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					f()
+					callOnce()
 					return []*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-1",
 							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
@@ -205,9 +205,9 @@ func TestDataForCertificate(t *testing.T) {
 				listers.SetFakeSecretNamespaceListerGet(nil, nil),
 			),
 			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				f := expectCalled(t, 1)
+				shouldCallOnce := expectCalled(t, 1)
 				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					f()
+					shouldCallOnce()
 					return []*cmapi.CertificateRequest{
 						gen.CertificateRequest("cr-1",
 							gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
@@ -235,9 +235,9 @@ func TestDataForCertificate(t *testing.T) {
 				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{}, nil),
 			),
 			mockCertificateRequestsLister: mockCertificateRequests("default-unit-test-ns", func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister {
-				f := expectCalled(t, 1)
+				shouldCallOnce := expectCalled(t, 1)
 				return listers.NewFakeCertificateRequestNamespaceLister().WithList(func(_ labels.Selector) ([]*cmapi.CertificateRequest, error) {
-					f()
+					shouldCallOnce()
 					return nil, fmt.Errorf("error that is not a not_found error")
 				})
 			}),
@@ -275,11 +275,11 @@ func TestDataForCertificate(t *testing.T) {
 // has been called exactly once, which makes sure (1) was checked.
 func mockCertificateRequests(expectNamespace string, innerLister func(t *testing.T) *listers.FakeCertificateRequestNamespaceLister) func(*testing.T) *listers.FakeCertificateRequestLister {
 	return func(t *testing.T) *listers.FakeCertificateRequestLister {
-		f := expectCalled(t, 1)
+		shouldCallOnce := expectCalled(t, 1)
 		return listers.
 			NewFakeCertificateRequestLister().
 			WithCertificateRequests(func(namespace string) cmlist.CertificateRequestNamespaceLister {
-				f()
+				shouldCallOnce()
 				assert.Equal(t, expectNamespace, namespace)
 				return innerLister(t)
 			})
@@ -293,12 +293,20 @@ func mockCertificateRequests(expectNamespace string, innerLister func(t *testing
 // shown with the "file:line" where f was created to help the developer
 // figure out where this expectCalled came from.
 //
-// Example, the following will pass:
+// For example, the following will fail:
 //
-//   f := expectCalled(t, 1)
-//   for {
-// 	     f()
-//       break
+//   Test_never(t *testing.T) {
+//       expectNeverCalled := expectCalled(t, 0)
+//       defer expectNeverCalled()
+//   }
+//
+// The following will nondeterministically fail:
+//
+//   Test_once(t *testing.T) {
+//       expectOnce := expectCalled(t, 1)
+//       go func() {
+//           expectOnce()
+//       }
 //   }
 func expectCalled(t *testing.T, expectedCount int) (f func()) {
 	// The whereAmI is just meant to help the developer find where the
@@ -327,15 +335,18 @@ func expectCalled(t *testing.T, expectedCount int) (f func()) {
 
 func expectNeverCalled() func(t *testing.T) *listers.FakeCertificateRequestLister {
 	return func(t *testing.T) *listers.FakeCertificateRequestLister {
-		f := expectCalled(t, 0)
+		shouldNeverBeCalled := expectCalled(t, 0)
 		return listers.NewFakeCertificateRequestLister().WithCertificateRequests(func(_ string) cmlist.CertificateRequestNamespaceLister {
-			f()
+			shouldNeverBeCalled()
 			return nil
 		})
 	}
 }
 
-// Returns a string of the form:
+// Useful to let the users know where a function was supposedly or not
+// supposed to be called. Returns a string that contains the locations of
+// the stack calls starting from the caller (unless some frames are
+// skipped) to the root of the stack.
 //
 //    "gatherer_test.go:93\n"                   ← parent
 //  + "\tgatherer_test.go:283\n"                ← grand-parent
