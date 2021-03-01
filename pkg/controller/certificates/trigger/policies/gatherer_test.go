@@ -40,7 +40,6 @@ import (
 
 func TestDataForCertificate(t *testing.T) {
 	tests := map[string]struct {
-		name             string
 		mockSecretLister *listers.FakeSecretLister
 		givenCert        *cmapi.Certificate
 
