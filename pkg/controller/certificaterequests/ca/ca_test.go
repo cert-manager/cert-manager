@@ -401,7 +401,6 @@ func runTest(t *testing.T, test testT) {
 }
 
 func TestCA_Sign(t *testing.T) {
-
 	rsaPair, err := pki.GenerateRSAPrivateKey(2048)
 	require.NoError(t, err)
 	rsaCSR := generateCSR(t, rsaPair)
@@ -531,16 +530,16 @@ func TestCA_Sign(t *testing.T) {
 
 			gotIssueResp, gotErr := c.Sign(context.Background(), test.givenCR, test.givenCAIssuer)
 			if test.wantErr != "" {
-				assert.EqualError(t, gotErr, test.wantErr)
-				return
+				require.EqualError(t, gotErr, test.wantErr)
+			} else {
+				require.NoError(t, gotErr)
+
+				require.NotNil(t, gotIssueResp)
+				gotCert, err := pki.DecodeX509CertificateBytes(gotIssueResp.Certificate)
+				require.NoError(t, err)
+
+				test.assertSignedCert(t, gotCert)
 			}
-			require.NoError(t, gotErr)
-			require.NotNil(t, gotIssueResp)
-
-			gotCert, err := pki.DecodeX509CertificateBytes(gotIssueResp.Certificate)
-			require.NoError(t, err)
-
-			test.assertSignedCert(t, gotCert)
 		})
 	}
 }
