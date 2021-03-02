@@ -33,7 +33,7 @@ func Test_fingerprintCert(t *testing.T) {
 		{
 			name: "Fingerprint a valid cert",
 			cert: MustParseCertificate(t, testCert),
-			want: "A9:4D:28:6F:1E:78:4A:72:C7:38:01:7C:31:CC:42:09:C7:46:9C:6A:26:C5:71:1A:F1:35:11:6E:BA:C3:BA:5A",
+			want: "FF:D0:A8:85:0B:A4:5A:E1:FC:55:40:E1:FC:07:09:F1:02:AE:B9:EB:28:C4:01:23:B9:4F:C8:FA:9B:EF:F4:C1",
 		},
 		{
 			name: "Fingerprint nil",

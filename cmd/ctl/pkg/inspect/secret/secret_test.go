@@ -28,23 +28,20 @@ import (
 )
 
 const testCert = `-----BEGIN CERTIFICATE-----
-MIIDCTCCAfGgAwIBAgIQZcMA0zmHAF59XPwyJ5isYTANBgkqhkiG9w0BAQsFADBF
-MQswCQYDVQQGEwJCRTENMAsGA1UEChMEY25jZjEVMBMGA1UECxMMY2VydC1tYW5h
-Z2VyMRAwDgYDVQQDEwd0ZXN0LWNhMB4XDTIwMTEyNjEwMTU1NVoXDTIxMDIyNDEw
-MTU1NVowRzELMAkGA1UEBhMCQkUxDTALBgNVBAoTBGNuY2YxFTATBgNVBAsTDGNl
-cnQtbWFuYWdlcjESMBAGA1UEAxMJVGVzdCBDZXJ0MFkwEwYHKoZIzj0CAQYIKoZI
-zj0DAQcDQgAEyyZL+5lqdsHGAu/LskCzH7hxuHNcDL94P7hejBDdWo8qfYgJCv2P
-yuRG2gCWeUbJdxQxwejjTDQGgsREZYU1YqOBvTCBujAOBgNVHQ8BAf8EBAMCBaAw
-IwYDVR0lBBwwGgYEVR0lAAYIKwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQC
-MAAwHwYDVR0jBBgwFoAUWfIOb7hiqgkyiKGsljHW4kVJeEMwVAYDVR0RBE0wS4IR
-Y2VydC1tYW5hZ2VyLnRlc3SBFHRlc3RAY2VydC1tYW5hZ2VyLmlvhwQKAAABhhpz
-cGlmZmU6Ly9jZXJ0LW1hbmFnZXIudGVzdDANBgkqhkiG9w0BAQsFAAOCAQEAscxM
-8Kkaq2KePyiMyboyYLnaWdS+V5XIB15gsseXN2wcuWyX74WsKRfuwD2KrDenaaOc
-ziMelxT3HlEOT/efmZlwP2CvTYvOKNEoLnH4RnehpVSPcrkP4mVCJ3Rnk1g5XZO3
-OJ8wRLEjZxDOTBllEE6LH4BTNJZX8Dt1wUwaJdMwZvYOWM0570Pv1O59qRggV/we
-EpFEF9AeUM7wopJCgwNgN8Eh28RVVjL78ZlTEw3pQrPqWUnz9uyx7guumP7D+Y0D
-smSH8yw3PNftw5kD2ORK3EnkRtZcZIl0O/C6RiNLxBT/GR1opQpQGWlPBjtVOZlq
-JuuLwYEHo8JSNLGsUQ==
+MIICljCCAhugAwIBAgIUNAQr779ga/BNXyCpK7ddFbjAK98wCgYIKoZIzj0EAwMw
+aTELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNh
+biBGcmFuY2lzY28xHzAdBgNVBAoTFkludGVybmV0IFdpZGdldHMsIEluYy4xDDAK
+BgNVBAsTA1dXVzAeFw0yMTAyMjYxMDM1MDBaFw0yMjAyMjYxMDM1MDBaMDMxCzAJ
+BgNVBAYTAkdCMQ0wCwYDVQQKEwRjbmNmMRUwEwYDVQQLEwxjZXJ0LW1hbmFnZXIw
+WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATd5gWH2rkzWBGrr1jCR6JDB0dZOizZ
+jCt2gnzNfzZmEg3rqxPvIakfT1lsjL2HrQyBRMQGGZhj7RkN7/VUM+VUo4HWMIHT
+MA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIw
+DAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUCUEeUFyT7U3e6zP4q4VYEr2x0KcwHwYD
+VR0jBBgwFoAUFkKAaJ18Vg9xFx3K7d5b7HjoSSMwVAYDVR0RBE0wS4IRY2VydC1t
+YW5hZ2VyLnRlc3SBFHRlc3RAY2VydC1tYW5hZ2VyLmlvhwQKAAABhhpzcGlmZmU6
+Ly9jZXJ0LW1hbmFnZXIudGVzdDAKBggqhkjOPQQDAwNpADBmAjEA3Fv1aP+dBtBh
++DThW0QQO/Xl0CHQRKnJmJ8JjnleaMYFVdHf7dcf0ZeyOC26aUkdAjEA/fvxvhcz
+Dtj+gY2rewoeJv5Pslli+SEObUslRaVtUMGxwUbmPU2fKuZHWBfe2FfA
 -----END CERTIFICATE-----
 `
 
@@ -88,10 +85,10 @@ func Test_describeCertificate(t *testing.T) {
 			name: "Describe test certificate",
 			cert: MustParseCertificate(t, testCert),
 			want: `Certificate:
-	Signing Algorithm:	SHA256-RSA
+	Signing Algorithm:	ECDSA-SHA384
 	Public Key Algorithm: 	ECDSA
-	Serial Number:	135264542196636937349115151139823201377
-	Fingerprints: 	A9:4D:28:6F:1E:78:4A:72:C7:38:01:7C:31:CC:42:09:C7:46:9C:6A:26:C5:71:1A:F1:35:11:6E:BA:C3:BA:5A
+	Serial Number:	296960550473797734497458414367422077039506631647
+	Fingerprints: 	FF:D0:A8:85:0B:A4:5A:E1:FC:55:40:E1:FC:07:09:F1:02:AE:B9:EB:28:C4:01:23:B9:4F:C8:FA:9B:EF:F4:C1
 	Is a CA certificate: false
 	CRL:	<none>
 	OCSP:	<none>`,
@@ -150,10 +147,10 @@ func Test_describeIssuedBy(t *testing.T) {
 			name: "Describe test certificate",
 			cert: MustParseCertificate(t, testCert),
 			want: `Issued By:
-	Common Name:	test-ca
-	Organization:	test-ca
-	OrganizationalUnit:	cncf
-	Country:	BE`,
+	Common Name:	<none>
+	Organization:	<none>
+	OrganizationalUnit:	Internet Widgets, Inc.
+	Country:	US`,
 		},
 	}
 	for _, tt := range tests {
@@ -175,10 +172,10 @@ func Test_describeIssuedFor(t *testing.T) {
 			name: "Describe test cert",
 			cert: MustParseCertificate(t, testCert),
 			want: `Issued For:
-	Common Name:	Test Cert
-	Organization:	Test Cert
+	Common Name:	<none>
+	Organization:	<none>
 	OrganizationalUnit:	cncf
-	Country:	BE`,
+	Country:	GB`,
 		},
 	}
 	for _, tt := range tests {
@@ -278,7 +275,6 @@ func Test_describeValidFor(t *testing.T) {
 	Usages: 
 		- digital signature
 		- key encipherment
-		- any
 		- server auth
 		- client auth`,
 		},
@@ -302,8 +298,8 @@ func Test_describeValidityPeriod(t *testing.T) {
 			name: "Describe test certificate",
 			cert: MustParseCertificate(t, testCert),
 			want: `Validity period:
-	Not Before: Thu, 26 Nov 2020 10:15:55 UTC
-	Not After: Wed, 24 Feb 2021 10:15:55 UTC`,
+	Not Before: Fri, 26 Feb 2021 10:35:00 UTC
+	Not After: Sat, 26 Feb 2022 10:35:00 UTC`,
 		},
 	}
 	for _, tt := range tests {
