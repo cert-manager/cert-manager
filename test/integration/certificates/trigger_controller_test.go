@@ -124,8 +124,9 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	defaultRenewBefore := time.Hour * 24
 
 	fakeClock := &fakeclock.FakeClock{}
-	// only use the 'current certificate nearing expiry' policy chain during the test
-	// as we want to test the very specific cases of triggering/not triggering depending on whether a renewal is required
+	// Only use the 'current certificate nearing expiry' policy chain during the
+	// test as we want to test the very specific cases of triggering/not
+	// triggering depending on whether a renewal is required.
 	policyChain := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock, defaultRenewBefore)}
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
@@ -157,15 +158,15 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		},
 	}
 
-	// Create a private key for x509 cert
+	// Create a private key for X.509 cert
 	sk, err := utilpki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
 	}
 	skBytes := utilpki.EncodePKCS1PrivateKey(sk)
-	// Create an x509 cert
+	// Create an X.509 cert
 	x509CertBytes := selfSignCertificateWithNotBeforeAfter(t, skBytes, cert, notBefore.Time, notAfter.Time)
-	// Create a Secret with the x509 cert
+	// Create a Secret with the X.509 cert
 	_, err = kubeClient.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -200,21 +201,24 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// 1. Test that Certificate's Issuing condition is not set to True when the x509 cert is not approaching expiry
+	// 1. Test that the Certificate's Issuing condition is not set to True when the
+	// X.509 cert is not approaching expiry.
 	// Wait for 2s, polling every 200ms to ensure that the controller does not set
 	// the condition.
 	t.Log("Ensuring Certificate does not have Issuing condition for 2s...")
 	ensureCertificateDoesNotHaveIssuingCondition(ctx, t, cmCl, namespace, certName)
 
-	// 2. Test that a Certificate does get the Issuing status condition set to True when the x509 cert is nearing expiry
+	// 2. Test that a Certificate does get the Issuing status condition set to
+	// True when the X.509 cert is nearing expiry.
 	t.Log("Advancing the clock forward to renewal time")
-	// advance the clock to a millisecond after renewal time
+	// Advance the clock to a millisecond after renewal time.
 	// fakeclock implementation uses .After when checking whether to trigger timers.
 	// renewalTime = notAfter - renewBefore
 	renewalTime := notAfter.Add(renewBefore.Duration * -1)
 	fakeClock.SetTime(renewalTime.Add(time.Millisecond * 2))
 
-	// Certificate's status.RenewalTime does not determine renewal, but we need to update some field to trigger a reconcile
+	// Certificate's status.RenewalTime does not determine renewal, but we need to
+	// update some field to trigger a reconcile.
 	someRenewalTime := metav1.NewTime(now)
 	cert.Status.RenewalTime = &someRenewalTime
 	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
