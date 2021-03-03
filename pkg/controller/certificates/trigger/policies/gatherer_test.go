@@ -66,7 +66,6 @@ func TestDataForCertificate(t *testing.T) {
 						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-9")),
 					),
 				},
-				ExpectedEvents: []string{},
 			},
 			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
 				gen.SetCertificateUID("uid-7"),
@@ -146,7 +145,7 @@ func TestDataForCertificate(t *testing.T) {
 			// namespace instead of the non-empty expected namespace, or
 			// the lister is called with the right namespace and the fake
 			// clientset behaved as expected. In order to avoid the
-			// inconsistancy, we do make sure to have the right input
+			// inconsistency, we do make sure to have the right input
 			// argument being called.
 			//
 			// The problem with (2) is that not knowing if the call was

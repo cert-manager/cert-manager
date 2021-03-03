@@ -53,11 +53,11 @@ type Gatherer struct {
 //
 // We need the "current" certificate request because this CR contains the
 // "source of truth" of the current certificate, and getting the "current"
-// CR allows is to check whether the current certificate still matches the
+// CR allows us to check whether the current certificate still matches the
 // already-issued certificate request.
 //
 // An error is returned when two certificate requests are found for the
-// couple (certificate's revision, certificate's uid). This function does
+// pair (certificate's revision, certificate's uid). This function does
 // not return any apierrors.NewNotFound errors for either the secret or the
 // certificate request. Instead, if either the secret or the certificate
 // request is not found, the returned secret (respectively, certificate
