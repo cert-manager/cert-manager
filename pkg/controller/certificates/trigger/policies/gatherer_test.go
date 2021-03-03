@@ -26,7 +26,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -46,6 +48,22 @@ func TestDataForCertificate(t *testing.T) {
 		wantSecret  *corev1.Secret
 		wantErr     string
 	}{
+		"the returned secret should stay nil when it is not found": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
+				gen.SetCertificateSecretName("secret-1"),
+				gen.SetCertificateUID("uid-1"),
+			),
+			builder:    &testpkg.Builder{},
+			wantSecret: nil,
+		},
+		"the returned certificaterequest should stay nil when the list function returns nothing": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
+				gen.SetCertificateSecretName("secret-1"),
+				gen.SetCertificateUID("uid-1"),
+			),
+			builder:     &testpkg.Builder{},
+			wantRequest: nil,
+		},
 		"should find the certificaterequest that matches revision and owner": {
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{},
@@ -67,7 +85,7 @@ func TestDataForCertificate(t *testing.T) {
 					),
 				},
 			},
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"), gen.SetCertificateNamespace("default-unit-test-ns"),
 				gen.SetCertificateUID("uid-7"),
 				gen.SetCertificateSecretName("secret-1"),
 				gen.SetCertificateRevision(7),
@@ -78,6 +96,93 @@ func TestDataForCertificate(t *testing.T) {
 					"cert-manager.io/certificate-revision": "7",
 				}),
 			),
+		},
+		"should return a nil certificaterequest when no match of revision or owner": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
+				gen.SetCertificateUID("uid-1"),
+				gen.SetCertificateSecretName("secret-1"),
+				gen.SetCertificateRevision(1),
+			),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateRequest("cr-1", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
+					),
+					gen.CertificateRequest("cr-2", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							"cert-manager.io/certificate-revision": "42",
+						}),
+					),
+					gen.CertificateRequest("cr-42", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-42", "uid-42")),
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							"cert-manager.io/certificate-revision": "1",
+						}),
+					),
+				},
+			},
+			wantRequest: nil,
+		},
+		"should not return any certificaterequest when certificate has no revision yet": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
+				gen.SetCertificateUID("uid-1"),
+			),
+			builder:     &testpkg.Builder{},
+			wantRequest: nil,
+		},
+		"should return the certificaterequest and secret when both found": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
+				gen.SetCertificateSecretName("secret-1"),
+				gen.SetCertificateUID("uid-1"),
+				gen.SetCertificateRevision(1),
+			),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1", Namespace: "default-unit-test-ns"}},
+				},
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateRequest("cr-1",
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							"cert-manager.io/certificate-revision": "1",
+						}),
+					),
+				},
+			},
+			wantRequest: gen.CertificateRequest("cr-1",
+				gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
+				gen.AddCertificateRequestAnnotations(map[string]string{
+					"cert-manager.io/certificate-revision": "1",
+				}),
+			),
+			wantSecret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1", Namespace: "default-unit-test-ns"}},
+		},
+		"should return error when multiple certificaterequests found": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
+				gen.SetCertificateUID("uid-1"),
+				gen.SetCertificateSecretName("secret-1"),
+				gen.SetCertificateRevision(1),
+			),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}},
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateRequest("cr-1",
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							"cert-manager.io/certificate-revision": "1",
+						}),
+					),
+					gen.CertificateRequest("cr-2",
+						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							"cert-manager.io/certificate-revision": "1",
+						}),
+					),
+				},
+			},
+			wantErr: "multiple CertificateRequest resources exist for the current revision, not triggering new issuance until requests have been cleaned up",
 		},
 	}
 	for name, test := range tests {
@@ -96,6 +201,7 @@ func TestDataForCertificate(t *testing.T) {
 			// kind fields on cert-manager objects are not automatically
 			// filled, which breaks the lister cache (i.e., the "indexer").
 			_ = cmscheme.Scheme
+			_ = kscheme.Scheme
 
 			test.builder.Init()
 
@@ -108,9 +214,9 @@ func TestDataForCertificate(t *testing.T) {
 			// the Register(controller.Context) in these lister-only unit
 			// tests, we "force" the creation of the indexer for the CR
 			// type by registering a fake handler.
-			test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
-			})
+			noop := cache.ResourceEventHandlerFuncs{AddFunc: func(obj interface{}) {}}
+			test.builder.SharedInformerFactory.Certmanager().V1().CertificateRequests().Informer().AddEventHandler(noop)
+			test.builder.KubeSharedInformerFactory.Core().V1().Secrets().Informer().AddEventHandler(noop)
 
 			// Even though we are only relying on listers in this unit test
 			// and do not use the informer event handlers, we still need to
