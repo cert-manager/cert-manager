@@ -26,7 +26,7 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	testutil "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
+	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
 )
 
 // Runs a full set of tests against the 'policy chain' once it is composed
@@ -36,7 +36,7 @@ import (
 // modifying existing code.
 func TestDefaultPolicyChain(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
-	staticFixedPrivateKey := testutil.MustCreatePEMPrivateKey(t)
+	staticFixedPrivateKey := internaltest.MustCreatePEMPrivateKey(t)
 	tests := map[string]struct {
 		// policy inputs
 		certificate *cmapi.Certificate
@@ -94,7 +94,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: testutil.MustCreatePEMPrivateKey(t),
+					corev1.TLSPrivateKeyKey: internaltest.MustCreatePEMPrivateKey(t),
 					corev1.TLSCertKey:       []byte("test"),
 				},
 			},
@@ -107,7 +107,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: []byte("invalid"),
-					corev1.TLSCertKey: testutil.MustCreateCert(t, testutil.MustCreatePEMPrivateKey(t),
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -120,8 +120,8 @@ func TestDefaultPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: testutil.MustCreatePEMPrivateKey(t),
-					corev1.TLSCertKey: testutil.MustCreateCert(t, testutil.MustCreatePEMPrivateKey(t),
+					corev1.TLSPrivateKeyKey: internaltest.MustCreatePEMPrivateKey(t),
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -145,7 +145,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -171,7 +171,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -199,7 +199,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -229,7 +229,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						// It does not matter what certificate data is stored in the Secret
 						// as the CertificateRequest will be used to determine whether a
 						// re-issuance is required.
@@ -243,7 +243,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
 				},
-				Request: testutil.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 					CommonName: "old.example.com",
 				}}),
 			}},
@@ -270,7 +270,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						// It does not matter what certificate data is stored in the Secret
 						// as the CertificateRequest will be used to determine whether a
 						// re-issuance is required.
@@ -284,7 +284,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
 				},
-				Request: testutil.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 				}}),
 			}},
@@ -308,7 +308,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "old.example.com"}},
 					),
 				},
@@ -336,7 +336,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -367,7 +367,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 1 minute time
@@ -404,7 +404,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 1 minute time
@@ -441,7 +441,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: testutil.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 5 minutes time

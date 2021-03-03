@@ -58,14 +58,14 @@ type controller struct {
 	secretLister             corelisters.SecretLister
 	client                   cmclient.Interface
 	gatherer                 *policies.Gatherer
-	// readyCondition builds Ready condition of a Certificate based on policy evaluation
-	readyCondition readyConditionFunc
-	// renewalTime calculates renewal time of a certificate
-	renewalTime certificates.RenewalTimeFunc
+	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation
+	policyEvaluator policyEvaluatorFunc
+	// renewalTimeCalculator calculates renewal time of a certificate
+	renewalTimeCalculator certificates.RenewalTimeFunc
 }
 
 // readyConditionFunc is custom function type that builds certificate's Ready condition
-type readyConditionFunc func(policies.Chain, policies.Input) cmapi.CertificateCondition
+type policyEvaluatorFunc func(policies.Chain, policies.Input) cmapi.CertificateCondition
 
 func NewController(
 	log logr.Logger,
@@ -73,8 +73,8 @@ func NewController(
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	chain policies.Chain,
-	renewalTime certificates.RenewalTimeFunc,
-	readyCondition readyConditionFunc,
+	renewalTimeCalculator certificates.RenewalTimeFunc,
+	policyEvaluator policyEvaluatorFunc,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -115,8 +115,8 @@ func NewController(
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
 		},
-		readyCondition: readyCondition,
-		renewalTime:    renewalTime,
+		policyEvaluator:       policyEvaluator,
+		renewalTimeCalculator: renewalTimeCalculator,
 	}, queue, mustSync
 }
 
@@ -144,7 +144,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	condition := c.readyCondition(c.policyChain, input)
+	condition := c.policyEvaluator(c.policyChain, input)
 
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, condition.Type, condition.Status, condition.Reason, condition.Message)
@@ -161,7 +161,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
-		renewalTime := c.renewalTime(x509cert.NotBefore, x509cert.NotAfter, crt)
+		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt)
 
 		//update Certificate's Status
 		crt.Status.NotBefore = &notBefore
@@ -182,11 +182,8 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-// forces compiler to check that readyCondition is readyConditionFunc type
-var _ readyConditionFunc = readyCondition
-
-// readyCondition builds Certificate's Ready condition using the result of policy chain evaluation
-func readyCondition(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
+// policyEvaluator builds Certificate's Ready condition using the result of policy chain evaluation
+func policyEvaluator(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
 	reason, message, violationsFound := chain.Evaluate(input)
 	if !violationsFound {
 		return cmapi.CertificateCondition{
@@ -232,7 +229,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		NewReadinessPolicyChain(ctx.Clock),
 		certificates.RenewalTimeWrapper(cmapi.DefaultRenewBefore),
-		readyCondition,
+		policyEvaluator,
 	)
 	c.controller = ctrl
 

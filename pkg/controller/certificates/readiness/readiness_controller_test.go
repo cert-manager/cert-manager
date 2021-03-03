@@ -21,28 +21,29 @@ import (
 	"testing"
 	"time"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	internaltestutil "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates"
+	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
+	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-// readyConditionBuilder returns a fake readyConditionFunc for ReadinessController
-func readyConditionBuilder(c cmapi.CertificateCondition) readyConditionFunc {
+// policyEvaluatorBuilder returns a fake readyConditionFunc for ReadinessController.
+func policyEvaluatorBuilder(c cmapi.CertificateCondition) policyEvaluatorFunc {
 	return func(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
 		return c
 	}
 }
 
-// renewalTimeBuilder returns a fake renewalTimeFunc for ReadinessController
+// renewalTimeBuilder returns a fake renewalTimeFunc for ReadinessController.
 func renewalTimeBuilder(rt *metav1.Time) certificates.RenewalTimeFunc {
 	return func(notBefore, notAfter time.Time, cert *cmapi.Certificate) *metav1.Time {
 		return rt
@@ -53,8 +54,8 @@ func TestProcessItem(t *testing.T) {
 	// now time is the current UTC time at the start of the test
 	now := time.Now().UTC()
 	metaNow := metav1.NewTime(now)
-	// private key to be used to generate x509 certificate
-	privKey := internaltestutil.MustCreatePEMPrivateKey(t)
+	// private key to be used to generate X509 certificate
+	privKey := internaltest.MustCreatePEMPrivateKey(t)
 	cert := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 		Spec: cmapi.CertificateSpec{
@@ -72,11 +73,11 @@ func TestProcessItem(t *testing.T) {
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
 		// if not set, the 'namespace/name' of the 'Certificate' field will be used.
-		// if neither is set, the key will be ""
+		// if neither is set, the key will be "".
 		key string
 
-		// whether cert should be loaded into the fake clientset
-		certShouldExist bool
+		// cert to be loaded to fake clientset
+		cert *cmapi.Certificate
 
 		// whether we expect an update action against the Certificate
 		certShouldUpdate bool
@@ -85,15 +86,15 @@ func TestProcessItem(t *testing.T) {
 		condition cmapi.CertificateCondition
 
 		// whether secret should be loaded into the fake clientset
-		// if notAfter, notBefore and renewalTime are set, an x509 cert will also be built and
+		// if notAfter, notBefore and renewalTime are set, an X509 cert will also be built and
 		// added as tls.crt value to the secret data
 		secretShouldExist bool
 
-		// notAfter will be used to build the x509 cert and
+		// notAfter will be used to build the X509 cert and
 		// as the updated Certificate's status.notAfter
 		notAfter *metav1.Time
 
-		// notBefore will be used to build the x509 cert and
+		// notBefore will be used to build the X509 cert and
 		// as the updated Certificate's status.notBefore
 		notBefore *metav1.Time
 
@@ -109,28 +110,30 @@ func TestProcessItem(t *testing.T) {
 		"do nothing if a key references a Certificate that does not exist": {
 			key: "namespace/name",
 		},
-		"update status for a Certificate that is evaluated as Ready and whose spec.secretName secret contains a valid x509 cert": {
+		"update status for a Certificate that is evaluated as Ready and whose spec.secretName secret contains a valid X509 cert": {
 			condition: cmapi.CertificateCondition{
-				Type:    cmapi.CertificateConditionReady,
-				Status:  cmmeta.ConditionTrue,
-				Reason:  ReadyReason,
-				Message: "ready message",
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "ready message",
+				LastTransitionTime: &metaNow,
 			},
-			certShouldExist:   true,
+			cert:              gen.CertificateFrom(cert),
 			certShouldUpdate:  true,
 			secretShouldExist: true,
 			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
 			notBefore:         func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Truncate(time.Second))),
 			renewalTime:       func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour))),
 		},
-		"update status for a Certificate that is evaluated as not Ready and whose spec.secretName secret contains a valid x509 cert": {
+		"update status for a Certificate that is evaluated as not Ready and whose spec.secretName secret contains a valid X509 cert": {
 			condition: cmapi.CertificateCondition{
-				Type:    cmapi.CertificateConditionReady,
-				Status:  cmmeta.ConditionFalse,
-				Reason:  "some reason",
-				Message: "some message",
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             "some reason",
+				Message:            "some message",
+				LastTransitionTime: &metaNow,
 			},
-			certShouldExist:   true,
+			cert:              gen.CertificateFrom(cert),
 			certShouldUpdate:  true,
 			secretShouldExist: true,
 			notAfter:          func(m metav1.Time) *metav1.Time { return &m }(metav1.NewTime(now.Add(time.Hour * 2).Truncate(time.Second))),
@@ -139,80 +142,151 @@ func TestProcessItem(t *testing.T) {
 		},
 		"update status for a Certificate whose spec.secretName secret does not exist": {
 			condition: cmapi.CertificateCondition{
-				Type:    cmapi.CertificateConditionReady,
-				Status:  cmmeta.ConditionFalse,
-				Reason:  "some reason",
-				Message: "some message",
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             "some reason",
+				Message:            "some message",
+				LastTransitionTime: &metaNow,
 			},
-			certShouldExist: true,
+			cert: gen.CertificateFrom(cert),
 
 			certShouldUpdate: true,
 		},
 		"update status for a Certificate whose spec.secretName secret does not contain a TLS certificate": {
 			condition: cmapi.CertificateCondition{
-				Type:    cmapi.CertificateConditionReady,
-				Status:  cmmeta.ConditionFalse,
-				Reason:  "some reason",
-				Message: "some message",
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             "some reason",
+				Message:            "some message",
+				LastTransitionTime: &metaNow,
 			},
-			certShouldExist:   true,
+			cert:              gen.CertificateFrom(cert),
 			certShouldUpdate:  true,
 			secretShouldExist: true,
+		},
+		"update status for a Certificate that currently has Ready condition false, but policy evaluates to True": {
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "ready message",
+				LastTransitionTime: &metaNow,
+			},
+			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
+				cmapi.CertificateCondition{
+					Type:    cmapi.CertificateConditionReady,
+					Status:  cmmeta.ConditionFalse,
+					Reason:  "some reason",
+					Message: "some message",
+				})),
+			certShouldUpdate:  true,
+			secretShouldExist: true,
+		},
+		"update status for a Certificate that already has some other condition": {
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             "some reason",
+				Message:            "some message",
+				LastTransitionTime: &metaNow,
+			},
+			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
+				cmapi.CertificateCondition{
+					Type:    cmapi.CertificateConditionIssuing,
+					Status:  cmmeta.ConditionTrue,
+					Reason:  "some reason",
+					Message: "some message",
+				})),
+			certShouldUpdate: true,
+		},
+		"update status for a Certificate that has Ready condition set to true, but policy evaluator fails": {
+			certShouldUpdate: true,
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionFalse,
+				Reason:             "some reason",
+				Message:            "some message",
+				LastTransitionTime: &metaNow,
+			},
+			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
+				cmapi.CertificateCondition{
+					Type:    cmapi.CertificateConditionReady,
+					Status:  cmmeta.ConditionTrue,
+					Reason:  ReadyReason,
+					Message: "ready message",
+				})),
+		},
+		// TODO: this is the current behaviour, but we might want to actually not do unnecessary updates https://github.com/jetstack/cert-manager/issues/3663
+		"update status for a Certificate that has a Ready conditon and the policy evaluates to True- should remain True": {
+			condition: cmapi.CertificateCondition{
+				Type:               cmapi.CertificateConditionReady,
+				Status:             cmmeta.ConditionTrue,
+				Reason:             ReadyReason,
+				Message:            "ready message",
+				LastTransitionTime: &metaNow,
+			},
+			cert: gen.CertificateFrom(cert, gen.SetCertificateStatusCondition(
+				cmapi.CertificateCondition{
+					Type:               cmapi.CertificateConditionReady,
+					Status:             cmmeta.ConditionTrue,
+					Reason:             ReadyReason,
+					Message:            "ready message",
+					LastTransitionTime: &metaNow,
+				})),
+			secretShouldExist: true,
+			certShouldUpdate:  true,
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			// Create and initialise a new unit test builder
+			// Create and initialise a new unit test builder.
 			builder := &testpkg.Builder{
 				T: t,
-				// fix the clock to be able to set lastTransitionTime on Certificate's Ready condition
+				// Fix the clock to be able to set lastTransitionTime on Certificate's Ready condition.
 				Clock: fakeclock.NewFakeClock(now),
 			}
-			if test.certShouldExist {
-				// ensures cert is loaded into the builder's fake clientset
-				builder.CertManagerObjects = append(builder.CertManagerObjects,
-					gen.CertificateFrom(cert))
+			if test.cert != nil {
+				// Ensures cert is loaded into the builder's fake clientset.
+				builder.CertManagerObjects = append(builder.CertManagerObjects, test.cert)
 			}
 
 			if test.secretShouldExist {
 				mods := make([]gen.SecretModifier, 0)
-				// if the test scenario needs a secret with a valid x509 cert
+				// If the test scenario needs a secret with a valid X509 cert.
 				if test.notBefore != nil && test.notAfter != nil {
-					x509Bytes := internaltestutil.MustCreateCertWithNotBeforeAfter(t, privKey, cert, test.notBefore.Time, test.notAfter.Time)
+					x509Bytes := internaltest.MustCreateCertWithNotBeforeAfter(t, privKey, cert, test.notBefore.Time, test.notAfter.Time)
 					mods = append(mods,
 						gen.SetSecretData(map[string][]byte{
 							"tls.crt": x509Bytes,
 						}))
 				}
-				// ensures secret is loaded into the builder's fake clientset
+				// Ensure secret is loaded into the builder's fake clientset.
 				builder.KubeObjects = append(builder.KubeObjects,
 					gen.SecretFrom(secret, mods...))
 			}
 
 			builder.Init()
 
-			// Register informers used by the controller using the registration wrapper
+			// Register informers used by the controller using the registration wrapper.
 			w := &controllerWrapper{}
 			_, _, err := w.Register(builder.Context)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// Override controller's readyCondition func with a fake that returns test.condition
-			w.controller.readyCondition = readyConditionBuilder(test.condition)
+			// Override controller's readyCondition func with a fake that returns test.condition.
+			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
 
-			// Override controller's renewalTime func with a fake that returns test.renewalTime
-			w.controller.renewalTime = renewalTimeBuilder(test.renewalTime)
+			// Override controller's renewalTime func with a fake that returns test.renewalTime.
+			w.controller.renewalTimeCalculator = renewalTimeBuilder(test.renewalTime)
 
-			// If Certificate's status should be updated
-			// build the expected Certificate and use it to  set the expected update action on builder
+			// If Certificate's status should be updated,
+			// build the expected Certificate and use it to set the expected update action on builder.
 			if test.certShouldUpdate {
-				expectedCondition := test.condition
-				expectedCondition.LastTransitionTime = &metaNow
-				c := gen.CertificateFrom(cert,
-					gen.SetCertificateStatusCondition(expectedCondition))
+				c := gen.CertificateFrom(test.cert,
+					gen.SetCertificateStatusCondition(test.condition))
 
-				// gen package functions don't accept pointers- we need to test setting these values to nil in some scenarios
+				// gen package functions don't accept pointers- we need to test setting these values to nil in some scenarios.
 				c.Status.NotAfter = test.notAfter
 				c.Status.NotBefore = test.notBefore
 				c.Status.RenewalTime = test.renewalTime
@@ -225,7 +299,7 @@ func TestProcessItem(t *testing.T) {
 						c)))
 			}
 
-			// Start the informers and begin processing updates
+			// Start the informers and begin processing updates.
 			builder.Start()
 			defer builder.Stop()
 
@@ -253,10 +327,10 @@ func TestProcessItem(t *testing.T) {
 	}
 }
 
-// Test the evaluation of the ordered policy chain as a whole
+// Test the evaluation of the ordered policy chain as a whole.
 func TestNewReadinessPolicyChain(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
-	privKey := internaltestutil.MustCreatePEMPrivateKey(t)
+	privKey := internaltest.MustCreatePEMPrivateKey(t)
 	tests := map[string]struct {
 		// policy inputs
 		cert   *cmapi.Certificate
@@ -322,7 +396,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				map[string][]byte{
 					corev1.TLSPrivateKeyKey: privKey,
 					// generate a different private key
-					corev1.TLSCertKey: internaltestutil.MustCreateCert(t, internaltestutil.MustCreatePEMPrivateKey(t),
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
 						gen.Certificate("something else", gen.SetCertificateCommonName("example.com"))),
 				})),
 			reason:         policies.InvalidKeyPair,
@@ -345,7 +419,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				gen.SetSecretData(
 					map[string][]byte{
 						corev1.TLSPrivateKeyKey: privKey,
-						corev1.TLSCertKey: internaltestutil.MustCreateCert(t, privKey,
+						corev1.TLSCertKey: internaltest.MustCreateCert(t, privKey,
 							gen.Certificate("something else", gen.SetCertificateCommonName("old.example.com"))),
 					},
 				),
@@ -359,7 +433,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					},
 				),
 				gen.SetCertificateRequestCSR(
-					internaltestutil.MustGenerateCSRImpl(t, privKey,
+					internaltest.MustGenerateCSRImpl(t, privKey,
 						gen.Certificate("somethingelse",
 							gen.SetCertificateCommonName("old.example.com"))))),
 			reason:         policies.RequestChanged,
@@ -383,7 +457,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				gen.SetSecretData(
 					map[string][]byte{
 						corev1.TLSPrivateKeyKey: privKey,
-						corev1.TLSCertKey: internaltestutil.MustCreateCertWithNotBeforeAfter(t, privKey,
+						corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, privKey,
 							gen.Certificate("something", gen.SetCertificateCommonName("new.example.com")),
 							clock.Now().Add(-3*time.Hour), clock.Now().Add(-1*time.Hour),
 						),
@@ -417,7 +491,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				gen.SetSecretData(
 					map[string][]byte{
 						corev1.TLSPrivateKeyKey: privKey,
-						corev1.TLSCertKey: internaltestutil.MustCreateCertWithNotBeforeAfter(t, privKey,
+						corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, privKey,
 							&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "new.example.com"}},
 							clock.Now(), clock.Now().Add(time.Hour*3),
 						),
@@ -431,7 +505,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 						Group: "group.example.com",
 					},
 				),
-				gen.SetCertificateRequestCSR(internaltestutil.MustGenerateCSRImpl(t, privKey,
+				gen.SetCertificateRequestCSR(internaltest.MustGenerateCSRImpl(t, privKey,
 					gen.Certificate("something",
 						gen.SetCertificateCommonName("new.example.com")))),
 			),

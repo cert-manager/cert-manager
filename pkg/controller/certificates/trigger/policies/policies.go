@@ -198,7 +198,10 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 // issued certificate has actually expired rather than just nearing expiry.
 func CurrentCertificateHasExpired(c clock.Clock) Func {
 	return func(input Input) (string, string, bool) {
-		certData := input.Secret.Data[corev1.TLSCertKey]
+		certData, ok := input.Secret.Data[corev1.TLSCertKey]
+		if !ok {
+			return MissingData, "Missing Certificate data", true
+		}
 		// TODO: replace this with a generic decoder that can handle different
 		//  formats such as JKS, P12 etc (i.e. add proper support for keystores)
 		cert, err := pki.DecodeX509CertificateBytes(certData)
