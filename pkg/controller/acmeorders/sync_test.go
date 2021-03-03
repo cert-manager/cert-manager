@@ -66,7 +66,7 @@ func TestSyncHappyPath(t *testing.T) {
 		},
 	}))
 
-	testIssuerHTTP01TestComPrefferedChain := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
+	testIssuerHTTP01TestComPreferredChain := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
 		PreferredChain: "ISRG Root X1",
 		Solvers: []cmacme.ACMEChallengeSolver{
 			{
@@ -508,7 +508,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 		"call FinalizeOrder fetch alternate cert chain": {
 			order: testOrderReady.DeepCopy(),
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestComPrefferedChain, testOrderReady, testAuthorizationChallengeValid},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestComPreferredChain, testOrderReady, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
 						"status",
