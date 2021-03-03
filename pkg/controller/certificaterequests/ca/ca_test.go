@@ -27,6 +27,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+	"math"
 	"math/big"
 	"testing"
 	"time"
@@ -434,10 +435,12 @@ func TestCA_Sign(t *testing.T) {
 				},
 			))),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
-				// The notAfter field uses a precision of 1 second. That's
-				// why we truncate the expected time.
-				expectNotAfter := time.Now().UTC().Truncate(1 * time.Second).Add(30 * time.Minute)
-				assert.Equalf(t, expectNotAfter, got.NotAfter, "time mismatch, expect='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
+				// Let's check that the difference between the expected and
+				// gotten time is lower than one second. One second seems
+				// small enough since the overall duration is 30 minutes.
+				expectNotAfter := time.Now().UTC().Add(30 * time.Minute)
+				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
+				assert.LessOrEqualf(t, deltaSec, 1., "expected a time delta lower than 1 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
 			},
 		},
 		"when the CertificateRequest has the isCA field set, it should appear on the signed ca": {
