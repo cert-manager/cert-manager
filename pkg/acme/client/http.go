@@ -69,7 +69,7 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Remember the current time.
 	start := time.Now()
 
-	// Make the request using the wrappd RoundTripper.
+	// Make the request using the wrapped RoundTripper.
 	resp, err := it.wrappedRT.RoundTrip(req)
 	if resp != nil {
 		statusCode = resp.StatusCode
