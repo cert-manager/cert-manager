@@ -67,7 +67,7 @@ func TestBuildUsages(t *testing.T) {
 			expectedError:    false,
 		},
 		{
-			name:          "nonexisting keyusage error",
+			name:          "nonexistent keyusage error",
 			usages:        []cmapi.KeyUsage{"nonexistent"},
 			expectedError: true,
 		},
