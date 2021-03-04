@@ -39,6 +39,9 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
@@ -202,6 +205,9 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
@@ -365,6 +371,9 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
@@ -530,6 +539,9 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
