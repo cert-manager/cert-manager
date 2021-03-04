@@ -29,9 +29,9 @@ func TestRetryBackoff(t *testing.T) {
 		resp *http.Response
 	}
 	tests := []struct {
-		name            string
-		args            args
-		validdateOutput func(time.Duration) bool
+		name           string
+		args           args
+		validateOutput func(time.Duration) bool
 	}{
 		{
 			name: "Do not retry a non 400 error",
@@ -40,7 +40,7 @@ func TestRetryBackoff(t *testing.T) {
 				r:    &http.Request{},
 				resp: &http.Response{StatusCode: http.StatusUnauthorized},
 			},
-			validdateOutput: func(duration time.Duration) bool {
+			validateOutput: func(duration time.Duration) bool {
 				return duration == -1
 			},
 		},
@@ -51,7 +51,7 @@ func TestRetryBackoff(t *testing.T) {
 				r:    &http.Request{},
 				resp: &http.Response{StatusCode: http.StatusBadRequest},
 			},
-			validdateOutput: func(duration time.Duration) bool {
+			validateOutput: func(duration time.Duration) bool {
 				return duration > 0
 			},
 		},
@@ -62,7 +62,7 @@ func TestRetryBackoff(t *testing.T) {
 				r:    &http.Request{},
 				resp: &http.Response{StatusCode: http.StatusBadRequest},
 			},
-			validdateOutput: func(duration time.Duration) bool {
+			validateOutput: func(duration time.Duration) bool {
 				return duration > 5
 			},
 		},
@@ -73,15 +73,15 @@ func TestRetryBackoff(t *testing.T) {
 				r:    &http.Request{},
 				resp: &http.Response{StatusCode: http.StatusBadRequest},
 			},
-			validdateOutput: func(duration time.Duration) bool {
+			validateOutput: func(duration time.Duration) bool {
 				return duration == -1
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RetryBackoff(tt.args.n, tt.args.r, tt.args.resp); !tt.validdateOutput(got) {
-				t.Errorf("RetryBackoff() = %v which is not valid according to the validdateOutput()", got)
+			if got := RetryBackoff(tt.args.n, tt.args.r, tt.args.resp); !tt.validateOutput(got) {
+				t.Errorf("RetryBackoff() = %v which is not valid according to the validateOutput()", got)
 			}
 		})
 	}
