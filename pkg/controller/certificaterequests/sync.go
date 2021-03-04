@@ -29,17 +29,17 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var (
-	certificateRequestGvk = v1.SchemeGroupVersion.WithKind(v1.CertificateRequestKind)
+	certificateRequestGvk = cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind)
 )
 
-func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err error) {
+func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (err error) {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
@@ -48,12 +48,18 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 		return nil
 	}
 
+	// If CertificateRequest has not been approved, exit early.
+	if !apiutil.CertificateRequestHasApproved(cr) {
+		dbg.Info("certificate request has not been approved")
+		return nil
+	}
+
 	switch apiutil.CertificateRequestReadyReason(cr) {
-	case v1.CertificateRequestReasonFailed:
+	case cmapi.CertificateRequestReasonFailed:
 		dbg.Info("certificate request Ready condition failed so skipping processing")
 		return
 
-	case v1.CertificateRequestReasonIssued:
+	case cmapi.CertificateRequestReasonIssued:
 		dbg.Info("certificate request Ready condition true so skipping processing")
 		return
 	}
@@ -99,8 +105,8 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 	}
 
 	// check ready condition
-	if !apiutil.IssuerHasCondition(issuerObj, v1.IssuerCondition{
-		Type:   v1.IssuerConditionReady,
+	if !apiutil.IssuerHasCondition(issuerObj, cmapi.IssuerCondition{
+		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}) {
 		c.reporter.Pending(crCopy, nil, "IssuerNotReady",
@@ -148,7 +154,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 	return nil
 }
 
-func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *v1.CertificateRequest) (*v1.CertificateRequest, error) {
+func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 
 	// if annotations changed we have to call .Update() and not .UpdateStatus()
