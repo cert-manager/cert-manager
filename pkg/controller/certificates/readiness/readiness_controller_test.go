@@ -274,10 +274,10 @@ func TestProcessItem(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Override controller's readyCondition func with a fake that returns test.condition.
+			// Override controller's policyEvaluator func with a fake that returns test.condition.
 			w.controller.policyEvaluator = policyEvaluatorBuilder(test.condition)
 
-			// Override controller's renewalTime func with a fake that returns test.renewalTime.
+			// Override controller's renewalTimeCalculator func with a fake that returns test.renewalTime.
 			w.controller.renewalTimeCalculator = renewalTimeBuilder(test.renewalTime)
 
 			// If Certificate's status should be updated,

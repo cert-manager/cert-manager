@@ -51,20 +51,20 @@ const (
 )
 
 type controller struct {
-	// the policies to use to define readiness - named here to make testing simpler
+	// The policies to use to define readiness - named here to make testing simpler.
 	policyChain              policies.Chain
 	certificateLister        cmlisters.CertificateLister
 	certificateRequestLister cmlisters.CertificateRequestLister
 	secretLister             corelisters.SecretLister
 	client                   cmclient.Interface
 	gatherer                 *policies.Gatherer
-	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation
+	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation.
 	policyEvaluator policyEvaluatorFunc
-	// renewalTimeCalculator calculates renewal time of a certificate
+	// renewalTimeCalculator calculates renewal time of a certificate.
 	renewalTimeCalculator certificates.RenewalTimeFunc
 }
 
-// readyConditionFunc is custom function type that builds certificate's Ready condition
+// policyEvaluatorFunc is custom function type that builds certificate's Ready condition.
 type policyEvaluatorFunc func(policies.Chain, policies.Input) cmapi.CertificateCondition
 
 func NewController(
@@ -163,7 +163,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt)
 
-		//update Certificate's Status
+		// update Certificate's Status
 		crt.Status.NotBefore = &notBefore
 		crt.Status.NotAfter = &notAfter
 		crt.Status.RenewalTime = renewalTime
@@ -182,8 +182,8 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-// policyEvaluator builds Certificate's Ready condition using the result of policy chain evaluation
-func policyEvaluator(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
+// PolicyEvaluator builds Certificate's Ready condition using the result of policy chain evaluation.
+func PolicyEvaluator(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
 	reason, message, violationsFound := chain.Evaluate(input)
 	if !violationsFound {
 		return cmapi.CertificateCondition{
@@ -229,7 +229,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		NewReadinessPolicyChain(ctx.Clock),
 		certificates.RenewalTimeWrapper(cmapi.DefaultRenewBefore),
-		policyEvaluator,
+		PolicyEvaluator,
 	)
 	c.controller = ctrl
 
