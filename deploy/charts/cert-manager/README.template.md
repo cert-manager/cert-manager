@@ -146,11 +146,11 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
 | `webhook.containerSecurityContext` | Security context to be set on the webhook component container | `{}` |
 | `webhook.hostNetwork` | If `true`, run the Webhook on the host network. | `false` |
-| `webhook.livenessProbe.failureThreshold` | The livneness probe failure threshold | `3` |
-| `webhook.livenessProbe.initialDelaySeconds` | The livneness probe initial delay (in seconds) | `60` |
-| `webhook.livenessProbe.periodSeconds` | The livneness probe period (in seconds) | `10` |
-| `webhook.livenessProbe.successThreshold` | The livneness probe success threshold | `1` |
-| `webhook.livenessProbe.timeoutSeconds` | The livneness probe timeout (in seconds) | `1` |
+| `webhook.livenessProbe.failureThreshold` | The liveness probe failure threshold | `3` |
+| `webhook.livenessProbe.initialDelaySeconds` | The liveness probe initial delay (in seconds) | `60` |
+| `webhook.livenessProbe.periodSeconds` | The liveness probe period (in seconds) | `10` |
+| `webhook.livenessProbe.successThreshold` | The liveness probe success threshold | `1` |
+| `webhook.livenessProbe.timeoutSeconds` | The liveness probe timeout (in seconds) | `1` |
 | `webhook.readinessProbe.failureThreshold` | The readiness probe failure threshold | `3` |
 | `webhook.readinessProbe.initialDelaySeconds` | The readiness probe initial delay (in seconds) | `5` |
 | `webhook.readinessProbe.periodSeconds` | The readiness probe period (in seconds) | `5` |
