@@ -33,6 +33,14 @@ const (
 	// Issued indicates that a CertificateRequest has been completed, and that
 	// the `status.certificate` field is set.
 	CertificateRequestReasonIssued = "Issued"
+
+	// Approved indicates that a CertificateRequest has been approved by the
+	// approver, and the CertificateRequest is ready for signing.
+	CertificateRequestReasonApproved = "Approved"
+
+	// Denied indicates that a CertificateRequest has been denied by the
+	// approver, and the CertificateRequest will be never be signed.
+	CertificateRequestReasonDenied = "Denied"
 )
 
 // +genclient
@@ -187,4 +195,8 @@ const (
 	// parameters being invalid. Additional information about why the request
 	// was rejected can be found in the `reason` and `message` fields.
 	CertificateRequestConditionInvalidRequest CertificateRequestConditionType = "InvalidRequest"
+
+	// CertificateRequestConditionApproved indicates that a certificate is
+	// approved and ready for signing, or denied and should never be signed.
+	CertificateRequestConditionApproved CertificateRequestConditionType = "Approved"
 )
