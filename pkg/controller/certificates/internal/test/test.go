@@ -22,6 +22,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -222,4 +223,70 @@ func generateCSRImpl(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	})
 
 	return csrPEM, nil
+}
+
+// MustGenerateCSRImpl returns PEM encoded certificate signing request
+func MustGenerateCSRImpl(t *testing.T, pkData []byte, cert *cmapi.Certificate) []byte {
+	csrPEM, err := generateCSRImpl(cert, pkData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return csrPEM
+}
+
+// MustCreatePEMPrivateKey returns a PEM encoded 2048 bit RSA private key
+func MustCreatePEMPrivateKey(t *testing.T) []byte {
+	pk, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pkData
+}
+
+// MustCreateCertWithNotBeforeAfter returns a self-signed x509 cert for Certificate
+// with the provided NotBefore, NotAfter values
+func MustCreateCertWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cmapi.Certificate, notBefore, notAfter time.Time) []byte {
+	pk, err := pki.DecodePrivateKeyBytes(pkData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template, err := pki.GenerateTemplate(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template.NotBefore = notBefore
+	template.NotAfter = notAfter
+
+	certData, _, err := pki.SignCertificate(template, template, pk.Public(), pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return certData
+}
+
+// MustCreateCert returns a self-signed x509 certificate
+func MustCreateCert(t *testing.T, pkData []byte, spec *cmapi.Certificate) []byte {
+	pk, err := pki.DecodePrivateKeyBytes(pkData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template, err := pki.GenerateTemplate(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	certData, _, err := pki.SignCertificate(template, template, pk.Public(), pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return certData
 }

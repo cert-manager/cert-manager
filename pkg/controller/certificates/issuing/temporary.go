@@ -31,8 +31,8 @@ import (
 
 var temporaryCertificatePolicyChain = policies.Chain{
 	policies.SecretDoesNotExist,
-	policies.SecretHasData,
-	policies.SecretPublicKeysMatch,
+	policies.SecretIsMissingData,
+	policies.SecretPublicKeysDiffer,
 }
 
 // ensureTemporaryCertificate will create a temporary certificate and store it
