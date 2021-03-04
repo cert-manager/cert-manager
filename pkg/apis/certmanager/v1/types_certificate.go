@@ -98,6 +98,7 @@ type CertificateSpec struct {
 
 	// The requested 'duration' (i.e. lifetime) of the Certificate.
 	// This option may be ignored/overridden by some issuer types.
+	// If unset this defaults to 90 days.
 	// If overridden and `renewBefore` is greater than the actual certificate
 	// duration, the certificate will be automatically renewed 2/3rds of the
 	// way through the certificate's duration.
