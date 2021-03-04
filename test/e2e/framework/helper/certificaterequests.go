@@ -186,6 +186,10 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		}
 	}
 
+	if !apiutil.CertificateRequestHasApproved(cr) {
+		return nil, fmt.Errorf("CertificateRequest does not have an Approved condition: %+v", cr.Status.Conditions)
+	}
+
 	return cert, nil
 }
 
