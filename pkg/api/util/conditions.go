@@ -315,3 +315,37 @@ func CertificateRequestHasInvalidRequest(cr *cmapi.CertificateRequest) bool {
 
 	return false
 }
+
+// This returns with true if the CertificateRequest is approved via an Approved
+// condition of true, returns false otherwise.
+func CertificateRequestHasApproved(cr *cmapi.CertificateRequest) bool {
+	if cr == nil {
+		return false
+	}
+
+	for _, con := range cr.Status.Conditions {
+		if con.Type == cmapi.CertificateRequestConditionApproved &&
+			con.Status == cmmeta.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
+}
+
+// This returns with true if the CertificateRequest is denied via an Approved
+// condition of false, returns false otherwise.
+func CertificateRequestHasDenied(cr *cmapi.CertificateRequest) bool {
+	if cr == nil {
+		return false
+	}
+
+	for _, con := range cr.Status.Conditions {
+		if con.Type == cmapi.CertificateRequestConditionApproved &&
+			con.Status == cmmeta.ConditionFalse {
+			return true
+		}
+	}
+
+	return false
+}
