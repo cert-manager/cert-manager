@@ -452,6 +452,6 @@ rules:
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
   - apiGroups: ["acme.cert-manager.io"]
     resources: ["challenges", "orders"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["create", "delete", "deletecollection", "patch", "update"]
 
 {{- end }}
