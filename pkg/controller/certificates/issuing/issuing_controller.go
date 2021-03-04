@@ -193,12 +193,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		logf.WithResource(log, nextPrivateKeySecret).Error(err, "failed to parse next private key, waiting for keymanager controller")
 		return nil
 	}
-	pkVioations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
+	pkViolations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if err != nil {
 		return err
 	}
-	if len(pkVioations) > 0 {
-		logf.WithResource(log, nextPrivateKeySecret).Info("stored next private key does not match requirements on Certificate resource, waiting for keymanager controller", "violations", pkVioations)
+	if len(pkViolations) > 0 {
+		logf.WithResource(log, nextPrivateKeySecret).Info("stored next private key does not match requirements on Certificate resource, waiting for keymanager controller", "violations", pkViolations)
 		return nil
 	}
 
