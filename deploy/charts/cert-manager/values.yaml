@@ -80,6 +80,8 @@ serviceAccount:
   # name: ""
   # Optional additional annotations to add to the controller's ServiceAccount
   # annotations: {}
+  # Automount API credentials for a Service Account.
+  automountServiceAccountToken: true
 
 # Optional additional arguments
 extraArgs: []
@@ -280,6 +282,8 @@ webhook:
     # name: ""
     # Optional additional annotations to add to the controller's ServiceAccount
     # annotations: {}
+    # Automount API credentials for a Service Account.
+    automountServiceAccountToken: true
 
   # The port that the webhook should listen on for requests.
   # In GKE private clusters, by default kubernetes apiservers are allowed to
@@ -367,3 +371,5 @@ cainjector:
     # name: ""
     # Optional additional annotations to add to the controller's ServiceAccount
     # annotations: {}
+    # Automount API credentials for a Service Account.
+    automountServiceAccountToken: true
