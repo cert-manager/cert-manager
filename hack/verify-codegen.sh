@@ -53,7 +53,7 @@ tmpfiles=$TEST_TMPDIR/files
   rm -rf {.,"$tmpfiles"}/{"$gazelle","$kazel"}
 )
 # Avoid diff -N so we handle empty files correctly
-# Ignoring Copyright to not trigger a CI fail avery new year
+# Ignoring Copyright to not trigger a CI fail every new year
 diff=$(diff -upr \
   -I '^Copyright.*' \
   "./pkg" "$tmpfiles/pkg" 2>/dev/null || true)
