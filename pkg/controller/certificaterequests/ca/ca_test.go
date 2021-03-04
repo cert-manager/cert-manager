@@ -436,7 +436,7 @@ func TestCA_Sign(t *testing.T) {
 			))),
 			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
 				// Let's check that the difference between the expected and
-				// gotten time is lower than one second. One second seems
+				// received time is less than one second. One second seems
 				// small enough since the overall duration is 30 minutes.
 				expectNotAfter := time.Now().UTC().Add(30 * time.Minute)
 				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
