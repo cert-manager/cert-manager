@@ -20,8 +20,11 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"net"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -550,6 +553,45 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("buildKeyUsagesExtensionsForCertificate() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestIPAddressesForCertificate(t *testing.T) {
+	tests := map[string]struct {
+		crt  *v1.Certificate
+		want []net.IP
+	}{
+		"valid ips should be returned": {
+			// Cannot use gen.Certificate because "gen" imports "pki".
+			crt: &v1.Certificate{Spec: v1.CertificateSpec{
+				IPAddresses: []string{
+					"127.0.0.1",
+					"127.0.0.2",
+				},
+			}},
+			want: []net.IP{
+				net.ParseIP("127.0.0.1"),
+				net.ParseIP("127.0.0.2"),
+			},
+		},
+		"a malformed ip is silently skipped": {
+			// Cannot use gen.Certificate because "gen" imports "pki".
+			crt: &v1.Certificate{Spec: v1.CertificateSpec{
+				IPAddresses: []string{
+					"127.0.0.1",
+					"malformed",
+				},
+			}},
+			want: []net.IP{
+				net.ParseIP("127.0.0.1"),
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := IPAddressesForCertificate(tt.crt)
+			assert.Equalf(t, tt.want, got, "expected='%s', actual='%s'", tt.want, got)
 		})
 	}
 }
