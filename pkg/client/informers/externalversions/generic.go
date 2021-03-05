@@ -29,6 +29,7 @@ import (
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
+	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/policy/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -122,6 +123,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1beta1().ClusterIssuers().Informer()}, nil
 	case certmanagerv1beta1.SchemeGroupVersion.WithResource("issuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1beta1().Issuers().Informer()}, nil
+
+		// Group=policy.cert-manager.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("certificaterequestpolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Policy().V1alpha1().CertificateRequestPolicies().Informer()}, nil
 
 	}
 

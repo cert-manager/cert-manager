@@ -27,6 +27,7 @@ import (
 	acme "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/acme"
 	certmanager "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager"
 	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
+	policy "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/policy"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -175,6 +176,7 @@ type SharedInformerFactory interface {
 
 	Acme() acme.Interface
 	Certmanager() certmanager.Interface
+	Policy() policy.Interface
 }
 
 func (f *sharedInformerFactory) Acme() acme.Interface {
@@ -183,4 +185,8 @@ func (f *sharedInformerFactory) Acme() acme.Interface {
 
 func (f *sharedInformerFactory) Certmanager() certmanager.Interface {
 	return certmanager.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Policy() policy.Interface {
+	return policy.New(f, f.namespace, f.tweakListOptions)
 }

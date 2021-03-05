@@ -36,6 +36,8 @@ import (
 	fakecertmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3/fake"
 	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1"
 	fakecertmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1/fake"
+	policyv1alpha1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/policy/v1alpha1"
+	fakepolicyv1alpha1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/policy/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -128,4 +130,9 @@ func (c *Clientset) CertmanagerV1beta1() certmanagerv1beta1.CertmanagerV1beta1In
 // CertmanagerV1 retrieves the CertmanagerV1Client
 func (c *Clientset) CertmanagerV1() certmanagerv1.CertmanagerV1Interface {
 	return &fakecertmanagerv1.FakeCertmanagerV1{Fake: &c.Fake}
+}
+
+// PolicyV1alpha1 retrieves the PolicyV1alpha1Client
+func (c *Clientset) PolicyV1alpha1() policyv1alpha1.PolicyV1alpha1Interface {
+	return &fakepolicyv1alpha1.FakePolicyV1alpha1{Fake: &c.Fake}
 }

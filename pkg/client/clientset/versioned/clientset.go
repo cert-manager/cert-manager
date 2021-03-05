@@ -29,6 +29,7 @@ import (
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha3"
 	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1"
+	policyv1alpha1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/policy/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -44,6 +45,7 @@ type Interface interface {
 	CertmanagerV1alpha3() certmanagerv1alpha3.CertmanagerV1alpha3Interface
 	CertmanagerV1beta1() certmanagerv1beta1.CertmanagerV1beta1Interface
 	CertmanagerV1() certmanagerv1.CertmanagerV1Interface
+	PolicyV1alpha1() policyv1alpha1.PolicyV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -58,6 +60,7 @@ type Clientset struct {
 	certmanagerV1alpha3 *certmanagerv1alpha3.CertmanagerV1alpha3Client
 	certmanagerV1beta1  *certmanagerv1beta1.CertmanagerV1beta1Client
 	certmanagerV1       *certmanagerv1.CertmanagerV1Client
+	policyV1alpha1      *policyv1alpha1.PolicyV1alpha1Client
 }
 
 // AcmeV1alpha2 retrieves the AcmeV1alpha2Client
@@ -98,6 +101,11 @@ func (c *Clientset) CertmanagerV1beta1() certmanagerv1beta1.CertmanagerV1beta1In
 // CertmanagerV1 retrieves the CertmanagerV1Client
 func (c *Clientset) CertmanagerV1() certmanagerv1.CertmanagerV1Interface {
 	return c.certmanagerV1
+}
+
+// PolicyV1alpha1 retrieves the PolicyV1alpha1Client
+func (c *Clientset) PolicyV1alpha1() policyv1alpha1.PolicyV1alpha1Interface {
+	return c.policyV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -153,6 +161,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.policyV1alpha1, err = policyv1alpha1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -173,6 +185,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.certmanagerV1alpha3 = certmanagerv1alpha3.NewForConfigOrDie(c)
 	cs.certmanagerV1beta1 = certmanagerv1beta1.NewForConfigOrDie(c)
 	cs.certmanagerV1 = certmanagerv1.NewForConfigOrDie(c)
+	cs.policyV1alpha1 = policyv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -189,6 +202,7 @@ func New(c rest.Interface) *Clientset {
 	cs.certmanagerV1alpha3 = certmanagerv1alpha3.New(c)
 	cs.certmanagerV1beta1 = certmanagerv1beta1.New(c)
 	cs.certmanagerV1 = certmanagerv1.New(c)
+	cs.policyV1alpha1 = policyv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

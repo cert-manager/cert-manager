@@ -27,6 +27,7 @@ import (
 	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	certmanagerv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
+	policyv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/policy/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -46,6 +47,7 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	certmanagerv1alpha3.AddToScheme,
 	certmanagerv1beta1.AddToScheme,
 	certmanagerv1.AddToScheme,
+	policyv1alpha1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition
