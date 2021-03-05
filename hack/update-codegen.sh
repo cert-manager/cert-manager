@@ -51,6 +51,8 @@ deepcopy_inputs=(
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup \
   pkg/acme/webhook/apis/acme/v1alpha1 \
+  pkg/internal/apis/policy \
+  pkg/apis/policy/v1alpha1 \
 )
 
 client_subpackage="pkg/client"
@@ -65,6 +67,7 @@ client_inputs=(
   pkg/apis/acme/v1alpha3 \
   pkg/apis/acme/v1beta1 \
   pkg/apis/acme/v1 \
+  pkg/apis/policy/v1alpha1 \
 )
 
 # Generate defaulting functions to be used by the mutating webhook
