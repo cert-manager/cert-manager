@@ -38,7 +38,7 @@ check_tool kubectl
 check_tool helm
 require_image "pebble:bazel" "//devel/addon/pebble:bundle"
 
-# Ensure the pebble namespace exists
+# Ensure the namespace exists, and if not create it
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 # Upgrade or install Pebble

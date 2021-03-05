@@ -44,13 +44,13 @@ load_image "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
 wait
 
-# Ensure the pebble namespace exists
+# Ensure the namespace exists, and if not create it
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
 # Build the Helm chart package .tgz
 bazel build //deploy/charts/cert-manager
 
-# Upgrade or install Pebble
+# Upgrade or install cert-manager
 helm upgrade \
     --install \
     --wait \
