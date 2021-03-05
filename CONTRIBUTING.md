@@ -4,16 +4,16 @@ You can find our full contributing guide on [our website](https://cert-manager.i
 
 ## DCO Sign off
 
-All authors to the project retain copyright to their work. However, to ensure
-that they are only submitting work that they have rights to, we are requiring
+All contributors to the project retain copyright to their work. However, to ensure
+that they are only submitting work that they have rights to, we require
 everyone to acknowledge this by signing their work.
 
-Any copyright notices in this repo should specify the authors as "the Jetstack
-cert-manager contributors".
+Any copyright notices in this repo should specify the authors as
+"The cert-manager Authors".
 
 To sign your work, just add a line like this at the end of your commit message:
 
-```
+```text
 Signed-off-by: Joe Bloggs <joe@example.com>
 ```
 
@@ -23,7 +23,7 @@ You can also mass sign-off a whole PR with `git rebase --signoff master`, replac
 
 By doing this you state that you can certify the following (from https://developercertificate.org/):
 
-```
+```text
 Developer Certificate of Origin
 Version 1.1
 

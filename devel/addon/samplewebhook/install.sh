@@ -37,10 +37,10 @@ check_tool kubectl
 check_tool helm
 require_image "sample-webhook:bazel" "//devel/addon/samplewebhook:bundle"
 
-# Ensure the pebble namespace exists
+# Ensure the namespace exists, and if not create it
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 
-# Upgrade or install Pebble
+# Upgrade or install the sample-webhook
 helm upgrade \
     --install \
     --wait \
