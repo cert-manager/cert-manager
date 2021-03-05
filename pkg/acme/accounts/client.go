@@ -43,7 +43,7 @@ func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.Pr
 	}
 }
 
-// BuildHTTPClient returns a instramented HTTP client to be used by the ACME
+// BuildHTTPClient returns a instrumented HTTP client to be used by the ACME
 // client.
 // For the time being, we construct a new HTTP client on each invocation.
 // This is because we need to set the 'skipTLSVerify' flag on the HTTP client

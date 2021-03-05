@@ -134,7 +134,7 @@ func New(log logr.Logger) *Metrics {
 	return m
 }
 
-// Start will register the Prometheu metrics, and start the Prometheus server
+// Start will register the Prometheus metrics, and start the Prometheus server
 func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, error) {
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)

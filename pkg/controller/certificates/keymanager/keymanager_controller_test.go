@@ -221,7 +221,7 @@ func TestProcessItem(t *testing.T) {
 		},
 		// TODO: in this case we should adapt the controller behaviour to unset the nextPrivateKeySecretName to
 		//  gracefully recover
-		"error if an existing Secret exists and is named as status.nextPrivateKeySecretName but it is not owned by the Certificte": {
+		"error if an existing Secret exists and is named as status.nextPrivateKeySecretName but it is not owned by the Certificate": {
 			certificate: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 				Status: cmapi.CertificateStatus{
