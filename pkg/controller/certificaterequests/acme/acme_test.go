@@ -129,6 +129,15 @@ func TestSign(t *testing.T) {
 			Kind:  "Issuer",
 		}),
 	)
+	baseCRDenied := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionDenied,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             cmapi.CertificateRequestReasonDenied,
+			Message:            "Certificate request has been denied by cert-manager.io",
+			LastTransitionTime: &metaFixedClockStart,
+		}),
+	)
 	baseCR := gen.CertificateRequestFrom(baseCRNotApproved,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionApproved,
@@ -191,6 +200,13 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
+			},
+		},
+		"a CertificateRequest with a denied condition should do nothing": {
+			certificateRequest: baseCRDenied.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCRDenied.DeepCopy(), baseIssuer.DeepCopy()},
 			},
 		},
 		"a badly formed CSR should report failure": {

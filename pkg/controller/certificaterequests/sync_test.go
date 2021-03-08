@@ -171,8 +171,8 @@ func TestSync(t *testing.T) {
 		"should return nil (no action) if certificate request is denied": {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-					Type:               cmapi.CertificateRequestConditionApproved,
-					Status:             cmmeta.ConditionFalse,
+					Type:               cmapi.CertificateRequestConditionDenied,
+					Status:             cmmeta.ConditionTrue,
 					Reason:             cmapi.CertificateRequestReasonDenied,
 					Message:            "Certificate request has been denied by cert-manager.io",
 					LastTransitionTime: &nowMetaTime,
