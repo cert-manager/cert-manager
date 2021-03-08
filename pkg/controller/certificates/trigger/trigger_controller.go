@@ -179,6 +179,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
+	// Although the below recorder.Event already logs the event, the log
+	// line is quite unreadable (very long). Since this information is very
+	// important for the user and the operator, we log the following
+	// message.
+	log.V(logf.InfoLevel).Info("Certificate must be re-issued", "reason", reason, "message", message)
+
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, reason, message)
 	_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
