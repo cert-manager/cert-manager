@@ -43,6 +43,7 @@ func (h *Helper) DefaultValidationSet() []ValidationFunc {
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
 		validations.ExpectValidPrivateKeyData,
+		validations.ExpectConditionReadyObservedGeneration,
 	}
 }
 
@@ -57,6 +58,7 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 		validations.ExpectValidCommonName,
 		validations.ExpectValidNotAfterDate,
 		validations.ExpectValidPrivateKeyData,
+		validations.ExpectConditionReadyObservedGeneration,
 	}
 
 	if !fs.Contains(featureset.URISANsFeature) {

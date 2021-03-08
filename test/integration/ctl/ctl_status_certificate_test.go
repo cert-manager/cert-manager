@@ -566,7 +566,7 @@ CertificateRequest:
 func setCertificateStatus(cmCl versioned.Interface, crt *cmapi.Certificate,
 	status *cmapi.CertificateStatus, ctx context.Context) (*cmapi.Certificate, error) {
 	for _, cond := range status.Conditions {
-		apiutil.SetCertificateCondition(crt, cond.Type, cond.Status, cond.Reason, cond.Message)
+		apiutil.SetCertificateCondition(crt, crt.Generation, cond.Type, cond.Status, cond.Reason, cond.Message)
 	}
 	crt.Status.NotAfter = status.NotAfter
 	crt.Status.Revision = status.Revision

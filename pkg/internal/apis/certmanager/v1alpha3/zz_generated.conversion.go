@@ -426,6 +426,7 @@ func autoConvert_v1alpha3_CertificateCondition_To_certmanager_CertificateConditi
 	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
+	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
 
@@ -440,6 +441,7 @@ func autoConvert_certmanager_CertificateCondition_To_v1alpha3_CertificateConditi
 	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
+	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
 

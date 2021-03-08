@@ -248,6 +248,13 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 		}
 	}
 
+	readyCond := apiutil.GetCertificateCondition(certificate, cmapi.CertificateConditionReady)
+	if readyCond.Status != cmmeta.ConditionTrue || readyCond.ObservedGeneration != certificate.Generation {
+		return nil, fmt.Errorf(
+			"expected Certificate to have ready condition true, with an observedGeneration matching the Certificate generation, got=%+v",
+			readyCond)
+	}
+
 	return cert, nil
 }
 

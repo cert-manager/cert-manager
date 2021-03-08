@@ -295,7 +295,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 		condition.Message)
 
 	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
 
 	_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {

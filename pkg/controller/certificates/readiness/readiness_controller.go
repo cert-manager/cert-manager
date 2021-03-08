@@ -147,7 +147,8 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	condition := c.policyEvaluator(c.policyChain, input)
 
 	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, condition.Type, condition.Status, condition.Reason, condition.Message)
+	apiutil.SetCertificateCondition(crt, crt.Generation, condition.Type, condition.Status, condition.Reason, condition.Message)
+
 	switch {
 	case input.Secret != nil && input.Secret.Data != nil:
 		x509cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
