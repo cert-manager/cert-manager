@@ -35,11 +35,11 @@ const (
 	CertificateRequestReasonIssued = "Issued"
 
 	// Approved indicates that a CertificateRequest has been approved by the
-	// approver, and the CertificateRequest is ready for signing.
+	// approver, and the certificate request is ready for signing.
 	CertificateRequestReasonApproved = "Approved"
 
 	// Denied indicates that a CertificateRequest has been denied by the
-	// approver, and the CertificateRequest will be never be signed.
+	// approver, and the certificate request will be never be signed.
 	CertificateRequestReasonDenied = "Denied"
 )
 
@@ -161,7 +161,8 @@ type CertificateRequestStatus struct {
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.
 type CertificateRequestCondition struct {
-	// Type of the condition, known values are (`Ready`, `InvalidRequest`).
+	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
+	// `Approved`, `Denied`).
 	Type CertificateRequestConditionType `json:"type"`
 
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
@@ -198,7 +199,15 @@ const (
 	// was rejected can be found in the `reason` and `message` fields.
 	CertificateRequestConditionInvalidRequest CertificateRequestConditionType = "InvalidRequest"
 
-	// CertificateRequestConditionApproved indicates that a certificate is
-	// approved and ready for signing, or denied and should never be signed.
+	// CertificateRequestConditionApproved indicates that a certificate request
+	// is approved and ready for signing. Condition must never have a status of
+	// `False`, and cannot be modified once set. Cannot be set alongside
+	// `Denied`.
 	CertificateRequestConditionApproved CertificateRequestConditionType = "Approved"
+
+	// CertificateRequestConditionDenied indicates that a certificate request is
+	// denied, and must never be signed. Condition must never have a status of
+	// `False`, and cannot be modified once set. Cannot be set alongside
+	// `Approved`.
+	CertificateRequestConditionDenied CertificateRequestConditionType = "Denied"
 )
