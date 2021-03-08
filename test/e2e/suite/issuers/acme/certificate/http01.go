@@ -305,7 +305,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			}
 			order = orders[0]
 
-			expected := `400 urn:ietf:params:acme:error:rejectedIdentifier: Cannot issue for "google.com"`
+			expected := `400 urn:ietf:params:acme:error:rejectedIdentifier`
 			if !strings.Contains(order.Status.Reason, expected) {
 				log.Logf("Waiting for Order's reason, current: %s, should contain: %s", order.Status.Reason, expected)
 				return false, nil
