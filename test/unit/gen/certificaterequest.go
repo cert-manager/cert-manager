@@ -96,6 +96,12 @@ func SetCertificateRequestStatusCondition(c v1.CertificateRequestCondition) Cert
 	}
 }
 
+func AddCertificateRequestStatusCondition(c v1.CertificateRequestCondition) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.Status.Conditions = append(cr.Status.Conditions, c)
+	}
+}
+
 func SetCertificateRequestNamespace(namespace string) CertificateRequestModifier {
 	return func(cr *v1.CertificateRequest) {
 		cr.ObjectMeta.Namespace = namespace
