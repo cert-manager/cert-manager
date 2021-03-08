@@ -33,18 +33,18 @@ const (
 )
 
 // Sync will set the "Approved" condition to True on synced
-// CertificateRequests. If the "Denied", "Approved" or "Ready" condition alrady
-// exists, exit early.
+// CertificateRequests. If the "Denied", "Approved" or "Ready" condition
+// already exists, exit early.
 func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (err error) {
 	log := logf.FromContext(ctx, "approver")
 
 	switch {
 	case
 		// If the CertificateRequest has already been approved, exit early.
-		apiutil.CertificateRequestHasApproved(cr),
+		apiutil.CertificateRequestIsApproved(cr),
 
 		// If the CertificateRequest has already been denied, exit early.
-		apiutil.CertificateRequestHasDenied(cr),
+		apiutil.CertificateRequestIsDenied(cr),
 
 		// If the CertificateRequest is "Issued" or "Failed", exit early.
 		apiutil.CertificateRequestReadyReason(cr) == cmapi.CertificateRequestReasonFailed,

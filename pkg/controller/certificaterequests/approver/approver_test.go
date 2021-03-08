@@ -83,8 +83,8 @@ func TestProcessItem(t *testing.T) {
 				Status: cmapi.CertificateRequestStatus{
 					Conditions: []cmapi.CertificateRequestCondition{
 						{
-							Type:   cmapi.CertificateRequestConditionApproved,
-							Status: cmmeta.ConditionFalse,
+							Type:   cmapi.CertificateRequestConditionDenied,
+							Status: cmmeta.ConditionTrue,
 						},
 					},
 				},
