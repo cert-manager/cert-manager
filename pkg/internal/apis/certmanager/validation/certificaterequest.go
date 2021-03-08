@@ -31,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/acme"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -40,6 +41,9 @@ var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cma
 func ValidateCertificateRequest(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	cr := obj.(*cmapi.CertificateRequest)
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), true)
+	allErrs = append(allErrs,
+		ValidateCertificateRequestApprovalCondition(cr.Status.Conditions, field.NewPath("status", "conditions"))...)
+
 	return allErrs
 }
 
@@ -55,6 +59,8 @@ func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, n
 	annotationField := field.NewPath("metadata", "annotations")
 	el = append(el, validateCertificateRequestAnnotations(oldCR, newCR, annotationField)...)
 	el = append(el, validateCertificateRequestAnnotations(newCR, oldCR, annotationField)...)
+	el = append(el,
+		ValidateUpdateCertificateRequestApprovalCondition(oldCR.Status.Conditions, newCR.Status.Conditions, field.NewPath("status", "conditions"))...)
 
 	if !reflect.DeepEqual(oldCR.Spec, newCR.Spec) {
 		el = append(el, field.Forbidden(field.NewPath("spec"), "cannot change spec after creation"))
@@ -105,6 +111,80 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 	}
 
 	return el
+}
+
+// ValidateCertificateRequestApprovalCondition will ensure that only a single
+// 'Approved' or 'Denied' condition may exist, and that they are set to True.
+func ValidateCertificateRequestApprovalCondition(crConds []cmapi.CertificateRequestCondition, fldPath *field.Path) field.ErrorList {
+	var (
+		approvedConditions []cmapi.CertificateRequestCondition
+		deniedConditions   []cmapi.CertificateRequestCondition
+		el                 = field.ErrorList{}
+	)
+
+	for _, cond := range crConds {
+		if cond.Type == cmapi.CertificateRequestConditionApproved {
+			approvedConditions = append(approvedConditions, cond)
+		}
+
+		if cond.Type == cmapi.CertificateRequestConditionDenied {
+			deniedConditions = append(deniedConditions, cond)
+		}
+	}
+
+	for _, cond := range []struct {
+		condType   cmapi.CertificateRequestConditionType
+		conditions []cmapi.CertificateRequestCondition
+	}{
+		{cmapi.CertificateRequestConditionApproved, approvedConditions},
+		{cmapi.CertificateRequestConditionDenied, deniedConditions},
+	} {
+		switch len(cond.conditions) {
+		case 0:
+			break
+		case 1:
+			if condition := cond.conditions[0]; condition.Status != cmmeta.ConditionTrue {
+				el = append(el, field.Invalid(fldPath.Child(condition.Reason), condition.Status,
+					fmt.Sprintf("%q condition may only be set to True", cond.condType)))
+			}
+		default:
+			el = append(el, field.Forbidden(fldPath, fmt.Sprintf("multiple %q conditions present", cond.condType)))
+		}
+	}
+
+	if len(deniedConditions) > 0 && len(approvedConditions) > 0 {
+		el = append(el, field.Forbidden(fldPath, "both 'Denied' and 'Approved' conditions cannot coexist"))
+	}
+
+	return el
+}
+
+// ValidateUpdateCertificateRequestApprovalCondition will ensure that the
+// 'Approved' and 'Denied' conditions may not be changed once set, i.e. if they
+// exist, they are not modified in the updated resource. Also runs the base
+// approval validation on the updated CertificateRequest conditions.
+func ValidateUpdateCertificateRequestApprovalCondition(oldCRConds, newCRConds []cmapi.CertificateRequestCondition, fldPath *field.Path) field.ErrorList {
+	var (
+		el            = field.ErrorList{}
+		oldCRDenied   = getCertificateRequestCondition(oldCRConds, cmapi.CertificateRequestConditionDenied)
+		oldCRApproved = getCertificateRequestCondition(oldCRConds, cmapi.CertificateRequestConditionApproved)
+	)
+
+	// If the approval condition has been set, ensure it hasn't been modified.
+	if oldCRApproved != nil && !reflect.DeepEqual(oldCRApproved,
+		getCertificateRequestCondition(newCRConds, cmapi.CertificateRequestConditionApproved),
+	) {
+		el = append(el, field.Forbidden(fldPath, "'Approved' condition may not be modified once set"))
+	}
+
+	// If the denied condition has been set, ensure it hasn't been modified.
+	if oldCRDenied != nil && !reflect.DeepEqual(oldCRDenied,
+		getCertificateRequestCondition(newCRConds, cmapi.CertificateRequestConditionDenied),
+	) {
+		el = append(el, field.Forbidden(fldPath, "'Denied' condition may not be modified once set"))
+	}
+
+	return append(el, ValidateCertificateRequestApprovalCondition(newCRConds, fldPath)...)
 }
 
 func getCSRKeyUsage(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, csr *x509.CertificateRequest, el field.ErrorList) ([]cmapi.KeyUsage, field.ErrorList) {
@@ -199,4 +279,13 @@ func ensureCertSignIsSet(list []cmapi.KeyUsage) []cmapi.KeyUsage {
 	}
 
 	return append(list, cmapi.UsageCertSign)
+}
+
+func getCertificateRequestCondition(conds []cmapi.CertificateRequestCondition, conditionType cmapi.CertificateRequestConditionType) *cmapi.CertificateRequestCondition {
+	for _, cond := range conds {
+		if cond.Type == conditionType {
+			return &cond
+		}
+	}
+	return nil
 }

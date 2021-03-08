@@ -27,6 +27,7 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cminternal "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cminternalmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -114,122 +115,318 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 }
 
 func TestValidateCertificateRequestSpec(t *testing.T) {
-	fldPath := field.NewPath("test")
+	fldPath := field.NewPath("spec")
+	fldPathConditions := field.NewPath("status", "conditions")
 
-	tests := []struct {
-		name   string
-		crSpec *cminternal.CertificateRequestSpec
-		want   field.ErrorList
+	tests := map[string]struct {
+		cr   *cminternal.CertificateRequest
+		want field.ErrorList
 	}{
-		{
-			name: "Test csr with no usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
-				IssuerRef: validIssuerRef,
-				Usages:    nil,
+		"Test csr with no usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"))),
+					IssuerRef: validIssuerRef,
+					Usages:    nil,
+				},
 			},
 			want: []*field.Error{},
 		},
-		{
-			name: "Test csr with double signature usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageSigning, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment))),
-				IssuerRef: validIssuerRef,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment},
+		"Test csr with double signature usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageSigning, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment))),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment},
+				},
 			},
 			want: []*field.Error{},
 		},
-		{
-			name: "Test csr with double extended usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
-				IssuerRef: validIssuerRef,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
+		"Test csr with double extended usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
+				},
 			},
 			want: []*field.Error{},
 		},
-		{
-			name: "Test csr with reordered usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
-				IssuerRef: validIssuerRef,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageServerAuth, cminternal.UsageClientAuth, cminternal.UsageKeyEncipherment, cminternal.UsageDigitalSignature},
+		"Test csr with reordered usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageServerAuth, cminternal.UsageClientAuth, cminternal.UsageKeyEncipherment, cminternal.UsageDigitalSignature},
+				},
 			},
 			want: []*field.Error{},
 		},
-		{
-			name: "Test csr that is CA with usages set",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageCertSign), gen.SetCertificateIsCA(true))),
-				IssuerRef: validIssuerRef,
-				IsCA:      true,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment, cminternal.UsageCertSign},
+		"Test csr that is CA with usages set": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageCertSign), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment, cminternal.UsageCertSign},
+				},
 			},
 			want: []*field.Error{},
 		},
-		{
-			name: "Test csr that is CA but no cert sign in usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth, cmapi.UsageServerAuth), gen.SetCertificateIsCA(true))),
-				IssuerRef: validIssuerRef,
-				IsCA:      true,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment, cminternal.UsageClientAuth, cminternal.UsageServerAuth},
+		"Test csr that is CA but no cert sign in usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth, cmapi.UsageServerAuth), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageDigitalSignature, cminternal.UsageKeyEncipherment, cminternal.UsageClientAuth, cminternal.UsageServerAuth},
+				},
 			},
 			want: []*field.Error{},
 		},
-		{
-			name: "Error on csr not having all usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth))),
-				IssuerRef: validIssuerRef,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
+		"Error on csr not having all usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth))),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
+				},
 			},
 			want: []*field.Error{
 				field.Invalid(fldPath.Child("request"), nil, "csr key usages do not match specified usages, these should match if both are set: [[]certmanager.KeyUsage[3] != []certmanager.KeyUsage[4]]"),
 			},
 		},
-		{
-			name: "Error on cr not having all usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
-				IssuerRef: validIssuerRef,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment},
+		"Error on cr not having all usages": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
+					IssuerRef: validIssuerRef,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageKeyEncipherment},
+				},
 			},
 			want: []*field.Error{
 				field.Invalid(fldPath.Child("request"), nil, "csr key usages do not match specified usages, these should match if both are set: [[]certmanager.KeyUsage[4] != []certmanager.KeyUsage[2]]"),
 			},
 		},
-		{
-			name: "Error on cr not having all usages",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth))),
-				IssuerRef: validIssuerRef,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageSigning},
-			},
-			want: []*field.Error{
-				field.Invalid(fldPath.Child("request"), nil, "csr key usages do not match specified usages, these should match if both are set: [[]certmanager.KeyUsage[4] != []certmanager.KeyUsage[2]]"),
-			},
-		},
-		{
-			name: "Test csr with any, signing, digital signature, key encipherment, server and client auth",
-			crSpec: &cminternal.CertificateRequestSpec{
-				Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageSigning, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth, cmapi.UsageServerAuth), gen.SetCertificateIsCA(true))),
-				IssuerRef: validIssuerRef,
-				IsCA:      true,
-				Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageSigning, cminternal.UsageKeyEncipherment, cminternal.UsageClientAuth, cminternal.UsageServerAuth},
+		"Test csr with any, signing, digital signature, key encipherment, server and client auth": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny, cmapi.UsageSigning, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth, cmapi.UsageServerAuth), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny, cminternal.UsageSigning, cminternal.UsageKeyEncipherment, cminternal.UsageClientAuth, cminternal.UsageServerAuth},
+				},
 			},
 			want: []*field.Error{},
 		},
+		"CertificateRequest with single Approved=true condition, shouldn't error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionApproved,
+							Status: cminternalmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			want: []*field.Error{},
+		},
+		"CertificateRequest with single Denied=true condition, shouldn't error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionDenied,
+							Status: cminternalmeta.ConditionTrue,
+						},
+					},
+				},
+			},
+			want: []*field.Error{},
+		},
+		"CertificateRequest with single Approved=false condition, should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionApproved,
+							Status: cminternalmeta.ConditionFalse,
+							Reason: cmapi.CertificateRequestReasonApproved,
+						},
+					},
+				},
+			},
+			want: []*field.Error{
+				field.Invalid(fldPathConditions.Child(cmapi.CertificateRequestReasonApproved), nil,
+					`"Approved" condition may only be set to True`),
+			},
+		},
+		"CertificateRequest with single Denied=false condition, should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionDenied,
+							Status: cminternalmeta.ConditionFalse,
+							Reason: cmapi.CertificateRequestReasonDenied,
+						},
+					},
+				},
+			},
+			want: []*field.Error{
+				field.Invalid(fldPathConditions.Child(cmapi.CertificateRequestReasonDenied), nil,
+					`"Denied" condition may only be set to True`),
+			},
+		},
+		"CertificateRequest with both Denied=false and Approved=false conditions, should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionApproved,
+							Status: cminternalmeta.ConditionFalse,
+							Reason: cmapi.CertificateRequestReasonApproved,
+						},
+						{
+							Type:   cminternal.CertificateRequestConditionDenied,
+							Status: cminternalmeta.ConditionFalse,
+							Reason: cmapi.CertificateRequestReasonDenied,
+						},
+					},
+				},
+			},
+			want: []*field.Error{
+				field.Invalid(field.NewPath("status", "conditions", cmapi.CertificateRequestReasonApproved), nil,
+					`"Approved" condition may only be set to True`),
+				field.Invalid(field.NewPath("status", "conditions", cmapi.CertificateRequestReasonDenied), nil,
+					`"Denied" condition may only be set to True`),
+				field.Forbidden(fldPathConditions, "both 'Denied' and 'Approved' conditions cannot coexist"),
+			},
+		},
+		"CertificateRequest with both Denied=true and Approved=true conditions, should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionApproved,
+							Status: cminternalmeta.ConditionTrue,
+							Reason: cmapi.CertificateRequestReasonApproved,
+						},
+						{
+							Type:   cminternal.CertificateRequestConditionDenied,
+							Status: cminternalmeta.ConditionTrue,
+							Reason: cmapi.CertificateRequestReasonDenied,
+						},
+					},
+				},
+			},
+			want: []*field.Error{
+				field.Forbidden(fldPathConditions, "both 'Denied' and 'Approved' conditions cannot coexist"),
+			},
+		},
+		"CertificateRequest with multiple Approved conditions, should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionApproved,
+							Status: cminternalmeta.ConditionTrue,
+							Reason: cmapi.CertificateRequestReasonApproved,
+						},
+						{
+							Type:   cminternal.CertificateRequestConditionApproved,
+							Status: cminternalmeta.ConditionFalse,
+							Reason: "foo",
+						},
+					},
+				},
+			},
+			want: []*field.Error{
+				field.Forbidden(fldPathConditions, `multiple "Approved" conditions present`),
+			},
+		},
+		"CertificateRequest with multiple Denied conditions, should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
+					IssuerRef: validIssuerRef,
+					IsCA:      true,
+					Usages:    []cminternal.KeyUsage{cminternal.UsageAny},
+				},
+				Status: cminternal.CertificateRequestStatus{
+					Conditions: []cminternal.CertificateRequestCondition{
+						{
+							Type:   cminternal.CertificateRequestConditionDenied,
+							Status: cminternalmeta.ConditionTrue,
+							Reason: cmapi.CertificateRequestReasonDenied,
+						},
+						{
+							Type:   cminternal.CertificateRequestConditionDenied,
+							Status: cminternalmeta.ConditionFalse,
+							Reason: "foo",
+						},
+					},
+				},
+			},
+			want: []*field.Error{
+				field.Forbidden(fldPathConditions, `multiple "Denied" conditions present`),
+			},
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ValidateCertificateRequestSpec(tt.crSpec, field.NewPath("test"), true)
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := ValidateCertificateRequest(nil, tt.cr)
 			for i := range got {
-				// filter out the value so it does not print the full CSR in tests
-				got[i].BadValue = nil
+				if got[i].Type != field.ErrorTypeForbidden {
+					// filter out the value so it does not print the full CSR in tests
+					got[i].BadValue = nil
+				}
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ValidateCertificateRequestSpec() = %v, want %v", got, tt.want)
+				t.Errorf("ValidateCertificateRequest() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -261,34 +458,29 @@ func mustGenerateCSR(t *testing.T, crt *cmapi.Certificate) []byte {
 }
 
 func Test_patchDuplicateKeyUsage(t *testing.T) {
-	tests := []struct {
-		name   string
+	tests := map[string]struct {
 		usages []cminternal.KeyUsage
 		want   []cminternal.KeyUsage
 	}{
-		{
-			name:   "Test single KU",
+		"Test single KU": {
 			usages: []cminternal.KeyUsage{cminternal.UsageKeyEncipherment},
 			want:   []cminternal.KeyUsage{cminternal.UsageKeyEncipherment},
 		},
-		{
-			name:   "Test UsageSigning",
+		"Test UsageSigning": {
 			usages: []cminternal.KeyUsage{cminternal.UsageSigning},
 			want:   []cminternal.KeyUsage{cminternal.UsageDigitalSignature},
 		},
-		{
-			name:   "Test multiple KU",
+		"Test multiple KU": {
 			usages: []cminternal.KeyUsage{cminternal.UsageDigitalSignature, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
 			want:   []cminternal.KeyUsage{cminternal.UsageDigitalSignature, cminternal.UsageServerAuth, cminternal.UsageClientAuth},
 		},
-		{
-			name:   "Test double signing",
+		"Test double signing": {
 			usages: []cminternal.KeyUsage{cminternal.UsageSigning, cminternal.UsageDigitalSignature},
 			want:   []cminternal.KeyUsage{cminternal.UsageDigitalSignature},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			if got := patchDuplicateKeyUsage(tt.usages); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("patchDuplicateKeyUsage() = %v, want %v", got, tt.want)
 			}
