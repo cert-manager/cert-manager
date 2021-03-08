@@ -18,6 +18,8 @@ package certificate
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"strings"
 	"time"
@@ -274,6 +276,77 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		By("Validating the issued Certificate...")
 		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should allow updating the dns name of a failing certificate that had a wrong dns name", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
+
+		By("Creating a failing Certificate")
+		cert := gen.Certificate(certificateName,
+			gen.SetCertificateSecretName(certificateSecretName),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateDNSNames("google.com"),
+		)
+		cert.Namespace = f.Namespace.Name
+
+		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Making sure the Order failed with a 400 since google.com is invalid")
+		order := &cmacme.Order{}
+		err = wait.PollImmediate(1*time.Second, 1*time.Minute, func() (done bool, err error) {
+			orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
+			Expect(err).NotTo(HaveOccurred())
+
+			if len(orders) != 1 {
+				log.Logf("Waiting as one Order should exist, but we found %d", len(orders))
+				return false, nil
+			}
+			order = orders[0]
+
+			expected := `400 urn:ietf:params:acme:error:rejectedIdentifier: Cannot issue for "google.com"`
+			if !strings.Contains(order.Status.Reason, expected) {
+				log.Logf("Waiting for Order's reason, current: %s, should contain: %s", order.Status.Reason, expected)
+				return false, nil
+			}
+
+			return true, nil
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Getting the latest version of the Certificate")
+		cert, err = certClient.Get(context.TODO(), certificateName, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Replacing dnsNames with a valid dns name")
+		cert.Spec.DNSNames = []string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)}
+		_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for the Certificate to be not ready")
+		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for the Certificate to become ready & valid")
+
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Checking that the secret contains this dns name")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, func(cert *v1.Certificate, secret *corev1.Secret) error {
+			dnsnames, err := findDNSNames(secret)
+			if err != nil {
+				return err
+			}
+			Expect(dnsnames).To(Equal(cert.Spec.DNSNames))
+			return nil
+		})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -570,3 +643,27 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 })
+
+// findDNSNames decodes and returns the dns names (SANs) contained in a
+// certificate secret.
+func findDNSNames(s *corev1.Secret) ([]string, error) {
+	if s.Data == nil {
+		return nil, fmt.Errorf("secret contains no data")
+	}
+	pkData := s.Data[corev1.TLSPrivateKeyKey]
+	certData := s.Data[corev1.TLSCertKey]
+	if len(pkData) == 0 || len(certData) == 0 {
+		return nil, fmt.Errorf("missing data in CA secret")
+	}
+	cert, err := tls.X509KeyPair(certData, pkData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse data in CA secret: %w", err)
+	}
+
+	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		return nil, fmt.Errorf("internal error parsing x509 certificate: %w", err)
+	}
+
+	return x509Cert.DNSNames, nil
+}
