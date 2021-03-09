@@ -55,7 +55,7 @@ func IssuerHasCondition(i cmapi.GenericIssuer, c cmapi.IssuerCondition) bool {
 //   condition will be updated and the LastTransitionTime set to the current
 //   time.
 // This function works with both Issuer and ClusterIssuer resources.
-func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditionType, status cmmeta.ConditionStatus, reason, message string) {
+func SetIssuerCondition(i cmapi.GenericIssuer, observedGeneration int64, conditionType cmapi.IssuerConditionType, status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.IssuerCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -65,6 +65,9 @@ func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditi
 
 	nowTime := metav1.NewTime(Clock.Now())
 	newCondition.LastTransitionTime = &nowTime
+
+	// Set the condition generation
+	newCondition.ObservedGeneration = observedGeneration
 
 	// Search through existing conditions
 	for idx, cond := range i.GetStatus().Conditions {
