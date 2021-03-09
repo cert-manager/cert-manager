@@ -56,7 +56,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	apiutil.SetCertificateRequestCondition(cr,
 		cmapi.CertificateRequestConditionApproved,
 		cmmeta.ConditionTrue,
-		cmapi.CertificateRequestReasonApproved,
+		"cert-manager.io",
 		ApprovedMessage,
 	)
 
@@ -65,7 +65,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	if err != nil {
 		return err
 	}
-	c.recorder.Event(cr, corev1.EventTypeNormal, cmapi.CertificateRequestReasonApproved, ApprovedMessage)
+	c.recorder.Event(cr, corev1.EventTypeNormal, "cert-manager.io", ApprovedMessage)
 
 	log.V(logf.DebugLevel).Info("approved certificate request")
 
