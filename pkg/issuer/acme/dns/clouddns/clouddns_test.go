@@ -109,6 +109,10 @@ func TestLiveGoogleCloudCleanUp(t *testing.T) {
 }
 
 func TestDNSProvider_getHostedZone(t *testing.T) {
+	if !gcloudLiveTest {
+		t.Skip("skipping live test")
+	}
+
 	testProvider, err := NewDNSProviderCredentials("my-project", util.RecursiveNameservers, "test-zone")
 	assert.NoError(t, err)
 
