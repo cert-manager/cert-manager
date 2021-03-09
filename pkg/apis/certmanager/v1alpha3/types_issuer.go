@@ -324,7 +324,7 @@ type IssuerCondition struct {
 	// set based upon.
 	// For instance, if .metadata.generation is currently 12, but the
 	// .status.condition[x].observedGeneration is 9, the condition is out of date
-	// with respect to the current state of the Certificate.
+	// with respect to the current state of the Issuer.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }

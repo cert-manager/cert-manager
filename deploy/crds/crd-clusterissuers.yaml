@@ -1051,6 +1051,10 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Issuer.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
@@ -2085,6 +2089,10 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Issuer.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
@@ -3121,6 +3129,10 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Issuer.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
@@ -4157,6 +4169,10 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Issuer.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
