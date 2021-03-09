@@ -289,6 +289,13 @@ type IssuerCondition struct {
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
 	Message string
+
+	// If set, this represents the .metadata.generation that the condition was
+	// set based upon.
+	// For instance, if .metadata.generation is currently 12, but the
+	// .status.condition[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the Issuer.
+	ObservedGeneration int64
 }
 
 // IssuerConditionType represents an Issuer condition value.
