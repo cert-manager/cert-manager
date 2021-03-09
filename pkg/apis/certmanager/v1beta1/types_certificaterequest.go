@@ -33,14 +33,6 @@ const (
 	// Issued indicates that a CertificateRequest has been completed, and that
 	// the `status.certificate` field is set.
 	CertificateRequestReasonIssued = "Issued"
-
-	// Approved indicates that a CertificateRequest has been approved by the
-	// approver, and the certificate request is ready for signing.
-	CertificateRequestReasonApproved = "Approved"
-
-	// Denied indicates that a CertificateRequest has been denied by the
-	// approver, and the certificate request will be never be signed.
-	CertificateRequestReasonDenied = "Denied"
 )
 
 // +genclient
