@@ -139,7 +139,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionDenied,
 			Status:             cmmeta.ConditionTrue,
-			Reason:             cmapi.CertificateRequestReasonDenied,
+			Reason:             "Foo",
 			Message:            "Certificate request has been denied by cert-manager.io",
 			LastTransitionTime: &metaFixedClockStart,
 		}),
@@ -148,7 +148,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionApproved,
 			Status:             cmmeta.ConditionTrue,
-			Reason:             cmapi.CertificateRequestReasonApproved,
+			Reason:             "cert-manager.io",
 			Message:            "Certificate request has been approved by cert-manager.io",
 			LastTransitionTime: &metaFixedClockStart,
 		}),

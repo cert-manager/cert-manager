@@ -144,7 +144,7 @@ func ValidateCertificateRequestApprovalCondition(crConds []cmapi.CertificateRequ
 			break
 		case 1:
 			if condition := cond.conditions[0]; condition.Status != cmmeta.ConditionTrue {
-				el = append(el, field.Invalid(fldPath.Child(condition.Reason), condition.Status,
+				el = append(el, field.Invalid(fldPath.Child(string(condition.Type)), condition.Status,
 					fmt.Sprintf("%q condition may only be set to True", cond.condType)))
 			}
 		default:
