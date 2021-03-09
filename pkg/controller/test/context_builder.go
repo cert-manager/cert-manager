@@ -198,6 +198,7 @@ func (b *Builder) AllEventsCalled() error {
 	return utilerrors.NewAggregate(errs)
 }
 
+// AllActionsExecuted skips the "list" and "watch" action verbs.
 func (b *Builder) AllActionsExecuted() error {
 	firedActions := b.FakeCMClient().Actions()
 	firedActions = append(firedActions, b.FakeKubeClient().Actions()...)

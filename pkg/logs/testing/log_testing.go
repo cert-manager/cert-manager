@@ -17,38 +17,48 @@ limitations under the License.
 package testing
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/go-logr/logr"
 )
 
-// TestLogger is a logr.Logger that prints through a testing.T object.
+// TestLogger is a logr.Logger that prints everything to t.Log.
 type TestLogger struct {
-	T *testing.T
+	T          *testing.T
+	name       string
+	withValues []string
 }
 
-var _ logr.Logger = TestLogger{}
+func (log TestLogger) Info(msg string, keysAndValues ...interface{}) {
+	withValues := append([]string{}, log.withValues...)
+	for i := 0; i < len(keysAndValues); i = i + 2 {
+		withValues = append(withValues, fmt.Sprintf(`%s="%v"`, keysAndValues[i], keysAndValues[i+1]))
+	}
+	log.T.Logf("%s: %v", msg, strings.Join(withValues, " "))
+}
 
 func (_ TestLogger) Enabled() bool {
 	return true
 }
 
-func (log TestLogger) Info(msg string, args ...interface{}) {
-	log.T.Logf("%s: %v", msg, args)
-}
-
 func (log TestLogger) Error(err error, msg string, args ...interface{}) {
-	log.T.Logf("%s: %v -- %v", msg, err, args)
+	log.T.Logf("%s: %v: %v", msg, err, args)
 }
 
-func (log TestLogger) V(v int) logr.InfoLogger {
+func (log TestLogger) V(v int) logr.Logger {
 	return log
 }
 
-func (log TestLogger) WithName(_ string) logr.Logger {
+func (log TestLogger) WithName(name string) logr.Logger {
+	log.name = name
 	return log
 }
 
-func (log TestLogger) WithValues(_ ...interface{}) logr.Logger {
+func (log TestLogger) WithValues(keysAndValues ...interface{}) logr.Logger {
+	for i := 0; i < len(keysAndValues); i = i + 2 {
+		log.withValues = append(log.withValues, fmt.Sprintf(`%s="%v"`, keysAndValues[i], keysAndValues[i+1]))
+	}
 	return log
 }
