@@ -388,8 +388,8 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 	}, nil
 }
 
-// SignCertificate returns a signed x509.Certificate object for the given
-// *v1.Certificate crt.
+// SignCertificate returns a signed *x509.Certificate given a template
+// *x509.Certificate crt and an issuer.
 // publicKey is the public key of the signee, and signerKey is the private
 // key of the signer.
 // It returns a PEM encoded copy of the Certificate as well as a *x509.Certificate
