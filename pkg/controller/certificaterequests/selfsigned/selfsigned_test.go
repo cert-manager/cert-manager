@@ -25,6 +25,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -51,9 +52,9 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm) []byte {
+func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm, commonName string) []byte {
 	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
+		CommonName: commonName,
 	}.ToRDNSequence())
 	template := x509.CertificateRequest{
 		RawSubject:         asn1Subj,
@@ -106,7 +107,7 @@ func TestSign(t *testing.T) {
 			corev1.TLSPrivateKeyKey: []byte("this is a bad key"),
 		},
 	}
-	csrRSAPEM := generateCSR(t, skRSA, x509.SHA256WithRSA)
+	csrRSAPEM := generateCSR(t, skRSA, x509.SHA256WithRSA, "test-rsa")
 
 	skEC, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
@@ -127,7 +128,9 @@ func TestSign(t *testing.T) {
 			corev1.TLSPrivateKeyKey: skECPEM,
 		},
 	}
-	csrECPEM := generateCSR(t, skEC, x509.ECDSAWithSHA256)
+	csrECPEM := generateCSR(t, skEC, x509.ECDSAWithSHA256, "test-ec")
+
+	csrEmptyCertPEM := generateCSR(t, skEC, x509.ECDSAWithSHA256, "")
 
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestAnnotations(
@@ -163,6 +166,9 @@ func TestSign(t *testing.T) {
 	ecCR := gen.CertificateRequestFrom(baseCR,
 		gen.SetCertificateRequestCSR(csrECPEM),
 	)
+	emptyCR := gen.CertificateRequestFrom(baseCR,
+		gen.SetCertificateRequestCSR(csrEmptyCertPEM),
+	)
 
 	templateRSA, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
@@ -181,6 +187,18 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 	certECPEM, _, err := pki.SignCertificate(templateEC, templateEC, skEC.Public(), skEC)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	templateEmptyCert, err := pki.GenerateTemplateFromCertificateRequest(emptyCR)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	emptyCertPEM, _, err := pki.SignCertificate(templateEmptyCert, templateEmptyCert, skEC.Public(), skEC)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -514,6 +532,50 @@ func TestSign(t *testing.T) {
 							}),
 							gen.SetCertificateRequestCertificate(certECPEM),
 							gen.SetCertificateRequestCA(certECPEM),
+						),
+					)),
+				},
+			},
+		},
+		"should sign a cert with no subject DN and create a warning event": {
+			certificateRequest: emptyCR.DeepCopy(),
+			signingFn: func(c1 *x509.Certificate, c2 *x509.Certificate, pk crypto.PublicKey, sk interface{}) ([]byte, *x509.Certificate, error) {
+				_, cert, err := pki.SignCertificate(c1, c2, pk, sk)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if cert.Subject.String() != "" {
+					return nil, nil, errors.New("invalid test: cert being issued should have an empty DN")
+				}
+
+				// need to return a known PEM cert as is done in other tets, since the actual issued cert (`cert` above)
+				// will have a different serial number + expiry
+				return emptyCertPEM, nil, nil
+			},
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{ecKeySecret},
+				CertManagerObjects: []runtime.Object{emptyCR.DeepCopy(), baseIssuer},
+				ExpectedEvents: []string{
+					fmt.Sprintf("Warning BadConfig %s", emptyDNMessage),
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(
+							emptyCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(emptyCertPEM),
+							gen.SetCertificateRequestCA(emptyCertPEM),
 						),
 					)),
 				},
