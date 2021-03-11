@@ -48,6 +48,10 @@ func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, n
 
 	var el field.ErrorList
 
+	// Enforce that no cert-manager annotations may be modified after creation.
+	// This is to prevent changing the request during processing resulting in
+	// undefined behaviour, and breaking the concept of requests being made by a
+	// single user.
 	annotationField := field.NewPath("metadata", "annotations")
 	el = append(el, validateCertificateRequestAnnotations(oldCR, newCR, annotationField)...)
 	el = append(el, validateCertificateRequestAnnotations(newCR, oldCR, annotationField)...)

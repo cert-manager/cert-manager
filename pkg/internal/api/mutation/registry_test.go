@@ -382,19 +382,4 @@ func TestMutate(t *testing.T) {
 			}
 		})
 	}
-
-	//reg := validation.NewRegistry(scheme)
-	//called := false
-	//utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
-	//	called = true
-	//	return nil
-	//}))
-	//errs := reg.Validate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
-	//if len(errs) > 0 {
-	//	t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
-	//}
-	//if !called {
-	//	t.Errorf("expected registered validation function to run but it did not")
-	//}
-
 }

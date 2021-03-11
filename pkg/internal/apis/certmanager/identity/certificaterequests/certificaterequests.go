@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package certificaterequests populates and enforces identiy on
+// Package certificaterequests populates and enforces identity on
 // CertificateRequest resources.
 package certificaterequests
 

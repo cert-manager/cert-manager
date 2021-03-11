@@ -53,7 +53,8 @@ func InstallValidation(registry *validation.Registry) {
 	utilruntime.Must(cmidentity.AddToValidationRegistry(registry))
 }
 
-// TODO
+// InstallMutation registers mutation functions for the API group with a
+// mutation registry
 func InstallMutation(registry *mutation.Registry) {
 	utilruntime.Must(cmidentity.AddToMutationRegistry(registry))
 }

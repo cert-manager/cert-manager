@@ -178,8 +178,8 @@ func TestValidateUpdate(t *testing.T) {
 
 func TestMutateCreate(t *testing.T) {
 	tests := map[string]struct {
-		req   *admissionv1.AdmissionRequest
-		expCR *cmapi.CertificateRequest
+		req                    *admissionv1.AdmissionRequest
+		existingCR, expectedCR *cmapi.CertificateRequest
 	}{
 		"should set the identity of CertificateRequest to that of the requester": {
 			req: &admissionv1.AdmissionRequest{
@@ -193,7 +193,43 @@ func TestMutateCreate(t *testing.T) {
 					},
 				},
 			},
-			expCR: &cmapi.CertificateRequest{
+			existingCR: new(cmapi.CertificateRequest),
+			expectedCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
+					UID:      "abc",
+					Username: "user-1",
+					Groups:   []string{"group-1", "group-2"},
+					Extra: map[string][]string{
+						"1": {"abc", "efg"},
+						"2": {"efg", "abc"},
+					},
+				},
+			},
+		},
+		"should overrite existing user info fields if they exist on a CREATE operation": {
+			req: &admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					UID:      "abc",
+					Username: "user-1",
+					Groups:   []string{"group-1", "group-2"},
+					Extra: map[string]authenticationv1.ExtraValue{
+						"1": []string{"abc", "efg"},
+						"2": []string{"efg", "abc"},
+					},
+				},
+			},
+			existingCR: &cmapi.CertificateRequest{
+				Spec: cmapi.CertificateRequestSpec{
+					UID:      "1234",
+					Username: "user-2",
+					Groups:   []string{"group-3", "group-4"},
+					Extra: map[string][]string{
+						"3": {"abc", "efg"},
+						"4": {"efg", "abc"},
+					},
+				},
+			},
+			expectedCR: &cmapi.CertificateRequest{
 				Spec: cmapi.CertificateRequestSpec{
 					UID:      "abc",
 					Username: "user-1",
@@ -209,10 +245,10 @@ func TestMutateCreate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			cr := new(cmapi.CertificateRequest)
+			cr := test.expectedCR.DeepCopy()
 			MutateCreate(test.req, cr)
-			if !reflect.DeepEqual(test.expCR, cr) {
-				t.Errorf("MutateCreate() = %v, want %v", cr, test.expCR)
+			if !reflect.DeepEqual(test.expectedCR, cr) {
+				t.Errorf("MutateCreate() = %v, want %v", cr, test.expectedCR)
 			}
 		})
 	}

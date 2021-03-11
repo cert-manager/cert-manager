@@ -22,7 +22,7 @@ limitations under the License.
 // functions are defined for that type. Any type where defaulting is desired
 // should be registered.
 // Functions are designed to update the incoming object, or new object, which
-// will then have a patch generated and returned to the mater Mutation.
+// will then have a patch generated and returned to the master Mutation.
 package mutation
 
 import (
@@ -102,8 +102,8 @@ func (r *Registry) AddMutateUpdateFunc(obj runtime.Object, fn MutateUpdateFunc) 
 	return nil
 }
 
-// Mutate will run all mutation functions registered for the internal type of
-// the given resource.
+// Mutate will run all mutation functions registed on CREATE and UPDATE
+// operations over the internal type of the given resource.
 // The object is converted to its internal version before either a CREATE or
 // UPDATE mutation is applied to the object. The object is then converted to
 // the requested version, and defaults applied for that schema.
