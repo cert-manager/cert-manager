@@ -39,7 +39,11 @@ const (
 	messageVaultConfigRequired           = "Vault config cannot be empty"
 	messageServerAndPathRequired         = "Vault server and path are required fields"
 	messageAuthFieldsRequired            = "Vault tokenSecretRef, appRole, or kubernetes is required"
-	messageAuthFieldRequired             = "Multiple auth methods cannot be set on the same Vault issuer"
+	messageMultipleAuthFieldsSet         = "Multiple auth methods cannot be set on the same Vault issuer"
+
+	messageKubeAuthFieldsRequired    = "Vault Kubernetes auth requires both role and secretRef.name"
+	messageTokenAuthNameRequired     = "Vault Token auth requires tokenSecretRef.name"
+	messageAppRoleAuthFieldsRequired = "Vault AppRole auth requires both roleId and tokenSecretRef.name"
 )
 
 func (v *Vault) Setup(ctx context.Context) error {
@@ -72,29 +76,29 @@ func (v *Vault) Setup(ctx context.Context) error {
 	if (tokenAuth != nil && appRoleAuth != nil) ||
 		(tokenAuth != nil && kubeAuth != nil) ||
 		(appRoleAuth != nil && kubeAuth != nil) {
-		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
-		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageMultipleAuthFieldsSet)
+		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageMultipleAuthFieldsSet)
 		return nil
 	}
 
 	// check if all mandatory Vault Token fields are set.
 	if tokenAuth != nil && len(tokenAuth.Name) == 0 {
-		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
-		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageTokenAuthNameRequired)
+		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageTokenAuthNameRequired)
 		return nil
 	}
 
 	// check if all mandatory Vault appRole fields are set.
 	if appRoleAuth != nil && (len(appRoleAuth.RoleId) == 0 || len(appRoleAuth.SecretRef.Name) == 0) {
-		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
-		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAppRoleAuthFieldsRequired)
+		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAppRoleAuthFieldsRequired)
 		return nil
 	}
 
 	// check if all mandatory Vault Kubernetes fields are set.
 	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) == 0 || len(kubeAuth.Role) == 0) {
-		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
-		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
+		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageKubeAuthFieldsRequired)
+		apiutil.SetIssuerCondition(v.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthFieldsRequired)
 		return nil
 	}
 
