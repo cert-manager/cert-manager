@@ -27,7 +27,12 @@ spec:
   - 'projected'
   - 'secret'
   - 'downwardAPI'
-  hostNetwork: false
+  hostNetwork: {{ .Values.webhook.hostNetwork }}
+  {{ if .Values.webhook.hostNetwork }}
+  hostPorts:
+  - max: {{ .Values.webhook.securePort }}
+    min: {{ .Values.webhook.securePort }}
+  {{ end }}
   hostIPC: false
   hostPID: false
   runAsUser:
