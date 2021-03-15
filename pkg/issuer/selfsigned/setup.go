@@ -29,6 +29,6 @@ const (
 )
 
 func (c *SelfSigned) Setup(ctx context.Context) error {
-	apiutil.SetIssuerCondition(c.issuer, v1.IssuerConditionReady, cmmeta.ConditionTrue, successReady, "")
+	apiutil.SetIssuerCondition(c.issuer, c.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successReady, "")
 	return nil
 }

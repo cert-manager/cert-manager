@@ -32,7 +32,7 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 		if err != nil {
 			errorMessage := "Failed to setup Venafi issuer"
 			v.log.Error(err, errorMessage)
-			apiutil.SetIssuerCondition(v.issuer, cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "ErrorSetup", fmt.Sprintf("%s: %v", errorMessage, err))
+			apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionFalse, "ErrorSetup", fmt.Sprintf("%s: %v", errorMessage, err))
 			err = fmt.Errorf("%s: %v", errorMessage, err)
 		}
 	}()
@@ -55,7 +55,7 @@ func (v *Venafi) Setup(ctx context.Context) (err error) {
 		v.Recorder.Eventf(v.issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with Venafi server")
 	}
 	v.log.V(logf.DebugLevel).Info("Venafi issuer started")
-	apiutil.SetIssuerCondition(v.issuer, cmapi.IssuerConditionReady, cmmeta.ConditionTrue, "Venafi issuer started", "Venafi issuer started")
+	apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), cmapi.IssuerConditionReady, cmmeta.ConditionTrue, "Venafi issuer started", "Venafi issuer started")
 
 	return nil
 }

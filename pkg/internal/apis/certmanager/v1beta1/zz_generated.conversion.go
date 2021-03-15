@@ -848,6 +848,7 @@ func autoConvert_v1beta1_IssuerCondition_To_certmanager_IssuerCondition(in *v1be
 	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
+	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
 
@@ -862,6 +863,7 @@ func autoConvert_certmanager_IssuerCondition_To_v1beta1_IssuerCondition(in *cert
 	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
+	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
 
