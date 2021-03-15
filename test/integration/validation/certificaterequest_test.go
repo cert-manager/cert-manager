@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/jetstack/cert-manager/pkg/api"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/integration/framework"
@@ -47,53 +47,53 @@ func TestValidationCertificateRequests(t *testing.T) {
 		expectError bool
 	}{
 		"No errors on valid certificaterequest with no usages set": {
-			input: &v1.CertificateRequest{
+			input: &cmapi.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1.CertificateRequestSpec{
-					Request: mustGenerateCSR(t, &v1.Certificate{
-						Spec: v1.CertificateSpec{
+				Spec: cmapi.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &cmapi.Certificate{
+						Spec: cmapi.CertificateSpec{
 							DNSNames: []string{"example.com"},
 						},
 					}),
-					Usages:    []v1.KeyUsage{},
+					Usages:    []cmapi.KeyUsage{},
 					IssuerRef: cmmeta.ObjectReference{Name: "test"},
 				},
 			},
 			expectError: false,
 		},
 		"No errors on valid certificaterequest with special usages set": {
-			input: &v1.CertificateRequest{
+			input: &cmapi.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1.CertificateRequestSpec{
-					Request: mustGenerateCSR(t, &v1.Certificate{
-						Spec: v1.CertificateSpec{
+				Spec: cmapi.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &cmapi.Certificate{
+						Spec: cmapi.CertificateSpec{
 							DNSNames: []string{"example.com"},
-							Usages:   []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+							Usages:   []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
 						},
 					}),
-					Usages:    []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
 					IssuerRef: cmmeta.ObjectReference{Name: "test"},
 				},
 			},
 			expectError: false,
 		},
 		"No errors on valid certificaterequest with special usages set only in CSR": {
-			input: &v1.CertificateRequest{
+			input: &cmapi.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1.CertificateRequestSpec{
-					Request: mustGenerateCSR(t, &v1.Certificate{
-						Spec: v1.CertificateSpec{
+				Spec: cmapi.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &cmapi.Certificate{
+						Spec: cmapi.CertificateSpec{
 							DNSNames: []string{"example.com"},
-							Usages:   []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+							Usages:   []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
 						},
 					}),
 					IssuerRef: cmmeta.ObjectReference{Name: "test"},
@@ -102,48 +102,69 @@ func TestValidationCertificateRequests(t *testing.T) {
 			expectError: false,
 		},
 		"No errors on valid certificaterequest with special usages only set in spec": {
-			input: &v1.CertificateRequest{
+			input: &cmapi.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1.CertificateRequestSpec{
-					Request: mustGenerateCSR(t, &v1.Certificate{
-						Spec: v1.CertificateSpec{
+				Spec: cmapi.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &cmapi.Certificate{
+						Spec: cmapi.CertificateSpec{
 							DNSNames: []string{"example.com"},
-							Usages:   []v1.KeyUsage{},
+							Usages:   []cmapi.KeyUsage{},
 						},
 					}),
-					Usages:    []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
 					IssuerRef: cmmeta.ObjectReference{Name: "test"},
 				},
 			},
 			expectError: false,
 		},
 		"Errors on certificaterequest with mismatch of usages": {
-			input: &v1.CertificateRequest{
+			input: &cmapi.CertificateRequest{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1.CertificateRequestSpec{
-					Request: mustGenerateCSR(t, &v1.Certificate{
-						Spec: v1.CertificateSpec{
+				Spec: cmapi.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &cmapi.Certificate{
+						Spec: cmapi.CertificateSpec{
 							DNSNames: []string{"example.com"},
-							Usages:   []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+							Usages:   []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
 						},
 					}),
-					Usages:    []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageCodeSigning},
+					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageCodeSigning},
 					IssuerRef: cmmeta.ObjectReference{Name: "test"},
 				},
 			},
 			expectError: true,
 			errorSuffix: "csr key usages do not match specified usages, these should match if both are set: [[2]: \"client auth\" != \"code signing\"]",
 		},
+		"Shouldn't error when setting user info, since this will be overwritten by the mutating webhook": {
+			input: &cmapi.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: cmapi.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, &cmapi.Certificate{
+						Spec: cmapi.CertificateSpec{
+							DNSNames: []string{"example.com"},
+							Usages:   []cmapi.KeyUsage{},
+						},
+					}),
+					Usages:    []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
+					IssuerRef: cmmeta.ObjectReference{Name: "test"},
+					Username:  "user-1",
+					Groups:    []string{"group-1", "group-2"},
+				},
+			},
+			expectError: false,
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			cert := test.input.(*v1.CertificateRequest)
+			cert := test.input.(*cmapi.CertificateRequest)
 			cert.SetGroupVersionKind(certGVK)
 
 			config, stop := framework.RunControlPlane(t)
@@ -157,20 +178,19 @@ func TestValidationCertificateRequests(t *testing.T) {
 			}
 
 			err = cl.Create(context.Background(), cert)
-
-			if !test.expectError && err != nil {
-				t.Fatalf("Didn't expect error and got error: %v", err)
-			} else if test.expectError && err == nil {
-				t.Errorf("Expected error %v but got nil", test.errorSuffix)
-
-			} else if test.expectError && !strings.HasSuffix(err.Error(), test.errorSuffix) {
-				t.Errorf("Expected error %q but got %q", test.errorSuffix, err)
+			if test.expectError != (err != nil) {
+				t.Errorf("unexpected error, exp=%t got=%v",
+					test.expectError, err)
+			}
+			if test.expectError && !strings.HasSuffix(err.Error(), test.errorSuffix) {
+				t.Errorf("unexpected error suffix, exp=%s got=%s",
+					test.errorSuffix, err)
 			}
 		})
 	}
 }
 
-func mustGenerateCSR(t *testing.T, cert *v1.Certificate) []byte {
+func mustGenerateCSR(t *testing.T, cert *cmapi.Certificate) []byte {
 	request, err := pki.GenerateCSR(cert)
 	if err != nil {
 		t.Fatal(err)

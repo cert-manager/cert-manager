@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -30,6 +31,87 @@ import (
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
+
+func TestValidateCertificateRequestUpdate(t *testing.T) {
+	baseCR := &cminternal.CertificateRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"abc":                      "123",
+				"cert-manager.io/foo":      "abc",
+				"acme.cert-manager.io/bar": "123",
+			},
+		},
+		Spec: cminternal.CertificateRequestSpec{
+			Request:   mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+			IssuerRef: validIssuerRef,
+			Usages:    nil,
+			UID:       "abc",
+			Username:  "user-1",
+			Groups:    []string{"group-1", "group-2"},
+			Extra: map[string][]string{
+				"1": {"abc", "efg"},
+				"2": {"efg", "abc"},
+			},
+		},
+	}
+
+	tests := map[string]struct {
+		oldCR, newCR *cminternal.CertificateRequest
+		want         field.ErrorList
+	}{
+		"if CertificateRequest spec and cert-manager.io annotations change, error": {
+			oldCR: baseCR.DeepCopy(),
+			newCR: &cminternal.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"acme.cert-manager.io/bar": "123",
+						"123":                      "abc",
+					},
+				},
+				Spec: cminternal.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+				},
+			},
+			want: []*field.Error{
+				field.Forbidden(field.NewPath("metadata", "annotations", "cert-manager.io/foo"), "cannot change cert-manager annotation after creation"),
+				field.Forbidden(field.NewPath("spec"), "cannot change spec after creation"),
+			},
+		},
+		"if CertificateRequest spec and acme.cert-manager.io annotations change, error": {
+			oldCR: baseCR.DeepCopy(),
+			newCR: &cminternal.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"cert-manager.io/foo": "abc",
+						"123":                 "abc",
+					},
+				},
+				Spec: cminternal.CertificateRequestSpec{
+					Request: mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+				},
+			},
+			want: []*field.Error{
+				field.Forbidden(field.NewPath("metadata", "annotations", "acme.cert-manager.io/bar"), "cannot change cert-manager annotation after creation"),
+				field.Forbidden(field.NewPath("spec"), "cannot change spec after creation"),
+			},
+		},
+		"if CertificateRequest spec and annotations do not change, don't error": {
+			oldCR: baseCR.DeepCopy(),
+			newCR: baseCR.DeepCopy(),
+			want:  nil,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := ValidateUpdateCertificateRequest(nil, test.oldCR, test.newCR)
+			if !reflect.DeepEqual(err, test.want) {
+				t.Errorf("got unexpected error response, exp=%v got=%v",
+					test.want, err)
+			}
+		})
+	}
+}
 
 func TestValidateCertificateRequestSpec(t *testing.T) {
 	fldPath := field.NewPath("test")

@@ -643,6 +643,10 @@ func autoConvert_v1alpha2_CertificateRequestSpec_To_certmanager_CertificateReque
 	// WARNING: in.CSRPEM requires manual conversion: does not exist in peer-type
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
+	out.Username = in.Username
+	out.UID = in.UID
+	out.Groups = *(*[]string)(unsafe.Pointer(&in.Groups))
+	out.Extra = *(*map[string][]string)(unsafe.Pointer(&in.Extra))
 	return nil
 }
 
@@ -655,6 +659,10 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1alpha2_CertificateReque
 	// WARNING: in.Request requires manual conversion: does not exist in peer-type
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]v1alpha2.KeyUsage)(unsafe.Pointer(&in.Usages))
+	out.Username = in.Username
+	out.UID = in.UID
+	out.Groups = *(*[]string)(unsafe.Pointer(&in.Groups))
+	out.Extra = *(*map[string][]string)(unsafe.Pointer(&in.Extra))
 	return nil
 }
 

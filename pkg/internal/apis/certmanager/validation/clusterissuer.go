@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -25,13 +26,13 @@ import (
 
 // Validation functions for cert-manager v1alpha2 ClusterIssuer types
 
-func ValidateClusterIssuer(obj runtime.Object) field.ErrorList {
+func ValidateClusterIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	iss := obj.(*cmapi.ClusterIssuer)
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs
 }
 
-func ValidateUpdateClusterIssuer(oldObj, obj runtime.Object) field.ErrorList {
+func ValidateUpdateClusterIssuer(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
 	iss := obj.(*cmapi.ClusterIssuer)
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs

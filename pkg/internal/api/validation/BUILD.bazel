@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/internal/api/validation",
     visibility = ["//pkg:__subpackages__"],
     deps = [
+        "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
@@ -20,6 +21,7 @@ go_test(
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/internal/apis/certmanager:go_default_library",
         "//pkg/webhook:go_default_library",
+        "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",

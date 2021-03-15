@@ -19,6 +19,7 @@ package webhook
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	acmeinstall "github.com/jetstack/cert-manager/pkg/internal/apis/acme/install"
 	cminstall "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/install"
@@ -40,6 +41,10 @@ var (
 	// ValidationRegistry is a validation registry with all required
 	// validations that should be enforced by the webhook component.
 	ValidationRegistry = validation.NewRegistry(Scheme)
+
+	// MutationRegistry is a mutation registry with all required
+	// mutations that should be enforced by the webhook component.
+	MutationRegistry = mutation.NewRegistry(Scheme)
 )
 
 func init() {
@@ -49,4 +54,6 @@ func init() {
 
 	cminstall.InstallValidation(ValidationRegistry)
 	acmeinstall.InstallValidation(ValidationRegistry)
+
+	cminstall.InstallMutation(MutationRegistry)
 }

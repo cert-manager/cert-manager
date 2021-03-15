@@ -42,7 +42,7 @@ func TestValidateTestType(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateTestType(s.obj)
+			errs := ValidateTestType(nil, s.obj)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
@@ -74,7 +74,7 @@ func TestValidateTestTypeUpdate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateTestTypeUpdate(s.old, s.new)
+			errs := ValidateTestTypeUpdate(nil, s.old, s.new)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
@@ -109,7 +109,7 @@ func testImmutableTestTypeField(t *testing.T, fldPath *field.Path, setter func(*
 		new := &testgroup.TestType{}
 		setter(old, testValueOptionOne)
 		setter(new, testValueOptionTwo)
-		errs := ValidateTestTypeUpdate(old, new)
+		errs := ValidateTestTypeUpdate(nil, old, new)
 		if len(errs) != len(expectedErrs) {
 			t.Errorf("Expected %v but got %v", expectedErrs, errs)
 			return
@@ -127,7 +127,7 @@ func testImmutableTestTypeField(t *testing.T, fldPath *field.Path, setter func(*
 		new := &testgroup.TestType{}
 		setter(old, testValueNone)
 		setter(new, testValueOptionOne)
-		errs := ValidateTestTypeUpdate(old, new)
+		errs := ValidateTestTypeUpdate(nil, old, new)
 		if len(errs) != len(expectedErrs) {
 			t.Errorf("Expected %v but got %v", expectedErrs, errs)
 			return

@@ -17,11 +17,12 @@ limitations under the License.
 package v2
 
 import (
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-func ValidateTestType(obj runtime.Object) field.ErrorList {
+func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	el := field.ErrorList{}
 	tt := obj.(*TestType)
 	if tt.TestField == DisallowedTestFieldValue {

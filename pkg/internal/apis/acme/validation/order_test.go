@@ -47,7 +47,7 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 		new := &cmacme.Order{}
 		setter(old, testValueOptionOne)
 		setter(new, testValueOptionTwo)
-		errs := ValidateOrderUpdate(old, new)
+		errs := ValidateOrderUpdate(nil, old, new)
 		if len(errs) != len(expectedErrs) {
 			t.Errorf("Expected %v but got %v", expectedErrs, errs)
 			return
@@ -65,7 +65,7 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 		new := &cmacme.Order{}
 		setter(old, testValueNone)
 		setter(new, testValueOptionOne)
-		errs := ValidateOrderUpdate(old, new)
+		errs := ValidateOrderUpdate(nil, old, new)
 		if len(errs) != len(expectedErrs) {
 			t.Errorf("Expected %v but got %v", expectedErrs, errs)
 			return
@@ -211,7 +211,7 @@ func TestValidateCertificateUpdate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateOrderUpdate(s.old, s.new)
+			errs := ValidateOrderUpdate(nil, s.old, s.new)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return

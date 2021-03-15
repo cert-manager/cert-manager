@@ -20,33 +20,61 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"fmt"
-
-	"github.com/jetstack/cert-manager/pkg/util"
-
 	"reflect"
+	"strings"
 
 	"github.com/kr/pretty"
-
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/apis/acme"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment}
 
-func ValidateCertificateRequest(obj runtime.Object) field.ErrorList {
+func ValidateCertificateRequest(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	cr := obj.(*cmapi.CertificateRequest)
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), true)
 	return allErrs
 }
 
-func ValidateUpdateCertificateRequest(oldObj, obj runtime.Object) field.ErrorList {
-	cr := obj.(*cmapi.CertificateRequest)
-	// do not check the CSR content here not to break existing resources on upgrade
-	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), false)
-	return allErrs
+func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
+	oldCR, newCR := oldObj.(*cmapi.CertificateRequest), newObj.(*cmapi.CertificateRequest)
+
+	var el field.ErrorList
+
+	// Enforce that no cert-manager annotations may be modified after creation.
+	// This is to prevent changing the request during processing resulting in
+	// undefined behaviour, and breaking the concept of requests being made by a
+	// single user.
+	annotationField := field.NewPath("metadata", "annotations")
+	el = append(el, validateCertificateRequestAnnotations(oldCR, newCR, annotationField)...)
+	el = append(el, validateCertificateRequestAnnotations(newCR, oldCR, annotationField)...)
+
+	if !reflect.DeepEqual(oldCR.Spec, newCR.Spec) {
+		el = append(el, field.Forbidden(field.NewPath("spec"), "cannot change spec after creation"))
+	}
+
+	return el
+}
+
+func validateCertificateRequestAnnotations(objA, objB *cmapi.CertificateRequest, fieldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+	for k, v := range objA.Annotations {
+		if strings.HasPrefix(k, certmanager.GroupName) ||
+			strings.HasPrefix(k, acme.GroupName) {
+			if vnew, ok := objB.Annotations[k]; !ok || v != vnew {
+				el = append(el, field.Forbidden(fieldPath.Child(k), "cannot change cert-manager annotation after creation"))
+			}
+		}
+	}
+
+	return el
 }
 
 func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPath *field.Path, validateCSRContent bool) field.ErrorList {

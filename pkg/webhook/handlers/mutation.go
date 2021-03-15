@@ -17,85 +17,44 @@ limitations under the License.
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 
 	"github.com/go-logr/logr"
-	"github.com/mattbaird/jsonpatch"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-type SchemeBackedDefaulter struct {
-	log    logr.Logger
-	scheme *runtime.Scheme
-	codec  runtime.Codec
+type RegistryBackedMutator struct {
+	log      logr.Logger
+	decoder  runtime.Decoder
+	registry *mutation.Registry
 }
 
-func NewSchemeBackedDefaulter(log logr.Logger, scheme *runtime.Scheme) *SchemeBackedDefaulter {
+func NewRegistryBackedMutator(log logr.Logger, scheme *runtime.Scheme, registry *mutation.Registry) *RegistryBackedMutator {
 	factory := serializer.NewCodecFactory(scheme)
-	serializer := apijson.NewSerializerWithOptions(apijson.DefaultMetaFactory, scheme, scheme, apijson.SerializerOptions{})
-	encoder := factory.WithoutConversion().EncoderForVersion(serializer, nil)
-	decoder := factory.UniversalDeserializer()
-	return &SchemeBackedDefaulter{
-		log:    log,
-		scheme: scheme,
-		codec:  runtime.NewCodec(encoder, decoder),
+	return &RegistryBackedMutator{
+		log:      log,
+		decoder:  factory.UniversalDecoder(),
+		registry: registry,
 	}
 }
 
-func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+func (c *RegistryBackedMutator) Mutate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
 	status := &admissionv1.AdmissionResponse{}
 	status.UID = admissionSpec.UID
 
-	// decode the raw object data
-	obj, _, err := c.codec.Decode(admissionSpec.Object.Raw, nil, nil)
+	// Generate a patch from the appropriate functions installed in the mutation registry
+	patch, err := c.registry.Mutate(admissionSpec)
 	if err != nil {
 		status.Result = &metav1.Status{
 			Status: metav1.StatusFailure, Code: http.StatusInternalServerError, Reason: metav1.StatusReasonInternalError,
-			Message: fmt.Sprintf("Failed to decode object: %v", err.Error()),
-		}
-		return status
-	}
-
-	// create a copy of the resource
-	defaultedObj := obj.DeepCopyObject()
-	// apply defaults to the object
-	c.scheme.Default(defaultedObj)
-	// encode the default object to JSON
-	buf := bytes.Buffer{}
-	if err := c.codec.Encode(defaultedObj, &buf); err != nil {
-		status.Result = &metav1.Status{
-			Status: metav1.StatusFailure, Code: http.StatusInternalServerError, Reason: metav1.StatusReasonInternalError,
-			Message: fmt.Sprintf("Failed to encode defaulted data: %v", err.Error()),
-		}
-		return status
-	}
-	// create a merge patch between the old and the new json data
-	ops, err := jsonpatch.CreatePatch(admissionSpec.Object.Raw, buf.Bytes())
-	if err != nil {
-		status.Result = &metav1.Status{
-			Status: metav1.StatusFailure, Code: http.StatusInternalServerError, Reason: metav1.StatusReasonInternalError,
-			Message: fmt.Sprintf("Failed to generate json patch: %v", err.Error()),
-		}
-		return status
-	}
-	// sort options by path to ensure the output of CreatePatch is deterministic
-	sortOps(ops)
-
-	patch, err := json.Marshal(ops)
-	if err != nil {
-		status.Result = &metav1.Status{
-			Status: metav1.StatusFailure, Code: http.StatusInternalServerError, Reason: metav1.StatusReasonInternalError,
-			Message: fmt.Sprintf("Failed to generate json patch: %v", err.Error()),
+			Message: fmt.Sprintf("Failed to mutate object: %v", err.Error()),
 		}
 		return status
 	}
@@ -109,10 +68,4 @@ func (c *SchemeBackedDefaulter) Mutate(admissionSpec *admissionv1.AdmissionReque
 	c.log.V(logf.DebugLevel).Info("generated patch", "patch", string(patch))
 
 	return status
-}
-
-func sortOps(ops []jsonpatch.JsonPatchOperation) {
-	sort.Slice(ops, func(i, j int) bool {
-		return ops[i].Path < ops[j].Path
-	})
 }
