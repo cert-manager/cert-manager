@@ -83,7 +83,7 @@ generate:
 ################
 images:
 	APP_VERSION=$(APP_VERSION) \
-	DOCKER_REGISTRY=$(DOCKER_REPO) \
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
 	bazel run \
 		--stamp \
 		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
