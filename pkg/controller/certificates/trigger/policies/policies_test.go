@@ -416,6 +416,40 @@ func TestDefaultPolicyChain(t *testing.T) {
 			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
 			reissue: true,
 		},
+		"does not trigger renewal if the x509 cert has been re-issued, but Certificate's renewal time has not been updated yet": {
+			certificate: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					RenewBefore: &metav1.Duration{Duration: time.Minute * 1},
+				},
+				Status: cmapi.CertificateStatus{
+					RenewalTime: &metav1.Time{Time: clock.Now()},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something",
+					Annotations: map[string]string{
+						cmapi.IssuerNameAnnotationKey:  "testissuer",
+						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+					},
+				},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+						clock.Now(),
+						// expires in 30 minutes time
+						clock.Now().Add(time.Minute*30),
+					),
+				},
+			},
+		},
 		"does not trigger renewal if renewal time is in 1 minute": {
 			certificate: &cmapi.Certificate{
 				Spec: cmapi.CertificateSpec{
@@ -451,7 +485,9 @@ func TestDefaultPolicyChain(t *testing.T) {
 			},
 		},
 	}
-	policyChain := NewTriggerPolicyChain(clock)
+	// we don't really test default renewal time here, it's just passed through
+	someDefaultRenewalTime := time.Hour * 5
+	policyChain := NewTriggerPolicyChain(clock, someDefaultRenewalTime)
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			reason, message, reissue := policyChain.Evaluate(Input{
