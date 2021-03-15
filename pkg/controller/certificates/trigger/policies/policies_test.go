@@ -441,7 +441,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now(),
 						// expires in 30 minutes time

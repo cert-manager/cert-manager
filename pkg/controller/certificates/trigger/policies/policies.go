@@ -202,9 +202,9 @@ func CurrentCertificateNearingExpiry(c clock.Clock, defaultRenewBeforeExpiryDura
 	return func(input Input) (string, string, bool) {
 
 		// Determine if the certificate is nearing expiry solely by looking at
-		// the actual cert if it exists. We assume that at this point we have
+		// the actual cert, if it exists. We assume that at this point we have
 		// called policy functions that check that input.Secret and
-		// input.Secret.Data exists (SecretDoesNotExist and SecretHasData).
+		// input.Secret.Data exists (SecretDoesNotExist and SecretIsMissingData).
 		x509cert, err := pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
 		if err != nil {
 			// This case should never happen as it should always be caught by the
