@@ -79,6 +79,11 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
 	}
+
+	if crt.RevisionHistoryLimit != nil && *crt.RevisionHistoryLimit < 1 {
+		el = append(el, field.Invalid(fldPath.Child("revisionHistoryLimit"), *crt.RevisionHistoryLimit, "must be a value of 1 or greater"))
+	}
+
 	return el
 }
 

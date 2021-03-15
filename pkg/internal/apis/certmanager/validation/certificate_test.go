@@ -41,6 +41,10 @@ func strPtr(s string) *string {
 	return &s
 }
 
+func int32Ptr(i int32) *int32 {
+	return &i
+}
+
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
@@ -483,6 +487,28 @@ func TestValidateCertificate(t *testing.T) {
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("emailAddresses").Index(0), "mailto:alice@example.com", "invalid email address: mail: expected comma"),
 			},
+		},
+		"valid certificate with revisionHistoryLimit less than 1 should error": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					EmailSANs:            []string{"alice@example.com"},
+					SecretName:           "abc",
+					IssuerRef:            validIssuerRef,
+					RevisionHistoryLimit: int32Ptr(-2),
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("revisionHistoryLimit"), int32(-2), "must be a value of 1 or greater")},
+		},
+		"valid certificate with revisionHistoryLimit of 1 shouldn't error": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					EmailSANs:            []string{"alice@example.com"},
+					SecretName:           "abc",
+					IssuerRef:            validIssuerRef,
+					RevisionHistoryLimit: int32Ptr(1),
+				},
+			},
+			errs: []*field.Error{},
 		},
 	}
 	for n, s := range scenarios {
