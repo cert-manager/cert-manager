@@ -177,3 +177,13 @@ func SetCertificateRequestGroups(groups []string) CertificateRequestModifier {
 		cr.Spec.Groups = groups
 	}
 }
+
+func SetCertificateRequestRevision(rev string) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		if cr.Annotations == nil {
+			cr.Annotations = make(map[string]string)
+		}
+
+		cr.Annotations[v1.CertificateRequestRevisionAnnotationKey] = rev
+	}
+}

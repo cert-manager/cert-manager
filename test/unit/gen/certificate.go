@@ -237,3 +237,9 @@ func CertificateRef(certName, ownedUID string) metav1.OwnerReference {
 		v1.SchemeGroupVersion.WithKind("Certificate"),
 	)
 }
+
+func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.RevisionHistoryLimit = &limit
+	}
+}
