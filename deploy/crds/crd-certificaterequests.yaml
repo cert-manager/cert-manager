@@ -44,7 +44,9 @@ spec:
           type: string
         - jsonPath: .spec.issuerRef.name
           name: Issuer
-          priority: 1
+          type: string
+        - jsonPath: .spec.username
+          name: Requestor
           type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].message
           name: Status
@@ -205,7 +207,9 @@ spec:
           type: string
         - jsonPath: .spec.issuerRef.name
           name: Issuer
-          priority: 1
+          type: string
+        - jsonPath: .spec.username
+          name: Requestor
           type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].message
           name: Status
@@ -366,7 +370,9 @@ spec:
           type: string
         - jsonPath: .spec.issuerRef.name
           name: Issuer
-          priority: 1
+          type: string
+        - jsonPath: .spec.username
+          name: Requestor
           type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].message
           name: Status
@@ -529,7 +535,9 @@ spec:
           type: string
         - jsonPath: .spec.issuerRef.name
           name: Issuer
-          priority: 1
+          type: string
+        - jsonPath: .spec.username
+          name: Requestor
           type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].message
           name: Status
