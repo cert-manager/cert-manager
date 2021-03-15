@@ -52,6 +52,12 @@ func applyDefaults(f *fixture) {
 	if f.resolvedFQDN == "" {
 		f.resolvedFQDN = "cert-manager-dns01-tests." + f.resolvedZone
 	}
+	if f.dnsName == "" {
+		f.dnsName = "example.com"
+	}
+	if f.dnsChallengeKey == "" {
+		f.dnsChallengeKey = "123d=="
+	}
 	runfiles := os.Getenv("TEST_SRCDIR")
 	if f.binariesPath == "" {
 		if runfiles != "" {
@@ -168,5 +174,20 @@ func SetPollInterval(d time.Duration) Option {
 func SetPropagationLimit(d time.Duration) Option {
 	return func(f *fixture) {
 		f.propagationLimit = d
+	}
+}
+
+// SetDNSChallengeKey defines the value of the acme challenge string.
+func SetDNSChallengeKey(s string) Option {
+	return func(f *fixture) {
+		f.dnsChallengeKey = s
+	}
+}
+
+// SetDNSName defines the domain name to be used in the webhook
+// integration tests.
+func SetDNSName(s string) Option {
+	return func(f *fixture) {
+		f.dnsName = s
 	}
 }
