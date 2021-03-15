@@ -146,6 +146,15 @@ type CertificateSpec struct {
 	// EncodeUsagesInRequest controls whether key usages should be present
 	// in the CertificateRequest
 	EncodeUsagesInRequest *bool
+
+	// revisionHistoryLimit is the maximum number of CertificateRequest revisions
+	// that are maintained in the Certificate's history. Each revision represents
+	// a single `CertificateRequest` created by this Certificate, either when it
+	// was created, renewed, or Spec was changed. Revisions will be removed by
+	// oldest first if the number of revisions exceeds this number. If set,
+	// revisionHistoryLimit must be a value of `1` or greater. If unset (`nil`),
+	// revisions will not be garbage collected. Default value is `nil`.
+	RevisionHistoryLimit *int32
 }
 
 // CertificatePrivateKey contains configuration options for private keys
