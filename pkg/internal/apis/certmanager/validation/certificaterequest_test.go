@@ -136,7 +136,7 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 			},
 			want: nil,
 		},
-		"CertificateRequest with single Denied=true condition that doens't change, shouldn't error": {
+		"CertificateRequest with single Denied=true condition that doesn't change, shouldn't error": {
 			oldCR: &cminternal.CertificateRequest{
 				Spec: cminternal.CertificateRequestSpec{
 					Request:   baseRequest,
