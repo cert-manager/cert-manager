@@ -113,7 +113,7 @@ func TestSign(t *testing.T) {
 
 	csrPEM := generateCSR(t, rsaSK)
 
-	baseCR := gen.CertificateRequest("test-cr",
+	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
@@ -121,6 +121,24 @@ func TestSign(t *testing.T) {
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  baseIssuer.Kind,
+		}),
+	)
+	baseCRDenied := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionDenied,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "Foo",
+			Message:            "Certificate request has been denied by cert-manager.io",
+			LastTransitionTime: &metaFixedClockStart,
+		}),
+	)
+	baseCR := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionApproved,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "cert-manager.io",
+			Message:            "Certificate request has been approved by cert-manager.io",
+			LastTransitionTime: &metaFixedClockStart,
 		}),
 	)
 
@@ -151,6 +169,20 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]testT{
+		"a CertificateRequest without an approved condition should do nothing": {
+			certificateRequest: baseCRNotApproved.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
+			},
+		},
+		"a CertificateRequest with a denied condition should do nothing": {
+			certificateRequest: baseCRDenied.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCRDenied.DeepCopy(), baseIssuer.DeepCopy()},
+			},
+		},
 		"no token, app role secret or kubernetes auth reference should report pending": {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{

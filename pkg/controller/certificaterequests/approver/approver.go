@@ -1,0 +1,106 @@
+/*
+Copyright 2021 The cert-manager Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package approver
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
+
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+)
+
+const (
+	ControllerName = "certificaterequests-approver"
+)
+
+// Controller is a CertificateRequest controller which manages the "Approved"
+// condition. In the absence of any automated policy engine, this controller
+// will _always_ set the "Approved" condition to True. All CertificateRequest
+// signing controllers should wait until the "Approved" condition is set to
+// True before processing.
+type Controller struct {
+	// logger to be used by this controller
+	log logr.Logger
+
+	certificateRequestLister cmlisters.CertificateRequestLister
+	cmClient                 cmclient.Interface
+
+	recorder record.EventRecorder
+
+	queue workqueue.RateLimitingInterface
+}
+
+func init() {
+	// create certificate request approver controller
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+		return controllerpkg.NewBuilder(ctx, ControllerName).
+			For(new(Controller)).Complete()
+	})
+}
+
+// Register registers and constructs the controller using the provided context.
+// It returns the workqueue to be used to enqueue items, a list of
+// InformerSynced functions that must be synced, or an error.
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	c.log = logf.FromContext(ctx.RootContext, ControllerName)
+	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+
+	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
+	mustSync := append([]cache.InformerSynced{certificateRequestInformer.Informer().HasSynced})
+	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+
+	c.certificateRequestLister = certificateRequestInformer.Lister()
+	c.cmClient = ctx.CMClient
+	c.recorder = ctx.Recorder
+
+	c.log.V(logf.DebugLevel).Info("certificate request approver controller registered")
+
+	return c.queue, mustSync, nil
+}
+
+func (c *Controller) ProcessItem(ctx context.Context, key string) error {
+	log := logf.FromContext(ctx)
+	dbg := log.V(logf.DebugLevel)
+
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		log.Error(err, "invalid resource key")
+		return nil
+	}
+
+	cr, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
+	if apierrors.IsNotFound(err) {
+		dbg.Info(fmt.Sprintf("certificate request in work queue no longer exists: %s", err))
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	ctx = logf.NewContext(ctx, logf.WithResource(log, cr))
+	return c.Sync(ctx, cr)
+}

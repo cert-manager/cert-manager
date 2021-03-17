@@ -39,6 +39,12 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
+        - jsonPath: .status.conditions[?(@.type=="Denied")].status
+          name: Denied
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
@@ -190,7 +196,7 @@ spec:
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`).
+                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`, `Approved`, `Denied`).
                         type: string
                 failureTime:
                   description: FailureTime stores the time that this CertificateRequest failed. This is used to influence garbage collection and back-off.
@@ -202,6 +208,12 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
+        - jsonPath: .status.conditions[?(@.type=="Denied")].status
+          name: Denied
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
@@ -353,7 +365,7 @@ spec:
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`).
+                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`, `Approved`, `Denied`).
                         type: string
                 failureTime:
                   description: FailureTime stores the time that this CertificateRequest failed. This is used to influence garbage collection and back-off.
@@ -365,6 +377,12 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
+        - jsonPath: .status.conditions[?(@.type=="Denied")].status
+          name: Denied
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
@@ -518,7 +536,7 @@ spec:
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`).
+                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`, `Approved`, `Denied`).
                         type: string
                 failureTime:
                   description: FailureTime stores the time that this CertificateRequest failed. This is used to influence garbage collection and back-off.
@@ -530,6 +548,12 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
+        - jsonPath: .status.conditions[?(@.type=="Approved")].status
+          name: Approved
+          type: string
+        - jsonPath: .status.conditions[?(@.type=="Denied")].status
+          name: Denied
+          type: string
         - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
           type: string
@@ -683,7 +707,7 @@ spec:
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`).
+                        description: Type of the condition, known values are (`Ready`, `InvalidRequest`, `Approved`, `Denied`).
                         type: string
                 failureTime:
                   description: FailureTime stores the time that this CertificateRequest failed. This is used to influence garbage collection and back-off.

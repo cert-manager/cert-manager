@@ -27,6 +27,7 @@ import (
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	cracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/acme"
+	crapprovercontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/approver"
 	crcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
 	crselfsignedcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/selfsigned"
 	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
@@ -144,6 +145,7 @@ var (
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
 		cracmecontroller.CRControllerName,
+		crapprovercontroller.ControllerName,
 		crcacontroller.CRControllerName,
 		crselfsignedcontroller.CRControllerName,
 		crvaultcontroller.CRControllerName,

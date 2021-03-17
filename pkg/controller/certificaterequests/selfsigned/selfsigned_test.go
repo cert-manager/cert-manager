@@ -129,7 +129,7 @@ func TestSign(t *testing.T) {
 	}
 	csrECPEM := generateCSR(t, skEC, x509.ECDSAWithSHA256)
 
-	baseCR := gen.CertificateRequest("test-cr",
+	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestAnnotations(
 			map[string]string{
 				cmapi.CertificateRequestPrivateKeyAnnotationKey: rsaKeySecret.Name,
@@ -140,6 +140,24 @@ func TestSign(t *testing.T) {
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
+		}),
+	)
+	baseCRDenied := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionDenied,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "Foo",
+			Message:            "Certificate request has been denied by cert-manager.io",
+			LastTransitionTime: &metaFixedClockStart,
+		}),
+	)
+	baseCR := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionApproved,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "cert-manager.io",
+			Message:            "Certificate request has been approved by cert-manager.io",
+			LastTransitionTime: &metaFixedClockStart,
 		}),
 	)
 	ecCR := gen.CertificateRequestFrom(baseCR,
@@ -169,6 +187,20 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]testT{
+		"a CertificateRequest without an approved condition should do nothing": {
+			certificateRequest: baseCRNotApproved.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
+			},
+		},
+		"a CertificateRequest with a denied condition should do nothing": {
+			certificateRequest: baseCRDenied.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCRDenied.DeepCopy(), baseIssuer.DeepCopy()},
+			},
+		},
 		"a CertificateRequest with no cert-manager.io/selfsigned-private-key annotation should fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				// no annotation

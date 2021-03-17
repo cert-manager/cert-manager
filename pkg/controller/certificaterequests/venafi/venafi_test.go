@@ -78,6 +78,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgori
 }
 
 func TestSign(t *testing.T) {
+	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	rsaSK, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Error(err)
@@ -135,8 +136,26 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	baseCR := gen.CertificateRequest("test-cr",
+	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestCSR(csrPEM),
+	)
+	baseCRDenied := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionDenied,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "Foo",
+			Message:            "Certificate request has been denied by cert-manager.io",
+			LastTransitionTime: &metaFixedClockStart,
+		}),
+	)
+	baseCR := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionApproved,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "cert-manager.io",
+			Message:            "Certificate request has been approved by cert-manager.io",
+			LastTransitionTime: &metaFixedClockStart,
+		}),
 	)
 
 	tppCR := gen.CertificateRequestFrom(baseCR,
@@ -226,8 +245,21 @@ func TestSign(t *testing.T) {
 		},
 	}
 
-	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	tests := map[string]testT{
+		"a CertificateRequest without an approved condition should do nothing": {
+			certificateRequest: baseCRNotApproved.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
+			},
+		},
+		"a CertificateRequest with a denied condition should do nothing": {
+			certificateRequest: baseCRDenied.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCRDenied.DeepCopy(), baseIssuer.DeepCopy()},
+			},
+		},
 		"tpp: if fail to build client based on missing secret then return nil and hard fail": {
 			certificateRequest: tppCR.DeepCopy(),
 			builder: &controllertest.Builder{

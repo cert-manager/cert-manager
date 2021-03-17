@@ -68,6 +68,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/controller/certificaterequests/acme:all-srcs",
+        "//pkg/controller/certificaterequests/approver:all-srcs",
         "//pkg/controller/certificaterequests/ca:all-srcs",
         "//pkg/controller/certificaterequests/fake:all-srcs",
         "//pkg/controller/certificaterequests/selfsigned:all-srcs",

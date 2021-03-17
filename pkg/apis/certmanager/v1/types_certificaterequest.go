@@ -153,7 +153,8 @@ type CertificateRequestStatus struct {
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.
 type CertificateRequestCondition struct {
-	// Type of the condition, known values are (`Ready`, `InvalidRequest`).
+	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
+	// `Approved`, `Denied`).
 	Type CertificateRequestConditionType `json:"type"`
 
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
@@ -189,4 +190,16 @@ const (
 	// parameters being invalid. Additional information about why the request
 	// was rejected can be found in the `reason` and `message` fields.
 	CertificateRequestConditionInvalidRequest CertificateRequestConditionType = "InvalidRequest"
+
+	// CertificateRequestConditionApproved indicates that a certificate request
+	// is approved and ready for signing. Condition must never have a status of
+	// `False`, and cannot be modified once set. Cannot be set alongside
+	// `Denied`.
+	CertificateRequestConditionApproved CertificateRequestConditionType = "Approved"
+
+	// CertificateRequestConditionDenied indicates that a certificate request is
+	// denied, and must never be signed. Condition must never have a status of
+	// `False`, and cannot be modified once set. Cannot be set alongside
+	// `Approved`.
+	CertificateRequestConditionDenied CertificateRequestConditionType = "Denied"
 )
