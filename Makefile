@@ -58,13 +58,6 @@ help:
 ###############
 
 build: ctl images
-images_push: 
-	APP_VERSION=$(APP_VERSION) \
-	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
-	bazel run \
-		--stamp \
-		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
-		//:images.push
 
 verify:
 	bazel test //...
@@ -98,6 +91,14 @@ images:
 		--stamp \
 		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
 		//build:server-images
+
+images_push: 
+	APP_VERSION=$(APP_VERSION) \
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
+	bazel run \
+		--stamp \
+		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
+		//:images.push
 
 ctl:
 	bazel build //cmd/ctl
