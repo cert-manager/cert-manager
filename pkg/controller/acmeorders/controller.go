@@ -35,6 +35,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/scheduler"
 )
 
 type controller struct {
@@ -62,6 +63,9 @@ type controller struct {
 	// so the handleOwnedResource method can enqueue resources
 	queue workqueue.RateLimitingInterface
 
+	// scheduledWorkQueue holds items to be re-queued after a period of time.
+	scheduledWorkQueue scheduler.ScheduledWorkQueue
+
 	// logger to be used by this controller
 	log logr.Logger
 }
@@ -73,8 +77,15 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
+	// clock is used when setting the failureTime on an Order's status
+	clock := ctx.Clock
+	c.clock = clock
+
 	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
+	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
+	c.queue = queue
+
+	c.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(clock, queue.Add)
 
 	// obtain references to all the informers used by this controller
 	orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders()
@@ -117,8 +128,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
-	// clock is used when setting the failureTime on an Order's status
-	c.clock = ctx.Clock
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
 	return c.queue, mustSync, nil

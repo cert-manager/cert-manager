@@ -340,9 +340,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 				},
 			},
 		},
-		// TODO: we should improve this behaviour as this is the 'stuck order' problem described in:
-		//  https://github.com/jetstack/cert-manager/issues/2868
-		"skip creating a Challenge for an already valid authorization, and do nothing if the order is pending": {
+		"skip creating a Challenge for an already valid authorization, reschedule if the ACME Order is still pending": {
 			order: gen.OrderFrom(testOrder, gen.SetOrderStatus(
 				cmacme.OrderStatus{
 					State:       cmacme.Pending,
@@ -379,6 +377,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					}, nil
 				},
 			},
+			shouldSchedule: true,
 		},
 		"skip creating a Challenge for an already valid authorization": {
 			order: gen.OrderFrom(testOrder, gen.SetOrderStatus(

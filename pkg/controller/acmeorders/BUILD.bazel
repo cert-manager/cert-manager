@@ -24,6 +24,7 @@ go_library(
         "//pkg/controller/acmeorders/selectors:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/scheduler:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/equality:go_default_library",

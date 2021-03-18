@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"time"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +41,8 @@ import (
 )
 
 const (
+	RequeuePeriod time.Duration = time.Minute
+
 	reasonSolver  = "Solver"
 	reasonCreated = "Created"
 )
@@ -144,10 +147,15 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return err
 	}
 
+	acmeOrder, err := getACMEOrder(ctx, cl, o)
+	if err != nil {
+		return err
+	}
 	switch {
 	case o.Status.State == cmacme.Ready:
 		log.V(logf.DebugLevel).Info("Finalizing Order as order state is 'Ready'")
 		return c.finalizeOrder(ctx, cl, o, genericIssuer)
+
 	case anyChallengesFailed(challenges):
 		// TODO (@munnerz): instead of waiting for the ACME server to mark this
 		//  Order as failed, we could just mark the Order as failed as there is
@@ -163,8 +171,24 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			}
 		}
 		return err
+
 	// anyChallengesFailed(challenges) == false is already implied by the above
-	// case, but explicitly check it here in case anything changes in future.
+	// case, but explicitly check it in the following cases for if anything changes in future.
+
+	// This is to avoid stuck Orders in edge cases where all the Challenges have
+	// been finalized, but the ACME server has not yet updated the ACME Order's
+	// status to valid. This is not an expected behaviour from an ACME server
+	// https://tools.ietf.org/html/rfc8555#section-7.1.6
+	// https://github.com/jetstack/cert-manager/issues/2868
+	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges) && acmeOrder.Status == acmeapi.StatusPending:
+		log.V(logf.InfoLevel).Info("All challenges in a final state, waiting for ACME server to update the status of the order...")
+		// This is probably not needed as at this point the Order's status
+		// should already be Pending, but set it anyway to be explicit.
+		c.setOrderState(&o.Status, string(cmacme.Pending))
+		// Re-queue the Order to be processed after RequeuePeriod
+		c.scheduledWorkQueue.Add(o, RequeuePeriod)
+		return nil
+
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
 		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
 		_, err := c.updateOrderStatus(ctx, cl, o)
@@ -232,18 +256,10 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 }
 
 func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) (*acmeapi.Order, error) {
-	log := logf.FromContext(ctx)
-	if o.Status.URL == "" {
-		return nil, fmt.Errorf("internal error: order URL not set")
-	}
-
-	log.V(logf.DebugLevel).Info("Fetching Order metadata from ACME server")
-	acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
+	acmeOrder, err := getACMEOrder(ctx, cl, o)
 	if err != nil {
 		return nil, err
 	}
-
-	log.V(logf.DebugLevel).Info("Retrieved ACME order from server", "raw_data", acmeOrder)
 	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
 	// order's URI field will be empty when calling GetOrder due to the
 	// 'Location' header not being set on the response from the ACME server.
@@ -581,4 +597,21 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 	}
 
 	return nil
+}
+
+// getACMEOrder returns the ACME Order for an Order Custom Resource.
+func getACMEOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) (*acmeapi.Order, error) {
+	log := logf.FromContext(ctx)
+	if o.Status.URL == "" {
+		return nil, fmt.Errorf("internal error: order URL not set")
+	}
+
+	log.V(logf.DebugLevel).Info("Fetching Order metadata from ACME server")
+	acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
+	if err != nil {
+		return nil, err
+	}
+
+	log.V(logf.DebugLevel).Info("Retrieved ACME order from server", "raw_data", acmeOrder)
+	return acmeOrder, nil
 }
