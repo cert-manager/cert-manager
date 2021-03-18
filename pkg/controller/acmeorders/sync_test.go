@@ -35,6 +35,7 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	schedulertest "github.com/jetstack/cert-manager/pkg/scheduler/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -451,6 +452,9 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderPending, nil
+				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
 					return "key", nil
@@ -605,10 +609,11 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 }
 
 type testT struct {
-	order      *cmacme.Order
-	builder    *testpkg.Builder
-	acmeClient acmecl.Interface
-	expectErr  bool
+	order          *cmacme.Order
+	builder        *testpkg.Builder
+	acmeClient     acmecl.Interface
+	shouldSchedule bool
+	expectErr      bool
 }
 
 func runTest(t *testing.T, test testT) {
@@ -626,6 +631,13 @@ func runTest(t *testing.T, test testT) {
 			return test.acmeClient, nil
 		},
 	}
+	gotScheduled := false
+	fakeScheduler := schedulertest.FakeScheduler{
+		AddFunc: func(obj interface{}, duration time.Duration) {
+			gotScheduled = true
+		},
+	}
+	c.scheduledWorkQueue = &fakeScheduler
 	test.builder.Start()
 
 	err = c.Sync(context.Background(), test.order)
@@ -634,6 +646,9 @@ func runTest(t *testing.T, test testT) {
 	}
 	if err == nil && test.expectErr {
 		t.Errorf("Expected function to get an error, but got: %v", err)
+	}
+	if gotScheduled != test.shouldSchedule {
+		t.Errorf("Expected Order to be re-queued: %v got requeued: %v", test.shouldSchedule, gotScheduled)
 	}
 
 	test.builder.CheckAndFinish(err)

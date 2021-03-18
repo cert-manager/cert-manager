@@ -74,6 +74,7 @@ go_test(
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/test:go_default_library",
+        "//pkg/scheduler/test:go_default_library",
         "//test/unit/gen:go_default_library",
         "@com_github_kr_pretty//:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
