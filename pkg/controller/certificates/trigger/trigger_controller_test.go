@@ -30,6 +30,7 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -37,6 +38,11 @@ import (
 
 func Test_controller_ProcessItem(t *testing.T) {
 	fixedNow := metav1.NewTime(time.Now())
+
+	// We don't need to full bundle, just a simple CertificateRequest.
+	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {
+		return internaltest.MustCreateCryptoBundle(t, crt, fakeclock.NewFakeClock(fixedNow.Time)).CertificateRequest
+	}
 
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem. If not set, the
@@ -167,6 +173,68 @@ func Test_controller_ProcessItem(t *testing.T) {
 			wantDataForCertificateCalled: true,
 			mockDataForCertificateReturn: policies.Input{},
 			wantShouldReissueCalled:      true,
+			mockShouldReissue: func(*testing.T) policies.Func {
+				return func(policies.Input) (string, string, bool) {
+					return "ForceTriggered", "Re-issuance forced by unit test case", true
+				}
+			},
+			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantConditions: []cmapi.CertificateCondition{{
+				Type:               "Issuing",
+				Status:             "True",
+				Reason:             "ForceTriggered",
+				Message:            "Re-issuance forced by unit test case",
+				LastTransitionTime: &fixedNow,
+				ObservedGeneration: 42,
+			}},
+		},
+		"should set Issuing=True when mismatch between cert and next CR and cert is failing": {
+			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("cert-1-uid"),
+				gen.SetCertificateRevision(1),
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateLastFailureTime(fixedNow),
+			),
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{
+				CurrentRevisionRequest: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+					gen.SetCertificateUID("cert-1-uid"),
+					gen.SetCertificateRevision(1),
+					gen.SetCertificateDNSNames("example-mismatched.com"),
+				)),
+			},
+			wantShouldReissueCalled: true,
+			mockShouldReissue: func(*testing.T) policies.Func {
+				return func(policies.Input) (string, string, bool) {
+					return "ForceTriggered", "Re-issuance forced by unit test case", true
+				}
+			},
+			wantEvent: "Normal Issuing Re-issuance forced by unit test case",
+			wantConditions: []cmapi.CertificateCondition{{
+				Type:               "Issuing",
+				Status:             "True",
+				Reason:             "ForceTriggered",
+				Message:            "Re-issuance forced by unit test case",
+				LastTransitionTime: &fixedNow,
+				ObservedGeneration: 42,
+			}},
+		},
+		"should set Issuing=True when cert is failing and the cert status.revision is nil": {
+			existingCertificate: gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+				gen.SetCertificateUID("cert-1-uid"),
+				// Revision is nil.
+				gen.SetCertificateDNSNames("example.com"),
+				gen.SetCertificateLastFailureTime(fixedNow),
+			),
+			wantDataForCertificateCalled: true,
+			mockDataForCertificateReturn: policies.Input{
+				CurrentRevisionRequest: createCertificateRequestOrPanic(gen.Certificate("cert-1", gen.SetCertificateNamespace("testns"),
+					gen.SetCertificateUID("cert-1-uid"),
+					gen.SetCertificateRevision(1),
+					gen.SetCertificateDNSNames("example-mismatch.com"),
+				)),
+			},
+			wantShouldReissueCalled: true,
 			mockShouldReissue: func(*testing.T) policies.Func {
 				return func(policies.Input) (string, string, bool) {
 					return "ForceTriggered", "Re-issuance forced by unit test case", true
