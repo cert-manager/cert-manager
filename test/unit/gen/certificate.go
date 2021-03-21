@@ -227,12 +227,20 @@ func AddCertificateLabels(labels map[string]string) CertificateModifier {
 	}
 }
 
-// CertificateRef creates an owner reference for a certificate without
-// having to give the full certificate.
-func CertificateRef(certName, ownedUID string) metav1.OwnerReference {
+// CertificateRef creates an owner reference for a certificate without having to
+// give the full certificate. Only use this function for testing purposes.
+//
+// Note that the only "important" field that must be filled in ownerReference
+// [1] is the UID. Must notably, the IsControlledBy function [2] only cares
+// about the UID. The apiVersion, kind and name are only used for information
+// purposes.
+//
+//  [1]: https://github.com/kubernetes/apimachinery/blob/10b3882/pkg/apis/meta/v1/types.go#L273-L275
+//  [2]: https://github.com/kubernetes/apimachinery/blob/10b3882/pkg/apis/meta/v1/controller_ref.go#L29
+func CertificateRef(certName, certUID string) metav1.OwnerReference {
 	return *metav1.NewControllerRef(
 		Certificate(certName,
-			SetCertificateUID(types.UID(ownedUID)),
+			SetCertificateUID(types.UID(certUID)),
 		),
 		v1.SchemeGroupVersion.WithKind("Certificate"),
 	)
