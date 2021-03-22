@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "approval.go",
         "certificate.go",
         "certificate_for_issuer.go",
         "certificaterequest.go",
@@ -26,15 +27,19 @@ go_library(
         "//pkg/util/pki:go_default_library",
         "@com_github_kr_pretty//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
+        "@io_k8s_api//authorization/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
+        "@io_k8s_client_go//kubernetes/typed/authorization/v1:go_default_library",
     ],
 )
 
 go_test(
     name = "go_default_test",
     srcs = [
+        "approval_test.go",
         "certificate_for_issuer_test.go",
         "certificate_test.go",
         "certificaterequest_test.go",
@@ -49,9 +54,15 @@ go_test(
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@io_k8s_api//admission/v1:go_default_library",
+        "@io_k8s_api//authentication/v1:go_default_library",
+        "@io_k8s_api//authorization/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
+        "@io_k8s_client_go//kubernetes/fake:go_default_library",
+        "@io_k8s_client_go//testing:go_default_library",
     ],
 )
 
