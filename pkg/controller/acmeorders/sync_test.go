@@ -621,7 +621,7 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Init()
 	defer test.builder.Stop()
 
-	c := &controller{}
+	c := &controllerWrapper{}
 	_, _, err := c.Register(test.builder.Context)
 	if err != nil {
 		t.Errorf("Error registering the controller: %v", err)
