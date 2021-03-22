@@ -21,30 +21,44 @@ limitations under the License.
 package validation
 
 import (
+	"errors"
+
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	authzclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 )
 
 // Registry is used to store and lookup references to validation functions for
 // given Kubernetes API types.
 type Registry struct {
-	scheme                 *runtime.Scheme
-	validateRegister       map[schema.GroupVersionKind]ValidateFunc
-	validateUpdateRegister map[schema.GroupVersionKind]ValidateUpdateFunc
+	scheme                      *runtime.Scheme
+	validateRegister            map[schema.GroupVersionKind]ValidateFunc
+	validateUpdateRegister      map[schema.GroupVersionKind]ValidateUpdateFunc
+	subjectAccessReviewRegister map[schema.GroupVersionKind]SubjectAccessReviewFunc
+
+	sarclient authzclient.SubjectAccessReviewInterface
 }
 
 type ValidateFunc func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList
 type ValidateUpdateFunc func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList
+type SubjectAccessReviewFunc func(client authzclient.SubjectAccessReviewInterface, req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList
 
 // NewRegistry creates a new empty registry, backed by the provided Scheme.
 func NewRegistry(scheme *runtime.Scheme) *Registry {
 	return &Registry{
-		scheme:                 scheme,
-		validateRegister:       make(map[schema.GroupVersionKind]ValidateFunc),
-		validateUpdateRegister: make(map[schema.GroupVersionKind]ValidateUpdateFunc),
+		scheme:                      scheme,
+		validateRegister:            make(map[schema.GroupVersionKind]ValidateFunc),
+		validateUpdateRegister:      make(map[schema.GroupVersionKind]ValidateUpdateFunc),
+		subjectAccessReviewRegister: make(map[schema.GroupVersionKind]SubjectAccessReviewFunc),
 	}
+}
+
+func (r *Registry) WithSubjectAccessReviewClient(client authzclient.SubjectAccessReviewInterface) *Registry {
+	r.sarclient = client
+	return r
 }
 
 // AddValidateFunc will add a new validation function to the register.
@@ -82,6 +96,26 @@ func (r *Registry) AddValidateUpdateFunc(obj runtime.Object, fn ValidateUpdateFu
 
 	for _, gvk := range gvks {
 		r.appendValidateUpdate(gvk, fn)
+	}
+
+	return nil
+}
+
+// AddSubjectAccessReviewFunc will add a new SubjectAccessReview function to
+// the register.
+// The function will be run whenever SubjectAccessReview is called with a
+// requestVersion set to any recognised GroupVersionKinds for this object.  If
+// obj is part of an internal API version, the review function will be called
+// on all calls to registry regardless of version.  If obj cannot be recognised
+// using the registry's scheme, an error will be returned.
+func (r *Registry) AddSubjectAccessReviewFunc(obj runtime.Object, fn SubjectAccessReviewFunc) error {
+	gvks, _, err := r.scheme.ObjectKinds(obj)
+	if err != nil {
+		return err
+	}
+
+	for _, gvk := range gvks {
+		r.appendSubjectAccessReview(gvk, fn)
 	}
 
 	return nil
@@ -149,6 +183,46 @@ func (r *Registry) ValidateUpdate(req *admissionv1.AdmissionRequest, oldObj, obj
 	return el
 }
 
+// SubjectAccessReview will run all SubjectAccessReview functions registered for
+// the given object.
+// If the passed objects are *not* of the same version as the provided
+// requestVersion, the registry will attempt to convert the objects before
+// calling the review functions.
+// Any review functions registered for the objects internal API version
+// will be run against the object regardless of version.
+func (r *Registry) SubjectAccessReview(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object, requestVersion schema.GroupVersionKind) field.ErrorList {
+	versioned, internal := r.lookupSubjectAccessReviewFuncs(requestVersion)
+	if versioned == nil && internal == nil {
+		return nil
+	}
+
+	// No SubjectAccessReview client is present for this registry. Exit error
+	// here as we cannot evaluate the request
+	if r.sarclient == nil {
+		return internalError(errors.New("SubjectAccessReview client not defined"))
+	}
+
+	targetOldObj, internalOldObj, err := r.convert(oldObj, requestVersion)
+	if err != nil {
+		return internalError(err)
+	}
+
+	targetObj, internalObj, err := r.convert(obj, requestVersion)
+	if err != nil {
+		return internalError(err)
+	}
+
+	el := field.ErrorList{}
+	if versioned != nil {
+		el = append(el, versioned(r.sarclient, req, targetOldObj, targetObj)...)
+	}
+	if internal != nil {
+		el = append(el, internal(r.sarclient, req, internalOldObj, internalObj)...)
+	}
+
+	return el
+}
+
 func (r *Registry) lookupValidateFuncs(gvk schema.GroupVersionKind) (versioned ValidateFunc, internal ValidateFunc) {
 	versioned = r.validateRegister[gvk]
 	gvk.Version = runtime.APIVersionInternal
@@ -160,6 +234,13 @@ func (r *Registry) lookupValidateUpdateFuncs(gvk schema.GroupVersionKind) (versi
 	versioned = r.validateUpdateRegister[gvk]
 	gvk.Version = runtime.APIVersionInternal
 	internal = r.validateUpdateRegister[gvk]
+	return versioned, internal
+}
+
+func (r *Registry) lookupSubjectAccessReviewFuncs(gvk schema.GroupVersionKind) (versioned SubjectAccessReviewFunc, internal SubjectAccessReviewFunc) {
+	versioned = r.subjectAccessReviewRegister[gvk]
+	gvk.Version = runtime.APIVersionInternal
+	internal = r.subjectAccessReviewRegister[gvk]
 	return versioned, internal
 }
 
@@ -184,6 +265,18 @@ func (r *Registry) appendValidateUpdate(gvk schema.GroupVersionKind, fn Validate
 
 	r.validateUpdateRegister[gvk] = func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
 		return append(existing(req, oldObj, obj), fn(req, oldObj, obj)...)
+	}
+}
+
+func (r *Registry) appendSubjectAccessReview(gvk schema.GroupVersionKind, fn SubjectAccessReviewFunc) {
+	existing, ok := r.subjectAccessReviewRegister[gvk]
+	if !ok {
+		r.subjectAccessReviewRegister[gvk] = fn
+		return
+	}
+
+	r.subjectAccessReviewRegister[gvk] = func(client authzclient.SubjectAccessReviewInterface, req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
+		return append(existing(client, req, oldObj, obj), fn(client, req, oldObj, obj)...)
 	}
 }
 
