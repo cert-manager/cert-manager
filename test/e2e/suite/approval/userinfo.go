@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certificaterequests
+package approval
 
 import (
 	"context"
@@ -37,12 +37,12 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-// Check that the identity fields on CertificateRequests are populated
+// Check that the UserInfo fields on CertificateRequests are populated
 // correctly, and they cannot be modified.
-var _ = framework.CertManagerDescribe("Identity CertificateRequests", func() {
-	f := framework.NewDefaultFramework("identity-certificaterequests")
+var _ = framework.CertManagerDescribe("UserInfo CertificateRequests", func() {
+	f := framework.NewDefaultFramework("userinfo-certificaterequests")
 
-	It("should appropriately create set identity of CertificateRequests, and reject changes", func() {
+	It("should appropriately create set UserInfo of CertificateRequests, and reject changes", func() {
 		var (
 			adminUsername = "kubernetes-admin"
 			adminGroups   = []string{"system:masters", "system:authenticated"}
@@ -62,7 +62,7 @@ var _ = framework.CertManagerDescribe("Identity CertificateRequests", func() {
 		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Ensure identity fields are set")
+		By("Ensure UserInfo fields are set")
 		if cr.Spec.Username != adminUsername {
 			Fail(fmt.Sprintf("Unexpected username in CertificateRequest, exp=%s got=%s", adminUsername, cr.Spec.Username))
 		}
@@ -70,14 +70,14 @@ var _ = framework.CertManagerDescribe("Identity CertificateRequests", func() {
 			Fail(fmt.Sprintf("Unexpected groups in CertificateRequest, exp=%s got=%s", adminGroups, cr.Spec.Groups))
 		}
 
-		By("Should error when attempting to update identity fields")
+		By("Should error when attempting to update UserInfo fields")
 		cr.Spec.Username = "abc"
 		cr.Spec.UID = "123"
 		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Update(context.TODO(), cr, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
 
-	It("should populate identity with ServiceAccount if is the requester", func() {
+	It("should populate UserInfo with ServiceAccount if is the requester", func() {
 		By("Creating ServiceAccount")
 		sa, err := f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), &corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
@@ -170,15 +170,13 @@ var _ = framework.CertManagerDescribe("Identity CertificateRequests", func() {
 		cr, err = client.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		fmt.Printf("%s %s %s %s", cr.Spec.UID, cr.Spec.Username, cr.Spec.Groups, cr.Spec.Extra)
-
 		expUsername := fmt.Sprintf("system:serviceaccount:%s:%s", f.Namespace.Name, sa.Name)
 		expGroups := []string{
 			"system:serviceaccounts",
 			"system:authenticated",
 			fmt.Sprintf("system:serviceaccounts:%s", f.Namespace.Name),
 		}
-		By("Ensure identity fields are set")
+		By("Ensure UserInfo fields are set")
 		if cr.Spec.UID != string(sa.UID) {
 			Fail(fmt.Sprintf("Unexpected UID in CertificateRequest, exp=%s got=%s", sa.UID, cr.Spec.UID))
 		}
