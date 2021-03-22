@@ -96,6 +96,11 @@ func (r *registryBackedValidator) Validate(admissionSpec *admissionv1.AdmissionR
 	} else if admissionSpec.Operation == admissionv1.Update {
 		// perform update validation on resource
 		errs = append(errs, r.registry.ValidateUpdate(admissionSpec, oldObj, obj, gvk)...)
+
+		// If no validation errors occurred, perform SubjectAccessReview checks.
+		if len(errs) == 0 {
+			errs = append(errs, r.registry.SubjectAccessReview(admissionSpec, oldObj, obj, gvk)...)
+		}
 	}
 	// return with allowed = false if any errors occurred
 	if err := errs.ToAggregate(); err != nil {
