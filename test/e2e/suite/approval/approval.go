@@ -38,7 +38,8 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-// TODO
+// This test ensures that the approval condition may only be set by users who
+// have the correct RBAC permissions.
 var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 	f := framework.NewDefaultFramework("approval-certificaterequests")
 
