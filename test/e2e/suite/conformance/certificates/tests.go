@@ -566,6 +566,7 @@ func (s *Suite) Define() {
 					return nil
 				},
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the issuer has preserved all the Certificate values
 			// in the signed certificate
