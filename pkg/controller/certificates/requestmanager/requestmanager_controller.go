@@ -51,7 +51,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateRequestManager"
+	ControllerName = "certificates-request-manager"
 )
 
 var (

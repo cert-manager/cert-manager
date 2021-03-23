@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateTrigger"
+	ControllerName = "certificates-trigger"
 
 	// the amount of time after the LastFailureTime of a Certificate
 	// before the request should be retried.
