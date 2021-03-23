@@ -18,6 +18,7 @@ package revisionmanager
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strconv"
 	"time"
@@ -26,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -57,7 +59,7 @@ type controller struct {
 
 type revision struct {
 	rev int
-	req *cmapi.CertificateRequest
+	types.NamespacedName
 }
 
 func NewController(log logr.Logger, client cmclient.Interface, cmFactory cminformers.SharedInformerFactory) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
@@ -120,8 +122,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	limit := int(*crt.Spec.RevisionHistoryLimit)
-
 	// Only garbage collect over Certificates that are in a Ready=True condition.
 	if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionReady,
@@ -137,22 +137,18 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	// Prune and sort all CertificateRequests by their revision number.
-	revisions := pruneSortRequestsWithRevisions(log, requests)
+	// Fetch and delete all CertificateRequests that need to be deleted
+	limit := int(*crt.Spec.RevisionHistoryLimit)
+	toDelete := certificateRequestsToDelete(log, limit, requests)
 
-	// If the number of owned CertificateRequests with revisions is less than the
-	// revision limit, exit early.
-	if limit >= len(revisions) {
-		log.V(logf.DebugLevel).Info("request revisions within limit")
-		return nil
-	}
-
-	// Delete requests until we hit the revision limit, oldest first.
-	for i := 0; i < (len(revisions) - limit); i++ {
-		req := revisions[i].req
-		logf.WithRelatedResource(log, req).WithValues("revision", revisions[i].rev).Info("garbage collecting old certificate request revsion")
-
+	for _, req := range toDelete {
+		logf.WithRelatedResourceName(log, req.Name, req.Namespace, cmapi.CertificateRequestKind).
+			WithValues("revision", req.rev).Info("garbage collecting old certificate request revsion")
 		err = c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{})
+		if apierrors.IsNotFound(err) {
+			continue
+		}
+
 		if err != nil {
 			return err
 		}
@@ -161,17 +157,23 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-// pruneSortRequestsWithRevisions will prune the given CertificateRequests for
-// those that have a valid revision number set, and return a sorted slice by
-// oldest first.
-func pruneSortRequestsWithRevisions(log logr.Logger, reqs []*cmapi.CertificateRequest) []revision {
-	var revisions []revision
+// certificateRequestsToDelete will prune the given CertificateRequests for
+// those that have a valid revision number set, and return a slice of requests
+// that should be deleted according to the limit given. Oldest
+// CertificateRequests by revision will be returned.
+func certificateRequestsToDelete(log logr.Logger, limit int, requests []*cmapi.CertificateRequest) []revision {
+	// If the number of requests is the same or below the limit, return nothing.
+	if limit >= len(requests) {
+		return nil
+	}
 
-	for _, req := range reqs {
+	// Prune and sort all CertificateRequests by their revision number.
+	var revisions []revision
+	for _, req := range requests {
 		log = logf.WithRelatedResource(log, req)
 
 		if req.Annotations == nil || req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == "" {
-			log.V(logf.DebugLevel).Info("skipping processing request with missing revsion")
+			log.Error(errors.New("skipping processing request with missing revsion"), "")
 			continue
 		}
 
@@ -181,14 +183,20 @@ func pruneSortRequestsWithRevisions(log logr.Logger, reqs []*cmapi.CertificateRe
 			continue
 		}
 
-		revisions = append(revisions, revision{rn, req})
+		revisions = append(revisions, revision{rn, types.NamespacedName{Namespace: req.Namespace, Name: req.Name}})
 	}
 
 	sort.SliceStable(revisions, func(i, j int) bool {
 		return revisions[i].rev < revisions[j].rev
 	})
 
-	return revisions
+	// Return the oldest revsions which are over the limit
+	remaining := len(revisions) - limit
+	if remaining < 0 {
+		return nil
+	}
+
+	return revisions[:remaining]
 }
 
 // controllerWrapper wraps the `controller` structure to make it implement

@@ -23,6 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -273,101 +274,136 @@ func TestProcessItem(t *testing.T) {
 	}
 }
 
-func TestPruneSortRequestsWithRevisions(t *testing.T) {
+func TestCertificateRequestsToDelete(t *testing.T) {
 	baseCR := gen.CertificateRequest("test")
 
 	tests := map[string]struct {
 		input []*cmapi.CertificateRequest
+		limit int
 		exp   []revision
 	}{
 		"an empty list of request should return empty": {
 			input: nil,
+			limit: 3,
 			exp:   nil,
 		},
 		"a single request with no revision set should return empty": {
 			input: []*cmapi.CertificateRequest{
 				baseCR,
 			},
-			exp: nil,
+			limit: 3,
+			exp:   nil,
 		},
-		"a single request with revision set should return single request": {
+		"a single request with revision set but higher limit should return no requests": {
 			input: []*cmapi.CertificateRequest{
 				gen.CertificateRequestFrom(baseCR,
 					gen.SetCertificateRequestRevision("123"),
 				),
 			},
-			exp: []revision{
-				{
-					rev: 123,
-					req: gen.CertificateRequestFrom(baseCR,
-						gen.SetCertificateRequestRevision("123"),
-					),
-				},
-			},
+			limit: 3,
+			exp:   nil,
 		},
-		"two requests with one badly formed revision should return single request": {
+		"two requests with one badly formed revision but limit set to 1 should return no requests": {
 			input: []*cmapi.CertificateRequest{
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-1"),
 					gen.SetCertificateRequestRevision("123"),
 				),
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-2"),
 					gen.SetCertificateRequestRevision("hello"),
 				),
 			},
-			exp: []revision{
-				{
-					rev: 123,
-					req: gen.CertificateRequestFrom(baseCR,
-						gen.SetCertificateRequestRevision("123"),
-					),
-				},
-			},
+			limit: 1,
+			exp:   []revision{},
 		},
 		"multiple requests with some with good revsions should return list in order": {
 			input: []*cmapi.CertificateRequest{
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-1"),
 					gen.SetCertificateRequestRevision("123"),
 				),
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-2"),
 					gen.SetCertificateRequestRevision("hello"),
 				),
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-3"),
 					gen.SetCertificateRequestRevision("3"),
 				),
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-4"),
 					gen.SetCertificateRequestRevision("cert-manager"),
 				),
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-5"),
 					gen.SetCertificateRequestRevision("900"),
 				),
 				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-6"),
 					gen.SetCertificateRequestRevision("1"),
 				),
 			},
+			limit: 1,
 			exp: []revision{
 				{
-					rev: 1,
-					req: gen.CertificateRequestFrom(baseCR,
-						gen.SetCertificateRequestRevision("1"),
-					),
+					1,
+					types.NamespacedName{
+						Namespace: gen.DefaultTestNamespace,
+						Name:      "cr-6",
+					},
 				},
 				{
-					rev: 3,
-					req: gen.CertificateRequestFrom(baseCR,
-						gen.SetCertificateRequestRevision("3"),
-					),
+					3,
+					types.NamespacedName{
+						Namespace: gen.DefaultTestNamespace,
+						Name:      "cr-3",
+					},
 				},
 				{
-					rev: 123,
-					req: gen.CertificateRequestFrom(baseCR,
-						gen.SetCertificateRequestRevision("123"),
-					),
+					123,
+					types.NamespacedName{
+						Namespace: gen.DefaultTestNamespace,
+						Name:      "cr-1",
+					},
 				},
+			},
+		},
+		"multiple requests with some with good revsions but less than the limit, should return list in order under limit": {
+			input: []*cmapi.CertificateRequest{
+				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-1"),
+					gen.SetCertificateRequestRevision("123"),
+				),
+				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-2"),
+					gen.SetCertificateRequestRevision("hello"),
+				),
+				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-3"),
+					gen.SetCertificateRequestRevision("3"),
+				),
+				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-4"),
+					gen.SetCertificateRequestRevision("cert-manager"),
+				),
+				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-5"),
+					gen.SetCertificateRequestRevision("900"),
+				),
+				gen.CertificateRequestFrom(baseCR,
+					gen.SetCertificateRequestName("cr-6"),
+					gen.SetCertificateRequestRevision("1"),
+				),
+			},
+			limit: 3,
+			exp: []revision{
 				{
-					rev: 900,
-					req: gen.CertificateRequestFrom(baseCR,
-						gen.SetCertificateRequestRevision("900"),
-					),
+					1,
+					types.NamespacedName{
+						Namespace: gen.DefaultTestNamespace,
+						Name:      "cr-6",
+					},
 				},
 			},
 		},
@@ -376,7 +412,7 @@ func TestPruneSortRequestsWithRevisions(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			log := logtest.TestLogger{T: t}
-			output := pruneSortRequestsWithRevisions(log, test.input)
+			output := certificateRequestsToDelete(log, test.limit, test.input)
 			if !reflect.DeepEqual(test.exp, output) {
 				t.Errorf("unexpected prune sort response, exp=%v got=%v",
 					test.exp, output)
