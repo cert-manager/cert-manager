@@ -81,7 +81,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			log := log.WithValues("controller", n)
 
 			// only run a controller if it's been enabled
-			if !util.Contains(opts.EnabledControllers, n) {
+			if !util.Contains(opts.EnabledControllers, n) || util.Contains(opts.DisabledControllers, n) {
 				log.V(logf.InfoLevel).Info("not starting controller as it's disabled")
 				continue
 			}

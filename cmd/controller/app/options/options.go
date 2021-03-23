@@ -60,7 +60,8 @@ type ControllerOptions struct {
 	LeaderElectionRenewDeadline time.Duration
 	LeaderElectionRetryPeriod   time.Duration
 
-	EnabledControllers []string
+	EnabledControllers  []string
+	DisabledControllers []string
 
 	ACMEHTTP01SolverImage                 string
 	ACMEHTTP01SolverResourceRequestCPU    string
@@ -159,6 +160,7 @@ var (
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
 	}
+	defaultDisabledControllers = []string{}
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -174,6 +176,7 @@ func NewControllerOptions() *ControllerOptions {
 		LeaderElectionRenewDeadline:       defaultLeaderElectionRenewDeadline,
 		LeaderElectionRetryPeriod:         defaultLeaderElectionRetryPeriod,
 		EnabledControllers:                defaultEnabledControllers,
+		DisabledControllers:               defaultDisabledControllers,
 		ClusterIssuerAmbientCredentials:   defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:          defaultIssuerAmbientCredentials,
 		DefaultIssuerName:                 defaultTLSACMEIssuerName,
@@ -224,6 +227,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringSliceVar(&s.EnabledControllers, "controllers", defaultEnabledControllers, ""+
 		"The set of controllers to enable.")
+	fs.StringSliceVar(&s.DisabledControllers, "disabled-controllers", defaultDisabledControllers, ""+
+		"The set of controllers to disable. Supersedes --controllers.")
 
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
