@@ -67,8 +67,9 @@ func ReviewApproval(client authzclient.SubjectAccessReviewInterface,
 
 // reviewRequest will perform a SubjectAccessReview with the UserInfo fields of
 // the client against the issuer of the CertificateRequest. A client must have
-// the "approve" verb, for the resource "signer", in the CertificateRequest
-// namespace, for the name "<issuer-kind>.<issuer-group>/<issuer-name>".
+// the "approve" verb, for the resource "signer", at the Cluster scope, for the
+// name "<issuer-kind>.<issuer-group>/<issuer-name>", or
+// "<issuer-kind>.<issuer-group>/*".
 func reviewRequest(client authzclient.SubjectAccessReviewInterface, req *admissionv1.AdmissionRequest, cr *cmapi.CertificateRequest) (bool, error) {
 	extra := make(map[string]authzv1.ExtraValue)
 	for k, v := range req.UserInfo.Extra {
