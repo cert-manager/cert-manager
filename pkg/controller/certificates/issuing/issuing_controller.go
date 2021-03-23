@@ -51,7 +51,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateIssuing"
+	ControllerName = "certificates-issuing"
 )
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)

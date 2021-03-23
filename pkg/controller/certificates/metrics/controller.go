@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateMetrics"
+	ControllerName = "certificates-metrics"
 )
 
 // controllerWrapper wraps the `controller` structure to make it implement

@@ -46,7 +46,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateReadiness"
+	ControllerName = "certificates-readiness"
 	ReadyReason    = "Ready"
 )
 
