@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
@@ -42,13 +41,14 @@ import (
 
 func TestDataForCertificate(t *testing.T) {
 	tests := map[string]struct {
-		builder     *testpkg.Builder
-		givenCert   *cmapi.Certificate
-		wantRequest *cmapi.CertificateRequest
-		wantSecret  *corev1.Secret
-		wantErr     string
+		builder    *testpkg.Builder
+		givenCert  *cmapi.Certificate
+		wantCurCR  *cmapi.CertificateRequest
+		wantNextCR *cmapi.CertificateRequest
+		wantSecret *corev1.Secret
+		wantErr    string
 	}{
-		"the returned secret should stay nil when it is not found": {
+		"when no secret is found, the returned secret is nil": {
 			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
 				gen.SetCertificateSecretName("secret-1"),
 				gen.SetCertificateUID("uid-1"),
@@ -56,133 +56,85 @@ func TestDataForCertificate(t *testing.T) {
 			builder:    &testpkg.Builder{},
 			wantSecret: nil,
 		},
-		"the returned certificaterequest should stay nil when the list function returns nothing": {
+		"when no current or next CR exists, the returned cur and next CRs are nil": {
 			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
 				gen.SetCertificateSecretName("secret-1"),
 				gen.SetCertificateUID("uid-1"),
 			),
-			builder:     &testpkg.Builder{},
-			wantRequest: nil,
+			builder:   &testpkg.Builder{},
+			wantCurCR: nil,
 		},
-		"should find the certificaterequest that matches revision and owner": {
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{},
-				CertManagerObjects: []runtime.Object{
-					gen.CertificateRequest("cr-4", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-4")),
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							"cert-manager.io/certificate-revision": "4",
-						}),
-					),
-					gen.CertificateRequest("cr-7", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-7")),
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							"cert-manager.io/certificate-revision": "7",
-						}),
-					),
-					gen.CertificateRequest("cr-9", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-9")),
-					),
-				},
-			},
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"), gen.SetCertificateNamespace("default-unit-test-ns"),
-				gen.SetCertificateUID("uid-7"),
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateRevision(7),
-			),
-			wantRequest: gen.CertificateRequest("cr-7", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
-				gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-7")),
-				gen.AddCertificateRequestAnnotations(map[string]string{
-					"cert-manager.io/certificate-revision": "7",
-				}),
-			),
-		},
-		"should return a nil certificaterequest when no match of revision or owner": {
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
-				gen.SetCertificateUID("uid-1"),
-				gen.SetCertificateSecretName("secret-1"),
+		"when cert revision=1 and no owned CRs, the returned cur and next CRs should be nil": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
+				gen.SetCertificateUID("cert-1-uid"),
 				gen.SetCertificateRevision(1),
 			),
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{},
-				CertManagerObjects: []runtime.Object{
-					gen.CertificateRequest("cr-1", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-					),
-					gen.CertificateRequest("cr-2", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							"cert-manager.io/certificate-revision": "42",
-						}),
-					),
-					gen.CertificateRequest("cr-42", gen.SetCertificateRequestNamespace("default-unit-test-ns"),
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-42", "uid-42")),
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							"cert-manager.io/certificate-revision": "1",
-						}),
-					),
-				},
-			},
-			wantRequest: nil,
+			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
+				cr("cr-unknown-rev1", "ns-1", "unknown-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unknown-rev2", "ns-1", "unknown-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+			}},
+			wantCurCR:  nil,
+			wantNextCR: nil,
 		},
-		"should not return any certificaterequest when certificate has no revision yet": {
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
-				gen.SetCertificateUID("uid-1"),
+		"when cert revision=nil, should only return the next CR with revision=1": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
+				gen.SetCertificateUID("cert-1-uid"),
 			),
-			builder:     &testpkg.Builder{},
-			wantRequest: nil,
+			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
+				cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-1-rev2", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+
+				// Edge cases.
+				cr("cr-1-norev", "ns-1", "cert-1-uid", nil),
+				cr("cr-1-empty", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": ""}),
+				cr("cr-unrelated-rev1", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unrelated-rev2", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+			}},
+			wantCurCR:  nil,
+			wantNextCR: cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
 		},
-		"should return the certificaterequest and secret when both found": {
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
-				gen.SetCertificateSecretName("secret-1"),
-				gen.SetCertificateUID("uid-1"),
+		"when cert revision=1, should return the current CR with revision=1 and the next CR with revision=2": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
+				gen.SetCertificateUID("cert-1-uid"),
 				gen.SetCertificateRevision(1),
 			),
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{
-					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1", Namespace: "default-unit-test-ns"}},
-				},
-				CertManagerObjects: []runtime.Object{
-					gen.CertificateRequest("cr-1",
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							"cert-manager.io/certificate-revision": "1",
-						}),
-					),
-				},
-			},
-			wantRequest: gen.CertificateRequest("cr-1",
-				gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-				gen.AddCertificateRequestAnnotations(map[string]string{
-					"cert-manager.io/certificate-revision": "1",
-				}),
-			),
-			wantSecret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1", Namespace: "default-unit-test-ns"}},
+			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
+				cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-1-rev2", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-1-rev3", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "3"}),
+
+				// Edge cases.
+				cr("cr-1-no-revision", "ns-1", "cert-1-uid", nil),
+				cr("cr-1-empty", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": ""}),
+				cr("cr-2-rev1", "ns-1", "cert-2-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unrelated-rev1", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-unrelated-rev2", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-unrelated-rev3", "ns-1", "cert-unrelated-uid", map[string]string{"cert-manager.io/certificate-revision": "3"}),
+			}},
+			wantCurCR:  cr("cr-1-rev1", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+			wantNextCR: cr("cr-1-rev2", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 		},
-		"should return error when multiple certificaterequests found": {
-			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
-				gen.SetCertificateUID("uid-1"),
-				gen.SetCertificateSecretName("secret-1"),
+		"should error when duplicate current CRs are found": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
+				gen.SetCertificateUID("cert-1-uid"),
 				gen.SetCertificateRevision(1),
 			),
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "secret-1"}}},
-				CertManagerObjects: []runtime.Object{
-					gen.CertificateRequest("cr-1",
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							"cert-manager.io/certificate-revision": "1",
-						}),
-					),
-					gen.CertificateRequest("cr-2",
-						gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("cert-1", "uid-1")),
-						gen.AddCertificateRequestAnnotations(map[string]string{
-							"cert-manager.io/certificate-revision": "1",
-						}),
-					),
-				},
-			},
-			wantErr: "multiple CertificateRequest resources exist for the current revision, not triggering new issuance until requests have been cleaned up",
+			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
+				cr("cr-1-rev1a", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+				cr("cr-1-rev1b", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
+			}},
+			wantErr: `multiple CertificateRequests found for the 'current' revision 1, skipping issuance until no more duplicate`,
+		},
+		"should error when duplicate next CRs are found": {
+			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
+				gen.SetCertificateUID("cert-1-uid"),
+				gen.SetCertificateRevision(1),
+			),
+			builder: &testpkg.Builder{CertManagerObjects: []runtime.Object{
+				cr("cr-1-rev2a", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+				cr("cr-1-rev2b", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
+			}},
+			wantErr: `multiple CertificateRequests found for the 'next' revision 2, skipping issuance until no more duplicate`,
 		},
 	}
 	for name, test := range tests {
@@ -272,7 +224,8 @@ func TestDataForCertificate(t *testing.T) {
 				require.NoError(t, gotErr)
 
 				assert.Equal(t, test.givenCert, got.Certificate, "input cert should always be equal to returned cert")
-				assert.Equal(t, test.wantRequest, got.CurrentRevisionRequest)
+				assert.Equal(t, test.wantCurCR, got.CurrentRevisionRequest)
+				assert.Equal(t, test.wantNextCR, got.NextRevisionRequest)
 				assert.Equal(t, test.wantSecret, got.Secret)
 			}
 		})
@@ -291,4 +244,11 @@ func turnOnKlogIfVerboseTest(t *testing.T) {
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
 	_ = klogFlags.Set("v", "4")
+}
+
+func cr(crName, crNamespace, ownerCertUID string, annot map[string]string) *cmapi.CertificateRequest {
+	return gen.CertificateRequest(crName, gen.SetCertificateRequestNamespace(crNamespace),
+		gen.AddCertificateRequestOwnerReferences(gen.CertificateRef("some-cert-name-that-does-not-matter", ownerCertUID)),
+		gen.AddCertificateRequestAnnotations(annot),
+	)
 }

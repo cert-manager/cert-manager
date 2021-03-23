@@ -49,6 +49,10 @@ type Input struct {
 	// CR allows is to check whether the current certificate still matches the
 	// already-issued certificate request.
 	CurrentRevisionRequest *cmapi.CertificateRequest
+
+	// The "next" certificate request is the one that is currently being
+	// issued.
+	NextRevisionRequest *cmapi.CertificateRequest
 }
 
 // A Func evaluates the given input data and decides whether a
