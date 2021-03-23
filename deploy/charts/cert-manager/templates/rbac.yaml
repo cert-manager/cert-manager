@@ -460,7 +460,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ template "cert-manager.fullname" . }}:approve
+  name: {{ template "cert-manager.fullname" . }}:approve-cert-manager-io
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
@@ -479,7 +479,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ template "cert-manager.fullname" . }}:approve
+  name: {{ template "cert-manager.fullname" . }}:approve-cert-manager-io
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
@@ -490,7 +490,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ template "cert-manager.fullname" . }}:approve
+  name: {{ template "cert-manager.fullname" . }}:approve-cert-manager-io
 subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace | quote }}
