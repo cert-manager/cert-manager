@@ -51,7 +51,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ template "webhook.fullname" . }}
+  name: {{ template "webhook.fullname" . }}:subjectaccessreviews
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
@@ -68,7 +68,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ template "webhook.fullname" . }}:dynamic-serving
+  name: {{ template "webhook.fullname" . }}:subjectaccessreviews
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
@@ -79,14 +79,11 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ template "webhook.fullname" . }}
+  name: {{ template "webhook.fullname" . }}:subjectaccessreviews
 subjects:
 - apiGroup: ""
   kind: ServiceAccount
   name: {{ template "webhook.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 
-
 {{- end -}}
-
-
