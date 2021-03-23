@@ -196,7 +196,7 @@ func TestReviewApproval(t *testing.T) {
 			},
 			expErr: field.ErrorList{
 				field.Forbidden(field.NewPath("status.conditions"),
-					`user "user-1" does not have permissions to set approved/deny conditions for issuer {test-issuer Issuer example.io}`),
+					`user "user-1" does not have permissions to set approved/denied conditions for issuer {test-issuer Issuer example.io}`),
 			},
 		},
 		"if deny condition changes, review returns false, error": {
@@ -231,7 +231,7 @@ func TestReviewApproval(t *testing.T) {
 			},
 			expErr: field.ErrorList{
 				field.Forbidden(field.NewPath("status.conditions"),
-					`user "user-1" does not have permissions to set approved/deny conditions for issuer {test-issuer Issuer example.io}`),
+					`user "user-1" does not have permissions to set approved/denied conditions for issuer {test-issuer Issuer example.io}`),
 			},
 		},
 		"if approve condition changes, review returns true, don't error": {
