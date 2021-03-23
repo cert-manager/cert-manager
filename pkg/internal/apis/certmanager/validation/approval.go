@@ -57,7 +57,7 @@ func ReviewApproval(client authzclient.SubjectAccessReviewInterface,
 	if !ok {
 		return field.ErrorList{
 			field.Forbidden(field.NewPath("status.conditions"),
-				fmt.Sprintf("user %q does not have permissions to set approved/deny conditions for issuer %v", req.UserInfo.Username, newCR.Spec.IssuerRef),
+				fmt.Sprintf("user %q does not have permissions to set approved/denied conditions for issuer %v", req.UserInfo.Username, newCR.Spec.IssuerRef),
 			),
 		}
 	}
