@@ -53,7 +53,7 @@ func TestRevisionManagerController(t *testing.T) {
 
 	c := controllerpkg.NewController(
 		context.Background(),
-		"issuing_test",
+		"revisionmanager_controller_test",
 		metrics.New(logf.Log),
 		ctrl.ProcessItem,
 		mustSync,
