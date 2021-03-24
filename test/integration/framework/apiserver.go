@@ -68,7 +68,7 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Fatal(err)
 	}
 
-	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{"--master=" + config.Host})
+	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{"--api-server-host=" + config.Host})
 	crdsDir := apitesting.CRDDirectory(t)
 	crds := readCustomResourcesAtPath(t, crdsDir)
 	for _, crd := range crds {
