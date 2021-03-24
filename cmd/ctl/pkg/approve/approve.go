@@ -58,9 +58,11 @@ type Options struct {
 	// boolean indicating if there was an Override in determining CmdNamespace
 	EnforceNamespace bool
 
-	// TODO:
+	// Reason is the string that will be set on the Reason field of the Approved
+	// condition.
 	Reason string
-	// TODO:
+	// Message is the string that will be set on the Message field of the
+	// Approved condition.
 	Message string
 
 	genericclioptions.IOStreams
