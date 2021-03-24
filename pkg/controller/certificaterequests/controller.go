@@ -18,6 +18,7 @@ package certificaterequests
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -172,6 +173,8 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
+	dbg := log.V(logf.DebugLevel)
+
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		log.Error(err, "invalid resource key")
@@ -181,7 +184,7 @@ func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 	cr, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			log.Error(err, "certificate request in work queue no longer exists")
+			dbg.Info(fmt.Sprintf("certificate request in work queue no longer exists: %s", err))
 			return nil
 		}
 
