@@ -44,7 +44,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		// is set, the key will be "".
 		key string
 
-		// Certificate to be synced for the test. if not set, the 'key' will be
+		// Certificate to be synced for the test. If not set, the 'key' will be
 		// passed to ProcessItem instead.
 		existingCertificate *cmapi.Certificate
 
