@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -145,7 +146,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 
 	condition := c.policyEvaluator(c.policyChain, input)
-
+	oldCrt := crt
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, condition.Type, condition.Status, condition.Reason, condition.Message)
 
@@ -175,12 +176,17 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		crt.Status.NotBefore = nil
 		crt.Status.RenewalTime = nil
 	}
-	_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-	if err != nil {
-		return err
+	if !apiequality.Semantic.DeepEqual(oldCrt.Status, crt.Status) {
+		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
+			crt.Status.NotAfter, "notBefore", crt.Status.NotBefore, "renewalTime",
+			crt.Status.RenewalTime)
+		_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
+
 }
 
 // policyEvaluator builds Certificate's Ready condition using the result of policy chain evaluation
