@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateRevisionManager"
+	ControllerName = "certificates-revision-manager"
 )
 
 var (
