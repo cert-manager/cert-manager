@@ -216,7 +216,6 @@ func TestProcessItem(t *testing.T) {
 					Message: "ready message",
 				})),
 		},
-		// TODO: this is the current behaviour, but we might want to actually not do unnecessary updates https://github.com/jetstack/cert-manager/issues/3663
 		"update status for a Certificate that has a Ready conditon and the policy evaluates to True- should remain True": {
 			condition: cmapi.CertificateCondition{
 				Type:               cmapi.CertificateConditionReady,
@@ -234,7 +233,7 @@ func TestProcessItem(t *testing.T) {
 					LastTransitionTime: &metaNow,
 				})),
 			secretShouldExist: true,
-			certShouldUpdate:  true,
+			certShouldUpdate:  false,
 		},
 	}
 	for name, test := range tests {
