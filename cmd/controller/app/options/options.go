@@ -232,7 +232,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
 
 	fs.StringVar(&s.ACMEHTTP01SolverServiceAccount, "acme-http01-solver-service-account", defaultACMEHTTP01SolverServiceAccount, ""+
-		"The docker image to use to solve ACME HTTP01 Service Account. You most likely will not "+
+		"The service account to use for the ACME HTTP01 solver pod. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
 
 	fs.StringVar(&s.ACMEHTTP01SolverResourceRequestCPU, "acme-http01-solver-resource-request-cpu", defaultACMEHTTP01SolverResourceRequestCPU, ""+
