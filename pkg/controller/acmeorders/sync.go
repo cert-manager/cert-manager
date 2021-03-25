@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
@@ -186,7 +187,13 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		// should already be Pending, but set it anyway to be explicit.
 		c.setOrderState(&o.Status, string(cmacme.Pending))
 		// Re-queue the Order to be processed after RequeuePeriod
-		c.scheduledWorkQueue.Add(o, RequeuePeriod)
+		key, err := cache.MetaNamespaceKeyFunc(o)
+		if err != nil {
+			// if we return an error here, at least the Order will get re-queued.
+			log.V(logf.InfoLevel).Info("Internal error: failed to construct key for pending Order")
+			return err
+		}
+		c.scheduledWorkQueue.Add(key, time.Second*5)
 		return nil
 
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
