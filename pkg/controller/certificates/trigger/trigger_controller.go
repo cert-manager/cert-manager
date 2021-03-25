@@ -69,7 +69,7 @@ type controller struct {
 	recorder                 record.EventRecorder
 	scheduledWorkQueue       scheduler.ScheduledWorkQueue
 
-	// The following is used for testing purposes.
+	// The following are used for testing purposes.
 	clock              clock.Clock
 	shouldReissue      policies.Func
 	dataForCertificate func(context.Context, *cmapi.Certificate) (policies.Input, error)
@@ -121,7 +121,7 @@ func NewController(
 		recorder:                 recorder,
 		scheduledWorkQueue:       scheduler.NewScheduledWorkQueue(clock, queue.Add),
 
-		// The following is used for testing purposes.
+		// The following are used for testing purposes.
 		clock:         clock,
 		shouldReissue: shouldReissue,
 		dataForCertificate: (&policies.Gatherer{
