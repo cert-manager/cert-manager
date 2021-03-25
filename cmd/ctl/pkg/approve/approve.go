@@ -139,7 +139,7 @@ func (o *Options) Complete(f cmdutil.Factory) error {
 	return nil
 }
 
-// Run executes create certificaterequest command
+// Run executes approve command
 func (o *Options) Run(ctx context.Context, args []string) error {
 	cr, err := o.CMClient.CertmanagerV1().CertificateRequests(o.CmdNamespace).Get(ctx, args[0], metav1.GetOptions{})
 	if err != nil {
