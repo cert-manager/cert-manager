@@ -67,7 +67,8 @@ func TestTriggerController(t *testing.T) {
 	}
 	// default certificate renewBefore period
 	defaultRenewBefore := time.Hour * 24
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, policies.NewTriggerPolicyChain(fakeClock, defaultRenewBefore))
+	shouldReissue := policies.NewTriggerPolicyChain(fakeClock, defaultRenewBefore).Evaluate
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shouldReissue)
 	c := controllerpkg.NewController(
 		context.Background(),
 		"trigger_test",
@@ -127,7 +128,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Only use the 'current certificate nearing expiry' policy chain during the
 	// test as we want to test the very specific cases of triggering/not
 	// triggering depending on whether a renewal is required.
-	policyChain := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock, defaultRenewBefore)}
+	shoudReissue := policies.Chain{policies.CurrentCertificateNearingExpiry(fakeClock, defaultRenewBefore)}.Evaluate
 	// Build, instantiate and run the trigger controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 
@@ -182,7 +183,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	}
 
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, policyChain)
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue)
 	c := controllerpkg.NewController(
 		logf.NewContext(context.Background(), logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
