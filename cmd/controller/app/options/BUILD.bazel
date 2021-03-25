@@ -49,4 +49,5 @@ go_test(
     name = "go_default_test",
     srcs = ["options_test.go"],
     embed = [":go_default_library"],
+    deps = ["@io_k8s_apimachinery//pkg/util/sets:go_default_library"],
 )

@@ -1,6 +1,5 @@
 /*
 Copyright 2021 The cert-manager Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,50 +15,48 @@ limitations under the License.
 
 package options
 
-import "testing"
+import (
+	"testing"
 
-func TestControllerEnabled(t *testing.T) {
+	"k8s.io/apimachinery/pkg/util/sets"
+)
+
+func TestEnabledControllers(t *testing.T) {
 	tests := map[string]struct {
-		enabled    []string
-		name       string
-		expEnabled bool
+		controllers []string
+		expEnabled  sets.String
 	}{
-		"if no controllers enabled, return false": {
-			enabled:    []string{},
-			name:       "foo",
-			expEnabled: false,
+		"if no controllers enabled, return empty": {
+			controllers: []string{},
+			expEnabled:  sets.NewString(),
 		},
-		"if different controllers enabled, return false": {
-			enabled:    []string{"123", "456"},
-			name:       "foo",
-			expEnabled: false,
+		"if some controllers enabled, return list": {
+			controllers: []string{"foo", "bar"},
+			expEnabled:  sets.NewString("foo", "bar"),
 		},
-		"if controller enabled, return true": {
-			enabled:    []string{"123", "foo", "456"},
-			name:       "foo",
-			expEnabled: true,
+		"if some controllers enabled, one then disabled, return list without disabled": {
+			controllers: []string{"foo", "bar", "-foo"},
+			expEnabled:  sets.NewString("bar"),
 		},
-		"if all controllers enabled, return true": {
-			enabled:    []string{"*"},
-			name:       "foo",
-			expEnabled: true,
+		"if all controllers enabled, return all controllers": {
+			controllers: []string{"*"},
+			expEnabled:  sets.NewString(allControllers...),
 		},
-		"if all controllers enabled but foo diabled, return false": {
-			enabled:    []string{"*", "-foo"},
-			name:       "foo",
-			expEnabled: false,
+		"if all controllers enabled, some diabled, return all controllers with disabled": {
+			controllers: []string{"*", "-clusrerissuers", "-issuer"},
+			expEnabled:  sets.NewString(allControllers...).Delete("-clusterissuers", "-issuers"),
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := ControllerOptions{
-				EnabledControllers: test.enabled,
+				controllers: test.controllers,
 			}
 
-			got := o.ControllerEnabled(test.name)
-			if got != test.expEnabled {
-				t.Errorf("got unexpected enabled, exp=%t got=%t",
+			got := o.EnabledControllers()
+			if !got.Equal(test.expEnabled) {
+				t.Errorf("got unexpected enabled, exp=%s got=%s",
 					test.expEnabled, got)
 			}
 		})

@@ -63,11 +63,13 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	log := logf.FromContext(rootCtx)
 
 	ctx, kubeCfg, err := buildControllerContext(rootCtx, stopCh, opts)
-
 	if err != nil {
 		log.Error(err, "error building controller context", "options", opts)
 		os.Exit(1)
 	}
+
+	enabledControllers := opts.EnabledControllers()
+	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers))
 
 	metricsServer, err := ctx.Metrics.Start(opts.MetricsListenAddress, opts.EnablePprof)
 	if err != nil {
@@ -81,7 +83,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			log := log.WithValues("controller", n)
 
 			// only run a controller if it's been enabled
-			if !opts.ControllerEnabled(n) {
+			if !enabledControllers.Has(n) {
 				log.V(logf.InfoLevel).Info("not starting controller as it's disabled")
 				continue
 			}

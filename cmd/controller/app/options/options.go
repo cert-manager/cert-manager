@@ -62,7 +62,7 @@ type ControllerOptions struct {
 	LeaderElectionRenewDeadline time.Duration
 	LeaderElectionRetryPeriod   time.Duration
 
-	EnabledControllers []string
+	controllers []string
 
 	ACMEHTTP01SolverImage                 string
 	ACMEHTTP01SolverResourceRequestCPU    string
@@ -177,7 +177,7 @@ func NewControllerOptions() *ControllerOptions {
 		LeaderElectionLeaseDuration:       defaultLeaderElectionLeaseDuration,
 		LeaderElectionRenewDeadline:       defaultLeaderElectionRenewDeadline,
 		LeaderElectionRetryPeriod:         defaultLeaderElectionRetryPeriod,
-		EnabledControllers:                defaultEnabledControllers,
+		controllers:                       defaultEnabledControllers,
 		ClusterIssuerAmbientCredentials:   defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:          defaultIssuerAmbientCredentials,
 		DefaultIssuerName:                 defaultTLSACMEIssuerName,
@@ -226,9 +226,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
 
-	fs.StringSliceVar(&s.EnabledControllers, "controllers", defaultEnabledControllers, fmt.Sprintf(""+
-		"A list of controllers to enable. '*' enables all on-by-default controllers, 'foo' enables the controller "+
-		"named 'foo', '-foo' disables the controller named 'foo'.\nAll controllers: %s",
+	fs.StringSliceVar(&s.controllers, "controllers", defaultEnabledControllers, fmt.Sprintf(""+
+		"A list of controllers to enable. '--controllers=*' enables all "+
+		"on-by-default controllers, '--controllers=foo' enables just the controller "+
+		"named 'foo', '--controllers=*,-foo' disables the controller named "+
+		"'foo'.\nAll controllers: %s",
 		strings.Join(allControllers, ", ")))
 
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
@@ -325,7 +327,7 @@ func (o *ControllerOptions) Validate() error {
 
 	errs := []error{}
 	allControllersSet := sets.NewString(allControllers...)
-	for _, controller := range o.EnabledControllers {
+	for _, controller := range o.controllers {
 		if controller == "*" {
 			continue
 		}
@@ -343,21 +345,22 @@ func (o *ControllerOptions) Validate() error {
 	return nil
 }
 
-func (o *ControllerOptions) ControllerEnabled(name string) bool {
-	var enabled bool
+func (o *ControllerOptions) EnabledControllers() sets.String {
+	var disabled []string
+	enabled := sets.NewString()
 
-	for _, controller := range o.EnabledControllers {
-		// Set enabled to true if wildcard or names match
-		if controller == "*" || name == controller {
-			enabled = true
-			continue
-		}
-
-		// Always return false if the controller is explicitly disabled.
-		if name == strings.TrimPrefix(controller, "-") {
-			return false
+	for _, controller := range o.controllers {
+		switch {
+		case controller == "*":
+			enabled = enabled.Insert(allControllers...)
+		case strings.HasPrefix(controller, "-"):
+			disabled = append(disabled, strings.TrimPrefix(controller, "-"))
+		default:
+			enabled = enabled.Insert(controller)
 		}
 	}
+
+	enabled = enabled.Delete(disabled...)
 
 	return enabled
 }
