@@ -36,10 +36,6 @@ func AddToValidationRegistry(reg *validation.Registry) error {
 		return err
 	}
 
-	if err := reg.AddSubjectAccessReviewFunc(&cmapi.CertificateRequest{}, ReviewApproval); err != nil {
-		return err
-	}
-
 	if err := reg.AddValidateFunc(&cmapi.ClusterIssuer{}, ValidateClusterIssuer); err != nil {
 		return err
 	}
