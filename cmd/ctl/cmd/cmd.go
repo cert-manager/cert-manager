@@ -25,14 +25,15 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-
 	// Load all auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/approve"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/deny"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/inspect"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status"
@@ -70,6 +71,8 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	cmds.AddCommand(renew.NewCmdRenew(ctx, ioStreams, factory))
 	cmds.AddCommand(status.NewCmdStatus(ctx, ioStreams, factory))
 	cmds.AddCommand(inspect.NewCmdInspect(ctx, ioStreams, factory))
+	cmds.AddCommand(approve.NewCmdApprove(ctx, ioStreams, factory))
+	cmds.AddCommand(deny.NewCmdDeny(ctx, ioStreams, factory))
 
 	return cmds
 }

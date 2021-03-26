@@ -6,8 +6,10 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/cmd/ctl/cmd",
     visibility = ["//visibility:public"],
     deps = [
+        "//cmd/ctl/pkg/approve:go_default_library",
         "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create:go_default_library",
+        "//cmd/ctl/pkg/deny:go_default_library",
         "//cmd/ctl/pkg/inspect:go_default_library",
         "//cmd/ctl/pkg/renew:go_default_library",
         "//cmd/ctl/pkg/status:go_default_library",
