@@ -23,8 +23,10 @@ import (
 	"errors"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/record"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -40,6 +42,7 @@ import (
 
 const (
 	CRControllerName = "certificaterequests-issuer-selfsigned"
+	emptyDNMessage   = "Certificate will be issued with an empty Issuer DN, which contravenes RFC 5280 and could break some strict clients"
 )
 
 type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
@@ -49,6 +52,7 @@ type SelfSigned struct {
 	secretsLister corelisters.SecretLister
 
 	reporter *crutil.Reporter
+	recorder record.EventRecorder
 
 	// Used for testing to get reproducible resulting certificates
 	signingFn signingFn
@@ -68,6 +72,7 @@ func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		recorder:      ctx.Recorder,
 		signingFn:     pki.SignCertificate,
 	}
 }
@@ -126,6 +131,15 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 	}
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().SelfSigned.CRLDistributionPoints
+
+	if template.Subject.String() == "" {
+		// RFC 5280 (https://tools.ietf.org/html/rfc5280#section-4.1.2.4) says that:
+		// "The issuer field MUST contain a non-empty distinguished name (DN)."
+		// Since we're creating a self-signed cert, the issuer will match whatever is
+		// in the template's subject DN.
+		log.V(logf.DebugLevel).Info("issued cert will have an empty issuer DN, which contravenes RFC 5280. emitting warning event")
+		s.recorder.Event(cr, corev1.EventTypeWarning, "BadConfig", emptyDNMessage)
+	}
 
 	// extract the public component of the key
 	publickey, err := pki.PublicKeyForPrivateKey(privatekey)

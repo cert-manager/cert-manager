@@ -312,13 +312,6 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networkingv1beta1.Ingr
 	}
 }
 
-func setCommonName(crt *cmapi.Certificate, ing *networkingv1beta1.Ingress) {
-	// if annotation is set use that as CN
-	if ing.Annotations != nil && ing.Annotations[cmapi.CommonNameAnnotationKey] != "" {
-		crt.Spec.CommonName = ing.Annotations[cmapi.CommonNameAnnotationKey]
-	}
-}
-
 // shouldSync returns true if this ingress should have a Certificate resource
 // created for it
 func shouldSync(ing *networkingv1beta1.Ingress, autoCertificateAnnotations []string) bool {
