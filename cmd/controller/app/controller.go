@@ -69,7 +69,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	}
 
 	enabledControllers := opts.EnabledControllers()
-	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers))
+	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers.List()))
 
 	metricsServer, err := ctx.Metrics.Start(opts.MetricsListenAddress, opts.EnablePprof)
 	if err != nil {
