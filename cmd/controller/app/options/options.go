@@ -19,9 +19,11 @@ package options
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	cm "github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
@@ -60,7 +62,7 @@ type ControllerOptions struct {
 	LeaderElectionRenewDeadline time.Duration
 	LeaderElectionRetryPeriod   time.Duration
 
-	EnabledControllers []string
+	controllers []string
 
 	ACMEHTTP01SolverImage                 string
 	ACMEHTTP01SolverResourceRequestCPU    string
@@ -138,7 +140,7 @@ var (
 
 	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
 
-	defaultEnabledControllers = []string{
+	allControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
@@ -159,6 +161,8 @@ var (
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
 	}
+
+	defaultEnabledControllers = []string{"*"}
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -173,7 +177,7 @@ func NewControllerOptions() *ControllerOptions {
 		LeaderElectionLeaseDuration:       defaultLeaderElectionLeaseDuration,
 		LeaderElectionRenewDeadline:       defaultLeaderElectionRenewDeadline,
 		LeaderElectionRetryPeriod:         defaultLeaderElectionRetryPeriod,
-		EnabledControllers:                defaultEnabledControllers,
+		controllers:                       defaultEnabledControllers,
 		ClusterIssuerAmbientCredentials:   defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:          defaultIssuerAmbientCredentials,
 		DefaultIssuerName:                 defaultTLSACMEIssuerName,
@@ -222,8 +226,12 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
 
-	fs.StringSliceVar(&s.EnabledControllers, "controllers", defaultEnabledControllers, ""+
-		"The set of controllers to enable.")
+	fs.StringSliceVar(&s.controllers, "controllers", defaultEnabledControllers, fmt.Sprintf(""+
+		"A list of controllers to enable. '--controllers=*' enables all "+
+		"on-by-default controllers, '--controllers=foo' enables just the controller "+
+		"named 'foo', '--controllers=*,-foo' disables the controller named "+
+		"'foo'.\nAll controllers: %s",
+		strings.Join(allControllers, ", ")))
 
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
@@ -317,5 +325,42 @@ func (o *ControllerOptions) Validate() error {
 		}
 	}
 
+	errs := []error{}
+	allControllersSet := sets.NewString(allControllers...)
+	for _, controller := range o.controllers {
+		if controller == "*" {
+			continue
+		}
+
+		controller = strings.TrimPrefix(controller, "-")
+		if !allControllersSet.Has(controller) {
+			errs = append(errs, fmt.Errorf("%q is not in the list of known controllers", controller))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("validation failed for '--controllers': %v", errs)
+	}
+
 	return nil
+}
+
+func (o *ControllerOptions) EnabledControllers() sets.String {
+	var disabled []string
+	enabled := sets.NewString()
+
+	for _, controller := range o.controllers {
+		switch {
+		case controller == "*":
+			enabled = enabled.Insert(allControllers...)
+		case strings.HasPrefix(controller, "-"):
+			disabled = append(disabled, strings.TrimPrefix(controller, "-"))
+		default:
+			enabled = enabled.Insert(controller)
+		}
+	}
+
+	enabled = enabled.Delete(disabled...)
+
+	return enabled
 }
