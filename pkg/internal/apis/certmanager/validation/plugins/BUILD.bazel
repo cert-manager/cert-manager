@@ -31,7 +31,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/internal/apis/certmanager:go_default_library",
-        "//pkg/internal/apis/certmanager/validation/plugins/internal/fake:go_default_library",
+        "//pkg/internal/apis/certmanager/validation/plugins/fake:go_default_library",
         "//pkg/internal/apis/meta:go_default_library",
         "//pkg/webhook:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
@@ -57,7 +57,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/internal/apis/certmanager/validation/plugins/internal/fake:all-srcs",
+        "//pkg/internal/apis/certmanager/validation/plugins/fake:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
