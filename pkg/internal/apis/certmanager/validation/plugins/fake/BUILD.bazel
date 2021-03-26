@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["discovery.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins/internal/fake",
+    visibility = ["//pkg:__subpackages__"],
+    deps = [
+        "@com_github_googleapis_gnostic//openapiv2:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/version:go_default_library",
+        "@io_k8s_client_go//discovery:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
