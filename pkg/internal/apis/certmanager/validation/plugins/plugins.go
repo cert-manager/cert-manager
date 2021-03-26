@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// Plugin is an admission plugin that will run during admission webhook events.
 type Plugin interface {
 	Init(client kubernetes.Interface)
 	Validate(admissionSpec *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) *field.Error

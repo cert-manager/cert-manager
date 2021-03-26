@@ -26,14 +26,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
+	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins"
 )
 
 type registryBackedValidator struct {
 	log      logr.Logger
 	decoder  runtime.Decoder
 	registry *validation.Registry
+
+	plugins []plugins.Plugin
 }
 
 func NewRegistryBackedValidator(log logr.Logger, scheme *runtime.Scheme, registry *validation.Registry) *registryBackedValidator {
@@ -42,6 +46,13 @@ func NewRegistryBackedValidator(log logr.Logger, scheme *runtime.Scheme, registr
 		log:      log,
 		decoder:  factory.UniversalDecoder(),
 		registry: registry,
+		plugins:  plugins.All(scheme),
+	}
+}
+
+func (r *registryBackedValidator) InitPlugins(client kubernetes.Interface) {
+	for _, plugin := range r.plugins {
+		plugin.Init(client)
 	}
 }
 
@@ -96,12 +107,17 @@ func (r *registryBackedValidator) Validate(admissionSpec *admissionv1.AdmissionR
 	} else if admissionSpec.Operation == admissionv1.Update {
 		// perform update validation on resource
 		errs = append(errs, r.registry.ValidateUpdate(admissionSpec, oldObj, obj, gvk)...)
+	}
 
-		// If no validation errors occurred, perform SubjectAccessReview checks.
-		if len(errs) == 0 {
-			errs = append(errs, r.registry.SubjectAccessReview(admissionSpec, oldObj, obj, gvk)...)
+	// If no validation errors occurred, perform plugin checks.
+	if len(errs) == 0 {
+		for _, plugin := range r.plugins {
+			if err := plugin.Validate(admissionSpec, oldObj, obj); err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
+
 	// return with allowed = false if any errors occurred
 	if err := errs.ToAggregate(); err != nil {
 		status.Allowed = false
