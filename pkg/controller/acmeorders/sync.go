@@ -22,10 +22,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"reflect"
 
 	acmeapi "golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -47,8 +47,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	o = o.DeepCopy()
 
 	defer func() {
-		// TODO: replace with more efficient comparison
-		if reflect.DeepEqual(oldOrder.Status, o.Status) {
+		if apiequality.Semantic.DeepEqual(oldOrder.Status, o.Status) {
 			dbg.Info("skipping updating resource as new status == existing status")
 			return
 		}
