@@ -338,7 +338,7 @@ func createCRD(crdclient crdclientset.Interface, group, plural, kind string, sco
 				Plural: plural,
 			},
 			Versions: []crdapi.CustomResourceDefinitionVersion{
-				crdapi.CustomResourceDefinitionVersion{
+				{
 					Name:    "v1alpha1",
 					Served:  true,
 					Storage: true,

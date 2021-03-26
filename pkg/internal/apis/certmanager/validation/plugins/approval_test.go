@@ -72,7 +72,7 @@ func TestValidate(t *testing.T) {
 		},
 		Status: internalcmapi.CertificateRequestStatus{
 			Conditions: []internalcmapi.CertificateRequestCondition{
-				internalcmapi.CertificateRequestCondition{
+				{
 					Type:    internalcmapi.CertificateRequestConditionApproved,
 					Status:  internalcmmeta.ConditionTrue,
 					Reason:  "cert-manager.io",
@@ -179,9 +179,7 @@ func TestValidate(t *testing.T) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
 								{Name: "example.io", Versions: []metav1.GroupVersionForDiscovery{
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "foo-bar",
-									},
+									{GroupVersion: "foo-bar"},
 								}},
 							},
 						}, nil
@@ -235,9 +233,7 @@ func TestValidate(t *testing.T) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
 								{Name: "example.io", Versions: []metav1.GroupVersionForDiscovery{
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "foo-bar",
-									},
+									{GroupVersion: "foo-bar"},
 								}},
 							},
 						}, nil
@@ -299,8 +295,8 @@ func TestReviewRequest(t *testing.T) {
 		Groups:   []string{"group-1", "group-2"},
 		UID:      "abc1",
 		Extra: map[string]authnv1.ExtraValue{
-			"foo": []string{"123", "456"},
-			"bar": []string{"789", "000"},
+			"foo": {"123", "456"},
+			"bar": {"789", "000"},
 		},
 	}
 
@@ -310,8 +306,8 @@ func TestReviewRequest(t *testing.T) {
 			!reflect.DeepEqual(sar.Spec.Groups, []string{"group-1", "group-2"}) ||
 			sar.Spec.UID != "abc1" ||
 			!reflect.DeepEqual(sar.Spec.Extra, map[string]authzv1.ExtraValue{
-				"foo": authzv1.ExtraValue{"123", "456"},
-				"bar": authzv1.ExtraValue{"789", "000"},
+				"foo": {"123", "456"},
+				"bar": {"789", "000"},
 			}) {
 			t.Errorf("got unexpected review userinfo: %#+v", sar.Spec)
 		}
@@ -459,7 +455,7 @@ func TestIsApprovalRequest(t *testing.T) {
 	approvedCR := &internalcmapi.CertificateRequest{
 		Status: internalcmapi.CertificateRequestStatus{
 			Conditions: []internalcmapi.CertificateRequestCondition{
-				internalcmapi.CertificateRequestCondition{
+				{
 					Type:    internalcmapi.CertificateRequestConditionApproved,
 					Status:  internalcmmeta.ConditionTrue,
 					Reason:  "cert-manager.io",
@@ -472,7 +468,7 @@ func TestIsApprovalRequest(t *testing.T) {
 	deniedCR := &internalcmapi.CertificateRequest{
 		Status: internalcmapi.CertificateRequestStatus{
 			Conditions: []internalcmapi.CertificateRequestCondition{
-				internalcmapi.CertificateRequestCondition{
+				{
 					Type:    internalcmapi.CertificateRequestConditionDenied,
 					Status:  internalcmmeta.ConditionTrue,
 					Reason:  "cert-manager.io",
@@ -748,9 +744,7 @@ func TestSignerResource(t *testing.T) {
 								{Name: "foo"},
 								{Name: "bar"},
 								{Name: "example.io", Versions: []metav1.GroupVersionForDiscovery{
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "foo-bar",
-									},
+									{GroupVersion: "foo-bar"},
 								}},
 							},
 						}, nil
@@ -788,12 +782,8 @@ func TestSignerResource(t *testing.T) {
 								{Name: "foo"},
 								{Name: "bar"},
 								{Name: "example.io", Versions: []metav1.GroupVersionForDiscovery{
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "foo-bar",
-									},
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "bar-foo",
-									},
+									{GroupVersion: "foo-bar"},
+									{GroupVersion: "bar-foo"},
 								}},
 							},
 						}, nil
@@ -840,12 +830,8 @@ func TestSignerResource(t *testing.T) {
 								{Name: "foo"},
 								{Name: "bar"},
 								{Name: "example.io", Versions: []metav1.GroupVersionForDiscovery{
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "foo-bar",
-									},
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "bar-foo",
-									},
+									{GroupVersion: "foo-bar"},
+									{GroupVersion: "bar-foo"},
 								}},
 							},
 						}, nil
@@ -900,12 +886,8 @@ func TestSignerResource(t *testing.T) {
 								{Name: "foo"},
 								{Name: "bar"},
 								{Name: "example.io", Versions: []metav1.GroupVersionForDiscovery{
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "foo-bar",
-									},
-									metav1.GroupVersionForDiscovery{
-										GroupVersion: "bar-foo",
-									},
+									{GroupVersion: "foo-bar"},
+									{GroupVersion: "bar-foo"},
 								}},
 							},
 						}, nil
