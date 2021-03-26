@@ -49,8 +49,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 	if err != nil {
 		return nil, fmt.Errorf("error creating kubernetes client: %s", err)
 	}
-
-	webhook.ValidationRegistry = webhook.ValidationRegistry.WithSubjectAccessReviewClient(cl.AuthorizationV1().SubjectAccessReviews())
+	validationHook.InitPlugins(cl)
 
 	var source tls.CertificateSource
 	switch {
