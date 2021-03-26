@@ -79,6 +79,7 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
 	}
+
 	return el
 }
 

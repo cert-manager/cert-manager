@@ -709,6 +709,7 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*certmanager.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
+	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	return nil
 }
 
@@ -731,6 +732,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1_CertificateSpec(in *certmanag
 	out.Usages = *(*[]v1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*v1.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
+	out.RevisionHistoryLimit = (*int32)(unsafe.Pointer(in.RevisionHistoryLimit))
 	return nil
 }
 

@@ -41,6 +41,10 @@ func strPtr(s string) *string {
 	return &s
 }
 
+func int32Ptr(i int32) *int32 {
+	return &i
+}
+
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {

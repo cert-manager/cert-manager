@@ -46,6 +46,7 @@ filegroup(
         "//pkg/controller/certificates/metrics:all-srcs",
         "//pkg/controller/certificates/readiness:all-srcs",
         "//pkg/controller/certificates/requestmanager:all-srcs",
+        "//pkg/controller/certificates/revisionmanager:all-srcs",
         "//pkg/controller/certificates/trigger:all-srcs",
     ],
     tags = ["automanaged"],

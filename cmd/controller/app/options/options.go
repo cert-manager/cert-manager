@@ -37,6 +37,7 @@ import (
 	certificatesmetricscontroller "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/readiness"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/requestmanager"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/revisionmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
@@ -156,6 +157,7 @@ var (
 		keymanager.ControllerName,
 		requestmanager.ControllerName,
 		readiness.ControllerName,
+		revisionmanager.ControllerName,
 	}
 )
 
