@@ -26,6 +26,8 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	crdapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	crdclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -47,10 +49,17 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		sa       *corev1.ServiceAccount
 		saclient clientset.Interface
 		request  *cmapi.CertificateRequest
+
+		crd       *crdapi.CustomResourceDefinition
+		crdclient crdclientset.Interface
+		group     string
 	)
 
 	JustBeforeEach(func() {
 		var err error
+		crdclient, err = crdclientset.NewForConfig(f.KubeClientConfig)
+		Expect(err).NotTo(HaveOccurred())
+		group = testutil.RandomSubdomain("example.io")
 
 		sa, err = f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), &corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
@@ -140,7 +149,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 				Name:  "test-issuer",
 				Kind:  "Issuer",
-				Group: "example.io",
+				Group: group,
 			}),
 		)
 		request.GenerateName = "test-request-"
@@ -154,62 +163,199 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Delete(context.TODO(), request.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
+
+		if crd != nil {
+			By("Removing CustomResource Definition")
+			err = crdclient.ApiextensionsV1().CustomResourceDefinitions().Delete(context.TODO(), crd.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}
+		crd = nil
 	})
 
 	It("attempting to approve a certificate request without the approve permission should error", func() {
 		approvedCR := request.DeepCopy()
-		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "integration")
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		_, err := saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("attempting to deny a certificate request without the approve permission should error", func() {
 		approvedCR := request.DeepCopy()
-		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "integration")
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		_, err := saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
 
-	It("a service account with the approve permissions for issuer.example.io/* should be able to approve requests", func() {
-		bindServiceAccountToApprove(f, sa, "issuer.example.io/*")
+	//
+
+	It("a service account with the approve permissions for a resource that doesn't exist attempting to approve should error", func() {
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/*", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "integration")
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("a service account with the approve permissions for a resource that doesn't exist attempting to deny should error", func() {
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/*", group))
+
+		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
+
+	//
+
+	It("a service account with the approve permissions for cluster scoped issuers.example.io/* should be able to approve requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/*", group))
+
+		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("a service account with the approve permissions for issuer.example.io/* should be able to deny requests", func() {
-		bindServiceAccountToApprove(f, sa, "issuer.example.io/*")
+	It("a service account with the approve permissions for cluster scoped issuers.example.io/* should be able to deny requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/*", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "integration")
+		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("a service account with the approve permissions for issuer.example.io/test-issuer should be able to approve requests", func() {
-		bindServiceAccountToApprove(f, sa, "issuer.example.io/test-issuer")
+	//
+
+	It("a service account with the approve permissions for cluster scoped issuers.example.io/test-issuer should be able to approve requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "integration")
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("a service account with the approve permissions for issuer.example.io/test-issuer should be able to deny requests", func() {
-		bindServiceAccountToApprove(f, sa, "issuer.example.io/test-issuer")
+	It("a service account with the approve permissions for cluster scoped issuers.example.io/<namespace>.test-issuer should not be able to approve requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", f.Namespace.Name, group))
+
+		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("a service account with the approve permissions for namespaced scoped issuers.example.io/<namespace>.test-issuer should be able to approve requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", group, f.Namespace.Name))
+
+		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("a service account with the approve permissions for namespaced scoped issuers.example.io/test-issuer should not be able to approve requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
+
+		approvedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(approvedCR, cmapi.CertificateRequestConditionApproved, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), approvedCR, metav1.UpdateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
+
+	//
+
+	It("a service account with the approve permissions for cluster scoped issuers.example.io/test-issuer should be able to deny requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
 
 		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "integration")
+		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
 		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 	})
+
+	It("a service account with the approve permissions for cluster scoped issuers.example.io/<namespace>.test-issuer should not be able to deny requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.ClusterScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", f.Namespace.Name, group))
+
+		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("a service account with the approve permissions for namespaced scoped issuers.example.io/<namespace>.test-issuer should be able to deny requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/%s.test-issuer", group, f.Namespace.Name))
+
+		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("a service account with the approve permissions for namespaced scoped issuers.example.io/test-issuer should not be able to denied requests", func() {
+		crd = createCRD(crdclient, group, "issuers", "Issuer", crdapi.NamespaceScoped)
+		bindServiceAccountToApprove(f, sa, fmt.Sprintf("issuers.%s/test-issuer", group))
+
+		deniedCR, err := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Get(context.TODO(), request.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		apiutil.SetCertificateRequestCondition(deniedCR, cmapi.CertificateRequestConditionDenied, cmmeta.ConditionTrue, "cert-manager.io", "e2e")
+		_, err = saclient.CertmanagerV1().CertificateRequests(f.Namespace.Name).UpdateStatus(context.TODO(), deniedCR, metav1.UpdateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
+
 })
+
+func createCRD(crdclient crdclientset.Interface, group, plural, kind string, scope crdapi.ResourceScope) *crdapi.CustomResourceDefinition {
+	crd, err := crdclient.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), &crdapi.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s.%s", plural, group),
+		},
+		Spec: crdapi.CustomResourceDefinitionSpec{
+			Group: group,
+			Names: crdapi.CustomResourceDefinitionNames{
+				Kind:   kind,
+				Plural: plural,
+			},
+			Versions: []crdapi.CustomResourceDefinitionVersion{
+				crdapi.CustomResourceDefinitionVersion{
+					Name:    "v1alpha1",
+					Served:  true,
+					Storage: true,
+					Schema: &crdapi.CustomResourceValidation{
+						OpenAPIV3Schema: &crdapi.JSONSchemaProps{
+							Type:       "object",
+							Properties: map[string]crdapi.JSONSchemaProps{},
+						},
+					},
+				},
+			},
+			Scope: scope,
+		},
+	}, metav1.CreateOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	return crd
+}
 
 func bindServiceAccountToApprove(f *framework.Framework, sa *corev1.ServiceAccount, resourceName string) {
 	clusterrole, err := f.KubeClientSet.RbacV1().ClusterRoles().Create(context.TODO(), &rbacv1.ClusterRole{
