@@ -18,10 +18,10 @@ package clusterissuers
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
@@ -65,7 +65,7 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.ClusterIssuer) (err er
 }
 
 func (c *controller) updateIssuerStatus(old, new *cmapi.ClusterIssuer) (*cmapi.ClusterIssuer, error) {
-	if reflect.DeepEqual(old.Status, new.Status) {
+	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
 	return c.cmClient.CertmanagerV1().ClusterIssuers().UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})

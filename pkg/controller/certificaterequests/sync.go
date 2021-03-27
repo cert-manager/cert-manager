@@ -18,11 +18,11 @@ package certificaterequests
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 
 	"github.com/kr/pretty"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -163,12 +163,10 @@ func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Co
 		return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).Update(context.TODO(), new, metav1.UpdateOptions{})
 	}
 
-	oldBytes, _ := json.Marshal(old.Status)
-	newBytes, _ := json.Marshal(new.Status)
-	if reflect.DeepEqual(oldBytes, newBytes) {
+	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
 
-	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
+	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(old.Status, new.Status))
 	return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
 }
