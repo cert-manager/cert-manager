@@ -60,11 +60,13 @@ echo "Installing sample-external-issuer into the cluster..."
 # Wait for all background jobs to finish and exit with non-zero if any of them fail
 # See https://stackoverflow.com/a/515170/919436
 for job in $(jobs -p); do
-    wait $job || let "EXIT+=1"
+    if wait $job > 0; then
+        job > /temp/job.txt
+    fi
 done
 
-if [[ "$EXIT" > 0 ]]; then
-    echo "ERROR: ${EXIT} setup jobs failed. Check logs above for details."
-fi
+for filename in /temp/*.txt; do
+    cat filename
+done
 
 exit $EXIT
