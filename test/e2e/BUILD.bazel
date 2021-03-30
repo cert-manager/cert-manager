@@ -29,7 +29,7 @@ go_test(
     name = "go_default_test",
     srcs = ["e2e_test.go"],
     embed = [":go_default_library"],
-    tags = ["manual"],
+    tags = ["manual"],  # 'bazel test //...' should not run e2e tests
     deps = [
         "//pkg/logs:go_default_library",
         "//test/e2e/framework:go_default_library",

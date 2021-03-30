@@ -27,6 +27,7 @@ def install():
         vcs = "git",
         importpath = "github.com/letsencrypt/pebble",
         build_external = "vendored",
+        build_naming_convention = "go_default_library",
         # Expose the generated go_default_library as 'public' visibility
         patch_cmds = ["sed -i -e 's/private/public/g' 'cmd/pebble/BUILD.bazel'"],
     )

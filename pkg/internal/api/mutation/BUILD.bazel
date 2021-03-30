@@ -32,8 +32,8 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["registry_test.go"],
-    embed = [":go_default_library"],
     deps = [
+        ":go_default_library",
         "//pkg/apis/certmanager:go_default_library",
         "//pkg/internal/apis/certmanager:go_default_library",
         "//pkg/webhook:go_default_library",
