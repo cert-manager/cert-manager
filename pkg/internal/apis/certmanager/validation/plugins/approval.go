@@ -37,7 +37,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
 
-// approval is responsible for reviewing where users attempting to approve or
+// approval is responsible for reviewing whether users attempting to approve or
 // deny a CertificateRequest have sufficient permissions to do so.
 type approval struct {
 	scheme *runtime.Scheme
@@ -96,6 +96,9 @@ func (a *approval) Validate(req *admissionv1.AdmissionRequest, oldObj, obj runti
 		Kind:    req.RequestKind.Kind,
 	}
 
+	// Convert the incomming old and new CertificateRequest into the internal
+	// version. This is so we can process a single type, reglardless of whatever
+	// CertificateRequest version is in the request.
 	for _, obj := range []runtime.Object{oldObj, obj} {
 		internalObj, err := a.scheme.New(gvk)
 		if err != nil {
