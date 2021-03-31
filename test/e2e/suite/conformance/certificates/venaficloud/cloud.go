@@ -32,7 +32,7 @@ import (
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
 )
 
-var _ = framework.ConformanceDescribe("Certificates", func() {
+var _ = framework.ConformanceDescribe("[Feature:Issuers:Venafi:Cloud] Certificates", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
 	// Venafi Cloud issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
