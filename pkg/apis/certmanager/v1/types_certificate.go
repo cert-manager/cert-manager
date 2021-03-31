@@ -138,6 +138,10 @@ type CertificateSpec struct {
 	// denoted issuer.
 	SecretName string `json:"secretName"`
 
+	// SecretTemplate defines annotations an labels to be propagate
+	// to Secret when created or updated.
+	SecretTemplate CertificateSecretTemplate `json:"secretTemplate"`
+
 	// Keystores configures additional keystore output formats stored in the
 	// `secretName` Secret resource.
 	// +optional
@@ -440,3 +444,9 @@ const (
 	// It will be removed by the 'issuing' controller upon completing issuance.
 	CertificateConditionIssuing CertificateConditionType = "Issuing"
 )
+
+// CertificateSecretTemplate defines the default labels and annotations
+// to be copied to the Kubernetes Secret resource named in `CertificateSpec.secretName`.
+type CertificateSecretTemplate struct {
+	Metadata metav1.ObjectMeta `json:"metadata,omitempty"`
+}

@@ -110,6 +110,12 @@ func SetCertificateSecretName(secretName string) CertificateModifier {
 	}
 }
 
+func SetCertificateSecretTemplateMeta(secretTemplateMeta metav1.ObjectMeta) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.SecretTemplate.Metadata = secretTemplateMeta
+	}
+}
+
 func SetCertificateDuration(duration time.Duration) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.Duration = &metav1.Duration{Duration: duration}

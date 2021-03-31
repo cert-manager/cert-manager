@@ -241,5 +241,25 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Annotations[cmapi.URISANAnnotationKey] = strings.Join(utilpki.URLsToString(x509Cert.URIs), ",")
 	}
 
+	// copy annotations from SecretTemplate. Do not overwrite if exists.
+	for annotation, value := range crt.Spec.SecretTemplate.Metadata.Annotations {
+		if _, exists := secret.Annotations[annotation]; !exists {
+			secret.Annotations[annotation] = value
+		}
+	}
+
+	// copy labels from SecretTemplate. Do not overwrite if exists.
+	// do not add empty labels if it is empty.
+	if len(crt.Spec.SecretTemplate.Metadata.Labels) > 0 {
+		if secret.Labels == nil {
+			secret.Labels = make(map[string]string)
+		}
+		for label, value := range crt.Spec.SecretTemplate.Metadata.Labels {
+			if _, exists := secret.Labels[label]; !exists {
+				secret.Labels[label] = value
+			}
+		}
+	}
+
 	return nil
 }
