@@ -170,7 +170,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
-		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
+		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(ctx, ch, metav1.UpdateOptions{})
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return

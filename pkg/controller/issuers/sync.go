@@ -40,7 +40,7 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.Issuer) (err error) {
 
 	issuerCopy := iss.DeepCopy()
 	defer func() {
-		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
+		if _, saveErr := c.updateIssuerStatus(ctx, iss, issuerCopy); saveErr != nil {
 			err = errors.NewAggregate([]error{saveErr, err})
 		}
 	}()
@@ -64,9 +64,9 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.Issuer) (err error) {
 	return nil
 }
 
-func (c *controller) updateIssuerStatus(old, new *cmapi.Issuer) (*cmapi.Issuer, error) {
+func (c *controller) updateIssuerStatus(ctx context.Context, old, new *cmapi.Issuer) (*cmapi.Issuer, error) {
 	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
-	return c.cmClient.CertmanagerV1().Issuers(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
+	return c.cmClient.CertmanagerV1().Issuers(new.Namespace).UpdateStatus(ctx, new, metav1.UpdateOptions{})
 }

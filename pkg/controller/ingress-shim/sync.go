@@ -74,7 +74,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 	}
 
 	for _, crt := range newCrts {
-		_, err := c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(context.TODO(), crt, metav1.CreateOptions{})
+		_, err := c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Create(ctx, crt, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 	}
 
 	for _, crt := range updateCrts {
-		_, err := c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(context.TODO(), crt, metav1.UpdateOptions{})
+		_, err := c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Update(ctx, crt, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 	}
 
 	for _, crt := range unrequiredCrts {
-		err = c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Delete(context.TODO(), crt.Name, metav1.DeleteOptions{})
+		err = c.cmClient.CertmanagerV1().Certificates(crt.Namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}

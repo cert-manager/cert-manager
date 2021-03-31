@@ -88,7 +88,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	switch {
 	case !a.issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
 		log.V(logf.InfoLevel).Info("generating acme account private key")
-		pk, err = a.createAccountPrivateKey(privateKeySelector, ns)
+		pk, err = a.createAccountPrivateKey(ctx, privateKeySelector, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
 			apiutil.SetIssuerCondition(a.issuer, a.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
@@ -182,7 +182,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	var eabAccount *acmeapi.ExternalAccountBinding
 	if eabObj := a.issuer.GetSpec().ACME.ExternalAccountBinding; eabObj != nil {
-		eabKey, err := a.getEABKey(ns)
+		eabKey, err := a.getEABKey(ctx, ns)
 		switch {
 		// Do not re-try if we fail to get the MAC key as it does not exist at the reference.
 		case apierrors.IsNotFound(err), errors.IsInvalidData(err):
@@ -339,9 +339,9 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAcco
 	return acc, nil
 }
 
-func (a *Acme) getEABKey(ns string) ([]byte, error) {
+func (a *Acme) getEABKey(ctx context.Context, ns string) ([]byte, error) {
 	eab := a.issuer.GetSpec().ACME.ExternalAccountBinding.Key
-	sec, err := a.secretsClient.Secrets(ns).Get(context.TODO(), eab.Name, metav1.GetOptions{})
+	sec, err := a.secretsClient.Secrets(ns).Get(ctx, eab.Name, metav1.GetOptions{})
 	// Surface IsNotFound API error to not cause re-sync
 	if apierrors.IsNotFound(err) {
 		return nil, err
@@ -370,14 +370,14 @@ func (a *Acme) getEABKey(ns string) ([]byte, error) {
 
 // createAccountPrivateKey will generate a new RSA private key, and create it
 // as a secret resource in the apiserver.
-func (a *Acme) createAccountPrivateKey(sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = a.secretsClient.Secrets(ns).Create(context.TODO(), &corev1.Secret{
+	_, err = a.secretsClient.Secrets(ns).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: ns,

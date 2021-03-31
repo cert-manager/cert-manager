@@ -52,7 +52,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			return
 		}
 		log.V(logf.DebugLevel).Info("updating Order resource status")
-		_, updateErr := c.cmClient.AcmeV1().Orders(o.Namespace).UpdateStatus(context.TODO(), o, metav1.UpdateOptions{})
+		_, updateErr := c.cmClient.AcmeV1().Orders(o.Namespace).UpdateStatus(ctx, o, metav1.UpdateOptions{})
 		if updateErr != nil {
 			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
@@ -100,7 +100,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		log.V(logf.DebugLevel).Info("Order has already been completed, cleaning up any owned Challenge resources")
 		// if the Order is valid and the certificate data has been set, clean
 		// up any owned Challenge resources and do nothing
-		return c.deleteAllChallenges(o)
+		return c.deleteAllChallenges(ctx, o)
 	}
 
 	dbg.Info("Computing list of Challenge resources that need to exist to complete this Order")
@@ -125,10 +125,10 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	switch {
 	case needToCreateChallenges:
 		log.V(logf.DebugLevel).Info("Creating additional Challenge resources to complete Order")
-		return c.createRequiredChallenges(o, requiredChallenges)
+		return c.createRequiredChallenges(ctx, o, requiredChallenges)
 	case needToDeleteChallenges:
 		log.V(logf.DebugLevel).Info("Deleting leftover Challenge resources no longer required by Order")
-		return c.deleteLeftoverChallenges(o, requiredChallenges)
+		return c.deleteLeftoverChallenges(ctx, o, requiredChallenges)
 	}
 
 	// we know that this list only contains the 'required' challenges as we use
@@ -339,9 +339,9 @@ func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmacme
 	return false, nil
 }
 
-func (c *controller) createRequiredChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
+func (c *controller) createRequiredChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
 	for _, ch := range requiredChallenges {
-		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(context.TODO(), &ch, metav1.CreateOptions{})
+		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Create(ctx, &ch, metav1.CreateOptions{})
 		if apierrors.IsAlreadyExists(err) {
 			continue
 		}
@@ -362,14 +362,14 @@ func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallen
 	return len(leftoverChallenges) > 0, nil
 }
 
-func (c *controller) deleteLeftoverChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
+func (c *controller) deleteLeftoverChallenges(ctx context.Context, o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
 	leftover, err := c.determineLeftoverChallenges(o, requiredChallenges)
 	if err != nil {
 		return err
 	}
 
 	for _, ch := range leftover {
-		if err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(context.TODO(), ch.Name, metav1.DeleteOptions{}); err != nil {
+		if err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(ctx, ch.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -377,14 +377,14 @@ func (c *controller) deleteLeftoverChallenges(o *cmacme.Order, requiredChallenge
 	return nil
 }
 
-func (c *controller) deleteAllChallenges(o *cmacme.Order) error {
+func (c *controller) deleteAllChallenges(ctx context.Context, o *cmacme.Order) error {
 	challenges, err := c.listOwnedChallenges(o)
 	if err != nil {
 		return err
 	}
 
 	for _, ch := range challenges {
-		if err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(context.TODO(), ch.Name, metav1.DeleteOptions{}); err != nil {
+		if err := c.cmClient.AcmeV1().Challenges(ch.Namespace).Delete(ctx, ch.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}

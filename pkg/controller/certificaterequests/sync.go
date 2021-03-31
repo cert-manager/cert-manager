@@ -160,7 +160,7 @@ func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Co
 	// if annotations changed we have to call .Update() and not .UpdateStatus()
 	if !reflect.DeepEqual(old.Annotations, new.Annotations) {
 		log.V(logf.DebugLevel).Info("updating resource due to change in annotations", "diff", pretty.Diff(old.Annotations, new.Annotations))
-		return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).Update(context.TODO(), new, metav1.UpdateOptions{})
+		return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).Update(ctx, new, metav1.UpdateOptions{})
 	}
 
 	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
@@ -168,5 +168,5 @@ func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Co
 	}
 
 	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(old.Status, new.Status))
-	return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
+	return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).UpdateStatus(ctx, new, metav1.UpdateOptions{})
 }
