@@ -19,13 +19,14 @@ package validation
 import (
 	"bytes"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 )
 
-func ValidateOrderUpdate(oldObj, newObj runtime.Object) field.ErrorList {
+func ValidateOrderUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
 	old, ok := oldObj.(*cmacme.Order)
 	new := newObj.(*cmacme.Order)
 	// if oldObj is not set, the Update operation is always valid.

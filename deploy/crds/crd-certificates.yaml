@@ -20,6 +20,8 @@ spec:
       - cert
       - certs
     singular: certificate
+    categories:
+      - cert-manager
   scope: Namespaced
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.
@@ -103,7 +105,7 @@ spec:
                   description: IsCA will mark this Certificate as valid for certificate signing. This will automatically add the `cert sign` usage to the list of `usages`.
                   type: boolean
                 issuerRef:
-                  description: IssuerRef is a reference to the issuer for this certificate. If the 'kind' field is not set, or set to 'Issuer', an Issuer resource with the given name in the same namespace as the Certificate will be used. If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the provided name will be used. The 'name' field in this stanza is required at all times.
+                  description: IssuerRef is a reference to the issuer for this certificate. If the `kind` field is not set, or set to `Issuer`, an Issuer resource with the given name in the same namespace as the Certificate will be used. If the `kind` field is set to `ClusterIssuer`, a ClusterIssuer with the provided name will be used. The `name` field in this stanza is required at all times.
                   type: object
                   required:
                     - name
@@ -118,22 +120,20 @@ spec:
                       description: Name of the resource being referred to.
                       type: string
                 keyAlgorithm:
-                  description: KeyAlgorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either "rsa" or "ecdsa" If `keyAlgorithm` is specified and `keySize` is not provided, key size of 256 will be used for "ecdsa" key algorithm and key size of 2048 will be used for "rsa" key algorithm.
+                  description: KeyAlgorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either `rsa` or `ecdsa` If `keyAlgorithm` is specified and `keySize` is not provided, key size of 256 will be used for `ecdsa` key algorithm and key size of 2048 will be used for `rsa` key algorithm.
                   type: string
                   enum:
                     - rsa
                     - ecdsa
                 keyEncoding:
-                  description: KeyEncoding is the private key cryptography standards (PKCS) for this certificate's private key to be encoded in. If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively. If KeyEncoding is not specified, then PKCS#1 will be used by default.
+                  description: KeyEncoding is the private key cryptography standards (PKCS) for this certificate's private key to be encoded in. If provided, allowed values are `pkcs1` and `pkcs8` standing for PKCS#1 and PKCS#8, respectively. If KeyEncoding is not specified, then `pkcs1` will be used by default.
                   type: string
                   enum:
                     - pkcs1
                     - pkcs8
                 keySize:
-                  description: KeySize is the key bit size of the corresponding private key for this certificate. If `keyAlgorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `keyAlgorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
+                  description: KeySize is the key bit size of the corresponding private key for this certificate. If `keyAlgorithm` is set to `rsa`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `keyAlgorithm` is set to `ecdsa`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                   type: integer
-                  maximum: 8192
-                  minimum: 0
                 keystores:
                   description: Keystores configures additional keystore output formats stored in the `secretName` Secret resource.
                   type: object
@@ -197,6 +197,11 @@ spec:
                 renewBefore:
                   description: The amount of time before the currently issued certificate's `notAfter` time that cert-manager will begin to attempt to renew the certificate. If this value is greater than the total duration of the certificate (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
+                revisionHistoryLimit:
+                  description: revisionHistoryLimit is the maximum number of CertificateRequest revisions that are maintained in the Certificate's history. Each revision represents a single `CertificateRequest` created by this Certificate, either when it was created, renewed, or Spec was changed. Revisions will be removed by oldest first if the number of revisions exceeds this number. If set, revisionHistoryLimit must be a value of `1` or greater. If unset (`nil`), revisions will not be garbage collected. Default value is `nil`.
+                  type: integer
+                  format: int32
+                  minimum: 1
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
@@ -293,18 +298,22 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Certificate.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready', `Issuing`).
+                        description: Type of the condition, known values are (`Ready`, `Issuing`).
                         type: string
                 lastFailureTime:
                   description: LastFailureTime is the time as recorded by the Certificate controller of the most recent failure to complete a CertificateRequest for this Certificate resource. If set, cert-manager will not re-request another Certificate until 1 hour has elapsed from this time.
@@ -400,7 +409,7 @@ spec:
                   description: IsCA will mark this Certificate as valid for certificate signing. This will automatically add the `cert sign` usage to the list of `usages`.
                   type: boolean
                 issuerRef:
-                  description: IssuerRef is a reference to the issuer for this certificate. If the 'kind' field is not set, or set to 'Issuer', an Issuer resource with the given name in the same namespace as the Certificate will be used. If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the provided name will be used. The 'name' field in this stanza is required at all times.
+                  description: IssuerRef is a reference to the issuer for this certificate. If the `kind` field is not set, or set to `Issuer`, an Issuer resource with the given name in the same namespace as the Certificate will be used. If the `kind` field is set to `ClusterIssuer`, a ClusterIssuer with the provided name will be used. The `name` field in this stanza is required at all times.
                   type: object
                   required:
                     - name
@@ -415,22 +424,20 @@ spec:
                       description: Name of the resource being referred to.
                       type: string
                 keyAlgorithm:
-                  description: KeyAlgorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either "rsa" or "ecdsa" If `keyAlgorithm` is specified and `keySize` is not provided, key size of 256 will be used for "ecdsa" key algorithm and key size of 2048 will be used for "rsa" key algorithm.
+                  description: KeyAlgorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either `rsa` or `ecdsa` If `keyAlgorithm` is specified and `keySize` is not provided, key size of 256 will be used for `ecdsa` key algorithm and key size of 2048 will be used for `rsa` key algorithm.
                   type: string
                   enum:
                     - rsa
                     - ecdsa
                 keyEncoding:
-                  description: KeyEncoding is the private key cryptography standards (PKCS) for this certificate's private key to be encoded in. If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively. If KeyEncoding is not specified, then PKCS#1 will be used by default.
+                  description: KeyEncoding is the private key cryptography standards (PKCS) for this certificate's private key to be encoded in. If provided, allowed values are `pkcs1` and `pkcs8` standing for PKCS#1 and PKCS#8, respectively. If KeyEncoding is not specified, then `pkcs1` will be used by default.
                   type: string
                   enum:
                     - pkcs1
                     - pkcs8
                 keySize:
-                  description: KeySize is the key bit size of the corresponding private key for this certificate. If `keyAlgorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `keyAlgorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
+                  description: KeySize is the key bit size of the corresponding private key for this certificate. If `keyAlgorithm` is set to `rsa`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `keyAlgorithm` is set to `ecdsa`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                   type: integer
-                  maximum: 8192
-                  minimum: 0
                 keystores:
                   description: Keystores configures additional keystore output formats stored in the `secretName` Secret resource.
                   type: object
@@ -489,6 +496,11 @@ spec:
                 renewBefore:
                   description: The amount of time before the currently issued certificate's `notAfter` time that cert-manager will begin to attempt to renew the certificate. If this value is greater than the total duration of the certificate (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
+                revisionHistoryLimit:
+                  description: revisionHistoryLimit is the maximum number of CertificateRequest revisions that are maintained in the Certificate's history. Each revision represents a single `CertificateRequest` created by this Certificate, either when it was created, renewed, or Spec was changed. Revisions will be removed by oldest first if the number of revisions exceeds this number. If set, revisionHistoryLimit must be a value of `1` or greater. If unset (`nil`), revisions will not be garbage collected. Default value is `nil`.
+                  type: integer
+                  format: int32
+                  minimum: 1
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
@@ -590,18 +602,22 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Certificate.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready', `Issuing`).
+                        description: Type of the condition, known values are (`Ready`, `Issuing`).
                         type: string
                 lastFailureTime:
                   description: LastFailureTime is the time as recorded by the Certificate controller of the most recent failure to complete a CertificateRequest for this Certificate resource. If set, cert-manager will not re-request another Certificate until 1 hour has elapsed from this time.
@@ -699,7 +715,7 @@ spec:
                   description: IsCA will mark this Certificate as valid for certificate signing. This will automatically add the `cert sign` usage to the list of `usages`.
                   type: boolean
                 issuerRef:
-                  description: IssuerRef is a reference to the issuer for this certificate. If the 'kind' field is not set, or set to 'Issuer', an Issuer resource with the given name in the same namespace as the Certificate will be used. If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the provided name will be used. The 'name' field in this stanza is required at all times.
+                  description: IssuerRef is a reference to the issuer for this certificate. If the `kind` field is not set, or set to `Issuer`, an Issuer resource with the given name in the same namespace as the Certificate will be used. If the `kind` field is set to `ClusterIssuer`, a ClusterIssuer with the provided name will be used. The `name` field in this stanza is required at all times.
                   type: object
                   required:
                     - name
@@ -766,13 +782,13 @@ spec:
                   type: object
                   properties:
                     algorithm:
-                      description: Algorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either "rsa" or "ecdsa" If `algorithm` is specified and `size` is not provided, key size of 256 will be used for "ecdsa" key algorithm and key size of 2048 will be used for "rsa" key algorithm.
+                      description: Algorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either `RSA` or `ECDSA` If `algorithm` is specified and `size` is not provided, key size of 256 will be used for `ECDSA` key algorithm and key size of 2048 will be used for `RSA` key algorithm.
                       type: string
                       enum:
                         - RSA
                         - ECDSA
                     encoding:
-                      description: The private key cryptography standards (PKCS) encoding for this certificate's private key to be encoded in. If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively. Defaults to PKCS#1 if not specified.
+                      description: The private key cryptography standards (PKCS) encoding for this certificate's private key to be encoded in. If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1 and PKCS#8, respectively. Defaults to `PKCS1` if not specified.
                       type: string
                       enum:
                         - PKCS1
@@ -783,11 +799,14 @@ spec:
                     size:
                       description: Size is the key bit size of the corresponding private key for this certificate. If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                       type: integer
-                      maximum: 8192
-                      minimum: 0
                 renewBefore:
                   description: The amount of time before the currently issued certificate's `notAfter` time that cert-manager will begin to attempt to renew the certificate. If this value is greater than the total duration of the certificate (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
+                revisionHistoryLimit:
+                  description: revisionHistoryLimit is the maximum number of CertificateRequest revisions that are maintained in the Certificate's history. Each revision represents a single `CertificateRequest` created by this Certificate, either when it was created, renewed, or Spec was changed. Revisions will be removed by oldest first if the number of revisions exceeds this number. If set, revisionHistoryLimit must be a value of `1` or greater. If unset (`nil`), revisions will not be garbage collected. Default value is `nil`.
+                  type: integer
+                  format: int32
+                  minimum: 1
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
@@ -889,18 +908,22 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Certificate.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready', `Issuing`).
+                        description: Type of the condition, known values are (`Ready`, `Issuing`).
                         type: string
                 lastFailureTime:
                   description: LastFailureTime is the time as recorded by the Certificate controller of the most recent failure to complete a CertificateRequest for this Certificate resource. If set, cert-manager will not re-request another Certificate until 1 hour has elapsed from this time.
@@ -979,7 +1002,7 @@ spec:
                   items:
                     type: string
                 duration:
-                  description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types. If overridden and `renewBefore` is greater than the actual certificate duration, the certificate will be automatically renewed 2/3rds of the way through the certificate's duration.
+                  description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types. If unset this defaults to 90 days. If overridden and `renewBefore` is greater than the actual certificate duration, the certificate will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
                 emailAddresses:
                   description: EmailAddresses is a list of email subjectAltNames to be set on the Certificate.
@@ -998,7 +1021,7 @@ spec:
                   description: IsCA will mark this Certificate as valid for certificate signing. This will automatically add the `cert sign` usage to the list of `usages`.
                   type: boolean
                 issuerRef:
-                  description: IssuerRef is a reference to the issuer for this certificate. If the 'kind' field is not set, or set to 'Issuer', an Issuer resource with the given name in the same namespace as the Certificate will be used. If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the provided name will be used. The 'name' field in this stanza is required at all times.
+                  description: IssuerRef is a reference to the issuer for this certificate. If the `kind` field is not set, or set to `Issuer`, an Issuer resource with the given name in the same namespace as the Certificate will be used. If the `kind` field is set to `ClusterIssuer`, a ClusterIssuer with the provided name will be used. The `name` field in this stanza is required at all times.
                   type: object
                   required:
                     - name
@@ -1065,13 +1088,13 @@ spec:
                   type: object
                   properties:
                     algorithm:
-                      description: Algorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either "rsa" or "ecdsa" If `algorithm` is specified and `size` is not provided, key size of 256 will be used for "ecdsa" key algorithm and key size of 2048 will be used for "rsa" key algorithm.
+                      description: Algorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either `RSA` or `ECDSA` If `algorithm` is specified and `size` is not provided, key size of 256 will be used for `ECDSA` key algorithm and key size of 2048 will be used for `RSA` key algorithm.
                       type: string
                       enum:
                         - RSA
                         - ECDSA
                     encoding:
-                      description: The private key cryptography standards (PKCS) encoding for this certificate's private key to be encoded in. If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively. Defaults to PKCS#1 if not specified.
+                      description: The private key cryptography standards (PKCS) encoding for this certificate's private key to be encoded in. If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1 and PKCS#8, respectively. Defaults to `PKCS1` if not specified.
                       type: string
                       enum:
                         - PKCS1
@@ -1082,11 +1105,14 @@ spec:
                     size:
                       description: Size is the key bit size of the corresponding private key for this certificate. If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`, and will default to `2048` if not specified. If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`, and will default to `256` if not specified. No other values are allowed.
                       type: integer
-                      maximum: 8192
-                      minimum: 0
                 renewBefore:
-                  description: The amount of time before the currently issued certificate's `notAfter` time that cert-manager will begin to attempt to renew the certificate. If this value is greater than the total duration of the certificate (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of the way through the certificate's duration.
+                  description: The amount of time before the currently issued certificate's `notAfter` time that cert-manager will begin to attempt to renew the certificate. If unset this defaults to 30 days. If this value is greater than the total duration of the certificate (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of the way through the certificate's duration.
                   type: string
+                revisionHistoryLimit:
+                  description: revisionHistoryLimit is the maximum number of CertificateRequest revisions that are maintained in the Certificate's history. Each revision represents a single `CertificateRequest` created by this Certificate, either when it was created, renewed, or Spec was changed. Revisions will be removed by oldest first if the number of revisions exceeds this number. If set, revisionHistoryLimit must be a value of `1` or greater. If unset (`nil`), revisions will not be garbage collected. Default value is `nil`.
+                  type: integer
+                  format: int32
+                  minimum: 1
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
@@ -1188,18 +1214,22 @@ spec:
                       message:
                         description: Message is a human readable description of the details of the last transition, complementing reason.
                         type: string
+                      observedGeneration:
+                        description: If set, this represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.condition[x].observedGeneration is 9, the condition is out of date with respect to the current state of the Certificate.
+                        type: integer
+                        format: int64
                       reason:
                         description: Reason is a brief machine readable explanation for the condition's last transition.
                         type: string
                       status:
-                        description: Status of the condition, one of ('True', 'False', 'Unknown').
+                        description: Status of the condition, one of (`True`, `False`, `Unknown`).
                         type: string
                         enum:
                           - "True"
                           - "False"
                           - Unknown
                       type:
-                        description: Type of the condition, known values are ('Ready', `Issuing`).
+                        description: Type of the condition, known values are (`Ready`, `Issuing`).
                         type: string
                 lastFailureTime:
                   description: LastFailureTime is the time as recorded by the Certificate controller of the most recent failure to complete a CertificateRequest for this Certificate resource. If set, cert-manager will not re-request another Certificate until 1 hour has elapsed from this time.

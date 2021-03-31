@@ -62,6 +62,16 @@ type fixture struct {
 	// Default: 8.8.8.8:53
 	testDNSServer string
 
+	// dnsName is the domain name used in the request in tests.
+	// This field can be set using the SetDNSName Option.
+	// Default: "example.com"
+	dnsName string
+
+	// dnsChallengeKey is the value of TXT record in tests.
+	// This field can be set using the SetDNSChallengeKey Option.
+	// Default: "123d=="
+	dnsChallengeKey string
+
 	// controlPlane is a reference to the control plane that is used to run the
 	// test suite.
 	// It is constructed when a Run* method is called.

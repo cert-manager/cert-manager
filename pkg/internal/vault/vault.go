@@ -42,6 +42,7 @@ type VaultClientBuilder func(namespace string, secretsLister corelisters.SecretL
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
 	Sys() *vault.Sys
+	IsVaultInitializedAndUnsealed() error
 }
 
 type Client interface {
@@ -109,11 +110,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 
 	request := v.client.NewRequest("POST", url)
 
-	if vaultIssuer.Namespace != "" {
-		vaultReqHeaders := http.Header{}
-		vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
-		request.Headers = vaultReqHeaders
-	}
+	v.addVaultNamespaceToRequest(request)
 
 	if err := request.SetJSONBody(parameters); err != nil {
 		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
@@ -258,6 +255,8 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
+	v.addVaultNamespaceToRequest(request)
+
 	resp, err := client.RawRequest(request)
 	if err != nil {
 		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
@@ -317,6 +316,8 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
+	v.addVaultNamespaceToRequest(request)
+
 	resp, err := client.RawRequest(request)
 	if err != nil {
 		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
@@ -365,4 +366,31 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 	}
 
 	return []byte(strings.Join(crtPems, "\n")), caPem, nil
+}
+
+func (v *Vault) IsVaultInitializedAndUnsealed() error {
+	healthURL := path.Join("/v1", "sys", "health")
+	healthRequest := v.client.NewRequest("GET", healthURL)
+	healthResp, err := v.client.RawRequest(healthRequest)
+	// 429 = if unsealed and standby
+	// 472 = if disaster recovery mode replication secondary and active
+	// 473 = if performance standby
+	if err != nil && healthResp.StatusCode != 429 && healthResp.StatusCode != 472 && healthResp.StatusCode != 473 {
+		return err
+	}
+	defer healthResp.Body.Close()
+	return nil
+}
+
+func (v *Vault) addVaultNamespaceToRequest(request *vault.Request) {
+	vaultIssuer := v.issuer.GetSpec().Vault
+	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
+		if request.Headers != nil {
+			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+		} else {
+			vaultReqHeaders := http.Header{}
+			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+			request.Headers = vaultReqHeaders
+		}
+	}
 }

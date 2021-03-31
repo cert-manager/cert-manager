@@ -177,7 +177,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		dbg.Info("determining whether this match is more significant than last")
 
 		// because we don't count multiple dnsName matches as extra 'weight'
-		// in the selection process, we normalise the numDNSNamesMatch vars
+		// in the selection process, we normalize the numDNSNamesMatch vars
 		// to be either 1 or 0 (i.e. true or false)
 		selectedHasMatchingDNSNames := selectedNumDNSNamesMatch > 0
 		hasMatchingDNSNames := numDNSNamesMatch > 0

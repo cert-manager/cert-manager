@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -297,7 +299,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
 		spec *cmapi.IssuerSpec
-		errs []*field.Error
+		errs field.ErrorList
 	}{
 		"valid ca issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -307,6 +309,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 					},
 				},
 			},
+			errs: []*field.Error{},
 		},
 		"ca issuer without secret name specified": {
 			spec: &cmapi.IssuerSpec{
@@ -322,6 +325,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 					SelfSigned: &cmapi.SelfSignedIssuer{},
 				},
 			},
+			errs: []*field.Error{},
 		},
 		"valid acme issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -329,6 +333,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 					ACME: &validACMEIssuer,
 				},
 			},
+			errs: []*field.Error{},
 		},
 		"valid vault issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -336,6 +341,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 					Vault: &validVaultIssuer,
 				},
 			},
+			errs: []*field.Error{},
 		},
 		"missing issuer config": {
 			spec: &cmapi.IssuerSpec{
@@ -358,20 +364,35 @@ func TestValidateIssuerSpec(t *testing.T) {
 				field.Forbidden(fldPath.Child("selfSigned"), "may not specify more than one issuer type"),
 			},
 		},
+		"valid ocsp url": {
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{
+						SecretName:  "valid",
+						OCSPServers: []string{"http://ocsp.int-x3.letsencrypt.org"},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"invalid ocsp url": {
+			spec: &cmapi.IssuerSpec{
+				IssuerConfig: cmapi.IssuerConfig{
+					CA: &cmapi.CAIssuer{
+						SecretName:  "valid",
+						OCSPServers: []string{""},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ca", "ocspServer").Index(0), "", `must be a valid URL, e.g., http://ocsp.int-x3.letsencrypt.org`),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateIssuerSpec(s.spec, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			gotErrs := ValidateIssuerSpec(s.spec, fldPath)
+			assert.Equal(t, s.errs, gotErrs)
 		})
 	}
 }

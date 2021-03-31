@@ -17,6 +17,7 @@ limitations under the License.
 package version
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,7 +50,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdVersion returns a cobra command for fetching versions
-func NewCmdVersion(ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{

@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -29,6 +30,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -45,27 +47,26 @@ import (
 )
 
 const (
-	ControllerName = "CertificateReadiness"
+	ControllerName = "certificates-readiness"
+	ReadyReason    = "Ready"
 )
-
-var PolicyChain = policies.Chain{
-	policies.SecretDoesNotExist,
-	policies.SecretHasData,
-	policies.SecretPublicKeysMatch,
-	policies.CurrentCertificateRequestValidForSpec,
-	policies.CurrentCertificateHasExpired,
-}
 
 type controller struct {
 	// the policies to use to define readiness - named here to make testing simpler
-	policyChain                      policies.Chain
-	certificateLister                cmlisters.CertificateLister
-	certificateRequestLister         cmlisters.CertificateRequestLister
-	secretLister                     corelisters.SecretLister
-	client                           cmclient.Interface
-	gatherer                         *policies.Gatherer
-	defaultRenewBeforeExpiryDuration time.Duration
+	policyChain              policies.Chain
+	certificateLister        cmlisters.CertificateLister
+	certificateRequestLister cmlisters.CertificateRequestLister
+	secretLister             corelisters.SecretLister
+	client                   cmclient.Interface
+	gatherer                 *policies.Gatherer
+	// policyEvaluator builds Ready condition of a Certificate based on policy evaluation
+	policyEvaluator policyEvaluatorFunc
+	// renewalTimeCalculator calculates renewal time of a certificate
+	renewalTimeCalculator certificates.RenewalTimeFunc
 }
+
+// readyConditionFunc is custom function type that builds certificate's Ready condition
+type policyEvaluatorFunc func(policies.Chain, policies.Input) cmapi.CertificateCondition
 
 func NewController(
 	log logr.Logger,
@@ -73,7 +74,8 @@ func NewController(
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	chain policies.Chain,
-	defaultRenewBeforeExpiryDuration time.Duration,
+	renewalTimeCalculator certificates.RenewalTimeFunc,
+	policyEvaluator policyEvaluatorFunc,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -114,7 +116,8 @@ func NewController(
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
 		},
-		defaultRenewBeforeExpiryDuration: defaultRenewBeforeExpiryDuration,
+		policyEvaluator:       policyEvaluator,
+		renewalTimeCalculator: renewalTimeCalculator,
 	}, queue, mustSync
 }
 
@@ -142,10 +145,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	condition := readyCondition(c.policyChain, input)
-
+	condition := c.policyEvaluator(c.policyChain, input)
+	oldCrt := crt
 	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, condition.Type, condition.Status, condition.Reason, condition.Message)
+	apiutil.SetCertificateCondition(crt, crt.Generation, condition.Type, condition.Status, condition.Reason, condition.Message)
 
 	switch {
 	case input.Secret != nil && input.Secret.Data != nil:
@@ -160,35 +163,40 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
+		renewalTime := c.renewalTimeCalculator(x509cert.NotBefore, x509cert.NotAfter, crt)
+
+		//update Certificate's Status
 		crt.Status.NotBefore = &notBefore
 		crt.Status.NotAfter = &notAfter
-		// calculate how long before the certificate expiry time the certificate
-		// should be renewed
-		renewBefore := certificates.RenewBeforeExpiryDuration(crt.Status.NotBefore.Time, crt.Status.NotAfter.Time, crt.Spec.RenewBefore, c.defaultRenewBeforeExpiryDuration)
-		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
-		crt.Status.RenewalTime = &renewalTime
+		crt.Status.RenewalTime = renewalTime
+
 	default:
 		// clear status fields if the secret does not have any data
 		crt.Status.NotAfter = nil
 		crt.Status.NotBefore = nil
 		crt.Status.RenewalTime = nil
 	}
-
-	_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-	if err != nil {
-		return err
+	if !apiequality.Semantic.DeepEqual(oldCrt.Status, crt.Status) {
+		log.V(logf.DebugLevel).Info("updating status fields", "notAfter",
+			crt.Status.NotAfter, "notBefore", crt.Status.NotBefore, "renewalTime",
+			crt.Status.RenewalTime)
+		_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
+
 }
 
-func readyCondition(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
-	reason, message, reissue := chain.Evaluate(input)
-	if !reissue {
+// policyEvaluator builds Certificate's Ready condition using the result of policy chain evaluation
+func policyEvaluator(chain policies.Chain, input policies.Input) cmapi.CertificateCondition {
+	reason, message, violationsFound := chain.Evaluate(input)
+	if !violationsFound {
 		return cmapi.CertificateCondition{
 			Type:    cmapi.CertificateConditionReady,
 			Status:  cmmeta.ConditionTrue,
-			Reason:  "Ready",
+			Reason:  ReadyReason,
 			Message: "Certificate is up to date and has not expired",
 		}
 	}
@@ -197,6 +205,18 @@ func readyCondition(chain policies.Chain, input policies.Input) cmapi.Certificat
 		Status:  cmmeta.ConditionFalse,
 		Reason:  reason,
 		Message: message,
+	}
+}
+
+// NewReadinessPolicyChain constructs an ordered chain of policies
+// that can be used to determine Certificate's Ready condition
+func NewReadinessPolicyChain(c clock.Clock) policies.Chain {
+	return policies.Chain{
+		policies.SecretDoesNotExist,
+		policies.SecretIsMissingData,
+		policies.SecretPublicKeysDiffer,
+		policies.CurrentCertificateRequestNotValidForSpec,
+		policies.CurrentCertificateHasExpired(c),
 	}
 }
 
@@ -214,8 +234,9 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
-		PolicyChain,
-		ctx.CertificateOptions.RenewBeforeExpiryDuration,
+		NewReadinessPolicyChain(ctx.Clock),
+		certificates.RenewalTimeWrapper(cmapi.DefaultRenewBefore),
+		policyEvaluator,
 	)
 	c.controller = ctrl
 

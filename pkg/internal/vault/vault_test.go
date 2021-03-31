@@ -1039,7 +1039,9 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			v := &Vault{
 				namespace:     "test-namespace",
 				secretsLister: test.fakeLister,
-				issuer:        nil,
+				issuer: gen.Issuer("vault-issuer",
+					gen.SetIssuerNamespace("namespace"),
+				),
 			}
 
 			token, err := v.requestTokenWithAppRoleRef(test.client, test.appRole)

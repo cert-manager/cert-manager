@@ -122,12 +122,22 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
-	baseCR := gen.CertificateRequest("test-cr",
+	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestCSR(csrRSAPEM),
 		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Kind: baseIssuer.Kind,
 			Name: baseIssuer.Name,
+		}),
+	)
+
+	baseCR := gen.CertificateRequestFrom(baseCRNotApproved,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionApproved,
+			Status:             cmmeta.ConditionTrue,
+			Reason:             "cert-manager.io",
+			Message:            "Certificate request has been approved by cert-manager.io",
+			LastTransitionTime: &nowMetaTime,
 		}),
 	)
 
@@ -142,6 +152,46 @@ func TestSync(t *testing.T) {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 					Group: "not-cert-manager.io",
+				}),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
+		"should return nil (no action) if certificate request is not approved": {
+			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
+		"should return nil (no action) if certificate request is denied": {
+			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionDenied,
+					Status:             cmmeta.ConditionTrue,
+					Reason:             "Foo",
+					Message:            "Certificate request has been denied by cert-manager.io",
+					LastTransitionTime: &nowMetaTime,
+				}),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
+		"should return nil (no action) if certificate request approved is set to false": {
+			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionApproved,
+					Status:             cmmeta.ConditionFalse,
+					Reason:             "cert-manager.io",
+					Message:            "Certificate request has not been approved",
+					LastTransitionTime: &nowMetaTime,
 				}),
 			),
 			builder: &testpkg.Builder{
@@ -292,35 +342,6 @@ func TestSync(t *testing.T) {
 				},
 				ExpectedActions: []testpkg.Action{},
 				ExpectedEvents:  []string{},
-			},
-		},
-		"report failure if the CertificateRequest fails validation": {
-			certificateRequest: gen.CertificateRequestFrom(baseCR,
-				gen.SetCertificateRequestCSR([]byte("bad csr")),
-			),
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{baseCR, baseIssuer},
-				ExpectedEvents: []string{
-					"Warning BadConfig Resource validation failed: spec.request: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestCSR([]byte("bad csr")),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             "Failed",
-								Message:            "Resource validation failed: spec.request: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
-								LastTransitionTime: &nowMetaTime,
-							}),
-							gen.SetCertificateRequestFailureTime(nowMetaTime),
-						),
-					)),
-				},
 			},
 		},
 		"if the Certificate is already set in the status then return nil and no-op, regardless of condition": {

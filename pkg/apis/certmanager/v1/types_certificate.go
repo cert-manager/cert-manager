@@ -69,12 +69,12 @@ type PrivateKeyEncoding string
 
 const (
 	// PKCS1 key encoding will produce PEM files that include the type of
-	// private key as part of the PEM header, e.g. "BEGIN RSA PRIVATE KEY".
+	// private key as part of the PEM header, e.g. `BEGIN RSA PRIVATE KEY`.
 	// If the keyAlgorithm is set to 'ECDSA', this will produce private keys
-	// that use the "BEGIN EC PRIVATE KEY" header.
+	// that use the `BEGIN EC PRIVATE KEY` header.
 	PKCS1 PrivateKeyEncoding = "PKCS1"
 
-	// PKCS8 key encoding will produce PEM files with the "BEGIN PRIVATE KEY"
+	// PKCS8 key encoding will produce PEM files with the `BEGIN PRIVATE KEY`
 	// header. It encodes the keyAlgorithm of the private key as part of the
 	// DER encoded PEM block.
 	PKCS8 PrivateKeyEncoding = "PKCS8"
@@ -98,6 +98,7 @@ type CertificateSpec struct {
 
 	// The requested 'duration' (i.e. lifetime) of the Certificate.
 	// This option may be ignored/overridden by some issuer types.
+	// If unset this defaults to 90 days.
 	// If overridden and `renewBefore` is greater than the actual certificate
 	// duration, the certificate will be automatically renewed 2/3rds of the
 	// way through the certificate's duration.
@@ -106,6 +107,7 @@ type CertificateSpec struct {
 
 	// The amount of time before the currently issued certificate's `notAfter`
 	// time that cert-manager will begin to attempt to renew the certificate.
+	// If unset this defaults to 30 days.
 	// If this value is greater than the total duration of the certificate
 	// (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of
 	// the way through the certificate's duration.
@@ -140,11 +142,11 @@ type CertificateSpec struct {
 	Keystores *CertificateKeystores `json:"keystores,omitempty"`
 
 	// IssuerRef is a reference to the issuer for this certificate.
-	// If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
+	// If the `kind` field is not set, or set to `Issuer`, an Issuer resource
 	// with the given name in the same namespace as the Certificate will be used.
-	// If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the
+	// If the `kind` field is set to `ClusterIssuer`, a ClusterIssuer with the
 	// provided name will be used.
-	// The 'name' field in this stanza is required at all times.
+	// The `name` field in this stanza is required at all times.
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
 	// IsCA will mark this Certificate as valid for certificate signing.
@@ -165,6 +167,18 @@ type CertificateSpec struct {
 	// in the CertificateRequest
 	// +optional
 	EncodeUsagesInRequest *bool `json:"encodeUsagesInRequest,omitempty"`
+
+	// revisionHistoryLimit is the maximum number of CertificateRequest revisions
+	// that are maintained in the Certificate's history. Each revision represents
+	// a single `CertificateRequest` created by this Certificate, either when it
+	// was created, renewed, or Spec was changed. Revisions will be removed by
+	// oldest first if the number of revisions exceeds this number. If set,
+	// revisionHistoryLimit must be a value of `1` or greater. If unset (`nil`),
+	// revisions will not be garbage collected. Default value is `nil`.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:ExclusiveMaximum=false
+	// +optional
+	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -185,17 +199,17 @@ type CertificatePrivateKey struct {
 
 	// The private key cryptography standards (PKCS) encoding for this
 	// certificate's private key to be encoded in.
-	// If provided, allowed values are "pkcs1" and "pkcs8" standing for PKCS#1
+	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
-	// Defaults to PKCS#1 if not specified.
+	// Defaults to `PKCS1` if not specified.
 	// +optional
 	Encoding PrivateKeyEncoding `json:"encoding,omitempty"`
 
 	// Algorithm is the private key algorithm of the corresponding private key
-	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
+	// for this certificate. If provided, allowed values are either `RSA` or `ECDSA`
 	// If `algorithm` is specified and `size` is not provided,
-	// key size of 256 will be used for "ecdsa" key algorithm and
-	// key size of 2048 will be used for "rsa" key algorithm.
+	// key size of 256 will be used for `ECDSA` key algorithm and
+	// key size of 2048 will be used for `RSA` key algorithm.
 	// +optional
 	Algorithm PrivateKeyAlgorithm `json:"algorithm,omitempty"`
 
@@ -205,12 +219,8 @@ type CertificatePrivateKey struct {
 	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
 	// No other values are allowed.
-	// +kubebuilder:validation:ExclusiveMaximum=false
-	// +kubebuilder:validation:Maximum=8192
-	// +kubebuilder:validation:ExclusiveMinimum=false
-	// +kubebuilder:validation:Minimum=0
 	// +optional
-	Size int `json:"size,omitempty"`
+	Size int `json:"size,omitempty"` // Validated by webhook. Be mindful of adding OpenAPI validation- see https://github.com/jetstack/cert-manager/issues/3644
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate
@@ -367,10 +377,10 @@ type CertificateStatus struct {
 
 // CertificateCondition contains condition information for an Certificate.
 type CertificateCondition struct {
-	// Type of the condition, known values are ('Ready', `Issuing`).
+	// Type of the condition, known values are (`Ready`, `Issuing`).
 	Type CertificateConditionType `json:"type"`
 
-	// Status of the condition, one of ('True', 'False', 'Unknown').
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
 	Status cmmeta.ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status
@@ -387,6 +397,14 @@ type CertificateCondition struct {
 	// transition, complementing reason.
 	// +optional
 	Message string `json:"message,omitempty"`
+
+	// If set, this represents the .metadata.generation that the condition was
+	// set based upon.
+	// For instance, if .metadata.generation is currently 12, but the
+	// .status.condition[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the Certificate.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 // CertificateConditionType represents an Certificate condition value.

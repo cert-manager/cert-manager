@@ -80,6 +80,8 @@ serviceAccount:
   # name: ""
   # Optional additional annotations to add to the controller's ServiceAccount
   # annotations: {}
+  # Automount API credentials for a Service Account.
+  automountServiceAccountToken: true
 
 # Optional additional arguments
 extraArgs: []
@@ -88,6 +90,8 @@ extraArgs: []
   # - --cluster-resource-namespace=kube-system
   # When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted
   # - --enable-certificate-owner-ref=true
+  # Use this flag to enabled or disable arbitrary controllers, for example, disable the CertificiateRequests approver
+  # - --controllers=*,-certificaterequests-approver
 
 extraEnv: []
 # - name: SOME_VAR
@@ -280,6 +284,8 @@ webhook:
     # name: ""
     # Optional additional annotations to add to the controller's ServiceAccount
     # annotations: {}
+    # Automount API credentials for a Service Account.
+    automountServiceAccountToken: true
 
   # The port that the webhook should listen on for requests.
   # In GKE private clusters, by default kubernetes apiservers are allowed to
@@ -367,3 +373,5 @@ cainjector:
     # name: ""
     # Optional additional annotations to add to the controller's ServiceAccount
     # annotations: {}
+    # Automount API credentials for a Service Account.
+    automountServiceAccountToken: true

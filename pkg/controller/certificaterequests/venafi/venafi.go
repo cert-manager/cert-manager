@@ -19,6 +19,7 @@ package venafi
 import (
 	"context"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -162,7 +163,20 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	log.V(logf.DebugLevel).Info("certificate issued")
 
+	// Assume the last certificate is the root CA
+	var (
+		block, lastBlock *pem.Block
+		remainingBytes   = certPem
+	)
+	for {
+		block, remainingBytes = pem.Decode(remainingBytes)
+		if block == nil {
+			break
+		}
+		lastBlock = block
+	}
 	return &issuerpkg.IssueResponse{
 		Certificate: certPem,
+		CA:          pem.EncodeToMemory(lastBlock),
 	}, nil
 }

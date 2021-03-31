@@ -19,15 +19,17 @@ package options
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	cm "github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	cracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/acme"
+	crapprovercontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/approver"
 	crcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
 	crselfsignedcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/selfsigned"
 	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
@@ -37,6 +39,7 @@ import (
 	certificatesmetricscontroller "github.com/jetstack/cert-manager/pkg/controller/certificates/metrics"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/readiness"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/requestmanager"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/revisionmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
@@ -59,7 +62,7 @@ type ControllerOptions struct {
 	LeaderElectionRenewDeadline time.Duration
 	LeaderElectionRetryPeriod   time.Duration
 
-	EnabledControllers []string
+	controllers []string
 
 	ACMEHTTP01SolverImage                 string
 	ACMEHTTP01SolverResourceRequestCPU    string
@@ -69,7 +72,6 @@ type ControllerOptions struct {
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
-	RenewBeforeExpiryDuration       time.Duration
 
 	// Default issuer/certificates details consumed by ingress-shim
 	DefaultIssuerName                 string
@@ -114,7 +116,6 @@ const (
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
-	defaultRenewBeforeExpiryDuration       = cmapi.DefaultRenewBefore
 
 	defaultTLSACMEIssuerName         = ""
 	defaultTLSACMEIssuerKind         = "Issuer"
@@ -139,7 +140,7 @@ var (
 
 	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
 
-	defaultEnabledControllers = []string{
+	allControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
@@ -147,6 +148,7 @@ var (
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
 		cracmecontroller.CRControllerName,
+		crapprovercontroller.ControllerName,
 		crcacontroller.CRControllerName,
 		crselfsignedcontroller.CRControllerName,
 		crvaultcontroller.CRControllerName,
@@ -157,7 +159,10 @@ var (
 		keymanager.ControllerName,
 		requestmanager.ControllerName,
 		readiness.ControllerName,
+		revisionmanager.ControllerName,
 	}
+
+	defaultEnabledControllers = []string{"*"}
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -172,10 +177,9 @@ func NewControllerOptions() *ControllerOptions {
 		LeaderElectionLeaseDuration:       defaultLeaderElectionLeaseDuration,
 		LeaderElectionRenewDeadline:       defaultLeaderElectionRenewDeadline,
 		LeaderElectionRetryPeriod:         defaultLeaderElectionRetryPeriod,
-		EnabledControllers:                defaultEnabledControllers,
+		controllers:                       defaultEnabledControllers,
 		ClusterIssuerAmbientCredentials:   defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:          defaultIssuerAmbientCredentials,
-		RenewBeforeExpiryDuration:         defaultRenewBeforeExpiryDuration,
 		DefaultIssuerName:                 defaultTLSACMEIssuerName,
 		DefaultIssuerKind:                 defaultTLSACMEIssuerKind,
 		DefaultIssuerGroup:                defaultTLSACMEIssuerGroup,
@@ -222,8 +226,12 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
 
-	fs.StringSliceVar(&s.EnabledControllers, "controllers", defaultEnabledControllers, ""+
-		"The set of controllers to enable.")
+	fs.StringSliceVar(&s.controllers, "controllers", defaultEnabledControllers, fmt.Sprintf(""+
+		"A list of controllers to enable. '--controllers=*' enables all "+
+		"on-by-default controllers, '--controllers=foo' enables just the controller "+
+		"named 'foo', '--controllers=*,-foo' disables the controller named "+
+		"'foo'.\nAll controllers: %s",
+		strings.Join(allControllers, ", ")))
 
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
@@ -249,11 +257,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Whether an issuer may make use of ambient credentials. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the Issuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
-	fs.DurationVar(&s.RenewBeforeExpiryDuration, "renew-before-expiry-duration", defaultRenewBeforeExpiryDuration, ""+
-		"The default 'renew before expiry' time for Certificates. "+
-		"Once a certificate is within this duration until expiry, a new Certificate "+
-		"will be attempted to be issued.")
-	fs.MarkDeprecated("renew-before-expiry-duration", "Deprecated. Please set the Certificate.Spec.RenewBefore field.")
 	fs.StringSliceVar(&s.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", defaultAutoCertificateAnnotations, ""+
 		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
 
@@ -322,5 +325,42 @@ func (o *ControllerOptions) Validate() error {
 		}
 	}
 
+	errs := []error{}
+	allControllersSet := sets.NewString(allControllers...)
+	for _, controller := range o.controllers {
+		if controller == "*" {
+			continue
+		}
+
+		controller = strings.TrimPrefix(controller, "-")
+		if !allControllersSet.Has(controller) {
+			errs = append(errs, fmt.Errorf("%q is not in the list of known controllers", controller))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("validation failed for '--controllers': %v", errs)
+	}
+
 	return nil
+}
+
+func (o *ControllerOptions) EnabledControllers() sets.String {
+	var disabled []string
+	enabled := sets.NewString()
+
+	for _, controller := range o.controllers {
+		switch {
+		case controller == "*":
+			enabled = enabled.Insert(allControllers...)
+		case strings.HasPrefix(controller, "-"):
+			disabled = append(disabled, strings.TrimPrefix(controller, "-"))
+		default:
+			enabled = enabled.Insert(controller)
+		}
+	}
+
+	enabled = enabled.Delete(disabled...)
+
+	return enabled
 }

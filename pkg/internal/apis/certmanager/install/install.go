@@ -22,8 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cmidentity "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/identity"
 	v1 "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha3"
@@ -48,4 +50,11 @@ func Install(scheme *runtime.Scheme) {
 // validation registry
 func InstallValidation(registry *validation.Registry) {
 	utilruntime.Must(cmvalidation.AddToValidationRegistry(registry))
+	utilruntime.Must(cmidentity.AddToValidationRegistry(registry))
+}
+
+// InstallMutation registers mutation functions for the API group with a
+// mutation registry
+func InstallMutation(registry *mutation.Registry) {
+	utilruntime.Must(cmidentity.AddToMutationRegistry(registry))
 }

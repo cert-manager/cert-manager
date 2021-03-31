@@ -18,30 +18,28 @@ package certificaterequests
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 
 	"github.com/kr/pretty"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 var (
-	certificateRequestGvk = v1.SchemeGroupVersion.WithKind(v1.CertificateRequestKind)
+	certificateRequestGvk = cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind)
 )
 
-func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err error) {
+func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (err error) {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
@@ -50,12 +48,18 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 		return nil
 	}
 
+	// If CertificateRequest has not been approved or is denied, exit early.
+	if !apiutil.CertificateRequestIsApproved(cr) || apiutil.CertificateRequestIsDenied(cr) {
+		dbg.Info("certificate request has not been approved")
+		return nil
+	}
+
 	switch apiutil.CertificateRequestReadyReason(cr) {
-	case v1.CertificateRequestReasonFailed:
+	case cmapi.CertificateRequestReasonFailed:
 		dbg.Info("certificate request Ready condition failed so skipping processing")
 		return
 
-	case v1.CertificateRequestReasonIssued:
+	case cmapi.CertificateRequestReasonIssued:
 		dbg.Info("certificate request Ready condition true so skipping processing")
 		return
 	}
@@ -101,8 +105,8 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 	}
 
 	// check ready condition
-	if !apiutil.IssuerHasCondition(issuerObj, v1.IssuerCondition{
-		Type:   v1.IssuerConditionReady,
+	if !apiutil.IssuerHasCondition(issuerObj, cmapi.IssuerCondition{
+		Type:   cmapi.IssuerConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}) {
 		c.reporter.Pending(crCopy, nil, "IssuerNotReady",
@@ -111,13 +115,6 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 	}
 
 	dbg.Info("validating CertificateRequest resource object")
-
-	el := webhook.ValidationRegistry.Validate(crCopy, internalapi.SchemeGroupVersion.WithKind("CertificateRequest"))
-	if len(el) > 0 {
-		c.reporter.Failed(crCopy, el.ToAggregate(), "BadConfig",
-			"Resource validation failed")
-		return nil
-	}
 
 	if len(crCopy.Status.Certificate) > 0 {
 		dbg.Info("certificate field is already set in status so skipping processing")
@@ -157,7 +154,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1.CertificateRequest) (err e
 	return nil
 }
 
-func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *v1.CertificateRequest) (*v1.CertificateRequest, error) {
+func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Context, old, new *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 
 	// if annotations changed we have to call .Update() and not .UpdateStatus()
@@ -166,12 +163,10 @@ func (c *Controller) updateCertificateRequestStatusAndAnnotations(ctx context.Co
 		return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).Update(context.TODO(), new, metav1.UpdateOptions{})
 	}
 
-	oldBytes, _ := json.Marshal(old.Status)
-	newBytes, _ := json.Marshal(new.Status)
-	if reflect.DeepEqual(oldBytes, newBytes) {
+	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
 
-	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
+	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(old.Status, new.Status))
 	return c.cmClient.CertmanagerV1().CertificateRequests(new.Namespace).UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})
 }

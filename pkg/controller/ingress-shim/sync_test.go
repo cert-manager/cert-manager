@@ -145,6 +145,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -197,6 +198,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -249,6 +251,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -290,6 +293,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -332,6 +336,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -378,6 +383,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -421,6 +427,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -428,7 +435,6 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry",
 			Issuer: acmeClusterIssuer,
-			Err:    true,
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -463,6 +469,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -508,16 +515,19 @@ func TestSync(t *testing.T) {
 							Kind:  "ClusterIssuer",
 							Group: "cert-manager.io",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
 		},
 		{
-			Name:           "should return an error when no TLS hosts are specified",
-			Issuer:         acmeIssuer,
-			IssuerLister:   []runtime.Object{acmeIssuer},
-			Err:            true,
-			ExpectedEvents: []string{`Warning BadConfig Secret "example-com-tls" for ingress TLS has no hosts specified`},
+			Name:         "should skip an invalid TLS entry (no TLS hosts specified)",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			ExpectedEvents: []string{
+				`Warning BadConfig TLS entry 0 is invalid: secret "example-com-tls-invalid" for ingress TLS has no hosts specified`,
+				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
+			},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -530,17 +540,43 @@ func TestSync(t *testing.T) {
 				Spec: networkingv1beta1.IngressSpec{
 					TLS: []networkingv1beta1.IngressTLS{
 						{
+							SecretName: "example-com-tls-invalid",
+						},
+						{
 							SecretName: "example-com-tls",
+							Hosts:      []string{"example.com", "www.example.com"},
+						},
+					},
+				},
+			},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						Usages:     cmapi.DefaultKeyUsages(),
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
 						},
 					},
 				},
 			},
 		},
+
 		{
-			Name:           "should return an error when no TLS secret name is specified",
-			Issuer:         acmeIssuer,
-			Err:            true,
-			ExpectedEvents: []string{`Warning BadConfig TLS entry 0 for hosts [example.com] must specify a secretName`},
+			Name:         "should skip an invalid TLS entry (no TLS secret name specified)",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			ExpectedEvents: []string{
+				`Warning BadConfig TLS entry 0 is invalid: TLS entry for hosts [example.com] must specify a secretName`,
+				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
+			},
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -555,14 +591,34 @@ func TestSync(t *testing.T) {
 						{
 							Hosts: []string{"example.com"},
 						},
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
 					},
 				},
 			},
-			IssuerLister: []runtime.Object{acmeIssuer},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						Usages:     cmapi.DefaultKeyUsages(),
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
 		},
 		{
 			Name: "should error if the specified issuer is not found",
-			Err:  true,
 			Ingress: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -613,6 +669,7 @@ func TestSync(t *testing.T) {
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -661,6 +718,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -708,6 +766,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -729,6 +788,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -770,6 +830,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -811,6 +872,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -843,6 +905,7 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -905,6 +968,7 @@ func TestSync(t *testing.T) {
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -924,6 +988,7 @@ func TestSync(t *testing.T) {
 							Kind:  "Issuer",
 							Group: "cert-manager.io",
 						},
+						Usages: cmapi.DefaultKeyUsages(),
 					},
 				},
 			},
@@ -986,6 +1051,61 @@ func TestSync(t *testing.T) {
 			},
 			Err: true,
 		},
+		{
+			Name:   "return a single Certificate for an ingress with a single valid TLS entry with common-name and keyusage annotation",
+			Issuer: acmeClusterIssuer,
+			Ingress: &networkingv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+						"cert-manager.io/usages":                    "signing,digital signature,content commitment",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: []cmapi.KeyUsage{
+							cmapi.UsageSigning,
+							cmapi.UsageDigitalSignature,
+							cmapi.UsageContentCommittment,
+						},
+					},
+				},
+			},
+		},
 	}
 	testFn := func(test testT) func(t *testing.T) {
 		return func(t *testing.T) {
@@ -1046,8 +1166,10 @@ func TestSync(t *testing.T) {
 			b.Start()
 
 			err := c.Sync(context.Background(), test.Ingress)
-			if err != nil && !test.Err {
-				t.Errorf("Expected no error, but got: %s", err)
+
+			// If test.Err == true, err should not be nil and vice versa
+			if test.Err == (err == nil) {
+				t.Errorf("Expected error: %v, but got: %v", test.Err, err)
 			}
 
 			if err := b.AllEventsCalled(); err != nil {

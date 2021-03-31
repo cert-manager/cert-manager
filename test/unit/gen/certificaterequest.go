@@ -96,6 +96,12 @@ func SetCertificateRequestStatusCondition(c v1.CertificateRequestCondition) Cert
 	}
 }
 
+func AddCertificateRequestStatusCondition(c v1.CertificateRequestCondition) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.Status.Conditions = append(cr.Status.Conditions, c)
+	}
+}
+
 func SetCertificateRequestNamespace(namespace string) CertificateRequestModifier {
 	return func(cr *v1.CertificateRequest) {
 		cr.ObjectMeta.Namespace = namespace
@@ -157,5 +163,33 @@ func DeleteCertificateRequestAnnotation(key string) CertificateRequestModifier {
 func SetCertificateRequestFailureTime(p metav1.Time) CertificateRequestModifier {
 	return func(cr *v1.CertificateRequest) {
 		cr.Status.FailureTime = &p
+	}
+}
+
+func SetCertificateRequestTypeMeta(tm metav1.TypeMeta) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.TypeMeta = tm
+	}
+}
+
+func SetCertificateRequestUsername(username string) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.Spec.Username = username
+	}
+}
+
+func SetCertificateRequestGroups(groups []string) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		cr.Spec.Groups = groups
+	}
+}
+
+func SetCertificateRequestRevision(rev string) CertificateRequestModifier {
+	return func(cr *v1.CertificateRequest) {
+		if cr.Annotations == nil {
+			cr.Annotations = make(map[string]string)
+		}
+
+		cr.Annotations[v1.CertificateRequestRevisionAnnotationKey] = rev
 	}
 }

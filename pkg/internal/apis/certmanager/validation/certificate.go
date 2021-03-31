@@ -21,6 +21,7 @@ import (
 	"net"
 	"net/mail"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -78,16 +79,17 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
 	}
+
 	return el
 }
 
-func ValidateCertificate(obj runtime.Object) field.ErrorList {
+func ValidateCertificate(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
 	return allErrs
 }
 
-func ValidateUpdateCertificate(oldObj, obj runtime.Object) field.ErrorList {
+func ValidateUpdateCertificate(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
 	return allErrs

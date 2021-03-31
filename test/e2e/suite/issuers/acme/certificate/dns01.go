@@ -29,6 +29,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -57,6 +58,11 @@ func testRFC2136DNSProvider() bool {
 		f.RequireAddon(p)
 
 		dnsDomain := ""
+
+		// ACME Issuer does not return a ca.crt. See:
+		// https://github.com/jetstack/cert-manager/issues/1571
+		unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+		validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 		BeforeEach(func() {
 			By("Creating an Issuer")
@@ -133,7 +139,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -155,7 +161,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -177,7 +183,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

@@ -95,6 +95,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `serviceAccount.create` | If `true`, create a new service account | `true` |
 | `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `serviceAccount.annotations` | Annotations to add to the service account |  |
+| `serviceAccount.automountServiceAccountToken` | Automount API credentials for the Service Account | `true` |
 | `volumes` | Optional volumes for cert-manager | `[]` |
 | `volumeMounts` | Optional volume mounts for cert-manager | `[]` |
 | `resources` | CPU/memory resource requests/limits | `{}` |
@@ -135,6 +136,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.serviceAccount.create` | If `true`, create a new service account for the webhook component | `true` |
 | `webhook.serviceAccount.name` | Service account for the webhook component to be used. If not set and `webhook.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `webhook.serviceAccount.annotations` | Annotations to add to the service account for the webhook component |  |
+| `webhook.serviceAccount.automountServiceAccountToken` | Automount API credentials for the webhook Service Account |  |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | `{}` |
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
 | `webhook.affinity` | Node affinity for webhook pod assignment | `{}` |
@@ -146,11 +148,11 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
 | `webhook.containerSecurityContext` | Security context to be set on the webhook component container | `{}` |
 | `webhook.hostNetwork` | If `true`, run the Webhook on the host network. | `false` |
-| `webhook.livenessProbe.failureThreshold` | The livneness probe failure threshold | `3` |
-| `webhook.livenessProbe.initialDelaySeconds` | The livneness probe initial delay (in seconds) | `60` |
-| `webhook.livenessProbe.periodSeconds` | The livneness probe period (in seconds) | `10` |
-| `webhook.livenessProbe.successThreshold` | The livneness probe success threshold | `1` |
-| `webhook.livenessProbe.timeoutSeconds` | The livneness probe timeout (in seconds) | `1` |
+| `webhook.livenessProbe.failureThreshold` | The liveness probe failure threshold | `3` |
+| `webhook.livenessProbe.initialDelaySeconds` | The liveness probe initial delay (in seconds) | `60` |
+| `webhook.livenessProbe.periodSeconds` | The liveness probe period (in seconds) | `10` |
+| `webhook.livenessProbe.successThreshold` | The liveness probe success threshold | `1` |
+| `webhook.livenessProbe.timeoutSeconds` | The liveness probe timeout (in seconds) | `1` |
 | `webhook.readinessProbe.failureThreshold` | The readiness probe failure threshold | `3` |
 | `webhook.readinessProbe.initialDelaySeconds` | The readiness probe initial delay (in seconds) | `5` |
 | `webhook.readinessProbe.periodSeconds` | The readiness probe period (in seconds) | `5` |
@@ -165,6 +167,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.serviceAccount.create` | If `true`, create a new service account for the cainjector component | `true` |
 | `cainjector.serviceAccount.name` | Service account for the cainjector component to be used. If not set and `cainjector.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `cainjector.serviceAccount.annotations` | Annotations to add to the service account for the cainjector component |  |
+| `cainjector.serviceAccount.automountServiceAccountToken` | Automount API credentials for the cainjector Service Account | `true` |
 | `cainjector.resources` | CPU/memory resource requests/limits for the cainjector pods | `{}` |
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.affinity` | Node affinity for cainjector pod assignment | `{}` |

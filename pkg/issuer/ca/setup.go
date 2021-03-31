@@ -48,7 +48,7 @@ func (c *CA) Setup(ctx context.Context) error {
 		log.Error(err, "error getting signing CA TLS certificate")
 		s := messageErrorGetKeyPair + err.Error()
 		c.Recorder.Event(c.issuer, corev1.EventTypeWarning, errorGetKeyPair, s)
-		apiutil.SetIssuerCondition(c.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorGetKeyPair, s)
+		apiutil.SetIssuerCondition(c.issuer, c.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorGetKeyPair, s)
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (c *CA) Setup(ctx context.Context) error {
 		log.Error(err, "error getting signing CA private key")
 		s := messageErrorGetKeyPair + err.Error()
 		c.Recorder.Event(c.issuer, corev1.EventTypeWarning, errorGetKeyPair, s)
-		apiutil.SetIssuerCondition(c.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorGetKeyPair, s)
+		apiutil.SetIssuerCondition(c.issuer, c.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorGetKeyPair, s)
 		return err
 	}
 
@@ -66,14 +66,14 @@ func (c *CA) Setup(ctx context.Context) error {
 		s := messageErrorGetKeyPair + "certificate is not a CA"
 		log.Error(nil, "signing certificate is not a CA")
 		c.Recorder.Event(c.issuer, corev1.EventTypeWarning, errorInvalidKeyPair, s)
-		apiutil.SetIssuerCondition(c.issuer, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorInvalidKeyPair, s)
+		apiutil.SetIssuerCondition(c.issuer, c.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorInvalidKeyPair, s)
 		// Don't return an error here as there is nothing more we can do
 		return nil
 	}
 
 	log.V(logf.DebugLevel).Info("signing CA verified")
 	c.Recorder.Event(c.issuer, corev1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
-	apiutil.SetIssuerCondition(c.issuer, v1.IssuerConditionReady, cmmeta.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
+	apiutil.SetIssuerCondition(c.issuer, c.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 
 	return nil
 }

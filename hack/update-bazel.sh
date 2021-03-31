@@ -41,5 +41,8 @@ if [[ ! -f go.mod ]]; then
 fi
 
 set -o xtrace
-"$gazelle" fix --external=external
+"$gazelle" fix \
+  --external=external \
+  --go_naming_convention=go_default_library
+
 "$kazel" --cfg-path=./hack/build/.kazelcfg.json

@@ -67,7 +67,7 @@ func TestValidateChallengeUpdate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateChallengeUpdate(s.old, s.new)
+			errs := ValidateChallengeUpdate(nil, s.old, s.new)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return

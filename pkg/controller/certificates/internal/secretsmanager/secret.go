@@ -82,7 +82,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	}
 	secretExists := (secret != nil)
 
-	// If the seret does not exist yet, then we need to create one
+	// If the secret does not exist yet, then we need to create one
 	if !secretExists {
 		secret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{

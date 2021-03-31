@@ -41,6 +41,10 @@ func strPtr(s string) *string {
 	return &s
 }
 
+func int32Ptr(i int32) *int32 {
+	return &i
+}
+
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
@@ -487,7 +491,7 @@ func TestValidateCertificate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateCertificate(s.cfg)
+			errs := ValidateCertificate(nil, s.cfg)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return

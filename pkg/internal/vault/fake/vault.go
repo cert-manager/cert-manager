@@ -26,14 +26,18 @@ import (
 )
 
 type Vault struct {
-	NewFn  func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)
-	SignFn func([]byte, time.Duration) ([]byte, []byte, error)
+	NewFn                           func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)
+	SignFn                          func([]byte, time.Duration) ([]byte, []byte, error)
+	IsVaultInitializedAndUnsealedFn func() error
 }
 
 func New() *Vault {
 	v := &Vault{
 		SignFn: func([]byte, time.Duration) ([]byte, []byte, error) {
 			return nil, nil, nil
+		},
+		IsVaultInitializedAndUnsealedFn: func() error {
+			return nil
 		},
 	}
 
@@ -71,4 +75,8 @@ func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer
 
 func (v *Vault) Sys() *vault.Sys {
 	return new(vault.Sys)
+}
+
+func (v *Vault) IsVaultInitializedAndUnsealed() error {
+	return nil
 }

@@ -16,8 +16,10 @@ go_library(
         "//pkg/util/errors:go_default_library",
         "//pkg/util/kube:go_default_library",
         "//pkg/util/pki:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
+        "@io_k8s_client_go//tools/record:go_default_library",
     ],
 )
 

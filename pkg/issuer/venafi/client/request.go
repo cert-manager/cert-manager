@@ -158,6 +158,7 @@ func convertCustomFieldsToVcert(customFields []api.CustomField) ([]certificate.C
 
 func newVRequest(cert *x509.Certificate) *certificate.Request {
 	req := certificate.NewRequest(cert)
+	req.ChainOption = certificate.ChainOptionRootLast
 
 	// overwrite entire Subject block
 	req.Subject = cert.Subject

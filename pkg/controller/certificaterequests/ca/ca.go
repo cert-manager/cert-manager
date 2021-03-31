@@ -70,6 +70,9 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 	}
 }
 
+// Returns a nil certificate and no error when the error is not retryable,
+// i.e., re-running the Sign command will lead to the same result. A
+// retryable error would be for example a network failure.
 func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
@@ -112,6 +115,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	}
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
+	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
 
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {

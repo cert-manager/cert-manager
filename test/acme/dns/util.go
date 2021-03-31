@@ -87,9 +87,8 @@ func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *whapi.Challeng
 		ResolvedZone:            f.resolvedZone,
 		AllowAmbientCredentials: f.allowAmbientCredentials,
 		Config:                  f.jsonConfig,
-		// TODO
-		DNSName: "example.com",
-		Key:     "123d==",
+		DNSName:                 f.dnsName,
+		Key:                     f.dnsChallengeKey,
 	}
 }
 

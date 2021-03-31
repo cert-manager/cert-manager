@@ -45,7 +45,7 @@ export GO111MODULE=on
 # something is wrong:
 #    gazelle: finding module path for import github.com/jetstack/cert-manager/test/unit/gen: exit status 1: build cache is required, but could not be located: GOCACHE is not defined and $HOME is not defined
 echo "Running gazelle..."
-gazelle_diff=$("$gazelle" fix --mode=diff --external=external || true)
+gazelle_diff=$("$gazelle" fix --go_naming_convention=go_default_library --mode=diff --external=external || true)
 echo "Running kazel..."
 kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./hack/build/.kazelcfg.json)
 

@@ -92,7 +92,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	return c.queue, mustSync, nil
 }
 
-// TODO: replace with generic handleObjet function (like Navigator)
+// TODO: replace with generic handleObject function (like Navigator)
 func (c *controller) secretDeleted(obj interface{}) {
 	log := c.log.WithName("secretDeleted")
 

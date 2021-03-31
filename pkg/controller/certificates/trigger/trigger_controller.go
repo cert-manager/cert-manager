@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateTrigger"
+	ControllerName = "certificates-trigger"
 
 	// the amount of time after the LastFailureTime of a Certificate
 	// before the request should be retried.
@@ -62,16 +62,17 @@ const (
 // It triggers re-issuance by adding the `Issuing` status condition when a new
 // certificate is required.
 type controller struct {
-	// the trigger policies to run - named here to make testing simpler
-	policyChain              policies.Chain
 	certificateLister        cmlisters.CertificateLister
 	certificateRequestLister cmlisters.CertificateRequestLister
 	secretLister             corelisters.SecretLister
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
-	clock                    clock.Clock
 	scheduledWorkQueue       scheduler.ScheduledWorkQueue
-	gatherer                 *policies.Gatherer
+
+	// The following are used for testing purposes.
+	clock              clock.Clock
+	shouldReissue      policies.Func
+	dataForCertificate func(context.Context, *cmapi.Certificate) (policies.Input, error)
 }
 
 func NewController(
@@ -81,7 +82,7 @@ func NewController(
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
 	clock clock.Clock,
-	chain policies.Chain,
+	shouldReissue policies.Func,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -113,18 +114,20 @@ func NewController(
 	}
 
 	return &controller{
-		policyChain:              chain,
 		certificateLister:        certificateInformer.Lister(),
 		certificateRequestLister: certificateRequestInformer.Lister(),
 		secretLister:             secretsInformer.Lister(),
 		client:                   client,
 		recorder:                 recorder,
-		clock:                    clock,
 		scheduledWorkQueue:       scheduler.NewScheduledWorkQueue(clock, queue.Add),
-		gatherer: &policies.Gatherer{
+
+		// The following are used for testing purposes.
+		clock:         clock,
+		shouldReissue: shouldReissue,
+		dataForCertificate: (&policies.Gatherer{
 			CertificateRequestLister: certificateRequestInformer.Lister(),
 			SecretLister:             secretsInformer.Lister(),
-		},
+		}).DataForCertificate,
 	}, queue, mustSync
 }
 
@@ -153,7 +156,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	input, err := c.gatherer.DataForCertificate(ctx, crt)
+	input, err := c.dataForCertificate(ctx, crt)
 	if err != nil {
 		return err
 	}
@@ -173,14 +176,20 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		c.scheduleRecheckOfCertificateIfRequired(log, key, crt.Status.RenewalTime.Time.Sub(c.clock.Now()))
 	}
 
-	reason, message, reissue := c.policyChain.Evaluate(input)
+	reason, message, reissue := c.shouldReissue(input)
 	if !reissue {
 		// no re-issuance required, return early
 		return nil
 	}
 
+	// Although the below recorder.Event already logs the event, the log
+	// line is quite unreadable (very long). Since this information is very
+	// important for the user and the operator, we log the following
+	// message.
+	log.V(logf.InfoLevel).Info("Certificate must be re-issued", "reason", reason, "message", message)
+
 	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, reason, message)
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, reason, message)
 	_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		return err
@@ -244,7 +253,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
-		policies.NewTriggerPolicyChain(ctx.Clock),
+		policies.NewTriggerPolicyChain(ctx.Clock, cmapi.DefaultRenewBefore).Evaluate,
 	)
 	c.controller = ctrl
 

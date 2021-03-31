@@ -198,6 +198,12 @@ func SetCertificateUID(uid types.UID) CertificateModifier {
 	}
 }
 
+func SetCertificateGeneration(gen int64) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Generation = gen
+	}
+}
+
 func AddCertificateAnnotations(annotations map[string]string) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		if crt.Annotations == nil {
@@ -218,5 +224,22 @@ func AddCertificateLabels(labels map[string]string) CertificateModifier {
 		for k, v := range labels {
 			crt.Labels[k] = v
 		}
+	}
+}
+
+// CertificateRef creates an owner reference for a certificate without
+// having to give the full certificate.
+func CertificateRef(certName, ownedUID string) metav1.OwnerReference {
+	return *metav1.NewControllerRef(
+		Certificate(certName,
+			SetCertificateUID(types.UID(ownedUID)),
+		),
+		v1.SchemeGroupVersion.WithKind("Certificate"),
+	)
+}
+
+func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.RevisionHistoryLimit = &limit
 	}
 }

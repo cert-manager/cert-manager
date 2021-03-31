@@ -51,7 +51,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateIssuing"
+	ControllerName = "certificates-issuing"
 )
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
@@ -193,12 +193,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		logf.WithResource(log, nextPrivateKeySecret).Error(err, "failed to parse next private key, waiting for keymanager controller")
 		return nil
 	}
-	pkVioations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
+	pkViolations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if err != nil {
 		return err
 	}
-	if len(pkVioations) > 0 {
-		logf.WithResource(log, nextPrivateKeySecret).Info("stored next private key does not match requirements on Certificate resource, waiting for keymanager controller", "violations", pkVioations)
+	if len(pkViolations) > 0 {
+		logf.WithResource(log, nextPrivateKeySecret).Info("stored next private key does not match requirements on Certificate resource, waiting for keymanager controller", "violations", pkViolations)
 		return nil
 	}
 
@@ -295,7 +295,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 		condition.Message)
 
 	crt = crt.DeepCopy()
-	apiutil.SetCertificateCondition(crt, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
 
 	_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {

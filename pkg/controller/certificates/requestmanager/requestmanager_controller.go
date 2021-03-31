@@ -51,7 +51,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateRequestManager"
+	ControllerName = "certificates-request-manager"
 )
 
 var (
@@ -338,6 +338,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 
 	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
 	if err != nil {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, "RequestFailed", "Failed to create CertificateRequest: "+err.Error())
 		return err
 	}
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, "Requested", "Created new CertificateRequest resource %q", cr.Name)

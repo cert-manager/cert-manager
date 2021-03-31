@@ -18,30 +18,24 @@ package clusterissuers
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	internalapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/webhook"
 )
 
 const (
 	errorInitIssuer = "ErrInitIssuer"
-	errorConfig     = "ConfigError"
 
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *controller) Sync(ctx context.Context, iss *v1.ClusterIssuer) (err error) {
+func (c *controller) Sync(ctx context.Context, iss *cmapi.ClusterIssuer) (err error) {
 	log := logf.FromContext(ctx)
 
 	issuerCopy := iss.DeepCopy()
@@ -51,25 +45,7 @@ func (c *controller) Sync(ctx context.Context, iss *v1.ClusterIssuer) (err error
 		}
 	}()
 
-	el := webhook.ValidationRegistry.Validate(issuerCopy, internalapi.SchemeGroupVersion.WithKind("ClusterIssuer"))
-	if len(el) > 0 {
-		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
-		apiutil.SetIssuerCondition(issuerCopy, v1.IssuerConditionReady, cmmeta.ConditionFalse, errorConfig, msg)
-		return
-	}
-
-	// Remove existing ErrorConfig condition if it exists
-	for i, c := range issuerCopy.Status.Conditions {
-		if c.Type == v1.IssuerConditionReady {
-			if c.Reason == errorConfig && c.Status == cmmeta.ConditionFalse {
-				issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
-				break
-			}
-		}
-	}
-
 	i, err := c.issuerFactory.IssuerFor(issuerCopy)
-
 	if err != nil {
 		return err
 	}
@@ -88,8 +64,8 @@ func (c *controller) Sync(ctx context.Context, iss *v1.ClusterIssuer) (err error
 	return nil
 }
 
-func (c *controller) updateIssuerStatus(old, new *v1.ClusterIssuer) (*v1.ClusterIssuer, error) {
-	if reflect.DeepEqual(old.Status, new.Status) {
+func (c *controller) updateIssuerStatus(old, new *cmapi.ClusterIssuer) (*cmapi.ClusterIssuer, error) {
+	if apiequality.Semantic.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
 	return c.cmClient.CertmanagerV1().ClusterIssuers().UpdateStatus(context.TODO(), new, metav1.UpdateOptions{})

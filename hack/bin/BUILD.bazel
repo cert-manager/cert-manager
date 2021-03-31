@@ -47,6 +47,17 @@ genrule(
 )
 
 genrule(
+    name = "fetch_kustomize",
+    srcs = select({
+        ":darwin": ["@kustomize_osx//:file"],
+        ":k8": ["@kustomize_linux//:file"],
+    }),
+    outs = ["kustomize"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "io_kubernetes_kube-apiserver",
     srcs = select({
         ":darwin": ["@kube-apiserver_darwin_amd64//file"],

@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	ControllerName = "CertificateKeyManager"
+	ControllerName = "certificates-key-manager"
 )
 
 var (

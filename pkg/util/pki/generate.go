@@ -38,11 +38,11 @@ const (
 	// generator functions in this package.
 	MaxRSAKeySize = 8192
 
-	// ECCurve256 represents a 256bit ECDSA key.
+	// ECCurve256 represents a secp256r1 / prime256v1 / NIST P-256 ECDSA key.
 	ECCurve256 = 256
-	// ECCurve384 represents a 384bit ECDSA key.
+	// ECCurve384 represents a secp384r1 / NIST P-384 ECDSA key.
 	ECCurve384 = 384
-	// ECCurve521 represents a 521bit ECDSA key.
+	// ECCurve521 represents a secp521r1 / NIST P-521 ECDSA key.
 	ECCurve521 = 521
 )
 

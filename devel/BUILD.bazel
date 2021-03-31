@@ -13,6 +13,7 @@ filegroup(
         "//devel/addon/certmanager:all-srcs",
         "//devel/addon/ingressnginx:all-srcs",
         "//devel/addon/pebble:all-srcs",
+        "//devel/addon/sample-external-issuer:all-srcs",
         "//devel/addon/samplewebhook:all-srcs",
         "//devel/addon/vault:all-srcs",
         "//devel/bin:all-srcs",

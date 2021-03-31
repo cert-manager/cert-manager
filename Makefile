@@ -47,14 +47,17 @@ help:
 	#
 	# Image targets can be run with optional args DOCKER_REGISTRY and APP_VERSION:
 	#
-	#     make images DOCKER_REGISTRY=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature
+	# make images DOCKER_REGISTRY=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature
+	#
+	# Images can be pushed with optional args DOCKER_REGISTRY and APP_VERSION:
+	#
+	# make images_push DOCKER_REGISTRY=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature
 	#
 
 # Alias targets
 ###############
 
 build: ctl images
-push: docker_push
 
 verify:
 	bazel test //...
@@ -83,11 +86,19 @@ generate:
 ################
 images:
 	APP_VERSION=$(APP_VERSION) \
-	DOCKER_REGISTRY=$(DOCKER_REPO) \
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
 	bazel run \
 		--stamp \
 		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
 		//build:server-images
+
+images_push: 
+	APP_VERSION=$(APP_VERSION) \
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
+	bazel run \
+		--stamp \
+		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
+		//:images.push
 
 ctl:
 	bazel build //cmd/ctl

@@ -180,7 +180,7 @@ gen-deepcopy() {
   prefixed_inputs=( "${deepcopy_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$deepcopygen" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt \
+    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     --output-file-base zz_generated.deepcopy \
     --bounding-dirs "${module_name}"
@@ -195,7 +195,7 @@ gen-clientsets() {
   prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$clientgen" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt \
+    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --clientset-name versioned \
     --input-base "" \
     --input "$joined" \
@@ -209,7 +209,7 @@ gen-listers() {
   prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$listergen" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt \
+    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     --output-package "${client_package}"/listers
   copyfiles "${client_subpackage}/listers" "*.go"
@@ -221,7 +221,7 @@ gen-informers() {
   prefixed_inputs=( "${client_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$informergen" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt \
+    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     --versioned-clientset-package "${client_package}"/clientset/versioned \
     --listers-package "${client_package}"/listers \
@@ -236,7 +236,7 @@ gen-defaulters() {
   prefixed_inputs=( "${defaulter_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$defaultergen" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt \
+    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     -O zz_generated.defaults
   for dir in "${defaulter_inputs[@]}"; do
@@ -251,7 +251,7 @@ gen-conversions() {
   prefixed_inputs=( "${conversion_inputs[@]/#/$module_name/}" )
   joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
   "$conversiongen" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt \
+    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     -O zz_generated.conversion
   for dir in "${conversion_inputs[@]}"; do

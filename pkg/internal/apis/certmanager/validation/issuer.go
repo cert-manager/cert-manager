@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -33,13 +34,13 @@ import (
 
 // Validation functions for cert-manager v1alpha2 Issuer types
 
-func ValidateIssuer(obj runtime.Object) field.ErrorList {
+func ValidateIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	iss := obj.(*certmanager.Issuer)
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs
 }
 
-func ValidateUpdateIssuer(oldObj, obj runtime.Object) field.ErrorList {
+func ValidateUpdateIssuer(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
 	iss := obj.(*certmanager.Issuer)
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs
@@ -185,6 +186,11 @@ func ValidateCAIssuerConfig(iss *certmanager.CAIssuer, fldPath *field.Path) fiel
 	el := field.ErrorList{}
 	if len(iss.SecretName) == 0 {
 		el = append(el, field.Required(fldPath.Child("secretName"), ""))
+	}
+	for i, ocspURL := range iss.OCSPServers {
+		if ocspURL == "" {
+			el = append(el, field.Invalid(fldPath.Child("ocspServer").Index(i), ocspURL, "must be a valid URL, e.g., http://ocsp.int-x3.letsencrypt.org"))
+		}
 	}
 	return el
 }

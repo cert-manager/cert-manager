@@ -36,6 +36,9 @@ const (
 	// Annotation key for certificate renewBefore.
 	RenewBeforeAnnotationKey = "cert-manager.io/renew-before"
 
+	// Annotation key for certificate key usages.
+	UsagesAnnotationKey = "cert-manager.io/usages"
+
 	// Annotation key the 'name' of the Issuer resource.
 	IssuerNameAnnotationKey = "cert-manager.io/issuer-name"
 

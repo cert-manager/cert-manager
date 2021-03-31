@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -40,11 +41,11 @@ var (
 func TestValidateType(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
 	called := false
-	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(obj runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 		called = true
 		return nil
 	}))
-	errs := reg.Validate(&cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.Validate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) > 0 {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
@@ -58,19 +59,19 @@ func TestValidateTypeMultiple(t *testing.T) {
 	called1 := false
 	called2 := false
 	calledInternal := false
-	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(obj runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 		called1 = true
 		return nil
 	}))
-	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(obj runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 		called2 = true
 		return nil
 	}))
-	utilruntime.Must(reg.AddValidateFunc(&cmapiinternal.Certificate{}, func(obj runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateFunc(&cmapiinternal.Certificate{}, func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 		calledInternal = true
 		return nil
 	}))
-	errs := reg.Validate(&cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.Validate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) > 0 {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
@@ -87,19 +88,19 @@ func TestValidateUpdateTypeMultiple(t *testing.T) {
 	called1 := false
 	called2 := false
 	calledInternal := false
-	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapi.Certificate{}, func(_, _ runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapi.Certificate{}, func(_ *admissionv1.AdmissionRequest, _, _ runtime.Object) field.ErrorList {
 		called1 = true
 		return nil
 	}))
-	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapi.Certificate{}, func(_, _ runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapi.Certificate{}, func(_ *admissionv1.AdmissionRequest, _, _ runtime.Object) field.ErrorList {
 		called2 = true
 		return nil
 	}))
-	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapiinternal.Certificate{}, func(_, _ runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapiinternal.Certificate{}, func(_ *admissionv1.AdmissionRequest, _, _ runtime.Object) field.ErrorList {
 		calledInternal = true
 		return nil
 	}))
-	errs := reg.ValidateUpdate(&cmapi.Certificate{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.ValidateUpdate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) > 0 {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
@@ -114,11 +115,11 @@ func TestValidateUpdateTypeMultiple(t *testing.T) {
 func TestValidateUpdateType(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
 	called := false
-	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapi.Certificate{}, func(oldObj, obj runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateUpdateFunc(&cmapi.Certificate{}, func(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
 		called = true
 		return nil
 	}))
-	errs := reg.ValidateUpdate(&cmapi.Certificate{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.ValidateUpdate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) > 0 {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
@@ -131,11 +132,11 @@ func TestValidateTypeReturnsErrors(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
 	called := false
 	expectedErr := field.InternalError(nil, fmt.Errorf("failed"))
-	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(obj runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateFunc(&cmapi.Certificate{}, func(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 		called = true
 		return field.ErrorList{expectedErr}
 	}))
-	errs := reg.Validate(&cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.Validate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) != 1 {
 		t.Error("expected to get an error but got none")
 	} else if err := errs[0]; err.Error() != expectedErr.Error() {
@@ -149,11 +150,11 @@ func TestValidateTypeReturnsErrors(t *testing.T) {
 func TestValidateInternalType(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
 	called := false
-	utilruntime.Must(reg.AddValidateFunc(&cmapiinternal.Certificate{}, func(obj runtime.Object) field.ErrorList {
+	utilruntime.Must(reg.AddValidateFunc(&cmapiinternal.Certificate{}, func(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 		called = true
 		return nil
 	}))
-	errs := reg.Validate(&cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.Validate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) > 0 {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
@@ -164,7 +165,7 @@ func TestValidateInternalType(t *testing.T) {
 
 func TestValidateNoErrorNoneRegistered(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
-	errs := reg.Validate(&cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.Validate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) > 0 {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
@@ -172,7 +173,7 @@ func TestValidateNoErrorNoneRegistered(t *testing.T) {
 
 func TestValidateUpdateNoErrorNoneRegistered(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
-	errs := reg.ValidateUpdate(&cmapi.Certificate{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
+	errs := reg.ValidateUpdate(&admissionv1.AdmissionRequest{}, &cmapi.Certificate{}, &cmapi.Certificate{}, cmapi.SchemeGroupVersion.WithKind("Certificate"))
 	if len(errs) > 0 {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
@@ -180,7 +181,7 @@ func TestValidateUpdateNoErrorNoneRegistered(t *testing.T) {
 
 func TestValidateUnrecognisedType(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
-	err := reg.AddValidateFunc(&corev1.Pod{}, func(obj runtime.Object) field.ErrorList {
+	err := reg.AddValidateFunc(&corev1.Pod{}, func(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 		return nil
 	})
 	if err == nil {
@@ -190,7 +191,7 @@ func TestValidateUnrecognisedType(t *testing.T) {
 
 func TestValidateUpdateUnrecognisedType(t *testing.T) {
 	reg := validation.NewRegistry(scheme)
-	err := reg.AddValidateUpdateFunc(&corev1.Pod{}, func(oldObj, obj runtime.Object) field.ErrorList {
+	err := reg.AddValidateUpdateFunc(&corev1.Pod{}, func(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
 		return nil
 	})
 	if err == nil {

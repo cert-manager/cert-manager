@@ -55,7 +55,7 @@ func IssuerHasCondition(i cmapi.GenericIssuer, c cmapi.IssuerCondition) bool {
 //   condition will be updated and the LastTransitionTime set to the current
 //   time.
 // This function works with both Issuer and ClusterIssuer resources.
-func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditionType, status cmmeta.ConditionStatus, reason, message string) {
+func SetIssuerCondition(i cmapi.GenericIssuer, observedGeneration int64, conditionType cmapi.IssuerConditionType, status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.IssuerCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -65,6 +65,9 @@ func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditi
 
 	nowTime := metav1.NewTime(Clock.Now())
 	newCondition.LastTransitionTime = &nowTime
+
+	// Set the condition generation
+	newCondition.ObservedGeneration = observedGeneration
 
 	// Search through existing conditions
 	for idx, cond := range i.GetStatus().Conditions {
@@ -134,9 +137,12 @@ func GetCertificateRequestCondition(req *cmapi.CertificateRequest, conditionType
 // - If a condition of the same type and state already exists, the condition
 //   will be updated but the LastTransitionTime will not be modified.
 // - If a condition of the same type and different state already exists, the
-//   condition will be updated and the LastTransitionTime set to the current
+//   condition will be updated with the LastTransitionTime set to the current
 //   time.
-func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType, status cmmeta.ConditionStatus, reason, message string) {
+// The given ObservedGeneration will always set on the condition, whether the
+// lastTransitionTime is modified or not.
+func SetCertificateCondition(crt *cmapi.Certificate, observedGeneration int64, conditionType cmapi.CertificateConditionType,
+	status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.CertificateCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -147,6 +153,9 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	nowTime := metav1.NewTime(Clock.Now())
 	newCondition.LastTransitionTime = &nowTime
 
+	// Set the condition generation
+	newCondition.ObservedGeneration = observedGeneration
+
 	// Search through existing conditions
 	for idx, cond := range crt.Status.Conditions {
 		// Skip unrelated conditions
@@ -154,8 +163,8 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 			continue
 		}
 
-		// If this update doesn't contain a state transition, we don't update
-		// the conditions LastTransitionTime to Now()
+		// If this update doesn't contain a state transition, we don't update the
+		// conditions LastTransitionTime to Now()
 		if cond.Status == status {
 			newCondition.LastTransitionTime = cond.LastTransitionTime
 		} else {
@@ -173,7 +182,7 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	logf.V(logf.InfoLevel).Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
 }
 
-// RemoteCertificateCondition will remove any condition with this condition type
+// RemoveCertificateCondition will remove any condition with this condition type
 func RemoveCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType) {
 	var updatedConditions []cmapi.CertificateCondition
 
@@ -299,6 +308,41 @@ func CertificateRequestHasInvalidRequest(cr *cmapi.CertificateRequest) bool {
 
 	for _, con := range cr.Status.Conditions {
 		if con.Type == cmapi.CertificateRequestConditionInvalidRequest &&
+			con.Status == cmmeta.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
+}
+
+// CertificateRequestIsApproved returns true if the CertificateRequest is
+// approved via an Approved condition of status `True`, returns false
+// otherwise.
+func CertificateRequestIsApproved(cr *cmapi.CertificateRequest) bool {
+	if cr == nil {
+		return false
+	}
+
+	for _, con := range cr.Status.Conditions {
+		if con.Type == cmapi.CertificateRequestConditionApproved &&
+			con.Status == cmmeta.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
+}
+
+// CertificateRequestIsDenied returns true if the CertificateRequest is denied
+// via a Denied condition of status `True`, returns false otherwise.
+func CertificateRequestIsDenied(cr *cmapi.CertificateRequest) bool {
+	if cr == nil {
+		return false
+	}
+
+	for _, con := range cr.Status.Conditions {
+		if con.Type == cmapi.CertificateRequestConditionDenied &&
 			con.Status == cmmeta.ConditionTrue {
 			return true
 		}

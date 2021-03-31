@@ -17,6 +17,9 @@ spec:
     listKind: ChallengeList
     plural: challenges
     singular: challenge
+    categories:
+      - cert-manager
+      - cert-manager-acme
   scope: Namespaced
   conversion:
     # a Webhook strategy instruct API server to call an external webhook for any conversion between custom resources.

@@ -17,7 +17,6 @@ limitations under the License.
 package policies
 
 import (
-	"encoding/pem"
 	"testing"
 	"time"
 
@@ -27,7 +26,7 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
 )
 
 // Runs a full set of tests against the 'policy chain' once it is composed
@@ -37,7 +36,7 @@ import (
 // modifying existing code.
 func TestDefaultPolicyChain(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
-	staticFixedPrivateKey := generatePEMPrivateKey(t)
+	staticFixedPrivateKey := internaltest.MustCreatePEMPrivateKey(t)
 	tests := map[string]struct {
 		// policy inputs
 		certificate *cmapi.Certificate
@@ -50,14 +49,14 @@ func TestDefaultPolicyChain(t *testing.T) {
 	}{
 		"trigger issuance if Secret is missing": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
-			reason:      "DoesNotExist",
+			reason:      DoesNotExist,
 			message:     "Issuing certificate as Secret does not exist",
 			reissue:     true,
 		},
 		"trigger issuance as Secret does not contain any data": {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"}},
-			reason:      "MissingData",
+			reason:      MissingData,
 			message:     "Issuing certificate as Secret does not contain any data",
 			reissue:     true,
 		},
@@ -66,7 +65,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{corev1.TLSCertKey: []byte("test")},
 			},
-			reason:  "MissingData",
+			reason:  MissingData,
 			message: "Issuing certificate as Secret does not contain a private key",
 			reissue: true,
 		},
@@ -75,7 +74,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{corev1.TLSPrivateKeyKey: []byte("test")},
 			},
-			reason:  "MissingData",
+			reason:  MissingData,
 			message: "Issuing certificate as Secret does not contain a certificate",
 			reissue: true,
 		},
@@ -87,7 +86,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 					corev1.TLSCertKey:       []byte("test"),
 				},
 			},
-			reason:  "InvalidKeyPair",
+			reason:  InvalidKeyPair,
 			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
 			reissue: true,
 		},
@@ -95,11 +94,11 @@ func TestDefaultPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: generatePEMPrivateKey(t),
+					corev1.TLSPrivateKeyKey: internaltest.MustCreatePEMPrivateKey(t),
 					corev1.TLSCertKey:       []byte("test"),
 				},
 			},
-			reason:  "InvalidKeyPair",
+			reason:  InvalidKeyPair,
 			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input",
 			reissue: true,
 		},
@@ -108,12 +107,12 @@ func TestDefaultPolicyChain(t *testing.T) {
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: []byte("invalid"),
-					corev1.TLSCertKey: selfSignCertificate(t, generatePEMPrivateKey(t),
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
 			},
-			reason:  "InvalidKeyPair",
+			reason:  InvalidKeyPair,
 			message: "Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in key input",
 			reissue: true,
 		},
@@ -121,13 +120,13 @@ func TestDefaultPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: generatePEMPrivateKey(t),
-					corev1.TLSCertKey: selfSignCertificate(t, generatePEMPrivateKey(t),
+					corev1.TLSPrivateKeyKey: internaltest.MustCreatePEMPrivateKey(t),
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
 			},
-			reason:  "InvalidKeyPair",
+			reason:  InvalidKeyPair,
 			message: "Issuing certificate as Secret contains an invalid key-pair: tls: private key does not match public key",
 			reissue: true,
 		},
@@ -146,12 +145,12 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificate(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
 			},
-			reason:  "IncorrectIssuer",
+			reason:  IncorrectIssuer,
 			message: "Issuing certificate as Secret was previously issued by Issuer.cert-manager.io/oldissuer",
 			reissue: true,
 		},
@@ -172,12 +171,12 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificate(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
 			},
-			reason:  "IncorrectIssuer",
+			reason:  IncorrectIssuer,
 			message: "Issuing certificate as Secret was previously issued by OldIssuerKind.cert-manager.io/testissuer",
 			reissue: true,
 		},
@@ -200,12 +199,12 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificate(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
 			},
-			reason:  "IncorrectIssuer",
+			reason:  IncorrectIssuer,
 			message: "Issuing certificate as Secret was previously issued by IssuerKind.new.example.com/testissuer",
 			reissue: true,
 		},
@@ -230,7 +229,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificate(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						// It does not matter what certificate data is stored in the Secret
 						// as the CertificateRequest will be used to determine whether a
 						// re-issuance is required.
@@ -244,11 +243,11 @@ func TestDefaultPolicyChain(t *testing.T) {
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
 				},
-				Request: generatePEMCertificateRequest(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 					CommonName: "old.example.com",
 				}}),
 			}},
-			reason:  "RequestChanged",
+			reason:  RequestChanged,
 			message: "Fields on existing CertificateRequest resource not up to date: [spec.commonName]",
 			reissue: true,
 		},
@@ -271,7 +270,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificate(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						// It does not matter what certificate data is stored in the Secret
 						// as the CertificateRequest will be used to determine whether a
 						// re-issuance is required.
@@ -285,7 +284,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
 				},
-				Request: generatePEMCertificateRequest(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 				}}),
 			}},
@@ -309,12 +308,12 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificate(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "old.example.com"}},
 					),
 				},
 			},
-			reason:  "SecretMismatch",
+			reason:  SecretMismatch,
 			message: "Existing issued Secret is not up to date for spec: [spec.commonName]",
 			reissue: true,
 		},
@@ -337,7 +336,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificate(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -368,7 +367,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 1 minute time
@@ -376,7 +375,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 					),
 				},
 			},
-			reason:  "Renewing",
+			reason:  Renewing,
 			message: "Renewing certificate as renewal was scheduled at 0001-01-01 00:00:00 +0000 UTC",
 			reissue: true,
 		},
@@ -405,7 +404,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 1 minute time
@@ -413,9 +412,43 @@ func TestDefaultPolicyChain(t *testing.T) {
 					),
 				},
 			},
-			reason:  "Renewing",
+			reason:  Renewing,
 			message: "Renewing certificate as renewal was scheduled at 0000-12-31 23:59:00 +0000 UTC",
 			reissue: true,
+		},
+		"does not trigger renewal if the x509 cert has been re-issued, but Certificate's renewal time has not been updated yet": {
+			certificate: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					CommonName: "example.com",
+					IssuerRef: cmmeta.ObjectReference{
+						Name:  "testissuer",
+						Kind:  "IssuerKind",
+						Group: "group.example.com",
+					},
+					RenewBefore: &metav1.Duration{Duration: time.Minute * 1},
+				},
+				Status: cmapi.CertificateStatus{
+					RenewalTime: &metav1.Time{Time: clock.Now()},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something",
+					Annotations: map[string]string{
+						cmapi.IssuerNameAnnotationKey:  "testissuer",
+						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+					},
+				},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
+						clock.Now(),
+						// expires in 30 minutes time
+						clock.Now().Add(time.Minute*30),
+					),
+				},
+			},
 		},
 		"does not trigger renewal if renewal time is in 1 minute": {
 			certificate: &cmapi.Certificate{
@@ -442,7 +475,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: selfSignCertificateWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 5 minutes time
@@ -452,7 +485,9 @@ func TestDefaultPolicyChain(t *testing.T) {
 			},
 		},
 	}
-	policyChain := NewTriggerPolicyChain(clock)
+	// we don't really test default renewal time here, it's just passed through
+	someDefaultRenewalTime := time.Hour * 5
+	policyChain := NewTriggerPolicyChain(clock, someDefaultRenewalTime)
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			reason, message, reissue := policyChain.Evaluate(Input{
@@ -472,69 +507,4 @@ func TestDefaultPolicyChain(t *testing.T) {
 			}
 		})
 	}
-}
-
-func generatePEMPrivateKey(t *testing.T) []byte {
-	pk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-	pkData, err := pki.EncodePrivateKey(pk, cmapi.PKCS8)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return pkData
-}
-
-func selfSignCertificateWithNotBeforeAfter(t *testing.T, pkData []byte, spec *cmapi.Certificate, notBefore, notAfter time.Time) []byte {
-	pk, err := pki.DecodePrivateKeyBytes(pkData)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	template, err := pki.GenerateTemplate(spec)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if notBefore != (time.Time{}) {
-		template.NotBefore = notBefore
-	}
-	if notAfter != (time.Time{}) {
-		template.NotAfter = notAfter
-	}
-
-	certData, _, err := pki.SignCertificate(template, template, pk.Public(), pk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return certData
-}
-
-func selfSignCertificate(t *testing.T, pkData []byte, spec *cmapi.Certificate) []byte {
-	return selfSignCertificateWithNotBeforeAfter(t, pkData, spec, time.Time{}, time.Time{})
-}
-
-func generatePEMCertificateRequest(t *testing.T, pkData []byte, cert *cmapi.Certificate) []byte {
-	csr, err := pki.GenerateCSR(cert)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	pk, err := pki.DecodePrivateKeyBytes(pkData)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrDER, err := pki.EncodeCSR(csr, pk)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
-	})
-
-	return csrPEM
 }
