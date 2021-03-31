@@ -17,6 +17,8 @@ limitations under the License.
 package plugins
 
 import (
+	"context"
+
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -26,7 +28,7 @@ import (
 // Plugin is an admission plugin that will run during admission webhook events.
 type Plugin interface {
 	Init(client kubernetes.Interface)
-	Validate(admissionSpec *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) *field.Error
+	Validate(ctx context.Context, admissionSpec *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) *field.Error
 }
 
 func All(scheme *runtime.Scheme) []Plugin {

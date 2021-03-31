@@ -17,6 +17,7 @@ limitations under the License.
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -114,10 +115,10 @@ type admissionTestT struct {
 	expectedResponse admissionv1.AdmissionResponse
 }
 
-type admissionFn func(request *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
+type admissionFn func(ctx context.Context, request *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
 
 func runAdmissionTest(t *testing.T, fn admissionFn, test admissionTestT) {
-	resp := fn(&test.inputRequest)
+	resp := fn(context.TODO(), &test.inputRequest)
 	if !reflect.DeepEqual(&test.expectedResponse, resp) {
 		t.Errorf("Response was not as expected: %v", diff.ObjectGoPrintSideBySide(&test.expectedResponse, resp))
 	}

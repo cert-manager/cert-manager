@@ -17,6 +17,8 @@ limitations under the License.
 package handlers
 
 import (
+	"context"
+
 	admissionv1 "k8s.io/api/admission/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -26,7 +28,7 @@ import (
 type ValidatingAdmissionHook interface {
 	// Validate is called to decide whether to accept the admission request. The returned AdmissionResponse
 	// must not use the Patch field.
-	Validate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
+	Validate(ctx context.Context, admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
 
 	// InitPlugins will initialise all plugins which are registered for this
 	// validating admission hook.
@@ -36,7 +38,7 @@ type ValidatingAdmissionHook interface {
 type MutatingAdmissionHook interface {
 	// Admit is called to decide whether to accept the admission request. The returned AdmissionResponse may
 	// use the Patch field to mutate the object from the passed AdmissionRequest.
-	Mutate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
+	Mutate(ctx context.Context, admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
 }
 
 type ConversionHook interface {
