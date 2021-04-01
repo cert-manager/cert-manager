@@ -72,7 +72,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -125,7 +125,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -154,7 +154,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -186,7 +186,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -216,7 +216,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -294,7 +294,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -324,7 +324,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -354,7 +354,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -381,7 +381,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -409,7 +409,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -467,7 +467,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -494,7 +494,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -525,7 +525,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -559,7 +559,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -620,7 +620,7 @@ func (s *Suite) Define() {
 			)).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certName, time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -656,7 +656,7 @@ func (s *Suite) Define() {
 			)).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certName, time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the ingres-shim has translated all the supplied

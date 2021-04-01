@@ -61,7 +61,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		_, err = certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for the Certificate to be issued...")
-		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
@@ -113,7 +113,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1.IssuerKind, v.inputDuration, v.inputRenewBefore), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -143,7 +143,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")

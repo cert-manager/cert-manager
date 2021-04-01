@@ -142,7 +142,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")

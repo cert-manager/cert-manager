@@ -168,7 +168,7 @@ func runVaultAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
@@ -264,7 +264,7 @@ func runVaultAppRoleTests(issuerKind string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")

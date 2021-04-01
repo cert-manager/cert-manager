@@ -246,17 +246,6 @@ func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsa
 	return us
 }
 
-func (h *Helper) WaitCertificateIssued(ns, name string, timeout time.Duration) error {
-	certificate, err := h.WaitForCertificateReady(ns, name, timeout)
-	if err != nil {
-		log.Logf("Error waiting for Certificate to become Ready: %v", err)
-		h.Kubectl(ns).DescribeResource("certificate", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		h.describeCertificateRequestFromCertificate(ns, certificate)
-	}
-	return err
-}
-
 func (h *Helper) defaultKeyUsagesToAdd(ns string, issuerRef *cmmeta.ObjectReference) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 	var issuerSpec *cmapi.IssuerSpec
 	switch issuerRef.Kind {
