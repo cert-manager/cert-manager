@@ -17,10 +17,10 @@ limitations under the License.
 package cainjector
 
 import (
-	admissionreg "k8s.io/api/admissionregistration/v1beta1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	admissionreg "k8s.io/api/admissionregistration/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 )
 
 // this contains implementations of CertInjector (and dependents)
@@ -132,8 +132,11 @@ func (t *crdConversionTarget) SetCA(data []byte) {
 	if t.obj.Spec.Conversion == nil || t.obj.Spec.Conversion.Strategy != apiext.WebhookConverter {
 		return
 	}
-	if t.obj.Spec.Conversion.WebhookClientConfig == nil {
-		t.obj.Spec.Conversion.WebhookClientConfig = &apiext.WebhookClientConfig{}
+	if t.obj.Spec.Conversion.Webhook == nil {
+		t.obj.Spec.Conversion.Webhook = &apiext.WebhookConversion{}
 	}
-	t.obj.Spec.Conversion.WebhookClientConfig.CABundle = data
+	if t.obj.Spec.Conversion.Webhook.ClientConfig == nil {
+		t.obj.Spec.Conversion.Webhook.ClientConfig = &apiext.WebhookClientConfig{}
+	}
+	t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle = data
 }

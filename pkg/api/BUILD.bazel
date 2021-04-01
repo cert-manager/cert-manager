@@ -16,14 +16,14 @@ go_library(
         "//pkg/apis/certmanager/v1alpha3:go_default_library",
         "//pkg/apis/certmanager/v1beta1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
         "@io_k8s_client_go//kubernetes/scheme:go_default_library",
-        "@io_k8s_kube_aggregator//pkg/apis/apiregistration/v1beta1:go_default_library",
+        "@io_k8s_kube_aggregator//pkg/apis/apiregistration/v1:go_default_library",
     ],
 )
 

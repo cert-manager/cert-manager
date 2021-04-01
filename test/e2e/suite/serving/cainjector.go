@@ -27,9 +27,9 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
-	admissionreg "k8s.io/api/admissionregistration/v1beta1"
+	admissionreg "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -304,6 +304,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		})
 	}
 
+	sideEffectsNone := admissionreg.SideEffectClassNone
+
 	injectorContext("validating webhook", &injectableTest{
 		makeInjectable: func(namePrefix string) runtime.Object {
 			someURL := "https://localhost:8675"
@@ -320,6 +322,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						ClientConfig: admissionreg.WebhookClientConfig{
 							URL: &someURL,
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 					{
 						Name: "hook2.fake.k8s.io",
@@ -329,6 +333,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 								Namespace: f.Namespace.Name,
 							},
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 				},
 			}
@@ -359,6 +365,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						ClientConfig: admissionreg.WebhookClientConfig{
 							URL: &someURL,
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 					{
 						Name: "hook2.fake.k8s.io",
@@ -368,6 +376,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 								Namespace: f.Namespace.Name,
 							},
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 				},
 			}
@@ -395,12 +405,18 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					},
 				},
 				Spec: apiext.CustomResourceDefinitionSpec{
-					Group:   namePrefix + ".testing.cert-manager.io",
-					Version: "v1",
+					Group: namePrefix + ".testing.cert-manager.io",
+					Versions: []apiext.CustomResourceDefinitionVersion{
+						{
+							Name: "v1",
+						},
+					},
 					Conversion: &apiext.CustomResourceConversion{
 						Strategy: apiext.WebhookConverter,
-						WebhookClientConfig: &apiext.WebhookClientConfig{
-							URL: &someURL,
+						Webhook: &apiext.WebhookConversion{
+							ClientConfig: &apiext.WebhookClientConfig{
+								URL: &someURL,
+							},
 						},
 					},
 					Names: apiext.CustomResourceDefinitionNames{
@@ -412,10 +428,10 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		},
 		getCAs: func(obj runtime.Object) [][]byte {
 			crd := obj.(*apiext.CustomResourceDefinition)
-			if crd.Spec.Conversion == nil || crd.Spec.Conversion.WebhookClientConfig == nil {
+			if crd.Spec.Conversion == nil || crd.Spec.Conversion.Webhook == nil || crd.Spec.Conversion.Webhook.ClientConfig == nil {
 				return nil
 			}
-			return [][]byte{crd.Spec.Conversion.WebhookClientConfig.CABundle}
+			return [][]byte{crd.Spec.Conversion.Webhook.ClientConfig.CABundle}
 		},
 		disabled: "ConversionWebhook feature not yet enabled on test infra",
 	})
