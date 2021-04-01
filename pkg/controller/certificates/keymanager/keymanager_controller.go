@@ -51,6 +51,7 @@ import (
 const (
 	ControllerName = "certificates-key-manager"
 	DecodeFailed   = "DecodeFailed"
+	Deleted        = "Deleted"
 )
 
 var (
@@ -215,7 +216,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 	if len(violations) > 0 {
 		log.V(logf.DebugLevel).Info("Regenerating private key due to change in fields", "violations", violations)
-		c.recorder.Eventf(crt, corev1.EventTypeNormal, "Deleted", "Regenerating private key due to change in fields: %v", violations)
+		c.recorder.Eventf(crt, corev1.EventTypeNormal, Deleted, "Regenerating private key due to change in fields: %v", violations)
 		return c.deleteSecretResources(ctx, secrets)
 	}
 

@@ -39,7 +39,10 @@ import (
 )
 
 const (
-	BadConfig = "BadConfig"
+	BadConfig         = "BadConfig"
+	CreateCertificate = "CreateCertificate"
+	UpdateCertificate = "UpdateCertificate"
+	DeleteCertificate = "DeleteCertificate"
 )
 
 var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
@@ -82,7 +85,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 		if err != nil {
 			return err
 		}
-		c.recorder.Eventf(ing, corev1.EventTypeNormal, "CreateCertificate", "Successfully created Certificate %q", crt.Name)
+		c.recorder.Eventf(ing, corev1.EventTypeNormal, CreateCertificate, "Successfully created Certificate %q", crt.Name)
 	}
 
 	for _, crt := range updateCrts {
@@ -90,7 +93,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 		if err != nil {
 			return err
 		}
-		c.recorder.Eventf(ing, corev1.EventTypeNormal, "UpdateCertificate", "Successfully updated Certificate %q", crt.Name)
+		c.recorder.Eventf(ing, corev1.EventTypeNormal, UpdateCertificate, "Successfully updated Certificate %q", crt.Name)
 	}
 
 	unrequiredCrts, err := c.findUnrequiredCertificates(ing)
@@ -103,7 +106,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 		if err != nil {
 			return err
 		}
-		c.recorder.Eventf(ing, corev1.EventTypeNormal, "DeleteCertificate", "Successfully deleted unrequired Certificate %q", crt.Name)
+		c.recorder.Eventf(ing, corev1.EventTypeNormal, DeleteCertificate, "Successfully deleted unrequired Certificate %q", crt.Name)
 	}
 
 	return nil
