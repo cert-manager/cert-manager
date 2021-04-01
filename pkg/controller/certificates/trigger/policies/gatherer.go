@@ -88,7 +88,7 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 		}
 		switch {
 		case len(reqs) > 1:
-			return Input{}, fmt.Errorf("multiple CertificateRequests found for the 'current' revision %v, skipping issuance until no more duplicate", *crt.Status.Revision)
+			return Input{}, fmt.Errorf("multiple CertificateRequests were found for the 'current' revision %v, issuance is skipped until there are no more duplicates", *crt.Status.Revision)
 		case len(reqs) == 1:
 			curCR = reqs[0]
 		case len(reqs) == 0:
@@ -112,7 +112,15 @@ func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificat
 	}
 	switch {
 	case len(reqs) > 1:
-		return Input{}, fmt.Errorf("multiple CertificateRequests found for the 'next' revision %v, skipping issuance until no more duplicate", nextCRRevision)
+		// This error feels worthless: we know that the "duplicate certificate
+		// requests" will be fixed almost instantaneously; showing this error to
+		// the user is pointless since it won't even help in a debug session.
+		// Unfortunately, we DO have to return an error just for the purpose of
+		// making sure that the caller function (trigger controller, readiness
+		// controller) will abort their sync and retrigger a new sync, with the
+		// hope that the duplicate will have been removed before the next
+		// resync.
+		return Input{}, fmt.Errorf("multiple CertificateRequests were found for the 'next' revision %v, issuance is skipped until there are no more duplicates", nextCRRevision)
 	case len(reqs) == 1:
 		nextCR = reqs[0]
 	case len(reqs) == 0:

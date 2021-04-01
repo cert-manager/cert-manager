@@ -123,7 +123,7 @@ func TestDataForCertificate(t *testing.T) {
 				cr("cr-1-rev1a", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
 				cr("cr-1-rev1b", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "1"}),
 			}},
-			wantErr: `multiple CertificateRequests found for the 'current' revision 1, skipping issuance until no more duplicate`,
+			wantErr: `multiple CertificateRequests were found for the 'current' revision 1, issuance is skipped until there are no more duplicates`,
 		},
 		"should error when duplicate next CRs are found": {
 			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("ns-1"),
@@ -134,7 +134,7 @@ func TestDataForCertificate(t *testing.T) {
 				cr("cr-1-rev2a", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 				cr("cr-1-rev2b", "ns-1", "cert-1-uid", map[string]string{"cert-manager.io/certificate-revision": "2"}),
 			}},
-			wantErr: `multiple CertificateRequests found for the 'next' revision 2, skipping issuance until no more duplicate`,
+			wantErr: `multiple CertificateRequests were found for the 'next' revision 2, issuance is skipped until there are no more duplicates`,
 		},
 	}
 	for name, test := range tests {
