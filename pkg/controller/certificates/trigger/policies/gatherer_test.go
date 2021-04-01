@@ -56,7 +56,7 @@ func TestDataForCertificate(t *testing.T) {
 			builder:    &testpkg.Builder{},
 			wantSecret: nil,
 		},
-		"when no current or next CR exists, the returned cur and next CRs are nil": {
+		"when neither current nor next CRs exist, the returned cur and next CRs should be nil": {
 			givenCert: gen.Certificate("cert-1", gen.SetCertificateNamespace("default-unit-test-ns"),
 				gen.SetCertificateSecretName("secret-1"),
 				gen.SetCertificateUID("uid-1"),

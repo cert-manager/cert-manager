@@ -199,12 +199,12 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-// shouldBackoffReissuingOnFailure tells us if this certificate's
-// re-issuance should be backed off and for how much time.
+// shouldBackoffReissuingOnFailure tells us if we should back off
+// re-issuing for this certificate and for how much time.
 //
-// The request can be left nil, in which case no back off is required. When
-// the certificate doesn't match the request, no back off is required
-// either since it means the request will have to be re-issued.
+// The request can be left nil, in which case no back off is required.
+// Additionally, if the certificate doesn't match the request, no back
+// off is required because it means the request will have to be re-issued.
 func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest) (backoff bool, delay time.Duration) {
 	if crt.Status.LastFailureTime == nil {
 		return false, 0

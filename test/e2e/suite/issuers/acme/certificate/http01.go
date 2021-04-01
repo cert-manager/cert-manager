@@ -279,7 +279,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should allow updating the dns name of a failing certificate that had a wrong dns name", func() {
+	It("should allow updating the dns name of a failing certificate that had an incorrect dns name", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating a failing Certificate")

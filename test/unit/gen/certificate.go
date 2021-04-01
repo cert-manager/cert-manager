@@ -231,7 +231,7 @@ func AddCertificateLabels(labels map[string]string) CertificateModifier {
 // give the full certificate. Only use this function for testing purposes.
 //
 // Note that the only "important" field that must be filled in ownerReference
-// [1] is the UID. Must notably, the IsControlledBy function [2] only cares
+// [1] is the UID. Most notably, the IsControlledBy function [2] only cares
 // about the UID. The apiVersion, kind and name are only used for information
 // purposes.
 //
