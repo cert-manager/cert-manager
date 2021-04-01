@@ -199,27 +199,29 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-// shouldBackoffReissuingOnFailure tells us if we should back off
-// re-issuing for this certificate and for how much time.
+// shouldBackoffReissuingOnFailure tells us if we should back-off re-issuing for
+// an hour or not. Notably, it returns no back-off when the certificate doesn't
+// match the "next" certificate (since a mismatch means that this certificate
+// gets re-issued immediately).
 //
-// The request can be left nil, in which case no back off is required.
-// Additionally, if the certificate doesn't match the request, no back
-// off is required because it means the request will have to be re-issued.
+// Note that the request can be left nil: in that case, the returned back-off
+// will be 0 since it means the CR must be created immediately.
 func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest) (backoff bool, delay time.Duration) {
 	if crt.Status.LastFailureTime == nil {
 		return false, 0
 	}
 
 	// We want to immediately trigger a re-issuance when the certificate
-	// changes, even when it is failing. In order to detect a "change", we
-	// compare the "next" CR with the certificate spec and reissue and there is
-	// a mismatch.
+	// changes. In order to detect a "change", we compare the "next" CR with the
+	// certificate spec and reissue and there is a mismatch.
 	//
 	// Note that the "next" CR is the only CR that matters when looking at
 	// whether the certificate still matches its CR. The "current" CR matches
 	// the previous spec of the certificate, so we don't want to be looking at
 	// the current CR.
-	if nextCR != nil {
+	if nextCR == nil {
+		log.V(logf.InfoLevel).Info("next CertificateRequest not available, skipping checking if Certificate matches the CertificateRequest")
+	} else {
 		mismatches, err := certificates.RequestMatchesSpec(nextCR, crt.Spec)
 		if err != nil {
 			log.V(logf.InfoLevel).Info("next CertificateRequest cannot be decoded, skipping checking if Certificate matches the CertificateRequest")
@@ -229,8 +231,6 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 			log.V(logf.ExtendedInfoLevel).WithValues("mismatches", mismatches).Info("Certificate is failing but the Certificate differs from CertificateRequest, backoff is not required")
 			return false, 0
 		}
-	} else {
-		log.V(logf.InfoLevel).Info("next CertificateRequest not available, skipping checking if Certificate matches the CertificateRequest")
 	}
 
 	now := c.Now()
