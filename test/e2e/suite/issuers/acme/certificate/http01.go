@@ -315,6 +315,10 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
+		By("Waiting for the Certificate to be not ready")
+		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
 		By("Getting the latest version of the Certificate")
 		cert, err = certClient.Get(context.TODO(), certificateName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -324,9 +328,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be not ready")
-		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
-		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to become ready & valid")
 
