@@ -65,7 +65,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	// ACME Issuer does not return a ca.crt. See:
 	// https://github.com/jetstack/cert-manager/issues/1571
 	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
-	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
+	sanityChecksWithoutx509Validation := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
 		solvers := []cmacme.ACMEChallengeSolver{
@@ -149,12 +149,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -174,12 +174,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -201,12 +201,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be issued")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certific")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -225,12 +225,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be issued")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-checking the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -250,12 +250,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		By("Verifying the Certificate is valid")
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be issued")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-checking the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Getting the latest version of the Certificate")
@@ -267,21 +267,19 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
 
 		By("Updating the Certificate in the apiserver")
-		cert, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
+		_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be not ready")
 		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to become ready & valid")
-
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-checking the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -339,7 +337,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Sanity checking the issued Certificate")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Checking that the secret contains this dns name")
@@ -389,12 +387,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		err = util.WaitForCertificateToExist(certClient, certificateSecretName, foreverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -428,12 +426,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = certClient.Create(context.TODO(), selfcert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, dummycert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, dummycert, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, dummycert, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
@@ -493,12 +491,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -547,12 +545,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// Killing the pod could potentially make the validation invalid if pebble
 		// were to ask us for the challenge after the pod was killed, but because
 		// we kill it so early, we should always be in the self-check phase
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -570,12 +568,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -594,12 +592,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -617,12 +615,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Getting the latest version of the Certificate")
@@ -641,12 +639,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to be ready")
 		err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		By("Sanity-check the issued Certificate")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, sanityChecksWithoutx509Validation...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
