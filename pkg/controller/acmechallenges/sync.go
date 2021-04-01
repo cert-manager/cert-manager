@@ -39,6 +39,7 @@ import (
 
 const (
 	reasonDomainVerified = "DomainVerified"
+	CleanUpError         = "CleanUpError"
 )
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -100,7 +101,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 
 			err = solver.CleanUp(ctx, genericIssuer, ch)
 			if err != nil {
-				c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+				c.recorder.Eventf(ch, corev1.EventTypeWarning, CleanUpError, "Error cleaning up challenge: %v", err)
 				ch.Status.Reason = err.Error()
 				log.Error(err, "error cleaning up challenge")
 				return err
@@ -279,7 +280,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
-		c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+		c.recorder.Eventf(ch, corev1.EventTypeWarning, CleanUpError, "Error cleaning up challenge: %v", err)
 		ch.Status.Reason = err.Error()
 		log.Error(err, "error cleaning up challenge")
 		return nil

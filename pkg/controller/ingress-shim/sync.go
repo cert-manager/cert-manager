@@ -38,6 +38,10 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
+const (
+	BadConfig = "BadConfig"
+)
+
 var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) error {
@@ -53,7 +57,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 	issuerName, issuerKind, issuerGroup, err := c.issuerForIngress(ing)
 	if err != nil {
 		log.Error(err, "failed to determine issuer to be used for ingress resource")
-		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Could not determine issuer for ingress due to bad annotations: %s",
+		c.recorder.Eventf(ing, corev1.EventTypeWarning, BadConfig, "Could not determine issuer for ingress due to bad annotations: %s",
 			err)
 		return nil
 	}
@@ -64,7 +68,7 @@ func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) e
 		if len(errs) > 1 {
 			errMsg = utilerrors.NewAggregate(errs).Error()
 		}
-		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", errMsg)
+		c.recorder.Eventf(ing, corev1.EventTypeWarning, BadConfig, errMsg)
 		return nil
 	}
 
@@ -145,7 +149,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 		// if this tls entry is invalid, record an error event on Ingress object and continue to the next tls entry
 		if len(errs) > 0 {
 			errMsg := utilerrors.NewAggregate(errs).Error()
-			c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", fmt.Sprintf("TLS entry %d is invalid: %s", i, errMsg))
+			c.recorder.Eventf(ing, corev1.EventTypeWarning, BadConfig, fmt.Sprintf("TLS entry %d is invalid: %s", i, errMsg))
 			continue
 		}
 		existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(tls.SecretName)

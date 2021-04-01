@@ -50,6 +50,7 @@ import (
 
 const (
 	ControllerName = "certificates-key-manager"
+	DecodeFailed   = "DecodeFailed"
 )
 
 var (
@@ -238,16 +239,16 @@ func (c *controller) createNextPrivateKeyRotationPolicyNever(ctx context.Context
 	existingPKData := s.Data[corev1.TLSPrivateKeyKey]
 	pk, err := pki.DecodePrivateKeyBytes(existingPKData)
 	if err != nil {
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, "DecodeFailed", "Failed to decode private key stored in Secret %q - generating new key", crt.Spec.SecretName)
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, DecodeFailed, "Failed to decode private key stored in Secret %q - generating new key", crt.Spec.SecretName)
 		return c.createAndSetNextPrivateKey(ctx, crt)
 	}
 	violations, err := certificates.PrivateKeyMatchesSpec(pk, crt.Spec)
 	if err != nil {
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, "DecodeFailed", "Failed to check if private key stored in Secret %q is up to date - generating new key", crt.Spec.SecretName)
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, DecodeFailed, "Failed to check if private key stored in Secret %q is up to date - generating new key", crt.Spec.SecretName)
 		return c.createAndSetNextPrivateKey(ctx, crt)
 	}
 	if len(violations) > 0 {
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, "DecodeFailed", "Existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v", crt.Spec.SecretName, violations)
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, DecodeFailed, "Existing private key in Secret %q does not match requirements on Certificate resource, mismatching fields: %v", crt.Spec.SecretName, violations)
 		return nil
 	}
 
