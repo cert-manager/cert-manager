@@ -210,6 +210,15 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 		return false, 0
 	}
 
+	// We want to immediately trigger a re-issuance when the certificate
+	// changes, even when it is failing. In order to detect a "change", we
+	// compare the "next" CR with the certificate spec and reissue and there is
+	// a mismatch.
+	//
+	// Note that the "next" CR is the only CR that matters when looking at
+	// whether the certificate still matches its CR. The "current" CR matches
+	// the previous spec of the certificate, so we don't want to be looking at
+	// the current CR.
 	if nextCR != nil {
 		mismatches, err := certificates.RequestMatchesSpec(nextCR, crt.Spec)
 		if err != nil {
