@@ -299,7 +299,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
 			Expect(err).NotTo(HaveOccurred())
 
-			if len(orders) != 1 {
+			if len(orders) == 0 || len(orders) > 1 {
 				log.Logf("Waiting as one Order should exist, but we found %d", len(orders))
 				return false, nil
 			}
@@ -328,13 +328,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for the Certificate to become ready & valid")
-
-		By("Waiting for the Certificate to be issued...")
+		By("Waiting for the Certificate to have the Ready=True condition")
 		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Validating the issued Certificate...")
+		By("Sanity checking the issued Certificate")
 		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -344,7 +342,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			if err != nil {
 				return err
 			}
-			Expect(dnsnames).To(Equal(cert.Spec.DNSNames))
+			Expect(cert.Spec.DNSNames).To(ContainElements(dnsnames))
 			return nil
 		})
 		Expect(err).NotTo(HaveOccurred())
