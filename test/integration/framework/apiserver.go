@@ -53,7 +53,22 @@ func init() {
 type StopFunc func()
 
 func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
-	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{})
+	// Here we start the API server so its address can be given to the webhook on
+	// start. We then restart the API with the CRDs in the webhook.
+	env := &envtest.Environment{
+		AttachControlPlaneOutput: false,
+	}
+
+	config, err := env.Start()
+	if err != nil {
+		t.Fatalf("failed to start control plane: %v", err)
+	}
+
+	if err := env.Stop(); err != nil {
+		t.Fatal(err)
+	}
+
+	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{"--api-server-host=" + config.Host})
 	crdsDir := apitesting.CRDDirectory(t)
 	crds := readCustomResourcesAtPath(t, crdsDir)
 	for _, crd := range crds {
@@ -61,12 +76,10 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	}
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
 
-	env := &envtest.Environment{
-		AttachControlPlaneOutput: false,
-		CRDs:                     crdsToRuntimeObjects(crds),
-	}
+	env.CRDs = crdsToRuntimeObjects(crds)
+	env.Config = config
 
-	config, err := env.Start()
+	config, err = env.Start()
 	if err != nil {
 		t.Fatalf("failed to start control plane: %v", err)
 	}

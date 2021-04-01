@@ -66,6 +66,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/internal/apis/certmanager/validation/plugins:all-srcs",
         "//pkg/internal/apis/certmanager/validation/util:all-srcs",
     ],
     tags = ["automanaged"],

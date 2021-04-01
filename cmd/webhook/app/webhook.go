@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
@@ -39,6 +40,17 @@ var mutationHook handlers.MutatingAdmissionHook = handlers.NewRegistryBackedMuta
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, webhook.Scheme)
 
 func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server.Server, error) {
+	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.Kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	cl, err := kubernetes.NewForConfig(restcfg)
+	if err != nil {
+		return nil, fmt.Errorf("error creating kubernetes client: %s", err)
+	}
+	validationHook.InitPlugins(cl)
+
 	var source tls.CertificateSource
 	switch {
 	case options.FileTLSSourceEnabled(opts):

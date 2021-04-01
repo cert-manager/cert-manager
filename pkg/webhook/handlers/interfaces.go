@@ -20,12 +20,17 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/client-go/kubernetes"
 )
 
 type ValidatingAdmissionHook interface {
 	// Validate is called to decide whether to accept the admission request. The returned AdmissionResponse
 	// must not use the Patch field.
 	Validate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse
+
+	// InitPlugins will initialise all plugins which are registered for this
+	// validating admission hook.
+	InitPlugins(client kubernetes.Interface)
 }
 
 type MutatingAdmissionHook interface {

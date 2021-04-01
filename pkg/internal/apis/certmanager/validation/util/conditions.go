@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,11 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package suite
+package util
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/approval"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/serving"
+	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
+
+func GetCertificateRequestCondition(conds []cmapi.CertificateRequestCondition, conditionType cmapi.CertificateRequestConditionType) *cmapi.CertificateRequestCondition {
+	for _, cond := range conds {
+		if cond.Type == conditionType {
+			return &cond
+		}
+	}
+	return nil
+}

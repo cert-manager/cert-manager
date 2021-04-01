@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,11 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package suite
+package plugins
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/approval"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/serving"
+	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/client-go/kubernetes"
 )
+
+// Plugin is an admission plugin that will run during admission webhook events.
+type Plugin interface {
+	Init(client kubernetes.Interface)
+	Validate(admissionSpec *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) *field.Error
+}
+
+func All(scheme *runtime.Scheme) []Plugin {
+	return []Plugin{
+		newApproval(scheme),
+	}
+}

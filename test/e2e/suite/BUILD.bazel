@@ -7,8 +7,8 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
+        "//test/e2e/suite/approval:go_default_library",
         "//test/e2e/suite/conformance:go_default_library",
-        "//test/e2e/suite/identity:go_default_library",
         "//test/e2e/suite/issuers:go_default_library",
         "//test/e2e/suite/serving:go_default_library",
     ],
@@ -25,8 +25,8 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//test/e2e/suite/approval:all-srcs",
         "//test/e2e/suite/conformance:all-srcs",
-        "//test/e2e/suite/identity:all-srcs",
         "//test/e2e/suite/issuers:all-srcs",
         "//test/e2e/suite/serving:all-srcs",
     ],
