@@ -316,7 +316,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be not ready")
-		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
+		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, 30*time.Second)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Getting the latest version of the Certificate")
@@ -327,7 +327,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert.Spec.DNSNames = []string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)}
 		_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-
 
 		By("Waiting for the Certificate to become ready & valid")
 
