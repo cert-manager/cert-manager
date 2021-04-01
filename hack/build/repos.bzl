@@ -2252,6 +2252,15 @@ def go_repositories():
         version = "v2.1.0+incompatible",
     )
     go_repository(
+        name = "com_github_pavel_v_chernykh_keystore_go_v4",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/pavel-v-chernykh/keystore-go/v4",
+        sum = "h1:xKxUVGoB9VJU+lgQLPN0KURjw+XCVVSpHfQEeyxk3zo=",
+        version = "v4.1.0",
+    )
+
+    go_repository(
         name = "com_github_pborman_uuid",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -2765,8 +2774,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/Venafi/vcert/v4",
-        sum = "h1:37gfyjS9v5YvZcIABwNPo1fAC31lIZT7glVK1vfUxk4=",
-        version = "v4.11.0",
+        sum = "h1:T+ZAygGBhncKGUFCtBth2rXrokJkGv8cOeEOgx9XLzc=",
+        version = "v4.13.1",
     )
     go_repository(
         name = "com_github_vividcortex_gohistogram",
