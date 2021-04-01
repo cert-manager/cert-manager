@@ -38,10 +38,11 @@ import (
 
 func Test_controller_ProcessItem(t *testing.T) {
 	fixedNow := metav1.NewTime(time.Now())
+	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
 
 	// We don't need to full bundle, just a simple CertificateRequest.
 	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {
-		return internaltest.MustCreateCryptoBundle(t, crt, fakeclock.NewFakeClock(fixedNow.Time)).CertificateRequest
+		return internaltest.MustCreateCryptoBundle(t, crt, fixedClock).CertificateRequest
 	}
 
 	tests := map[string]struct {
@@ -234,7 +235,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			builder := &testpkg.Builder{
 				T:     t,
-				Clock: fakeclock.NewFakeClock(fixedNow.Time),
+				Clock: fixedClock,
 			}
 			if test.existingCertificate != nil {
 				builder.CertManagerObjects = append(builder.CertManagerObjects, test.existingCertificate)
