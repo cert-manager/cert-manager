@@ -38,30 +38,29 @@ type Gatherer struct {
 	SecretLister             corelisters.SecretLister
 }
 
-// DataForCertificate returns the secret as well as the "current"
-// certificate request associated with the given certificate. It also
-// returns the given certificate as-is.
+// DataForCertificate returns the secret as well as the "current" and "next"
+// certificate request associated with the given certificate. It also returns
+// the given certificate as-is.
 //
-// The "current" certificate request designates the certificate request
-// that led to the current revision of the certificate. The "current"
-// certificate request is by definition in a ready state, and can be seen
-// as the source of information of the current certificate.
-//
-// This "current" certificate request is not to be confused with the "next"
-// certificate request that you might get by listing the CRs for the
-// certificate's revision+1; these "next" CRs might not be ready yet.
+// The "current" certificate request designates the certificate request that led
+// to the current revision of the certificate. The "current" certificate request
+// is by definition in a ready state, and can be seen as the source of
+// information of the current certificate. The "current" certificate request is
+// not to be confused with the "next" CR: the "next" CR is the not-yet-issued CR
+// of the certificate. Its revision is the certificate's revision + 1. Most
+// importantly, the "current" CR is by definition always ready. The "next", on
+// the other side, is by definition (almost) never ready.
 //
 // We need the "current" certificate request because this CR contains the
-// "source of truth" of the current certificate, and getting the "current"
-// CR allows us to check whether the current certificate still matches the
+// "source of truth" of the current certificate, and getting the "current" CR
+// allows us to check whether the current certificate still matches the
 // already-issued certificate request.
 //
-// An error is returned when two certificate requests are found for the
-// pair (certificate's revision, certificate's uid). This function does
-// not return any apierrors.NewNotFound errors for either the secret or the
-// certificate request. Instead, if either the secret or the certificate
-// request is not found, the returned secret (respectively, certificate
-// request) is left nil.
+// An error is returned when two certificate requests are found for the pair
+// (certificate's revision, certificate's uid). This function does not return
+// any apierrors.NewNotFound errors for either the secret or the certificate
+// request. Instead, if either the secret or the certificate request is not
+// found, the returned secret (respectively, certificate request) is left nil.
 func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificate) (Input, error) {
 	log := logf.FromContext(ctx)
 	// Attempt to fetch the Secret being managed but tolerate NotFound errors.
