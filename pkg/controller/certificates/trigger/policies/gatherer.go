@@ -16,31 +16,11 @@ limitations under the License.
 
 package policies
 
-import (
-	"context"
-	"fmt"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	corelisters "k8s.io/client-go/listers/core/v1"
-
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/predicate"
-)
-
-// Gatherer is used to gather data about a Certificate in order to evaluate
-// its current readiness/state by applying policy functions to it.
-type Gatherer struct {
-	CertificateRequestLister cmlisters.CertificateRequestLister
-	SecretLister             corelisters.SecretLister
-}
-
-// DataForCertificate returns the secret as well as the "current" and "next"
-// certificate request associated with the given certificate. It also returns
-// the given certificate as-is.
+// In order to decide whether a certificate should be reissued or not, we want
+// to be gathering the "state of the world" regarding that particular
+// certificate, which is the entire purpose of DataForCertificate. Along with
+// the certificate's secret, DataForCertificate also returns two separate
+// certificate requests: the "current" and the "next" certificate request.
 //
 // To understand the roles of the "current" and "next" certificate requests, let
 // us look at three different scenarii: A, B and C.
@@ -184,7 +164,6 @@ type Gatherer struct {
 // behavior only occurs when the certificate is failing:
 //                        ...
 //                         |
-//                         |
 //                         |              "current" +---------------------------------------------+
 //                         |               +------->| No current CertificateRequest               |
 //                         |               |        +---------------------------------------------+
@@ -228,6 +207,35 @@ type Gatherer struct {
 //                                                   |     reason: Pending                         |
 //                                                   +-NEW---------------NEW-------------------NEW-+
 //
+//
+
+import (
+	"context"
+	"fmt"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	corelisters "k8s.io/client-go/listers/core/v1"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/predicate"
+)
+
+// Gatherer is used to gather data about a Certificate in order to evaluate
+// its current readiness/state by applying policy functions to it.
+type Gatherer struct {
+	CertificateRequestLister cmlisters.CertificateRequestLister
+	SecretLister             corelisters.SecretLister
+}
+
+// DataForCertificate returns the secret as well as the "current" and "next"
+// certificate request associated with the given certificate. It also returns
+// the given certificate as-is. To know more about the "current" and "next"
+// certificate requests and why we want to be fetching them along with the
+// certificate's secret, take a look at the top comment on this file.
 //
 // DataForCertificate returns an error when duplicate CRs are found for the
 // "current" or the "next" revision. DataForCertificate does not return any
