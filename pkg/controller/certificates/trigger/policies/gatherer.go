@@ -229,12 +229,10 @@ type Gatherer struct {
 //                                                   +-NEW---------------NEW-------------------NEW-+
 //
 //
-// DataForCertificate returns an error when two certificate requests are found
-// for the pair (certificate's revision, certificate's uid). This function does
-// not return any apierrors.NewNotFound errors for either the secret or the
-// certificate request. Instead, if either the secret or the certificate request
-// is not found, the returned secret (respectively, certificate request) is left
-// nil.
+// DataForCertificate returns an error when duplicate CRs are found for the
+// "current" or the "next" revision. DataForCertificate does not return any
+// apierrors.NewNotFound; instead, if either of the objects (current CR, next CR
+// or secret) is not found, then the returned value of this object is left nil.
 func (g *Gatherer) DataForCertificate(ctx context.Context, crt *cmapi.Certificate) (Input, error) {
 	log := logf.FromContext(ctx)
 	// Attempt to fetch the Secret being managed but tolerate NotFound errors.
