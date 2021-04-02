@@ -213,7 +213,9 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 
 	// We want to immediately trigger a re-issuance when the certificate
 	// changes. In order to detect a "change", we compare the "next" CR with the
-	// certificate spec and reissue if there is a mismatch.
+	// certificate spec and reissue if there is a mismatch. To understand this
+	// mechanism, take a look at the diagram of the scenario C at the top of the
+	// gatherer.go file.
 	//
 	// Note that the "next" CR is the only CR that matters when looking at
 	// whether the certificate still matches its CR. The "current" CR matches
