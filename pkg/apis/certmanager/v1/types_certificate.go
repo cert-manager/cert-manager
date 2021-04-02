@@ -140,6 +140,7 @@ type CertificateSpec struct {
 
 	// SecretTemplate defines annotations an labels to be propagate
 	// to Secret when created or updated.
+	// +optional
 	SecretTemplate CertificateSecretTemplate `json:"secretTemplate"`
 
 	// Keystores configures additional keystore output formats stored in the
@@ -448,5 +449,11 @@ const (
 // CertificateSecretTemplate defines the default labels and annotations
 // to be copied to the Kubernetes Secret resource named in `CertificateSpec.secretName`.
 type CertificateSecretTemplate struct {
-	Metadata metav1.ObjectMeta `json:"metadata,omitempty"`
+	// Annotations is a key value map to be copied to the target Kubernetes Secret.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels is a key value map to be copied to the target Kubernetes Secret.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 }

@@ -110,9 +110,10 @@ func SetCertificateSecretName(secretName string) CertificateModifier {
 	}
 }
 
-func SetCertificateSecretTemplateMeta(secretTemplateMeta metav1.ObjectMeta) CertificateModifier {
+func SetCertificateSecretTemplate(annotations, labels map[string]string) CertificateModifier {
 	return func(crt *v1.Certificate) {
-		crt.Spec.SecretTemplate.Metadata = secretTemplateMeta
+		crt.Spec.SecretTemplate.Annotations = annotations
+		crt.Spec.SecretTemplate.Labels = labels
 	}
 }
 
