@@ -138,8 +138,8 @@ type CertificateSpec struct {
 	// denoted issuer.
 	SecretName string `json:"secretName"`
 
-	// SecretTemplate defines annotations an labels to be propagate
-	// to Secret when created or updated.
+	// SecretTemplate defines annotations an labels to be propagated
+	// to the Kubernetes Secret when it is created or updated.
 	// +optional
 	SecretTemplate CertificateSecretTemplate `json:"secretTemplate"`
 
