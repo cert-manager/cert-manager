@@ -19,7 +19,7 @@ package policies
 // In order to decide whether or not to reissue a certificate, we want to gather
 // the "state of the world" regarding that particular certificate, which is the
 // entire purpose of DataForCertificate. Along with the certificate's secret,
-// DataForCertificate also returns two separate // certificate requests: the
+// DataForCertificate also returns two separate certificate requests: the
 // "current" one and the "next" one.
 //
 // To understand the roles of the "current" and "next" certificate requests, let
@@ -42,9 +42,9 @@ package policies
 //               |   - type: Issuing   |  |        |     cert-manager.io/certificate-revision: 1 |
 //               |     status: True    |  +------->| status:                                     |
 //               +---------------------+    "next" |   conditions:                               |
-//                         |                       |   - type: Ready                             |
-//                         |                       |     status: False                           |
-//                         v                       |     reason: Pending                         |
+//                         |                       |    - type: Ready                            |
+//                         |                       |      status: False                          |
+//                         v                       |      reason: Pending                        |
 //                        ...                      +---------------------------------------------+
 //
 // DIAGRAM (A2): the certificate in (A1) gets reconciled. Eventually, it becomes
@@ -58,8 +58,8 @@ package policies
 //               |   revision: 1 ---------+------->|     cert-manager.io/certificate-revision: 1 |
 //               |   conditions:       |  |        | status:                                     |
 //               |    - type: Issuing  |  |        |   conditions:                               |
-//               |      status: False  |  |        |     type: Ready                             |
-//               |      reason: Issued |  |        |     status: True                            |
+//               |      status: False  |  |        |    - type: Ready                            |
+//               |      reason: Issued |  |        |      status: True                           |
 //               |    - type: Ready    |  |        +---------------------------------------------+
 //               |      status: True   |  |
 //               +---------------------+  |
@@ -91,8 +91,8 @@ package policies
 //                         |                        |     cert-manager.io/certificate-revision: 7 |
 //                         |                        | status:                                     |
 //                         |               "current"|   conditions:                               |
-//                         v               +------->|     type: Ready                             |
-//                +--------------------+   |        |     status: True                            |
+//                         v               +------->|    - type: Ready                            |
+//                +--------------------+   |        |      status: True                           |
 //    CERTIFICATE | kind: Certificate  |   |        +-MISMATCH---------MISMATCH----------MISMATCH-+
 //       DOES NOT | status:            |   |
 //      MATCH THE |   revision: 7 ---------+
@@ -114,8 +114,8 @@ package policies
 //                         |                        |     cert-manager.io/certificate-revision: 7 |
 //                         |                        | status:                                     |
 //                         v                        |   conditions:                               |
-//                +---------------------+ "current" |     type: Ready                             |
-//   CERTIFICATE  | kind: Certificate   |  +------->|     status: True                            |
+//                +---------------------+ "current" |    - type: Ready                            |
+//   CERTIFICATE  | kind: Certificate   |  +------->|      status: True                           |
 //      IS BEING  | status:             |  |        +-MISMATCH---------MISMATCH----------MISMATCH-+
 //      REISSUED  |   revision: 7----------+
 //                |   conditions:       |  |        +---------------------------------------------+
@@ -125,9 +125,9 @@ package policies
 //                |    - type: Ready    |    "next" |     cert-manager.io/certificate-revision: 8 |
 //                |      status: False  |           | status:                                     |
 //                +---------------------+           |   conditions:                               |
-//                                                  |     type: Ready                             |
-//                                                  |     status: False                           |
-//                                                  |     reason: Pending                         |
+//                                                  |    - type: Ready                            |
+//                                                  |      status: False                          |
+//                                                  |      reason: Pending                        |
 //                                                  +---------------------------------------------+
 //
 //
@@ -149,8 +149,8 @@ package policies
 //    IS FAILING | status:             |   |        |     cert-manager.io/certificate-revision: 1 |
 //               |   revision: nil --------+        | status:                                     |
 //               |   conditions:       |   |        |   conditions:                               |
-//               |    - type: Issuing  |   +------->|     type: Failed                            |
-//               |      status: False  |     "next" |     status: True                            |
+//               |    - type: Issuing  |   +------->|    - type: Failed                           |
+//               |      status: False  |     "next" |      status: True                           |
 //               |      reason: Failed |            +---------------------------------------------+
 //               |   lastFailureTime: *|
 //               +---------------------+
@@ -176,8 +176,8 @@ package policies
 //     MISMATCH  |    - type: Issuing  |   |        |     cert-manager.io/certificate-revision: 1 |
 //               |      status: True   |   |        | status:                                     |
 //               |      reason: Pending|   |------->|   conditions:                               |
-//               |    - type: Ready    |     "next" |     type: Failed                            |
-//               |      status: False  |            |     status: True                            |
+//               |    - type: Ready    |     "next" |    - type: Failed                           |
+//               |      status: False  |            |      status: True                           |
 //               +---------------------+            +-MISMATCH---------MISMATCH----------MISMATCH-+
 //                         |
 //                         v
@@ -202,9 +202,9 @@ package policies
 //                |      status: False   |  |        |     cert-manager.io/certificate-revision: 1 |
 //                |    - type: Issuing   |  |------->| status:                                     |
 //                |      status: True    |    "next" |   conditions:                               |
-//                |      reason: Pending |           |     type: Ready                             |
-//                +----------------------+           |     status: False                           |
-//                                                   |     reason: Pending                         |
+//                |      reason: Pending |           |    - type: Ready                            |
+//                +----------------------+           |      status: False                          |
+//                                                   |      reason: Pending                        |
 //                                                   +-NEW---------------NEW-------------------NEW-+
 
 import (
