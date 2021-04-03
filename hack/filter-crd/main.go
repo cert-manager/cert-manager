@@ -28,6 +28,8 @@ import (
 
 var removeKeys = []string{}
 
+// This code generates regular cert-manager deployment manifest from
+// one created for Helm by removing Helm-specific annotations.
 func main() {
 	loadVariant()
 
