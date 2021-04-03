@@ -10,6 +10,7 @@ RELEASE_NAME = "cert-manager"
 
 RELEASE_NAMESPACE = "cert-manager"
 
+# This genrule removes helm annotations.
 genrule(
     name = "crds.nohelm.yaml",
     srcs = [
@@ -57,6 +58,7 @@ genrule(
     ]),
 )
 
+# This genrule removes helm annotations.
 genrule(
     name = "unlicensed.nohelm",
     srcs = [
