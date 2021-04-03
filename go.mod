@@ -1,6 +1,6 @@
 module github.com/jetstack/cert-manager
 
-go 1.15
+go 1.16
 
 // this if a fork to add EAB and alternative chains in ACME
 // to be replaced after https://github.com/golang/crypto/pull/109 merges
