@@ -39,11 +39,11 @@ package policies
 //    NOT READY | status:            |   |        | kind: CertificateRequest                    |
 //              |   revision: nil -------+        | metadata:                                   |
 //              |   conditions:      |   |        |   annotations:                              |
-//              |   - type: Ready    |   |        |     cert-manager.io/certificate-revision: 1 |
-//              |     status: False  |   +------->| status:                                     |
-//              |   - type: Issuing  |     "next" |   conditions:                               |
-//              |     status: False  |            |   - type: Ready                             |
-//              +--------------------+            |     status: False                           |
+//              |   - type: Issuing  |   |        |     cert-manager.io/certificate-revision: 1 |
+//              |     status: True   |   +------->| status:                                     |
+//              +--------------------+     "next" |   conditions:                               |
+//                       |                        |   - type: Ready                             |
+//                       |                        |     status: False                           |
 //                       |                        |     reason: Pending                         |
 //                       v                        +---------------------------------------------+
 //                      ...
@@ -86,8 +86,8 @@ package policies
 // needs to be reissued.
 //
 //                                                 +-MISMATCH---------MISMATCH----------MISMATCH-+
-//                                                 | kind: CertificateRequest                    |
-//                    existing                     | metadata:                                   |
+//                    existing                     | kind: CertificateRequest                    |
+//                      ready                      | metadata:                                   |
 //                   certificate                   |   annotations:                              |
 //                        |                        |     cert-manager.io/certificate-revision: 7 |
 //                        |                        | status:                                     |
@@ -99,7 +99,7 @@ package policies
 //   THE CURRENT |   revision: 7 ---------+
 //   CERTIFICATE |   conditions:      |   |        +--------------------------------------------+
 //       REQUEST |   - type: Ready    |   |------->| No "next" CertificateRequest               |
-//               |     status: False  |     "next" +--------------------------------------------+
+//               |     status: True   |     "next" +--------------------------------------------+
 //               +--------------------+
 //                        |
 //                        v
@@ -124,8 +124,8 @@ package policies
 //              |     status: False  |    |        | metadata:                                   |
 //              |   - type: Issuing  |    |------->|   annotations:                              |
 //              |     status: True   |      "next" |     cert-manager.io/certificate-revision: 8 |
-//              +--------------------+             | status:                                     |
-//                                                 |   conditions:                               |
+//              |     reason: Pending|             | status:                                     |
+//              +--------------------+             |   conditions:                               |
 //                                                 |     type: Ready                             |
 //                                                 |     status: False                           |
 //                                                 |     reason: Pending                         |
@@ -150,10 +150,12 @@ package policies
 //    IN FAILURE | status:             |   |        |     cert-manager.io/certificate-revision: 1 |
 //               |   revision: nil --------+        | status:                                     |
 //               |   conditions:       |   |        |   conditions:                               |
-//               |    - type: Failed   |   +------->|     type: Failure                           |
-//               |      status: True   |     "next" |     status: True                            |
-//               |   lastFailureTime: *|            +---------------------------------------------+
-//               +---------|-----------+
+//               |    - type: Issuing  |   +------->|     type: Failure                           |
+//               |      status: False  |     "next" |     status: True                            |
+//               |      reason: Failed |            +---------------------------------------------+
+//               |   lastFailureTime: *|
+//               +---------------------+
+//                         |
 //                         v
 //                        ...
 //
@@ -164,49 +166,48 @@ package policies
 // behavior only occurs when the certificate is failing:
 //                        ...
 //                         |
-//                         |              "current" +---------------------------------------------+
-//                         |               +------->| No current CertificateRequest               |
-//                         |               |        +---------------------------------------------+
-//                         v               |
-//               +--------------------+    |
-//   CERTIFICATE | kind: Certificate  |    |        +-MISMATCH---------MISMATCH----------MISMATCH-+
-//     IS SET TO | status:            |    |        | kind: CertificateRequest                    |
-//   "REISSUING" |   revision: nil --------+        | metadata:                                   |
-//       DUE TO  |   conditions:      |    |        |   annotations:                              |
-//     MISMATCH  |    - type: Ready   |    |        |     cert-manager.io/certificate-revision: 1 |
-//               |      status: False |    |        | status:                                     |
-//               |    - type: Issuing |    |------->|   conditions:                               |
-//               |      status: True  |      "next" |     type: Failure                           |
-//               +--------------------+             |     status: True                            |
-//                          |                       +-MISMATCH---------MISMATCH----------MISMATCH-+
-//                          |
-//                          v
-//                         ...
+//                         |               "current" +---------------------------------------------+
+//                         |                +------->| No current CertificateRequest               |
+//                         |                |        +---------------------------------------------+
+//                         v                |
+//               +---------------------+    |
+//   CERTIFICATE | kind: Certificate   |    |        +-MISMATCH---------MISMATCH----------MISMATCH-+
+//     IS SET TO | status:             |    |        | kind: CertificateRequest                    |
+//   "REISSUING" |   revision: nil ---------+        | metadata:                                   |
+//       DUE TO  |   conditions:       |    |        |   annotations:                              |
+//     MISMATCH  |    - type: Ready    |    |        |     cert-manager.io/certificate-revision: 1 |
+//               |      status: False  |    |        | status:                                     |
+//               |    - type: Issuing  |    +------->|   conditions:                               |
+//               |      status: True   |      "next" |     type: Failure                           |
+//               |      reason: Pending|             |     status: True                            |
+//               +---------------------+              +-MISMATCH---------MISMATCH----------MISMATCH-+
+//                         |
+//                         v
+//                        ...
 //
 // DIAGRAM (C3): the trigger controller is able to detect the mismatch: it
 // triggers a re-issuance, and the failing certificate request is re-issued with
 // the same revision number:
-//                         ...
-//                          |
-//          user updates the|
-//        invalid field with|
-//             a valid value|              "current" +---------------------------------------------+
-//                          |               +------->| No current CertificateRequest               |
-//                          v               |        +---------------------------------------------+
-//                +--------------------+    |
-//       PREVIOUS | kind: Certificate  |    |
-//    CERTIFICATE | status:            |    |        +-NEW---------------NEW-------------------NEW-+
-//     REQUEST IS |   revision: nil --------+        | kind: CertificateRequest                    |
-//       REPLACED |   conditions:      |    |        | metadata:                                   |
-//                |    - type: Ready   |    |        |   annotations:                              |
-//                |      status: False |    |        |     cert-manager.io/certificate-revision: 1 |
-//                |    - type: Issuing |    |------->| status:                                     |
-//                |      status: True  |      "next" |   conditions:                               |
-//                +--------------------+             |     type: Ready                             |
-//                                                   |     status: False                           |
-//                                                   |     reason: Pending                         |
-//                                                   +-NEW---------------NEW-------------------NEW-+
-//
+//                        ...
+//                         |
+//         user updates the|
+//       invalid field with|
+//            a valid value|                "current" +---------------------------------------------+
+//                         |                 +------->| No current CertificateRequest               |
+//                         v                 |        +---------------------------------------------+
+//                +---------------------+    |
+//       PREVIOUS | kind: Certificate   |    |
+//    CERTIFICATE | status:             |    |        +-NEW---------------NEW-------------------NEW-+
+//     REQUEST IS |   revision: nil ---------+        | kind: CertificateRequest                    |
+//       REPLACED |   conditions:       |    |        | metadata:                                   |
+//                |    - type: Ready    |    |        |   annotations:                              |
+//                |      status: False  |    |        |     cert-manager.io/certificate-revision: 1 |
+//                |    - type: Issuing  |    |------->| status:                                     |
+//                |      status: True   |      "next" |   conditions:                               |
+//                |      reason: Pending|             |     type: Ready                             |
+//                +---------------------+             |     status: False                           |
+//                                                    |     reason: Pending                         |
+//                                                    +-NEW---------------NEW-------------------NEW-+
 //
 
 import (
