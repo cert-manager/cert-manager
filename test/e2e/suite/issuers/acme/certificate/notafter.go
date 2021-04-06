@@ -56,10 +56,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
-		// Enable Duration feature to set NotAfter
-		acmeIssuer.Spec.ACME.EnableDurationFeature = true
-		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
+		solvers := []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
@@ -80,6 +77,15 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 				},
 			},
 		}
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			// Enable Duration feature to set NotAfter
+			gen.SetIssuerACMEDuration(true),
+			gen.SetIssuerACMESolvers(solvers))
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())

@@ -39,7 +39,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
@@ -243,21 +242,6 @@ func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, nam
 	)
 }
 
-func NewCertManagerCAClusterIssuer(name, secretName string) *v1.ClusterIssuer {
-	return &v1.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.IssuerSpec{
-			IssuerConfig: v1.IssuerConfig{
-				CA: &v1.CAIssuer{
-					SecretName: secretName,
-				},
-			},
-		},
-	}
-}
-
 // Deprecated: use test/unit/gen/Certificate in future
 func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, dnsNames ...string) *v1.Certificate {
 	cn := "test.domain.com"
@@ -406,152 +390,6 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 									},
 								},
 							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.IssuerSpec{
-			IssuerConfig: v1.IssuerConfig{
-				ACME: &cmacme.ACMEIssuer{
-					Email:         acmeEmail,
-					Server:        acmeURL,
-					SkipTLSVerify: true,
-					PrivateKey: cmmeta.SecretKeySelector{
-						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: acmePrivateKey,
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func NewCertManagerCAIssuer(name, secretName string) *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.IssuerSpec{
-			IssuerConfig: v1.IssuerConfig{
-				CA: &v1.CAIssuer{
-					SecretName: secretName,
-				},
-			},
-		},
-	}
-}
-
-func NewCertManagerSelfSignedIssuer(name string) *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.IssuerSpec{
-			IssuerConfig: v1.IssuerConfig{
-				SelfSigned: &v1.SelfSignedIssuer{},
-			},
-		},
-	}
-}
-
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.IssuerSpec{
-			IssuerConfig: v1.IssuerConfig{
-				Vault: &v1.VaultIssuer{
-					Server:   vaultURL,
-					Path:     vaultPath,
-					CABundle: caBundle,
-					Auth: v1.VaultAuth{
-						TokenSecretRef: &cmmeta.SecretKeySelector{
-							Key: "secretkey",
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: vaultSecretToken,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
-		},
-		Spec: newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecretAppRole, authPath, caBundle),
-	}
-}
-
-func NewCertManagerVaultClusterIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1.ClusterIssuer {
-	return &v1.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
-		},
-		Spec: newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecretAppRole, authPath, caBundle),
-	}
-}
-
-func newCertManagerVaultIssuerSpecAppRole(vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) v1.IssuerSpec {
-	return v1.IssuerSpec{
-		IssuerConfig: v1.IssuerConfig{
-			Vault: &v1.VaultIssuer{
-				Server:   vaultURL,
-				Path:     vaultPath,
-				CABundle: caBundle,
-				Auth: v1.VaultAuth{
-					AppRole: &v1.VaultAppRole{
-						Path:   authPath,
-						RoleId: roleId,
-						SecretRef: cmmeta.SecretKeySelector{
-							Key: "secretkey",
-							LocalObjectReference: cmmeta.LocalObjectReference{
-								Name: vaultSecretAppRole,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func NewCertManagerVaultIssuerKubernetes(name, vaultURL, vaultPath, vaultSecretServiceAccount string, role string, authPath string, caBundle []byte) *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.IssuerSpec{
-			IssuerConfig: v1.IssuerConfig{
-				Vault: &v1.VaultIssuer{
-					Server:   vaultURL,
-					Path:     vaultPath,
-					CABundle: caBundle,
-					Auth: v1.VaultAuth{
-						Kubernetes: &v1.VaultKubernetesAuth{
-							Path: authPath,
-							SecretRef: cmmeta.SecretKeySelector{
-								Key: "token",
-								LocalObjectReference: cmmeta.LocalObjectReference{
-									Name: vaultSecretServiceAccount,
-								},
-							},
-							Role: role,
 						},
 					},
 				},
