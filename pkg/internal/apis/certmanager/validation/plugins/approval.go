@@ -74,7 +74,7 @@ func (a *approval) Init(client kubernetes.Interface) {
 // will be returned if the SubjectAccessReview fails, or if they do not have
 // permissions to perform the approval/denial. The request will also fail if
 // the referenced signer doesn't exist in this cluster.
-func (a *approval) Validate(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) *field.Error {
+func (a *approval) Validate(ctx context.Context, req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) *field.Error {
 	// Only perform validation on UPDATE operations
 	if req.Operation != admissionv1.Update {
 		return nil
@@ -134,7 +134,7 @@ func (a *approval) Validate(req *admissionv1.AdmissionRequest, oldObj, obj runti
 
 	// Review whether the approving user has the correct permissions for the
 	// given signer names
-	ok, err = a.reviewRequest(req, names)
+	ok, err = a.reviewRequest(ctx, req, names)
 	if err != nil {
 		return internalError(err)
 	}
@@ -152,14 +152,14 @@ func (a *approval) Validate(req *admissionv1.AdmissionRequest, oldObj, obj runti
 // the "approve" verb, for the resource "signer", at the Cluster scope, for the
 // name "<signer-kind>.<signer-group>/[<signer-namespace.]<signer-name>", or
 // "<signer-kind>.<signer-group>/*".
-func (a *approval) reviewRequest(req *admissionv1.AdmissionRequest, names []string) (bool, error) {
+func (a *approval) reviewRequest(ctx context.Context, req *admissionv1.AdmissionRequest, names []string) (bool, error) {
 	extra := make(map[string]authzv1.ExtraValue)
 	for k, v := range req.UserInfo.Extra {
 		extra[k] = authzv1.ExtraValue(v)
 	}
 
 	for _, name := range names {
-		resp, err := a.sarclient.Create(context.TODO(), &authzv1.SubjectAccessReview{
+		resp, err := a.sarclient.Create(ctx, &authzv1.SubjectAccessReview{
 			Spec: authzv1.SubjectAccessReviewSpec{
 				User:   req.UserInfo.Username,
 				Groups: req.UserInfo.Groups,

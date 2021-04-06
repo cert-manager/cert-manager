@@ -17,6 +17,7 @@ limitations under the License.
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -45,7 +46,7 @@ func NewRegistryBackedMutator(log logr.Logger, scheme *runtime.Scheme, registry 
 	}
 }
 
-func (c *RegistryBackedMutator) Mutate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+func (c *RegistryBackedMutator) Mutate(_ context.Context, admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
 	status := &admissionv1.AdmissionResponse{}
 	status.UID = admissionSpec.UID
 

@@ -17,6 +17,7 @@ limitations under the License.
 package plugins
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -280,7 +281,7 @@ func TestValidate(t *testing.T) {
 				discoverclient: test.discoverclient(t),
 			}
 
-			err := a.Validate(test.req, test.oldCR, test.newCR)
+			err := a.Validate(context.TODO(), test.req, test.oldCR, test.newCR)
 			if !reflect.DeepEqual(test.expErr, err) {
 				t.Errorf("unexpected error, exp=%#+v got=%#+v",
 					test.expErr, err)
@@ -435,7 +436,7 @@ func TestReviewRequest(t *testing.T) {
 			}
 
 			req := &admissionv1.AdmissionRequest{UserInfo: userInfo}
-			ok, err := a.reviewRequest(req, test.names)
+			ok, err := a.reviewRequest(context.TODO(), req, test.names)
 			if (err != nil) != test.expErr {
 				t.Errorf("unexpected error, exp=%t got=%v",
 					test.expErr, err)

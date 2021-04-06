@@ -17,6 +17,7 @@ limitations under the License.
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,7 +73,7 @@ func TestConvert(t *testing.T) {
 				ConversionWebhook: handlers.NewSchemeBackedConverter(log, defaultScheme),
 				Log:               log,
 			}
-			out, err := s.convert(tc.in)
+			out, err := s.convert(context.TODO(), tc.in)
 			if tc.err != "" {
 				assert.EqualError(t, err, tc.err)
 				assert.Nil(t, out)

@@ -17,6 +17,7 @@ limitations under the License.
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -56,7 +57,7 @@ func (r *registryBackedValidator) InitPlugins(client kubernetes.Interface) {
 	}
 }
 
-func (r *registryBackedValidator) Validate(admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+func (r *registryBackedValidator) Validate(ctx context.Context, admissionSpec *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
 	status := &admissionv1.AdmissionResponse{}
 	status.UID = admissionSpec.UID
 
@@ -112,7 +113,7 @@ func (r *registryBackedValidator) Validate(admissionSpec *admissionv1.AdmissionR
 	// If no validation errors occurred, perform plugin checks.
 	if len(errs) == 0 {
 		for _, plugin := range r.plugins {
-			if err := plugin.Validate(admissionSpec, oldObj, obj); err != nil {
+			if err := plugin.Validate(ctx, admissionSpec, oldObj, obj); err != nil {
 				errs = append(errs, err)
 			}
 		}

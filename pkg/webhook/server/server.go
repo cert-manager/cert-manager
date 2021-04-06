@@ -116,6 +116,8 @@ type Server struct {
 	listener net.Listener
 }
 
+type handleFunc func(context.Context, runtime.Object) (runtime.Object, error)
+
 func (s *Server) Run(stopCh <-chan struct{}) error {
 	if s.Log == nil {
 		s.Log = crlog.NullLogger{}
@@ -290,7 +292,7 @@ func (s *Server) scheme() *runtime.Scheme {
 	return s.Scheme
 }
 
-func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
+func (s *Server) validate(ctx context.Context, obj runtime.Object) (runtime.Object, error) {
 	outputVersion := admissionv1.SchemeGroupVersion
 	review, isV1 := obj.(*admissionv1.AdmissionReview)
 	if !isV1 {
@@ -302,7 +304,7 @@ func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
 		review = &admissionv1.AdmissionReview{}
 		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
-	resp := s.ValidationWebhook.Validate(review.Request)
+	resp := s.ValidationWebhook.Validate(ctx, review.Request)
 	review.Response = resp
 
 	// reply v1
@@ -316,7 +318,7 @@ func (s *Server) validate(obj runtime.Object) (runtime.Object, error) {
 	return reviewv1beta1, nil
 }
 
-func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
+func (s *Server) mutate(ctx context.Context, obj runtime.Object) (runtime.Object, error) {
 	outputVersion := admissionv1.SchemeGroupVersion
 	review, isV1 := obj.(*admissionv1.AdmissionReview)
 	if !isV1 {
@@ -328,7 +330,7 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 		review = &admissionv1.AdmissionReview{}
 		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
-	resp := s.MutationWebhook.Mutate(review.Request)
+	resp := s.MutationWebhook.Mutate(ctx, review.Request)
 	review.Response = resp
 
 	// reply v1
@@ -342,7 +344,7 @@ func (s *Server) mutate(obj runtime.Object) (runtime.Object, error) {
 	return reviewv1beta1, nil
 }
 
-func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
+func (s *Server) convert(_ context.Context, obj runtime.Object) (runtime.Object, error) {
 	switch review := obj.(type) {
 	case *apiextensionsv1.ConversionReview:
 		if review.Request == nil {
@@ -361,7 +363,7 @@ func (s *Server) convert(obj runtime.Object) (runtime.Object, error) {
 	}
 }
 
-func (s *Server) handle(inner func(runtime.Object) (runtime.Object, error)) func(w http.ResponseWriter, req *http.Request) {
+func (s *Server) handle(inner handleFunc) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 
@@ -383,7 +385,7 @@ func (s *Server) handle(inner func(runtime.Object) (runtime.Object, error)) func
 			return
 		}
 
-		result, err := inner(obj)
+		result, err := inner(req.Context(), obj)
 		if err != nil {
 			s.Log.Error(err, "failed to process webhook request")
 			w.WriteHeader(http.StatusInternalServerError)
