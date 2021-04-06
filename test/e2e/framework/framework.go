@@ -24,14 +24,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	api "k8s.io/api/core/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"

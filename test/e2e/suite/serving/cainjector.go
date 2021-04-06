@@ -23,16 +23,18 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	admissionreg "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+
 	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
-	admissionreg "k8s.io/api/admissionregistration/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 type injectableTest struct {
@@ -155,7 +157,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				By("changing the name of the corresponding secret in the cert")
 				secretName := types.NamespacedName{Name: cert.Spec.SecretName, Namespace: f.Namespace.Name}
 				cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
-				Expect(f.CRClient.Update(context.Background(), &cert)).To(Succeed())
+				Eventually(func() error { return f.CRClient.Update(context.Background(), &cert) }, "10s", "2s").Should(Succeed())
 
 				By("grabbing the new secret")
 				var secret corev1.Secret
@@ -304,6 +306,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		})
 	}
 
+	sideEffectsNone := admissionreg.SideEffectClassNone
+
 	injectorContext("validating webhook", &injectableTest{
 		makeInjectable: func(namePrefix string) runtime.Object {
 			someURL := "https://localhost:8675"
@@ -320,6 +324,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						ClientConfig: admissionreg.WebhookClientConfig{
 							URL: &someURL,
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 					{
 						Name: "hook2.fake.k8s.io",
@@ -329,6 +335,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 								Namespace: f.Namespace.Name,
 							},
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 				},
 			}
@@ -359,6 +367,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						ClientConfig: admissionreg.WebhookClientConfig{
 							URL: &someURL,
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 					{
 						Name: "hook2.fake.k8s.io",
@@ -368,6 +378,8 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 								Namespace: f.Namespace.Name,
 							},
 						},
+						SideEffects:             &sideEffectsNone,
+						AdmissionReviewVersions: []string{"v1beta1"},
 					},
 				},
 			}
@@ -395,12 +407,18 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					},
 				},
 				Spec: apiext.CustomResourceDefinitionSpec{
-					Group:   namePrefix + ".testing.cert-manager.io",
-					Version: "v1",
+					Group: namePrefix + ".testing.cert-manager.io",
+					Versions: []apiext.CustomResourceDefinitionVersion{
+						{
+							Name: "v1",
+						},
+					},
 					Conversion: &apiext.CustomResourceConversion{
 						Strategy: apiext.WebhookConverter,
-						WebhookClientConfig: &apiext.WebhookClientConfig{
-							URL: &someURL,
+						Webhook: &apiext.WebhookConversion{
+							ClientConfig: &apiext.WebhookClientConfig{
+								URL: &someURL,
+							},
 						},
 					},
 					Names: apiext.CustomResourceDefinitionNames{
@@ -412,46 +430,38 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		},
 		getCAs: func(obj runtime.Object) [][]byte {
 			crd := obj.(*apiext.CustomResourceDefinition)
-			if crd.Spec.Conversion == nil || crd.Spec.Conversion.WebhookClientConfig == nil {
+			if crd.Spec.Conversion == nil || crd.Spec.Conversion.Webhook == nil || crd.Spec.Conversion.Webhook.ClientConfig == nil {
 				return nil
 			}
-			return [][]byte{crd.Spec.Conversion.WebhookClientConfig.CABundle}
+			return [][]byte{crd.Spec.Conversion.Webhook.ClientConfig.CABundle}
 		},
 		disabled: "ConversionWebhook feature not yet enabled on test infra",
 	})
 
-	// TODO: re-enable this test.
-	// This test has been disabled in order to reduce flakes on e2e tests
-	// (hitting around 70% failure rate). This is because when running this test
-	// will cause tiller install to fail, therefore making other tests to fail
-	// when running bother at the same time. We should find a way to make this test run in serial.
-	// https://github.com/jetstack/cert-manager/issues/2353
-	// https://github.com/jetstack/cert-manager/issues/2354
-	//injectorContext("api service", &injectableTest{
-	//	makeInjectable: func(namePrefix string) runtime.Object {
-	//		return &apireg.APIService{
-	//			ObjectMeta: metav1.ObjectMeta{
-	//				Name: "corev1." + namePrefix + ".testing.cert-manager.io",
-	//				Annotations: map[string]string{
-	//					certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
-	//				},
-	//			},
-	//			Spec: apireg.APIServiceSpec{
-	//				Service: &apireg.ServiceReference{
-	//					Name:      "does-not-exit",
-	//					Namespace: "default",
-	//				},
-	//				Group:                namePrefix + ".testing.cert-manager.io",
-	//				Version:              "v1",
-	//				GroupPriorityMinimum: 1,
-	//				VersionPriority:      1,
-	//			},
-	//		}
-	//	},
-	//	getCAs: func(obj runtime.Object) [][]byte {
-	//		apiSvc := obj.(*apireg.APIService)
-	//		return [][]byte{apiSvc.Spec.CABundle}
-	//	},
-	//})
-
+	injectorContext("api service", &injectableTest{
+		makeInjectable: func(namePrefix string) runtime.Object {
+			return &apireg.APIService{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "v1." + namePrefix + ".testing.cert-manager.io",
+					Annotations: map[string]string{
+						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
+					},
+				},
+				Spec: apireg.APIServiceSpec{
+					Service: &apireg.ServiceReference{
+						Name:      "does-not-exit",
+						Namespace: "default",
+					},
+					Group:                namePrefix + ".testing.cert-manager.io",
+					Version:              "v1",
+					GroupPriorityMinimum: 1,
+					VersionPriority:      1,
+				},
+			}
+		},
+		getCAs: func(obj runtime.Object) [][]byte {
+			apiSvc := obj.(*apireg.APIService)
+			return [][]byte{apiSvc.Spec.CABundle}
+		},
+	})
 })
