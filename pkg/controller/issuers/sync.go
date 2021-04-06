@@ -38,6 +38,10 @@ const (
 func (c *controller) Sync(ctx context.Context, iss *cmapi.Issuer) (err error) {
 	log := logf.FromContext(ctx)
 
+	// allow a maximum of 10s
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
 	issuerCopy := iss.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateIssuerStatus(ctx, iss, issuerCopy); saveErr != nil {
@@ -50,9 +54,6 @@ func (c *controller) Sync(ctx context.Context, iss *cmapi.Issuer) (err error) {
 		return err
 	}
 
-	// allow a maximum of 10s
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	defer cancel()
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
