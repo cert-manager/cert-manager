@@ -83,7 +83,7 @@ package policies
 //
 // DIAGRAM (B1): the "current" certificate request can be pictured as the
 // "current state of the world". When the certificate does not match its
-// "current" certificate request, then certificate is in "mismatch" mode and
+// "current" certificate request, then certificate is in "mismatch" state and
 // needs to be reissued.
 //
 //                                                 +-MISMATCH---------MISMATCH----------MISMATCH-+
