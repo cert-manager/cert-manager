@@ -238,6 +238,16 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	cond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
 	if cond == nil {
+		// If the certificate request has been denied, set the last failure time to
+		// now, and set the Issuing status condition to False with reason. We only
+		// perform this check if the request also doesn't have a Ready condition,
+		// since some issuers may not honor a Denied condition, and will sign and
+		// set the Ready condition to True anyway. We would still want to complete
+		// issuance for requests where the issuer doesn't respect approval.
+		if apiutil.CertificateRequestIsDenied(req) {
+			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionDenied))
+		}
+
 		log.V(logf.DebugLevel).Info("CertificateRequest does not have Ready condition, waiting...")
 		return nil
 	}
@@ -245,7 +255,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// If the certificate request has failed, set the last failure time to now,
 	// and set the Issuing status condition to False with reason.
 	if cond.Reason == cmapi.CertificateRequestReasonFailed {
-		return c.failIssueCertificate(ctx, log, crt, req)
+		return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady))
 	}
 
 	// If public key does not match, do nothing (requestmanager will handle this).
@@ -280,16 +290,16 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-// failIssueCertificate will mark the condition Issuing of this Certificate as failed, and log an appropriate event
-func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, req *cmapi.CertificateRequest) error {
+// failIssueCertificate will mark the Issuing condition of this Certificate as
+// failed, and log an appropriate event. The reason and message of the
+// condition will be that of the CertificateRequest condition passed.
+func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, crt *cmapi.Certificate, condition *cmapi.CertificateRequestCondition) error {
 	nowTime := metav1.NewTime(c.clock.Now())
 	crt.Status.LastFailureTime = &nowTime
 
 	log.V(logf.DebugLevel).Info("CertificateRequest in failed state so retrying issuance later")
 
 	var reason, message string
-	condition := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
-
 	reason = condition.Reason
 	message = fmt.Sprintf("The certificate request has failed to complete and will be retried: %s",
 		condition.Message)
