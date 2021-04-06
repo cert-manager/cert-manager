@@ -30,7 +30,7 @@ package policies
 // certificate request exists. You can see below that the first revision is "1":
 //
 //                    user creates
-//                    certiticate
+//                    certificate
 //                         |              "current"+---------------------------------------------+
 //                         |              +------->| No current CertificateRequest yet.          |
 //                         v              |        +---------------------------------------------+
