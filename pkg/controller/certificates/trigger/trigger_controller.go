@@ -238,7 +238,7 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 	now := c.Now()
 	durationSinceFailure := now.Sub(crt.Status.LastFailureTime.Time)
 	if durationSinceFailure >= retryAfterLastFailure {
-		log.V(logf.ExtendedInfoLevel).WithValues("since_failure", durationSinceFailure).Info("Certificate has been in failure mode long enough, no need to back off")
+		log.V(logf.ExtendedInfoLevel).WithValues("since_failure", durationSinceFailure).Info("Certificate has been in failure state long enough, no need to back off")
 		return false, 0
 	}
 	return true, retryAfterLastFailure - durationSinceFailure
