@@ -46,7 +46,7 @@ func TestEnsurePod(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Challenge)
+				ing, err := s.Solver.createPod(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -142,11 +142,11 @@ func TestEnsurePod(t *testing.T) {
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createPod(s.Challenge)
+				_, err := s.Solver.createPod(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createPod(s.Challenge)
+				_, err = s.Solver.createPod(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -196,7 +196,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Challenge)
+				ing, err := s.Solver.createPod(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -231,7 +231,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				_, err := s.Solver.createPod(differentChallenge)
+				_, err := s.Solver.createPod(context.TODO(), differentChallenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}

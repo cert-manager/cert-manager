@@ -69,7 +69,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) (*corev1.P
 
 	log.V(logf.InfoLevel).Info("creating HTTP01 challenge solver pod")
 
-	return s.createPod(ch)
+	return s.createPod(ctx, ch)
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
@@ -117,7 +117,7 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 		log := logf.WithRelatedResource(log, pod).V(logf.DebugLevel)
 		log.V(logf.InfoLevel).Info("deleting pod resource")
 
-		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
+		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			log.V(logf.WarnLevel).Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)
@@ -131,9 +131,9 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(ch *cmacme.Challenge) (*corev1.Pod, error) {
+func (s *Solver) createPod(ctx context.Context, ch *cmacme.Challenge) (*corev1.Pod, error) {
 	return s.Client.CoreV1().Pods(ch.Namespace).Create(
-		context.TODO(),
+		ctx,
 		s.buildPod(ch),
 		metav1.CreateOptions{})
 }

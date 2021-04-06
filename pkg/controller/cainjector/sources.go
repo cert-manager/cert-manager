@@ -55,7 +55,7 @@ type caDataSource interface {
 	ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error)
 
 	// ApplyTo applies any required watchers to the given controller.
-	ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error
+	ApplyTo(ctx context.Context, mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error
 }
 
 // kubeconfigDataSource reads the ca bundle provided as part of the struct
@@ -73,7 +73,7 @@ func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, meta
 	return c.apiserverCABundle, nil
 }
 
-func (c *kubeconfigDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, _ controller.Controller, _ cache.Cache) error {
+func (c *kubeconfigDataSource) ApplyTo(ctx context.Context, mgr ctrl.Manager, setup injectorSetup, _ controller.Controller, _ cache.Cache) error {
 	cfg := mgr.GetConfig()
 	caBundle, err := dataFromSliceOrFile(cfg.CAData, cfg.CAFile)
 	if err != nil {
@@ -142,9 +142,9 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	return caData, nil
 }
 
-func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
+func (c *certificateDataSource) ApplyTo(ctx context.Context, mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
 	typ := setup.injector.NewTarget().AsObject()
-	if err := ca.IndexField(context.TODO(), typ, injectFromPath, injectableCAFromIndexer); err != nil {
+	if err := ca.IndexField(ctx, typ, injectFromPath, injectableCAFromIndexer); err != nil {
 		return err
 	}
 
@@ -219,9 +219,9 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	return caData, nil
 }
 
-func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
+func (c *secretDataSource) ApplyTo(ctx context.Context, mgr ctrl.Manager, setup injectorSetup, controller controller.Controller, ca cache.Cache) error {
 	typ := setup.injector.NewTarget().AsObject()
-	if err := ca.IndexField(context.TODO(), typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
+	if err := ca.IndexField(ctx, typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
 		return err
 	}
 	if err := controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),

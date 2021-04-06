@@ -44,7 +44,7 @@ func TestEnsureService(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				svc, err := s.Solver.createService(s.Challenge)
+				svc, err := s.Solver.createService(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -139,11 +139,11 @@ func TestEnsureService(t *testing.T) {
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createService(s.Challenge)
+				_, err := s.Solver.createService(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createService(s.Challenge)
+				_, err = s.Solver.createService(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -193,7 +193,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createService(s.Challenge)
+				ing, err := s.Solver.createService(context.TODO(), s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -228,7 +228,7 @@ func TestGetServicesForChallenge(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "invaliddomain"
-				_, err := s.Solver.createService(differentChallenge)
+				_, err := s.Solver.createService(context.TODO(), differentChallenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}

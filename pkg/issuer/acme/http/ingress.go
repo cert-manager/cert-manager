@@ -110,7 +110,7 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 	}
 
 	log.V(logf.DebugLevel).Info("creating HTTP01 challenge solver ingress")
-	return s.createIngress(ch, svcName)
+	return s.createIngress(ctx, ch, svcName)
 }
 
 func ingressServiceName(ing *networkingv1beta1.Ingress) string {
@@ -119,7 +119,7 @@ func ingressServiceName(ing *networkingv1beta1.Ingress) string {
 
 // createIngress will create a challenge solving ingress for the given certificate,
 // domain, token and key.
-func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*networkingv1beta1.Ingress, error) {
+func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*networkingv1beta1.Ingress, error) {
 	ing, err := buildIngressResource(ch, svcName)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*networkin
 		ing = s.mergeIngressObjectMetaWithIngressResourceTemplate(ing, ch.Spec.Solver.HTTP01.Ingress.IngressTemplate)
 	}
 
-	return s.Client.NetworkingV1beta1().Ingresses(ch.Namespace).Create(context.TODO(), ing, metav1.CreateOptions{})
+	return s.Client.NetworkingV1beta1().Ingresses(ch.Namespace).Create(ctx, ing, metav1.CreateOptions{})
 }
 
 func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1beta1.Ingress, error) {
@@ -239,11 +239,11 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 						return ing, nil
 					}
 					rule.HTTP.Paths[i] = ingPathToAdd
-					return s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+					return s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(ctx, ing, metav1.UpdateOptions{})
 				}
 			}
 			rule.HTTP.Paths = append([]networkingv1beta1.HTTPIngressPath{ingPathToAdd}, rule.HTTP.Paths...)
-			return s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+			return s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(ctx, ing, metav1.UpdateOptions{})
 		}
 	}
 
@@ -256,7 +256,7 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 			},
 		},
 	})
-	return s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+	return s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(ctx, ing, metav1.UpdateOptions{})
 }
 
 // cleanupIngresses will remove the rules added by cert-manager to an existing
@@ -283,7 +283,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 			log := logf.WithRelatedResource(log, ingress).V(logf.DebugLevel)
 
 			log.V(logf.DebugLevel).Info("deleting ingress resource")
-			err := s.Client.NetworkingV1beta1().Ingresses(ingress.Namespace).Delete(context.TODO(), ingress.Name, metav1.DeleteOptions{})
+			err := s.Client.NetworkingV1beta1().Ingresses(ingress.Namespace).Delete(ctx, ingress.Name, metav1.DeleteOptions{})
 			if err != nil {
 				log.V(logf.WarnLevel).Info("failed to delete ingress resource", "error", err)
 				errs = append(errs, err)
@@ -295,7 +295,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 	}
 
 	// otherwise, we need to remove any cert-manager added rules from the ingress resource
-	ing, err := s.Client.NetworkingV1beta1().Ingresses(ch.Namespace).Get(context.TODO(), existingIngressName, metav1.GetOptions{})
+	ing, err := s.Client.NetworkingV1beta1().Ingresses(ch.Namespace).Get(ctx, existingIngressName, metav1.GetOptions{})
 	if k8sErrors.IsNotFound(err) {
 		log.Error(err, "named ingress resource not found, skipping cleanup")
 		return nil
@@ -338,7 +338,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 
 	ing.Spec.Rules = ingRules
 
-	_, err = s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
+	_, err = s.Client.NetworkingV1beta1().Ingresses(ing.Namespace).Update(ctx, ing, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

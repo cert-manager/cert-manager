@@ -50,7 +50,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
+				ing, err := s.Solver.createIngress(context.TODO(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -83,7 +83,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
+				ing, err := s.Solver.createIngress(context.TODO(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -118,7 +118,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				_, err := s.Solver.createIngress(differentChallenge, "fakeservice")
+				_, err := s.Solver.createIngress(context.TODO(), differentChallenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -168,7 +168,7 @@ func TestCleanupIngresses(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
+				ing, err := s.Solver.createIngress(context.TODO(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -203,7 +203,7 @@ func TestCleanupIngresses(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				ing, err := s.Solver.createIngress(differentChallenge, "fakeservice")
+				ing, err := s.Solver.createIngress(context.TODO(), differentChallenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -397,7 +397,7 @@ func TestCleanupIngresses(t *testing.T) {
 				s.Builder.FakeKubeClient().PrependReactor("delete", "ingresses", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, fmt.Errorf("simulated error")
 				})
-				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
+				ing, err := s.Solver.createIngress(context.TODO(), s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -436,7 +436,7 @@ func TestEnsureIngress(t *testing.T) {
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createIngress(s.Challenge, "anotherfakeservice")
+				_, err := s.Solver.createIngress(context.TODO(), s.Challenge, "anotherfakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -542,7 +542,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.createIngress(test.Challenge, "fakeservice")
+			resp, err := test.Solver.createIngress(context.TODO(), test.Challenge, "fakeservice")
 			test.Finish(t, resp, err)
 		})
 	}

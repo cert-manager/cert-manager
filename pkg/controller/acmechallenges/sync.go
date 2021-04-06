@@ -71,7 +71,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		if apiequality.Semantic.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
-		_, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
+		_, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(ctx, ch, metav1.UpdateOptions{})
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}
@@ -248,14 +248,14 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 
 	defer func() {
 		// call UpdateStatus first as we may have updated the challenge.status.reason field
-		ch, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(context.TODO(), ch, metav1.UpdateOptions{})
+		ch, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(ctx, ch, metav1.UpdateOptions{})
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return
 		}
 		// call Update to remove the metadata.finalizers entry
 		ch.Finalizers = ch.Finalizers[1:]
-		_, updateErr = c.cmClient.AcmeV1().Challenges(ch.Namespace).Update(context.TODO(), ch, metav1.UpdateOptions{})
+		_, updateErr = c.cmClient.AcmeV1().Challenges(ch.Namespace).Update(ctx, ch, metav1.UpdateOptions{})
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return

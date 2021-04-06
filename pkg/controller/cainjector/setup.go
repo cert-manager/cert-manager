@@ -79,7 +79,7 @@ var (
 func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
 	controllers := make([]controller.Controller, len(injectorSetups))
 	for i, setup := range injectorSetups {
-		controller, err := newGenericInjectionController(groupName, mgr, setup, sources, ca, client)
+		controller, err := newGenericInjectionController(ctx, groupName, mgr, setup, sources, ca, client)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
@@ -123,7 +123,9 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 // indexes and event sources. Keep checking new controller-runtime releases for
 // improvements which might make this easier:
 // * https://github.com/kubernetes-sigs/controller-runtime/issues/764
-func newGenericInjectionController(groupName string, mgr ctrl.Manager, setup injectorSetup, sources []caDataSource, ca cache.Cache, client client.Client) (controller.Controller, error) {
+func newGenericInjectionController(ctx context.Context, groupName string, mgr ctrl.Manager,
+	setup injectorSetup, sources []caDataSource, ca cache.Cache,
+	client client.Client) (controller.Controller, error) {
 	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
 
@@ -148,7 +150,7 @@ func newGenericInjectionController(groupName string, mgr ctrl.Manager, setup inj
 	}
 
 	for _, s := range sources {
-		if err := s.ApplyTo(mgr, setup, c, ca); err != nil {
+		if err := s.ApplyTo(ctx, mgr, setup, c, ca); err != nil {
 			return nil, err
 		}
 	}
