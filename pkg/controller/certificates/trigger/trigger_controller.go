@@ -163,7 +163,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	// Back off from re-issuing immediately when the certificate has been
 	// in failing mode for less than 1 hour.
-	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate)
+	backoff, delay := shouldBackoffReissuingOnFailure(log, c.clock, input.Certificate, input.NextRevisionRequest)
 	if backoff {
 		log.V(logf.InfoLevel).Info("Not re-issuing certificate as an attempt has been made in the last hour", "retry_delay", delay)
 		c.scheduleRecheckOfCertificateIfRequired(log, key, delay)
@@ -199,20 +199,48 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return nil
 }
 
-// shouldBackoffReissuingOnFailure tells us if we should back off from
-// reissuing the certificate and for how much time.
-func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate) (backoff bool, delay time.Duration) {
+// shouldBackoffReissuingOnFailure tells us if we should back-off re-issuing for
+// an hour or not. Notably, it returns no back-off when the certificate doesn't
+// match the "next" certificate (since a mismatch means that this certificate
+// gets re-issued immediately).
+//
+// Note that the request can be left nil: in that case, the returned back-off
+// will be 0 since it means the CR must be created immediately.
+func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.Certificate, nextCR *cmapi.CertificateRequest) (backoff bool, delay time.Duration) {
 	if crt.Status.LastFailureTime == nil {
 		return false, 0
+	}
+
+	// We want to immediately trigger a re-issuance when the certificate
+	// changes. In order to detect a "change", we compare the "next" CR with the
+	// certificate spec and reissue if there is a mismatch. To understand this
+	// mechanism, take a look at the diagram of the scenario C at the top of the
+	// gatherer.go file.
+	//
+	// Note that the "next" CR is the only CR that matters when looking at
+	// whether the certificate still matches its CR. The "current" CR matches
+	// the previous spec of the certificate, so we don't want to be looking at
+	// the current CR.
+	if nextCR == nil {
+		log.V(logf.InfoLevel).Info("next CertificateRequest not available, skipping checking if Certificate matches the CertificateRequest")
+	} else {
+		mismatches, err := certificates.RequestMatchesSpec(nextCR, crt.Spec)
+		if err != nil {
+			log.V(logf.InfoLevel).Info("next CertificateRequest cannot be decoded, skipping checking if Certificate matches the CertificateRequest")
+			return false, 0
+		}
+		if len(mismatches) > 0 {
+			log.V(logf.ExtendedInfoLevel).WithValues("mismatches", mismatches).Info("Certificate is failing but the Certificate differs from CertificateRequest, backoff is not required")
+			return false, 0
+		}
 	}
 
 	now := c.Now()
 	durationSinceFailure := now.Sub(crt.Status.LastFailureTime.Time)
 	if durationSinceFailure >= retryAfterLastFailure {
-		log.V(logf.ExtendedInfoLevel).WithValues("since_failure", durationSinceFailure).Info("Certificate has been in failure mode long enough, no need to back off")
+		log.V(logf.ExtendedInfoLevel).WithValues("since_failure", durationSinceFailure).Info("Certificate has been in failure state long enough, no need to back off")
 		return false, 0
 	}
-
 	return true, retryAfterLastFailure - durationSinceFailure
 }
 

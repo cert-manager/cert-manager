@@ -115,7 +115,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.F
 		annotations[k] = v
 	}
 	if crt.Status.Revision != nil {
-		annotations[cmapi.CertificateRequestRevisionAnnotationKey] = fmt.Sprintf("%d", crt.Status.Revision)
+		annotations[cmapi.CertificateRequestRevisionAnnotationKey] = fmt.Sprintf("%d", *crt.Status.Revision)
 	}
 
 	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = crt.Spec.SecretName

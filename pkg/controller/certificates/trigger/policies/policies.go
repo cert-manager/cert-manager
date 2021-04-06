@@ -35,20 +35,18 @@ type Input struct {
 	Certificate *cmapi.Certificate
 	Secret      *corev1.Secret
 
-	// The "current" certificate request designates the certificate request
-	// that led to the current revision of the certificate. The "current"
-	// certificate request is by definition in a ready state, and can be seen
-	// as the source of information of the current certificate.
-	//
-	// This "current" certificate request is not to be confused with the "next"
-	// certificate request that you might get by listing the CRs for the
-	// certificate's revision+1; these "next" CRs might not be ready yet.
-	//
-	// We need the "current" certificate request because this CR contains the
-	// "source of truth" of the current certificate, and getting the "current"
-	// CR allows is to check whether the current certificate still matches the
-	// already-issued certificate request.
+	// The "current" certificate request designates the certificate request that
+	// led to the current revision of the certificate. The "current" certificate
+	// request is by definition in a ready state, and can be seen as the source
+	// of information of the current certificate. Take a look at the gatherer
+	// package's documentation to see more about why we care about the "current"
+	// certificate request.
 	CurrentRevisionRequest *cmapi.CertificateRequest
+
+	// The "next" certificate request is the one that is currently being issued.
+	// Take a look at the gatherer package's documentation to see more about why
+	// we care about the "next" certificate request.
+	NextRevisionRequest *cmapi.CertificateRequest
 }
 
 // A Func evaluates the given input data and decides whether a

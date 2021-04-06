@@ -56,6 +56,7 @@ go_test(
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/controller:go_default_library",
+        "//pkg/controller/certificates/internal/test:go_default_library",
         "//pkg/controller/certificates/trigger/policies:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//test/unit/gen:go_default_library",
