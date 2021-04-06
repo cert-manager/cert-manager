@@ -18,11 +18,15 @@ package acme
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -266,5 +270,77 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 				return false, nil
 			})
 		Expect(err).NotTo(HaveOccurred())
+	})
+	It("ACME account with External Account Binding", func() {
+
+		By("providing the legacy keyAlgorithm value")
+
+		var (
+			secretName = "test-secret"
+			keyID      = "kid-1"
+			key        = "kid-secret-1"
+		)
+
+		// TODO: this value will get base64 encoded twice. Investigate why we need to do this.
+		keyBytes := []byte(base64.RawURLEncoding.EncodeToString([]byte(key)))
+		s := gen.Secret(secretName,
+			gen.SetSecretNamespace(f.Namespace.Name),
+			gen.SetSecretData(map[string][]byte{
+				"key": keyBytes,
+			}))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(context.TODO(), s, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey),
+			gen.SetIssuerACMEEABWithKeyAlgorithm(keyID, secretName, cmacme.HS256))
+
+		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(
+			context.TODO(), acmeIssuer, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			acmeIssuer.Name,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("removing the legacy keyAlgorithm value")
+
+		acmeIssuer, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Get(context.TODO(), acmeIssuer.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		acmeIssuer = gen.IssuerFrom(acmeIssuer,
+			gen.SetIssuerACMEEAB(keyID, secretName))
+
+		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Update(context.TODO(), acmeIssuer, metav1.UpdateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// TODO: we should use observedGeneration here, but currently it won't
+		// be incremented correctly in this scenario.
+		// Verify that Issuer's Ready condition remains True for 5 seconds.
+		err = wait.Poll(time.Millisecond*200, time.Second*5, func() (bool, error) {
+			iss, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Get(
+				context.TODO(), issuerName, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+			if !apiutil.IssuerHasCondition(iss, v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionTrue,
+			}) {
+				return false, errors.New("expected Ready condition to be true, got false")
+			}
+			// keep polling
+			return false, nil
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError(wait.ErrWaitTimeout))
 	})
 })
