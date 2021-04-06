@@ -39,8 +39,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 })
 var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
 	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
-		KeyID:        "kid-1",
-		KeyAlgorithm: "HS256",
+		KeyID: "kid-1",
 	})
 })
 
