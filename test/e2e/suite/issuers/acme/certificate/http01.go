@@ -68,8 +68,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
-		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
+		solvers := []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
@@ -90,6 +89,13 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				},
 			},
 		}
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMESolvers(solvers))
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -399,10 +405,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// force-ssl-redirect should make every request turn into a redirect,
 		// but I haven't been able to make this happen. Create a TLS cert via
 		// the self-sign issuer to make it have a "proper" TLS cert
+		// TODO: investigate if we still need to use the self-signed issuer here
 
-		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerSelfSignedIssuer("selfsign"), metav1.CreateOptions{})
+		issuer := gen.Issuer("selfsign",
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for (self-sign) Issuer to become Ready")
+		By("Waiting for (selfsign) Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1.IssuerCondition{

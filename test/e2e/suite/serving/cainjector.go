@@ -32,9 +32,11 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
 	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 type injectableTest struct {
@@ -56,8 +58,9 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 			BeforeEach(func() {
 				By("creating a self-signing issuer")
-				issuer := util.NewCertManagerSelfSignedIssuer(issuerName)
-				issuer.Namespace = f.Namespace.Name
+				issuer := gen.Issuer(issuerName,
+					gen.SetIssuerNamespace(f.Namespace.Name),
+					gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
 				Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 				By("Waiting for Issuer to become Ready")

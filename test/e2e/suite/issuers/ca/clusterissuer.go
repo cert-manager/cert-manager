@@ -28,6 +28,7 @@ import (
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
@@ -50,7 +51,8 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	It("should validate a signing keypair", func() {
 		By("Creating an Issuer")
-		clusterIssuer := util.NewCertManagerCAClusterIssuer(issuerName, secretName)
+		clusterIssuer := gen.ClusterIssuer(issuerName,
+			gen.SetIssuerCASecretName(secretName))
 		_, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), clusterIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
