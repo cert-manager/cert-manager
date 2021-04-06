@@ -118,9 +118,12 @@ type ACMEExternalAccountBinding struct {
 	// encoded data.
 	Key cmmeta.SecretKeySelector `json:"keySecretRef"`
 
-	// keyAlgorithm is the MAC key algorithm that the key is used for.
-	// Valid values are "HS256", "HS384" and "HS512".
-	KeyAlgorithm HMACKeyAlgorithm `json:"keyAlgorithm"`
+	// (deprecated) keyAlgorithm is the MAC key algorithm that the key is used
+	// for. Valid values are "HS256", "HS384" and "HS512".
+	// Deprecation warning: this value is no longer used as
+	// golang/x/crypto/acme hardcodes the algorithm to HS256.
+	// +optional
+	KeyAlgorithm HMACKeyAlgorithm `json:"keyAlgorithm,omitempty"`
 }
 
 // HMACKeyAlgorithm is the name of a key algorithm used for HMAC encryption

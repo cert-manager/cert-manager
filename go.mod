@@ -4,7 +4,7 @@ go 1.16
 
 // this if a fork to add EAB and alternative chains in ACME
 // to be replaced after https://github.com/golang/crypto/pull/109 merges
-replace golang.org/x/crypto => github.com/meyskens/crypto v0.0.0-20200821143559-6ca9aec645f0
+replace golang.org/x/crypto => github.com/cert-manager/crypto v0.0.0-20210331051623-e6485987d0e4
 
 require (
 	github.com/Azure/azure-sdk-for-go v46.3.0+incompatible
@@ -40,7 +40,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/api v0.15.0
