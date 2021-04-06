@@ -101,6 +101,10 @@ type ACMEOptions struct {
 	// HTTP01SolverResourceRequestCPU defines the ACME pod's resource request CPU size
 	HTTP01SolverResourceRequestCPU resource.Quantity
 
+	// ACMEHTTP01SolverImagePullSecret is the name of the secret to get the ACMEHTTP01SolverImage
+	// from a private container registry
+	HTTP01SolverImagePullSecret string
+
 	// HTTP01SolverResourceRequestMemory defines the ACME pod's resource request Memory size
 	HTTP01SolverResourceRequestMemory resource.Quantity
 

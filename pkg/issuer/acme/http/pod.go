@@ -168,6 +168,9 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyOnFailure,
+			ImagePullSecrets: []corev1.LocalObjectReference{
+				{Name: s.ACMEOptions.HTTP01SolverImagePullSecret},
+			},
 			Containers: []corev1.Container{
 				{
 					Name: "acmesolver",
