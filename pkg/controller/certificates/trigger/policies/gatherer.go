@@ -23,7 +23,7 @@ package policies
 // certificate requests: the "current" and the "next" certificate request.
 //
 // To understand the roles of the "current" and "next" certificate requests, let
-// us look at three different scenarii: A, B and C.
+// us look at three different scenarios: A, B and C.
 //
 // DIAGRAM (A1): the first scenario is a certificate that just got created.
 // Since the certificate is brand new, only the "next" certificate request
@@ -105,8 +105,8 @@ package policies
 //                        v
 //                       ...
 //
-// DIAGRAM (B2): since the "current" CR mismatches the certificate, the trigger
-// controller sets Issuing=True, and the "next" CR gets created:
+// DIAGRAM (B2): since the "current" CR does not match the certificate's spec,
+// the trigger controller sets Issuing=True, and the "next" CR gets created:
 //
 //                       ...                       +-MISMATCH---------MISMATCH----------MISMATCH-+
 //                        |                        | kind: CertificateRequest                    |
@@ -161,7 +161,7 @@ package policies
 //
 // DIAGRAM (C2): now, imagine that the user wants to fix their nistake and
 // update the certificate with the correct value. Of course, the user does not
-// want to want for 1 hour for the automatic re-issue. By looking at the "next"
+// want to wait for 1 hour for the automatic re-issue. By looking at the "next"
 // CR, we can detect whether the "next" CR still matches the certificate. This
 // behavior only occurs when the certificate is failing:
 //                        ...
