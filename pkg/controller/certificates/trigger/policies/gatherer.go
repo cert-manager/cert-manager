@@ -25,10 +25,9 @@ package policies
 // To understand the roles of the "current" and "next" certificate requests, let
 // us look at three different scenarios: A, B and C.
 //
-// DIAGRAM (A1): in the first scenario, a user just created a Kubernetes
-// Certificate CR (custom resource). Since the Certificate object is new, only
-// the "next" certificate request exists. You can see below that the first
-// revision is "1":
+// DIAGRAM (A1): in the first scenario, a user just created a cert-manager
+// Kubernetes Certificate object. Since the object is new, only the "next"
+// certificate request exists. You can see below that the first revision is "1":
 //
 //                  user creates
 //                  certiticate
