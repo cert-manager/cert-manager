@@ -16,11 +16,11 @@ limitations under the License.
 
 package policies
 
-// In order to decide whether a certificate should be reissued or not, we want
-// to be gathering the "state of the world" regarding that particular
-// certificate, which is the entire purpose of DataForCertificate. Along with
-// the certificate's secret, DataForCertificate also returns two separate
-// certificate requests: the "current" and the "next" certificate request.
+// In order to decide whether or not to reissue a certificate, we want to gather
+// the "state of the world" regarding that particular certificate, which is the
+// entire purpose of DataForCertificate. Along with the certificate's secret,
+// DataForCertificate also returns two separate // certificate requests: the
+// "current" one and the "next" one.
 //
 // To understand the roles of the "current" and "next" certificate requests, let
 // us look at three different scenarios: A, B and C.
@@ -71,9 +71,9 @@ package policies
 //                  secret ready
 //                   to be used
 //
-// Now that we went over the base scenario A, let's dig into why we need the
-// notion of "current" certificate request. The second scenario B will help us
-// understand the reason why DataForCertificate needs to be able to fetch the
+// Now that we've covered the base scenario A, let's dig into why we need the
+// notion of the "current" certificate request. The second scenario B will help
+// us understand the reason why DataForCertificate needs to be able to fetch the
 // "current" certificate request.
 //
 // The "current" certificate request is important to us because the "current" CR
@@ -96,7 +96,7 @@ package policies
 //                        v               +------->|     type: Ready                             |
 //               +--------------------+   |        |     status: True                            |
 //   CERTIFICATE | kind: Certificate  |   |        +-MISMATCH---------MISMATCH----------MISMATCH-+
-//    MISMATCHES | status:            |   |
+// DOESN'T MATCH | status:            |   |
 //   THE CURRENT |   revision: 7 ---------+
 //   CERTIFICATE |   conditions:      |   |        +--------------------------------------------+
 //       REQUEST |   - type: Ready    |   |------->| No "next" CertificateRequest               |
@@ -134,10 +134,10 @@ package policies
 //
 //
 // The third scenario C will help us understand the reason why
-// DataForCertificate fetch the "next" certificate request.
+// DataForCertificate has a "next" certificate request.
 //
 // DIAGRAM (C1): imagine that a user creates a certificate that contains a
-// mistake. The certificate will end up in failure mode and will be retried
+// mistake. The certificate will end up in failure state and will be retried
 // after 1 hour:
 //
 //                  user creates a        "current" +---------------------------------------------+
@@ -161,7 +161,7 @@ package policies
 //                        ...
 //
 // DIAGRAM (C2): now, imagine that the user wants to fix their nistake and
-// update the certificate with the correct value. Of course, the user does not
+// update the certificate with a correct value. Of course, the user does not
 // want to wait for 1 hour for the automatic re-issue. By looking at the "next"
 // CR, we can detect whether the "next" CR still matches the certificate. This
 // behavior only occurs when the certificate is failing:
