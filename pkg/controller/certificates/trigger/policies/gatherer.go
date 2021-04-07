@@ -158,7 +158,7 @@ package policies
 //                         v
 //                        ...
 //
-// DIAGRAM (C2): now, imagine that the user wants to fix their nistake and
+// DIAGRAM (C2): now, imagine that the user wants to fix their mistake and
 // update the certificate with a correct value. Of course, the user does not
 // want to wait for 1 hour for the automatic re-issue. By looking at the "next"
 // CR, we can detect whether the "next" CR still matches the certificate. This
