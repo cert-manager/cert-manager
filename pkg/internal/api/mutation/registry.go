@@ -102,7 +102,7 @@ func (r *Registry) AddMutateUpdateFunc(obj runtime.Object, fn MutateUpdateFunc) 
 	return nil
 }
 
-// Mutate will run all mutation functions registed on CREATE and UPDATE
+// Mutate will run all mutation functions registered on CREATE and UPDATE
 // operations over the internal type of the given resource.
 // The object is converted to its internal version before either a CREATE or
 // UPDATE mutation is applied to the object. The object is then converted to
