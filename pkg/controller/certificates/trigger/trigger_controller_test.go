@@ -260,7 +260,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 			// TODO(mael): we should really remove the Certificate field from
 			// DataForCertificate since the input certificate is always expected
-			// to be the same as the output certiticate.
+			// to be the same as the output certificate.
 			test.mockDataForCertificateReturn.Certificate = test.existingCertificate
 
 			gotDataForCertificateCalled := false
