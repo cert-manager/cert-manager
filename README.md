@@ -88,10 +88,18 @@ project.
 Please take a look at our [issue tracker](https://github.com/jetstack/cert-manager/issues)
 if you are unsure where to start with getting involved!
 
-We also use the #cert-manager channel on kubernetes.slack.com for chat relating to
-the project.
+We also use the #cert-manager and #cert-manager-dev channels on [Kubernetes Slack](https://kubernetes.slack.com)
+for chat relating to the project.
 
 Developer documentation is available in the [official documentation](https://cert-manager.io/docs/contributing/).
+
+## Security Reporting
+
+Security is the number one priority for cert-manager. If you think you've found
+a security vulnerability, we'd love to hear from you.
+
+Please follow the instructions in [SECURITY.md](./SECURITY.md) to report a
+vulnerability to the team.
 
 ## Changelog
 
