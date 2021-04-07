@@ -8,6 +8,10 @@ keywords:
   - kube-lego
   - letsencrypt
   - tls
+maintainers:
+  - name: eumel8 # Frank Kloeker
+    email: f.kloeker@telekom.de
+    url: https://www.telekom.com
 name: cert-manager-crd
 sources:
   - https://github.com/jetstack/cert-manager
