@@ -3,7 +3,7 @@ module github.com/jetstack/cert-manager
 go 1.16
 
 // this if a fork to add EAB and alternative chains in ACME
-// to be replaced after https://github.com/golang/crypto/pull/109 merges
+// to be replaced after https://go-review.googlesource.com/c/crypto/+/277294/ merges
 replace golang.org/x/crypto => github.com/cert-manager/crypto v0.0.0-20210331051623-e6485987d0e4
 
 require (
