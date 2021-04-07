@@ -69,7 +69,7 @@ func validateCertificateRequestAnnotations(objA, objB *cmapi.CertificateRequest,
 	for k, v := range objA.Annotations {
 		if strings.HasPrefix(k, certmanager.GroupName) ||
 			strings.HasPrefix(k, acme.GroupName) {
-			if vnew, ok := objB.Annotations[k]; !ok || v != vnew {
+			if vNew, ok := objB.Annotations[k]; !ok || v != vNew {
 				el = append(el, field.Forbidden(fieldPath.Child(k), "cannot change cert-manager annotation after creation"))
 			}
 		}
