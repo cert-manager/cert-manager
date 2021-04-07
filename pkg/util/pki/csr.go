@@ -424,9 +424,9 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template 
 		return nil, nil, errors.New("no CA certificates given to sign CSR template")
 	}
 
-	issuingCACert := caCerts[0]
+	caCert := caCerts[0]
 
-	certPem, _, err := SignCertificate(template, issuingCACert, template.PublicKey, caKey)
+	certPem, _, err := SignCertificate(template, caCert, template.PublicKey, caKey)
 	if err != nil {
 		return nil, nil, err
 
@@ -440,8 +440,7 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template 
 	certPem = append(certPem, chainPem...)
 
 	// encode the CA certificate to be bundled in the output
-	caCert := caCerts[len(caCerts)-1]
-	caPem, err := EncodeX509(caCert)
+	caPem, err := EncodeX509(caCerts[0])
 	if err != nil {
 		return nil, nil, err
 	}
