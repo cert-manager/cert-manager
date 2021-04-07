@@ -24,16 +24,18 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
 
-// Validation functions for cert-manager v1alpha2 ClusterIssuer types
+// Validation functions for cert-manager ClusterIssuer types.
 
-func ValidateClusterIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateClusterIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	iss := obj.(*cmapi.ClusterIssuer)
-	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	return allErrs
+	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	return allErrs, warnings
 }
 
-func ValidateUpdateClusterIssuer(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
+func ValidateUpdateClusterIssuer(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	iss := obj.(*cmapi.ClusterIssuer)
-	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	return allErrs
+	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	return allErrs, warnings
 }

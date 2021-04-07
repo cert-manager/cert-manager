@@ -83,16 +83,18 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	return el
 }
 
-func ValidateCertificate(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateCertificate(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs
+	return allErrs, warnings
 }
 
-func ValidateUpdateCertificate(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
+func ValidateUpdateCertificate(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs
+	return allErrs, warnings
 }
 
 func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) field.ErrorList {

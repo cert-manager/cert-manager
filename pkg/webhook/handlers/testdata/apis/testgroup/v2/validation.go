@@ -22,11 +22,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	el := field.ErrorList{}
 	tt := obj.(*TestType)
 	if tt.TestField == DisallowedTestFieldValue {
 		el = append(el, field.Invalid(field.NewPath("testField"), tt.TestField, "value not allowed"))
 	}
-	return el
+	return el, warnings
 }

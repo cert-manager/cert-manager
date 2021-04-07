@@ -26,18 +26,19 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 )
 
-func ValidateOrderUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
+func ValidateOrderUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	old, ok := oldObj.(*cmacme.Order)
 	new := newObj.(*cmacme.Order)
 	// if oldObj is not set, the Update operation is always valid.
 	if !ok || old == nil {
-		return nil
+		return nil, warnings
 	}
 
 	el := field.ErrorList{}
 	el = append(el, ValidateOrderSpecUpdate(old.Spec, new.Spec, field.NewPath("spec"))...)
 	el = append(el, ValidateOrderStatusUpdate(old.Status, new.Status, field.NewPath("status"))...)
-	return el
+	return el, warnings
 }
 
 func ValidateOrderSpecUpdate(old, new cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {

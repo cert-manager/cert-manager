@@ -35,8 +35,8 @@ type Registry struct {
 	validateUpdateRegister map[schema.GroupVersionKind]ValidateUpdateFunc
 }
 
-type ValidateFunc func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList
-type ValidateUpdateFunc func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList
+type ValidateFunc func(req *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string)
+type ValidateUpdateFunc func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string)
 
 // NewRegistry creates a new empty registry, backed by the provided Scheme.
 func NewRegistry(scheme *runtime.Scheme) *Registry {
@@ -93,26 +93,29 @@ func (r *Registry) AddValidateUpdateFunc(obj runtime.Object, fn ValidateUpdateFu
 // calling the validation functions.
 // Any validation functions registered for the objects internal API version
 // will be run against the object regardless of version.
-func (r *Registry) Validate(req *admissionv1.AdmissionRequest, obj runtime.Object, requestVersion schema.GroupVersionKind) field.ErrorList {
+func (r *Registry) Validate(req *admissionv1.AdmissionRequest, obj runtime.Object, requestVersion schema.GroupVersionKind) (field.ErrorList, []string) {
 	versioned, internal := r.lookupValidateFuncs(requestVersion)
 	if versioned == nil && internal == nil {
-		return nil
+		return nil, nil
 	}
 
 	targetObj, internalObj, err := r.convert(obj, requestVersion)
 	if err != nil {
-		return internalError(err)
+		return internalError(err), nil
 	}
 
 	el := field.ErrorList{}
+	var warnings []string
 	if versioned != nil {
-		el = append(el, versioned(req, targetObj)...)
+		e, w := versioned(req, targetObj)
+		el, warnings = append(el, e...), append(warnings, w...)
 	}
 	if internal != nil {
-		el = append(el, internal(req, internalObj)...)
+		e, w := internal(req, internalObj)
+		el, warnings = append(el, e...), append(warnings, w...)
 	}
 
-	return el
+	return el, warnings
 }
 
 // ValidateUpdate will run all update validation functions registered for the
@@ -122,31 +125,34 @@ func (r *Registry) Validate(req *admissionv1.AdmissionRequest, obj runtime.Objec
 // calling the validation functions.
 // Any validation functions registered for the objects internal API version
 // will be run against the object regardless of version.
-func (r *Registry) ValidateUpdate(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object, requestVersion schema.GroupVersionKind) field.ErrorList {
+func (r *Registry) ValidateUpdate(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object, requestVersion schema.GroupVersionKind) (field.ErrorList, []string) {
 	versioned, internal := r.lookupValidateUpdateFuncs(requestVersion)
 	if versioned == nil && internal == nil {
-		return nil
+		return nil, nil
 	}
 
 	targetOldObj, internalOldObj, err := r.convert(oldObj, requestVersion)
 	if err != nil {
-		return internalError(err)
+		return internalError(err), nil
 	}
 
 	targetObj, internalObj, err := r.convert(obj, requestVersion)
 	if err != nil {
-		return internalError(err)
+		return internalError(err), nil
 	}
 
 	el := field.ErrorList{}
+	var warnings []string
 	if versioned != nil {
-		el = append(el, versioned(req, targetOldObj, targetObj)...)
+		e, w := versioned(req, targetOldObj, targetObj)
+		el, warnings = append(el, e...), append(warnings, w...)
 	}
 	if internal != nil {
-		el = append(el, internal(req, internalOldObj, internalObj)...)
+		e, w := internal(req, internalOldObj, internalObj)
+		el, warnings = append(el, e...), append(warnings, w...)
 	}
 
-	return el
+	return el, warnings
 }
 
 func (r *Registry) lookupValidateFuncs(gvk schema.GroupVersionKind) (versioned ValidateFunc, internal ValidateFunc) {
@@ -170,8 +176,12 @@ func (r *Registry) appendValidate(gvk schema.GroupVersionKind, fn ValidateFunc) 
 		return
 	}
 
-	r.validateRegister[gvk] = func(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
-		return append(existing(req, obj), fn(req, obj)...)
+	// If a ValidateFunc for GVK already exists, build a new ValidateFunc that
+	// will return both the results of the new and old ValidateFunc.
+	r.validateRegister[gvk] = func(req *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+		e, w := existing(req, obj)
+		newE, newW := fn(req, obj)
+		return append(e, newE...), append(w, newW...)
 	}
 }
 
@@ -182,8 +192,13 @@ func (r *Registry) appendValidateUpdate(gvk schema.GroupVersionKind, fn Validate
 		return
 	}
 
-	r.validateUpdateRegister[gvk] = func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
-		return append(existing(req, oldObj, obj), fn(req, oldObj, obj)...)
+	// If a ValidateUpdateFunc for GVK already exists, build a new
+	// ValidateUpdateFunc that will return both the results of the new and old
+	// ValidateUpdateFunc.
+	r.validateUpdateRegister[gvk] = func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
+		e, w := existing(req, oldObj, obj)
+		newE, newW := fn(req, oldObj, obj)
+		return append(e, newE...), append(w, newW...)
 	}
 }
 

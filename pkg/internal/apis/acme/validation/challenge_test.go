@@ -29,6 +29,7 @@ func TestValidateChallengeUpdate(t *testing.T) {
 	scenarios := map[string]struct {
 		old, new *cmacme.Challenge
 		errs     []*field.Error
+		warnings []string
 	}{
 		"allows setting challenge spec for the first time": {
 			new: &cmacme.Challenge{
@@ -67,7 +68,7 @@ func TestValidateChallengeUpdate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateChallengeUpdate(nil, s.old, s.new)
+			errs, warnings := ValidateChallengeUpdate(nil, s.old, s.new)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
@@ -75,8 +76,11 @@ func TestValidateChallengeUpdate(t *testing.T) {
 			for i, e := range errs {
 				expectedErr := s.errs[i]
 				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
+					t.Errorf("Expected errors %v but got %v", expectedErr, e)
 				}
+			}
+			if !reflect.DeepEqual(warnings, s.warnings) {
+				t.Errorf("Expected warnings %+#v but got %+#v", s.warnings, warnings)
 			}
 		})
 	}

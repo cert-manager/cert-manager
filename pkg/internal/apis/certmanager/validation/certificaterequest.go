@@ -38,16 +38,18 @@ import (
 
 var defaultInternalKeyUsages = []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment}
 
-func ValidateCertificateRequest(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateCertificateRequest(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	cr := obj.(*cmapi.CertificateRequest)
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"), true)
 	allErrs = append(allErrs,
 		ValidateCertificateRequestApprovalCondition(cr.Status.Conditions, field.NewPath("status", "conditions"))...)
 
-	return allErrs
+	return allErrs, warnings
 }
 
-func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
+func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, []string) {
+	var warnings []string
 	oldCR, newCR := oldObj.(*cmapi.CertificateRequest), newObj.(*cmapi.CertificateRequest)
 
 	var el field.ErrorList
@@ -66,7 +68,7 @@ func ValidateUpdateCertificateRequest(_ *admissionv1.AdmissionRequest, oldObj, n
 		el = append(el, field.Forbidden(field.NewPath("spec"), "cannot change spec after creation"))
 	}
 
-	return el
+	return el, warnings
 }
 
 func validateCertificateRequestAnnotations(objA, objB *cmapi.CertificateRequest, fieldPath *field.Path) field.ErrorList {
