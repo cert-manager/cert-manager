@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
@@ -203,6 +204,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					},
 				},
 			},
+			warnings: []string{apiutil.DeprecatedACMEEABKeyAlgorithmField},
 		},
 		"acme solver with missing http01 config type": {
 			spec: &cmacme.ACMEIssuer{

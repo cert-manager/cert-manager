@@ -121,6 +121,10 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 		}
 
 		el = append(el, ValidateSecretKeySelector(&eab.Key, eabFldPath.Child("keySecretRef"))...)
+
+		if len(eab.KeyAlgorithm) != 0 {
+			warnings = append(warnings, apiutil.DeprecatedACMEEABKeyAlgorithmField)
+		}
 	}
 
 	for i, sol := range iss.Solvers {

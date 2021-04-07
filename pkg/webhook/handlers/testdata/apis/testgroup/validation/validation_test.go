@@ -28,8 +28,8 @@ import (
 
 func TestValidateTestType(t *testing.T) {
 	scenarios := map[string]struct {
-		obj  *testgroup.TestType
-		errs []*field.Error
+		obj      *testgroup.TestType
+		errs     []*field.Error
 		warnings []string
 	}{
 		"does not allow testField to be TestFieldValueNotAllowed": {
