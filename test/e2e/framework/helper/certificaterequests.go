@@ -198,7 +198,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		return nil, fmt.Errorf("CertificateRequest does not have an Approved condition set to True: %+v", cr.Status.Conditions)
 	}
 	if apiutil.CertificateRequestIsDenied(cr) {
-		return nil, fmt.Errorf("CertificateRequest has a Denied conditon set to True: %+v", cr.Status.Conditions)
+		return nil, fmt.Errorf("CertificateRequest has a Denied condition set to True: %+v", cr.Status.Conditions)
 	}
 
 	return cert, nil

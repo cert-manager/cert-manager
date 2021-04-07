@@ -56,7 +56,7 @@ func DefaultCertificateSigningRequestSet() []certificatesigningrequests.Validati
 		certificatesigningrequests.ExpectCARootCertificate,
 		certificatesigningrequests.ExpectIsCA,
 		certificatesigningrequests.ExpectConditionApproved,
-		certificatesigningrequests.ExpectConditiotNotDenied,
+		certificatesigningrequests.ExpectConditionNotDenied,
 		certificatesigningrequests.ExpectConditionNotFailed,
 	}
 }
