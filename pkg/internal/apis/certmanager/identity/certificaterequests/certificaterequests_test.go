@@ -215,7 +215,7 @@ func TestMutateCreate(t *testing.T) {
 				},
 			},
 		},
-		"should overrite existing user info fields if they exist on a CREATE operation": {
+		"should override existing user info fields if they exist on a CREATE operation": {
 			req: &admissionv1.AdmissionRequest{
 				UserInfo: authenticationv1.UserInfo{
 					UID:      "abc",
