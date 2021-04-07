@@ -58,12 +58,12 @@ func extrasMatch(crExtra map[string][]string, reqExtra map[string]authentication
 	}
 
 	for k, v := range crExtra {
-		reqv, ok := reqExtra[k]
+		reqValue, ok := reqExtra[k]
 		if !ok {
 			return false
 		}
 
-		if !util.EqualUnsorted(v, reqv) {
+		if !util.EqualUnsorted(v, reqValue) {
 			return false
 		}
 	}
