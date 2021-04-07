@@ -234,7 +234,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableD
 	name, err := apiutil.ComputeName(
 		cr.Name,
 		// Pass an anonymous struct with the certificaterequest name to gaurantee a unique hash
-		// of the certificate request on renewal time (up to the k8s character limit of names)
+		// of the order name on renewal time (up to the k8s character limit of names)
 		struct {
 			CRName string            `json:"certificateRequestName"`
 			Spec   *cmacme.OrderSpec `json:"spec"`
