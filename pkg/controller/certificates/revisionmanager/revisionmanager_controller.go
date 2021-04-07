@@ -139,7 +139,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	for _, req := range toDelete {
 		logf.WithRelatedResourceName(log, req.Name, req.Namespace, cmapi.CertificateRequestKind).
-			WithValues("revision", req.rev).Info("garbage collecting old certificate request revsion")
+			WithValues("revision", req.rev).Info("garbage collecting old certificate request revision")
 		err = c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{})
 		if apierrors.IsNotFound(err) {
 			continue
@@ -169,13 +169,13 @@ func certificateRequestsToDelete(log logr.Logger, limit int, requests []*cmapi.C
 		log = logf.WithRelatedResource(log, req)
 
 		if req.Annotations == nil || req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey] == "" {
-			log.Error(errors.New("skipping processing request with missing revsion"), "")
+			log.Error(errors.New("skipping processing request with missing revision"), "")
 			continue
 		}
 
 		rn, err := strconv.Atoi(req.Annotations[cmapi.CertificateRequestRevisionAnnotationKey])
 		if err != nil {
-			log.Error(err, "failed to parse request revsion")
+			log.Error(err, "failed to parse request revision")
 			continue
 		}
 
@@ -186,7 +186,7 @@ func certificateRequestsToDelete(log logr.Logger, limit int, requests []*cmapi.C
 		return revisions[i].rev < revisions[j].rev
 	})
 
-	// Return the oldest revsions which are over the limit
+	// Return the oldest revisions which are over the limit
 	remaining := len(revisions) - limit
 	if remaining < 0 {
 		return nil
