@@ -97,7 +97,7 @@ func (a *approval) Validate(ctx context.Context, req *admissionv1.AdmissionReque
 	}
 
 	// Convert the incoming old and new CertificateRequest into the internal
-	// version. This is so we can process a single type, reglardless of whatever
+	// version. This is so we can process a single type, regardless of whatever
 	// CertificateRequest version is in the request.
 	for _, obj := range []runtime.Object{oldObj, obj} {
 		internalObj, err := a.scheme.New(gvk)
