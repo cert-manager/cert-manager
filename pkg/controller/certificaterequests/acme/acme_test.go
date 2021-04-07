@@ -306,7 +306,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{ipBaseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-3104426127",
+					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-876117371",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -324,7 +324,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Created Order resource default-unit-test-ns/test-cr-3104426127",
+								Message:            "Created Order resource default-unit-test-ns/test-cr-876117371",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -340,7 +340,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-1733622556",
+					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-1858046868",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -357,7 +357,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Created Order resource default-unit-test-ns/test-cr-1733622556",
+								Message:            "Created Order resource default-unit-test-ns/test-cr-1858046868",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -399,7 +399,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-1733622556: this is a network error",
+					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-1858046868: this is a network error",
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
@@ -412,7 +412,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to get order resource default-unit-test-ns/test-cr-1733622556: this is a network error",
+								Message:            "Failed to get order resource default-unit-test-ns/test-cr-1858046868: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -435,7 +435,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Warning OrderFailed Failed to wait for order resource "test-cr-1733622556" to become ready: order is in "invalid" state: simulated failure`,
+					`Warning OrderFailed Failed to wait for order resource "test-cr-1858046868" to become ready: order is in "invalid" state: simulated failure`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -453,7 +453,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Failed to wait for order resource "test-cr-1733622556" to become ready: order is in "invalid" state: simulated failure`,
+								Message:            `Failed to wait for order resource "test-cr-1858046868" to become ready: order is in "invalid" state: simulated failure`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -467,7 +467,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-1733622556: "pending"`,
+					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-1858046868: "pending"`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -484,7 +484,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-1733622556: "pending"`,
+								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-1858046868: "pending"`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -497,7 +497,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					"Normal OrderPending Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1733622556",
+					"Normal OrderPending Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1858046868",
 				},
 				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
 					gen.SetOrderState(cmacme.Valid),
@@ -512,7 +512,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1733622556",
+								Message:            "Waiting for order-controller to add certificate data to Order default-unit-test-ns/test-cr-1858046868",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -701,4 +701,54 @@ func Test_buildOrder(t *testing.T) {
 			}
 		})
 	}
+
+	longCrOne := gen.CertificateRequest(
+		"test-comparison-that-is-at-the-fifty-two-character-l-one",
+		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
+		gen.SetCertificateRequestCSR(csrPEM))
+	orderOne, err := buildOrder(longCrOne, csr, false)
+	if err != nil {
+		t.Errorf("buildOrder() received error %v", err)
+		return
+	}
+
+	t.Run("Builds two orders from different long CRs to gaurantee unique name", func(t *testing.T) {
+		longCrTwo := gen.CertificateRequest(
+			"test-comparison-that-is-at-the-fifty-two-character-l-two",
+			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
+			gen.SetCertificateRequestCSR(csrPEM))
+
+		orderTwo, err := buildOrder(longCrTwo, csr, false)
+		if err != nil {
+			t.Errorf("buildOrder() received error %v", err)
+			return
+		}
+
+		if orderOne.Name == orderTwo.Name {
+			t.Errorf(
+				"orders built from different CR have equal names: %s == %s",
+				orderOne.Name,
+				orderTwo.Name)
+		}
+	})
+
+	t.Run("Builds two orders from the same long CRs to gaurantee same name", func(t *testing.T) {
+		orderOne, err := buildOrder(longCrOne, csr, false)
+		if err != nil {
+			t.Errorf("buildOrder() received error %v", err)
+			return
+		}
+
+		orderTwo, err := buildOrder(longCrOne, csr, false)
+		if err != nil {
+			t.Errorf("buildOrder() received error %v", err)
+			return
+		}
+		if orderOne.Name != orderTwo.Name {
+			t.Errorf(
+				"orders built from the same CR have unequal names: %s != %s",
+				orderOne.Name,
+				orderTwo.Name)
+		}
+	})
 }
