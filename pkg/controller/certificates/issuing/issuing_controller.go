@@ -236,14 +236,18 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
+	// Some issuers won't honor the "Denied=True" condition, and we don't want
+	// to break these issuers. To avoid breaking these issuers, we skip bubbling
+	// up the "Denied=True" condition from the certificate request object to the
+	// certificate object when the issuer ignores the "Denied" state.
+	//
+	// To know whether or not an issuer ignores the "Denied" state, we pay
+	// attention to the "Ready" condition on the certificate request. If a
+	// certificate request is "Denied=True" and that the issuer still proceeds
+	// to adding the "Ready" condition (to either true or false), then we
+	// consider that this issuer has ignored the "Denied" state.
 	cond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
 	if cond == nil {
-		// If the certificate request has been denied, set the last failure time to
-		// now, and set the Issuing status condition to False with reason. We only
-		// perform this check if the request also doesn't have a Ready condition,
-		// since some issuers may not honor a Denied condition, and will sign and
-		// set the Ready condition to True anyway. We would still want to complete
-		// issuance for requests where the issuer doesn't respect approval.
 		if apiutil.CertificateRequestIsDenied(req) {
 			return c.failIssueCertificate(ctx, log, crt, apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionDenied))
 		}
