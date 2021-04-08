@@ -120,8 +120,6 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) er
 	m.SetUpdate(zone)
 	switch action {
 	case "INSERT":
-		// Always remove old challenge left over from who knows what.
-		m.RemoveRRset(rrs)
 		m.Insert(rrs)
 	case "REMOVE":
 		m.Remove(rrs)
