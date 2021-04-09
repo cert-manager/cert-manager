@@ -67,14 +67,6 @@ func (r *Reporter) Denied(cr *cmapi.CertificateRequest) {
 	}
 
 	message := "The CertificateRequest was denied by an approval controller"
-
-	// If RequestDenied condition not already set then fire a RequestDenied
-	// Event. This is to reduce strain on the API server and avoid rate limiting
-	// ourselves for Event creation.
-	if apiutil.CertificateRequestReadyReason(cr) != cmapi.CertificateRequestReasonDenied {
-		r.recorder.Event(cr, corev1.EventTypeWarning, cmapi.CertificateRequestReasonDenied, message)
-	}
-
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
 		cmmeta.ConditionFalse, cmapi.CertificateRequestReasonDenied, message)
 }
