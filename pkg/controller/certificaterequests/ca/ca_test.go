@@ -189,14 +189,12 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
 			},
 		},
-		"a CertificateRequest with a denied condition should update Ready condition with RequestDenied": {
+		"a CertificateRequest with a denied condition should update Ready condition with 'Denied'": {
 			certificateRequest: baseCRDenied.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRDenied.DeepCopy(), baseIssuer.DeepCopy()},
-				ExpectedEvents: []string{
-					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
-				},
+				ExpectedEvents:     []string{},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
@@ -206,7 +204,7 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
-								Reason:             "RequestDenied",
+								Reason:             "Denied",
 								Message:            "The CertificateRequest was denied by an approval controller",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
