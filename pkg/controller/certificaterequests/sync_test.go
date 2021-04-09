@@ -168,7 +168,7 @@ func TestSync(t *testing.T) {
 				ExpectedActions:    []testpkg.Action{},
 			},
 		},
-		"should return nil (no action) if certificate request is denied": {
+		"should update RequestDenied if certificate request is denied": {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionDenied,
@@ -180,8 +180,172 @@ func TestSync(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents:     []string{},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedEvents: []string{
+					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCRNotApproved,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionDenied,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             "Foo",
+								Message:            "Certificate request has been denied by cert-manager.io",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "RequestDenied",
+								Message:            "The CertificateRequest was denied by an approval controller",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestFailureTime(nowMetaTime),
+						),
+					)),
+				},
+			},
+		},
+		"should update RequestDenied if certificate request is denied and also has Failed condition": {
+			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionDenied,
+					Status:             cmmeta.ConditionTrue,
+					Reason:             "Foo",
+					Message:            "Certificate request has been denied by cert-manager.io",
+					LastTransitionTime: &nowMetaTime,
+				}),
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionReady,
+					Status:             cmmeta.ConditionFalse,
+					Reason:             "Failed",
+					Message:            "Request has failed",
+					LastTransitionTime: &nowMetaTime,
+				}),
+				gen.SetCertificateRequestFailureTime(nowMetaTime),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents: []string{
+					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCRNotApproved,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionDenied,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             "Foo",
+								Message:            "Certificate request has been denied by cert-manager.io",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "RequestDenied",
+								Message:            "The CertificateRequest was denied by an approval controller",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestFailureTime(nowMetaTime),
+						),
+					)),
+				},
+			},
+		},
+		"should do nothing if request has both Denied and Ready with reason RequestDenied conditions": {
+			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionDenied,
+					Status:             cmmeta.ConditionTrue,
+					Reason:             "Foo",
+					Message:            "Certificate request has been denied by cert-manager.io",
+					LastTransitionTime: &nowMetaTime,
+				}),
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionReady,
+					Status:             cmmeta.ConditionFalse,
+					Reason:             "RequestDenied",
+					Message:            "The CertificateRequest was denied by an approval controller",
+					LastTransitionTime: &nowMetaTime,
+				}),
+				gen.SetCertificateRequestFailureTime(nowMetaTime),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer,
+					gen.CertificateRequestFrom(baseCRNotApproved,
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:               cmapi.CertificateRequestConditionDenied,
+							Status:             cmmeta.ConditionTrue,
+							Reason:             "Foo",
+							Message:            "Certificate request has been denied by cert-manager.io",
+							LastTransitionTime: &nowMetaTime,
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:               cmapi.CertificateRequestConditionReady,
+							Status:             cmmeta.ConditionFalse,
+							Reason:             "RequestDenied",
+							Message:            "The CertificateRequest was denied by an approval controller",
+							LastTransitionTime: &nowMetaTime,
+						}),
+						gen.SetCertificateRequestFailureTime(nowMetaTime),
+					),
+				},
+				ExpectedEvents:  []string{},
+				ExpectedActions: []testpkg.Action{},
+			},
+		},
+		"should update Failed if certificate request is denied and has Ready Pending condition": {
+			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionDenied,
+					Status:             cmmeta.ConditionTrue,
+					Reason:             "Foo",
+					Message:            "Certificate request has been denied by cert-manager.io",
+					LastTransitionTime: &nowMetaTime,
+				}),
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionReady,
+					Status:             cmmeta.ConditionFalse,
+					Reason:             "Pending",
+					Message:            "Certificate request is pending",
+					LastTransitionTime: &nowMetaTime,
+				}),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents: []string{
+					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCRNotApproved,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionDenied,
+								Status:             cmmeta.ConditionTrue,
+								Reason:             "Foo",
+								Message:            "Certificate request has been denied by cert-manager.io",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "RequestDenied",
+								Message:            "The CertificateRequest was denied by an approval controller",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestFailureTime(nowMetaTime),
+						),
+					)),
+				},
 			},
 		},
 		"should return nil (no action) if certificate request approved is set to false": {
