@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 var _ = framework.CertManagerDescribe("Vault Issuer CertificateRequest (AppRole)", func() {
@@ -126,12 +127,23 @@ func runVaultAppRoleTests(issuerKind string) {
 
 		var err error
 		if issuerKind == cmapi.IssuerKind {
-			iss, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerVaultIssuerAppRole("test-vault-issuer-", vaultURL, vaultPath, roleId, vaultSecretName, authPath, vault.Details().VaultCA), metav1.CreateOptions{})
+			vaultIssuer := gen.IssuerWithRandomName("test-vault-issuer-",
+				gen.SetIssuerNamespace(f.Namespace.Name),
+				gen.SetIssuerVaultURL(vaultURL),
+				gen.SetIssuerVaultPath(vaultPath),
+				gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
+				gen.SetIssuerVaultAppRoleAuth("secretkey", vaultSecretName, roleId, authPath))
+			iss, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vaultIssuerName = iss.Name
 		} else {
-			iss, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), util.NewCertManagerVaultClusterIssuerAppRole("test-vault-issuer-", vaultURL, vaultPath, roleId, vaultSecretName, authPath, vault.Details().VaultCA), metav1.CreateOptions{})
+			vaultIssuer := gen.ClusterIssuerWithRandomName("test-vault-issuer-",
+				gen.SetIssuerVaultURL(vaultURL),
+				gen.SetIssuerVaultPath(vaultPath),
+				gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
+				gen.SetIssuerVaultAppRoleAuth("secretkey", vaultSecretName, roleId, authPath))
+			iss, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			vaultIssuerName = iss.Name
@@ -205,12 +217,23 @@ func runVaultAppRoleTests(issuerKind string) {
 
 			var err error
 			if issuerKind == cmapi.IssuerKind {
-				iss, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), util.NewCertManagerVaultIssuerAppRole("test-vault-issuer-", vault.Details().Host, vaultPath, roleId, vaultSecretName, authPath, vault.Details().VaultCA), metav1.CreateOptions{})
+				vaultIssuer := gen.IssuerWithRandomName("test-vault-issuer-",
+					gen.SetIssuerNamespace(f.Namespace.Name),
+					gen.SetIssuerVaultURL(vault.Details().Host),
+					gen.SetIssuerVaultPath(vaultPath),
+					gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
+					gen.SetIssuerVaultAppRoleAuth("secretkey", vaultSecretName, roleId, authPath))
+				iss, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				vaultIssuerName = iss.Name
 			} else {
-				iss, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), util.NewCertManagerVaultClusterIssuerAppRole("test-vault-issuer", vault.Details().Host, vaultPath, roleId, vaultSecretName, authPath, vault.Details().VaultCA), metav1.CreateOptions{})
+				vaultIssuer := gen.ClusterIssuerWithRandomName("test-vault-issuer-",
+					gen.SetIssuerVaultURL(vault.Details().Host),
+					gen.SetIssuerVaultPath(vaultPath),
+					gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
+					gen.SetIssuerVaultAppRoleAuth("secretkey", vaultSecretName, roleId, authPath))
+				iss, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				vaultIssuerName = iss.Name

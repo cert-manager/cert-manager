@@ -19,6 +19,8 @@ package gen
 import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type IssuerModifier func(v1.GenericIssuer)
@@ -35,6 +37,20 @@ func ClusterIssuer(name string, mods ...IssuerModifier) *v1.ClusterIssuer {
 }
 
 func ClusterIssuerFrom(iss *v1.ClusterIssuer, mods ...IssuerModifier) *v1.ClusterIssuer {
+	for _, mod := range mods {
+		mod(iss)
+	}
+	return iss
+}
+
+// ClusterIssuerWithRandomName returns a ClusterIssuer named 'prefix<random-string>'
+// with the specified modifications.
+func ClusterIssuerWithRandomName(prefix string, mods ...IssuerModifier) *v1.ClusterIssuer {
+	iss := &v1.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: prefix,
+		},
+	}
 	for _, mod := range mods {
 		mod(iss)
 	}
@@ -59,9 +75,124 @@ func IssuerFrom(iss *v1.Issuer, mods ...IssuerModifier) *v1.Issuer {
 	return iss
 }
 
+// IssuerWithRandomName returns a new Issuer named prefix<random-string>
+// with the provided modifications.
+func IssuerWithRandomName(prefix string, mods ...IssuerModifier) *v1.Issuer {
+	iss := &v1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: prefix,
+		},
+	}
+	for _, mod := range mods {
+		mod(iss)
+	}
+	return iss
+}
+
 func SetIssuerACME(a cmacme.ACMEIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().ACME = &a
+	}
+}
+
+func SetIssuerACMEURL(url string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.Server = url
+	}
+}
+
+func SetIssuerACMEEmail(email string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.Email = email
+	}
+}
+func SetIssuerACMEPrivKeyRef(privateKeyName string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.PrivateKey = cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
+				Name: privateKeyName,
+			},
+		}
+	}
+}
+func SetIssuerACMESolvers(solvers []cmacme.ACMEChallengeSolver) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.Solvers = solvers
+	}
+}
+
+func SetIssuerACMEDuration(enabled bool) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.EnableDurationFeature = enabled
+	}
+}
+
+func SetIssuerACMESkipTLSVerify(shouldSkip bool) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.SkipTLSVerify = shouldSkip
+	}
+}
+
+func SetIssuerACMEEAB(keyID, secretName string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.ExternalAccountBinding = &cmacme.ACMEExternalAccountBinding{
+			KeyID: keyID,
+			Key: cmmeta.SecretKeySelector{
+				Key: "key",
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: secretName,
+				},
+			},
+		}
+	}
+}
+
+// SetIssuerACMEEABWithKeyAlgorithm returns an ACME Issuer modifier that sets
+// ACME External Account Binding with the legacy keyAlgorithm field set.
+func SetIssuerACMEEABWithKeyAlgorithm(keyID, secretName string, keyAlgorithm cmacme.HMACKeyAlgorithm) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.ExternalAccountBinding = &cmacme.ACMEExternalAccountBinding{
+			KeyID:        keyID,
+			KeyAlgorithm: keyAlgorithm,
+			Key: cmmeta.SecretKeySelector{
+				Key: "key",
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: secretName,
+				},
+			},
+		}
 	}
 }
 
@@ -71,12 +202,102 @@ func SetIssuerCA(a v1.CAIssuer) IssuerModifier {
 	}
 }
 
+func SetIssuerCASecretName(secretName string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.CA == nil {
+			spec.CA = &v1.CAIssuer{}
+		}
+		spec.CA.SecretName = secretName
+	}
+}
+
 func SetIssuerVault(v v1.VaultIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().Vault = &v
 	}
 }
+func SetIssuerVaultURL(url string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Server = url
+	}
+}
 
+func SetIssuerVaultPath(path string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Path = path
+	}
+}
+
+func SetIssuerVaultCABundle(caBundle []byte) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.CABundle = caBundle
+	}
+}
+func SetIssuerVaultTokenAuth(keyName, tokenName string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Auth.TokenSecretRef = &cmmeta.SecretKeySelector{
+			Key: keyName,
+			LocalObjectReference: cmmeta.LocalObjectReference{
+				Name: tokenName,
+			},
+		}
+	}
+}
+func SetIssuerVaultAppRoleAuth(keyName, approleName, roleId, path string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Auth.AppRole = &v1.VaultAppRole{
+			Path:   path,
+			RoleId: roleId,
+			SecretRef: cmmeta.SecretKeySelector{
+				Key: keyName,
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: approleName,
+				},
+			},
+		}
+	}
+}
+
+func SetIssuerVaultKubernetesAuth(keyName, secretServiceAccount, role, path string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Auth.Kubernetes = &v1.VaultKubernetesAuth{
+			Path: path,
+			SecretRef: cmmeta.SecretKeySelector{
+				Key: keyName,
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: secretServiceAccount,
+				},
+			},
+			Role: role,
+		}
+
+	}
+}
 func SetIssuerSelfSigned(a v1.SelfSignedIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().SelfSigned = &a

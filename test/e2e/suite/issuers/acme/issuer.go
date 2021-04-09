@@ -28,6 +28,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 const invalidACMEURL = "http://not-a-real-acme-url.com"
@@ -47,8 +48,12 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	It("should register ACME account", func() {
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
-
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey))
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -82,8 +87,12 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	It("should recover a lost ACME account URI", func() {
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
-
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey))
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -123,7 +132,12 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Recreating the Issuer")
-		acmeIssuer = util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer = gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey))
 		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -153,7 +167,12 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	It("should fail to register an ACME account", func() {
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, invalidACMEURL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(invalidACMEURL),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey))
 
 		By("Creating an Issuer with an invalid server")
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
@@ -170,7 +189,12 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	It("should handle updates to the email field", func() {
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey))
 
 		By("Creating an Issuer")
 		acmeIssuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})

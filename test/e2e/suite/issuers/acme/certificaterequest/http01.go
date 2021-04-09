@@ -38,6 +38,7 @@ import (
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func() {
@@ -53,8 +54,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	fixedIngressName := "testingress"
 
 	BeforeEach(func() {
-		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, f.Config.Addons.ACMEServer.URL, testingACMEEmail, testingACMEPrivateKey)
-		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
+		solvers := []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
@@ -75,6 +75,13 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 				},
 			},
 		}
+		acmeIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
+			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey),
+			gen.SetIssuerACMESkipTLSVerify(true),
+			gen.SetIssuerACMESolvers(solvers))
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), acmeIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
