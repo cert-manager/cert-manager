@@ -34,10 +34,10 @@ const (
 	// the `status.certificate` field is set.
 	CertificateRequestReasonIssued = "Issued"
 
-	// RequestDenied is a Ready condition reason that indicates that a
+	// Denied is a Ready condition reason that indicates that a
 	// CertificateRequest has been denied, and the CertificateRequest will never
 	// be issued.
-	CertificateRequestReasonDenied = "RequestDenied"
+	CertificateRequestReasonDenied = "Denied"
 )
 
 // +genclient
