@@ -168,7 +168,7 @@ func TestSync(t *testing.T) {
 				ExpectedActions:    []testpkg.Action{},
 			},
 		},
-		"should update RequestDenied if certificate request is denied": {
+		"should update Ready condition with 'Denied' if certificate request is denied": {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionDenied,
@@ -180,9 +180,7 @@ func TestSync(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents: []string{
-					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
-				},
+				ExpectedEvents:     []string{},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
@@ -199,7 +197,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
-								Reason:             "RequestDenied",
+								Reason:             "Denied",
 								Message:            "The CertificateRequest was denied by an approval controller",
 								LastTransitionTime: &nowMetaTime,
 							}),
@@ -209,7 +207,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
-		"should update RequestDenied if certificate request is denied and also has Failed condition": {
+		"should overwrite Ready condition with Denied if certificate request is denied": {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionDenied,
@@ -229,9 +227,7 @@ func TestSync(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents: []string{
-					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
-				},
+				ExpectedEvents:     []string{},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
@@ -248,7 +244,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
-								Reason:             "RequestDenied",
+								Reason:             "Denied",
 								Message:            "The CertificateRequest was denied by an approval controller",
 								LastTransitionTime: &nowMetaTime,
 							}),
@@ -258,7 +254,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
-		"should do nothing if request has both Denied and Ready with reason RequestDenied conditions": {
+		"should do nothing if request has a Denied condition and already has a False Ready condition": {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionDenied,
@@ -270,7 +266,7 @@ func TestSync(t *testing.T) {
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionReady,
 					Status:             cmmeta.ConditionFalse,
-					Reason:             "RequestDenied",
+					Reason:             "Denied",
 					Message:            "The CertificateRequest was denied by an approval controller",
 					LastTransitionTime: &nowMetaTime,
 				}),
@@ -289,7 +285,7 @@ func TestSync(t *testing.T) {
 						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 							Type:               cmapi.CertificateRequestConditionReady,
 							Status:             cmmeta.ConditionFalse,
-							Reason:             "RequestDenied",
+							Reason:             "Denied",
 							Message:            "The CertificateRequest was denied by an approval controller",
 							LastTransitionTime: &nowMetaTime,
 						}),
@@ -300,7 +296,7 @@ func TestSync(t *testing.T) {
 				ExpectedActions: []testpkg.Action{},
 			},
 		},
-		"should update Failed if certificate request is denied and has Ready Pending condition": {
+		"should set Ready condition reason to Denied if certificate request is denied and has a Pending reason for the Ready condition": {
 			certificateRequest: gen.CertificateRequestFrom(baseCRNotApproved,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionDenied,
@@ -319,9 +315,7 @@ func TestSync(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents: []string{
-					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
-				},
+				ExpectedEvents:     []string{},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
@@ -338,7 +332,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
-								Reason:             "RequestDenied",
+								Reason:             "Denied",
 								Message:            "The CertificateRequest was denied by an approval controller",
 								LastTransitionTime: &nowMetaTime,
 							}),
