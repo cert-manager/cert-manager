@@ -213,14 +213,23 @@ func TestReporter(t *testing.T) {
 			call: "ready",
 		},
 
-		"a denied report should update the conditions and send an event, but not update failure time if existing": {
+		"a denied report should update the conditions and send an event": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR),
+			expectedEvents: []string{
+				"Warning RequestDenied The CertificateRequest was denied by an approval controller",
+			},
+			expectedConditions:  []cmapi.CertificateRequestCondition{deniedReadyCondition},
+			expectedFailureTime: &nowMetaTime,
+
+			call: "denied",
+		},
+
+		"a denied report should update the conditions and send an event, but not update failure time or send event if existing": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestStatusCondition(deniedReadyCondition),
 				gen.SetCertificateRequestFailureTime(oldMetaTime),
 			),
-			expectedEvents: []string{
-				"Warning RequestDenied The CertificateRequest was denied by an approval controller",
-			},
+			expectedEvents:      []string{},
 			expectedConditions:  []cmapi.CertificateRequestCondition{deniedReadyCondition},
 			expectedFailureTime: &oldMetaTime,
 

@@ -48,8 +48,23 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 		return nil
 	}
 
-	// If CertificateRequest has not been approved or is denied, exit early.
-	if !apiutil.CertificateRequestIsApproved(cr) || apiutil.CertificateRequestIsDenied(cr) {
+	crCopy := cr.DeepCopy()
+
+	defer func() {
+		if _, saveErr := c.updateCertificateRequestStatusAndAnnotations(ctx, cr, crCopy); saveErr != nil {
+			err = utilerrors.NewAggregate([]error{saveErr, err})
+		}
+	}()
+
+	// If CertificateRequest has been denied, mark the CertificateRequest as
+	// Ready=RequestDenied if not already.
+	if apiutil.CertificateRequestIsDenied(cr) {
+		c.reporter.Denied(crCopy)
+		return nil
+	}
+
+	// If CertificateRequest has not been approved, exit early.
+	if !apiutil.CertificateRequestIsApproved(cr) {
 		dbg.Info("certificate request has not been approved")
 		return nil
 	}
@@ -63,14 +78,6 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 		dbg.Info("certificate request Ready condition true so skipping processing")
 		return
 	}
-
-	crCopy := cr.DeepCopy()
-
-	defer func() {
-		if _, saveErr := c.updateCertificateRequestStatusAndAnnotations(ctx, cr, crCopy); saveErr != nil {
-			err = utilerrors.NewAggregate([]error{saveErr, err})
-		}
-	}()
 
 	dbg.Info("fetching issuer object referenced by CertificateRequest")
 

@@ -253,11 +253,31 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
 			},
 		},
-		"a CertificateRequest with a denied condition should do nothing": {
+		"a CertificateRequest with a denied condition should update Ready condition with RequestDenied": {
 			certificateRequest: baseCRDenied.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRDenied.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Warning RequestDenied The CertificateRequest was denied by an approval controller",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCRDenied,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "RequestDenied",
+								Message:            "The CertificateRequest was denied by an approval controller",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
 			},
 		},
 		"tpp: if fail to build client based on missing secret then return nil and hard fail": {
