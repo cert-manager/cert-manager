@@ -283,7 +283,6 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			key        = "kid-secret-1"
 		)
 
-		// TODO: this value will get base64 encoded twice. Investigate why we need to do this.
 		keyBytes := []byte(base64.RawURLEncoding.EncodeToString([]byte(key)))
 		s := gen.Secret(secretName,
 			gen.SetSecretNamespace(f.Namespace.Name),

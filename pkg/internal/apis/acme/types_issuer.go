@@ -108,8 +108,9 @@ type ACMEExternalAccountBinding struct {
 	// encoded data.
 	Key cmmeta.SecretKeySelector
 
-	// keyAlgorithm is deprecated. This value will not be used
-	// as golang/x/crypto/acme hardcodes the algorithm to HS256.
+	// Deprecated: keyAlgorithm exists for historical compatibility reasons and
+	// should not be used. golang/x/crypto/acme hardcodes the algorithm to HS256
+	// so setting this field will have no effect.
 	// See https://github.com/jetstack/cert-manager/issues/3220#issuecomment-809438314
 	KeyAlgorithm HMACKeyAlgorithm
 }

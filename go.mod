@@ -4,7 +4,7 @@ go 1.16
 
 // this if a fork to add EAB and alternative chains in ACME
 // to be replaced after https://go-review.googlesource.com/c/crypto/+/277294/ merges
-replace golang.org/x/crypto => github.com/cert-manager/crypto v0.0.0-20210331051623-e6485987d0e4
+replace golang.org/x/crypto => github.com/cert-manager/crypto v0.0.0-20210409161129-d4c19753215a
 
 require (
 	github.com/Azure/azure-sdk-for-go v46.3.0+incompatible
