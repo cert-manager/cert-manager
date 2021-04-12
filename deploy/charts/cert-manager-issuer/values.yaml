@@ -1,2 +1,6 @@
+# params for Let's Encrypt service
 letsencrypt:
+# e-mail contact address for certificates
   email: nobody@example.com
+# Ingress Class for ACME Solver (nginx, traefik...)
+  # ingressClass: nginx

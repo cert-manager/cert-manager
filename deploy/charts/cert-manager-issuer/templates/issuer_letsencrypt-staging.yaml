@@ -15,4 +15,4 @@ spec:
     solvers:
     - http01:
         ingress:
-          class: nginx
+          class: {{ .Values.letsencrypt.ingressClass | default "nginx" }}
