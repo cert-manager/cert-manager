@@ -488,6 +488,29 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("emailAddresses").Index(0), "mailto:alice@example.com", "invalid email address: mail: expected comma"),
 			},
 		},
+		"valid certificate with revision history limit == 1": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:           "abc",
+					SecretName:           "abc",
+					IssuerRef:            validIssuerRef,
+					RevisionHistoryLimit: int32Ptr(1),
+				},
+			},
+		},
+		"invalid certificate with revision history limit < 1": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName:           "abc",
+					SecretName:           "abc",
+					IssuerRef:            validIssuerRef,
+					RevisionHistoryLimit: int32Ptr(0),
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("revisionHistoryLimit"), int32(0), "must not be less than 1"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
