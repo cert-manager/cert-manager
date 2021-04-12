@@ -26,9 +26,11 @@ spec:
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: "controller"
+{{- if .Values.prometheus.servicemonitor.namespace }}
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}
+{{- end }}
   endpoints:
   - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
     path: {{ .Values.prometheus.servicemonitor.path }}
