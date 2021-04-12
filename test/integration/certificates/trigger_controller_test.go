@@ -223,7 +223,9 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	someRenewalTime := metav1.NewTime(now)
 	cert.Status.RenewalTime = &someRenewalTime
 	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
-
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = wait.Poll(time.Millisecond*200, time.Second*2, func() (done bool, err error) {
 		c, err := cmCl.CertmanagerV1().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 		if err != nil {
