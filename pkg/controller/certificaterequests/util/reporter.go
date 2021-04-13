@@ -59,6 +59,18 @@ func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, messa
 
 }
 
+func (r *Reporter) Denied(cr *cmapi.CertificateRequest) {
+	// Set the FailureTime to c.clock.Now(), only if it has not been already set.
+	if cr.Status.FailureTime == nil {
+		nowTime := metav1.NewTime(r.clock.Now())
+		cr.Status.FailureTime = &nowTime
+	}
+
+	message := "The CertificateRequest was denied by an approval controller"
+	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
+		cmmeta.ConditionFalse, cmapi.CertificateRequestReasonDenied, message)
+}
+
 func (r *Reporter) InvalidRequest(cr *cmapi.CertificateRequest, reason, message string) {
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionInvalidRequest,
 		cmmeta.ConditionTrue, reason, message)

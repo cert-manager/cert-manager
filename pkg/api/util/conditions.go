@@ -270,6 +270,7 @@ func CertificateRequestReadyReason(cr *cmapi.CertificateRequest) string {
 		cmapi.CertificateRequestReasonFailed,
 		cmapi.CertificateRequestReasonIssued,
 		cmapi.CertificateRequestReasonPending,
+		cmapi.CertificateRequestReasonDenied,
 	} {
 		for _, con := range cr.Status.Conditions {
 			if con.Type == cmapi.CertificateRequestConditionReady &&
