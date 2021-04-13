@@ -39,6 +39,10 @@ import (
 
 const (
 	reasonDomainVerified = "DomainVerified"
+	reasonCleanUpError   = "CleanUpError"
+	reasonPresentError   = "PresentError"
+	reasonPresented      = "Presented"
+	reasonFailed         = "Failed"
 )
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -79,7 +83,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 
 	// bail out early on if processing=false, as this challenge has not been
 	// scheduled yet.
-	if ch.Status.Processing == false {
+	if !ch.Status.Processing {
 		return nil
 	}
 
@@ -100,7 +104,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 
 			err = solver.CleanUp(ctx, genericIssuer, ch)
 			if err != nil {
-				c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+				c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
 				ch.Status.Reason = err.Error()
 				log.Error(err, "error cleaning up challenge")
 				return err
@@ -167,13 +171,13 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 	if !ch.Status.Presented {
 		err := solver.Present(ctx, genericIssuer, ch)
 		if err != nil {
-			c.recorder.Eventf(ch, corev1.EventTypeWarning, "PresentError", "Error presenting challenge: %v", err)
+			c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonPresentError, "Error presenting challenge: %v", err)
 			ch.Status.Reason = err.Error()
 			return err
 		}
 
 		ch.Status.Presented = true
-		c.recorder.Eventf(ch, corev1.EventTypeNormal, "Presented", "Presented challenge using %s challenge mechanism", ch.Spec.Type)
+		c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonPresented, "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
 	err = solver.Check(ctx, genericIssuer, ch)
@@ -279,7 +283,7 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
-		c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+		c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonCleanUpError, "Error cleaning up challenge: %v", err)
 		ch.Status.Reason = err.Error()
 		log.Error(err, "error cleaning up challenge")
 		return nil
@@ -375,7 +379,7 @@ func (c *controller) handleAuthorizationError(ch *cmacme.Challenge, err error) e
 	//   if the returned state is 'invalid'
 	ch.Status.State = cmacme.Invalid
 	ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
-	c.recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", authErr)
+	c.recorder.Eventf(ch, corev1.EventTypeWarning, reasonFailed, "Accepting challenge authorization failed: %v", authErr)
 
 	// return nil here, as accepting the challenge did not error, the challenge
 	// simply failed
