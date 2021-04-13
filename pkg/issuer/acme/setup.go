@@ -204,9 +204,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 		// set the external account binding
 		eabAccount = &acmeapi.ExternalAccountBinding{
-			KID:          eabObj.KeyID,
-			Key:          eabKey,
-			KeyAlgorithm: string(eabObj.KeyAlgorithm),
+			KID: eabObj.KeyID,
+			Key: eabKey,
 		}
 	}
 

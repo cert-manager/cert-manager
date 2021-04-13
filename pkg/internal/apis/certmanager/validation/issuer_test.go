@@ -146,7 +146,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 		},
-		"acme solver with empty external account binding fields": {
+		"acme solver with external account binding missing required fields": {
 			spec: &cmacme.ACMEIssuer{
 				Email:                  "valid-email",
 				Server:                 "valid-server",
@@ -164,7 +164,43 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("externalAccountBinding.keyID"), "the keyID field is required when using externalAccountBinding"),
 				field.Required(fldPath.Child("externalAccountBinding.keySecretRef.name"), "secret name is required"),
 				field.Required(fldPath.Child("externalAccountBinding.keySecretRef.key"), "secret key is required"),
-				field.Required(fldPath.Child("externalAccountBinding.keyAlgorithm"), "the keyAlgorithm field is required when using externalAccountBinding"),
+			},
+		},
+		"acme solver with a valid external account binding and keyAlgorithm not set": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				ExternalAccountBinding: &cmacme.ACMEExternalAccountBinding{
+					KeyID: "test",
+					Key:   validSecretKeyRef,
+				},
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
+			},
+		},
+		"acme solver with a valid external account binding and keyAlgorithm set": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				ExternalAccountBinding: &cmacme.ACMEExternalAccountBinding{
+					KeyID:        "test",
+					Key:          validSecretKeyRef,
+					KeyAlgorithm: cmacme.HS384,
+				},
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
+							CloudDNS: &validCloudDNSProvider,
+						},
+					},
+				},
 			},
 		},
 		"acme solver with missing http01 config type": {

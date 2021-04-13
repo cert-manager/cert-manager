@@ -3380,9 +3380,9 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/crypto",
-        replace = "github.com/meyskens/crypto",
-        sum = "h1:09XQpCKCNW3zrjz4zvD/cYU3hqUEWW+bZrBwK8NwFW0=",
-        version = "v0.0.0-20200821143559-6ca9aec645f0",
+        replace = "github.com/cert-manager/crypto",
+        sum = "h1:HXp46OGPFPV7He+NPxUbCgEDCBL56R7BkQRGWEkznVQ=",
+        version = "v0.0.0-20210409161129-d4c19753215a",
     )
     go_repository(
         name = "org_golang_x_exp",
@@ -3430,8 +3430,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/net",
-        sum = "h1:VvcQYSHwXgi7W+TpUR6A9g6Up98WAHf3f/ulnJ62IyA=",
-        version = "v0.0.0-20200822124328-c89045814202",
+        sum = "h1:qWPm9rbaAMKs8Bq/9LRpbMqxWRVUAQwMI9fVrssnTfw=",
+        version = "v0.0.0-20210226172049-e18ecbb05110",
     )
     go_repository(
         name = "org_golang_x_oauth2",
@@ -3454,9 +3454,18 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/sys",
-        sum = "h1:5/PjkGUjvEU5Gl6BxmvKRPpqo2uNMv4rcHBMwzk/st8=",
-        version = "v0.0.0-20200622214017-ed371f2e16b4",
+        sum = "h1:nxC68pudNYkKU6jWhgrqdreuFiOQWj1Fs7T3VrH4Pjw=",
+        version = "v0.0.0-20201119102817-f84b799fce68",
     )
+    go_repository(
+        name = "org_golang_x_term",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "golang.org/x/term",
+        sum = "h1:v+OssWQX+hTHEmOBgwxdZxK4zHq3yOs8F9J7mk0PY8E=",
+        version = "v0.0.0-20201126162022-7de9c90e9dd1",
+    )
+
     go_repository(
         name = "org_golang_x_text",
         build_file_generation = "on",

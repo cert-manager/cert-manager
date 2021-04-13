@@ -84,12 +84,11 @@ spec:
                       description: ExternalAccountBinding is a reference to a CA external account of the ACME server. If set, upon registration cert-manager will attempt to associate the given external account credentials with the registered ACME account.
                       type: object
                       required:
-                        - keyAlgorithm
                         - keyID
                         - keySecretRef
                       properties:
                         keyAlgorithm:
-                          description: keyAlgorithm is the MAC key algorithm that the key is used for. Valid values are "HS256", "HS384" and "HS512".
+                          description: 'Deprecated: keyAlgorithm field exists for historical compatibility reasons and should not be used. The algorithm is now hardcoded to HS256 in golang/x/crypto/acme.'
                           type: string
                           enum:
                             - HS256
@@ -1122,12 +1121,11 @@ spec:
                       description: ExternalAccountBinding is a reference to a CA external account of the ACME server. If set, upon registration cert-manager will attempt to associate the given external account credentials with the registered ACME account.
                       type: object
                       required:
-                        - keyAlgorithm
                         - keyID
                         - keySecretRef
                       properties:
                         keyAlgorithm:
-                          description: keyAlgorithm is the MAC key algorithm that the key is used for. Valid values are "HS256", "HS384" and "HS512".
+                          description: 'Deprecated: keyAlgorithm field exists for historical compatibility reasons and should not be used. The algorithm is now hardcoded to HS256 in golang/x/crypto/acme.'
                           type: string
                           enum:
                             - HS256
@@ -2162,12 +2160,11 @@ spec:
                       description: ExternalAccountBinding is a reference to a CA external account of the ACME server. If set, upon registration cert-manager will attempt to associate the given external account credentials with the registered ACME account.
                       type: object
                       required:
-                        - keyAlgorithm
                         - keyID
                         - keySecretRef
                       properties:
                         keyAlgorithm:
-                          description: keyAlgorithm is the MAC key algorithm that the key is used for. Valid values are "HS256", "HS384" and "HS512".
+                          description: 'Deprecated: keyAlgorithm field exists for historical compatibility reasons and should not be used. The algorithm is now hardcoded to HS256 in golang/x/crypto/acme.'
                           type: string
                           enum:
                             - HS256
@@ -3202,12 +3199,11 @@ spec:
                       description: ExternalAccountBinding is a reference to a CA external account of the ACME server. If set, upon registration cert-manager will attempt to associate the given external account credentials with the registered ACME account.
                       type: object
                       required:
-                        - keyAlgorithm
                         - keyID
                         - keySecretRef
                       properties:
                         keyAlgorithm:
-                          description: keyAlgorithm is the MAC key algorithm that the key is used for. Valid values are "HS256", "HS384" and "HS512".
+                          description: 'Deprecated: keyAlgorithm field exists for historical compatibility reasons and should not be used. The algorithm is now hardcoded to HS256 in golang/x/crypto/acme.'
                           type: string
                           enum:
                             - HS256

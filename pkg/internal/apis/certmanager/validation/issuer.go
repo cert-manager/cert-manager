@@ -32,7 +32,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
-// Validation functions for cert-manager v1alpha2 Issuer types
+// Validation functions for cert-manager Issuer types.
 
 func ValidateIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
 	iss := obj.(*certmanager.Issuer)
@@ -116,10 +116,6 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) field
 		}
 
 		el = append(el, ValidateSecretKeySelector(&eab.Key, eabFldPath.Child("keySecretRef"))...)
-
-		if len(eab.KeyAlgorithm) == 0 {
-			el = append(el, field.Required(eabFldPath.Child("keyAlgorithm"), "the keyAlgorithm field is required when using externalAccountBinding"))
-		}
 	}
 
 	for i, sol := range iss.Solvers {
