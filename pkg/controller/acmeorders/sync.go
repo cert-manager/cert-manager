@@ -40,8 +40,8 @@ import (
 )
 
 const (
-	statusSolver  = "Solver"
-	statusCreated = "Created"
+	reasonSolver  = "Solver"
+	reasonCreated = "Created"
 )
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
@@ -112,7 +112,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	requiredChallenges, err := buildRequiredChallenges(ctx, cl, genericIssuer, o)
 	if err != nil {
 		log.Error(err, "Failed to determine the list of Challenge resources needed for the Order")
-		c.recorder.Eventf(o, corev1.EventTypeWarning, statusSolver, "Failed to determine a valid solver configuration for the set of domains on the Order: %v", err)
+		c.recorder.Eventf(o, corev1.EventTypeWarning, reasonSolver, "Failed to determine a valid solver configuration for the set of domains on the Order: %v", err)
 		return nil
 	}
 
@@ -353,7 +353,7 @@ func (c *controller) createRequiredChallenges(o *cmacme.Order, requiredChallenge
 		if err != nil {
 			return err
 		}
-		c.recorder.Eventf(o, corev1.EventTypeNormal, statusCreated, "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
+		c.recorder.Eventf(o, corev1.EventTypeNormal, reasonCreated, "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
 	}
 	return nil
 }

@@ -52,8 +52,8 @@ import (
 
 const (
 	ControllerName      = "certificates-request-manager"
-	statusRequestFailed = "RequestFailed"
-	statusRequested     = "Requested"
+	reasonRequestFailed = "RequestFailed"
+	reasonRequested     = "Requested"
 )
 
 var (
@@ -340,10 +340,10 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 
 	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
 	if err != nil {
-		c.recorder.Eventf(crt, corev1.EventTypeWarning, statusRequestFailed, "Failed to create CertificateRequest: "+err.Error())
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed to create CertificateRequest: "+err.Error())
 		return err
 	}
-	c.recorder.Eventf(crt, corev1.EventTypeNormal, statusRequested, "Created new CertificateRequest resource %q", cr.Name)
+	c.recorder.Eventf(crt, corev1.EventTypeNormal, reasonRequested, "Created new CertificateRequest resource %q", cr.Name)
 	if err := c.waitForCertificateRequestToExist(cr.Namespace, cr.Name); err != nil {
 		return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried")
 	}
