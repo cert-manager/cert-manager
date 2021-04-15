@@ -72,7 +72,9 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 
 	if !fs.Contains(featureset.SaveCAToSecret) {
 		out = append(out, validations.ExpectCorrectTrustChain)
-		out = append(out, validations.ExpectCARootCertificate)
+		if !fs.Contains(featureset.SaveRootCAToSecret) {
+			out = append(out, validations.ExpectCARootCertificate)
+		}
 	}
 
 	return out

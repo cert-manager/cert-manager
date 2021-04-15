@@ -43,6 +43,7 @@ const (
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	var unsupportedFeatures = featureset.NewFeatureSet(
 		featureset.KeyUsagesFeature,
+		featureset.SaveRootCAToSecret,
 	)
 
 	provisioner := new(vaultAppRoleProvisioner)

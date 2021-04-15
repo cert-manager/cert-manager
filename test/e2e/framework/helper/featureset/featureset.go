@@ -128,6 +128,10 @@ const (
 	OnlySAN = "OnlySAN"
 
 	// SaveCAToSecret denotes whether the target issuer returns a CA
-	// certificate which can be stored in the CA.crt field of the Secret.
+	// certificate which can be stored in the ca.crt field of the Secret.
 	SaveCAToSecret = "SaveCAToSecret"
+
+	// SaveRootCAToSecret denotes whether the CA certificate is expected to
+	// represent a root CA (sub-feature of SaveCAToSecret)
+	SaveRootCAToSecret = "SaveRootCAToSecret"
 )
