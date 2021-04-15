@@ -37,6 +37,7 @@ func (h *Helper) DefaultValidationSet() []ValidationFunc {
 		validations.ExpectCertificateOrganizationToMatch,
 		validations.ExpectCertificateURIsToMatch,
 		validations.ExpectCorrectTrustChain,
+		validations.ExpectCARootCertificate,
 		validations.ExpectEmailsToMatch,
 		validations.ExpectValidAnnotations,
 		validations.ExpectValidCertificate,
@@ -71,6 +72,7 @@ func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet)
 
 	if !fs.Contains(featureset.SaveCAToSecret) {
 		out = append(out, validations.ExpectCorrectTrustChain)
+		out = append(out, validations.ExpectCARootCertificate)
 	}
 
 	return out

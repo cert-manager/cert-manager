@@ -17,6 +17,7 @@ limitations under the License.
 package validations
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
@@ -307,6 +308,19 @@ func ExpectCorrectTrustChain(certificate *cmapi.Certificate, secret *corev1.Secr
 			pretty.Sprint(intermediateCertPool),
 			err,
 		)
+	}
+
+	return nil
+}
+
+// ExpectCARootCertificate checks if the CA cert is root CA if one is provided
+func ExpectCARootCertificate(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	caCert, err := pki.DecodeX509CertificateBytes(secret.Data[cmmeta.TLSCAKey])
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(caCert.RawSubject, caCert.RawIssuer) {
+		return fmt.Errorf("expected CA certificate to be root CA; want Issuer %v, but got %v", caCert.Subject, caCert.Issuer)
 	}
 
 	return nil
