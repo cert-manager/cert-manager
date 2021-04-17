@@ -47,7 +47,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
 	var unsupportedHTTP01Features = featureset.NewFeatureSet(
-		featureset.IPAddressFeature,
 		featureset.DurationFeature,
 		featureset.WildcardsFeature,
 		featureset.URISANsFeature,
@@ -79,6 +78,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 Issuer",
+		IPAddressType:       certificates.IngressIPAddressType,
 		DomainSuffixType:    certificates.IngressDomainSuffixType,
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
@@ -87,6 +87,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 Issuer on Istio",
+		IPAddressType:       certificates.IstioIPAddressType,
 		DomainSuffixType:    certificates.IstioDomainSuffixType,
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01IssuerOnIstio,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
@@ -103,6 +104,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 ClusterIssuer",
+		IPAddressType:       certificates.IngressIPAddressType,
 		DomainSuffixType:    certificates.IngressDomainSuffixType,
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,

@@ -31,6 +31,9 @@ import (
 const (
 	IstioDomainSuffixType   = "istio"
 	IngressDomainSuffixType = "ingress"
+
+	IstioIPAddressType   = "istio"
+	IngressIPAddressType = "ingress"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any
@@ -65,6 +68,17 @@ type Suite struct {
 	// in case DomainSuffix is left empty.
 	DomainSuffixType string
 
+	// IPAddress is an IP used on all IPAddress requests.
+	// This is useful when the issuer being tested requires special
+	// configuration for a set of IPAddresses in order for certificates to be
+	// issued, such as the ACME issuer.
+	// If not set, this will be defaulted to "127.0.0.1".
+	IPAddress string
+
+	// IPAddressType is a string used to detect what IPAddress to use
+	// in case IPAddress is left empty.
+	IPAddressType string
+
 	// UnsupportedFeatures is a list of features that are not supported by this
 	// invocation of the test suite.
 	// This is useful if a particular issuers explicitly does not support
@@ -93,6 +107,19 @@ func (s *Suite) complete(f *framework.Framework) {
 			s.DomainSuffix = f.Config.Addons.Istio.Domain
 		default:
 			Fail("Domain suffix type not recognised")
+		}
+	}
+
+	if s.IPAddress == "" {
+		switch s.IPAddressType {
+		case IngressIPAddressType:
+			s.IPAddress = f.Config.Addons.ACMEServer.IngressIP
+		case IstioIPAddressType:
+			s.IPAddress = f.Config.Addons.ACMEServer.IstioIP
+		case "":
+			s.IPAddress = "127.0.0.1"
+		default:
+			Fail("IPAddress type not recognised")
 		}
 	}
 
