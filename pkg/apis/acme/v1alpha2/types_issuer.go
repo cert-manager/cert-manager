@@ -204,6 +204,14 @@ type ACMEChallengeSolverHTTP01 struct {
 	// provisioned by cert-manager for each Challenge to be completed.
 	// +optional
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress,omitempty"`
+
+	// The Istio virtualservice based HTTP01 challenge solver will solve
+	// challenges by creating an Istio virtualservice resource that is connected
+	// to the specified Istio gateway in order to route requests for
+	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
+	// provisioned by cert-manager for each Challenge to be completed.
+	// +optional
+	Istio *ACMEChallengeSolverHTTP01Istio `json:"istio,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
@@ -303,6 +311,19 @@ type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
 	// Labels that should be added to the created ACME HTTP01 solver ingress.
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01Istio struct {
+	// Namespace of the gateway that is used to generate the virtualservice for.
+	GatewayNamespace string `json:"gatewayNamespace"`
+
+	// Name of the gateway that is used to generate the virtualservice for.
+	GatewayName string `json:"gatewayName"`
+
+	// Optional pod template used to configure the ACME challenge solver pods
+	// used for HTTP01 challenges
+	// +optional
+	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }
 
 // Used to configure a DNS01 challenge provider to be used when solving DNS01

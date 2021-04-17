@@ -156,8 +156,11 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 		numDefined++
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(http01.Ingress, fldPath.Child("ingress"))...)
 	}
-	if numDefined == 0 {
-		el = append(el, field.Required(fldPath, "no HTTP01 solver type configured"))
+	if http01.Istio != nil {
+		numDefined++
+	}
+	if numDefined != 1 {
+		el = append(el, field.Required(fldPath, "exactly 1 HTTP01 solver type has to be configured"))
 	}
 
 	return el

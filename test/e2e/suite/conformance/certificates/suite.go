@@ -28,6 +28,11 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 )
 
+const (
+	IstioDomainSuffixType   = "istio"
+	IngressDomainSuffixType = "ingress"
+)
+
 // Suite defines a reusable conformance test suite that can be used against any
 // Issuer implementation.
 type Suite struct {
@@ -56,6 +61,10 @@ type Suite struct {
 	// nginx-ingress addon.
 	DomainSuffix string
 
+	// DomainSuffixType is a string used to detect what DomainSuffix to use
+	// in case DomainSuffix is left empty.
+	DomainSuffixType string
+
 	// UnsupportedFeatures is a list of features that are not supported by this
 	// invocation of the test suite.
 	// This is useful if a particular issuers explicitly does not support
@@ -68,12 +77,23 @@ type Suite struct {
 
 // complete will validate configuration and set default values.
 func (s *Suite) complete(f *framework.Framework) {
-	// TODO: work out how to fail an entire 'Describe' block so we can validate these are correctly set
-	//Expect(s.Name).NotTo(Equal(""), "Name must be set")
-	//Expect(s.CreateIssuerFunc).NotTo(BeNil(), "CreateIssuerFunc must be set")
+	if s.Name == "" {
+		Fail("Name must be set")
+	}
+
+	if s.CreateIssuerFunc == nil {
+		Fail("CreateIssuerFunc must be set")
+	}
 
 	if s.DomainSuffix == "" {
-		s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		switch s.DomainSuffixType {
+		case IngressDomainSuffixType, "":
+			s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		case IstioDomainSuffixType:
+			s.DomainSuffix = f.Config.Addons.Istio.Domain
+		default:
+			Fail("Domain suffix type not recognised")
+		}
 	}
 
 	if s.UnsupportedFeatures == nil {
@@ -137,4 +157,8 @@ func (s *Suite) newDomainDepth(depth int) string {
 		subdomains[i] = util.RandStringRunes(4)
 	}
 	return strings.Join(append(subdomains, s.DomainSuffix), ".")
+}
+
+func (s *Suite) newDomainLength(length int) string {
+	return fmt.Sprintf("%s.%s", util.RandStringRunes(length), s.DomainSuffix)
 }

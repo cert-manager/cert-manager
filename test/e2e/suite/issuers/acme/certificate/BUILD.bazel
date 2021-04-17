@@ -4,7 +4,8 @@ go_library(
     name = "go_default_library",
     srcs = [
         "dns01.go",
-        "http01.go",
+        "http01_ingress.go",
+        "http01_istio.go",
         "notafter.go",
         "webhook.go",
     ],

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,36 +41,21 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func() {
-	f := framework.NewDefaultFramework("create-acme-certificate-request-http01")
+var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01) Istio", func() {
+	f := framework.NewDefaultFramework("create-acme-certificate-request-http01-istio")
 	h := f.Helper()
 
 	var acmeIngressDomain string
 	issuerName := "test-acme-issuer"
 	certificateRequestName := "test-acme-certificate-request"
-	// fixedIngressName is the name of an ingress resource that is configured
-	// with a challenge solve.
-	// To utilise this solver, add the 'testing.cert-manager.io/fixed-ingress: "true"' label.
-	fixedIngressName := "testingress"
 
 	BeforeEach(func() {
 		solvers := []cmacme.ACMEChallengeSolver{
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-						Class: &f.Config.Addons.IngressController.IngressClass,
-					},
-				},
-			},
-			{
-				Selector: &cmacme.CertificateDNSNameSelector{
-					MatchLabels: map[string]string{
-						"testing.cert-manager.io/fixed-ingress": "true",
-					},
-				},
-				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
-						Name: fixedIngressName,
+					Istio: &cmacme.ACMEChallengeSolverHTTP01Istio{
+						GatewayNamespace: f.Config.Addons.Istio.GatewayNamespace,
+						GatewayName:      f.Config.Addons.Istio.GatewayName,
 					},
 				},
 			},
@@ -112,7 +97,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	})
 
 	JustBeforeEach(func() {
-		acmeIngressDomain = frameworkutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
+		acmeIngressDomain = frameworkutil.RandomSubdomain(f.Config.Addons.Istio.Domain)
 	})
 
 	AfterEach(func() {

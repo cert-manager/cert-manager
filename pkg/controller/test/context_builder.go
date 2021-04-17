@@ -26,7 +26,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	dynamicinformers "k8s.io/client-go/dynamic/dynamicinformer"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	coretesting "k8s.io/client-go/testing"
@@ -57,6 +61,7 @@ type Builder struct {
 	T *testing.T
 
 	KubeObjects        []runtime.Object
+	DynamicObjects     []runtime.Object
 	CertManagerObjects []runtime.Object
 	ExpectedActions    []Action
 	ExpectedEvents     []string
@@ -106,12 +111,15 @@ func (b *Builder) Init() {
 	}
 	b.requiredReactors = make(map[string]bool)
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
+	b.DynamicClient = dynamicfake.NewSimpleDynamicClient(runtime.NewScheme(), b.DynamicObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.Recorder = new(FakeRecorder)
 
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
+	b.FakeDynamicClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
+	b.DynamicSharedInformerFactory = dynamicinformers.NewDynamicSharedInformerFactory(b.DynamicClient, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
 	b.Metrics = metrics.New(logs.Log)
@@ -133,6 +141,14 @@ func (b *Builder) FakeKubeClient() *kubefake.Clientset {
 
 func (b *Builder) FakeKubeInformerFactory() kubeinformers.SharedInformerFactory {
 	return b.Context.KubeSharedInformerFactory
+}
+
+func (b *Builder) FakeDynamicClient() *dynamicfake.FakeDynamicClient {
+	return b.Context.DynamicClient.(*dynamicfake.FakeDynamicClient)
+}
+
+func (b *Builder) FakeDynamicSharedInformerFactory() dynamicinformers.DynamicSharedInformerFactory {
+	return b.Context.DynamicSharedInformerFactory
 }
 
 func (b *Builder) FakeCMClient() *cmfake.Clientset {
@@ -269,6 +285,7 @@ func (b *Builder) Stop() {
 
 func (b *Builder) Start() {
 	b.KubeSharedInformerFactory.Start(b.stopCh)
+	b.DynamicSharedInformerFactory.Start(b.stopCh)
 	b.SharedInformerFactory.Start(b.stopCh)
 	// wait for caches to sync
 	b.Sync()
@@ -277,6 +294,9 @@ func (b *Builder) Start() {
 func (b *Builder) Sync() {
 	if err := mustAllSync(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
+	}
+	if err := mustAllSyncDynamic(b.DynamicSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
+		panic("Error waiting for dynamicSharedInformerFactory to sync: " + err.Error())
 	}
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for SharedInformerFactory to sync: " + err.Error())
@@ -302,6 +322,16 @@ func (b *Builder) Events() []string {
 	}
 
 	return nil
+}
+
+func mustAllSyncDynamic(in map[schema.GroupVersionResource]bool) error {
+	var errs []error
+	for t, started := range in {
+		if !started {
+			errs = append(errs, fmt.Errorf("informer for %v not synced", t))
+		}
+	}
+	return utilerrors.NewAggregate(errs)
 }
 
 func mustAllSync(in map[reflect.Type]bool) error {

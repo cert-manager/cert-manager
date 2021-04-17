@@ -574,5 +574,86 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		s.it(f, "should allow updating an existing certificate with a new dns name", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					DNSNames:   []string{s.newDomain()},
+					IssuerRef:  issuerRef,
+				},
+			}
+			validations := f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Getting the latest version of the Certificate")
+			cert, err := f.Helper().CMClient.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.TODO(), "testcert", metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Adding an additional dnsName to the Certificate")
+			newDNSName := s.newDomain()
+			cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
+
+			By("Updating the Certificate in the apiserver")
+			err = f.CRClient.Update(context.TODO(), cert)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be not ready")
+			_, err = f.Helper().WaitForCertificateNotReady(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OnlySAN)
+
+		s.it(f, "should obtain a signed certificate for a long domain", func(issuerRef cmmeta.ObjectReference) {
+			// the maximum length of a single segment of the domain being requested
+			const maxLengthOfDomainSegment = 63
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					DNSNames:   []string{s.newDomainLength(maxLengthOfDomainSegment)},
+					IssuerRef:  issuerRef,
+				},
+			}
+			validations := f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OnlySAN)
 	})
 }

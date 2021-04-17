@@ -223,6 +223,12 @@ rules:
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "list", "watch", "create", "delete", "update"]
+  # HTTP01 Istio rules
+  # Need to be able to create and update Istio virtualservices that are used
+  # to route HTTP01 requests to the challenge solver pod
+  - apiGroups: ["networking.istio.io"]
+    resources: ["virtualservices"]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
   # We require the ability to specify a custom hostname when we are creating
   # new ingress resources.
   # See: https://github.com/openshift/origin/blob/21f191775636f9acadb44fa42beeb4f75b255532/pkg/route/apiserver/admission/ingress_admission.go#L84-L148
