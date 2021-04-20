@@ -63,21 +63,22 @@ Please be sure to include as much information as possible about your environment
 
 ## Community
 
-There is a Google Group used for project wide announcements and development coordination.
+The `cert-manager-dev` Google Group is used for project wide announcements and development coordination.
 Anybody can join the group by visiting [here](https://groups.google.com/forum/#!forum/cert-manager-dev)
 and clicking "Join Group". A Google account is required to join the group.
-Joining this group will also invite you to the cert-manager development meetings.
 
-### Bi-weekly development meeting
-Once you have become a member, you should receive an invite to the bi-weekly development
-meeting, hosted on **Wednesdays at 5pm UK Time** on Google Meet.
+### Bi-weekly Development Meeting
 
-Anyone is welcome to join these calls, even if just to ask questions.  
-Meeting notes are recorded in [Google docs](https://docs.google.com/document/d/1Tc5t6ylY9dhXAan1OjOoldeaoys1Yh4Ir710ATfBa5U).
+Once you've joined the `cert-manager-dev` Google Group, you should receive an invite to the bi-weekly development
+meeting, hosted every other Wednesday at [5pm London time](http://www.thetimezoneconverter.com/?t=17:00&tz=Europe/London) on Google Meet.
 
-### Daily standups
-You are also welcome to join our daily standup every day at **10.30am UK Time** on Google Meet.
-Invites are sent via the [Google Group](https://groups.google.com/forum/#!forum/cert-manager-dev)
+Anyone is welcome to join these calls, even if just to ask questions. Meeting notes are recorded in
+[Google docs](https://docs.google.com/document/d/1Tc5t6ylY9dhXAan1OjOoldeaoys1Yh4Ir710ATfBa5U).
+
+### Daily Standups
+
+You are also welcome to join our daily standup every weekday at [10.30am London time](http://www.thetimezoneconverter.com/?t=10:30&tz=Europe/London)
+on Google Meet. For more information, see [cert-manager.io](https://cert-manager.io/docs/contributing/).
 
 ## Contributing
 
@@ -91,7 +92,21 @@ if you are unsure where to start with getting involved!
 We also use the #cert-manager and #cert-manager-dev channels on [Kubernetes Slack](https://kubernetes.slack.com)
 for chat relating to the project.
 
-Developer documentation is available in the [official documentation](https://cert-manager.io/docs/contributing/).
+Developer documentation is available on the [cert-manager.io website](https://cert-manager.io/docs/contributing/).
+
+## Coding Conventions
+
+Code style guidelines are documented on the [coding conventions](https://cert-manager.io/docs/contributing/coding-conventions/) page
+of the cert-manager website. Please try to follow those guidelines if you're submitting a pull request for cert-manager.
+
+## Importing cert-manager as a Module
+
+⚠️ Please note that cert-manager **does not** currently provide a Go module compatibility guarantee. That means that
+**most code under `pkg/` is subject to change in a breaking way**, even between minor or patch releases and even if
+the code is currently publicly exported.
+
+This lack of a Go module compatibility guarantee does not affect API version guarantees
+under the [Kubernetes Deprecation Policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/).
 
 ## Security Reporting
 
