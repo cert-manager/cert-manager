@@ -342,7 +342,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 
 		// Any response code other than NOERROR and NXDOMAIN is treated as error
 		if in.Rcode != dns.RcodeNameError && in.Rcode != dns.RcodeSuccess {
-			return "", fmt.Errorf("Unexpected response code '%s' for %s",
+			return "", fmt.Errorf("Could not find the start of authority, unexpected response code '%s' for %s",
 				dns.RcodeToString[in.Rcode], domain)
 		}
 
