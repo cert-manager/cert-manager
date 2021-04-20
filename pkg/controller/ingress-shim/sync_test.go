@@ -568,7 +568,6 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			Name:         "should skip an invalid TLS entry (no TLS secret name specified)",
 			Issuer:       acmeIssuer,
@@ -1082,6 +1081,67 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: []cmapi.KeyUsage{
+							cmapi.UsageSigning,
+							cmapi.UsageDigitalSignature,
+							cmapi.UsageContentCommittment,
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "return a single Certificate for an ingress with a single valid TLS entry with common-name and keyusage annotation + custom annotations",
+			Issuer: acmeClusterIssuer,
+			Ingress: &networkingv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+						"cert-manager.io/usages":                    "signing,digital signature,content commitment",
+						"external-issuer.io/annotation1":            "annotation1",
+						"other-issuer.com/annotation2":              "annotation2",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1beta1.IngressSpec{
+					TLS: []networkingv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"external-issuer.io/annotation1": "annotation1",
+							"other-issuer.com/annotation2":   "annotation2",
+						},
 						Name:      "example-com-tls",
 						Namespace: gen.DefaultTestNamespace,
 						Labels: map[string]string{

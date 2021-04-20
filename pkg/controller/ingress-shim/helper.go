@@ -67,5 +67,17 @@ func translateIngressAnnotations(crt *cmapi.Certificate, annotations map[string]
 		}
 		crt.Spec.Usages = newUsages
 	}
+
+	const cmPrefix = "cert-manager.io/"
+	for k, v := range annotations {
+		if strings.HasPrefix(k, cmPrefix) {
+			continue
+		}
+
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
+		}
+		crt.Annotations[k] = v
+	}
 	return nil
 }
