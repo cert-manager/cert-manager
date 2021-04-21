@@ -361,14 +361,14 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 		}
 
 		// Any non-successful response code, other than NXDOMAIN, is treated as an error
-		// and interrupts the search
+		// and interrupts the search.
 		if in.Rcode != dns.RcodeSuccess {
 			return "", fmt.Errorf("When querying the SOA record for the domain '%s' using nameservers %v, rcode was expected to be 'NOERROR' or 'NXDOMAIN', but got '%s'",
 				domain, nameservers, dns.RcodeToString[in.Rcode])
 		}
 
-		// CNAME records cannot/should not exist at the root of a zone.
-		// So we skip a domain when a CNAME is found.
+		// As per RFC 2181, CNAME records cannot not exist at the root of a zone,
+		// which means we won't be finding any SOA record for this domain.
 		if dnsMsgContainsCNAME(in) {
 			continue
 		}
