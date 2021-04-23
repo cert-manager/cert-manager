@@ -13,6 +13,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Azure/go-autorest/autorest/validation v0.3.0 // indirect
 	github.com/Venafi/vcert/v4 v4.13.1
+	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.1.0
 	github.com/aws/aws-sdk-go v1.34.30
 	github.com/cloudflare/cloudflare-go v0.13.2
 	github.com/cpu/goacmedns v0.0.3
