@@ -59,6 +59,7 @@ func TestRevisionManagerController(t *testing.T) {
 		mustSync,
 		nil,
 		queue,
+		time.Second,
 	)
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
