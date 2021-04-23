@@ -71,6 +71,10 @@ type Context struct {
 	// Metrics is used for exposing Prometheus metrics across the controllers
 	Metrics *metrics.Metrics
 
+	// SyncPeriod is used to configure the frequency at which the controller will
+	// pull items off the workqueue for processing.
+	SyncPeriod time.Duration
+
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions

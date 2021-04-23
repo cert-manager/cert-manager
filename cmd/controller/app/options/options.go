@@ -97,6 +97,7 @@ type ControllerOptions struct {
 	EnablePprof bool
 
 	DNS01CheckRetryPeriod time.Duration
+	SyncPeriod            time.Duration
 }
 
 const (
@@ -129,6 +130,8 @@ const (
 	defaultPrometheusMetricsServerAddress = "0.0.0.0:9402"
 
 	defaultDNS01CheckRetryPeriod = 10 * time.Second
+
+	defaultSyncPeriod = time.Second
 )
 
 var (
@@ -190,6 +193,7 @@ func NewControllerOptions() *ControllerOptions {
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
 		EnablePprof:                       false,
+		SyncPeriod:                        defaultSyncPeriod,
 	}
 }
 
@@ -295,6 +299,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The host and port that the metrics endpoint should listen on.")
 	fs.BoolVar(&s.EnablePprof, "enable-profiling", false, ""+
 		"Enable profiling for controller.")
+	fs.DurationVar(&s.SyncPeriod, "sync-period", defaultSyncPeriod, ""+
+		"The duration the controller should wait between pulling items from the workqueue for processing"+
+		"This should be a valid duration string, for example 180s or 1h")
 }
 
 func (o *ControllerOptions) Validate() error {

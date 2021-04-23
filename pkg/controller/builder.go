@@ -51,7 +51,7 @@ type Builder struct {
 	runDurationFuncs []runDurationFunc
 }
 
-// New creates a basic Builder, setting the sync call to the one given
+// NewBuilder creates a basic Builder, setting the sync call to the one given
 func NewBuilder(controllerctx *Context, name string) *Builder {
 	ctx := logf.NewContext(controllerctx.RootContext, nil, name)
 	return &Builder{
@@ -97,5 +97,5 @@ func (b *Builder) Complete() (Interface, error) {
 		return nil, fmt.Errorf("error registering controller: %v", err)
 	}
 
-	return NewController(b.ctx, b.name, b.context.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
+	return NewController(b.ctx, b.name, b.context.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue, b.context.SyncPeriod), nil
 }

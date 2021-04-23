@@ -115,6 +115,7 @@ func (b *Builder) Init() {
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
 	b.Metrics = metrics.New(logs.Log)
+	b.SyncPeriod = time.Second
 
 	// set the Clock on the context
 	if b.Clock == nil {
