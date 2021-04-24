@@ -141,9 +141,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		log.V(logf.DebugLevel).Info("starting shared informer factories")
 		ctx.SharedInformerFactory.Start(stopCh)
 		ctx.KubeSharedInformerFactory.Start(stopCh)
-		if ctx.IstioEnabled {
-			ctx.DynamicSharedInformerFactory.Start(stopCh)
-		}
+		ctx.DynamicSharedInformerFactory.Start(stopCh)
 		wg.Wait()
 		log.V(logf.InfoLevel).Info("control loops exited")
 		ctx.Metrics.Shutdown(metricsServer)

@@ -75,16 +75,20 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
 func NewSolver(ctx *controller.Context) *Solver {
-	dynamicInformer := ctx.DynamicSharedInformerFactory.ForResource(istio.VirtualServiceGvr())
-	return &Solver{
+	solver := Solver{
 		Context:              ctx,
 		podLister:            ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
 		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
 		ingressLister:        ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
-		virtualServiceLister: dynamiclister.New(dynamicInformer.Informer().GetIndexer(), istio.VirtualServiceGvr()),
+		virtualServiceLister: nil,
 		testReachability:     testReachability,
 		requiredPasses:       5,
 	}
+	if ctx.IstioEnabled {
+		dynamicInformer := ctx.DynamicSharedInformerFactory.ForResource(istio.VirtualServiceGvr())
+		solver.virtualServiceLister = dynamiclister.New(dynamicInformer.Informer().GetIndexer(), istio.VirtualServiceGvr())
+	}
+	return &solver
 }
 
 func http01LogCtx(ctx context.Context) context.Context {
@@ -151,7 +155,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 	// Call present again to be certain.
 	// if the listers are nil, that means we're in the present checks
 	// test
-	if s.podLister != nil && s.serviceLister != nil && s.ingressLister != nil && s.virtualServiceLister != nil {
+	if s.podLister != nil && s.serviceLister != nil && s.ingressLister != nil {
 		log.V(logf.DebugLevel).Info("calling Present function before running self check to ensure required resources exist")
 		err := s.Present(ctx, issuer, ch)
 		if err != nil {
@@ -188,7 +192,9 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	errs = append(errs, s.cleanupPods(ctx, ch))
 	errs = append(errs, s.cleanupServices(ctx, ch))
 	errs = append(errs, s.cleanupIngresses(ctx, ch))
-	errs = append(errs, s.cleanupVirtualServices(ctx, ch))
+	if s.IstioEnabled {
+		errs = append(errs, s.cleanupVirtualServices(ctx, ch))
+	}
 	return utilerrors.NewAggregate(errs)
 }
 

@@ -103,7 +103,8 @@ const informerResyncPeriod = time.Millisecond * 10
 func (b *Builder) Init() {
 	if b.Context == nil {
 		b.Context = &controller.Context{
-			RootContext: context.Background(),
+			RootContext:  context.Background(),
+			IstioEnabled: true,
 		}
 	}
 	if b.StringGenerator == nil {
