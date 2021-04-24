@@ -26,18 +26,14 @@ type Istio struct {
 	// to the IP of the Istio ingress gateway's Service resource.
 	Domain string
 
-	// GatewayNamespace is the namespace of the gateway resource used for the HTTP01 ACME validation tests.
-	GatewayNamespace string
-
-	// GatewayName is the name of the gateway resource used for the HTTP01 ACME validation tests.
-	GatewayName string
+	// Gateway is the name of the gateway resource used for the HTTP01 ACME validation tests.
+	Gateway string
 }
 
 func (n *Istio) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&n.Domain, "istio-ingress-domain", "istio.http01.example.com", "The domain name used during ACME DNS01 validation tests. "+
 		"All subdomains of this domain must also resolve to the IP of the Istio ingress gateway's Service.")
-	fs.StringVar(&n.GatewayNamespace, "istio-gateway-namespace", "istio-system", "The namespace of the gateway resource used for the HTTP01 ACME validation tests")
-	fs.StringVar(&n.GatewayName, "istio-gateway-name", "ingress", "The name of the gateway resource used for the HTTP01 ACME validation tests")
+	fs.StringVar(&n.Gateway, "istio-gateway", "istio-system/ingress", "The name of the gateway resource used for the HTTP01 ACME validation tests.")
 }
 
 func (n *Istio) Validate() []error {

@@ -60,8 +60,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01) Istio", func() 
 			{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 					Istio: &cmacme.ACMEChallengeSolverHTTP01Istio{
-						GatewayNamespace: f.Config.Addons.Istio.GatewayNamespace,
-						GatewayName:      f.Config.Addons.Istio.GatewayName,
+						Gateways: []string{f.Config.Addons.Istio.Gateway},
 					},
 				},
 			},

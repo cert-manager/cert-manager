@@ -105,7 +105,7 @@ func serviceTypeForChallenge(ch *cmacme.Challenge) (corev1.ServiceType, error) {
 			return ch.Spec.Solver.HTTP01.Ingress.ServiceType, nil
 		}
 		if ch.Spec.Solver.HTTP01.Istio != nil {
-			return corev1.ServiceTypeClusterIP, nil
+			return ch.Spec.Solver.HTTP01.Istio.ServiceType, nil
 		}
 	}
 
@@ -134,6 +134,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 		if s.IstioEnabled {
 			_, istioErr = s.ensureIstio(ctx, ch, svc.Name)
 		} else {
+			// TODO: add support for dynamic Istio support detection (start / stop the VirtualService lister as necessary)
 			istioErr = errors.New("Istio support was not detected on startup, try restarting cert-manager")
 		}
 	}

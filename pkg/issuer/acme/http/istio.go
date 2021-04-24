@@ -155,7 +155,7 @@ func createVirtualServiceSpec(ch *cmacme.Challenge, svcName string) *networkingv
 	return &networkingv1beta1.VirtualService{
 		ExportTo: []string{"*"},
 		Hosts:    []string{ch.Spec.DNSName},
-		Gateways: []string{http01Istio.GatewayNamespace + "/" + http01Istio.GatewayName},
+		Gateways: http01Istio.Gateways,
 		Http: []*networkingv1beta1.HTTPRoute{
 			{
 				Match: []*networkingv1beta1.HTTPMatchRequest{

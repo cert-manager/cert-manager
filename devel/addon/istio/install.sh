@@ -24,7 +24,6 @@ set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 check_tool kubectl
 check_tool istioctl

@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -41,8 +42,7 @@ func TestEnsureIstio(t *testing.T) {
 			Solver: cmacme.ACMEChallengeSolver{
 				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 					Istio: &cmacme.ACMEChallengeSolverHTTP01Istio{
-						GatewayNamespace: defaultTestNamespace,
-						GatewayName:      "test-gateway",
+						Gateways: []string{fmt.Sprintf("%s/test-gateway", defaultTestNamespace)},
 					},
 				},
 			},

@@ -17,6 +17,8 @@ limitations under the License.
 // By utilising this file, no dependance on `istio.io/client-go` is
 // required. Used in combination with a dynamic client, it is possible
 // to create a client for these CRDs without adding a client-go dependency.
+// Based on: https://github.com/istio/client-go/blob/4c970a7c677150c96c4381118821b36c52e4c7b7/pkg/apis/networking/v1beta1/zz_generated.deepcopy.gen.go#L269-L328
+// TODO: remove this file in favour of Istio API types without client-go dependency https://github.com/istio/api/issues/1959
 
 package istio
 

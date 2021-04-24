@@ -31,7 +31,7 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
-echo "Installing istio into the kind cluster..."
+echo "Installing Istio into the cluster..."
 "${SCRIPT_ROOT}/addon/istio/install.sh"
 
 echo "Installing cert-manager into the cluster..."
@@ -57,4 +57,3 @@ echo "Loading vault into the cluster..."
 
 echo "Installing sample-external-issuer into the cluster..."
 "${SCRIPT_ROOT}/addon/sample-external-issuer/install.sh" 
-

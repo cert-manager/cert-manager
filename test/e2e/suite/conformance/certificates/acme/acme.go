@@ -234,8 +234,7 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec(serverURL string) cmapi.I
 }
 
 func (a *acmeIssuerProvisioner) createHTTP01IssuerOnIstioSpec(serverURL string) cmapi.IssuerSpec {
-	const TestGatewayNamespace = "istio-system"
-	const TestGatewayName = "ingress"
+	const TestGateway = "istio-system/ingress"
 
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
@@ -252,8 +251,7 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerOnIstioSpec(serverURL string) 
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Istio: &cmacme.ACMEChallengeSolverHTTP01Istio{
-								GatewayNamespace: TestGatewayNamespace,
-								GatewayName:      TestGatewayName,
+								Gateways: []string{TestGateway},
 							},
 						},
 					},

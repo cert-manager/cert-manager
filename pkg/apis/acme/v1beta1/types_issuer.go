@@ -314,11 +314,17 @@ type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
 }
 
 type ACMEChallengeSolverHTTP01Istio struct {
-	// Namespace of the gateway that is used to generate the virtualservice for.
-	GatewayNamespace string `json:"gatewayNamespace"`
+	// Optional service type for Kubernetes solver service
+	// +optional
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
-	// Name of the gateway that is used to generate the virtualservice for.
-	GatewayName string `json:"gatewayName"`
+	// The names of the gateways that are used to generate the virtualservice
+	// that configures the HTTP01 challenge routes.
+	// `<gateway namespace>/<gateway name>`; specifying a gateway with no
+	// namespace qualifier is the same as specifying the VirtualService's
+	// namespace.
+	// ref: https://github.com/istio/api/blob/24c65c0415b63a6ebca18059c60fc8fccf041e9a/networking/v1beta1/virtual_service.pb.go#L233-L246
+	Gateways []string `json:"gateways,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
 	// used for HTTP01 challenges
