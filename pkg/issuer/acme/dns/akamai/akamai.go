@@ -80,6 +80,8 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 		MaxBody:      131072,
 	}
 
+	dns.Init(dnsp.dnsclient.(*OpenDNSConfig).config)
+
 	return dnsp, nil
 }
 
