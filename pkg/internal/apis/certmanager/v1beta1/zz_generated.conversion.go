@@ -23,12 +23,14 @@ package v1beta1
 import (
 	unsafe "unsafe"
 
-	acmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
+	apisacmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	v1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	acmev1beta1 "github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1beta1"
 	certmanager "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	apismetav1 "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -451,8 +453,24 @@ func Convert_certmanager_CertificateCondition_To_v1beta1_CertificateCondition(in
 }
 
 func autoConvert_v1beta1_CertificateKeystores_To_certmanager_CertificateKeystores(in *v1beta1.CertificateKeystores, out *certmanager.CertificateKeystores, s conversion.Scope) error {
-	out.JKS = (*certmanager.JKSKeystore)(unsafe.Pointer(in.JKS))
-	out.PKCS12 = (*certmanager.PKCS12Keystore)(unsafe.Pointer(in.PKCS12))
+	if in.JKS != nil {
+		in, out := &in.JKS, &out.JKS
+		*out = new(certmanager.JKSKeystore)
+		if err := Convert_v1beta1_JKSKeystore_To_certmanager_JKSKeystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.JKS = nil
+	}
+	if in.PKCS12 != nil {
+		in, out := &in.PKCS12, &out.PKCS12
+		*out = new(certmanager.PKCS12Keystore)
+		if err := Convert_v1beta1_PKCS12Keystore_To_certmanager_PKCS12Keystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PKCS12 = nil
+	}
 	return nil
 }
 
@@ -462,8 +480,24 @@ func Convert_v1beta1_CertificateKeystores_To_certmanager_CertificateKeystores(in
 }
 
 func autoConvert_certmanager_CertificateKeystores_To_v1beta1_CertificateKeystores(in *certmanager.CertificateKeystores, out *v1beta1.CertificateKeystores, s conversion.Scope) error {
-	out.JKS = (*v1beta1.JKSKeystore)(unsafe.Pointer(in.JKS))
-	out.PKCS12 = (*v1beta1.PKCS12Keystore)(unsafe.Pointer(in.PKCS12))
+	if in.JKS != nil {
+		in, out := &in.JKS, &out.JKS
+		*out = new(v1beta1.JKSKeystore)
+		if err := Convert_certmanager_JKSKeystore_To_v1beta1_JKSKeystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.JKS = nil
+	}
+	if in.PKCS12 != nil {
+		in, out := &in.PKCS12, &out.PKCS12
+		*out = new(v1beta1.PKCS12Keystore)
+		if err := Convert_certmanager_PKCS12Keystore_To_v1beta1_PKCS12Keystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PKCS12 = nil
+	}
 	return nil
 }
 
@@ -474,7 +508,17 @@ func Convert_certmanager_CertificateKeystores_To_v1beta1_CertificateKeystores(in
 
 func autoConvert_v1beta1_CertificateList_To_certmanager_CertificateList(in *v1beta1.CertificateList, out *certmanager.CertificateList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.Certificate)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.Certificate, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_Certificate_To_certmanager_Certificate(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -485,7 +529,17 @@ func Convert_v1beta1_CertificateList_To_certmanager_CertificateList(in *v1beta1.
 
 func autoConvert_certmanager_CertificateList_To_v1beta1_CertificateList(in *certmanager.CertificateList, out *v1beta1.CertificateList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta1.Certificate)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta1.Certificate, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_Certificate_To_v1beta1_Certificate(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -582,7 +636,17 @@ func Convert_certmanager_CertificateRequestCondition_To_v1beta1_CertificateReque
 
 func autoConvert_v1beta1_CertificateRequestList_To_certmanager_CertificateRequestList(in *v1beta1.CertificateRequestList, out *certmanager.CertificateRequestList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.CertificateRequest)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.CertificateRequest, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_CertificateRequest_To_certmanager_CertificateRequest(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -593,7 +657,17 @@ func Convert_v1beta1_CertificateRequestList_To_certmanager_CertificateRequestLis
 
 func autoConvert_certmanager_CertificateRequestList_To_v1beta1_CertificateRequestList(in *certmanager.CertificateRequestList, out *v1beta1.CertificateRequestList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta1.CertificateRequest)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta1.CertificateRequest, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_CertificateRequest_To_v1beta1_CertificateRequest(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -604,8 +678,7 @@ func Convert_certmanager_CertificateRequestList_To_v1beta1_CertificateRequestLis
 
 func autoConvert_v1beta1_CertificateRequestSpec_To_certmanager_CertificateRequestSpec(in *v1beta1.CertificateRequestSpec, out *certmanager.CertificateRequestSpec, s conversion.Scope) error {
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_ObjectReference_To_meta_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
@@ -625,8 +698,7 @@ func Convert_v1beta1_CertificateRequestSpec_To_certmanager_CertificateRequestSpe
 
 func autoConvert_certmanager_CertificateRequestSpec_To_v1beta1_CertificateRequestSpec(in *certmanager.CertificateRequestSpec, out *v1beta1.CertificateRequestSpec, s conversion.Scope) error {
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_ObjectReference_To_v1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
@@ -680,9 +752,16 @@ func autoConvert_v1beta1_CertificateSpec_To_certmanager_CertificateSpec(in *v1be
 	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
 	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
 	out.SecretName = in.SecretName
-	out.Keystores = (*certmanager.CertificateKeystores)(unsafe.Pointer(in.Keystores))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if in.Keystores != nil {
+		in, out := &in.Keystores, &out.Keystores
+		*out = new(certmanager.CertificateKeystores)
+		if err := Convert_v1beta1_CertificateKeystores_To_certmanager_CertificateKeystores(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Keystores = nil
+	}
+	if err := apismetav1.Convert_v1_ObjectReference_To_meta_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.IsCA = in.IsCA
@@ -708,9 +787,16 @@ func autoConvert_certmanager_CertificateSpec_To_v1beta1_CertificateSpec(in *cert
 	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
 	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
 	out.SecretName = in.SecretName
-	out.Keystores = (*v1beta1.CertificateKeystores)(unsafe.Pointer(in.Keystores))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if in.Keystores != nil {
+		in, out := &in.Keystores, &out.Keystores
+		*out = new(v1beta1.CertificateKeystores)
+		if err := Convert_certmanager_CertificateKeystores_To_v1beta1_CertificateKeystores(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Keystores = nil
+	}
+	if err := apismetav1.Convert_meta_ObjectReference_To_v1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.IsCA = in.IsCA
@@ -792,7 +878,17 @@ func Convert_certmanager_ClusterIssuer_To_v1beta1_ClusterIssuer(in *certmanager.
 
 func autoConvert_v1beta1_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1beta1.ClusterIssuerList, out *certmanager.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.ClusterIssuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.ClusterIssuer, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_ClusterIssuer_To_certmanager_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -803,7 +899,17 @@ func Convert_v1beta1_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1be
 
 func autoConvert_certmanager_ClusterIssuerList_To_v1beta1_ClusterIssuerList(in *certmanager.ClusterIssuerList, out *v1beta1.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta1.ClusterIssuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta1.ClusterIssuer, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_ClusterIssuer_To_v1beta1_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -875,11 +981,35 @@ func Convert_certmanager_IssuerCondition_To_v1beta1_IssuerCondition(in *certmana
 }
 
 func autoConvert_v1beta1_IssuerConfig_To_certmanager_IssuerConfig(in *v1beta1.IssuerConfig, out *certmanager.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*acme.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(acme.ACMEIssuer)
+		if err := acmev1beta1.Convert_v1beta1_ACMEIssuer_To_acme_ACMEIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	out.CA = (*certmanager.CAIssuer)(unsafe.Pointer(in.CA))
-	out.Vault = (*certmanager.VaultIssuer)(unsafe.Pointer(in.Vault))
+	if in.Vault != nil {
+		in, out := &in.Vault, &out.Vault
+		*out = new(certmanager.VaultIssuer)
+		if err := Convert_v1beta1_VaultIssuer_To_certmanager_VaultIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Vault = nil
+	}
 	out.SelfSigned = (*certmanager.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
-	out.Venafi = (*certmanager.VenafiIssuer)(unsafe.Pointer(in.Venafi))
+	if in.Venafi != nil {
+		in, out := &in.Venafi, &out.Venafi
+		*out = new(certmanager.VenafiIssuer)
+		if err := Convert_v1beta1_VenafiIssuer_To_certmanager_VenafiIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Venafi = nil
+	}
 	return nil
 }
 
@@ -889,11 +1019,35 @@ func Convert_v1beta1_IssuerConfig_To_certmanager_IssuerConfig(in *v1beta1.Issuer
 }
 
 func autoConvert_certmanager_IssuerConfig_To_v1beta1_IssuerConfig(in *certmanager.IssuerConfig, out *v1beta1.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*acmev1beta1.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(apisacmev1beta1.ACMEIssuer)
+		if err := acmev1beta1.Convert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	out.CA = (*v1beta1.CAIssuer)(unsafe.Pointer(in.CA))
-	out.Vault = (*v1beta1.VaultIssuer)(unsafe.Pointer(in.Vault))
+	if in.Vault != nil {
+		in, out := &in.Vault, &out.Vault
+		*out = new(v1beta1.VaultIssuer)
+		if err := Convert_certmanager_VaultIssuer_To_v1beta1_VaultIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Vault = nil
+	}
 	out.SelfSigned = (*v1beta1.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
-	out.Venafi = (*v1beta1.VenafiIssuer)(unsafe.Pointer(in.Venafi))
+	if in.Venafi != nil {
+		in, out := &in.Venafi, &out.Venafi
+		*out = new(v1beta1.VenafiIssuer)
+		if err := Convert_certmanager_VenafiIssuer_To_v1beta1_VenafiIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Venafi = nil
+	}
 	return nil
 }
 
@@ -904,7 +1058,17 @@ func Convert_certmanager_IssuerConfig_To_v1beta1_IssuerConfig(in *certmanager.Is
 
 func autoConvert_v1beta1_IssuerList_To_certmanager_IssuerList(in *v1beta1.IssuerList, out *certmanager.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.Issuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.Issuer, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_Issuer_To_certmanager_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -915,7 +1079,17 @@ func Convert_v1beta1_IssuerList_To_certmanager_IssuerList(in *v1beta1.IssuerList
 
 func autoConvert_certmanager_IssuerList_To_v1beta1_IssuerList(in *certmanager.IssuerList, out *v1beta1.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta1.Issuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta1.Issuer, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_Issuer_To_v1beta1_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -950,7 +1124,15 @@ func Convert_certmanager_IssuerSpec_To_v1beta1_IssuerSpec(in *certmanager.Issuer
 
 func autoConvert_v1beta1_IssuerStatus_To_certmanager_IssuerStatus(in *v1beta1.IssuerStatus, out *certmanager.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanager.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	out.ACME = (*acme.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(acme.ACMEIssuerStatus)
+		if err := acmev1beta1.Convert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	return nil
 }
 
@@ -961,7 +1143,15 @@ func Convert_v1beta1_IssuerStatus_To_certmanager_IssuerStatus(in *v1beta1.Issuer
 
 func autoConvert_certmanager_IssuerStatus_To_v1beta1_IssuerStatus(in *certmanager.IssuerStatus, out *v1beta1.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]v1beta1.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	out.ACME = (*acmev1beta1.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(apisacmev1beta1.ACMEIssuerStatus)
+		if err := acmev1beta1.Convert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	return nil
 }
 
@@ -972,8 +1162,7 @@ func Convert_certmanager_IssuerStatus_To_v1beta1_IssuerStatus(in *certmanager.Is
 
 func autoConvert_v1beta1_JKSKeystore_To_certmanager_JKSKeystore(in *v1beta1.JKSKeystore, out *certmanager.JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -986,8 +1175,7 @@ func Convert_v1beta1_JKSKeystore_To_certmanager_JKSKeystore(in *v1beta1.JKSKeyst
 
 func autoConvert_certmanager_JKSKeystore_To_v1beta1_JKSKeystore(in *certmanager.JKSKeystore, out *v1beta1.JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1000,8 +1188,7 @@ func Convert_certmanager_JKSKeystore_To_v1beta1_JKSKeystore(in *certmanager.JKSK
 
 func autoConvert_v1beta1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1beta1.PKCS12Keystore, out *certmanager.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1014,8 +1201,7 @@ func Convert_v1beta1_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1beta1.PK
 
 func autoConvert_certmanager_PKCS12Keystore_To_v1beta1_PKCS12Keystore(in *certmanager.PKCS12Keystore, out *v1beta1.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1049,8 +1235,7 @@ func Convert_certmanager_SelfSignedIssuer_To_v1beta1_SelfSignedIssuer(in *certma
 func autoConvert_v1beta1_VaultAppRole_To_certmanager_VaultAppRole(in *v1beta1.VaultAppRole, out *certmanager.VaultAppRole, s conversion.Scope) error {
 	out.Path = in.Path
 	out.RoleId = in.RoleId
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1064,8 +1249,7 @@ func Convert_v1beta1_VaultAppRole_To_certmanager_VaultAppRole(in *v1beta1.VaultA
 func autoConvert_certmanager_VaultAppRole_To_v1beta1_VaultAppRole(in *certmanager.VaultAppRole, out *v1beta1.VaultAppRole, s conversion.Scope) error {
 	out.Path = in.Path
 	out.RoleId = in.RoleId
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1077,9 +1261,33 @@ func Convert_certmanager_VaultAppRole_To_v1beta1_VaultAppRole(in *certmanager.Va
 }
 
 func autoConvert_v1beta1_VaultAuth_To_certmanager_VaultAuth(in *v1beta1.VaultAuth, out *certmanager.VaultAuth, s conversion.Scope) error {
-	out.TokenSecretRef = (*meta.SecretKeySelector)(unsafe.Pointer(in.TokenSecretRef))
-	out.AppRole = (*certmanager.VaultAppRole)(unsafe.Pointer(in.AppRole))
-	out.Kubernetes = (*certmanager.VaultKubernetesAuth)(unsafe.Pointer(in.Kubernetes))
+	if in.TokenSecretRef != nil {
+		in, out := &in.TokenSecretRef, &out.TokenSecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TokenSecretRef = nil
+	}
+	if in.AppRole != nil {
+		in, out := &in.AppRole, &out.AppRole
+		*out = new(certmanager.VaultAppRole)
+		if err := Convert_v1beta1_VaultAppRole_To_certmanager_VaultAppRole(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AppRole = nil
+	}
+	if in.Kubernetes != nil {
+		in, out := &in.Kubernetes, &out.Kubernetes
+		*out = new(certmanager.VaultKubernetesAuth)
+		if err := Convert_v1beta1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Kubernetes = nil
+	}
 	return nil
 }
 
@@ -1089,9 +1297,33 @@ func Convert_v1beta1_VaultAuth_To_certmanager_VaultAuth(in *v1beta1.VaultAuth, o
 }
 
 func autoConvert_certmanager_VaultAuth_To_v1beta1_VaultAuth(in *certmanager.VaultAuth, out *v1beta1.VaultAuth, s conversion.Scope) error {
-	out.TokenSecretRef = (*metav1.SecretKeySelector)(unsafe.Pointer(in.TokenSecretRef))
-	out.AppRole = (*v1beta1.VaultAppRole)(unsafe.Pointer(in.AppRole))
-	out.Kubernetes = (*v1beta1.VaultKubernetesAuth)(unsafe.Pointer(in.Kubernetes))
+	if in.TokenSecretRef != nil {
+		in, out := &in.TokenSecretRef, &out.TokenSecretRef
+		*out = new(metav1.SecretKeySelector)
+		if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TokenSecretRef = nil
+	}
+	if in.AppRole != nil {
+		in, out := &in.AppRole, &out.AppRole
+		*out = new(v1beta1.VaultAppRole)
+		if err := Convert_certmanager_VaultAppRole_To_v1beta1_VaultAppRole(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AppRole = nil
+	}
+	if in.Kubernetes != nil {
+		in, out := &in.Kubernetes, &out.Kubernetes
+		*out = new(v1beta1.VaultKubernetesAuth)
+		if err := Convert_certmanager_VaultKubernetesAuth_To_v1beta1_VaultKubernetesAuth(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Kubernetes = nil
+	}
 	return nil
 }
 
@@ -1134,8 +1366,7 @@ func Convert_certmanager_VaultIssuer_To_v1beta1_VaultIssuer(in *certmanager.Vaul
 
 func autoConvert_v1beta1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *v1beta1.VaultKubernetesAuth, out *certmanager.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	out.Role = in.Role
@@ -1149,8 +1380,7 @@ func Convert_v1beta1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *
 
 func autoConvert_certmanager_VaultKubernetesAuth_To_v1beta1_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *v1beta1.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	out.Role = in.Role
@@ -1164,8 +1394,7 @@ func Convert_certmanager_VaultKubernetesAuth_To_v1beta1_VaultKubernetesAuth(in *
 
 func autoConvert_v1beta1_VenafiCloud_To_certmanager_VenafiCloud(in *v1beta1.VenafiCloud, out *certmanager.VenafiCloud, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APITokenSecretRef, &out.APITokenSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.APITokenSecretRef, &out.APITokenSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1178,8 +1407,7 @@ func Convert_v1beta1_VenafiCloud_To_certmanager_VenafiCloud(in *v1beta1.VenafiCl
 
 func autoConvert_certmanager_VenafiCloud_To_v1beta1_VenafiCloud(in *certmanager.VenafiCloud, out *v1beta1.VenafiCloud, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APITokenSecretRef, &out.APITokenSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.APITokenSecretRef, &out.APITokenSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1192,8 +1420,24 @@ func Convert_certmanager_VenafiCloud_To_v1beta1_VenafiCloud(in *certmanager.Vena
 
 func autoConvert_v1beta1_VenafiIssuer_To_certmanager_VenafiIssuer(in *v1beta1.VenafiIssuer, out *certmanager.VenafiIssuer, s conversion.Scope) error {
 	out.Zone = in.Zone
-	out.TPP = (*certmanager.VenafiTPP)(unsafe.Pointer(in.TPP))
-	out.Cloud = (*certmanager.VenafiCloud)(unsafe.Pointer(in.Cloud))
+	if in.TPP != nil {
+		in, out := &in.TPP, &out.TPP
+		*out = new(certmanager.VenafiTPP)
+		if err := Convert_v1beta1_VenafiTPP_To_certmanager_VenafiTPP(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TPP = nil
+	}
+	if in.Cloud != nil {
+		in, out := &in.Cloud, &out.Cloud
+		*out = new(certmanager.VenafiCloud)
+		if err := Convert_v1beta1_VenafiCloud_To_certmanager_VenafiCloud(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Cloud = nil
+	}
 	return nil
 }
 
@@ -1204,8 +1448,24 @@ func Convert_v1beta1_VenafiIssuer_To_certmanager_VenafiIssuer(in *v1beta1.Venafi
 
 func autoConvert_certmanager_VenafiIssuer_To_v1beta1_VenafiIssuer(in *certmanager.VenafiIssuer, out *v1beta1.VenafiIssuer, s conversion.Scope) error {
 	out.Zone = in.Zone
-	out.TPP = (*v1beta1.VenafiTPP)(unsafe.Pointer(in.TPP))
-	out.Cloud = (*v1beta1.VenafiCloud)(unsafe.Pointer(in.Cloud))
+	if in.TPP != nil {
+		in, out := &in.TPP, &out.TPP
+		*out = new(v1beta1.VenafiTPP)
+		if err := Convert_certmanager_VenafiTPP_To_v1beta1_VenafiTPP(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TPP = nil
+	}
+	if in.Cloud != nil {
+		in, out := &in.Cloud, &out.Cloud
+		*out = new(v1beta1.VenafiCloud)
+		if err := Convert_certmanager_VenafiCloud_To_v1beta1_VenafiCloud(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Cloud = nil
+	}
 	return nil
 }
 
@@ -1216,8 +1476,7 @@ func Convert_certmanager_VenafiIssuer_To_v1beta1_VenafiIssuer(in *certmanager.Ve
 
 func autoConvert_v1beta1_VenafiTPP_To_certmanager_VenafiTPP(in *v1beta1.VenafiTPP, out *certmanager.VenafiTPP, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.CredentialsRef, &out.CredentialsRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(&in.CredentialsRef, &out.CredentialsRef, s); err != nil {
 		return err
 	}
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
@@ -1231,8 +1490,7 @@ func Convert_v1beta1_VenafiTPP_To_certmanager_VenafiTPP(in *v1beta1.VenafiTPP, o
 
 func autoConvert_certmanager_VenafiTPP_To_v1beta1_VenafiTPP(in *certmanager.VenafiTPP, out *v1beta1.VenafiTPP, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.CredentialsRef, &out.CredentialsRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(&in.CredentialsRef, &out.CredentialsRef, s); err != nil {
 		return err
 	}
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
