@@ -332,6 +332,20 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	fqdnToZoneLock.RUnlock()
 
 	labelIndexes := dns.Split(fqdn)
+
+	// We are climbing up the domain tree, looking for the SOA record on
+	// one of them. For example, imagine that the DNS tree looks like this:
+	//
+	//  example.com.                                   ← SOA is here.
+	//  └── foo.example.com.
+	//      └── _acme-challenge.foo.example.com.       ← Starting point.
+	//
+	// We start at the bottom of the tree and climb up. The NXDOMAIN error
+	// lets us know that we should climb higher:
+	//
+	//  _acme-challenge.foo.example.com. returns NXDOMAIN
+	//                  foo.example.com. returns NXDOMAIN
+	//                      example.com. returns NOERROR along with the SOA
 	for _, index := range labelIndexes {
 		domain := fqdn[index:]
 
@@ -340,36 +354,39 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 			return "", err
 		}
 
-		// Any response code other than NOERROR and NXDOMAIN is treated as error
-		if in.Rcode != dns.RcodeNameError && in.Rcode != dns.RcodeSuccess {
-			return "", fmt.Errorf("Unexpected response code '%s' for %s",
-				dns.RcodeToString[in.Rcode], domain)
+		// NXDOMAIN tells us that we did not climb far enough up the DNS tree. We
+		// thus continue climbing to find the SOA record.
+		if in.Rcode == dns.RcodeNameError {
+			continue
 		}
 
-		// Check if we got a SOA RR in the answer section
-		if in.Rcode == dns.RcodeSuccess {
+		// Any non-successful response code, other than NXDOMAIN, is treated as an error
+		// and interrupts the search.
+		if in.Rcode != dns.RcodeSuccess {
+			return "", fmt.Errorf("When querying the SOA record for the domain '%s' using nameservers %v, rcode was expected to be 'NOERROR' or 'NXDOMAIN', but got '%s'",
+				domain, nameservers, dns.RcodeToString[in.Rcode])
+		}
 
-			// CNAME records cannot/should not exist at the root of a zone.
-			// So we skip a domain when a CNAME is found.
-			if dnsMsgContainsCNAME(in) {
-				continue
-			}
+		// As per RFC 2181, CNAME records cannot not exist at the root of a zone,
+		// which means we won't be finding any SOA record for this domain.
+		if dnsMsgContainsCNAME(in) {
+			continue
+		}
 
-			for _, ans := range in.Answer {
-				if soa, ok := ans.(*dns.SOA); ok {
-					fqdnToZoneLock.Lock()
-					defer fqdnToZoneLock.Unlock()
+		for _, ans := range in.Answer {
+			if soa, ok := ans.(*dns.SOA); ok {
+				fqdnToZoneLock.Lock()
+				defer fqdnToZoneLock.Unlock()
 
-					zone := soa.Hdr.Name
-					fqdnToZone[fqdn] = zone
-					logf.V(logf.DebugLevel).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
-					return zone, nil
-				}
+				zone := soa.Hdr.Name
+				fqdnToZone[fqdn] = zone
+				logf.V(logf.DebugLevel).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
+				return zone, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("Could not find the start of authority")
+	return "", fmt.Errorf("Could not find the SOA record in the DNS tree for the domain '%s' using nameservers %v", fqdn, nameservers)
 }
 
 // dnsMsgContainsCNAME checks for a CNAME answer in msg
