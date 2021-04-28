@@ -11,6 +11,7 @@ go_library(
         "ginkgo.go",
         "helm.go",
         "ingress_controller.go",
+        "istio.go",
         "samplewebhook.go",
         "suite.go",
         "tiller.go",

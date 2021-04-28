@@ -21,26 +21,11 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+SEI_VERSION="v0.1.0"
+
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
-setup_tools
+check_tool kubectl
 
-repo_dir="$(mktemp -d)"
-
-function cleanup {
-    rm -rf "${repo_dir}"
-}
-
-trap cleanup EXIT
-
-git clone https://github.com/cert-manager/sample-external-issuer "${repo_dir}"
-
-# TODO: Move this image to quay.io
-# https://github.com/jetstack/cert-manager/issues/3531
-img="ghcr.io/wallrj/sample-external-issuer/controller:v0.0.0-30-gf333b9e"
-
-require_image "${img}" "//devel/addon/sample-external-issuer:bundle"
-
-make -C "${repo_dir}" "IMG=${img}" deploy
+kubectl apply -f "https://github.com/cert-manager/sample-external-issuer/releases/download/${SEI_VERSION}/install.yaml"

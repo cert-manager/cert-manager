@@ -12,6 +12,10 @@ global:
   priorityClassName: ""
   rbac:
     create: true
+    # Allow cert-manager to manage Istio VirtualService resources, used for
+    # solving HTTP01 Istio challenges. When set to false, cert-manager will
+    # not support solving ACME HTTP01 challenges using VirtualServices.
+    allowIstioResourceAccess: true
 
   podSecurityPolicy:
     enabled: false
@@ -170,7 +174,7 @@ prometheus:
 
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
-# http_proxy: "http://proxy:8080"
+# https_proxy: "https://proxy:8080"
 # no_proxy: 127.0.0.1,localhost
 
 # expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#affinity-v1-core
@@ -304,6 +308,17 @@ webhook:
   # network, `webhook.securePort` should be changed to an available port if
   # running in hostNetwork mode.
   hostNetwork: false
+
+  # Specifies how the service should be handled. Useful if you want to expose the
+  # webhook to outside of the cluster. In some cases, the control plane cannot
+  # reach internal services.
+  serviceType: ClusterIP
+  # loadBalancerIP:
+
+  # Overrides the mutating webhook and validating webhook so they reach the webhook
+  # service using the `url` field instead of a service.
+  url: {}
+    # host:
 
 cainjector:
   enabled: true

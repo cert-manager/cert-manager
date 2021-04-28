@@ -33,7 +33,11 @@ webhooks:
     # Only include 'sideEffects' field in Kubernetes 1.12+
     sideEffects: None
     clientConfig:
+      {{- if .Values.webhook.url.host }}
+      url: https://{{ .Values.webhook.url.host }}/mutate
+      {{- else }}
       service:
         name: {{ template "webhook.fullname" . }}
         namespace: {{ .Release.Namespace | quote }}
         path: /mutate
+      {{- end }}

@@ -27,21 +27,28 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
+	var unsupportedFeatures = featureset.NewFeatureSet(
+		featureset.OnlyValidACMEDNSName,
+	)
+
 	caIssuer := new(ca)
 	(&certificates.Suite{
-		Name:             "CA Issuer",
-		CreateIssuerFunc: caIssuer.createCAIssuer,
+		Name:                "CA Issuer",
+		CreateIssuerFunc:    caIssuer.createCAIssuer,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	caClusterIssuer := new(ca)
 	(&certificates.Suite{
-		Name:             "CA ClusterIssuer",
-		CreateIssuerFunc: caClusterIssuer.createCAClusterIssuer,
-		DeleteIssuerFunc: caClusterIssuer.deleteCAClusterIssuer,
+		Name:                "CA ClusterIssuer",
+		CreateIssuerFunc:    caClusterIssuer.createCAClusterIssuer,
+		DeleteIssuerFunc:    caClusterIssuer.deleteCAClusterIssuer,
+		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 

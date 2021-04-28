@@ -46,4 +46,5 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
 	--acme-ingress-ip="$INGRESS_IP" \
+	--acme-istio-ip="$ISTIO_IP" \
 	"$@"

@@ -34,12 +34,13 @@ export OPENSHIFT_VERSION="${OPENSHIFT_VERSION:-"3.11"}"
 export SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
 export DNS_SERVER="${SERVICE_IP_PREFIX}.16"
 export INGRESS_IP="${SERVICE_IP_PREFIX}.15"
+export ISTIO_IP="${SERVICE_IP_PREFIX}.14"
 
 # setup_tools will build and set up the environment to use bazel-provided
 # versions of the tools required for development
 setup_tools() {
   check_bazel
-  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //hack/bin:kustomize //devel/bin:ginkgo
+  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //hack/bin:kustomize //devel/bin:ginkgo //hack/bin:istioctl
   if [[ "$IS_OPENSHIFT" == "true" ]] ; then
     bazel build //hack/bin:oc3
   fi
@@ -48,6 +49,7 @@ setup_tools() {
   export KIND="${bindir}/hack/bin/kind"
   export OC3="${bindir}/hack/bin/oc3"
   export KUBECTL="${bindir}/hack/bin/kubectl"
+  export ISTIOCTL="${bindir}/hack/bin/istioctl"
   export KUSTOMIZE="${bindir}/hack/bin/kustomize"
   export GINKGO="${bindir}/devel/bin/ginkgo"
   # Configure PATH to use bazel provided e2e tools
