@@ -32,7 +32,12 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-// NewClient will return a new ACME client.
+// NewClientFunc is a function type for building a new ACME client.
+type NewClientFunc func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey) acmecl.Interface
+
+var _ NewClientFunc = NewClient
+
+// NewClient is an implementation of NewClientFunc that returns a real ACME client.
 func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface {
 	return &acmeapi.Client{
 		Key:          privateKey,

@@ -37,7 +37,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -84,7 +83,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// if it contains invalid data, warn the user and return without error.
 	// if any other error occurs, return it and retry.
 	privateKeySelector := acme.PrivateKeySelector(a.issuer.GetSpec().ACME.PrivateKey)
-	pk, err := kube.SecretTLSKeyRef(ctx, a.secretsLister, ns, privateKeySelector.Name, privateKeySelector.Key)
+	pk, err := a.keyFromSecret(ctx, ns, privateKeySelector.Name, privateKeySelector.Key)
 	switch {
 	case !a.issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
 		log.V(logf.InfoLevel).Info("generating acme account private key")
@@ -122,7 +121,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	//  and remove them when the corresponding issuer is updated/deleted.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
 	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify)
-	cl := accounts.NewClient(httpClient, *a.issuer.GetSpec().ACME, rsaPk)
+	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk)
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
@@ -322,6 +321,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface, eabAcco
 		ExternalAccountBinding: eabAccount,
 	}
 
+	// private key, server URL and HTTP options are stored in the ACME client (cl).
 	acc, err := cl.Register(ctx, acc, acmeapi.AcceptTOS)
 	// If the account already exists, fetch the Account object and return.
 	if err == acmeapi.ErrAccountAlreadyExists {
