@@ -49,6 +49,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		featureset.IPAddressFeature,
 		// Venafi doesn't allow certs with empty CN & DN
 		featureset.OnlySAN,
+		featureset.OnlyValidACMEDNSName,
 	)
 
 	provisioner := new(venafiProvisioner)

@@ -18,40 +18,48 @@ package certificate
 
 import (
 	"context"
-	"crypto/x509"
-	"fmt"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
-	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func() {
-	f := framework.NewDefaultFramework("create-acme-certificate-request-http01")
-	h := f.Helper()
+const testingACMEEmail = "e2e@cert-manager.io"
+const testingACMEPrivateKey = "test-acme-private-key"
+const foreverTestTimeout = time.Second * 60
+
+var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01) Ingress", func() {
+	f := framework.NewDefaultFramework("create-acme-certificate-http01-ingress")
 
 	var acmeIngressDomain string
 	issuerName := "test-acme-issuer"
-	certificateRequestName := "test-acme-certificate-request"
+	certificateName := "test-acme-certificate"
+	certificateSecretName := "test-acme-certificate"
 	// fixedIngressName is the name of an ingress resource that is configured
 	// with a challenge solve.
 	// To utilise this solver, add the 'testing.cert-manager.io/fixed-ingress: "true"' label.
 	fixedIngressName := "testingress"
+
+	// ACME Issuer does not return a ca.crt. See:
+	// https://github.com/jetstack/cert-manager/issues/1571
+	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
 		solvers := []cmacme.ACMEChallengeSolver{
@@ -121,97 +129,120 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), testingACMEPrivateKey, metav1.DeleteOptions{})
 	})
 
-	It("should obtain a signed certificate with a single CN from the ACME server", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
+	It("should obtain a signed certificate with a single CN from the ACME server when redirected", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
-		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
-			[]string{acmeIngressDomain}, nil, nil, x509.RSA)
+		// force-ssl-redirect should make every request turn into a redirect,
+		// but I haven't been able to make this happen. Create a TLS cert via
+		// the self-sign issuer to make it have a "proper" TLS cert
+		// TODO: investigate if we still need to use the self-signed issuer here
+
+		issuer := gen.Issuer("selfsign",
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerSelfSigned(v1.SelfSignedIssuer{}))
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for (selfsign) Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionTrue,
+			})
 		Expect(err).NotTo(HaveOccurred())
 
-		cr, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
+		const dummycert = "dummy-tls"
+		const secretname = "dummy-tls-secret"
+
+		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1.IssuerKind, nil, nil, acmeIngressDomain)
+		_, err = certClient.Create(context.TODO(), selfcert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Verifying the Certificate is valid")
-		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should obtain a signed ecdsa certificate with a single CN from the ACME server", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
-
-		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
-			[]string{acmeIngressDomain}, nil, nil, x509.ECDSA)
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, dummycert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		By("Verifying the Certificate is valid and of type ECDSA")
-		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should obtain a signed certificate for a long domain using http01 validation", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
-
-		// the maximum length of a single segment of the domain being requested
-		const maxLengthOfDomainSegment = 63
-		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
-			[]string{acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)},
-			nil, nil, x509.RSA)
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, dummycert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
+		// create an ingress that points at nothing, but has the TLS redirect annotation set
+		// using the TLS secret that we just got from the self-sign
+		ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+		_, err = ingress.Create(context.TODO(), &networkingv1beta1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fixedIngressName,
+				Annotations: map[string]string{
+					"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+					"kubernetes.io/ingress.class":                    "nginx",
+				},
+			},
+			Spec: networkingv1beta1.IngressSpec{
+				TLS: []networkingv1beta1.IngressTLS{
+					{
+						Hosts:      []string{acmeIngressDomain},
+						SecretName: secretname,
+					},
+				},
+				Rules: []networkingv1beta1.IngressRule{
+					{
+						Host: acmeIngressDomain,
+						IngressRuleValue: networkingv1beta1.IngressRuleValue{
+							HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+								Paths: []networkingv1beta1.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: networkingv1beta1.IngressBackend{
+											ServiceName: "doesnotexist",
+											ServicePort: intstr.FromInt(443),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
-		Expect(err).NotTo(HaveOccurred())
-	})
 
-	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
-
-		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
-			[]string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)},
-			nil, nil, x509.RSA)
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		By("Verifying the CertificateRequest is valid")
-		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
-		// create test fixture
-		By("Creating a CertificateRequest")
-		cr, _, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
-			[]string{"google.com"}, nil, nil, x509.RSA)
-		Expect(err).NotTo(HaveOccurred())
-
-		cr, err = f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name).Create(context.TODO(), cr, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		notReadyCondition := v1.CertificateRequestCondition{
-			Type:   v1.CertificateRequestConditionReady,
-			Status: cmmeta.ConditionFalse,
+		By("Creating a Certificate")
+		// This is a special cert for the test suite, where we specify an ingress rather than a
+		// class
+		By("Creating a Certificate")
+		cert := gen.Certificate(certificateName,
+			gen.SetCertificateSecretName(certificateSecretName),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateDNSNames(acmeIngressDomain),
+		)
+		cert.Namespace = f.Namespace.Name
+		cert.Labels = map[string]string{
+			"testing.cert-manager.io/fixed-ingress": "true",
 		}
-		Eventually(cr, "30s", "1s").Should(HaveCondition(f, notReadyCondition))
-		Consistently(cr, "1m", "10s").Should(HaveCondition(f, notReadyCondition))
+
+		_, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should automatically recreate challenge pod and still obtain a certificate if it is manually deleted", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
-		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind, nil,
-			[]string{acmeIngressDomain}, nil, nil, x509.RSA)
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = crClient.Create(context.TODO(), cr, metav1.CreateOptions{})
+		By("Creating a Certificate")
+		cert := gen.Certificate(certificateName,
+			gen.SetCertificateSecretName(certificateSecretName),
+			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
+			gen.SetCertificateDNSNames(acmeIngressDomain),
+		)
+		cert.Namespace = f.Namespace.Name
+		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("killing the solver pod")
@@ -246,8 +277,12 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		// Killing the pod could potentially make the validation invalid if pebble
 		// were to ask us for the challenge after the pod was killed, but because
 		// we kill it so early, we should always be in the self-check phase
-		By("Verifying the CertificateRequest is valid")
-		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
+		By("Waiting for the Certificate to be issued...")
+		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Validating the issued Certificate...")
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

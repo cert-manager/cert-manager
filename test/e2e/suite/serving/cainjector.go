@@ -90,7 +90,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
+				_, err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
 					Type:   certmanager.CertificateConditionReady,
 					Status: cmmeta.ConditionTrue,
 				}, time.Second*30)

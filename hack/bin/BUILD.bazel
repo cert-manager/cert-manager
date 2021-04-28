@@ -81,6 +81,18 @@ genrule(
 )
 
 genrule(
+    name = "fetch_istioctl",
+    srcs = select({
+        ":darwin": ["@istioctl_darwin//:file"],
+        ":k8": ["@istioctl_linux//:file"],
+    }),
+    outs = ["istioctl"],
+    cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "fetch_oc3",
     srcs = select({
         ":k8": ["@oc_3_11_linux//:file"],

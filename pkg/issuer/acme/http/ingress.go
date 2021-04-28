@@ -74,7 +74,7 @@ func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challe
 // that the ingress has an appropriate challenge path configured
 func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (ing *networkingv1beta1.Ingress, err error) {
 	log := logf.FromContext(ctx).WithName("ensureIngress")
-	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
+	httpDomainCfg, err := httpIngressForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 }
 
 func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1beta1.Ingress, error) {
-	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
+	httpDomainCfg, err := httpIngressForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *netw
 }
 
 func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*networkingv1beta1.Ingress, error) {
-	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
+	httpDomainCfg, err := httpIngressForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,12 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) error {
 	log := logf.FromContext(ctx, "cleanupPods")
 
-	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
+	// Only do cleanup if HTTP01 and Ingress are set
+	if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
+		return nil
+	}
+
+	httpDomainCfg, err := httpIngressForChallenge(ch)
 	if err != nil {
 		return err
 	}

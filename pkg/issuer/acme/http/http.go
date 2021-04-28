@@ -19,6 +19,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -29,13 +30,16 @@ import (
 
 	k8snet "k8s.io/utils/net"
 
+	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/dynamic/dynamiclister"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	networkingv1beta1listers "k8s.io/client-go/listers/networking/v1beta1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/internal/istio"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
@@ -57,9 +61,10 @@ var (
 type Solver struct {
 	*controller.Context
 
-	podLister     corev1listers.PodLister
-	serviceLister corev1listers.ServiceLister
-	ingressLister networkingv1beta1listers.IngressLister
+	podLister            corev1listers.PodLister
+	serviceLister        corev1listers.ServiceLister
+	ingressLister        networkingv1beta1listers.IngressLister
+	virtualServiceLister dynamiclister.Lister
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -70,26 +75,45 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
 func NewSolver(ctx *controller.Context) *Solver {
-	return &Solver{
-		Context:          ctx,
-		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
-		testReachability: testReachability,
-		requiredPasses:   5,
+	solver := Solver{
+		Context:              ctx,
+		podLister:            ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:        ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
+		virtualServiceLister: nil,
+		testReachability:     testReachability,
+		requiredPasses:       5,
 	}
+	if ctx.IstioEnabled {
+		dynamicInformer := ctx.DynamicSharedInformerFactory.ForResource(istio.VirtualServiceGvr())
+		solver.virtualServiceLister = dynamiclister.New(dynamicInformer.Informer().GetIndexer(), istio.VirtualServiceGvr())
+	}
+	return &solver
 }
 
 func http01LogCtx(ctx context.Context) context.Context {
 	return logf.NewContext(ctx, nil, "http01")
 }
 
-func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
+func httpIngressForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
 	if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
-		return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
+		return nil, errors.New("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
 			"Ensure solvers[].http01.ingress is specified on your issuer resource")
 	}
 	return ch.Spec.Solver.HTTP01.Ingress, nil
+}
+
+func serviceTypeForChallenge(ch *cmacme.Challenge) (corev1.ServiceType, error) {
+	if ch.Spec.Solver.HTTP01 != nil {
+		if ch.Spec.Solver.HTTP01.Ingress != nil {
+			return ch.Spec.Solver.HTTP01.Ingress.ServiceType, nil
+		}
+		if ch.Spec.Solver.HTTP01.Istio != nil {
+			return ch.Spec.Solver.HTTP01.Istio.ServiceType, nil
+		}
+	}
+
+	return "", errors.New("could not determine service type for challenge")
 }
 
 // Present will realise the resources required to solve the given HTTP01
@@ -103,8 +127,23 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
-	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
+
+	var ingressErr error
+	if ch.Spec.Solver.HTTP01.Ingress != nil {
+		_, ingressErr = s.ensureIngress(ctx, ch, svc.Name)
+	}
+
+	var istioErr error
+	if ch.Spec.Solver.HTTP01.Istio != nil {
+		if s.IstioEnabled {
+			_, istioErr = s.ensureIstio(ctx, ch, svc.Name)
+		} else {
+			// TODO: add support for dynamic Istio support detection (start / stop the VirtualService lister as necessary)
+			istioErr = errors.New("Istio support was not detected on startup, try restarting cert-manager")
+		}
+	}
+
+	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr, istioErr})
 }
 
 func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
@@ -153,6 +192,9 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	errs = append(errs, s.cleanupPods(ctx, ch))
 	errs = append(errs, s.cleanupServices(ctx, ch))
 	errs = append(errs, s.cleanupIngresses(ctx, ch))
+	if s.IstioEnabled {
+		errs = append(errs, s.cleanupVirtualServices(ctx, ch))
+	}
 	return utilerrors.NewAggregate(errs)
 }
 
