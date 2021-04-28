@@ -19,10 +19,12 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -154,8 +156,14 @@ func (b *controller) worker(ctx context.Context) {
 			// Increase sync count for this controller
 			b.metrics.IncrementSyncCallCount(b.name)
 
-			if err := b.syncHandler(ctx, key); err != nil {
-				log.Error(err, "re-queuing item due to error processing")
+			err := b.syncHandler(ctx, key)
+			if err != nil {
+				if strings.Contains(err.Error(), genericregistry.OptimisticLockErrorMsg) {
+					log.Info("re-queuing item due to optimistic locking on resource", "error", err.Error())
+				} else {
+					log.Error(err, "re-queuing item due to error processing")
+				}
+
 				b.queue.AddRateLimited(obj)
 				return
 			}
