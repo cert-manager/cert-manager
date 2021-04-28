@@ -35,6 +35,21 @@ Create the name of the service account to use
 {{- end -}}
 
 {{/*
+Create the default PodDisruptionBudget to use
+*/}}
+{{- define "podDisruptionBudget.spec" -}}
+{{- if and .Values.global.podDisruptionBudget.minAvailable .Values.global.podDisruptionBudget.maxUnavailable }}
+{{- fail "Cannot set both .Values.global.podDisruptionBudget.minAvailable and .Values.global.podDisruptionBudget.maxUnavailable" -}}
+{{- end }}
+{{- if not .Values.global.podDisruptionBudget.maxUnavailable }}
+minAvailable: {{ default 1 .Values.global.podDisruptionBudget.minAvailable }}
+{{- end }}
+{{- if .Values.global.podDisruptionBudget.maxUnavailable }}
+maxUnavailable: {{ .Values.global.podDisruptionBudget.maxUnavailable }}
+{{- end }}
+{{- end }}
+
+{{/*
 Webhook templates
 */}}
 

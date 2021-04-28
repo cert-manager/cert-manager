@@ -1,0 +1,18 @@
+{{- if .Values.global.podDisruptionBudget.enabled }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
+  name: {{ include "cainjector.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+{{- include "podDisruptionBudget.spec" . | indent 2 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cainjector.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

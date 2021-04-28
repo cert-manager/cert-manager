@@ -24,6 +24,11 @@ global:
     # Aggregate ClusterRoles to Kubernetes default user-facing roles. Ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles
     aggregateClusterRoles: true
 
+  podDisruptionBudget:
+    enabled: true
+    # minAvailable: 1
+    # maxUnavailable: 1
+
   podSecurityPolicy:
     enabled: false
     useAppArmor: true
