@@ -26,7 +26,7 @@ import (
 // TODO: expand this out one day to be backed by the pebble wfe package
 // this will allow us to simulate a 'real' acme server in lightweight tests
 
-// FakeACME is a convenience structure to create a stub ACME implementation
+// FakeACME implements Interface and can be used as a mock acme.Client in tests.
 type FakeACME struct {
 	FakeAuthorizeOrder          func(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error)
 	FakeGetOrder                func(ctx context.Context, url string) (*acme.Order, error)

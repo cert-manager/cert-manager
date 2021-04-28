@@ -18,10 +18,15 @@ package test
 
 import (
 	"crypto/rsa"
+	"net/http"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+
+	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 )
+
+var _ accounts.Registry = &FakeRegistry{}
 
 // FakeRegistry implements the accounts.Registry interface using stub functions
 type FakeRegistry struct {
@@ -31,7 +36,7 @@ type FakeRegistry struct {
 	ListClientsFunc  func() map[string]acmecl.Interface
 }
 
-func (f *FakeRegistry) AddClient(uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
+func (f *FakeRegistry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
 	f.AddClientFunc(uid, config, privateKey)
 }
 
