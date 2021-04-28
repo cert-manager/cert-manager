@@ -174,7 +174,7 @@ prometheus:
 
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
-# http_proxy: "http://proxy:8080"
+# https_proxy: "https://proxy:8080"
 # no_proxy: 127.0.0.1,localhost
 
 # expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#affinity-v1-core
