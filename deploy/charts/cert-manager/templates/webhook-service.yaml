@@ -11,7 +11,10 @@ metadata:
     app.kubernetes.io/component: "webhook"
     helm.sh/chart: {{ include "webhook.chart" . }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.webhook.serviceType }}
+  {{- if .Values.webhook.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.webhook.loadBalancerIP }}
+  {{- end }}
   ports:
   - name: https
     port: 443

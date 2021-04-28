@@ -148,6 +148,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
 | `webhook.containerSecurityContext` | Security context to be set on the webhook component container | `{}` |
 | `webhook.hostNetwork` | If `true`, run the Webhook on the host network. | `false` |
+| `webhook.serviceType` | The type of the `Service`. | `ClusterIP` |
+| `webhook.loadBalancerIP` | The specific load balancer IP to use (when `serviceType` is `LoadBalancer`). |  |
+| `webhook.url.host` | The host to use to reach the webhook, instead of using internal cluster DNS for the service. |  |
 | `webhook.livenessProbe.failureThreshold` | The liveness probe failure threshold | `3` |
 | `webhook.livenessProbe.initialDelaySeconds` | The liveness probe initial delay (in seconds) | `60` |
 | `webhook.livenessProbe.periodSeconds` | The liveness probe period (in seconds) | `10` |
