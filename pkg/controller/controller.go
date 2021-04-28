@@ -159,7 +159,7 @@ func (b *controller) worker(ctx context.Context) {
 			err := b.syncHandler(ctx, key)
 			if err != nil {
 				if strings.Contains(err.Error(), genericregistry.OptimisticLockErrorMsg) {
-					log.V(logf.DebugLevel).Error(err, "re-queuing item due to optimistic locking")
+					log.Info("re-queuing item due to optimistic locking on resource", "error", err.Error())
 				} else {
 					log.Error(err, "re-queuing item due to error processing")
 				}
