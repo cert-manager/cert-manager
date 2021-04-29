@@ -42,8 +42,8 @@ def install():
 def install_staticcheck():
     http_archive(
         name = "co_honnef_go_tools_staticcheck_linux",
-        sha256 = "09d2c2002236296de2c757df111fe3ae858b89f9e183f645ad01f8135c83c519",
-        urls = ["https://github.com/dominikh/go-tools/releases/download/2020.1.4/staticcheck_linux_amd64.tar.gz"],
+        sha256 = "03b100561e3bc14db0b3b4004b102a00cb0197938d23cc40193f269f7b246d2d",
+        urls = ["https://github.com/dominikh/go-tools/releases/download/2020.2.3/staticcheck_linux_amd64.tar.gz"],
         build_file_content = """
 filegroup(
     name = "file",
@@ -57,8 +57,8 @@ filegroup(
 
     http_archive(
         name = "co_honnef_go_tools_staticcheck_osx",
-        sha256 = "5706d101426c025e8f165309e0cb2932e54809eb035ff23ebe19df0f810699d8",
-        urls = ["https://github.com/dominikh/go-tools/releases/download/2020.1.4/staticcheck_darwin_amd64.tar.gz"],
+        sha256 = "932108eb16638f776fd0fd9ce4fa68e1e400ad47027b516870858231d369d631",
+        urls = ["https://github.com/dominikh/go-tools/releases/download/2020.2.3/staticcheck_darwin_amd64.tar.gz"],
         build_file_content = """
 filegroup(
     name = "file",
