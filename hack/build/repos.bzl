@@ -2193,16 +2193,18 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/onsi/ginkgo",
-        sum = "h1:1V1NfVQR87RtWAgp1lv9JZJ5Jap+XFGKPi00andXGi4=",
-        version = "v1.15.0",
+        replace = "github.com/onsi/ginkgo",
+        sum = "h1:mFwc4LvZ0xpSvDZ3E+k8Yte0hLOMxXUlP+yXtJqkYfQ=",
+        version = "v1.12.1",
     )
     go_repository(
         name = "com_github_onsi_gomega",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/onsi/gomega",
-        sum = "h1:7n6FEkpFmfCoo2t+YYqXH0evK+a9ICQz0xcAy9dYcaQ=",
-        version = "v1.10.5",
+        replace = "github.com/onsi/gomega",
+        sum = "h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=",
+        version = "v1.10.1",
     )
 
     go_repository(

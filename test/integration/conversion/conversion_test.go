@@ -27,7 +27,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/diff"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,9 +67,9 @@ func TestConversion(t *testing.T) {
 	testCSR := generateCSR(t)
 
 	tests := map[string]struct {
-		input     runtime.Object
+		input     client.Object
 		targetGVK schema.GroupVersionKind
-		output    runtime.Object
+		output    client.Object
 	}{
 		"should convert Certificates from v1alpha2 to v1alpha3": {
 			input: &v1alpha2.Certificate{
@@ -221,7 +220,7 @@ func TestConversion(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := cl.Get(context.Background(), client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, convertedObj); err != nil {
+			if err := cl.Get(context.Background(), client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, convertedObj.(client.Object)); err != nil {
 				t.Fatalf("failed to fetch object in expected API version: %v", err)
 			}
 

@@ -69,6 +69,10 @@ require (
 
 replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 
+replace github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.12.1
+
+replace github.com/onsi/gomega => github.com/onsi/gomega v1.10.1
+
 replace google.golang.org/grpc => google.golang.org/grpc v1.27.1
 
 replace k8s.io/code-generator => github.com/kmodules/code-generator v0.21.1-rc.0.0.20210428003838-7eafae069eb0

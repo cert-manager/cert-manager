@@ -23,7 +23,6 @@ import (
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"golang.org/x/sync/errgroup"
-
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -32,9 +31,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -240,7 +239,7 @@ func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, clie
 		Mapper: mgr.GetRESTMapper(),
 	}
 
-	client, err := manager.NewClientBuilder().Build(ca, mgr.GetConfig(), clientOptions)
+	client, err := cluster.DefaultNewClient(ca, mgr.GetConfig(), clientOptions)
 	if err != nil {
 		return nil, nil, err
 	}
