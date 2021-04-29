@@ -25,6 +25,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
@@ -106,8 +108,9 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 func TestValidateACMEIssuerConfig(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
-		spec *cmacme.ACMEIssuer
-		errs []*field.Error
+		spec     *cmacme.ACMEIssuer
+		errs     []*field.Error
+		warnings validation.WarningList
 	}{
 		"valid acme issuer": {
 			spec: &validACMEIssuer,
@@ -316,7 +319,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateACMEIssuerConfig(s.spec, fldPath)
+			errs, warnings := ValidateACMEIssuerConfig(s.spec, fldPath)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
@@ -327,6 +330,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					t.Errorf("Expected %v but got %v", expectedErr, e)
 				}
 			}
+			assert.Equal(t, s.warnings, warnings)
 		})
 	}
 }
@@ -334,8 +338,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 func TestValidateIssuerSpec(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
-		spec *cmapi.IssuerSpec
-		errs field.ErrorList
+		spec     *cmapi.IssuerSpec
+		errs     field.ErrorList
+		warnings validation.WarningList
 	}{
 		"valid ca issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -427,8 +432,9 @@ func TestValidateIssuerSpec(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			gotErrs := ValidateIssuerSpec(s.spec, fldPath)
+			gotErrs, warnings := ValidateIssuerSpec(s.spec, fldPath)
 			assert.Equal(t, s.errs, gotErrs)
+			assert.Equal(t, s.warnings, warnings)
 		})
 	}
 }

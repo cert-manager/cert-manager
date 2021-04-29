@@ -24,6 +24,7 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
 
@@ -31,9 +32,10 @@ func TestValidateCreate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 
 	tests := map[string]struct {
-		req  *admissionv1.AdmissionRequest
-		cr   *cmapi.CertificateRequest
-		want field.ErrorList
+		req   *admissionv1.AdmissionRequest
+		cr    *cmapi.CertificateRequest
+		wantE field.ErrorList
+		wantW validation.WarningList
 	}{
 		"if identity fields don't match that of requester, should fail": {
 			req: &admissionv1.AdmissionRequest{
@@ -58,7 +60,7 @@ func TestValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			want: field.ErrorList{
+			wantE: field.ErrorList{
 				field.Forbidden(fldPath.Child("uid"), "uid identity must be that of the requester"),
 				field.Forbidden(fldPath.Child("username"), "username identity must be that of the requester"),
 				field.Forbidden(fldPath.Child("groups"), "groups identity must be that of the requester"),
@@ -88,15 +90,18 @@ func TestValidateCreate(t *testing.T) {
 					},
 				},
 			},
-			want: nil,
+			wantE: nil,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := ValidateCreate(test.req, test.cr)
-			if !reflect.DeepEqual(got, test.want) {
-				t.Errorf("ValidateCreate() = %v, want %v", got, test.want)
+			gotE, gotW := ValidateCreate(test.req, test.cr)
+			if !reflect.DeepEqual(gotE, test.wantE) {
+				t.Errorf("errors from ValidateCreate() = %v, want %v", gotE, test.wantE)
+			}
+			if !reflect.DeepEqual(gotW, test.wantW) {
+				t.Errorf("warnings from ValidateCreate() = %v, want %v", gotW, test.wantW)
 			}
 		})
 	}
@@ -107,7 +112,8 @@ func TestValidateUpdate(t *testing.T) {
 
 	tests := map[string]struct {
 		oldCR, newCR *cmapi.CertificateRequest
-		want         field.ErrorList
+		wantE        field.ErrorList
+		wantW        validation.WarningList
 	}{
 		"if identity fields don't match that of the old CertificateRequest, should fail": {
 			oldCR: &cmapi.CertificateRequest{
@@ -132,7 +138,7 @@ func TestValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			want: field.ErrorList{
+			wantE: field.ErrorList{
 				field.Forbidden(fldPath.Child("uid"), "uid identity cannot be changed once set"),
 				field.Forbidden(fldPath.Child("username"), "username identity cannot be changed once set"),
 				field.Forbidden(fldPath.Child("groups"), "groups identity cannot be changed once set"),
@@ -162,15 +168,18 @@ func TestValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			want: nil,
+			wantE: nil,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := ValidateUpdate(nil, test.newCR, test.oldCR)
-			if !reflect.DeepEqual(got, test.want) {
-				t.Errorf("ValidateUpdate() = %v, want %v", got, test.want)
+			gotE, gotW := ValidateUpdate(nil, test.newCR, test.oldCR)
+			if !reflect.DeepEqual(gotE, test.wantE) {
+				t.Errorf("errors from ValidateUpdate() = %v, want %v", gotE, test.wantE)
+			}
+			if !reflect.DeepEqual(gotW, test.wantW) {
+				t.Errorf("warnings from ValidateUpdate() = %v, want %v", gotW, test.wantW)
 			}
 		})
 	}

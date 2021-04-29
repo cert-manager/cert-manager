@@ -8,6 +8,7 @@ go_library(
         "issuers.go",
         "names.go",
         "usages.go",
+        "warnings.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/api/util",
     visibility = ["//visibility:public"],

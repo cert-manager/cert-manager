@@ -26,11 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-func ValidateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
+	var warnings validation.WarningList
 	cr := obj.(*cmapi.CertificateRequest)
 	fldPath := field.NewPath("spec")
 
@@ -48,7 +50,7 @@ func ValidateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) field
 		el = append(el, field.Forbidden(fldPath.Child("extra"), "extra identity must be that of the requester"))
 	}
 
-	return el
+	return el, warnings
 }
 
 func extrasMatch(crExtra map[string][]string, reqExtra map[string]authenticationv1.ExtraValue) bool {
@@ -70,7 +72,8 @@ func extrasMatch(crExtra map[string][]string, reqExtra map[string]authentication
 	return true
 }
 
-func ValidateUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
+func ValidateUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
+	var warnings validation.WarningList
 	oldCR, newCR := oldObj.(*cmapi.CertificateRequest), newObj.(*cmapi.CertificateRequest)
 	fldPath := field.NewPath("spec")
 
@@ -88,7 +91,7 @@ func ValidateUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Obje
 		el = append(el, field.Forbidden(fldPath.Child("extra"), "extra identity cannot be changed once set"))
 	}
 
-	return el
+	return el, warnings
 }
 
 func MutateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) {
