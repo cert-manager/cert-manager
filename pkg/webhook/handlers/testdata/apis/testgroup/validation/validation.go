@@ -27,26 +27,24 @@ import (
 )
 
 func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
 	testType := obj.(*testgroup.TestType)
 	el := field.ErrorList{}
 	if testType.TestField == v1.TestFieldValueNotAllowed {
 		el = append(el, field.Invalid(field.NewPath("testField"), testType.TestField, "invalid value"))
 	}
-	return el, warnings
+	return el, nil
 }
 
 func ValidateTestTypeUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
 	old, ok := oldObj.(*testgroup.TestType)
 	new := newObj.(*testgroup.TestType)
 	// if oldObj is not set, the Update operation is always valid.
 	if !ok || old == nil {
-		return nil, warnings
+		return nil, nil
 	}
 	el := field.ErrorList{}
 	if old.TestFieldImmutable != "" && old.TestFieldImmutable != new.TestFieldImmutable {
 		el = append(el, field.Forbidden(field.NewPath("testFieldImmutable"), "field is immutable once set"))
 	}
-	return el, warnings
+	return el, nil
 }

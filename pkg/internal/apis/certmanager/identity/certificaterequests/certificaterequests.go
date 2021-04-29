@@ -32,7 +32,6 @@ import (
 )
 
 func ValidateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
 	cr := obj.(*cmapi.CertificateRequest)
 	fldPath := field.NewPath("spec")
 
@@ -50,7 +49,7 @@ func ValidateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) (fiel
 		el = append(el, field.Forbidden(fldPath.Child("extra"), "extra identity must be that of the requester"))
 	}
 
-	return el, warnings
+	return el, nil
 }
 
 func extrasMatch(crExtra map[string][]string, reqExtra map[string]authenticationv1.ExtraValue) bool {
@@ -73,7 +72,6 @@ func extrasMatch(crExtra map[string][]string, reqExtra map[string]authentication
 }
 
 func ValidateUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
 	oldCR, newCR := oldObj.(*cmapi.CertificateRequest), newObj.(*cmapi.CertificateRequest)
 	fldPath := field.NewPath("spec")
 
@@ -91,7 +89,7 @@ func ValidateUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Obje
 		el = append(el, field.Forbidden(fldPath.Child("extra"), "extra identity cannot be changed once set"))
 	}
 
-	return el, warnings
+	return el, nil
 }
 
 func MutateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) {

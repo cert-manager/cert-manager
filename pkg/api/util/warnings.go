@@ -19,5 +19,6 @@ package util
 // Warning values thrown by validating webhook
 // https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
 const (
+	// DeprecatedACMEEABKeyAlgorithmField is raised when the deprecated keyAlgorithm field for an ACME issuer's external account binding (EAB) is set.
 	DeprecatedACMEEABKeyAlgorithmField = "ACME issuer spec field 'externalAccount.keyAlgorithm' is deprecated. The value of this field will be ignored."
 )

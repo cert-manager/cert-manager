@@ -36,10 +36,9 @@ func ValidateOrderUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime
 	}
 
 	el := field.ErrorList{}
-	var warnings validation.WarningList
 	el = append(el, ValidateOrderSpecUpdate(old.Spec, new.Spec, field.NewPath("spec"))...)
 	el = append(el, ValidateOrderStatusUpdate(old.Status, new.Status, field.NewPath("status"))...)
-	return el, warnings
+	return el, nil
 }
 
 func ValidateOrderSpecUpdate(old, new cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {

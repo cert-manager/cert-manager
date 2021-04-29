@@ -26,10 +26,9 @@ import (
 
 func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	el := field.ErrorList{}
-	warnings := validation.WarningList{}
 	tt := obj.(*TestType)
 	if tt.TestField == DisallowedTestFieldValue {
 		el = append(el, field.Invalid(field.NewPath("testField"), tt.TestField, "value not allowed"))
 	}
-	return el, warnings
+	return el, nil
 }

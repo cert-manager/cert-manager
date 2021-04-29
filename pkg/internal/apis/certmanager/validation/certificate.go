@@ -88,17 +88,15 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 }
 
 func ValidateCertificate(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs, warnings
+	return allErrs, nil
 }
 
 func ValidateUpdateCertificate(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs, warnings
+	return allErrs, nil
 }
 
 func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) field.ErrorList {
