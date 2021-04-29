@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/istio"
+	"github.com/jetstack/cert-manager/pkg/internal/istio"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 

@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/istio"
+	"github.com/jetstack/cert-manager/pkg/internal/istio"
 )
 
 func IsInstalled(ctx *controller.Context) (bool, error) {
