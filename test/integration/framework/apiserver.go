@@ -199,17 +199,17 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 	return crds, nil
 }
 
-func crdsToRuntimeObjects(in []*v1.CustomResourceDefinition) []runtime.Object {
-	out := make([]runtime.Object, len(in))
+func crdsToRuntimeObjects(in []*v1.CustomResourceDefinition) []client.Object {
+	out := make([]client.Object, len(in))
 
 	for i, crd := range in {
-		out[i] = runtime.Object(crd)
+		out[i] = client.Object(crd)
 	}
 
 	return out
 }
 
-func getValidatingWebhookConfig(url string, caPEM []byte) runtime.Object {
+func getValidatingWebhookConfig(url string, caPEM []byte) client.Object {
 	failurePolicy := admissionregistrationv1beta1.Fail
 	sideEffects := admissionregistrationv1beta1.SideEffectClassNone
 	validateURL := fmt.Sprintf("%s/validate", url)
@@ -246,7 +246,7 @@ func getValidatingWebhookConfig(url string, caPEM []byte) runtime.Object {
 	return &webhook
 }
 
-func getMutatingWebhookConfig(url string, caPEM []byte) runtime.Object {
+func getMutatingWebhookConfig(url string, caPEM []byte) client.Object {
 	failurePolicy := admissionregistrationv1beta1.Fail
 	sideEffects := admissionregistrationv1beta1.SideEffectClassNone
 	validateURL := fmt.Sprintf("%s/mutate", url)

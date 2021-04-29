@@ -60,7 +60,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	k8s.io/kubectl v0.21.0
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
-	sigs.k8s.io/controller-runtime v0.8.3
+	sigs.k8s.io/controller-runtime v0.9.0-beta.0
 	sigs.k8s.io/controller-tools v0.5.0
 	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0
@@ -76,5 +76,3 @@ replace k8s.io/code-generator => github.com/kmodules/code-generator v0.21.1-rc.0
 replace k8s.io/gengo => github.com/kmodules/gengo v0.0.0-20210428002657-a8850da697c2
 
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
-
-replace sigs.k8s.io/controller-runtime => github.com/kmodules/controller-runtime v0.8.4-0.20210429143355-465c3c00a79a
