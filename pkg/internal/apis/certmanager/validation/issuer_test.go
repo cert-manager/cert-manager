@@ -205,6 +205,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					},
 				},
 			},
+			warnings: validation.WarningList{apiutil.DeprecatedACMEEABKeyAlgorithmField},
 		},
 		"acme solver with missing http01 config type": {
 			spec: &cmacme.ACMEIssuer{
