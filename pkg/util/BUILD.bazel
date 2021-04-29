@@ -37,6 +37,7 @@ filegroup(
         "//pkg/util/coverage:all-srcs",
         "//pkg/util/errors:all-srcs",
         "//pkg/util/feature:all-srcs",
+        "//pkg/util/istio:all-srcs",
         "//pkg/util/kube:all-srcs",
         "//pkg/util/pki:all-srcs",
         "//pkg/util/predicate:all-srcs",

@@ -35,10 +35,10 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
+	"github.com/jetstack/cert-manager/pkg/internal/istio"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/internal/istio"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
