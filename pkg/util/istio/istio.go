@@ -24,7 +24,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/internal/apis/istio"
 )
 
-func IsIstioInstalled(ctx *controller.Context) (bool, error) {
+func IsInstalled(ctx *controller.Context) (bool, error) {
 	groups, err := ctx.Client.Discovery().ServerGroups()
 	if err != nil {
 		return false, err

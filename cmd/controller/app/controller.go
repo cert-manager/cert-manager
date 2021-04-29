@@ -71,7 +71,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		os.Exit(1)
 	}
 
-	ctx.IstioEnabled, err = istio.IsIstioInstalled(ctx)
+	ctx.IstioEnabled, err = istio.IsInstalled(ctx)
 	if err != nil {
 		log.Error(err, "failed to discover if Istio is available")
 		os.Exit(1)
