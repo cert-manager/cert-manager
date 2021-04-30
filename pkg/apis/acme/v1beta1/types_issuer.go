@@ -324,6 +324,7 @@ type ACMEChallengeSolverHTTP01Istio struct {
 	// namespace qualifier is the same as specifying the VirtualService's
 	// namespace.
 	// ref: https://github.com/istio/api/blob/24c65c0415b63a6ebca18059c60fc8fccf041e9a/networking/v1beta1/virtual_service.pb.go#L233-L246
+	// +optional
 	Gateways []string `json:"gateways,omitempty"`
 }
 
