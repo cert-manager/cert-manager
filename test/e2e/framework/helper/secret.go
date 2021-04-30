@@ -18,8 +18,6 @@ package helper
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"time"
 
@@ -58,28 +56,4 @@ func (h *Helper) WaitForSecretCertificateData(ns, name string, timeout time.Dura
 	}
 
 	return secret, nil
-}
-
-// GetSecretDNSNames decodes and returns the dns names (SANs) contained in a
-// certificate secret.
-func (h *Helper) GetSecretDNSNames(s *corev1.Secret) ([]string, error) {
-	if s.Data == nil {
-		return nil, fmt.Errorf("secret contains no data")
-	}
-	pkData := s.Data[corev1.TLSPrivateKeyKey]
-	certData := s.Data[corev1.TLSCertKey]
-	if len(pkData) == 0 || len(certData) == 0 {
-		return nil, fmt.Errorf("missing data in CA secret")
-	}
-	cert, err := tls.X509KeyPair(certData, pkData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse data in CA secret: %w", err)
-	}
-
-	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
-	if err != nil {
-		return nil, fmt.Errorf("internal error parsing x509 certificate: %w", err)
-	}
-
-	return x509Cert.DNSNames, nil
 }

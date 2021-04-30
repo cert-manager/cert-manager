@@ -46,7 +46,6 @@ var _ = framework.ConformanceDescribe("[Feature:Issuers:Venafi:Cloud] Certificat
 		featureset.URISANsFeature,
 		// Venafi doesn't allow certs with empty CN & DN
 		featureset.OnlySAN,
-		featureset.OnlyValidACMEDNSName,
 	)
 
 	provisioner := new(venafiProvisioner)

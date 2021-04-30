@@ -125,12 +125,12 @@ func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	}
 
 	// checking for presence of http01 config and if set serviceType is set, override our default (NodePort)
-	serviceType, err := serviceTypeForChallenge(ch)
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
-	if serviceType != "" {
-		service.Spec.Type = serviceType
+	if httpDomainCfg.ServiceType != "" {
+		service.Spec.Type = httpDomainCfg.ServiceType
 	}
 
 	return service, nil
