@@ -357,11 +357,6 @@ func (in *ACMEChallengeSolverHTTP01Istio) DeepCopyInto(out *ACMEChallengeSolverH
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.PodTemplate != nil {
-		in, out := &in.PodTemplate, &out.PodTemplate
-		*out = new(ACMEChallengeSolverHTTP01IngressPodTemplate)
-		(*in).DeepCopyInto(*out)
-	}
 	return
 }
 
