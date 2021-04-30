@@ -6,8 +6,8 @@ go_library(
         "istio.go",
         "istio_deepcopy.gen.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/istio",
-    visibility = ["//pkg:__subpackages__"],
+    importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/http/internal/istio",
+    visibility = ["//:__subpackages__"],
     deps = [
         "@io_istio_api//meta/v1alpha1:go_default_library",
         "@io_istio_api//networking/v1beta1:go_default_library",

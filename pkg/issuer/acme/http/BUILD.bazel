@@ -15,7 +15,7 @@ go_library(
         "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/controller:go_default_library",
-        "//pkg/internal/istio:go_default_library",
+        "//pkg/issuer/acme/http/internal/istio:go_default_library",
         "//pkg/issuer/acme/http/solver:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
@@ -49,7 +49,7 @@ go_test(
     deps = [
         "//pkg/apis/acme/v1:go_default_library",
         "//pkg/controller/test:go_default_library",
-        "//pkg/internal/istio:go_default_library",
+        "//pkg/issuer/acme/http/internal/istio:go_default_library",
         "//test/unit/gen:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//networking/v1beta1:go_default_library",
@@ -74,6 +74,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/issuer/acme/http/internal/istio:all-srcs",
         "//pkg/issuer/acme/http/solver:all-srcs",
     ],
     tags = ["automanaged"],
