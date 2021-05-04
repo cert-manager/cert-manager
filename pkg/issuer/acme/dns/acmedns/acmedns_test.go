@@ -27,21 +27,21 @@ import (
 var (
 	acmednsLiveTest    bool
 	acmednsHost        string
-	acmednsAccountJson []byte
+	acmednsAccountJSON []byte
 	acmednsDomain      string
 )
 
 func init() {
 	acmednsHost = os.Getenv("ACME_DNS_HOST")
-	acmednsAccountJson = []byte(os.Getenv("ACME_DNS_ACCOUNTS_JSON"))
+	acmednsAccountJSON = []byte(os.Getenv("ACME_DNS_ACCOUNTS_JSON"))
 	acmednsDomain = os.Getenv("ACME_DNS_DOMAIN")
-	if len(acmednsHost) > 0 && len(acmednsAccountJson) > 0 {
+	if len(acmednsHost) > 0 && len(acmednsAccountJSON) > 0 {
 		acmednsLiveTest = true
 	}
 }
 
 func TestValidJsonAccount(t *testing.T) {
-	accountJson := []byte(`{
+	accountJSON := []byte(`{
         "domain": {
             "fulldomain": "fooldom",
             "password": "secret",
@@ -49,7 +49,7 @@ func TestValidJsonAccount(t *testing.T) {
             "username": "usernom"
         }
     }`)
-	provider, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
+	provider, err := NewDNSProviderHostBytes("http://localhost/", accountJSON, util.RecursiveNameservers)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 	assert.Equal(t, provider.accounts["domain"].FullDomain, "fooldom")
 }
@@ -70,7 +70,7 @@ func TestLiveAcmeDnsPresent(t *testing.T) {
 	if !acmednsLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderHostBytes(acmednsHost, acmednsAccountJson, util.RecursiveNameservers)
+	provider, err := NewDNSProviderHostBytes(acmednsHost, acmednsAccountJSON, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	// ACME-DNS requires 43 character keys or it throws a bad TXT error
