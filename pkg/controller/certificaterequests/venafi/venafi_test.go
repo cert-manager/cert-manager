@@ -41,7 +41,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 	internalvenafifake "github.com/jetstack/cert-manager/pkg/issuer/venafi/client/fake"
@@ -248,19 +247,19 @@ func TestSign(t *testing.T) {
 	tests := map[string]testT{
 		"a CertificateRequest without an approved condition should do nothing": {
 			certificateRequest: baseCRNotApproved.DeepCopy(),
-			builder: &testpkg.Builder{
+			builder: &controllertest.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRNotApproved.DeepCopy(), baseIssuer.DeepCopy()},
 			},
 		},
 		"a CertificateRequest with a denied condition should update Ready condition with 'Denied'": {
 			certificateRequest: baseCRDenied.DeepCopy(),
-			builder: &testpkg.Builder{
+			builder: &controllertest.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{baseCRDenied.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents:     []string{},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -285,8 +284,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Normal SecretMissing Required secret resource not found: secret "test-tpp-secret" not found`,
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -311,8 +310,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -339,8 +338,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Normal SecretMissing Required secret resource not found: secret "test-cloud-secret" not found`,
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -364,8 +363,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -386,7 +385,7 @@ func TestSign(t *testing.T) {
 		},
 		"should exit nil and set status pending if referenced issuer is not ready": {
 			certificateRequest: cloudCR.DeepCopy(),
-			builder: &testpkg.Builder{
+			builder: &controllertest.Builder{
 				KubeObjects: []runtime.Object{},
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(),
 					gen.Issuer(cloudIssuer.DeepCopy().Name,
@@ -395,8 +394,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					"Normal IssuerNotReady Referenced issuer does not have a Ready status condition",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -422,8 +421,8 @@ func TestSign(t *testing.T) {
 					"Normal IssuancePending Venafi certificate is requested",
 					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
@@ -438,7 +437,7 @@ func TestSign(t *testing.T) {
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -468,8 +467,8 @@ func TestSign(t *testing.T) {
 					"Normal IssuancePending Venafi certificate is requested",
 					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
@@ -484,7 +483,7 @@ func TestSign(t *testing.T) {
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -513,8 +512,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					"Warning RequestError Failed to request venafi certificate: this is an error",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -544,8 +543,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					"Warning RequestError Failed to request venafi certificate: this is an error",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -576,8 +575,8 @@ func TestSign(t *testing.T) {
 					"Normal IssuancePending Venafi certificate is requested",
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
@@ -592,7 +591,7 @@ func TestSign(t *testing.T) {
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -623,8 +622,8 @@ func TestSign(t *testing.T) {
 					`Normal IssuancePending Venafi certificate is requested`,
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
@@ -639,7 +638,7 @@ func TestSign(t *testing.T) {
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -670,8 +669,8 @@ func TestSign(t *testing.T) {
 					"Normal IssuancePending Venafi certificate is requested",
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"",
 						gen.DefaultTestNamespace,
@@ -686,7 +685,7 @@ func TestSign(t *testing.T) {
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -717,8 +716,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Warning CustomFieldsError Failed to parse "venafi.cert-manager.io/custom-fields" annotation: invalid character 'c' looking for beginning of value`,
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
@@ -748,8 +747,8 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Warning CustomFieldsError certificate request contains an invalid Venafi custom fields type: "Bool": certificate request contains an invalid Venafi custom fields type: "Bool"`,
 				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+				ExpectedActions: []controllertest.Action{
+					controllertest.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						"status",
 						gen.DefaultTestNamespace,
