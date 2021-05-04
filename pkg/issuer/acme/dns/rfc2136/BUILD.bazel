@@ -39,6 +39,7 @@ go_test(
         "//test/acme/dns/server:go_default_library",
         "@com_github_miekg_dns//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
     ],
 )
 
