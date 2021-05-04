@@ -52,7 +52,10 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	defer b.Stop()
 
 	c := &controller{}
-	c.Register(b.Context)
+	if _, _, err := c.Register(b.Context); err != nil {
+		t.Errorf("failed to register context against controller: %v", err)
+		return
+	}
 	b.Start()
 
 	fakeClient := b.FakeCMClient()

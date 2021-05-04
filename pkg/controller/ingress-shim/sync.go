@@ -298,7 +298,7 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networkingv1beta1.Ingr
 	}
 
 	// for ACME issuers
-	editInPlaceVal, _ := ingAnnotations[cmacme.IngressEditInPlaceAnnotationKey]
+	editInPlaceVal := ingAnnotations[cmacme.IngressEditInPlaceAnnotationKey]
 	editInPlace := editInPlaceVal == "true"
 	if editInPlace {
 		if crt.Annotations == nil {

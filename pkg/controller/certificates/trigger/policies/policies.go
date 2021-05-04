@@ -118,7 +118,7 @@ func SecretPublicKeysDiffer(input Input) (string, string, bool) {
 
 func SecretPrivateKeyMatchesSpec(input Input) (string, string, bool) {
 	if input.Secret.Data == nil || len(input.Secret.Data[corev1.TLSPrivateKeyKey]) == 0 {
-		return SecretMismatch, fmt.Sprintf("Existing issued Secret does not contain private key data"), true
+		return SecretMismatch, "Existing issued Secret does not contain private key data", true
 	}
 
 	pkBytes := input.Secret.Data[corev1.TLSPrivateKeyKey]

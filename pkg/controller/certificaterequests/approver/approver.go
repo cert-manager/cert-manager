@@ -69,7 +69,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
 	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1().CertificateRequests()
-	mustSync := append([]cache.InformerSynced{certificateRequestInformer.Informer().HasSynced})
+	mustSync := []cache.InformerSynced{certificateRequestInformer.Informer().HasSynced}
 	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 
 	c.certificateRequestLister = certificateRequestInformer.Lister()

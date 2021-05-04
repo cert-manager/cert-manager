@@ -532,7 +532,10 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	controller := certificaterequests.New(apiutil.IssuerVault, vault)
-	controller.Register(test.builder.Context)
+	if _, _, err := controller.Register(test.builder.Context); err != nil {
+		t.Errorf("failed to register context with controller: %v", err)
+	}
+
 	test.builder.Start()
 
 	err := controller.Sync(context.Background(), test.certificateRequest)

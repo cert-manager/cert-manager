@@ -45,8 +45,8 @@ import (
 
 func init() {
 	logs.InitLogs(nil)
-	flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
-	flag.Lookup("v").Value.Set("4")
+	_ = flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
+	_ = flag.Lookup("v").Value.Set("4")
 }
 
 // Builder is a structure used to construct new Contexts for use during tests.
