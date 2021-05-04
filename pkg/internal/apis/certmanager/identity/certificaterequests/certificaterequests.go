@@ -106,5 +106,4 @@ func MutateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) {
 }
 
 func MutateUpdate(_ *admissionv1.AdmissionRequest, _, _ runtime.Object) {
-	return
 }
