@@ -111,13 +111,18 @@ type ChallengeRequest struct {
 	Config *apiext.JSON `json:"config,omitempty"`
 }
 
+// ChallengeAction represents an action associated with a challenge such as
+// 'present' or cleanup'.
 type ChallengeAction string
 
 const (
+	// ChallengeActionPresent is 'present' challenge action.
 	ChallengeActionPresent ChallengeAction = "Present"
+	// ChallengeActionCleanup is a 'cleanup' challenge acton.
 	ChallengeActionCleanUp ChallengeAction = "CleanUp"
 )
 
+// ChallengeResponse represents a response from an ACME challenge.
 type ChallengeResponse struct {
 	// UID is an identifier for the individual request/response.
 	// This should be copied over from the corresponding ChallengeRequest.

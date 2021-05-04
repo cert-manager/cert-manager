@@ -152,6 +152,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 var keyFunc = controllerpkg.KeyFunc
 
 const (
+	// ControllerName is the name of the ClusterIssuers controller.
 	ControllerName = "clusterissuers"
 )
 

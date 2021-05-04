@@ -39,7 +39,7 @@ var (
 	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
 )
 
-type CryptoBundle struct {
+type cryptoBundle struct {
 	// certificate is the Certificate resource used to create this bundle
 	Certificate *cmapi.Certificate
 	// expectedRequestName is the name of the CertificateRequest that is
@@ -72,7 +72,8 @@ type CryptoBundle struct {
 	FixedClock *fakeclock.FakeClock
 }
 
-func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) CryptoBundle {
+// MustCreateCryptoBundle creates a cryptoBundle to be used with tests or fails.
+func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, fixedClock *fakeclock.FakeClock) cryptoBundle {
 	c, err := createCryptoBundle(crt, fixedClock)
 	if err != nil {
 		t.Fatalf("error generating crypto bundle: %v", err)
@@ -80,7 +81,7 @@ func MustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate, fixedClock *fa
 	return *c
 }
 
-func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.FakeClock) (*CryptoBundle, error) {
+func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.FakeClock) (*cryptoBundle, error) {
 	crt := originalCert.DeepCopy()
 	if crt.Spec.PrivateKey == nil {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
@@ -183,7 +184,7 @@ func createCryptoBundle(originalCert *cmapi.Certificate, fixedClock *fakeclock.F
 		panic("failed to generate test fixture: " + err.Error())
 	}
 
-	return &CryptoBundle{
+	return &cryptoBundle{
 		Certificate:                            originalCert,
 		ExpectedRequestName:                    reqName,
 		PrivateKey:                             privateKey,

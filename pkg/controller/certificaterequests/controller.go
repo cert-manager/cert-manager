@@ -37,15 +37,20 @@ import (
 )
 
 const (
+	// ControllerName is the name of the Certificate Requests controller.
 	ControllerName = "certificaterequests"
 )
 
 var keyFunc = controllerpkg.KeyFunc
 
+// Issuer implements the functionality to sign a certificate request for a
+// particular issuer type.
 type Issuer interface {
 	Sign(context.Context, *v1.CertificateRequest, v1.GenericIssuer) (*issuer.IssueResponse, error)
 }
 
+// Controller is an implementation of the queueingController for
+// certificate requests.
 type Controller struct {
 	helper issuer.Helper
 
@@ -171,6 +176,8 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	return c.queue, mustSync, nil
 }
 
+// ProcessItem is the worker function that will be called with a new key from
+// the workqueue. A key corresponds to a certificate request object.
 func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)

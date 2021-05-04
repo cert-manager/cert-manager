@@ -33,15 +33,18 @@ import (
 )
 
 const (
+	// CRControllerName is the name of Vault certificate requests controller.
 	CRControllerName = "certificaterequests-issuer-vault"
 )
 
+// Vault is a Vault-specific implementation of
+// pkg/controller/certificaterequests.Issuer interface.
 type Vault struct {
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
 	reporter      *crutil.Reporter
 
-	vaultClientBuilder vaultinternal.VaultClientBuilder
+	vaultClientBuilder vaultinternal.ClientBuilder
 }
 
 func init() {
@@ -53,6 +56,7 @@ func init() {
 	})
 }
 
+// NewVault returns a new Vault instance with the given controller context.
 func NewVault(ctx *controllerpkg.Context) *Vault {
 	return &Vault{
 		issuerOptions:      ctx.IssuerOptions,
@@ -62,6 +66,8 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 	}
 }
 
+// Sign will connect to Vault server associated with the provided issuer to sign
+// the X.509 certificate from the Certificate Request.
 func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)

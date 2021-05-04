@@ -24,6 +24,7 @@ import (
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 )
 
+// Solver has the functionality to solve ACME challenges.
 type Solver interface {
 	// Name is the name of this ACME solver as part of the API group.
 	// This must match what you configure in the ACME Issuer's DNS01 config.
