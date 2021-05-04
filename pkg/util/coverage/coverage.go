@@ -59,7 +59,9 @@ func InitCoverage(name string) {
 	}
 
 	// Set up the unit test framework with the required arguments to activate test coverage.
-	flag.CommandLine.Parse([]string{"-test.coverprofile", tempCoveragePath()})
+	if err := flag.CommandLine.Parse([]string{"-test.coverprofile", tempCoveragePath()}); err != nil {
+		panic(err)
+	}
 
 	// Begin periodic logging
 	go wait.Forever(FlushCoverage, flushInterval)
