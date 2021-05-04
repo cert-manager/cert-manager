@@ -28,7 +28,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cminternal "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cminternalmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -762,11 +761,11 @@ func mustGenerateCSR(t *testing.T, crt *cmapi.Certificate) []byte {
 		t.Fatal(err)
 	}
 
-	x509CSR, err := pki.GenerateCSR(crt)
+	x509CSR, err := utilpki.GenerateCSR(crt)
 	if err != nil {
 		t.Fatal(err)
 	}
-	csrDER, err := pki.EncodeCSR(x509CSR, pk)
+	csrDER, err := utilpki.EncodeCSR(x509CSR, pk)
 	if err != nil {
 		t.Fatal(err)
 	}
