@@ -58,13 +58,13 @@ func init() {
 	utilruntime.Must(metainternalversion.AddToScheme(Scheme))
 
 	// Adds the conversion between internalmeta.List and corev1.List
-	Scheme.AddConversionFunc((*corev1.List)(nil), (*metainternalversion.List)(nil), func(a, b interface{}, scope conversion.Scope) error {
+	_ = Scheme.AddConversionFunc((*corev1.List)(nil), (*metainternalversion.List)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		metaList := &metav1.List{}
 		metaList.Items = a.(*corev1.List).Items
 		return metainternalversion.Convert_v1_List_To_internalversion_List(metaList, b.(*metainternalversion.List), scope)
 	})
 
-	Scheme.AddConversionFunc((*metainternalversion.List)(nil), (*corev1.List)(nil), func(a, b interface{}, scope conversion.Scope) error {
+	_ = Scheme.AddConversionFunc((*metainternalversion.List)(nil), (*corev1.List)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		metaList := &metav1.List{}
 		err := metainternalversion.Convert_internalversion_List_To_v1_List(a.(*metainternalversion.List), metaList, scope)
 		if err != nil {

@@ -21,6 +21,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
         "@io_k8s_component_base//cli/flag:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
     ],

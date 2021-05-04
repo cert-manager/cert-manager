@@ -34,7 +34,6 @@ const (
 	errorVault = "VaultError"
 
 	messageVaultClientInitFailed         = "Failed to initialize Vault client: "
-	messageVaultHealthCheckFailed        = "Failed to call Vault health check: "
 	messageVaultStatusVerificationFailed = "Vault is not initialized or is sealed"
 	messageVaultConfigRequired           = "Vault config cannot be empty"
 	messageServerAndPathRequired         = "Vault server and path are required fields"

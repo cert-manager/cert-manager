@@ -39,7 +39,11 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
-	defer server.Shutdown()
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Errorf("failed to gracefully shut down test server: %v", err)
+		}
+	}()
 
 	var validConfig = cmacme.ACMEIssuerDNS01ProviderRFC2136{
 		Nameserver: server.ListenAddr(),
@@ -74,7 +78,11 @@ func TestRunSuiteNoTSIG(t *testing.T) {
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
-	defer server.Shutdown()
+	defer func() {
+		if err := server.Shutdown(); err != nil {
+			t.Errorf("failed to gracefully shut down test server: %v", err)
+		}
+	}()
 
 	var validConfig = cmacme.ACMEIssuerDNS01ProviderRFC2136{
 		Nameserver: server.ListenAddr(),
