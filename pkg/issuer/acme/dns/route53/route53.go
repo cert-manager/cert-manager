@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	maxRetries = 5
 	route53TTL = 10
 )
 
