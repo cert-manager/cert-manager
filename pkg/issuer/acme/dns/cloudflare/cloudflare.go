@@ -267,7 +267,7 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Error querying Cloudflare API for %s %q -> %v", method, uri, err)
+		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q: %v", method, uri, err)
 	}
 
 	defer resp.Body.Close()
@@ -287,9 +287,9 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 					errStr += fmt.Sprintf("<- %d: %s", chainErr.Code, chainErr.Message)
 				}
 			}
-			return nil, fmt.Errorf("Cloudflare API Error for %s %q \n%s", method, uri, errStr)
+			return nil, fmt.Errorf("error from the Cloudflare API for %s %q \n%s", method, uri, errStr)
 		}
-		return nil, fmt.Errorf("Cloudflare API error for %s %q", method, uri)
+		return nil, fmt.Errorf("error from the Cloudflare API for %s %q", method, uri)
 	}
 
 	return r.Result, nil
