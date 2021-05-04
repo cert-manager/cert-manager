@@ -304,7 +304,6 @@ func TestSign(t *testing.T) {
 		},
 		"tpp: if fail to build client based on secret lister transient error then return err and set pending": {
 			certificateRequest: tppCR.DeepCopy(),
-			issuer:             tppIssuer,
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
@@ -332,7 +331,6 @@ func TestSign(t *testing.T) {
 		},
 		"cloud: if fail to build client based on missing secret then return nil and hard fail": {
 			certificateRequest: cloudCR.DeepCopy(),
-			issuer:             cloudIssuer,
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
@@ -662,7 +660,6 @@ func TestSign(t *testing.T) {
 		},
 		"annotations: Custom Fields": {
 			certificateRequest: tppCRWithCustomFields.DeepCopy(),
-			issuer:             tppIssuer,
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
@@ -710,7 +707,6 @@ func TestSign(t *testing.T) {
 		},
 		"annotations: Error on invalid JSON in custom fields": {
 			certificateRequest: tppCRWithInvalidCustomFields.DeepCopy(),
-			issuer:             tppIssuer,
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFields.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
@@ -741,7 +737,6 @@ func TestSign(t *testing.T) {
 		},
 		"annotations: Error on invalid type in custom fields": {
 			certificateRequest: tppCRWithInvalidCustomFieldType.DeepCopy(),
-			issuer:             tppIssuer,
 			builder: &controllertest.Builder{
 				CertManagerObjects: []runtime.Object{tppCRWithInvalidCustomFieldType.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
@@ -783,7 +778,6 @@ func TestSign(t *testing.T) {
 type testT struct {
 	builder            *controllertest.Builder
 	certificateRequest *cmapi.CertificateRequest
-	issuer             cmapi.GenericIssuer
 
 	fakeClient *internalvenafifake.Venafi
 
