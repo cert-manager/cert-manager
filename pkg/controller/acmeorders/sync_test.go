@@ -618,7 +618,10 @@ func runTest(t *testing.T, test testT) {
 	defer test.builder.Stop()
 
 	c := &controller{}
-	c.Register(test.builder.Context)
+	_, _, err := c.Register(test.builder.Context)
+	if err != nil {
+		t.Errorf("Error registering the controller: %v", err)
+	}
 	c.accountRegistry = &accountstest.FakeRegistry{
 		GetClientFunc: func(_ string) (acmecl.Interface, error) {
 			return test.acmeClient, nil
@@ -626,7 +629,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	test.builder.Start()
 
-	err := c.Sync(context.Background(), test.order)
+	err = c.Sync(context.Background(), test.order)
 	if err != nil && !test.expectErr {
 		t.Errorf("Expected function to not error, but got: %v", err)
 	}
