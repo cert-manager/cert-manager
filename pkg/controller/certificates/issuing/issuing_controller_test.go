@@ -999,12 +999,9 @@ func TestIssuingController(t *testing.T) {
 			test.builder.Init()
 			defer test.builder.Stop()
 
-			// Instantiate/setup the controller
 			w := controllerWrapper{}
-			w.Register(test.builder.Context)
+			_, _, _ = w.Register(test.builder.Context)
 			w.controller.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle.LocalTemporaryCertificateBytes)
-
-			// Start the unit test builder
 			test.builder.Start()
 
 			key, err := cache.MetaNamespaceKeyFunc(test.certificate)
