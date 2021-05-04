@@ -145,7 +145,7 @@ func ValidateCertificateRequestApprovalCondition(crConds []cmapi.CertificateRequ
 	} {
 		switch len(cond.conditions) {
 		case 0:
-			break
+			// Do nothing.
 		case 1:
 			if condition := cond.conditions[0]; condition.Status != cmmeta.ConditionTrue {
 				el = append(el, field.Invalid(fldPath.Child(string(condition.Type)), condition.Status,
