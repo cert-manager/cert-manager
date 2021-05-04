@@ -48,11 +48,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	"github.com/jetstack/cert-manager/test/unit/listers"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
@@ -586,7 +584,7 @@ func TestCA_Sign(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			rec := &controllertest.FakeRecorder{}
+			rec := &testpkg.FakeRecorder{}
 
 			c := &CA{
 				issuerOptions: controller.IssuerOptions{
@@ -595,8 +593,8 @@ func TestCA_Sign(t *testing.T) {
 					IssuerAmbientCredentials:        false,
 				},
 				reporter: util.NewReporter(fixedClock, rec),
-				secretsLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-					listers.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
+				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
+					testlisters.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
 				),
 				templateGenerator: pki.GenerateTemplateFromCertificateRequest,
 			}
