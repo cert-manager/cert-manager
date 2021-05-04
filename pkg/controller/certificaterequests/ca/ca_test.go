@@ -438,10 +438,13 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	controller := certificaterequests.New(apiutil.IssuerCA, ca)
-	controller.Register(test.builder.Context)
+	_, _, err := controller.Register(test.builder.Context)
+	if err != nil {
+		t.Errorf("controller.Register failed (%s)", err.Error())
+	}
 	test.builder.Start()
 
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err = controller.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
