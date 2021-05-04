@@ -28,13 +28,13 @@ import (
 func (c *controller) handleGenericIssuer(obj interface{}) {
 	iss, ok := obj.(cmapi.GenericIssuer)
 	if !ok {
-		runtime.HandleError(fmt.Errorf("Object does not implement GenericIssuer %#v", obj))
+		runtime.HandleError(fmt.Errorf("object does not implement GenericIssuer %#v", obj))
 		return
 	}
 
 	certs, err := c.ordersForGenericIssuer(iss)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetObjectMeta().Namespace, iss.GetObjectMeta().Name))
+		runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetObjectMeta().Namespace, iss.GetObjectMeta().Name))
 		return
 	}
 	for _, crt := range certs {
