@@ -137,7 +137,7 @@ func (f *FileCertificateSource) updateCertificateFromDisk() error {
 
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	if bytes.Compare(keyData, f.cachedKeyBytes) == 0 && bytes.Compare(certData, f.cachedCertBytes) == 0 {
+	if bytes.Equal(keyData, f.cachedKeyBytes) && bytes.Equal(certData, f.cachedCertBytes) {
 		f.Log.V(logf.DebugLevel).Info("key and certificate on disk have not changed")
 		return nil
 	}
