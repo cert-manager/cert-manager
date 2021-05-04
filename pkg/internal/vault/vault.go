@@ -179,7 +179,7 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 
 	caCertPool := x509.NewCertPool()
 	ok := caCertPool.AppendCertsFromPEM(certs)
-	if ok == false {
+	if !ok {
 		return nil, fmt.Errorf("error loading Vault CA bundle")
 	}
 

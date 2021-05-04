@@ -71,7 +71,7 @@ func (a *action) Action() coretesting.Action {
 
 func (a *action) Matches(act coretesting.Action) error {
 	matches := reflect.DeepEqual(a.action, act)
-	if matches == true {
+	if matches {
 		return nil
 	}
 
