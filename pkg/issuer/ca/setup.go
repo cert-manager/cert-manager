@@ -34,8 +34,7 @@ const (
 
 	successKeyPairVerified = "KeyPairVerified"
 
-	messageErrorGetKeyPair     = "Error getting keypair for CA issuer: "
-	messageErrorInvalidKeyPair = "Invalid signing key pair: "
+	messageErrorGetKeyPair = "Error getting keypair for CA issuer: "
 
 	messageKeyPairVerified = "Signing CA verified"
 )
