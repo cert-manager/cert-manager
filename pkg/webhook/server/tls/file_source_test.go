@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -56,8 +58,10 @@ func TestFileSource_ReadsFile(t *testing.T) {
 		Log:            logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
-	defer close(stopCh)
-	go source.Run(stopCh)
+	errGroup := new(errgroup.Group)
+	errGroup.Go(func() error {
+		return source.Run(stopCh)
+	})
 
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
@@ -70,6 +74,10 @@ func TestFileSource_ReadsFile(t *testing.T) {
 	}
 	if x509Crt.Subject.SerialNumber != serial {
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
+	}
+	close(stopCh)
+	if err := errGroup.Wait(); err != nil {
+		t.Errorf("FileCertificateSource failed (%s)", err.Error())
 	}
 }
 
@@ -97,8 +105,10 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 		Log:            logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
-	defer close(stopCh)
-	go source.Run(stopCh)
+	errGroup := new(errgroup.Group)
+	errGroup.Go(func() error {
+		return source.Run(stopCh)
+	})
 
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
@@ -130,6 +140,11 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	}
 	if x509Crt.Subject.SerialNumber != serial {
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
+	}
+
+	close(stopCh)
+	if err := errGroup.Wait(); err != nil {
+		t.Errorf("FileCertificateSource failed (%s)", err.Error())
 	}
 }
 
