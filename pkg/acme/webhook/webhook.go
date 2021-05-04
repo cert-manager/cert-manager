@@ -16,7 +16,6 @@ limitations under the License.
 
 // Package webhook provides a library that can be used to build external ACME
 // solver webhooks.
-
 package webhook
 
 import (
