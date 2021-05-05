@@ -24,6 +24,9 @@ import (
 	"golang.org/x/crypto/acme"
 )
 
+// Interface is an Automatic Certificate Management Environment (ACME) client
+// implementing an Order-based flow.
+// For more information see RFC 8555 (https://tools.ietf.org/html/rfc8555).
 type Interface interface {
 	AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error)
 	GetOrder(ctx context.Context, url string) (*acme.Order, error)
@@ -35,7 +38,7 @@ type Interface interface {
 	GetChallenge(ctx context.Context, url string) (*acme.Challenge, error)
 	GetAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
 	WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
-	Register(ctx context.Context, a *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error)
+	Register(ctx context.Context, acct *acme.Account, prompt func(tosURL string) bool) (*acme.Account, error)
 	GetReg(ctx context.Context, url string) (*acme.Account, error)
 	HTTP01ChallengeResponse(token string) (string, error)
 	DNS01ChallengeRecord(token string) (string, error)

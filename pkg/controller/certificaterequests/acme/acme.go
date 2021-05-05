@@ -41,9 +41,13 @@ import (
 )
 
 const (
+	// CRControllerName is the string used to refer to
+	// this controller when enabling or disabling it from
+	// command line flags
 	CRControllerName = "certificaterequests-issuer-acme"
 )
 
+// ACME is a controller that implements `certificaterequests.Issuer`
 type ACME struct {
 	// used to record Events about resources to the API
 	recorder      record.EventRecorder
@@ -67,6 +71,7 @@ func init() {
 	})
 }
 
+// NewACME returns a configured controller
 func NewACME(ctx *controllerpkg.Context) *ACME {
 	return &ACME{
 		recorder:      ctx.Recorder,
@@ -77,6 +82,12 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 	}
 }
 
+// Sign returns a CA, certificate and Key from an ACME CA.
+//
+// If no order exists for a CertificateRequest, an order is constructed
+// and sent back to the Kubernetes API server for processing.
+// The order controller then processes the order. The CertificateRequest
+// is then updated with the result.
 func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
