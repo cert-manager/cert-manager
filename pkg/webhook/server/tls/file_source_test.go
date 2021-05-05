@@ -77,7 +77,7 @@ func TestFileSource_ReadsFile(t *testing.T) {
 	}
 	close(stopCh)
 	if err := errGroup.Wait(); err != nil {
-		t.Errorf("FileCertificateSource failed (%s)", err.Error())
+		t.Errorf("FileCertificateSource failed %v", err)
 	}
 }
 
@@ -144,7 +144,7 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 
 	close(stopCh)
 	if err := errGroup.Wait(); err != nil {
-		t.Errorf("FileCertificateSource failed (%s)", err.Error())
+		t.Errorf("FileCertificateSource failed: %v", err)
 	}
 }
 

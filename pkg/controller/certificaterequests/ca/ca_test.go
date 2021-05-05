@@ -438,7 +438,7 @@ func runTest(t *testing.T, test testT) {
 	controller := certificaterequests.New(apiutil.IssuerCA, ca)
 	_, _, err := controller.Register(test.builder.Context)
 	if err != nil {
-		t.Errorf("controller.Register failed (%s)", err.Error())
+		t.Errorf("controller.Register failed: %v", err)
 	}
 	test.builder.Start()
 

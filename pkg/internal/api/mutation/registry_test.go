@@ -365,12 +365,12 @@ func TestMutate(t *testing.T) {
 			// Add mutation functions to registry
 			for _, m := range test.mutations {
 				if err := reg.AddMutateFunc(m.obj, m.fn(t)); err != nil {
-					t.Errorf("reg.AddMutateFunc failed (%s)", err.Error())
+					t.Errorf("reg.AddMutateFunc failed %v", err)
 				}
 			}
 			for _, m := range test.mutationUpdates {
 				if err := reg.AddMutateUpdateFunc(m.obj, m.fn(t)); err != nil {
-					t.Errorf("reg.AddMutateUpdateFunc failed (%s)", err.Error())
+					t.Errorf("reg.AddMutateUpdateFunc failed: %v", err)
 				}
 			}
 
