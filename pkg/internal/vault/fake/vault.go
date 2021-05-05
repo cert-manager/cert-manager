@@ -50,12 +50,12 @@ func New() *Vault {
 	return v
 }
 
-// Sign implements vault.Interface
+// Sign implements `vault.Interface`.
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) ([]byte, []byte, error) {
 	return v.SignFn(csrPEM, duration)
 }
 
-// WithSign sets the fake Vault's Sign function
+// WithSign sets the fake Vault's Sign function.
 func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	v.SignFn = func([]byte, time.Duration) ([]byte, []byte, error) {
 		return certPEM, caPEM, err
@@ -63,13 +63,13 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	return v
 }
 
-// WithNew sets the fake Vault's New function
+// WithNew sets the fake Vault's New function.
 func (v *Vault) WithNew(f func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)) *Vault {
 	v.NewFn = f
 	return v
 }
 
-// New call NewFn and returns a pointer to the fake Vault
+// New call NewFn and returns a pointer to the fake Vault.
 func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer) (*Vault, error) {
 	_, err := v.NewFn(ns, sl, iss)
 	if err != nil {
@@ -79,7 +79,7 @@ func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer
 	return v, nil
 }
 
-// Sys returns an empty vault.Sys
+// Sys returns an empty `vault.Sys`.
 func (v *Vault) Sys() *vault.Sys {
 	return new(vault.Sys)
 }

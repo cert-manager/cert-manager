@@ -34,13 +34,13 @@ const (
 )
 
 // A Reporter updates the Status of a CertificateRequest and sends an event
-// to the Kubernetes Events API
+// to the Kubernetes Events API.
 type Reporter struct {
 	clock    clock.Clock
 	recorder record.EventRecorder
 }
 
-// NewReporter returns a Reporter that will send events to the given EventRecorder
+// NewReporter returns a Reporter that will send events to the given EventRecorder.
 func NewReporter(clock clock.Clock, recorder record.EventRecorder) *Reporter {
 	return &Reporter{
 		clock:    clock,
@@ -63,7 +63,8 @@ func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, messa
 
 }
 
-// Denied marks a CertificateRequest as terminally denied
+// Denied marks a CertificateRequest as terminally denied. No event is sent as it is
+// expected to be sent by the approval controller.
 func (r *Reporter) Denied(cr *cmapi.CertificateRequest) {
 	// Set the FailureTime to c.clock.Now(), only if it has not been already set.
 	if cr.Status.FailureTime == nil {
@@ -76,7 +77,8 @@ func (r *Reporter) Denied(cr *cmapi.CertificateRequest) {
 		cmmeta.ConditionFalse, cmapi.CertificateRequestReasonDenied, message)
 }
 
-// InvalidRequest marks a CertificateRequest as terminally Invalid
+// InvalidRequest marks a CertificateRequest as terminally Invalid. No event is sent as it
+// is expected to be reported by the order controller.
 func (r *Reporter) InvalidRequest(cr *cmapi.CertificateRequest, reason, message string) {
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionInvalidRequest,
 		cmmeta.ConditionTrue, reason, message)
@@ -84,7 +86,7 @@ func (r *Reporter) InvalidRequest(cr *cmapi.CertificateRequest, reason, message 
 
 // Pending marks a CertificateRequest as pending and sends a corresponding event.
 //
-// The event is only sent if the CertificateRequest is not already pending
+// The event is only sent if the CertificateRequest is not already pending.
 func (r *Reporter) Pending(cr *cmapi.CertificateRequest, err error, reason, message string) {
 	if err != nil {
 		message = fmt.Sprintf("%s: %v", message, err)

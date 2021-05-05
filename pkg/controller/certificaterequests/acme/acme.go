@@ -43,11 +43,11 @@ import (
 const (
 	// CRControllerName is the string used to refer to
 	// this controller when enabling or disabling it from
-	// command line flags
+	// command line flags.
 	CRControllerName = "certificaterequests-issuer-acme"
 )
 
-// ACME is a controller that implements `certificaterequests.Issuer`
+// ACME is a controller that implements `certificaterequests.Issuer`.
 type ACME struct {
 	// used to record Events about resources to the API
 	recorder      record.EventRecorder
@@ -71,7 +71,7 @@ func init() {
 	})
 }
 
-// NewACME returns a configured controller
+// NewACME returns a configured controller.
 func NewACME(ctx *controllerpkg.Context) *ACME {
 	return &ACME{
 		recorder:      ctx.Recorder,
