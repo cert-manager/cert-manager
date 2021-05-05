@@ -59,7 +59,9 @@ func InitCoverage(name string) {
 	}
 
 	// Set up the unit test framework with the required arguments to activate test coverage.
-	if err := flag.CommandLine.Parse([]string{"-test.coverprofile", tempCoveragePath()}); err != nil {
+	cmdLine := []string{"-test.coverprofile", tempCoveragePath()}
+	if err := flag.CommandLine.Parse(cmdLine); err != nil {
+		fmt.Printf("Failed to activate test coverage framework (failed to parse command line): %v\n", cmdLine)
 		panic(err)
 	}
 
