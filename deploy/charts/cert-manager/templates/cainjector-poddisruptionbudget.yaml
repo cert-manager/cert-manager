@@ -1,4 +1,4 @@
-{{- if .Values.global.podDisruptionBudget.enabled }}
+{{- if .Values.cainjector.podDisruptionBudget.enabled }}
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
@@ -10,7 +10,7 @@ metadata:
   name: {{ include "cainjector.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
 spec:
-{{- include "podDisruptionBudget.spec" . | indent 2 }}
+{{- include "cainjector.podDisruptionBudget.spec" . | indent 2 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "cainjector.name" . }}

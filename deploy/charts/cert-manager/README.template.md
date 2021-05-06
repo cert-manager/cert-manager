@@ -121,6 +121,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.servicemonitor.honorLabels` | Enable label honoring for metrics scraped by Prometheus (see [Prometheus scrape config docs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) for details). By setting `honorLabels` to `true`, Prometheus will prefer label contents given by cert-manager on conflicts. Can be used to remove the "exported_namespace" label for example.  | `false` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
 | `deploymentAnnotations` | Annotations to add to the cert-manager deployment | `{}` |
+| `podDisruptionBudget.enabled` | Adds a PodDisruptionBudget for the cert-manager deployment | `false` |
+| `podDisruptionBudget.minAvailable` | Configures the minimum available pods for voluntary disruptions. Cannot used if `maxUnavailable` is set. | `1` |
+| `podDisruptionBudget.maxUnavailable` | Configures the maximum unavailable pods for voluntary disruptions. Cannot used if `minAvailable` is set. |  |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
 | `podDnsConfig` | Optional cert-manager pod [DNS configurations](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-config) |  |
 | `podLabels` | Labels to add to the cert-manager pod | `{}` |
@@ -138,6 +141,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.podLabels` | Labels to add to the cert-manager webhook pod | `{}` |
 | `webhook.serviceLabels` | Labels to add to the cert-manager webhook service | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
+| `webhook.podDisruptionBudget.enabled` | Adds a PodDisruptionBudget for the cert-manager deployment | `false` |
+| `webhook.podDisruptionBudget.minAvailable` | Configures the minimum available pods for voluntary disruptions. Cannot used if `maxUnavailable` is set. | `1` |
+| `webhook.podDisruptionBudget.maxUnavailable` | Configures the maximum unavailable pods for voluntary disruptions. Cannot used if `minAvailable` is set. |  |
 | `webhook.mutatingWebhookConfigurationAnnotations` | Annotations to add to the mutating webhook configuration | `{}` |
 | `webhook.validatingWebhookConfigurationAnnotations` | Annotations to add to the validating webhook configuration | `{}` |
 | `webhook.serviceAnnotations` | Annotations to add to the webhook service | `{}` |
@@ -180,6 +186,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
 | `cainjector.podLabels` | Labels to add to the cert-manager cainjector pod | `{}` |
 | `cainjector.deploymentAnnotations` | Annotations to add to the cainjector deployment | `{}` |
+| `cainjector.podDisruptionBudget.enabled` | Adds a PodDisruptionBudget for the cert-manager deployment | `false` |
+| `cainjector.podDisruptionBudget.minAvailable` | Configures the minimum available pods for voluntary disruptions. Cannot used if `maxUnavailable` is set. | `1` |
+| `cainjector.podDisruptionBudget.maxUnavailable` | Configures the maximum unavailable pods for voluntary disruptions. Cannot used if `minAvailable` is set. |  |
 | `cainjector.extraArgs` | Optional flags for cert-manager cainjector component | `[]` |
 | `cainjector.serviceAccount.create` | If `true`, create a new service account for the cainjector component | `true` |
 | `cainjector.serviceAccount.name` | Service account for the cainjector component to be used. If not set and `cainjector.serviceAccount.create` is `true`, a name is generated using the fullname template |  |

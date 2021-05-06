@@ -38,20 +38,35 @@ Create the name of the service account to use
 Create the default PodDisruptionBudget to use
 */}}
 {{- define "podDisruptionBudget.spec" -}}
-{{- if and .Values.global.podDisruptionBudget.minAvailable .Values.global.podDisruptionBudget.maxUnavailable }}
-{{- fail "Cannot set both .Values.global.podDisruptionBudget.minAvailable and .Values.global.podDisruptionBudget.maxUnavailable" -}}
+{{- if and .Values.podDisruptionBudget.minAvailable .Values.podDisruptionBudget.maxUnavailable }}
+{{- fail "Cannot set both .Values.podDisruptionBudget.minAvailable and .Values.podDisruptionBudget.maxUnavailable" -}}
 {{- end }}
-{{- if not .Values.global.podDisruptionBudget.maxUnavailable }}
-minAvailable: {{ default 1 .Values.global.podDisruptionBudget.minAvailable }}
+{{- if not .Values.podDisruptionBudget.maxUnavailable }}
+minAvailable: {{ default 1 .Values.podDisruptionBudget.minAvailable }}
 {{- end }}
-{{- if .Values.global.podDisruptionBudget.maxUnavailable }}
-maxUnavailable: {{ .Values.global.podDisruptionBudget.maxUnavailable }}
+{{- if .Values.podDisruptionBudget.maxUnavailable }}
+maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
 {{- end }}
 {{- end }}
 
 {{/*
 Webhook templates
 */}}
+
+{{/*
+Create the PodDisruptionBudget to use
+*/}}
+{{- define "webhook.podDisruptionBudget.spec" -}}
+{{- if and .Values.webhook.podDisruptionBudget.minAvailable .Values.webhook.podDisruptionBudget.maxUnavailable }}
+{{- fail "Cannot set both .Values.webhook.podDisruptionBudget.minAvailable and .Values.webhook.podDisruptionBudget.maxUnavailable" -}}
+{{- end }}
+{{- if not .Values.webhook.podDisruptionBudget.maxUnavailable }}
+minAvailable: {{ default 1 .Values.webhook.podDisruptionBudget.minAvailable }}
+{{- end }}
+{{- if .Values.webhook.podDisruptionBudget.maxUnavailable }}
+maxUnavailable: {{ .Values.webhook.podDisruptionBudget.maxUnavailable }}
+{{- end }}
+{{- end }}
 
 {{/*
 Expand the name of the chart.
@@ -90,6 +105,21 @@ Create the name of the service account to use
 {{/*
 cainjector templates
 */}}
+
+{{/*
+Create the PodDisruptionBudget to use
+*/}}
+{{- define "cainjector.podDisruptionBudget.spec" -}}
+{{- if and .Values.cainjector.podDisruptionBudget.minAvailable .Values.cainjector.podDisruptionBudget.maxUnavailable }}
+{{- fail "Cannot set both .Values.cainjector.podDisruptionBudget.minAvailable and .Values.cainjector.podDisruptionBudget.maxUnavailable" -}}
+{{- end }}
+{{- if not .Values.cainjector.podDisruptionBudget.maxUnavailable }}
+minAvailable: {{ default 1 .Values.cainjector.podDisruptionBudget.minAvailable }}
+{{- end }}
+{{- if .Values.cainjector.podDisruptionBudget.maxUnavailable }}
+maxUnavailable: {{ .Values.cainjector.podDisruptionBudget.maxUnavailable }}
+{{- end }}
+{{- end }}
 
 {{/*
 Expand the name of the chart.
