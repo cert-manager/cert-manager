@@ -140,3 +140,160 @@ func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateReques
 
 	return csr, nil
 }
+
+type PEMBundle struct {
+	CAPEM    []byte
+	ChainPEM []byte
+}
+
+type chainNode struct {
+	cert *x509.Certificate
+
+	issuer *chainNode
+}
+
+// ParseCertificateChainPEM will decode the bundle before passing to
+// ParseCertificateChain
+func ParseCertificateChainPEM(pembundle []byte) (*PEMBundle, error) {
+	certs, err := DecodeX509CertificateChainBytes(pembundle)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCertificateChain(certs)
+}
+
+// ParseCertificateChain will return an x509 PEM encoded certificate chain and
+// CA. The CA may not be a true root, but the highest intermediate certificate.
+// Removes duplicate entries. The returned CA may be empty if a single
+// certificate was passed. Chain contains leaf certificate first. Removes
+// comments and white space. An error is returned if the passed bundle is not a
+// valid flat tree chain, the bundle is malformed, or the chain is broken.
+func ParseCertificateChain(certs []*x509.Certificate) (*PEMBundle, error) {
+	// De-duplicate certificates
+	for i := 0; i < len(certs)-1; i++ {
+		for j := 1; j < len(certs); j++ {
+			if i == j {
+				continue
+			}
+			if certs[i].Equal(certs[j]) {
+				certs = append(certs[:i], certs[i+1:]...)
+			}
+		}
+	}
+
+	var chains []*chainNode
+	// Build the nodes to the linked list
+	for i := range certs {
+		chains = append(chains, &chainNode{cert: certs[i]})
+	}
+
+	for {
+		// We have built the full chain
+		if len(chains) == 1 {
+			break
+		}
+
+		// lastChainsLength is used to ensure that at every pass, the number of
+		// tested chains gets smaller.
+		lastChainsLength := len(chains)
+		for i := 0; i < len(chains)-1; i++ {
+			for j := 1; j < len(chains); j++ {
+				if i == j {
+					continue
+				}
+
+				// attempt to add both chain together
+				chain, ok := chains[i].tryMergeChain(chains[j])
+				if ok {
+					// If adding the chains together was successful, remove inner chain from
+					// list
+					chains = append(chains[:j], chains[j+1:]...)
+				}
+
+				chains[i] = chain
+			}
+		}
+
+		// If no chains were merged in this pass, the chain can never be built
+		// flat. Error.
+		if lastChainsLength == len(chains) {
+			return nil, errors.NewInvalidData("certificate chain is malformed or broken")
+		}
+	}
+
+	// There is only a single chain left at index 0. Return chain as PEM.
+	return chains[0].toBundleAndCA()
+}
+
+// toBundleAndCA will return the PEM bundle of this chain.
+func (c *chainNode) toBundleAndCA() (*PEMBundle, error) {
+	var (
+		certs []*x509.Certificate
+		ca    *x509.Certificate
+	)
+
+	for {
+		// If the issuer is nil, we have hit the root of the chain. Assign the CA
+		// to this certificate and stop traversing.
+		if c.issuer == nil {
+			ca = c.cert
+			break
+		}
+
+		// Add this nodes certificate to the list at the end. Ready to check next
+		// node up.
+		certs = append(certs, c.cert)
+		c = c.issuer
+	}
+
+	capem, err := EncodeX509(ca)
+	if err != nil {
+		return nil, err
+	}
+
+	// If no certificates parsed, then CA is the only certificate and should be
+	// the chain
+	if len(certs) == 0 {
+		return &PEMBundle{ChainPEM: capem}, nil
+	}
+
+	// Encode cert chain
+	chainpem, err := EncodeX509Chain(certs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return chain and ca
+	return &PEMBundle{CAPEM: capem, ChainPEM: chainpem}, nil
+}
+
+// tryMergeChain will attempt to add the chain "c" and "chain" together.
+// Successful if the either chain is added to the top or bottom of the other
+// chain.
+func (c *chainNode) tryMergeChain(chain *chainNode) (*chainNode, bool) {
+	// The given chain's root has been signed by this node. Add this node on top
+	// of the given chain.
+	if chain.root().cert.CheckSignatureFrom(c.cert) == nil {
+		chain.root().issuer = c
+		return chain, true
+	}
+
+	// The given chain is the issuer of the root of this node. Add the given
+	// chain on top of the root of this node.
+	if c.root().cert.CheckSignatureFrom(chain.cert) == nil {
+		root := c.root()
+		root.issuer = chain
+		return c, true
+	}
+
+	// Chains cannot be added together.
+	return c, false
+}
+
+// Return the root most node of this chain.
+func (c *chainNode) root() *chainNode {
+	if c.issuer == nil {
+		return c
+	}
+	return c.issuer.root()
+}

@@ -17,16 +17,22 @@ limitations under the License.
 package pki
 
 import (
+	"crypto"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
-func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
+func generatePrivateKeyBytes(keyAlgo cmapi.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
 	cert := buildCertificateWithKeyParams(keyAlgo, keySize)
 	privateKey, err := GeneratePrivateKeyForCertificate(cert)
 	if err != nil {
@@ -36,7 +42,7 @@ func generatePrivateKeyBytes(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byt
 	return EncodePrivateKey(privateKey, cert.Spec.PrivateKey.Encoding)
 }
 
-func generatePKCS8PrivateKey(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
+func generatePKCS8PrivateKey(keyAlgo cmapi.PrivateKeyAlgorithm, keySize int) ([]byte, error) {
 	privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(keyAlgo, keySize))
 	if err != nil {
 		return nil, err
@@ -44,34 +50,183 @@ func generatePKCS8PrivateKey(keyAlgo v1.PrivateKeyAlgorithm, keySize int) ([]byt
 	return EncodePKCS8PrivateKey(privateKey)
 }
 
+type testBundle struct {
+	cert *x509.Certificate
+	pem  []byte
+	pk   crypto.PrivateKey
+}
+
+func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle {
+	pk, err := GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template := &x509.Certificate{
+		Version:               3,
+		BasicConstraintsValid: true,
+		SerialNumber:          serialNumber,
+		PublicKeyAlgorithm:    x509.RSA,
+		PublicKey:             pk.Public(),
+		IsCA:                  true,
+		Subject: pkix.Name{
+			CommonName: name,
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Minute),
+		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+
+	var (
+		issuerKey  crypto.PrivateKey
+		issuerCert *x509.Certificate
+	)
+
+	if issuer == nil {
+		// Selfsigned (no issuer)
+		issuerKey = pk
+		issuerCert = template
+	} else {
+		issuerKey = issuer.pk
+		issuerCert = issuer.cert
+	}
+
+	//cert, err := x509.CreateCertificate(rand.Reader, template, issuerCert, pk.Public(), issuerKey)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//certpem, err := EncodeX509(cert)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	certpem, cert, err := SignCertificate(template, issuerCert, pk.Public(), issuerKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return &testBundle{pem: certpem, cert: cert, pk: pk}
+}
+
+func TestParseCertificateChain(t *testing.T) {
+	root := mustCreateBundle(t, nil, "root")
+	int1 := mustCreateBundle(t, root, "int-1")
+	int2 := mustCreateBundle(t, int1, "int-2")
+	leaf := mustCreateBundle(t, int2, "leaf")
+	random := mustCreateBundle(t, nil, "random")
+
+	joinPEM := func(first []byte, rest ...[]byte) []byte {
+		for _, b := range rest {
+			first = append(first, b...)
+		}
+		return first
+	}
+
+	tests := map[string]struct {
+		inputBundle  []byte
+		expPEMBundle *PEMBundle
+		expErr       bool
+	}{
+		"if single certificate passed, return single certificate": {
+			inputBundle:  root.pem,
+			expPEMBundle: &PEMBundle{ChainPEM: root.pem},
+			expErr:       false,
+		},
+		"if two certificate chain passed in order, should return single ca and certificate": {
+			inputBundle:  joinPEM(int1.pem, root.pem),
+			expPEMBundle: &PEMBundle{ChainPEM: int1.pem, CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if two certificate chain passed out of order, should return single ca and certificate": {
+			inputBundle:  joinPEM(root.pem, int1.pem),
+			expPEMBundle: &PEMBundle{ChainPEM: int1.pem, CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 3 certificate chain passed out of order, should return single ca and chain in order": {
+			inputBundle:  joinPEM(root.pem, int2.pem, int1.pem),
+			expPEMBundle: &PEMBundle{ChainPEM: joinPEM(int2.pem, int1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"empty entries should be ignored, and return ca and certificate": {
+			inputBundle:  joinPEM(root.pem, int2.pem, []byte("\n#foo\n  \n"), int1.pem),
+			expPEMBundle: &PEMBundle{ChainPEM: joinPEM(int2.pem, int1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 4 certificate chain passed in order, should return single ca and chain in order": {
+			inputBundle:  joinPEM(leaf.pem, int1.pem, int2.pem, root.pem),
+			expPEMBundle: &PEMBundle{ChainPEM: joinPEM(leaf.pem, int2.pem, int1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 4 certificate chain passed out of order, should return single ca and chain in order": {
+			inputBundle:  joinPEM(root.pem, int1.pem, leaf.pem, int2.pem),
+			expPEMBundle: &PEMBundle{ChainPEM: joinPEM(leaf.pem, int2.pem, int1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 3 certificate chain but has break in the chain, should return error": {
+			inputBundle:  joinPEM(root.pem, int1.pem, leaf.pem),
+			expPEMBundle: nil,
+			expErr:       true,
+		},
+		"if 4 certificate chain but also random certificate, should return error": {
+			inputBundle:  joinPEM(root.pem, int1.pem, leaf.pem, int2.pem, random.pem),
+			expPEMBundle: nil,
+			expErr:       true,
+		},
+		"if 6 certificate chain but some are duplicates, duplicates should be removed and return single ca with chain": {
+			inputBundle:  joinPEM(int2.pem, int1.pem, root.pem, leaf.pem, int1.pem, root.pem),
+			expPEMBundle: &PEMBundle{ChainPEM: joinPEM(leaf.pem, int2.pem, int1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			bundle, err := ParseCertificateChainPEM(test.inputBundle)
+			if (err != nil) != test.expErr {
+				t.Errorf("unexpected error, exp=%t got=%v",
+					test.expErr, err)
+			}
+
+			if !reflect.DeepEqual(bundle, test.expPEMBundle) {
+				t.Errorf("unexpected pem bundle, exp=%+s got=%+s",
+					test.expPEMBundle, bundle)
+			}
+		})
+	}
+}
+
 func TestDecodePrivateKeyBytes(t *testing.T) {
 	type testT struct {
 		name         string
 		keyBytes     []byte
-		keyAlgo      v1.PrivateKeyAlgorithm
+		keyAlgo      cmapi.PrivateKeyAlgorithm
 		expectErr    bool
 		expectErrStr string
 	}
 
-	rsaKeyBytes, err := generatePrivateKeyBytes(v1.RSAKeyAlgorithm, MinRSAKeySize)
+	rsaKeyBytes, err := generatePrivateKeyBytes(cmapi.RSAKeyAlgorithm, MinRSAKeySize)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
 	}
 
-	pkcs8RsaKeyBytes, err := generatePKCS8PrivateKey(v1.RSAKeyAlgorithm, MinRSAKeySize)
+	pkcs8RsaKeyBytes, err := generatePKCS8PrivateKey(cmapi.RSAKeyAlgorithm, MinRSAKeySize)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
 	}
 
-	ecdsaKeyBytes, err := generatePrivateKeyBytes(v1.ECDSAKeyAlgorithm, 256)
+	ecdsaKeyBytes, err := generatePrivateKeyBytes(cmapi.ECDSAKeyAlgorithm, 256)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
 	}
 
-	pkcs8EcdsaKeyBytes, err := generatePKCS8PrivateKey(v1.ECDSAKeyAlgorithm, 256)
+	pkcs8EcdsaKeyBytes, err := generatePKCS8PrivateKey(cmapi.ECDSAKeyAlgorithm, 256)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
@@ -89,25 +244,25 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		{
 			name:      "decode pem encoded rsa private key bytes",
 			keyBytes:  rsaKeyBytes,
-			keyAlgo:   v1.RSAKeyAlgorithm,
+			keyAlgo:   cmapi.RSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
 			name:      "decode pkcs#8 encoded rsa private key bytes",
 			keyBytes:  pkcs8RsaKeyBytes,
-			keyAlgo:   v1.RSAKeyAlgorithm,
+			keyAlgo:   cmapi.RSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
 			name:      "decode pem encoded ecdsa private key bytes",
 			keyBytes:  ecdsaKeyBytes,
-			keyAlgo:   v1.ECDSAKeyAlgorithm,
+			keyAlgo:   cmapi.ECDSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
 			name:      "decode pkcs#8 encoded ecdsa private key bytes",
 			keyBytes:  pkcs8EcdsaKeyBytes,
-			keyAlgo:   v1.ECDSAKeyAlgorithm,
+			keyAlgo:   cmapi.ECDSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
@@ -151,7 +306,7 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 					return
 				}
 
-				if test.keyAlgo == v1.RSAKeyAlgorithm {
+				if test.keyAlgo == cmapi.RSAKeyAlgorithm {
 					_, ok := privateKey.(*rsa.PrivateKey)
 					if !ok {
 						t.Errorf("expected rsa private key, but got %T", privateKey)
@@ -159,7 +314,7 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 					}
 				}
 
-				if test.keyAlgo == v1.ECDSAKeyAlgorithm {
+				if test.keyAlgo == cmapi.ECDSAKeyAlgorithm {
 					_, ok := privateKey.(*ecdsa.PrivateKey)
 					if !ok {
 						t.Errorf("expected ecdsa private key, but got %T", privateKey)
