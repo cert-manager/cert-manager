@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	maxRetries = 5
 	route53TTL = 10
 )
 
@@ -178,7 +177,7 @@ func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
 func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	hostedZoneID, err := r.getHostedZoneID(fqdn)
 	if err != nil {
-		return fmt.Errorf("Failed to determine Route 53 hosted zone ID: %v", err)
+		return fmt.Errorf("failed to determine Route 53 hosted zone ID: %v", err)
 	}
 
 	recordSet := newTXTRecordSet(fqdn, value, ttl)
@@ -205,7 +204,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("Failed to change Route 53 record set: %v", removeReqID(err))
+		return fmt.Errorf("failed to change Route 53 record set: %v", removeReqID(err))
 
 	}
 
@@ -217,7 +216,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 		}
 		resp, err := r.client.GetChange(reqParams)
 		if err != nil {
-			return false, fmt.Errorf("Failed to query Route 53 change status: %v", removeReqID(err))
+			return false, fmt.Errorf("failed to query Route 53 change status: %v", removeReqID(err))
 		}
 		if *resp.ChangeInfo.Status == route53.ChangeStatusInsync {
 			return true, nil
@@ -256,13 +255,13 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	}
 	authZone, err = util.FindBestMatch(fqdn, hostedZones...)
 	if err != nil {
-		return "", fmt.Errorf("Zone %s not found in Route 53 for domain %s", authZone, fqdn)
+		return "", fmt.Errorf("zone %s not found in Route 53 for domain %s", authZone, fqdn)
 	}
 
 	hostedZoneID, ok := zoneToID[authZone]
 
 	if len(hostedZoneID) == 0 || !ok {
-		return "", fmt.Errorf("Zone %s not found in Route 53 for domain %s", authZone, fqdn)
+		return "", fmt.Errorf("zone %s not found in Route 53 for domain %s", authZone, fqdn)
 	}
 
 	if strings.HasPrefix(hostedZoneID, "/hostedzone/") {

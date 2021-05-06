@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -492,13 +491,13 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		crt     *v1.Certificate
+		crt     *cmapi.Certificate
 		want    []pkix.Extension
 		wantErr bool
 	}{
 		{
 			name: "Test no usages set",
-			crt:  &v1.Certificate{},
+			crt:  &cmapi.Certificate{},
 			want: []pkix.Extension{
 				{
 					Id:    OIDExtensionKeyUsage,
@@ -509,9 +508,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 		},
 		{
 			name: "Test client auth extended usage set",
-			crt: &v1.Certificate{
-				Spec: v1.CertificateSpec{
-					Usages: []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageClientAuth},
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageClientAuth},
 				},
 			},
 			want: []pkix.Extension{
@@ -528,9 +527,9 @@ func Test_buildKeyUsagesExtensionsForCertificate(t *testing.T) {
 		},
 		{
 			name: "Test server + client auth extended usage set",
-			crt: &v1.Certificate{
-				Spec: v1.CertificateSpec{
-					Usages: []v1.KeyUsage{v1.UsageDigitalSignature, v1.UsageKeyEncipherment, v1.UsageServerAuth, v1.UsageClientAuth},
+			crt: &cmapi.Certificate{
+				Spec: cmapi.CertificateSpec{
+					Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageServerAuth, cmapi.UsageClientAuth},
 				},
 			},
 			want: []pkix.Extension{

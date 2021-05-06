@@ -48,11 +48,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	"github.com/jetstack/cert-manager/test/unit/listers"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
@@ -438,10 +436,13 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	controller := certificaterequests.New(apiutil.IssuerCA, ca)
-	controller.Register(test.builder.Context)
+	_, _, err := controller.Register(test.builder.Context)
+	if err != nil {
+		t.Errorf("controller.Register failed: %v", err)
+	}
 	test.builder.Start()
 
-	err := controller.Sync(context.Background(), test.certificateRequest)
+	err = controller.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
@@ -583,7 +584,7 @@ func TestCA_Sign(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			rec := &controllertest.FakeRecorder{}
+			rec := &testpkg.FakeRecorder{}
 
 			c := &CA{
 				issuerOptions: controller.IssuerOptions{
@@ -592,8 +593,8 @@ func TestCA_Sign(t *testing.T) {
 					IssuerAmbientCredentials:        false,
 				},
 				reporter: util.NewReporter(fixedClock, rec),
-				secretsLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-					listers.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
+				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
+					testlisters.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
 				),
 				templateGenerator: pki.GenerateTemplateFromCertificateRequest,
 			}

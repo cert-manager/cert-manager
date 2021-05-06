@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -56,20 +58,29 @@ func TestFileSource_ReadsFile(t *testing.T) {
 		Log:            logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
-	defer close(stopCh)
-	go source.Run(stopCh)
+	errGroup := new(errgroup.Group)
+	errGroup.Go(func() error {
+		return source.Run(stopCh)
+	})
 
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
 	if err != nil {
+		close(stopCh)
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
+		close(stopCh)
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
+		close(stopCh)
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
+	}
+	close(stopCh)
+	if err := errGroup.Wait(); err != nil {
+		t.Errorf("FileCertificateSource failed %v", err)
 	}
 }
 
@@ -97,19 +108,24 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 		Log:            logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
-	defer close(stopCh)
-	go source.Run(stopCh)
+	errGroup := new(errgroup.Group)
+	errGroup.Go(func() error {
+		return source.Run(stopCh)
+	})
 
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
 	if err != nil {
+		close(stopCh)
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
+		close(stopCh)
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
+		close(stopCh)
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
 	}
 
@@ -122,14 +138,22 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	time.Sleep(interval * 2)
 	cert, err = source.GetCertificate(nil)
 	if err != nil {
+		close(stopCh)
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err = x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
+		close(stopCh)
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
+		close(stopCh)
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
+	}
+
+	close(stopCh)
+	if err := errGroup.Wait(); err != nil {
+		t.Errorf("FileCertificateSource failed: %v", err)
 	}
 }
 

@@ -24,6 +24,8 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
+// DefaultCertDuration returns d.Duration if set, otherwise returns
+// cert-manager's default certificate duration (90 days).
 func DefaultCertDuration(d *metav1.Duration) time.Duration {
 	certDuration := v1.DefaultCertificateDuration
 	if d != nil {
