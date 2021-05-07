@@ -237,9 +237,7 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Spec.Tolerations = []corev1.Toleration{}
 	}
 
-	for _, t := range podTempl.Spec.Tolerations {
-		pod.Spec.Tolerations = append(pod.Spec.Tolerations, t)
-	}
+	pod.Spec.Tolerations = append(pod.Spec.Tolerations, podTempl.Spec.Tolerations...)
 
 	if podTempl.Spec.Affinity != nil {
 		pod.Spec.Affinity = podTempl.Spec.Affinity

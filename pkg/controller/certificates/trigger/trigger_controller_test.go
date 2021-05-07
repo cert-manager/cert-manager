@@ -254,9 +254,8 @@ func Test_controller_ProcessItem(t *testing.T) {
 				if test.mockShouldReissue == nil {
 					t.Fatal("no mock set for shouldReissue, but shouldReissue has been called")
 					return "", "", false
-				} else {
-					return test.mockShouldReissue(t)(i)
 				}
+				return test.mockShouldReissue(t)(i)
 			}
 
 			// TODO(mael): we should really remove the Certificate field from

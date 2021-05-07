@@ -47,10 +47,6 @@ const (
 	ControllerName = "certificates-revision-manager"
 )
 
-var (
-	certificateGvk = cmapi.SchemeGroupVersion.WithKind("Certificate")
-)
-
 type controller struct {
 	certificateLister        cmlisters.CertificateLister
 	certificateRequestLister cmlisters.CertificateRequestLister

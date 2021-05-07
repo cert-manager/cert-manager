@@ -135,7 +135,6 @@ func (r *Registry) Mutate(req *admissionv1.AdmissionRequest) ([]byte, error) {
 		}
 
 		mutate(req, internal)
-		break
 
 	case admissionv1.Update:
 		// Attempt to retrieve the registered UPDATE mutating functions, and apply
@@ -154,7 +153,6 @@ func (r *Registry) Mutate(req *admissionv1.AdmissionRequest) ([]byte, error) {
 
 		// Pass both the old and new internal types to mutate
 		mutate(req, oldInternal, internal)
-		break
 
 	default:
 		// If not under a CREATE or UPDATE operation, exit early

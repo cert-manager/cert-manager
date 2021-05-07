@@ -202,7 +202,7 @@ func (a *DNSProvider) makeRequest(req *http.Request) ([]byte, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Akamai OPEN API returned %d %s", resp.StatusCode, resp.Status)
+		return nil, fmt.Errorf("unexpected response from Akamai OPEN API: status_code: %d, status: %s", resp.StatusCode, resp.Status)
 	}
 
 	responsePayload, err := ioutil.ReadAll(resp.Body)

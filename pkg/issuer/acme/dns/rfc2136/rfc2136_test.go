@@ -30,6 +30,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	testserver "github.com/jetstack/cert-manager/test/acme/dns/server"
@@ -50,12 +51,14 @@ func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:   []string{rfc2136TestZone},
-		Handler: dns.HandlerFunc(serverHandlerHello),
+		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerHello),
 	}
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
 	}
-	defer server.Shutdown()
+	defer func() {
+		require.NoError(t, server.Shutdown())
+	}()
 
 	c := new(dns.Client)
 	m := new(dns.Msg)
@@ -74,7 +77,7 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:   []string{rfc2136TestZone},
-		Handler: dns.HandlerFunc(serverHandlerReturnSuccess),
+		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnSuccess),
 	}
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
@@ -94,7 +97,7 @@ func TestRFC2136ServerError(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:   []string{rfc2136TestZone},
-		Handler: dns.HandlerFunc(serverHandlerReturnErr),
+		Handler: dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnErr),
 	}
 	if err := server.Run(ctx); err != nil {
 		t.Fatalf("failed to start test server: %v", err)
@@ -116,7 +119,7 @@ func TestRFC2136TsigClient(t *testing.T) {
 	ctx := logf.NewContext(context.TODO(), nil, t.Name())
 	server := &testserver.BasicServer{
 		Zones:         []string{rfc2136TestZone},
-		Handler:       dns.HandlerFunc(serverHandlerReturnSuccess),
+		Handler:       dns.HandlerFunc((&testHandlers{t: t}).serverHandlerReturnSuccess),
 		EnableTSIG:    true,
 		TSIGZone:      rfc2136TestZone,
 		TSIGKeyName:   rfc2136TestTsigKeyName,
@@ -325,7 +328,14 @@ func TestRFC2136ValidUpdatePacket(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func serverHandlerHello(w dns.ResponseWriter, req *dns.Msg) {
+// testHandlers provides DNS server handlers for use in tests and has a
+// reference to testing.T so that the handlers (which do not return errors) can
+// make test assertions and fail tests.
+type testHandlers struct {
+	t *testing.T
+}
+
+func (o *testHandlers) serverHandlerHello(w dns.ResponseWriter, req *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(req)
 	m.Extra = make([]dns.RR, 1)
@@ -333,10 +343,12 @@ func serverHandlerHello(w dns.ResponseWriter, req *dns.Msg) {
 		Hdr: dns.RR_Header{Name: m.Question[0].Name, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: 0},
 		Txt: []string{"Hello world"},
 	}
-	w.WriteMsg(m)
+	if err := w.WriteMsg(m); err != nil {
+		assert.NoError(o.t, err)
+	}
 }
 
-func serverHandlerReturnSuccess(w dns.ResponseWriter, req *dns.Msg) {
+func (o *testHandlers) serverHandlerReturnSuccess(w dns.ResponseWriter, req *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetReply(req)
 	if req.Opcode == dns.OpcodeQuery && req.Question[0].Qtype == dns.TypeSOA && req.Question[0].Qclass == dns.ClassINET {
@@ -351,12 +363,15 @@ func serverHandlerReturnSuccess(w dns.ResponseWriter, req *dns.Msg) {
 			m.SetTsig(rfc2136TestZone, dns.HmacMD5, 300, time.Now().Unix())
 		}
 	}
-
-	w.WriteMsg(m)
+	if err := w.WriteMsg(m); err != nil {
+		assert.NoError(o.t, err)
+	}
 }
 
-func serverHandlerReturnErr(w dns.ResponseWriter, req *dns.Msg) {
+func (o *testHandlers) serverHandlerReturnErr(w dns.ResponseWriter, req *dns.Msg) {
 	m := new(dns.Msg)
 	m.SetRcode(req, dns.RcodeNotZone)
-	w.WriteMsg(m)
+	if err := w.WriteMsg(m); err != nil {
+		assert.NoError(o.t, err)
+	}
 }
