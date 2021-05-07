@@ -292,8 +292,9 @@ func (c *chainNode) tryMergeChain(chain *chainNode) (*chainNode, bool) {
 
 // Return the root most node of this chain.
 func (c *chainNode) root() *chainNode {
-	if c.issuer == nil {
-		return c
+	for c.issuer != nil {
+		c = c.issuer
 	}
-	return c.issuer.root()
+
+	return c
 }
