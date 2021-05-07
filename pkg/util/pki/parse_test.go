@@ -96,14 +96,6 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 		issuerCert = issuer.cert
 	}
 
-	//cert, err := x509.CreateCertificate(rand.Reader, template, issuerCert, pk.Public(), issuerKey)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//certpem, err := EncodeX509(cert)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
 	certpem, cert, err := SignCertificate(template, issuerCert, pk.Public(), issuerKey)
 	if err != nil {
 		t.Fatal(err)

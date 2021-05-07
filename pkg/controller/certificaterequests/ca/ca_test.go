@@ -174,7 +174,7 @@ func TestSign(t *testing.T) {
 		t.Error(err)
 		t.FailNow()
 	}
-	certPEM, caPEM, err := pki.SignCSRTemplate([]*x509.Certificate{rsaCert}, skRSA, template)
+	certPEM, _, err := pki.SignCSRTemplate([]*x509.Certificate{rsaCert}, skRSA, template)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
