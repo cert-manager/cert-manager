@@ -52,7 +52,6 @@ import (
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	"github.com/jetstack/cert-manager/test/unit/listers"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
@@ -155,7 +154,7 @@ func TestSign(t *testing.T) {
 	)
 
 	// generate a self signed root ca valid for 60d
-	_, rsaPEMCert := generateSelfSignedCertFromCR(t, baseCR, skRSA, time.Hour*24*60)
+	rsaCert, rsaPEMCert := generateSelfSignedCertFromCR(t, baseCR, skRSA, time.Hour*24*60)
 	rsaCASecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "root-ca-secret",
@@ -175,7 +174,7 @@ func TestSign(t *testing.T) {
 		t.Error(err)
 		t.FailNow()
 	}
-	certPEM, _, err := pki.SignCSRTemplate([]*x509.Certificate{template}, skRSA, template)
+	certPEM, caPEM, err := pki.SignCSRTemplate([]*x509.Certificate{rsaCert}, skRSA, template)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -592,8 +591,8 @@ func TestCA_Sign(t *testing.T) {
 					IssuerAmbientCredentials:        false,
 				},
 				reporter: util.NewReporter(fixedClock, rec),
-				secretsLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-					listers.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
+				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
+					testlisters.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
 				),
 				templateGenerator: pki.GenerateTemplateFromCertificateRequest,
 			}
