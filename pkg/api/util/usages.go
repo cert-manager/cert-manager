@@ -24,16 +24,16 @@ import (
 )
 
 var keyUsages = map[cmapi.KeyUsage]x509.KeyUsage{
-	cmapi.UsageSigning:            x509.KeyUsageDigitalSignature,
-	cmapi.UsageDigitalSignature:   x509.KeyUsageDigitalSignature,
-	cmapi.UsageContentCommittment: x509.KeyUsageContentCommitment,
-	cmapi.UsageKeyEncipherment:    x509.KeyUsageKeyEncipherment,
-	cmapi.UsageKeyAgreement:       x509.KeyUsageKeyAgreement,
-	cmapi.UsageDataEncipherment:   x509.KeyUsageDataEncipherment,
-	cmapi.UsageCertSign:           x509.KeyUsageCertSign,
-	cmapi.UsageCRLSign:            x509.KeyUsageCRLSign,
-	cmapi.UsageEncipherOnly:       x509.KeyUsageEncipherOnly,
-	cmapi.UsageDecipherOnly:       x509.KeyUsageDecipherOnly,
+	cmapi.UsageSigning:           x509.KeyUsageDigitalSignature,
+	cmapi.UsageDigitalSignature:  x509.KeyUsageDigitalSignature,
+	cmapi.UsageContentCommitment: x509.KeyUsageContentCommitment,
+	cmapi.UsageKeyEncipherment:   x509.KeyUsageKeyEncipherment,
+	cmapi.UsageKeyAgreement:      x509.KeyUsageKeyAgreement,
+	cmapi.UsageDataEncipherment:  x509.KeyUsageDataEncipherment,
+	cmapi.UsageCertSign:          x509.KeyUsageCertSign,
+	cmapi.UsageCRLSign:           x509.KeyUsageCRLSign,
+	cmapi.UsageEncipherOnly:      x509.KeyUsageEncipherOnly,
+	cmapi.UsageDecipherOnly:      x509.KeyUsageDecipherOnly,
 }
 
 var extKeyUsages = map[cmapi.KeyUsage]x509.ExtKeyUsage{
