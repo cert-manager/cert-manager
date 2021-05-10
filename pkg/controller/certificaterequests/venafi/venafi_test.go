@@ -24,6 +24,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"math/big"
 	"testing"
 	"time"
 
@@ -63,12 +64,12 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgori
 			"foo.example.com", "bar.example.com",
 		},
 		SignatureAlgorithm: alg,
+		PublicKey:          secretKey.Public(),
 	}
 
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
 
 	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
@@ -78,13 +79,41 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgori
 
 func TestSign(t *testing.T) {
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
-	rsaSK, err := pki.GenerateRSAPrivateKey(2048)
+	rootPK, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
 
-	csrPEM := generateCSR(t, rsaSK, x509.SHA1WithRSA)
+	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rootTmpl := &x509.Certificate{
+		Version:               3,
+		BasicConstraintsValid: true,
+		SerialNumber:          serialNumber,
+		PublicKeyAlgorithm:    x509.ECDSA,
+		PublicKey:             rootPK.Public(),
+		IsCA:                  true,
+		Subject: pkix.Name{
+			CommonName: "root-ca",
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Minute),
+		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+	rootPEM, rootCert, err := pki.SignCertificate(rootTmpl, rootTmpl, rootPK.Public(), rootPK)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testPK, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csrPEM := generateCSR(t, testPK, x509.ECDSAWithSHA256)
 
 	tppSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -191,14 +220,12 @@ func TestSign(t *testing.T) {
 
 	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
 
-	certPEM, _, err := pki.SignCertificate(template, template, rsaSK.Public(), rsaSK)
+	certPEM, _, err := pki.SignCertificate(template, rootCert, testPK.Public(), rootPK)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
 
 	clientReturnsPending := &internalvenafifake.Venafi{
@@ -222,7 +249,7 @@ func TestSign(t *testing.T) {
 			return "test", nil
 		},
 		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
-			return certPEM, nil
+			return append(certPEM, rootPEM...), nil
 		},
 	}
 
@@ -234,7 +261,7 @@ func TestSign(t *testing.T) {
 			return "", errors.New("Custom field not set")
 		},
 		RetrieveCertificateFn: func(string, []byte, time.Duration, []api.CustomField) ([]byte, error) {
-			return certPEM, nil
+			return append(certPEM, rootPEM...), nil
 		},
 	}
 
@@ -602,7 +629,7 @@ func TestSign(t *testing.T) {
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestCertificate(certPEM),
-							gen.SetCertificateRequestCA(certPEM),
+							gen.SetCertificateRequestCA(rootPEM),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
@@ -649,7 +676,7 @@ func TestSign(t *testing.T) {
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestCertificate(certPEM),
-							gen.SetCertificateRequestCA(certPEM),
+							gen.SetCertificateRequestCA(rootPEM),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
@@ -695,7 +722,7 @@ func TestSign(t *testing.T) {
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestCertificate(certPEM),
-							gen.SetCertificateRequestCA(certPEM),
+							gen.SetCertificateRequestCA(rootPEM),
 							gen.AddCertificateRequestAnnotations(map[string]string{cmapi.VenafiPickupIDAnnotationKey: "test"}),
 						),
 					)),
