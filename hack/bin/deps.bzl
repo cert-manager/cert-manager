@@ -13,7 +13,6 @@
 # limitations under the License.
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file", "http_archive")
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 def install():
