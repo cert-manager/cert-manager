@@ -57,10 +57,7 @@ def multi_arch_container(
 
     go_image(
         name = "%s-internal-notimestamp" % name,
-        base = select({
-            go_platform_constraint(os = "linux", arch = arch): base.format(ARCH = arch)
-            for arch in architectures
-        }),
+        base = base,
         architecture = select({
             go_platform_constraint(os = "linux", arch = arch): arch
             for arch in architectures
