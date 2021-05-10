@@ -141,7 +141,7 @@ func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateReques
 	return csr, nil
 }
 
-// PEMBundle includes the PEM encoded x509 certificate chain and CA. CAPEM
+// PEMBundle includes the PEM encoded X.509 certificate chain and CA. CAPEM
 // contains either 1 CA certificate, or is empty if only a single certificate
 // exists in the chain.
 type PEMBundle struct {
