@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -86,6 +87,32 @@ func SecretTLSCertChain(ctx context.Context, secretLister corelisters.SecretList
 	}
 
 	return cert, nil
+}
+
+// SecretTLSKeyPairAndCA returns the X.509 certificate chain and private key of
+// the leaf certificate contained in the target Secret. If the ca.crt field exists
+// on the Secret, it is parsed and added to the end of the certificate chain.
+func SecretTLSKeyPairAndCA(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
+	certs, key, err := SecretTLSKeyPair(ctx, secretLister, namespace, name)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	secret, err := secretLister.Secrets(namespace).Get(name)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	caBytes, ok := secret.Data[cmmeta.TLSCAKey]
+	if !ok || len(caBytes) == 0 {
+		return certs, key, nil
+	}
+	ca, err := pki.DecodeX509CertificateBytes(caBytes)
+	if err != nil {
+		return nil, key, errors.NewInvalidData(err.Error())
+	}
+
+	return append(certs, ca), key, nil
 }
 
 func SecretTLSKeyPair(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
