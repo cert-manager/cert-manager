@@ -418,35 +418,25 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 // SignCSRTemplate signs a certificate template usually based upon a CSR. This
 // function expects all fields to be present in the certificate template,
 // including it's public key.
-// It returns the certificate data followed by the CA data, encoded in PEM format.
-func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) ([]byte, []byte, error) {
+// It returns the PEM bundle containing certificate data and the CA data, encoded in PEM format.
+func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (PEMBundle, error) {
 	if len(caCerts) == 0 {
-		return nil, nil, errors.New("no CA certificates given to sign CSR template")
+		return PEMBundle{}, errors.New("no CA certificates given to sign CSR template")
 	}
 
 	issuingCACert := caCerts[0]
 
-	certPem, _, err := SignCertificate(template, issuingCACert, template.PublicKey, caKey)
+	_, cert, err := SignCertificate(template, issuingCACert, template.PublicKey, caKey)
 	if err != nil {
-		return nil, nil, err
-
+		return PEMBundle{}, err
 	}
 
-	chainPem, err := EncodeX509Chain(caCerts)
+	bundle, err := ParseCertificateChain(append(caCerts, cert))
 	if err != nil {
-		return nil, nil, err
+		return PEMBundle{}, err
 	}
 
-	certPem = append(certPem, chainPem...)
-
-	// encode the CA certificate to be bundled in the output
-	caCert := caCerts[len(caCerts)-1]
-	caPem, err := EncodeX509(caCert)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return certPem, caPem, nil
+	return bundle, nil
 }
 
 // EncodeCSR calls x509.CreateCertificateRequest to sign the given CSR template.

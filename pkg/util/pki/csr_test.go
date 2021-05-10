@@ -25,6 +25,7 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -564,63 +565,46 @@ func TestSignCSRTemplate(t *testing.T) {
 	// for that, we construct a chain of four certificates:
 	// a root CA, two intermediate CA, and a leaf certificate.
 
-	// We start with a root CA:
-	rootPrivKey, err := GenerateRSAPrivateKey(MinRSAKeySize)
-	require.NoError(t, err)
-	rootTemplate := &x509.Certificate{
-		SerialNumber: big.NewInt(0),
-		Subject: pkix.Name{
-			CommonName: "testing-root",
-		},
-		PublicKey: rootPrivKey.Public(),
-		IsCA:      true,
-	}
-	rootPem, rootCert, err := SignCertificate(rootTemplate, rootTemplate, rootTemplate.PublicKey, rootPrivKey)
-	require.NoError(t, err)
+	mustCreatePair := func(issuerCert *x509.Certificate, issuerPK crypto.Signer, name string, isCA bool) ([]byte, *x509.Certificate, *x509.Certificate, crypto.Signer) {
+		pk, err := GenerateECPrivateKey(256)
+		require.NoError(t, err)
+		tmpl := &x509.Certificate{
+			Version:               3,
+			BasicConstraintsValid: true,
+			SerialNumber:          big.NewInt(0),
+			Subject: pkix.Name{
+				CommonName: name,
+			},
+			PublicKeyAlgorithm: x509.ECDSA,
+			NotBefore:          time.Now(),
+			NotAfter:           time.Now().Add(time.Minute),
+			KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+			PublicKey:          pk.Public(),
+			IsCA:               isCA,
+		}
 
-	// Then, we want an intermediate CA:
-	inter1PrivKey, err := GenerateRSAPrivateKey(MinRSAKeySize)
-	require.NoError(t, err)
-	inter1Template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName: "testing-intermediate-1",
-		},
-		PublicKey: inter1PrivKey.Public(),
-		IsCA:      true,
-	}
-	inter1Pem, inter1Cert, err := SignCertificate(inter1Template, rootCert, inter1Template.PublicKey, rootPrivKey)
-	require.NoError(t, err)
+		if isCA {
+			tmpl.KeyUsage |= x509.KeyUsageCertSign
+		}
 
-	// Then, we want another intermediate CA:
-	inter2PrivKey, err := GenerateRSAPrivateKey(MinRSAKeySize)
-	require.NoError(t, err)
-	inter2Template := &x509.Certificate{
-		SerialNumber: big.NewInt(2),
-		Subject: pkix.Name{
-			CommonName: "testing-intermediate-2",
-		},
-		PublicKey: inter2PrivKey.Public(),
-		IsCA:      true,
-	}
-	inter2Pem, inter2Cert, err := SignCertificate(inter2Template, inter1Cert, inter2Template.PublicKey, inter1PrivKey)
-	require.NoError(t, err)
+		if issuerCert == nil {
+			issuerCert = tmpl
+		}
+		if issuerPK == nil {
+			issuerPK = pk
+		}
 
-	// And finally, we also want a leaf certificate:
-	leafPrivKey, err := GenerateRSAPrivateKey(MinRSAKeySize)
-	require.NoError(t, err)
-	leafTemplate := &x509.Certificate{
-		SerialNumber: big.NewInt(3),
-		Subject: pkix.Name{
-			CommonName: "testing-leaf",
-		},
-		PublicKey: leafPrivKey.Public(),
+		pem, cert, err := SignCertificate(tmpl, issuerCert, tmpl.PublicKey, issuerPK)
+		require.NoError(t, err)
+		return pem, cert, tmpl, pk
 	}
-	leafPem, _, err := SignCertificate(leafTemplate, inter2Cert, leafTemplate.PublicKey, inter2PrivKey)
-	require.NoError(t, err)
 
-	tests := []struct {
-		name              string
+	rootPEM, rootCert, rootTmpl, rootPK := mustCreatePair(nil, nil, "root", true)
+	int1PEM, int1Cert, int1Tmpl, int1PK := mustCreatePair(rootCert, rootPK, "int1", true)
+	int2PEM, int2Cert, int2Tmpl, int2PK := mustCreatePair(int1Cert, int1PK, "int2", true)
+	leafPEM, _, leafTmpl, _ := mustCreatePair(int2Cert, int2PK, "leaf", false)
+
+	tests := map[string]struct {
 		caCerts           []*x509.Certificate
 		caKey             crypto.Signer
 		template          *x509.Certificate
@@ -628,68 +612,64 @@ func TestSignCSRTemplate(t *testing.T) {
 		expectedCaCertPem []byte
 		wantErr           bool
 	}{
-		{
-			name:              "Sign intermediate 1 template",
+		"Sign intermediate 1 template": {
 			caCerts:           []*x509.Certificate{rootCert},
-			caKey:             rootPrivKey,
-			template:          inter1Template,
-			expectedCertPem:   inter1Pem,
-			expectedCaCertPem: rootPem,
+			caKey:             rootPK,
+			template:          int1Tmpl,
+			expectedCertPem:   int1PEM,
+			expectedCaCertPem: rootPEM,
 			wantErr:           false,
 		},
-		{
-			name:              "Sign intermediate 2 template",
-			caCerts:           []*x509.Certificate{inter1Cert, rootCert},
-			caKey:             inter1PrivKey,
-			template:          inter2Template,
-			expectedCertPem:   append(inter2Pem, inter1Pem...),
-			expectedCaCertPem: rootPem,
+		"Sign intermediate 2 template": {
+			caCerts:           []*x509.Certificate{int1Cert, rootCert},
+			caKey:             int1PK,
+			template:          int2Tmpl,
+			expectedCertPem:   append(int2PEM, int1PEM...),
+			expectedCaCertPem: rootPEM,
 			wantErr:           false,
 		},
-		{
-			name:              "Sign leaf template",
-			caCerts:           []*x509.Certificate{inter2Cert, inter1Cert, rootCert},
-			caKey:             inter2PrivKey,
-			template:          leafTemplate,
-			expectedCertPem:   append(append(leafPem, inter1Pem...), inter2Pem...),
-			expectedCaCertPem: rootPem,
+		"Sign leaf template": {
+			caCerts:           []*x509.Certificate{int2Cert, int1Cert, rootCert},
+			caKey:             int2PK,
+			template:          leafTmpl,
+			expectedCertPem:   append(append(leafPEM, int1PEM...), int2PEM...),
+			expectedCaCertPem: rootPEM,
 			wantErr:           false,
 		},
-		{
-			name:              "Sign leaf template no root",
-			caCerts:           []*x509.Certificate{inter2Cert, inter1Cert},
-			caKey:             inter2PrivKey,
-			template:          leafTemplate,
-			expectedCertPem:   append(leafPem, inter2Pem...),
-			expectedCaCertPem: inter1Pem,
+		"Sign leaf template no root": {
+			caCerts:           []*x509.Certificate{int2Cert, int1Cert},
+			caKey:             int2PK,
+			template:          leafTmpl,
+			expectedCertPem:   append(leafPEM, int2PEM...),
+			expectedCaCertPem: int1PEM,
 			wantErr:           false,
 		},
-		{
-			name:     "Error on no CA",
-			caKey:    rootPrivKey,
-			template: rootTemplate,
+		"Error on no CA": {
+			caKey:    rootPK,
+			template: rootTmpl,
 			wantErr:  true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actualCertPem, actualCaCertPem, err := SignCSRTemplate(tt.caCerts, tt.caKey, tt.template)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("TestSignCSRTemplate() error = %v, wantErr %v", err, tt.wantErr)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			actualBundle, err := SignCSRTemplate(test.caCerts, test.caKey, test.template)
+			if (err != nil) != test.wantErr {
+				t.Errorf("TestSignCSRTemplate() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
-			if !bytes.Equal(tt.expectedCertPem, actualCertPem) {
+
+			if !bytes.Equal(test.expectedCertPem, actualBundle.ChainPEM) {
 				// To help us identify where the mismatch is, we decode turn the
 				// into strings and do a textual diff.
-				expected, _ := DecodeX509CertificateBytes(tt.expectedCertPem)
-				actual, _ := DecodeX509CertificateBytes(actualCertPem)
+				expected, _ := DecodeX509CertificateBytes(test.expectedCertPem)
+				actual, _ := DecodeX509CertificateBytes(actualBundle.ChainPEM)
 				assert.Equal(t, expected.Subject.String(), actual.Subject.String())
 			}
-			if !bytes.Equal(tt.expectedCaCertPem, actualCaCertPem) {
+			if !bytes.Equal(test.expectedCaCertPem, actualBundle.CAPEM) {
 				// To help us identify where the mismatch is, we decode turn the
 				// into strings and do a textual diff.
-				expected, _ := DecodeX509CertificateBytes(tt.expectedCaCertPem)
-				actual, _ := DecodeX509CertificateBytes(actualCaCertPem)
+				expected, _ := DecodeX509CertificateBytes(test.expectedCaCertPem)
+				actual, _ := DecodeX509CertificateBytes(actualBundle.CAPEM)
 				assert.Equal(t, expected.Subject.String(), actual.Subject.String())
 			}
 		})
