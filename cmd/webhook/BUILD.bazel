@@ -17,7 +17,6 @@ go_library(
 go_binary(
     name = "webhook",
     embed = [":go_default_library"],
-    pure = "on",
     visibility = ["//visibility:public"],
 )
 
