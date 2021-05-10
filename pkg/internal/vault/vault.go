@@ -348,24 +348,22 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 		return nil, nil, fmt.Errorf("failed to decode response returned by vault: %s", err)
 	}
 
-	bundle, err := parsedBundle.ToCertBundle()
+	vbundle, err := parsedBundle.ToCertBundle()
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
 	}
 
-	var caPem []byte
-	if len(bundle.CAChain) > 0 {
-		caPem = []byte(bundle.CAChain[len(bundle.CAChain)-1])
-	} else {
-		caPem = []byte(bundle.IssuingCA)
+	bundle, err := pki.ParseCertificateChainPEM([]byte(
+		strings.Join(append(
+			vbundle.CAChain,
+			vbundle.IssuingCA,
+			vbundle.Certificate,
+		), "\n")))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse certificate chain from vault: %w", err)
 	}
 
-	crtPems := []string{bundle.Certificate}
-	if len(bundle.CAChain) > 1 {
-		crtPems = append(crtPems, bundle.CAChain[0:len(bundle.CAChain)-1]...)
-	}
-
-	return []byte(strings.Join(crtPems, "\n")), caPem, nil
+	return bundle.ChainPEM, bundle.CAPEM, nil
 }
 
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
