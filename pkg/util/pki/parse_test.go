@@ -188,7 +188,7 @@ type testBundle struct {
 }
 
 func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle {
-	pk, err := GenerateRSAPrivateKey(2048)
+	pk, err := GenerateECPrivateKey(256)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
-		PublicKeyAlgorithm:    x509.RSA,
+		PublicKeyAlgorithm:    x509.ECDSA,
 		PublicKey:             pk.Public(),
 		IsCA:                  true,
 		Subject: pkix.Name{
