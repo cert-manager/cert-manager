@@ -80,7 +80,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
 
 	// get a copy of the CA certificate named on the Issuer
-	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
+	caCerts, caKey, err := kube.SecretTLSKeyPairAndCA(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
 	if k8sErrors.IsNotFound(err) {
 		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
 
@@ -117,7 +117,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
 	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
 
-	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
+	bundle, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"
 		c.reporter.Failed(cr, err, "SigningError", message)
@@ -128,7 +128,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	log.V(logf.DebugLevel).Info("certificate issued")
 
 	return &issuerpkg.IssueResponse{
-		Certificate: certPEM,
-		CA:          caPEM,
+		Certificate: bundle.ChainPEM,
+		CA:          bundle.CAPEM,
 	}, nil
 }

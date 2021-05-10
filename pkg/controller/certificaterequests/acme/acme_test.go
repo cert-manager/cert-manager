@@ -24,6 +24,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"math/big"
 	"net"
 	"reflect"
 	"testing"
@@ -111,6 +112,31 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
+	rootPK, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal()
+	}
+
+	rootTmpl := &x509.Certificate{
+		Version:               3,
+		BasicConstraintsValid: true,
+		SerialNumber:          big.NewInt(0),
+		Subject: pkix.Name{
+			CommonName: "root",
+		},
+		PublicKeyAlgorithm: x509.RSA,
+		NotBefore:          time.Now(),
+		NotAfter:           time.Now().Add(time.Minute),
+		KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		PublicKey:          rootPK.Public(),
+		IsCA:               true,
+	}
+
+	_, rootCert, err := pki.SignCertificate(rootTmpl, rootTmpl, rootPK.Public(), rootPK)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	sk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Fatal(err)
@@ -158,7 +184,7 @@ func TestSign(t *testing.T) {
 		t.Errorf("error generating template: %v", err)
 	}
 
-	certPEM, _, err := pki.SignCSRTemplate([]*x509.Certificate{template}, sk, template)
+	certBundle, err := pki.SignCSRTemplate([]*x509.Certificate{rootCert}, rootPK, template)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +199,7 @@ func TestSign(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	certPEM2, _, err := pki.SignCSRTemplate([]*x509.Certificate{template}, sk, template2)
+	cert2Bundle, err := pki.SignCSRTemplate([]*x509.Certificate{rootCert}, rootPK, template2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,7 +587,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
 					gen.SetOrderState(cmacme.Valid),
-					gen.SetOrderCertificate(certPEM2),
+					gen.SetOrderCertificate(cert2Bundle.ChainPEM),
 				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewDeleteAction(
@@ -581,7 +607,7 @@ func TestSign(t *testing.T) {
 				},
 				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
 					gen.SetOrderState(cmacme.Valid),
-					gen.SetOrderCertificate(certPEM),
+					gen.SetOrderCertificate(certBundle.ChainPEM),
 				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
@@ -596,7 +622,7 @@ func TestSign(t *testing.T) {
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
-							gen.SetCertificateRequestCertificate(certPEM),
+							gen.SetCertificateRequestCertificate(certBundle.ChainPEM),
 						),
 					)),
 				},
