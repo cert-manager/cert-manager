@@ -20,12 +20,25 @@ DOCKERIZED_BINARIES = {
     },
 }
 
+# Allows passing --define image_type=dynamic custom flag to Bazel command.
+# Used to allow optionally build with the dynamic base image.
+config_setting(
+    name = "dynamic_image",
+    values = {
+        "define": "image_type=dynamic"
+    }
+)
+
 # When pushing to quay.io, we want to use an arch, since the archless name is now used for a
 # manifest list. Bazel doesn't support manifest lists (yet), so we can't do that either.
 [multi_arch_container(
     name = binary,
     architectures = SERVER_PLATFORMS["linux"],
-    base = "@static_base//image",
+    # Always use the static base unless dynamic explicitly requested.
+    base = select({
+        ":dynamic_image": "@dynamic_base//image",
+        "//conditions:default": "@static_base//image",
+    }),
     binary = select(for_platforms(
         for_server = meta["target"],
         only_os = "linux",
