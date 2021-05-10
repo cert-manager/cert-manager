@@ -419,21 +419,21 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 // function expects all fields to be present in the certificate template,
 // including it's public key.
 // It returns the PEM bundle containing certificate data and the CA data, encoded in PEM format.
-func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (*PEMBundle, error) {
+func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (PEMBundle, error) {
 	if len(caCerts) == 0 {
-		return nil, errors.New("no CA certificates given to sign CSR template")
+		return PEMBundle{}, errors.New("no CA certificates given to sign CSR template")
 	}
 
 	issuingCACert := caCerts[0]
 
 	_, cert, err := SignCertificate(template, issuingCACert, template.PublicKey, caKey)
 	if err != nil {
-		return nil, err
+		return PEMBundle{}, err
 	}
 
 	bundle, err := ParseCertificateChain(append(caCerts, cert))
 	if err != nil {
-		return nil, err
+		return PEMBundle{}, err
 	}
 
 	return bundle, nil

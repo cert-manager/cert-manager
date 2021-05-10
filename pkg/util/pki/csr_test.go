@@ -659,10 +659,6 @@ func TestSignCSRTemplate(t *testing.T) {
 				return
 			}
 
-			if actualBundle == nil {
-				actualBundle = new(PEMBundle)
-			}
-
 			if !bytes.Equal(test.expectedCertPem, actualBundle.ChainPEM) {
 				// To help us identify where the mismatch is, we decode turn the
 				// into strings and do a textual diff.

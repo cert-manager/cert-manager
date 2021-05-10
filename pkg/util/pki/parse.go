@@ -156,10 +156,10 @@ type chainNode struct {
 
 // ParseCertificateChainPEM decodes a PEM encoded certificate chain before
 // calling ParseCertificateChain
-func ParseCertificateChainPEM(pembundle []byte) (*PEMBundle, error) {
+func ParseCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 	certs, err := DecodeX509CertificateChainBytes(pembundle)
 	if err != nil {
-		return nil, err
+		return PEMBundle{}, err
 	}
 	return ParseCertificateChain(certs)
 }
@@ -176,7 +176,7 @@ func ParseCertificateChainPEM(pembundle []byte) (*PEMBundle, error) {
 //
 // An error is returned if the passed bundle is not a valid flat tree chain,
 // the bundle is malformed, or the chain is broken.
-func ParseCertificateChain(certs []*x509.Certificate) (*PEMBundle, error) {
+func ParseCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	// De-duplicate certificates. This moves "complicated" logic away from
 	// consumers and into a shared function, who would otherwise have to do this
 	// anyway.
@@ -232,10 +232,10 @@ func ParseCertificateChain(certs []*x509.Certificate) (*PEMBundle, error) {
 			}
 		}
 
-		// If no chains were merged in this pass, the chain can never be built
-		// flat. Error.
+		// If no chains were merged in this pass, the chain can never be built as a
+		// single list. Error.
 		if lastChainsLength == len(chains) {
-			return nil, errors.NewInvalidData("certificate chain is malformed or broken")
+			return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
 		}
 	}
 
@@ -244,7 +244,7 @@ func ParseCertificateChain(certs []*x509.Certificate) (*PEMBundle, error) {
 }
 
 // toBundleAndCA will return the PEM bundle of this chain.
-func (c *chainNode) toBundleAndCA() (*PEMBundle, error) {
+func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 	var (
 		certs []*x509.Certificate
 		ca    *x509.Certificate
@@ -266,23 +266,23 @@ func (c *chainNode) toBundleAndCA() (*PEMBundle, error) {
 
 	caPEM, err := EncodeX509(ca)
 	if err != nil {
-		return nil, err
+		return PEMBundle{}, err
 	}
 
 	// If no certificates parsed, then CA is the only certificate and should be
 	// the chain
 	if len(certs) == 0 {
-		return &PEMBundle{ChainPEM: caPEM}, nil
+		return PEMBundle{ChainPEM: caPEM}, nil
 	}
 
 	// Encode full certificate chain
 	chainPEM, err := EncodeX509Chain(certs)
 	if err != nil {
-		return nil, err
+		return PEMBundle{}, err
 	}
 
 	// Return chain and ca
-	return &PEMBundle{CAPEM: caPEM, ChainPEM: chainPEM}, nil
+	return PEMBundle{CAPEM: caPEM, ChainPEM: chainPEM}, nil
 }
 
 // tryMergeChain will attempt to add the chain "c" and "chain" together.
