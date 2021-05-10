@@ -171,8 +171,8 @@ func ParseCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // The CA may not be a true root, but the highest intermediate certificate.
 // The returned CA may be empty if a single certificate was passed.
 //
-// This function removes duplicate certificate entries and removes comments and
-// white space.
+// This function removes duplicate certificate entries as well as comments and
+// unnecessary white space.
 //
 // An error is returned if the passed bundle is not a valid flat tree chain,
 // the bundle is malformed, or the chain is broken.
@@ -258,8 +258,8 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 			break
 		}
 
-		// Add this nodes certificate to the list at the end. Ready to check next
-		// node up.
+		// Add this node's certificate to the list at the end. Ready to check
+		// next node up.
 		certs = append(certs, c.cert)
 		c = c.issuer
 	}

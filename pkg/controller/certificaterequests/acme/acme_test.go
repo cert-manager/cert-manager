@@ -112,8 +112,7 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	// Build root RSA CA
-	rootPK, err := pki.GenerateRSAPrivateKey(2048)
+	rootPK, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
 		t.Fatal()
 	}

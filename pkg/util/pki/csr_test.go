@@ -567,7 +567,7 @@ func TestSignCSRTemplate(t *testing.T) {
 	// a root CA, two intermediate CA, and a leaf certificate.
 
 	mustCreatePair := func(issuerCert *x509.Certificate, issuerPK crypto.Signer, name string, isCA bool) ([]byte, *x509.Certificate, *x509.Certificate, crypto.Signer) {
-		pk, err := GenerateRSAPrivateKey(MinRSAKeySize)
+		pk, err := GenerateECPrivateKey(256)
 		require.NoError(t, err)
 		tmpl := &x509.Certificate{
 			Version:               3,
@@ -576,7 +576,7 @@ func TestSignCSRTemplate(t *testing.T) {
 			Subject: pkix.Name{
 				CommonName: name,
 			},
-			PublicKeyAlgorithm: x509.RSA,
+			PublicKeyAlgorithm: x509.ECDSA,
 			NotBefore:          time.Now(),
 			NotAfter:           time.Now().Add(time.Minute),
 			KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
