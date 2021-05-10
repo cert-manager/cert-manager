@@ -141,19 +141,21 @@ func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateReques
 	return csr, nil
 }
 
+// PEMBundle includes the PEM encoded x509 certificate chain and CA. CAPEM
+// contains either 1 CA certificate, or is empty if only a single certificate
+// exists in the chain.
 type PEMBundle struct {
 	CAPEM    []byte
 	ChainPEM []byte
 }
 
 type chainNode struct {
-	cert *x509.Certificate
-
+	cert   *x509.Certificate
 	issuer *chainNode
 }
 
-// ParseCertificateChainPEM will decode the bundle before passing to
-// ParseCertificateChain
+// ParseCertificateChainPEM decodes a PEM encoded certificate chain before
+// calling ParseCertificateChain
 func ParseCertificateChainPEM(pembundle []byte) (*PEMBundle, error) {
 	certs, err := DecodeX509CertificateChainBytes(pembundle)
 	if err != nil {
@@ -162,14 +164,22 @@ func ParseCertificateChainPEM(pembundle []byte) (*PEMBundle, error) {
 	return ParseCertificateChain(certs)
 }
 
-// ParseCertificateChain will return an x509 PEM encoded certificate chain and
-// CA. The CA may not be a true root, but the highest intermediate certificate.
-// Removes duplicate entries. The returned CA may be empty if a single
-// certificate was passed. Chain contains leaf certificate first. Removes
-// comments and white space. An error is returned if the passed bundle is not a
-// valid flat tree chain, the bundle is malformed, or the chain is broken.
+// ParseCertificateChain returns the PEM-encoded chain of certificates as well
+// as the PEM-encoded CA certificate. The certificate chain contains the
+// leaf certificate first.
+//
+// The CA may not be a true root, but the highest intermediate certificate.
+// The returned CA may be empty if a single certificate was passed.
+//
+// This function removes duplicate certificate entries and removes comments and
+// white space.
+//
+// An error is returned if the passed bundle is not a valid flat tree chain,
+// the bundle is malformed, or the chain is broken.
 func ParseCertificateChain(certs []*x509.Certificate) (*PEMBundle, error) {
-	// De-duplicate certificates
+	// De-duplicate certificates. This moves "complicated" logic away from
+	// consumers and into a shared function, who would otherwise have to do this
+	// anyway.
 	for i := 0; i < len(certs)-1; i++ {
 		for j := 1; j < len(certs); j++ {
 			if i == j {
@@ -181,14 +191,22 @@ func ParseCertificateChain(certs []*x509.Certificate) (*PEMBundle, error) {
 		}
 	}
 
+	// A certificate chain can be well described as a linked list. Here we build
+	// multiple lists that contain a single node, each being a single certificate
+	// that was passed.
 	var chains []*chainNode
-	// Build the nodes to the linked list
 	for i := range certs {
 		chains = append(chains, &chainNode{cert: certs[i]})
 	}
 
+	// The task is to build a single list which represents a single certificate
+	// chain. The strategy is to iteratively attempt to join items in the list to
+	// build this single chain. Once we have a single list, we have built the
+	// chain. If the number of lists do not decrease after a pass, then the list
+	// can never be reduced to a single chain and we error.
 	for {
-		// We have built the full chain
+		// If a single list is left, then we have built the entire chain. Stop
+		// iterating.
 		if len(chains) == 1 {
 			break
 		}
@@ -246,7 +264,7 @@ func (c *chainNode) toBundleAndCA() (*PEMBundle, error) {
 		c = c.issuer
 	}
 
-	capem, err := EncodeX509(ca)
+	caPEM, err := EncodeX509(ca)
 	if err != nil {
 		return nil, err
 	}
@@ -254,17 +272,17 @@ func (c *chainNode) toBundleAndCA() (*PEMBundle, error) {
 	// If no certificates parsed, then CA is the only certificate and should be
 	// the chain
 	if len(certs) == 0 {
-		return &PEMBundle{ChainPEM: capem}, nil
+		return &PEMBundle{ChainPEM: caPEM}, nil
 	}
 
-	// Encode cert chain
-	chainpem, err := EncodeX509Chain(certs)
+	// Encode full certificate chain
+	chainPEM, err := EncodeX509Chain(certs)
 	if err != nil {
 		return nil, err
 	}
 
 	// Return chain and ca
-	return &PEMBundle{CAPEM: capem, ChainPEM: chainpem}, nil
+	return &PEMBundle{CAPEM: caPEM, ChainPEM: chainPEM}, nil
 }
 
 // tryMergeChain will attempt to add the chain "c" and "chain" together.

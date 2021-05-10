@@ -89,6 +89,9 @@ func SecretTLSCertChain(ctx context.Context, secretLister corelisters.SecretList
 	return cert, nil
 }
 
+// SecretTLSKeyPairAndCA returns the x509 Certificate chain and private key of
+// the leaf certificate contained in the target Secret. Attempts to also parse
+// the CA certificate if it exists.
 func SecretTLSKeyPairAndCA(ctx context.Context, secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
 	certs, key, err := SecretTLSKeyPair(ctx, secretLister, namespace, name)
 	if err != nil {
