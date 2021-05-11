@@ -14,21 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package validation
 
-import (
-	admissionv1 "k8s.io/api/admission/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation/field"
-
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
+// Warning values thrown by validating webhook
+// https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
+const (
+	// deprecatedACMEEABKeyAlgorithmField is raised when the deprecated keyAlgorithm field for an ACME issuer's external account binding (EAB) is set.
+	deprecatedACMEEABKeyAlgorithmField = "ACME issuer spec field 'externalAccount.keyAlgorithm' is deprecated. The value of this field will be ignored."
 )
-
-func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	el := field.ErrorList{}
-	tt := obj.(*TestType)
-	if tt.TestField == DisallowedTestFieldValue {
-		el = append(el, field.Invalid(field.NewPath("testField"), tt.TestField, "value not allowed"))
-	}
-	return el, nil
-}

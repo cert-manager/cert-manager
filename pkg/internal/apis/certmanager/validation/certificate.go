@@ -27,6 +27,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
@@ -86,16 +87,16 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	return el
 }
 
-func ValidateCertificate(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateCertificate(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs
+	return allErrs, nil
 }
 
-func ValidateUpdateCertificate(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
+func ValidateUpdateCertificate(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs
+	return allErrs, nil
 }
 
 func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) field.ErrorList {

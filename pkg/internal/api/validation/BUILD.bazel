@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["registry.go"],
+    srcs = [
+        "registry.go",
+        "warning.go",
+    ],
     importpath = "github.com/jetstack/cert-manager/pkg/internal/api/validation",
     visibility = ["//pkg:__subpackages__"],
     deps = [

@@ -24,6 +24,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 )
 
@@ -43,38 +44,46 @@ func testImmutableOrderField(t *testing.T, fldPath *field.Path, setter func(*cma
 		expectedErrs := []*field.Error{
 			field.Forbidden(fldPath, "field is immutable once set"),
 		}
+		var expectedWarnings validation.WarningList
 		old := &cmacme.Order{}
 		new := &cmacme.Order{}
 		setter(old, testValueOptionOne)
 		setter(new, testValueOptionTwo)
-		errs := ValidateOrderUpdate(nil, old, new)
+		errs, warnings := ValidateOrderUpdate(nil, old, new)
 		if len(errs) != len(expectedErrs) {
-			t.Errorf("Expected %v but got %v", expectedErrs, errs)
+			t.Errorf("Expected errors %v but got %v", expectedErrs, errs)
 			return
 		}
 		for i, e := range errs {
 			expectedErr := expectedErrs[i]
 			if !reflect.DeepEqual(e, expectedErr) {
-				t.Errorf("Expected %v but got %v", expectedErr, e)
+				t.Errorf("Expected error %v but got %v", expectedErr, e)
 			}
+		}
+		if !reflect.DeepEqual(warnings, expectedWarnings) {
+			t.Errorf("Expected warnings %+#v but got %+#v", expectedWarnings, warnings)
 		}
 	})
 	t.Run("should allow updates to "+fldPath.String()+" if not already set", func(t *testing.T) {
 		expectedErrs := []*field.Error{}
+		var expectedWarnings validation.WarningList
 		old := &cmacme.Order{}
 		new := &cmacme.Order{}
 		setter(old, testValueNone)
 		setter(new, testValueOptionOne)
-		errs := ValidateOrderUpdate(nil, old, new)
+		errs, warnings := ValidateOrderUpdate(nil, old, new)
 		if len(errs) != len(expectedErrs) {
-			t.Errorf("Expected %v but got %v", expectedErrs, errs)
+			t.Errorf("Expected errors %v but got %v", expectedErrs, errs)
 			return
 		}
 		for i, e := range errs {
 			expectedErr := expectedErrs[i]
 			if !reflect.DeepEqual(e, expectedErr) {
-				t.Errorf("Expected %v but got %v", expectedErr, e)
+				t.Errorf("Expected error %v but got %v", expectedErr, e)
 			}
+		}
+		if !reflect.DeepEqual(warnings, expectedWarnings) {
+			t.Errorf("Expected warnings %+#v but got %+#v", expectedWarnings, warnings)
 		}
 	})
 }
@@ -200,6 +209,7 @@ func TestValidateCertificateUpdate(t *testing.T) {
 	scenarios := map[string]struct {
 		old, new *cmacme.Order
 		errs     []*field.Error
+		warnings validation.WarningList
 	}{
 		"allows all updates if old is nil": {
 			new: &cmacme.Order{
@@ -211,7 +221,7 @@ func TestValidateCertificateUpdate(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateOrderUpdate(nil, s.old, s.new)
+			errs, warnings := ValidateOrderUpdate(nil, s.old, s.new)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
@@ -219,8 +229,11 @@ func TestValidateCertificateUpdate(t *testing.T) {
 			for i, e := range errs {
 				expectedErr := s.errs[i]
 				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
+					t.Errorf("Expected errors %v but got %v", expectedErr, e)
 				}
+			}
+			if !reflect.DeepEqual(warnings, s.warnings) {
+				t.Errorf("Expected warnings %+#v but got %+#v", s.warnings, warnings)
 			}
 		})
 	}

@@ -14,21 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2
+package validation
 
-import (
-	admissionv1 "k8s.io/api/admission/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation/field"
-
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-)
-
-func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	el := field.ErrorList{}
-	tt := obj.(*TestType)
-	if tt.TestField == DisallowedTestFieldValue {
-		el = append(el, field.Invalid(field.NewPath("testField"), tt.TestField, "value not allowed"))
-	}
-	return el, nil
-}
+// WarningList is a list of warnings that will be returned by the validating webhook.
+// See https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#webhook-request-and-response
+type WarningList []string

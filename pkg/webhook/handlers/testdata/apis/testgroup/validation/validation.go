@@ -21,29 +21,30 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
 )
 
-func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateTestType(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	testType := obj.(*testgroup.TestType)
 	el := field.ErrorList{}
 	if testType.TestField == v1.TestFieldValueNotAllowed {
 		el = append(el, field.Invalid(field.NewPath("testField"), testType.TestField, "invalid value"))
 	}
-	return el
+	return el, nil
 }
 
-func ValidateTestTypeUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
+func ValidateTestTypeUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
 	old, ok := oldObj.(*testgroup.TestType)
 	new := newObj.(*testgroup.TestType)
 	// if oldObj is not set, the Update operation is always valid.
 	if !ok || old == nil {
-		return nil
+		return nil, nil
 	}
 	el := field.ErrorList{}
 	if old.TestFieldImmutable != "" && old.TestFieldImmutable != new.TestFieldImmutable {
 		el = append(el, field.Forbidden(field.NewPath("testFieldImmutable"), "field is immutable once set"))
 	}
-	return el
+	return el, nil
 }
