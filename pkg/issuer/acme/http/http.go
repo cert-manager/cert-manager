@@ -39,7 +39,7 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/internal/istio"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/internal/istio"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"

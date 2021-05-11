@@ -24,6 +24,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	dynamicclient "k8s.io/client-go/dynamic"
@@ -47,10 +48,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/internal/istio"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/istio"
 )
 
 const controllerAgentName = "cert-manager"
@@ -71,14 +72,14 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		os.Exit(1)
 	}
 
-	ctx.IstioEnabled, err = istio.IsInstalled(ctx)
+	ctx.IstioEnabled, err = isIstioInstalled(ctx)
 	if err != nil {
 		log.Error(err, "failed to discover if Istio is available")
 		os.Exit(1)
 	}
 
 	if ctx.IstioEnabled {
-		ctx.IstioEnabled, err = istio.CanListVirtualService(ctx, opts.Namespace)
+		ctx.IstioEnabled, err = canListVirtualService(rootCtx, ctx, opts.Namespace)
 		if err != nil {
 			log.Error(err, "failed to list Istio VirtualServices")
 			os.Exit(1)
@@ -160,6 +161,33 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	}
 
 	startLeaderElection(rootCtx, opts, leaderElectionClient, ctx.Recorder, run)
+}
+
+func isIstioInstalled(ctx *controller.Context) (bool, error) {
+	groups, err := ctx.Client.Discovery().ServerGroups()
+	if err != nil {
+		return false, err
+	}
+
+	for _, group := range groups.Groups {
+		if group.Name == istio.VirtualServiceGvr().Group {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func canListVirtualService(rootCtx context.Context, ctx *controller.Context, namespace string) (bool, error) {
+	// Check if sa has permissions to list virtualservice
+	_, err := ctx.DynamicClient.Resource(istio.VirtualServiceGvr()).Namespace(namespace).List(rootCtx, metav1.ListOptions{})
+	if errors.IsForbidden(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
