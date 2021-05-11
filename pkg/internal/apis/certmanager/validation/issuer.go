@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
@@ -123,7 +122,7 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 		el = append(el, ValidateSecretKeySelector(&eab.Key, eabFldPath.Child("keySecretRef"))...)
 
 		if len(eab.KeyAlgorithm) != 0 {
-			warnings = append(warnings, apiutil.DeprecatedACMEEABKeyAlgorithmField)
+			warnings = append(warnings, deprecatedACMEEABKeyAlgorithmField)
 		}
 	}
 
