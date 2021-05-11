@@ -47,6 +47,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
 	var unsupportedHTTP01Features = featureset.NewFeatureSet(
+		featureset.IPAddressFeature,
 		featureset.DurationFeature,
 		featureset.WildcardsFeature,
 		featureset.URISANsFeature,
@@ -78,18 +79,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 Issuer",
-		IPAddressType:       certificates.IngressIPAddressType,
-		DomainSuffixType:    certificates.IngressDomainSuffixType,
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
-		DeleteIssuerFunc:    provisionerHTTP01.delete,
-		UnsupportedFeatures: unsupportedHTTP01Features,
-	}).Define()
-
-	(&certificates.Suite{
-		Name:                "ACME HTTP01 Issuer on Istio",
-		IPAddressType:       certificates.IstioIPAddressType,
-		DomainSuffixType:    certificates.IstioDomainSuffixType,
-		CreateIssuerFunc:    provisionerHTTP01.createHTTP01IssuerOnIstio,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
 	}).Define()
@@ -104,8 +94,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	(&certificates.Suite{
 		Name:                "ACME HTTP01 ClusterIssuer",
-		IPAddressType:       certificates.IngressIPAddressType,
-		DomainSuffixType:    certificates.IngressDomainSuffixType,
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
@@ -164,27 +152,6 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01IssuerOnIstio(f *framework.Framework) cmmeta.ObjectReference {
-	a.ensureEABSecret(f, "")
-
-	By("Creating an ACME HTTP01 Istio Issuer")
-	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-issuer-http01-",
-		},
-		Spec: a.createHTTP01IssuerOnIstioSpec(f.Config.Addons.ACMEServer.URL),
-	}
-
-	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 Istio issuer")
-
-	return cmmeta.ObjectReference{
-		Group: cmapi.SchemeGroupVersion.Group,
-		Kind:  cmapi.IssuerKind,
-		Name:  issuer.Name,
-	}
-}
-
 func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
@@ -225,34 +192,6 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec(serverURL string) cmapi.I
 							// new ingress resources that do not specify a class to solve challenges,
 							// which means all Ingress controllers should act on the ingresses.
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func (a *acmeIssuerProvisioner) createHTTP01IssuerOnIstioSpec(serverURL string) cmapi.IssuerSpec {
-	const TestGateway = "istio-system/ingress"
-
-	return cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			ACME: &cmacme.ACMEIssuer{
-				Server:        serverURL,
-				SkipTLSVerify: true,
-				PrivateKey: cmmeta.SecretKeySelector{
-					LocalObjectReference: cmmeta.LocalObjectReference{
-						Name: "acme-private-key-http01",
-					},
-				},
-				ExternalAccountBinding: a.eab,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Istio: &cmacme.ACMEChallengeSolverHTTP01Istio{
-								Gateways: []string{TestGateway},
-							},
 						},
 					},
 				},

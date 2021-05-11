@@ -18,4 +18,5 @@ package acme
 
 import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/certificate"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/certificaterequest"
 )

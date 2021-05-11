@@ -26,8 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	dynamicclient "k8s.io/client-go/dynamic"
-	dynamicinformers "k8s.io/client-go/dynamic/dynamicinformer"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -50,7 +48,6 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/istio"
 )
 
 const controllerAgentName = "cert-manager"
@@ -69,26 +66,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	if err != nil {
 		log.Error(err, "error building controller context", "options", opts)
 		os.Exit(1)
-	}
-
-	ctx.IstioEnabled, err = istio.IsInstalled(ctx)
-	if err != nil {
-		log.Error(err, "failed to discover if Istio is available")
-		os.Exit(1)
-	}
-
-	if ctx.IstioEnabled {
-		ctx.IstioEnabled, err = istio.CanListVirtualService(ctx, opts.Namespace)
-		if err != nil {
-			log.Error(err, "failed to list Istio VirtualServices")
-			os.Exit(1)
-		}
-	}
-
-	if ctx.IstioEnabled {
-		log.Info("Istio support is enabled")
-	} else {
-		log.Info("Istio support is disabled")
 	}
 
 	enabledControllers := opts.EnabledControllers()
@@ -140,7 +117,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		log.V(logf.DebugLevel).Info("starting shared informer factories")
 		ctx.SharedInformerFactory.Start(stopCh)
 		ctx.KubeSharedInformerFactory.Start(stopCh)
-		ctx.DynamicSharedInformerFactory.Start(stopCh)
 		wg.Wait()
 		log.V(logf.InfoLevel).Info("control loops exited")
 		ctx.Metrics.Shutdown(metricsServer)
@@ -188,11 +164,6 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
-	dyncl, err := dynamicclient.NewForConfig(kubeCfg)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error creating dynamic client: %s", err.Error())
-	}
-
 	nameservers := opts.DNS01RecursiveNameservers
 	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
@@ -231,24 +202,21 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, resyncPeriod, informers.WithNamespace(opts.Namespace))
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, resyncPeriod, kubeinformers.WithNamespace(opts.Namespace))
-	dynamicSharedInformerFactory := dynamicinformers.NewFilteredDynamicSharedInformerFactory(dyncl, resyncPeriod, opts.Namespace, nil)
 
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
 	return &controller.Context{
-		RootContext:                  ctx,
-		StopCh:                       stopCh,
-		RESTConfig:                   kubeCfg,
-		Client:                       cl,
-		DynamicClient:                dyncl,
-		CMClient:                     intcl,
-		Recorder:                     recorder,
-		KubeSharedInformerFactory:    kubeSharedInformerFactory,
-		DynamicSharedInformerFactory: dynamicSharedInformerFactory,
-		SharedInformerFactory:        sharedInformerFactory,
-		Namespace:                    opts.Namespace,
-		Clock:                        clock.RealClock{},
-		Metrics:                      metrics.New(log),
+		RootContext:               ctx,
+		StopCh:                    stopCh,
+		RESTConfig:                kubeCfg,
+		Client:                    cl,
+		CMClient:                  intcl,
+		Recorder:                  recorder,
+		KubeSharedInformerFactory: kubeSharedInformerFactory,
+		SharedInformerFactory:     sharedInformerFactory,
+		Namespace:                 opts.Namespace,
+		Clock:                     clock.RealClock{},
+		Metrics:                   metrics.New(log),
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,

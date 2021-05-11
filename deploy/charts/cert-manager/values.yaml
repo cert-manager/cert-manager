@@ -12,10 +12,6 @@ global:
   priorityClassName: ""
   rbac:
     create: true
-    # Allow cert-manager to manage Istio VirtualService resources, used for
-    # solving HTTP01 Istio challenges. When set to false, cert-manager will
-    # not support solving ACME HTTP01 challenges using VirtualServices.
-    allowIstioResourceAccess: true
 
   podSecurityPolicy:
     enabled: false

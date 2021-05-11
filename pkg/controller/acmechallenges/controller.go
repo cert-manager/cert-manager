@@ -35,7 +35,6 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
-	"github.com/jetstack/cert-manager/pkg/internal/istio"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
@@ -98,7 +97,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
 	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
 	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
-
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
@@ -108,11 +106,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		podInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
 		ingressInformer.Informer().HasSynced,
-	}
-
-	if ctx.IstioEnabled {
-		virtualServiceInformer := ctx.DynamicSharedInformerFactory.ForResource(istio.VirtualServiceGvr())
-		mustSync = append(mustSync, virtualServiceInformer.Informer().HasSynced)
 	}
 
 	// set all the references to the listers for used by the Sync function

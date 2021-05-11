@@ -164,12 +164,8 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 		numDefined++
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(http01.Ingress, fldPath.Child("ingress"))...)
 	}
-	if http01.Istio != nil {
-		numDefined++
-		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IstioConfig(http01.Istio, fldPath.Child("istio"))...)
-	}
-	if numDefined != 1 {
-		el = append(el, field.Required(fldPath, "exactly 1 HTTP01 solver type must be configured"))
+	if numDefined == 0 {
+		el = append(el, field.Required(fldPath, "no HTTP01 solver type configured"))
 	}
 
 	return el
@@ -181,18 +177,6 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 	if ingress.Class != nil && len(ingress.Name) > 0 {
 		el = append(el, field.Forbidden(fldPath, "only one of 'name' or 'class' should be specified"))
 	}
-	switch ingress.ServiceType {
-	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
-	default:
-		el = append(el, field.Invalid(fldPath.Child("serviceType"), ingress.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
-	}
-
-	return el
-}
-
-func ValidateACMEIssuerChallengeSolverHTTP01IstioConfig(ingress *cmacme.ACMEChallengeSolverHTTP01Istio, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-
 	switch ingress.ServiceType {
 	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
 	default:

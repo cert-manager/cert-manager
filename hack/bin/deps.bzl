@@ -23,7 +23,6 @@ def install():
     install_staticcheck()
     install_helm()
     install_kubectl()
-    install_istioctl()
     install_oc3()
     install_kind()
     install_kustomize()
@@ -233,38 +232,6 @@ def install_kubectl():
         urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl"],
     )
 
-def install_istioctl():
-    http_archive(
-        name = "istioctl_darwin",
-        sha256 = "fa0cca95e5c4b1d1084946a8d7953d4a1e830d80c36ef10bbbfae8ce4480ccc8",
-        urls = ["https://github.com/istio/istio/releases/download/1.9.3/istioctl-1.9.3-osx.tar.gz"],
-        build_file_content =
-            """
-filegroup(
-    name = "file",
-    srcs = [
-        "istioctl",
-    ],
-    visibility = ["//visibility:public"],
-)
-""",
-    )
-
-    http_archive(
-        name = "istioctl_linux",
-        sha256 = "f820aa0e0e85a5c5a5b20c1409f03e58d9783646b5976db2ef85ddac12b43848",
-        urls = ["https://github.com/istio/istio/releases/download/1.9.3/istioctl-1.9.3-linux-amd64.tar.gz"],
-        build_file_content =
-            """
-filegroup(
-    name = "file",
-    srcs = [
-        "istioctl",
-    ],
-    visibility = ["//visibility:public"],
-)
-""",
-    )
 
 # Define rules for different oc versions
 def install_oc3():
