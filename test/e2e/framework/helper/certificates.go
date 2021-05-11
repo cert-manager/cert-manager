@@ -28,6 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -35,35 +36,62 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
-	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 // WaitForCertificateReady waits for the certificate resource to enter a Ready
 // state.
 func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
-	return e2eutil.WaitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(ns), name, cmapi.CertificateCondition{
-		Type:   cmapi.CertificateConditionReady,
-		Status: cmmeta.ConditionTrue,
-	}, timeout)
+	var certificate *cmapi.Certificate
+	err := wait.PollImmediate(time.Second, timeout,
+		func() (bool, error) {
+			var err error
+			log.Logf("Waiting for Certificate %v to be ready", name)
+			certificate, err = h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+			}
+			isReady := apiutil.CertificateHasCondition(certificate, cmapi.CertificateCondition{
+				Type:   cmapi.CertificateConditionReady,
+				Status: cmmeta.ConditionTrue,
+			})
+			if !isReady {
+				log.Logf("Expected Certificate to have Ready condition 'true' but it has: %v", certificate.Status.Conditions)
+				return false, nil
+			}
+			return true, nil
+		},
+	)
+
+	// return certificate even when error to use for debugging
+	return certificate, err
 }
 
-// WaitForCertificateReadyUpdate waits for the certificate resource to enter a Ready
-// state. If the provided cert was in a Ready state already, the function waits for a state transition to have happened.
-func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
-	return e2eutil.WaitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
-		Type:               cmapi.CertificateConditionReady,
-		Status:             cmmeta.ConditionTrue,
-		ObservedGeneration: cert.Generation,
-	}, timeout)
-}
+// WaitForCertificateNotReady waits for the certificate resource to enter a
+// non-Ready state.
+func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
+	var certificate *cmapi.Certificate
+	err := wait.PollImmediate(time.Second, timeout,
+		func() (bool, error) {
+			var err error
+			log.Logf("Waiting for Certificate %v to be ready", name)
+			certificate, err = h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+			}
+			isReady := apiutil.CertificateHasCondition(certificate, cmapi.CertificateCondition{
+				Type:   cmapi.CertificateConditionReady,
+				Status: cmmeta.ConditionFalse,
+			})
+			if !isReady {
+				log.Logf("Expected Certificate to have Ready condition 'true' but it has: %v", certificate.Status.Conditions)
+				return false, nil
+			}
+			return true, nil
+		},
+	)
 
-// WaitForCertificateNotReady waits for the certificate resource to enter a Ready False state.
-func (h *Helper) WaitForCertificateNotReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
-	return e2eutil.WaitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
-		Type:               cmapi.CertificateConditionReady,
-		Status:             cmmeta.ConditionFalse,
-		ObservedGeneration: cert.Generation,
-	}, timeout)
+	// return certificate even when error to use for debugging
+	return certificate, err
 }
 
 // ValidateIssuedCertificate will ensure that the given Certificate has a

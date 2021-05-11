@@ -219,7 +219,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("solvers").Index(0).Child("http01"), "exactly 1 HTTP01 solver type must be configured"),
+				field.Required(fldPath.Child("solvers").Index(0).Child("http01"), "no HTTP01 solver type configured"),
 			},
 		},
 		"acme solver with valid http01 config": {
@@ -465,7 +465,7 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 		"no solver config type specified": {
 			cfg: &cmacme.ACMEChallengeSolverHTTP01{},
 			errs: []*field.Error{
-				field.Required(fldPath, "exactly 1 HTTP01 solver type must be configured"),
+				field.Required(fldPath, "no HTTP01 solver type configured"),
 			},
 		},
 		"both fields specified": {

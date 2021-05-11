@@ -127,10 +127,6 @@ const (
 	// with only SANs set
 	OnlySAN = "OnlySAN"
 
-	// OnlyValidACMEDNSName denotes whether the target issuer checks the
-	// requested DNS Name to be a valid ACME DNS Name
-	OnlyValidACMEDNSName = "OnlyValidACMEDNSName"
-
 	// SaveCAToSecret denotes whether the target issuer returns a CA
 	// certificate which can be stored in the ca.crt field of the Secret.
 	SaveCAToSecret = "SaveCAToSecret"

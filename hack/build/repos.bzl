@@ -719,8 +719,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/envoyproxy/go-control-plane",
-        sum = "h1:rEvIZUSZ3fx39WIi3JkQqQBitGwpELBIYWeBVh6wn+E=",
-        version = "v0.9.4",
+        sum = "h1:4cmBvAEBNJaGARUEs3/suWRyfyBfhf7I60WBZq+bv2w=",
+        version = "v0.9.1-0.20191026205805-5f8ba28d4473",
     )
     go_repository(
         name = "com_github_envoyproxy_protoc_gen_validate",
@@ -3064,23 +3064,6 @@ def go_repositories():
         version = "v0.5.0-alpha.5.0.20200819165624-17cef6e3e9d5",
     )
     go_repository(
-        name = "io_istio_api",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "istio.io/api",
-        sum = "h1:U0KZYCOKILJw51SWV5vpcR4FMTXl1CmA70aFy4zMKrU=",
-        version = "v0.0.0-20210114003959-328c3a371318",
-    )
-    go_repository(
-        name = "io_istio_gogo_genproto",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "istio.io/gogo-genproto",
-        sum = "h1:w7zILua2dnYo9CxImhpNW4NE/8ZxEoc/wfBfHrhUhrE=",
-        version = "v0.0.0-20190930162913-45029607206a",
-    )
-
-    go_repository(
         name = "io_k8s_api",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -3373,8 +3356,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "google.golang.org/grpc",
-        sum = "h1:C1QC6KzgSiLyBabDi87BbjaGreoRgGUF5nOyvfrAZ1k=",
-        version = "v1.28.1",
+        sum = "h1:rRYRFMVgRv6E0D70Skyfsr28tDXIuuPZyWGMPdMcnXg=",
+        version = "v1.27.0",
     )
     go_repository(
         name = "org_golang_google_grpc_examples",
