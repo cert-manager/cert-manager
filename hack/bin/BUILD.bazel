@@ -58,6 +58,17 @@ genrule(
 )
 
 genrule(
+    name = "fetch_cue",
+    srcs = select({
+        ":darwin": ["@cue_osx//:file"],
+        ":k8": ["@cue_linux//:file"],
+    }),
+    outs = ["cue"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "io_kubernetes_kube-apiserver",
     srcs = select({
         ":darwin": ["@kube-apiserver_darwin_amd64//file"],

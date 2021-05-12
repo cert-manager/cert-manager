@@ -25,6 +25,7 @@ def install():
     install_oc3()
     install_kind()
     install_kustomize()
+    install_cue()
 
     # Install golang.org/x/build as kubernetes/repo-infra requires it for the
     # build-tar bazel target.
@@ -231,7 +232,6 @@ def install_kubectl():
         urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl"],
     )
 
-
 # Define rules for different oc versions
 def install_oc3():
     http_archive(
@@ -239,7 +239,7 @@ def install_oc3():
         sha256 = "4b0f07428ba854174c58d2e38287e5402964c9a9355f6c359d1242efd0990da3",
         urls = ["https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz"],
         build_file_content =
-         """
+            """
 filegroup(
      name = "file",
      srcs = [
@@ -249,6 +249,7 @@ filegroup(
 )
     """,
     )
+
 ## Fetch kind images used during e2e tests
 def install_kind():
     # install kind binary
@@ -266,3 +267,35 @@ def install_kind():
         urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.11.0/kind-linux-amd64"],
     )
 
+## Cue is used for linting the CRD YAML that gets generated in ./update-crds.sh.
+def install_cue():
+    # install kind binary
+    http_archive(
+        name = "cue_darwin",
+        sha256 = "24717a72b067a4d8f4243b51832f4a627eaa7e32abc4b9117b0af9aa63ae0332",
+        urls = ["https://github.com/cuelang/cue/releases/download/v0.4.0/cue_v0.4.0_darwin_amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "cue",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+    )
+
+    http_archive(
+        name = "cue_linux",
+        sha256 = "a118177d9c605b4fc1a61c15a90fddf57a661136c868dbcaa9d2406c95897949",
+        urls = ["https://github.com/cuelang/cue/releases/download/v0.4.0/cue_v0.4.0_linux_amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "cue",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+    )

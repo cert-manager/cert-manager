@@ -32,12 +32,32 @@ else
 fi
 
 go=$(realpath "$1")
+
 controllergen="$(realpath "$2")"
+cue="$(realpath "$3")"
+
 export PATH=$(dirname "$go"):$PATH
 
 # This script should be run via `bazel run //hack:update-crds`
 REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY}
 cd "${REPO_ROOT}"
+
+set -xe
+
+# controller-gen silently skips YAML crd-*.yaml files that are not proper
+# YAML. As detailed in [1], this issue prevented anyone from updating the
+# crd-*.yaml files. To avoid this issue from happening again, we want to
+# make sure every CRD file is a valid YAML file, before running
+# controller-gen.
+#
+# We could just use yq (the python CLI) to parse the YAML... But I didn't
+# want us to rely on python things. And its Go equivalent, mikefarah/yq,
+# has a pretty poor CLI UX. So I just used the excellent CUE tool. ALthough
+# CUE is meant for validating schemas, we don't care about schemas here,
+# that's why we use a dummy valid-crd.cue.
+#
+# [1]: https://github.com/jetstack/cert-manager/pull/3989
+"$cue" vet hack/valid-crd.cue deploy/crds/*.yaml
 
 "$controllergen" \
   schemapatch:manifests=./deploy/crds \
