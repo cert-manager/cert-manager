@@ -17,11 +17,17 @@ limitations under the License.
 package pki
 
 import (
+	"crypto"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -172,5 +178,158 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, testFn(test))
+	}
+}
+
+type testBundle struct {
+	cert *x509.Certificate
+	pem  []byte
+	pk   crypto.PrivateKey
+}
+
+func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle {
+	pk, err := GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template := &x509.Certificate{
+		Version:               3,
+		BasicConstraintsValid: true,
+		SerialNumber:          serialNumber,
+		PublicKeyAlgorithm:    x509.ECDSA,
+		PublicKey:             pk.Public(),
+		IsCA:                  true,
+		Subject: pkix.Name{
+			CommonName: name,
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Minute),
+		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+
+	var (
+		issuerKey  crypto.PrivateKey
+		issuerCert *x509.Certificate
+	)
+
+	if issuer == nil {
+		// Selfsigned (no issuer)
+		issuerKey = pk
+		issuerCert = template
+	} else {
+		issuerKey = issuer.pk
+		issuerCert = issuer.cert
+	}
+
+	certPEM, cert, err := SignCertificate(template, issuerCert, pk.Public(), issuerKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return &testBundle{pem: certPEM, cert: cert, pk: pk}
+}
+
+func TestParseSingleCertificateChain(t *testing.T) {
+	root := mustCreateBundle(t, nil, "root")
+	intA1 := mustCreateBundle(t, root, "intA-1")
+	intA2 := mustCreateBundle(t, intA1, "intA-2")
+	intB1 := mustCreateBundle(t, root, "intB-1")
+	intB2 := mustCreateBundle(t, intB1, "intB-2")
+	leaf := mustCreateBundle(t, intA2, "leaf")
+	random := mustCreateBundle(t, nil, "random")
+
+	joinPEM := func(first []byte, rest ...[]byte) []byte {
+		for _, b := range rest {
+			first = append(first, b...)
+		}
+		return first
+	}
+
+	tests := map[string]struct {
+		inputBundle  []byte
+		expPEMBundle PEMBundle
+		expErr       bool
+	}{
+		"if single certificate passed, return single certificate": {
+			inputBundle:  root.pem,
+			expPEMBundle: PEMBundle{ChainPEM: root.pem},
+			expErr:       false,
+		},
+		"if two certificate chain passed in order, should return single ca and certificate": {
+			inputBundle:  joinPEM(intA1.pem, root.pem),
+			expPEMBundle: PEMBundle{ChainPEM: intA1.pem, CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if two certificate chain passed out of order, should return single ca and certificate": {
+			inputBundle:  joinPEM(root.pem, intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: intA1.pem, CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 3 certificate chain passed out of order, should return single ca and chain in order": {
+			inputBundle:  joinPEM(root.pem, intA2.pem, intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"empty entries should be ignored, and return ca and certificate": {
+			inputBundle:  joinPEM(root.pem, intA2.pem, []byte("\n#foo\n  \n"), intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 4 certificate chain passed in order, should return single ca and chain in order": {
+			inputBundle:  joinPEM(leaf.pem, intA1.pem, intA2.pem, root.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 4 certificate chain passed out of order, should return single ca and chain in order": {
+			inputBundle:  joinPEM(root.pem, intA1.pem, leaf.pem, intA2.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 3 certificate chain but has break in the chain, should return error": {
+			inputBundle:  joinPEM(root.pem, intA1.pem, leaf.pem),
+			expPEMBundle: PEMBundle{},
+			expErr:       true,
+		},
+		"if 4 certificate chain but also random certificate, should return error": {
+			inputBundle:  joinPEM(root.pem, intA1.pem, leaf.pem, intA2.pem, random.pem),
+			expPEMBundle: PEMBundle{},
+			expErr:       true,
+		},
+		"if 6 certificate chain but some are duplicates, duplicates should be removed and return single ca with chain": {
+			inputBundle:  joinPEM(intA2.pem, intA1.pem, root.pem, leaf.pem, intA1.pem, root.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if 6 certificate chain in different configuration but some are duplicates, duplicates should be removed and return single ca with chain": {
+			inputBundle:  joinPEM(root.pem, intA1.pem, intA2.pem, leaf.pem, root.pem, intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if certificate chain contains branches, then should error": {
+			inputBundle:  joinPEM(root.pem, intA1.pem, intA2.pem, intB1.pem, intB2.pem),
+			expPEMBundle: PEMBundle{},
+			expErr:       true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			bundle, err := ParseSingleCertificateChainPEM(test.inputBundle)
+			if (err != nil) != test.expErr {
+				t.Errorf("unexpected error, exp=%t got=%v",
+					test.expErr, err)
+			}
+
+			if !reflect.DeepEqual(bundle, test.expPEMBundle) {
+				t.Errorf("unexpected pem bundle, exp=%+s got=%+s",
+					test.expPEMBundle, bundle)
+			}
+		})
 	}
 }
