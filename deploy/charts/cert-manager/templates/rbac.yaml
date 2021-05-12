@@ -14,13 +14,13 @@ metadata:
     helm.sh/chart: {{ include "cert-manager.chart" . }}
 rules:
   # Used for leader election by the controller
-  - apiGroups: [""]
-    resources: ["configmaps"]
+  - apiGroups: ["coordination.k8s.io", ""]
+    resources: ["leases", "configmaps"]
+    verbs: ["create"]
+  - apiGroups: ["coordination.k8s.io", ""]
+    resources: ["leases", "configmaps"]
     resourceNames: ["cert-manager-controller"]
     verbs: ["get", "update", "patch"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["create"]
 
 ---
 

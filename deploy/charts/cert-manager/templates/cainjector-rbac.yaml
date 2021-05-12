@@ -74,12 +74,12 @@ rules:
   #   see cmd/cainjector/start.go#L113
   # cert-manager-cainjector-leader-election-core is used by the SecretBased injector controller
   #   see cmd/cainjector/start.go#L137
-  - apiGroups: [""]
-    resources: ["configmaps"]
+  - apiGroups: ["coordination.k8s.io", ""]
+    resources: ["leases", "configmaps"]
     resourceNames: ["cert-manager-cainjector-leader-election", "cert-manager-cainjector-leader-election-core"]
     verbs: ["get", "update", "patch"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
+  - apiGroups: ["coordination.k8s.io", ""]
+    resources: ["leases", "configmaps"]
     verbs: ["create"]
 ---
 
