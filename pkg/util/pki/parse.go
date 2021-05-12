@@ -154,18 +154,18 @@ type chainNode struct {
 	issuer *chainNode
 }
 
-// ParseCertificateChainPEM decodes a PEM encoded certificate chain before
-// calling ParseCertificateChain
-func ParseCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
+// ParseSingleCertificateChainPEM decodes a PEM encoded certificate chain before
+// calling ParseSingleCertificateChainPEM
+func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 	certs, err := DecodeX509CertificateChainBytes(pembundle)
 	if err != nil {
 		return PEMBundle{}, err
 	}
-	return ParseCertificateChain(certs)
+	return ParseSingleCertificateChain(certs)
 }
 
-// ParseCertificateChain returns the PEM-encoded chain of certificates as well
-// as the PEM-encoded CA certificate. The certificate chain contains the
+// ParseSingleCertificateChain returns the PEM-encoded chain of certificates as
+// well as the PEM-encoded CA certificate. The certificate chain contains the
 // leaf certificate first.
 //
 // The CA may not be a true root, but the highest intermediate certificate.
@@ -176,7 +176,7 @@ func ParseCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 //
 // An error is returned if the passed bundle is not a valid flat tree chain,
 // the bundle is malformed, or the chain is broken.
-func ParseCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
+func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 	// De-duplicate certificates. This moves "complicated" logic away from
 	// consumers and into a shared function, who would otherwise have to do this
 	// anyway.
@@ -186,7 +186,7 @@ func ParseCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 				continue
 			}
 			if certs[i].Equal(certs[j]) {
-				certs = append(certs[:i], certs[i+1:]...)
+				certs = append(certs[:j], certs[j+1:]...)
 			}
 		}
 	}
@@ -220,7 +220,7 @@ func ParseCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 					continue
 				}
 
-				// attempt to add both chain together
+				// attempt to add both chains together
 				chain, ok := chains[i].tryMergeChain(chains[j])
 				if ok {
 					// If adding the chains together was successful, remove inner chain from

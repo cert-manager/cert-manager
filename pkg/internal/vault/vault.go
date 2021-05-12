@@ -353,7 +353,7 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
 	}
 
-	bundle, err := pki.ParseCertificateChainPEM([]byte(
+	bundle, err := pki.ParseSingleCertificateChainPEM([]byte(
 		strings.Join(append(
 			vbundle.CAChain,
 			vbundle.IssuingCA,

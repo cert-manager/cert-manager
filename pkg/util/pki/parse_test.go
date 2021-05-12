@@ -227,19 +227,21 @@ func mustCreateBundle(t *testing.T, issuer *testBundle, name string) *testBundle
 		issuerCert = issuer.cert
 	}
 
-	certpem, cert, err := SignCertificate(template, issuerCert, pk.Public(), issuerKey)
+	certPEM, cert, err := SignCertificate(template, issuerCert, pk.Public(), issuerKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return &testBundle{pem: certpem, cert: cert, pk: pk}
+	return &testBundle{pem: certPEM, cert: cert, pk: pk}
 }
 
-func TestParseCertificateChain(t *testing.T) {
+func TestParseSingleCertificateChain(t *testing.T) {
 	root := mustCreateBundle(t, nil, "root")
-	int1 := mustCreateBundle(t, root, "int-1")
-	int2 := mustCreateBundle(t, int1, "int-2")
-	leaf := mustCreateBundle(t, int2, "leaf")
+	intA1 := mustCreateBundle(t, root, "intA-1")
+	intA2 := mustCreateBundle(t, intA1, "intA-2")
+	intB1 := mustCreateBundle(t, root, "intB-1")
+	intB2 := mustCreateBundle(t, intB1, "intB-2")
+	leaf := mustCreateBundle(t, intA2, "leaf")
 	random := mustCreateBundle(t, nil, "random")
 
 	joinPEM := func(first []byte, rest ...[]byte) []byte {
@@ -260,55 +262,65 @@ func TestParseCertificateChain(t *testing.T) {
 			expErr:       false,
 		},
 		"if two certificate chain passed in order, should return single ca and certificate": {
-			inputBundle:  joinPEM(int1.pem, root.pem),
-			expPEMBundle: PEMBundle{ChainPEM: int1.pem, CAPEM: root.pem},
+			inputBundle:  joinPEM(intA1.pem, root.pem),
+			expPEMBundle: PEMBundle{ChainPEM: intA1.pem, CAPEM: root.pem},
 			expErr:       false,
 		},
 		"if two certificate chain passed out of order, should return single ca and certificate": {
-			inputBundle:  joinPEM(root.pem, int1.pem),
-			expPEMBundle: PEMBundle{ChainPEM: int1.pem, CAPEM: root.pem},
+			inputBundle:  joinPEM(root.pem, intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: intA1.pem, CAPEM: root.pem},
 			expErr:       false,
 		},
 		"if 3 certificate chain passed out of order, should return single ca and chain in order": {
-			inputBundle:  joinPEM(root.pem, int2.pem, int1.pem),
-			expPEMBundle: PEMBundle{ChainPEM: joinPEM(int2.pem, int1.pem), CAPEM: root.pem},
+			inputBundle:  joinPEM(root.pem, intA2.pem, intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,
 		},
 		"empty entries should be ignored, and return ca and certificate": {
-			inputBundle:  joinPEM(root.pem, int2.pem, []byte("\n#foo\n  \n"), int1.pem),
-			expPEMBundle: PEMBundle{ChainPEM: joinPEM(int2.pem, int1.pem), CAPEM: root.pem},
+			inputBundle:  joinPEM(root.pem, intA2.pem, []byte("\n#foo\n  \n"), intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,
 		},
 		"if 4 certificate chain passed in order, should return single ca and chain in order": {
-			inputBundle:  joinPEM(leaf.pem, int1.pem, int2.pem, root.pem),
-			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, int2.pem, int1.pem), CAPEM: root.pem},
+			inputBundle:  joinPEM(leaf.pem, intA1.pem, intA2.pem, root.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,
 		},
 		"if 4 certificate chain passed out of order, should return single ca and chain in order": {
-			inputBundle:  joinPEM(root.pem, int1.pem, leaf.pem, int2.pem),
-			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, int2.pem, int1.pem), CAPEM: root.pem},
+			inputBundle:  joinPEM(root.pem, intA1.pem, leaf.pem, intA2.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,
 		},
 		"if 3 certificate chain but has break in the chain, should return error": {
-			inputBundle:  joinPEM(root.pem, int1.pem, leaf.pem),
+			inputBundle:  joinPEM(root.pem, intA1.pem, leaf.pem),
 			expPEMBundle: PEMBundle{},
 			expErr:       true,
 		},
 		"if 4 certificate chain but also random certificate, should return error": {
-			inputBundle:  joinPEM(root.pem, int1.pem, leaf.pem, int2.pem, random.pem),
+			inputBundle:  joinPEM(root.pem, intA1.pem, leaf.pem, intA2.pem, random.pem),
 			expPEMBundle: PEMBundle{},
 			expErr:       true,
 		},
 		"if 6 certificate chain but some are duplicates, duplicates should be removed and return single ca with chain": {
-			inputBundle:  joinPEM(int2.pem, int1.pem, root.pem, leaf.pem, int1.pem, root.pem),
-			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, int2.pem, int1.pem), CAPEM: root.pem},
+			inputBundle:  joinPEM(intA2.pem, intA1.pem, root.pem, leaf.pem, intA1.pem, root.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,
+		},
+		"if 6 certificate chain in different configuration but some are duplicates, duplicates should be removed and return single ca with chain": {
+			inputBundle:  joinPEM(root.pem, intA1.pem, intA2.pem, leaf.pem, root.pem, intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if certificate chain contains branches, then should error": {
+			inputBundle:  joinPEM(root.pem, intA1.pem, intA2.pem, intB1.pem, intB2.pem),
+			expPEMBundle: PEMBundle{},
+			expErr:       true,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			bundle, err := ParseCertificateChainPEM(test.inputBundle)
+			bundle, err := ParseSingleCertificateChainPEM(test.inputBundle)
 			if (err != nil) != test.expErr {
 				t.Errorf("unexpected error, exp=%t got=%v",
 					test.expErr, err)
