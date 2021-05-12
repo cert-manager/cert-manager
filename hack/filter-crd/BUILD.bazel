@@ -5,7 +5,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/jetstack/cert-manager/hack/filter-crd",
     visibility = ["//visibility:private"],
-    deps = ["@in_gopkg_yaml_v2//:go_default_library"],
+    deps = ["@in_gopkg_yaml_v3//:go_default_library"],
 )
 
 go_binary(
