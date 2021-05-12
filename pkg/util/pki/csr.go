@@ -431,7 +431,7 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template 
 		return PEMBundle{}, err
 	}
 
-	bundle, err := ParseCertificateChain(append(caCerts, cert))
+	bundle, err := ParseSingleCertificateChain(append(caCerts, cert))
 	if err != nil {
 		return PEMBundle{}, err
 	}

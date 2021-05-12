@@ -124,12 +124,11 @@ func TestSign(t *testing.T) {
 		Subject: pkix.Name{
 			CommonName: "root",
 		},
-		PublicKeyAlgorithm: x509.RSA,
-		NotBefore:          time.Now(),
-		NotAfter:           time.Now().Add(time.Minute),
-		KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		PublicKey:          rootPK.Public(),
-		IsCA:               true,
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Minute),
+		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		PublicKey: rootPK.Public(),
+		IsCA:      true,
 	}
 
 	_, rootCert, err := pki.SignCertificate(rootTmpl, rootTmpl, rootPK.Public(), rootPK)

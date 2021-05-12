@@ -19,8 +19,8 @@ package ca
 import (
 	"context"
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -47,7 +47,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -59,13 +58,13 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
+func generateCSR(t *testing.T, secretKey crypto.Signer, sigAlg x509.SignatureAlgorithm) []byte {
 	asn1Subj, _ := asn1.Marshal(pkix.Name{
 		CommonName: "test",
 	}.ToRDNSequence())
 	template := x509.CertificateRequest{
 		RawSubject:         asn1Subj,
-		SignatureAlgorithm: x509.SHA256WithRSA,
+		SignatureAlgorithm: sigAlg,
 	}
 
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
@@ -86,12 +85,11 @@ func generateSelfSignedCACert(t *testing.T, key crypto.Signer, name string) (*x5
 		Subject: pkix.Name{
 			CommonName: name,
 		},
-		PublicKeyAlgorithm: x509.RSA,
-		NotBefore:          time.Now(),
-		NotAfter:           time.Now().Add(time.Minute),
-		KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		PublicKey:          key.Public(),
-		IsCA:               true,
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Minute),
+		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		PublicKey: key.Public(),
+		IsCA:      true,
 	}
 
 	pem, cert, err := pki.SignCertificate(tmpl, tmpl, key.Public(), key)
@@ -113,18 +111,20 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	// Build root RSA CA
-	rootPK, err := pki.GenerateRSAPrivateKey(2048)
+	rootPK, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
-	rootPKPEM := pki.EncodePKCS1PrivateKey(rootPK)
+	rootPKPEM, err := pki.EncodeECPrivateKey(rootPK)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	testpk, err := pki.GenerateRSAPrivateKey(2048)
+	testpk, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
-	testCSR := generateCSR(t, testpk)
+	testCSR := generateCSR(t, testpk, x509.ECDSAWithSHA256)
 
 	baseCRNotApproved := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
@@ -374,6 +374,9 @@ func TestSign(t *testing.T) {
 
 				return template, nil
 			},
+			signingFn: func(_ []*x509.Certificate, _ crypto.Signer, _ *x509.Certificate) (pki.PEMBundle, error) {
+				return pki.PEMBundle{CAPEM: certBundle.CAPEM, ChainPEM: certBundle.ChainPEM}, nil
+			},
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rsaCASecret},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
@@ -415,6 +418,7 @@ type testT struct {
 	builder            *testpkg.Builder
 	certificateRequest *cmapi.CertificateRequest
 	templateGenerator  templateGenerator
+	signingFn          signingFn
 
 	expectedErr bool
 
@@ -435,6 +439,9 @@ func runTest(t *testing.T, test testT) {
 	if test.templateGenerator != nil {
 		ca.templateGenerator = test.templateGenerator
 	}
+	if test.signingFn != nil {
+		ca.signingFn = test.signingFn
+	}
 
 	controller := certificaterequests.New(apiutil.IssuerCA, ca)
 	controller.Register(test.builder.Context)
@@ -452,19 +459,18 @@ func runTest(t *testing.T, test testT) {
 }
 
 func TestCA_Sign(t *testing.T) {
-	// Build root RSA CA
-	rootPK, err := pki.GenerateRSAPrivateKey(2048)
+	rootPK, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
 	rootCert, _ := generateSelfSignedCACert(t, rootPK, "root")
 
 	// Build test CSR
-	testpk, err := pki.GenerateRSAPrivateKey(2048)
+	testpk, err := pki.GenerateECPrivateKey(256)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
-	testCSR := generateCSR(t, testpk)
+	testCSR := generateCSR(t, testpk, x509.ECDSAWithSHA256)
 
 	tests := map[string]struct {
 		givenCASecret    *corev1.Secret
@@ -572,7 +578,7 @@ func TestCA_Sign(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			rec := &controllertest.FakeRecorder{}
+			rec := &testpkg.FakeRecorder{}
 
 			c := &CA{
 				issuerOptions: controller.IssuerOptions{
@@ -585,6 +591,7 @@ func TestCA_Sign(t *testing.T) {
 					testlisters.SetFakeSecretNamespaceListerGet(test.givenCASecret, nil),
 				),
 				templateGenerator: pki.GenerateTemplateFromCertificateRequest,
+				signingFn:         pki.SignCSRTemplate,
 			}
 
 			gotIssueResp, gotErr := c.Sign(context.Background(), test.givenCR, test.givenCAIssuer)
@@ -605,12 +612,12 @@ func TestCA_Sign(t *testing.T) {
 
 // Returns a map that is meant to be used for creating a certificate Secret
 // that contains the fields "tls.crt" and "tls.key".
-func secretDataFor(t *testing.T, caKey *rsa.PrivateKey, caCrt *x509.Certificate) (secretData map[string][]byte) {
+func secretDataFor(t *testing.T, caKey *ecdsa.PrivateKey, caCrt *x509.Certificate) (secretData map[string][]byte) {
 	rootCADER, err := x509.CreateCertificate(rand.Reader, caCrt, caCrt, caKey.Public(), caKey)
 	require.NoError(t, err)
 	caCrt, err = x509.ParseCertificate(rootCADER)
 	require.NoError(t, err)
-	caKeyPEM, err := pki.EncodePKCS8PrivateKey(caKey)
+	caKeyPEM, err := pki.EncodeECPrivateKey(caKey)
 	require.NoError(t, err)
 	caCrtPEM, err := pki.EncodeX509(caCrt)
 	require.NoError(t, err)
