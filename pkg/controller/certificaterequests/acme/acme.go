@@ -206,7 +206,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 		return nil, a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
 	}
 
-	bundle, err := pki.ParseCertificateChainPEM(order.Status.Certificate)
+	bundle, err := pki.ParseSingleCertificateChainPEM(order.Status.Certificate)
 	if err != nil {
 		log.Error(err, "failed to successfully build a certificate chain from data on Order resource.")
 		return nil, a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
