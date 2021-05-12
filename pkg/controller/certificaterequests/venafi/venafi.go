@@ -163,7 +163,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	log.V(logf.DebugLevel).Info("certificate issued")
 
-	bundle, err := utilpki.ParseCertificateChainPEM(certPem)
+	bundle, err := utilpki.ParseSingleCertificateChainPEM(certPem)
 	if err != nil {
 		message := "Failed to parse returned certificate bundle"
 		v.reporter.Failed(cr, err, "ParseError", message)
