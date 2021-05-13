@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2020 - 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ limitations under the License.
 // Package akamai implements a DNS provider for solving the DNS-01
 // challenge using Akamai Edge DNS.
 // See https://developer.akamai.com/api/cloud_security/edge_dns_zone_management/v2.html
+
 package akamai
 
 import (
@@ -33,7 +34,7 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-//*dns.RecordBody
+// Interface defined to enable mocking and required functions
 type OpenEdgegridDNSService interface {
 	GetRecord(zone string, name string, record_type string) (*dns.RecordBody, error)
 	RecordSave(rec *dns.RecordBody, zone string) error
@@ -59,6 +60,7 @@ type DNSProvider struct {
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
 func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string, dns01Nameservers []string) (*DNSProvider, error) {
 
+	// required Aka OpenEdgegrid creds + non empty dnsservers list
 	if serviceConsumerDomain == "" || clientToken == "" || clientSecret == "" || accessToken == "" || len(dns01Nameservers) < 1 {
 		return nil, fmt.Errorf("edgedns: Provider creation failed. Missing required arguments.")
 	}
@@ -94,7 +96,7 @@ func findHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
 	return util.UnFqdn(zone), nil
 }
 
-// Present creates a TXT record to fulfill the dns-01 challenge.
+// Present creates/updates a TXT record to fulfill the dns-01 challenge.
 func (a *DNSProvider) Present(domain, fqdn, value string) error {
 
 	logf.V(logf.DebugLevel).Infof("Entering Present. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
@@ -155,7 +157,7 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 	return nil
 }
 
-// CleanUp removes the record matching the specified parameters.
+// CleanUp removes/updates the TXT record matching the specified parameters.
 func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
 	logf.V(logf.DebugLevel).Infof("Entering CleanUp. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)

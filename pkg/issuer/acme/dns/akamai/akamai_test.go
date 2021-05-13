@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2020-2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -92,7 +92,6 @@ func TestPresentBasicFlow(t *testing.T) {
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = nil
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordSave"] = testRecordBodyData()
-	// akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
 
@@ -110,9 +109,7 @@ func TestPresentExists(t *testing.T) {
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyDataExist()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
-	//akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
 
 	assert.NoError(t, akamai.Present("test.example.com", "_acme-challenge.test.example.com.", "dns01-key-stub"))
@@ -128,7 +125,6 @@ func TestPresentValueExists(t *testing.T) {
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
@@ -179,7 +175,6 @@ func TestPresentFailUpdateRecord(t *testing.T) {
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyDataExist()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update failed")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
@@ -198,10 +193,8 @@ func TestCleanUpBasicFlow(t *testing.T) {
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordDelete"] = testRecordBodyData()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
-	//akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
 
 	assert.NoError(t, akamai.CleanUp("test.example.com", "_acme-challenge.test.example.com.", "dns01-key"))
 
@@ -217,9 +210,7 @@ func TestCleanUpExists(t *testing.T) {
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyDataExist()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
-	//akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
 
 	assert.NoError(t, akamai.CleanUp("test.example.com", "_acme-challenge.test.example.com.", "dns01-key-stub"))
@@ -235,7 +226,6 @@ func TestCleanUpExistsNoValue(t *testing.T) {
 	akamai.isNotFound = stubIsNotFoundFalse // ignored for this flow ...
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
@@ -253,7 +243,6 @@ func TestCleanUpNoRecord(t *testing.T) {
 	akamai.isNotFound = stubIsNotFoundTrue // ignored for this flow ...
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = nil
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
@@ -288,7 +277,6 @@ func TestCleanUpFailUpdateRecord(t *testing.T) {
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyDataExist()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordUpdate"] = testRecordBodyData()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update failed")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete not expected")
@@ -306,7 +294,6 @@ func TestCleanUpFailDeleteRecord(t *testing.T) {
 	akamai.dnsclient = &StubOpenDNSConfig{FuncOutput: map[string]interface{}{}, FuncErrors: map[string]error{}}
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["GetRecord"] = testRecordBodyData()
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncOutput["RecordDelete"] = testRecordBodyData()
-	// Should only call update
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordSave"] = fmt.Errorf("Save not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordUpdate"] = fmt.Errorf("Update not expected")
 	akamai.dnsclient.(*StubOpenDNSConfig).FuncErrors["RecordDelete"] = fmt.Errorf("Delete failed")
