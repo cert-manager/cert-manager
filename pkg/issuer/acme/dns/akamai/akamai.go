@@ -99,7 +99,7 @@ func findHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
 // Present creates/updates a TXT record to fulfill the dns-01 challenge.
 func (a *DNSProvider) Present(domain, fqdn, value string) error {
 
-	logf.V(logf.DebugLevel).Infof("Entering Present. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
+	logf.V(logf.DebugLevel).Infof("entering Present. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
 
 	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
 	if err != nil {
@@ -124,7 +124,7 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 	}
 
 	if record != nil {
-		logf.V(logf.InfoLevel).Infof("TXT record already exists. Updating target")
+		logf.V(logf.InfoLevel).Infof("edgedns: TXT record already exists. Updating target")
 
 		if containsValue(record.Target, value) {
 			// have a record and have entry already
@@ -160,7 +160,7 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 // CleanUp removes/updates the TXT record matching the specified parameters.
 func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
-	logf.V(logf.DebugLevel).Infof("Entering CleanUp. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
+	logf.V(logf.DebugLevel).Infof("entering CleanUp. domain: %s, fqdn: %s, value: %s", domain, fqdn, value)
 
 	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
 	if err != nil {
@@ -206,7 +206,7 @@ func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
 	if len(newRData) > 0 {
 		existingRec.Target = newRData
-		logf.V(logf.DebugLevel).Infof("Updating Akamai TXT record: %s, data: %s", existingRec.Name, newRData)
+		logf.V(logf.DebugLevel).Infof("updating Akamai TXT record: %s, data: %s", existingRec.Name, newRData)
 		err = a.dnsclient.RecordUpdate(existingRec, hostedDomain)
 		if err != nil {
 			return errors.Wrapf(err, "edgedns: TXT record update failed")
@@ -215,7 +215,7 @@ func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		return nil
 	}
 
-	logf.V(logf.DebugLevel).Infof("Deleting Akamai TXT record %s", existingRec.Name)
+	logf.V(logf.DebugLevel).Infof("deleting Akamai TXT record %s", existingRec.Name)
 	err = a.dnsclient.RecordDelete(existingRec, hostedDomain)
 	if err != nil {
 		return errors.Wrapf(err, "edgedns: TXT record delete failed")
