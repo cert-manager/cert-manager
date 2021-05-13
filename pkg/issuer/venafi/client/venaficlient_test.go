@@ -22,7 +22,6 @@ import (
 
 	vcert "github.com/Venafi/vcert/v4"
 	corev1 "k8s.io/api/core/v1"
-	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -50,7 +49,7 @@ func checkZone(t *testing.T, zone string, cnf *vcert.Config) {
 
 func generateSecretLister(s *corev1.Secret, err error) corelisters.SecretLister {
 	return &testlisters.FakeSecretLister{
-		SecretsFn: func(string) clientcorev1.SecretNamespaceLister {
+		SecretsFn: func(string) corelisters.SecretNamespaceLister {
 			return &testlisters.FakeSecretNamespaceLister{
 				GetFn: func(string) (*corev1.Secret, error) {
 					return s, err

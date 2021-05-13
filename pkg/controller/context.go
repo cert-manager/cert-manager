@@ -21,8 +21,6 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
-	dynamicclient "k8s.io/client-go/dynamic"
-	dynamicinformers "k8s.io/client-go/dynamic/dynamicinformer"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -50,8 +48,6 @@ type Context struct {
 	RESTConfig *rest.Config
 	// Client is a Kubernetes clientset
 	Client kubernetes.Interface
-	// DynamicClient is a Dynamic clientset
-	DynamicClient dynamicclient.Interface
 	// CMClient is a cert-manager clientset
 	CMClient clientset.Interface
 	// Recorder to record events to
@@ -60,15 +56,9 @@ type Context struct {
 	// KubeSharedInformerFactory can be used to obtain shared
 	// SharedIndexInformer instances for Kubernetes types
 	KubeSharedInformerFactory kubeinformers.SharedInformerFactory
-	// DynamicSharedInformerFactory can be used to obtain shared
-	// SharedIndexInformer instances for Dynamic types
-	DynamicSharedInformerFactory dynamicinformers.DynamicSharedInformerFactory
 	// SharedInformerFactory can be used to obtain shared SharedIndexInformer
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
-
-	// IstioEnabled is true if Istio support is enabled
-	IstioEnabled bool
 
 	// Namespace is the namespace to operate within.
 	// If unset, operates on all namespaces

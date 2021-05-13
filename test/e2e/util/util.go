@@ -144,23 +144,19 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 
 // WaitForCertificateCondition waits for the status of the named Certificate to contain
 // a condition whose type and status matches the supplied one.
-func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
-	var certificate *v1.Certificate
-	err := wait.PollImmediate(500*time.Millisecond, timeout,
+func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) error {
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
-			log.Logf("Waiting for Certificate %v to have contition %v %v", name, condition.Type, condition.Status)
+			log.Logf("Waiting for Certificate %v condition %#v", name, condition)
 			certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			if !apiutil.CertificateHasCondition(certificate, condition) {
-				log.Logf("Expected Certificate to have condition %v %v %v but it has: %v", condition.Type, condition.Status, condition.ObservedGeneration, certificate.Status.Conditions)
-				return false, nil
-			}
-			return true, nil
+
+			return apiutil.CertificateHasCondition(certificate, condition), nil
 		},
 	)
-	return certificate, err
+	return wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
 }
 
 // WaitForCertificateEvent waits for an event on the named Certificate to contain

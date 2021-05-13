@@ -41,9 +41,13 @@ import (
 )
 
 const (
+	// CRControllerName is the string used to refer to
+	// this controller when enabling or disabling it from
+	// command line flags.
 	CRControllerName = "certificaterequests-issuer-acme"
 )
 
+// ACME is a controller that implements `certificaterequests.Issuer`.
 type ACME struct {
 	// used to record Events about resources to the API
 	recorder      record.EventRecorder
@@ -67,6 +71,7 @@ func init() {
 	})
 }
 
+// NewACME returns a configured controller.
 func NewACME(ctx *controllerpkg.Context) *ACME {
 	return &ACME{
 		recorder:      ctx.Recorder,
@@ -77,6 +82,12 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 	}
 }
 
+// Sign returns a CA, certificate and Key from an ACME CA.
+//
+// If no order exists for a CertificateRequest, an order is constructed
+// and sent back to the Kubernetes API server for processing.
+// The order controller then processes the order. The CertificateRequest
+// is then updated with the result.
 func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
@@ -195,11 +206,18 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 		return nil, a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
 	}
 
+	bundle, err := pki.ParseSingleCertificateChainPEM(order.Status.Certificate)
+	if err != nil {
+		log.Error(err, "failed to successfully build a certificate chain from data on Order resource.")
+		return nil, a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
+	}
+
 	log.V(logf.InfoLevel).Info("certificate issued")
 
 	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
 	return &issuerpkg.IssueResponse{
-		Certificate: order.Status.Certificate,
+		Certificate: bundle.ChainPEM,
+		CA:          bundle.CAPEM,
 	}, nil
 
 }

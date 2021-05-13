@@ -18,6 +18,7 @@ package ca
 
 import (
 	"context"
+	"crypto"
 	"crypto/x509"
 	"fmt"
 
@@ -41,6 +42,7 @@ const (
 )
 
 type templateGenerator func(*cmapi.CertificateRequest) (*x509.Certificate, error)
+type signingFn func([]*x509.Certificate, crypto.Signer, *x509.Certificate) (pki.PEMBundle, error)
 
 type CA struct {
 	issuerOptions controllerpkg.IssuerOptions
@@ -50,6 +52,7 @@ type CA struct {
 
 	// Used for testing to get reproducible resulting certificates
 	templateGenerator templateGenerator
+	signingFn         signingFn
 }
 
 func init() {
@@ -67,6 +70,7 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		templateGenerator: pki.GenerateTemplateFromCertificateRequest,
+		signingFn:         pki.SignCSRTemplate,
 	}
 }
 
@@ -80,7 +84,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
 
 	// get a copy of the CA certificate named on the Issuer
-	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
+	caCerts, caKey, err := kube.SecretTLSKeyPairAndCA(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
 	if k8sErrors.IsNotFound(err) {
 		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
 
@@ -117,7 +121,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
 	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
 
-	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
+	bundle, err := c.signingFn(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"
 		c.reporter.Failed(cr, err, "SigningError", message)
@@ -128,7 +132,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	log.V(logf.DebugLevel).Info("certificate issued")
 
 	return &issuerpkg.IssueResponse{
-		Certificate: certPEM,
-		CA:          caPEM,
+		Certificate: bundle.ChainPEM,
+		CA:          bundle.CAPEM,
 	}, nil
 }

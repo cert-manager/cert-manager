@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 
@@ -81,7 +82,8 @@ func BenchmarkScheduleAscending(b *testing.B) {
 			s := &Scheduler{}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				s.scheduleN(30, chs)
+				_, err := s.scheduleN(30, chs)
+				require.NoError(b, err)
 			}
 		})
 	}
@@ -95,7 +97,8 @@ func BenchmarkScheduleRandom(b *testing.B) {
 			s := &Scheduler{}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				s.scheduleN(30, chs)
+				_, err := s.scheduleN(30, chs)
+				require.NoError(b, err)
 			}
 		})
 	}
@@ -109,7 +112,8 @@ func BenchmarkScheduleDuplicates(b *testing.B) {
 			s := &Scheduler{}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				s.scheduleN(30, chs)
+				_, err := s.scheduleN(30, chs)
+				require.NoError(b, err)
 			}
 		})
 	}
@@ -311,7 +315,8 @@ func TestScheduleN(t *testing.T) {
 			factory := cminformers.NewSharedInformerFactory(cl, 0)
 			challengesInformer := factory.Acme().V1().Challenges()
 			for _, ch := range test.challenges {
-				challengesInformer.Informer().GetIndexer().Add(ch)
+				err := challengesInformer.Informer().GetIndexer().Add(ch)
+				require.NoError(t, err)
 			}
 
 			s := New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges)

@@ -22,6 +22,7 @@ import (
 	"runtime/debug"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
@@ -52,7 +53,10 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	defer b.Stop()
 
 	c := &controller{}
-	c.Register(b.Context)
+
+	_, _, err := c.Register(b.Context)
+	require.NoError(t, err)
+
 	b.Start()
 
 	cmClient := b.FakeCMClient()

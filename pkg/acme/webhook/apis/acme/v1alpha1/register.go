@@ -33,6 +33,8 @@ func Resource(resource string) schema.GroupResource {
 }
 
 var (
+	// SchemeBuilder should be declared in packages that will have generated deep
+	// copy or conversion functions.
 	SchemeBuilder      runtime.SchemeBuilder
 	localSchemeBuilder = &SchemeBuilder
 	AddToScheme        = localSchemeBuilder.AddToScheme
