@@ -14,13 +14,21 @@ metadata:
     helm.sh/chart: {{ include "cert-manager.chart" . }}
 rules:
   # Used for leader election by the controller
-  - apiGroups: ["coordination.k8s.io", ""]
-    resources: ["leases", "configmaps"]
-    verbs: ["create"]
-  - apiGroups: ["coordination.k8s.io", ""]
-    resources: ["leases", "configmaps"]
+  # See also: https://github.com/kubernetes-sigs/controller-runtime/pull/1144#discussion_r480173688
+  - apiGroups: [""]
+    resources: ["configmaps"]
     resourceNames: ["cert-manager-controller"]
     verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["cert-manager-controller"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
 
 ---
 
