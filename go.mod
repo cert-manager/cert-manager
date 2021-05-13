@@ -58,6 +58,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	k8s.io/kubectl v0.21.0
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
+	// To be replaced when there are stable versions that use k8s 1.21 libraries available
 	sigs.k8s.io/controller-runtime v0.9.0-beta.1
 	sigs.k8s.io/controller-tools v0.6.0-beta.0
 	sigs.k8s.io/testing_frameworks v0.1.2
@@ -67,16 +68,18 @@ require (
 
 replace golang.org/x/net => golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
 
+// To be replaced once there is a release of kubernetes/apiserver that uses gnostic v0.5. See https://github.com/jetstack/cert-manager/pull/3926#issuecomment-828923436
 replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 
+// See https://github.com/jetstack/cert-manager/issues/3999
 replace github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.12.1
 
 replace github.com/onsi/gomega => github.com/onsi/gomega v1.10.1
 
-replace google.golang.org/grpc => google.golang.org/grpc v1.27.1
-
+// See https://github.com/kubernetes/kubernetes/issues/101567
 replace k8s.io/code-generator => github.com/kmodules/code-generator v0.21.1-rc.0.0.20210428003838-7eafae069eb0
 
 replace k8s.io/gengo => github.com/kmodules/gengo v0.0.0-20210428002657-a8850da697c2
 
+// See https://github.com/kubernetes/kubernetes/pull/99817
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
