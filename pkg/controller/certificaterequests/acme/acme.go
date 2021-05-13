@@ -206,11 +206,18 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 		return nil, a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
 	}
 
+	bundle, err := pki.ParseSingleCertificateChainPEM(order.Status.Certificate)
+	if err != nil {
+		log.Error(err, "failed to successfully build a certificate chain from data on Order resource.")
+		return nil, a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
+	}
+
 	log.V(logf.InfoLevel).Info("certificate issued")
 
 	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
 	return &issuerpkg.IssueResponse{
-		Certificate: order.Status.Certificate,
+		Certificate: bundle.ChainPEM,
+		CA:          bundle.CAPEM,
 	}, nil
 
 }
