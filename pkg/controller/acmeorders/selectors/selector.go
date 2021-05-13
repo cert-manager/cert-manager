@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Selector determines whether a kubernetes object matches the
+// criteria checked by the implementation.
 type Selector interface {
 	// Matches returns the number of matches that this selector
 	// has with the given object metadata and dnsName.

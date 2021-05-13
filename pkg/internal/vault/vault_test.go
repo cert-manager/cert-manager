@@ -76,7 +76,8 @@ A5oRrSHcd8Hd8/lk0Y9BpFTnZEg7RLhFhh9nazVp1/pjwaGx449uHIGEoxREQoPq
 bfHWnmdelE0WP7h7B0PSA0EXn0pdg2VQIQsknV6y3MCzFQCCSAog/OSguokXG1PG
 l6fctDJ3+AF07EjtgArOBkUn7Nt3/CgMN8I1rnBZ1Vmd8yrHEP0E3yRXBL7cDj5j
 Fqmd89NQLlGs
------END CERTIFICATE-----`
+-----END CERTIFICATE-----
+`
 
 	testIntermediateCa = `-----BEGIN CERTIFICATE-----
 MIIFaTCCA1GgAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwQTEPMA0GA1UEAwwGYmFy
@@ -108,7 +109,8 @@ rFQvv3jOPJ99IUpYpJydpv0Rfds3zMy2FJ6uex8gmlF7+XDZUSLQLuuFcjyHybfB
 zwZlUQ6EVmjOWLDdAmpeIAIkNEiogPuSz9E7xKdU+5bFYSgm6uxe8tFZSge2VEMC
 vPY2RcZ6uPZwpItqPmna8beydzlYohPcNcs4eK3hblLLacBV6eltP+q4/td+y87N
 yNCb90/k5dhi3YML4qoFeZjYfbY65RKHTztv5iqHH36dIZos0LucuphEWlKK
------END CERTIFICATE-----`
+-----END CERTIFICATE-----
+`
 	testRootCa = `-----BEGIN CERTIFICATE-----
 MIIFczCCA1ugAwIBAgIUcq3TKhc/RJfQOLCF2UQ805R+lkIwDQYJKoZIhvcNAQEL
 BQAwQTEPMA0GA1UEAwwGYmFyLmNhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0Ex
@@ -140,7 +142,8 @@ O4MslwSiWvenq5apF9PzvwDndFIfSKzIE6A7/gyKKKuMYz87FTiHipsA/GAOjNUO
 Pc7TUJiY8gW9SWhPVUPaMkTIBgfN11c6BzLlhzN2r1zaZyghXr8QmcG4kWywkX7k
 oXeN5eS8iO5fx0EOvIcYQ4yRZLGafZxsLHlsZmt32N/ZZtcl4KDP5LRE7iZEOaE/
 UXY5wAUH2A==
------END CERTIFICATE-----`
+-----END CERTIFICATE-----
+`
 )
 
 func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
@@ -310,7 +313,7 @@ func TestSign(t *testing.T) {
 
 type testExtractCertificatesFromVaultCertT struct {
 	secret       *certutil.Secret
-	expectedCert []string
+	expectedCert string
 	expectedCA   string
 }
 
@@ -318,17 +321,17 @@ func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
 	tests := map[string]testExtractCertificatesFromVaultCertT{
 		"when a Vault engine is a root CA": {
 			secret:       signedCertificateSecret(testIntermediateCa),
-			expectedCert: []string{testLeafCertificate},
+			expectedCert: testLeafCertificate,
 			expectedCA:   testIntermediateCa,
 		},
 		"when a Vault engine is an intermediate CA, and its parent is a root CA": {
 			secret:       signedCertificateSecret(testIntermediateCa, testRootCa),
-			expectedCert: []string{testLeafCertificate, testIntermediateCa},
+			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testRootCa,
 		},
 		"when a Vault engine is an intermediate CA, and its parent is a intermediate CA": {
 			secret:       signedCertificateSecret(testIntermediateCa, testIntermediateCa, testRootCa),
-			expectedCert: []string{testLeafCertificate, testIntermediateCa, testIntermediateCa},
+			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testRootCa,
 		},
 	}
@@ -339,12 +342,11 @@ func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s: failed to extract certificate: %s", name, err)
 		}
-		expectedCert := strings.Join(test.expectedCert, "\n")
-		if expectedCert != string(cert) {
-			t.Errorf("%s: unexpected leaf certificate, exp=%s, got=%s", name, expectedCert, cert)
+		if test.expectedCert != string(cert) {
+			t.Errorf("%s: unexpected leaf certificate, exp=%q, got=%q", name, test.expectedCert, cert)
 		}
 		if test.expectedCA != string(ca) {
-			t.Errorf("%s: unexpected root certificate, exp=%s, got=%s", name, test.expectedCA, cert)
+			t.Errorf("%s: unexpected root certificate, exp=%q, got=%q", name, test.expectedCA, cert)
 		}
 	}
 }

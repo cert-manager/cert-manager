@@ -33,6 +33,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
+// PrivateKeyMatchesSpec returns an error if the private key bit size
+// doesn't match the provided spec. Both RSA and ECDSA are supported.
+// If any error is returned, a list of violations will also be returned.
 func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
 	spec = *spec.DeepCopy()
 	if spec.PrivateKey == nil {

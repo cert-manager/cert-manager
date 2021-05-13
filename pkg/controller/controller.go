@@ -19,10 +19,12 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -130,12 +132,12 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (b *controller) worker(ctx context.Context) {
-	log := logf.FromContext(b.ctx)
+func (c *controller) worker(ctx context.Context) {
+	log := logf.FromContext(c.ctx)
 
 	log.V(logf.DebugLevel).Info("starting worker")
 	for {
-		obj, shutdown := b.queue.Get()
+		obj, shutdown := c.queue.Get()
 		if shutdown {
 			break
 		}
@@ -143,7 +145,7 @@ func (b *controller) worker(ctx context.Context) {
 		var key string
 		// use an inlined function so we can use defer
 		func() {
-			defer b.queue.Done(obj)
+			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
 				return
@@ -152,15 +154,21 @@ func (b *controller) worker(ctx context.Context) {
 			log.V(logf.DebugLevel).Info("syncing item")
 
 			// Increase sync count for this controller
-			b.metrics.IncrementSyncCallCount(b.name)
+			c.metrics.IncrementSyncCallCount(c.name)
 
-			if err := b.syncHandler(ctx, key); err != nil {
-				log.Error(err, "re-queuing item due to error processing")
-				b.queue.AddRateLimited(obj)
+			err := c.syncHandler(ctx, key)
+			if err != nil {
+				if strings.Contains(err.Error(), genericregistry.OptimisticLockErrorMsg) {
+					log.Info("re-queuing item due to optimistic locking on resource", "error", err.Error())
+				} else {
+					log.Error(err, "re-queuing item due to error processing")
+				}
+
+				c.queue.AddRateLimited(obj)
 				return
 			}
 			log.V(logf.DebugLevel).Info("finished processing work item")
-			b.queue.Forget(obj)
+			c.queue.Forget(obj)
 		}()
 	}
 	log.V(logf.DebugLevel).Info("exiting worker loop")

@@ -13,3 +13,4 @@ SECURITY.md and report your vulnerability via e-mail.
 - [JoshVanL](https://github.com/JoshVanL)
 - [maelvls](https://github.com/maelvls)
 - [wallrj](https://github.com/wallrj)
+- [munnerz](https://github.com/munnerz)

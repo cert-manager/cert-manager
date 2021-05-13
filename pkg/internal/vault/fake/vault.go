@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package fake contains a fake Vault signer for use in tests
 package fake
 
 import (
@@ -31,6 +32,7 @@ type Vault struct {
 	IsVaultInitializedAndUnsealedFn func() error
 }
 
+// New returns a new fake Vault
 func New() *Vault {
 	v := &Vault{
 		SignFn: func([]byte, time.Duration) ([]byte, []byte, error) {
@@ -48,10 +50,12 @@ func New() *Vault {
 	return v
 }
 
+// Sign implements `vault.Interface`.
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) ([]byte, []byte, error) {
 	return v.SignFn(csrPEM, duration)
 }
 
+// WithSign sets the fake Vault's Sign function.
 func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	v.SignFn = func([]byte, time.Duration) ([]byte, []byte, error) {
 		return certPEM, caPEM, err
@@ -59,11 +63,13 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	return v
 }
 
+// WithNew sets the fake Vault's New function.
 func (v *Vault) WithNew(f func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)) *Vault {
 	v.NewFn = f
 	return v
 }
 
+// New call NewFn and returns a pointer to the fake Vault.
 func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer) (*Vault, error) {
 	_, err := v.NewFn(ns, sl, iss)
 	if err != nil {
@@ -73,10 +79,12 @@ func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1.GenericIssuer
 	return v, nil
 }
 
+// Sys returns an empty `vault.Sys`.
 func (v *Vault) Sys() *vault.Sys {
 	return new(vault.Sys)
 }
 
+// IsVaultInitializedAndUnsealed always returns nil
 func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	return nil
 }

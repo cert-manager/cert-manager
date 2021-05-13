@@ -16,6 +16,7 @@ go_library(
         "//pkg/apis/meta/v1:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/suite/issuers/acme/certificate:go_default_library",
+        "//test/e2e/suite/issuers/acme/certificaterequest:go_default_library",
         "//test/e2e/util:go_default_library",
         "//test/unit/gen:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
@@ -37,6 +38,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/e2e/suite/issuers/acme/certificate:all-srcs",
+        "//test/e2e/suite/issuers/acme/certificaterequest:all-srcs",
         "//test/e2e/suite/issuers/acme/dnsproviders:all-srcs",
     ],
     tags = ["automanaged"],

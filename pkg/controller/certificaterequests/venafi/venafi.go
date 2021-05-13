@@ -19,7 +19,6 @@ package venafi
 import (
 	"context"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +37,7 @@ import (
 	venaficlient "github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client/api"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 const (
@@ -163,20 +163,16 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 
 	log.V(logf.DebugLevel).Info("certificate issued")
 
-	// Assume the last certificate is the root CA
-	var (
-		block, lastBlock *pem.Block
-		remainingBytes   = certPem
-	)
-	for {
-		block, remainingBytes = pem.Decode(remainingBytes)
-		if block == nil {
-			break
-		}
-		lastBlock = block
+	bundle, err := utilpki.ParseSingleCertificateChainPEM(certPem)
+	if err != nil {
+		message := "Failed to parse returned certificate bundle"
+		v.reporter.Failed(cr, err, "ParseError", message)
+		log.Error(err, message)
+		return nil, err
 	}
+
 	return &issuerpkg.IssueResponse{
-		Certificate: certPem,
-		CA:          pem.EncodeToMemory(lastBlock),
+		Certificate: bundle.ChainPEM,
+		CA:          bundle.CAPEM,
 	}, nil
 }

@@ -20,6 +20,8 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
+// ResourceNamespace returns the Kubernetes namespace where resources
+// created or read by `iss` are located.
 func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {
 	ns := iss.GetObjectMeta().Namespace
 	if ns == "" {
@@ -28,6 +30,8 @@ func (o IssuerOptions) ResourceNamespace(iss cmapi.GenericIssuer) string {
 	return ns
 }
 
+// CanUseAmbientCredentials returns whether `iss` will attempt to configure itself
+// from ambient credentials (e.g. from a cloud metadata service).
 func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 	switch iss.(type) {
 	case *cmapi.ClusterIssuer:

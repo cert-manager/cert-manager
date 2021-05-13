@@ -144,12 +144,10 @@ func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 	pod := s.buildDefaultPod(ch)
 
 	// Override defaults if they have changed in the pod template.
-	if ch.Spec.Solver.HTTP01 != nil {
-		if ch.Spec.Solver.HTTP01.Ingress != nil {
-			pod = s.mergePodObjectMetaWithPodTemplate(pod, ch.Spec.Solver.HTTP01.Ingress.PodTemplate)
-		} else if ch.Spec.Solver.HTTP01.Istio != nil {
-			pod = s.mergePodObjectMetaWithPodTemplate(pod, ch.Spec.Solver.HTTP01.Istio.PodTemplate)
-		}
+	if ch.Spec.Solver.HTTP01 != nil &&
+		ch.Spec.Solver.HTTP01.Ingress != nil {
+		pod = s.mergePodObjectMetaWithPodTemplate(pod,
+			ch.Spec.Solver.HTTP01.Ingress.PodTemplate)
 	}
 
 	return pod
@@ -239,9 +237,7 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cm
 		pod.Spec.Tolerations = []corev1.Toleration{}
 	}
 
-	for _, t := range podTempl.Spec.Tolerations {
-		pod.Spec.Tolerations = append(pod.Spec.Tolerations, t)
-	}
+	pod.Spec.Tolerations = append(pod.Spec.Tolerations, podTempl.Spec.Tolerations...)
 
 	if podTempl.Spec.Affinity != nil {
 		pod.Spec.Affinity = podTempl.Spec.Affinity

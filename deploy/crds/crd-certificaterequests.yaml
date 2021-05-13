@@ -30,14 +30,14 @@ spec:
     webhook:
       conversionReviewVersions: ["v1", "v1beta1"]
       clientConfig:
-        {{- if .Values.webhook.url.host }}
+        # {{- if .Values.webhook.url.host }}
         url: https://{{ .Values.webhook.url.host }}/convert
-        {{- else }}
+        # {{- else }}
         service:
-          name: {{ template "webhook.fullname" . }}
-          namespace: {{ .Release.Namespace | quote }}
+          name: '{{ template "webhook.fullname" . }}'
+          namespace: "{{ .Release.Namespace }}"
           path: /convert
-        {{- end }}
+          # {{- end }}
   versions:
     - name: v1alpha2
       subresources:

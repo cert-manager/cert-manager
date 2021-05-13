@@ -161,10 +161,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 }
 
 func followCNAME(strategy cmacme.CNAMEStrategy) bool {
-	if strategy == cmacme.FollowStrategy {
-		return true
-	}
-	return false
+	return strategy == cmacme.FollowStrategy
 }
 
 func extractChallengeSolverConfig(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverDNS01, error) {

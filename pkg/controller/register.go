@@ -34,7 +34,7 @@ type Interface interface {
 type Constructor func(ctx *Context) (Interface, error)
 
 var (
-	known = make(map[string]Constructor, 0)
+	known = make(map[string]Constructor)
 )
 
 // Known returns a map of the registered controller Constructors
