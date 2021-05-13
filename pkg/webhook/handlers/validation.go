@@ -101,15 +101,19 @@ func (r *registryBackedValidator) Validate(ctx context.Context, admissionSpec *a
 		}
 	}
 	errs := field.ErrorList{}
+	var warnings validation.WarningList
 
 	if admissionSpec.Operation == admissionv1.Create {
 		// perform validation on new version of resource
-		errs = append(errs, r.registry.Validate(admissionSpec, obj, gvk)...)
+		e, w := r.registry.Validate(admissionSpec, obj, gvk)
+		errs, warnings = append(errs, e...), append(warnings, w...)
 	} else if admissionSpec.Operation == admissionv1.Update {
 		// perform update validation on resource
-		errs = append(errs, r.registry.ValidateUpdate(admissionSpec, oldObj, obj, gvk)...)
+		e, w := r.registry.ValidateUpdate(admissionSpec, oldObj, obj, gvk)
+		errs, warnings = append(errs, e...), append(warnings, w...)
 	}
 
+	// TODO: implement warnings for Plugin interface
 	// If no validation errors occurred, perform plugin checks.
 	if len(errs) == 0 {
 		for _, plugin := range r.plugins {
@@ -118,6 +122,8 @@ func (r *registryBackedValidator) Validate(ctx context.Context, admissionSpec *a
 			}
 		}
 	}
+
+	status.Warnings = warnings
 
 	// return with allowed = false if any errors occurred
 	if err := errs.ToAggregate(); err != nil {

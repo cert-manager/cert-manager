@@ -21,19 +21,20 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 )
 
-// Validation functions for cert-manager v1alpha2 ClusterIssuer types
+// Validation functions for cert-manager ClusterIssuer types.
 
-func ValidateClusterIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) field.ErrorList {
+func ValidateClusterIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	iss := obj.(*cmapi.ClusterIssuer)
-	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	return allErrs
+	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	return allErrs, warnings
 }
 
-func ValidateUpdateClusterIssuer(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) field.ErrorList {
+func ValidateUpdateClusterIssuer(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	iss := obj.(*cmapi.ClusterIssuer)
-	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	return allErrs
+	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	return allErrs, warnings
 }

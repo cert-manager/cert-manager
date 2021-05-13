@@ -26,26 +26,19 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	var unsupportedFeatures = featureset.NewFeatureSet(
-		featureset.OnlyValidACMEDNSName,
-	)
-
 	(&certificates.Suite{
-		Name:                "SelfSigned Issuer",
-		CreateIssuerFunc:    createSelfSignedIssuer,
-		UnsupportedFeatures: unsupportedFeatures,
+		Name:             "SelfSigned Issuer",
+		CreateIssuerFunc: createSelfSignedIssuer,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "SelfSigned ClusterIssuer",
-		CreateIssuerFunc:    createSelfSignedClusterIssuer,
-		DeleteIssuerFunc:    deleteSelfSignedClusterIssuer,
-		UnsupportedFeatures: unsupportedFeatures,
+		Name:             "SelfSigned ClusterIssuer",
+		CreateIssuerFunc: createSelfSignedClusterIssuer,
+		DeleteIssuerFunc: deleteSelfSignedClusterIssuer,
 	}).Define()
 })
 

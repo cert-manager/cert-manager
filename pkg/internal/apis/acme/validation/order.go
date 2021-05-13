@@ -23,26 +23,27 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 )
 
-func ValidateOrderUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) field.ErrorList {
+func ValidateOrderUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
 	old, ok := oldObj.(*cmacme.Order)
 	new := newObj.(*cmacme.Order)
 	// if oldObj is not set, the Update operation is always valid.
 	if !ok || old == nil {
-		return nil
+		return nil, nil
 	}
 
 	el := field.ErrorList{}
 	el = append(el, ValidateOrderSpecUpdate(old.Spec, new.Spec, field.NewPath("spec"))...)
 	el = append(el, ValidateOrderStatusUpdate(old.Status, new.Status, field.NewPath("status"))...)
-	return el
+	return el, nil
 }
 
 func ValidateOrderSpecUpdate(old, new cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
-	if len(old.Request) > 0 && bytes.Compare(old.Request, new.Request) != 0 {
+	if len(old.Request) > 0 && !bytes.Equal(old.Request, new.Request) {
 		el = append(el, field.Forbidden(fldPath.Child("request"), "field is immutable once set"))
 	}
 	return el
@@ -59,7 +60,7 @@ func ValidateOrderStatusUpdate(old, new cmacme.OrderStatus, fldPath *field.Path)
 		el = append(el, field.Forbidden(fldPath.Child("finalizeURL"), "field is immutable once set"))
 	}
 	// once the Certificate has been issued, it cannot be changed
-	if len(old.Certificate) > 0 && bytes.Compare(old.Certificate, new.Certificate) != 0 {
+	if len(old.Certificate) > 0 && !bytes.Equal(old.Certificate, new.Certificate) {
 		el = append(el, field.Forbidden(fldPath.Child("certificate"), "field is immutable once set"))
 	}
 

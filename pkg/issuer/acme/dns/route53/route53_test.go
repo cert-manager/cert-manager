@@ -146,7 +146,7 @@ func TestRoute53Present(t *testing.T) {
 	// request which causes spurious challenge updates.
 	err = provider.Present("bar.example.com", "bar.example.com.", keyAuth)
 	require.Error(t, err, "Expected Present to return an error")
-	assert.Equal(t, `Failed to change Route 53 record set: AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
+	assert.Equal(t, `failed to change Route 53 record set: AccessDenied: User: arn:aws:iam::0123456789:user/test-cert-manager is not authorized to perform: route53:ChangeResourceRecordSets on resource: arn:aws:route53:::hostedzone/OPQRSTU`, err.Error())
 }
 
 func TestAssumeRole(t *testing.T) {

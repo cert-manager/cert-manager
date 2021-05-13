@@ -32,6 +32,8 @@ import (
 )
 
 const (
+	// ControllerName is the string used to refer to this controller
+	// when enabling or disabling it from command line flags.
 	ControllerName = "certificates-metrics"
 )
 
