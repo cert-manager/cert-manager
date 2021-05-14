@@ -62,6 +62,7 @@ const (
 	messageTemplateNotRSA                  = "ACME private key in %q is not of type RSA"
 	messageTemplateFailedToParseURL        = "Failed to parse existing ACME server URI %q: %v"
 	messageTemplateFailedToParseAccountURL = "Failed to parse existing ACME account URI %q: %v"
+	messageTemplateFailedToGetEABKey       = "failed to get External Account Binding key from secret: %v"
 )
 
 // Setup will verify an existing ACME registration, or create one if not
@@ -86,7 +87,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
 		reason = errorInvalidConfig
 		msg = fmt.Sprintf(messageTemplateUpdateToV2, a.issuer.GetSpec().ACME.Server, newURL)
-		// return nil so that Setup only gets called again after the spec is updated
+		// Return nil, because we do not want to re-queue an Issuer with an invalid spec.
 		return nil
 	}
 
@@ -118,11 +119,14 @@ func (a *Acme) Setup(ctx context.Context) error {
 		a.issuer.GetStatus().ACMEStatus().URI = ""
 
 	case a.issuer.GetSpec().ACME.DisableAccountKeyGeneration && apierrors.IsNotFound(err):
-		wrapErr := fmt.Errorf("%s%s%w", messageAccountVerificationFailed,
+		wrapErr := fmt.Errorf("%s%s%v", messageAccountVerificationFailed,
 			messageNoSecretKeyGenerationDisabled,
 			err)
 		reason = errorAccountVerificationFailed
 		msg = wrapErr.Error()
+		// TODO: we should not re-queue the Issuer here as a resync will happen
+		// when the user adds the Secret or changes Issuer's spec. Should be
+		// fixed by https://github.com/jetstack/cert-manager/issues/4004
 		return wrapErr
 
 	case errors.IsInvalidData(err):
@@ -146,6 +150,10 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// TODO: don't always clear the client cache.
 	//  In future we should intelligently manage items in the account cache
 	//  and remove them when the corresponding issuer is updated/deleted.
+	// TODO: if we fail earlier, the issuer is considered not ready and we
+	// probably don't want other controllers to use its client from the cache.
+	// We could therefore move the removing of the client up to the start of
+	// this function.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
 	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify)
 	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk)
@@ -382,7 +390,7 @@ func (a *Acme) getEABKey(ctx context.Context, ns string) ([]byte, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get External Account Binding key from secret: %s", err)
+		return nil, fmt.Errorf(messageTemplateFailedToGetEABKey, err)
 	}
 
 	encodedKeyData, ok := sec.Data[eab.Key]
