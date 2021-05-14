@@ -17,6 +17,8 @@ limitations under the License.
 package acme
 
 import (
+	"context"
+	"crypto"
 	"fmt"
 
 	core "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -29,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/metrics"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
 // Acme is an issuer for an ACME server. It can be used to register and obtain
@@ -37,9 +40,15 @@ import (
 type Acme struct {
 	issuer v1.GenericIssuer
 
-	secretsLister corelisters.SecretLister
 	secretsClient core.SecretsGetter
 	recorder      record.EventRecorder
+
+	// keyFromSecret returns a decoded account key from a Kubernetes secret.
+	// It can be stubbed in unit tests.
+	keyFromSecret keyFromSecretFunc
+
+	// clientBuilder builds a new ACME client.
+	clientBuilder accounts.NewClientFunc
 
 	// namespace of referenced resources when the given issuer is a ClusterIssuer
 	clusterResourceNamespace string
@@ -60,7 +69,8 @@ func New(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, er
 
 	a := &Acme{
 		issuer:                   issuer,
-		secretsLister:            secretsLister,
+		keyFromSecret:            newKeyFromSecret(secretsLister),
+		clientBuilder:            accounts.NewClient,
 		secretsClient:            ctx.Client.CoreV1(),
 		recorder:                 ctx.Recorder,
 		clusterResourceNamespace: ctx.IssuerOptions.ClusterResourceNamespace,
@@ -69,6 +79,17 @@ func New(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, er
 	}
 
 	return a, nil
+}
+
+// keyFromSecretFunc accepts name, namespace and keyName for secret, verifies
+// and returns a private key stored at keyName.
+type keyFromSecretFunc func(ctx context.Context, namespace, name, keyName string) (crypto.Signer, error)
+
+// newKeyFromSecret returns an implementation of keyFromSecretFunc for a secrets lister.
+func newKeyFromSecret(secretLister corelisters.SecretLister) keyFromSecretFunc {
+	return func(ctx context.Context, namespace, name, keyName string) (crypto.Signer, error) {
+		return kube.SecretTLSKeyRef(ctx, secretLister, namespace, name, keyName)
+	}
 }
 
 // Register this Issuer with the issuer factory

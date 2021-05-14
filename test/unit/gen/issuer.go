@@ -157,6 +157,16 @@ func SetIssuerACMESkipTLSVerify(shouldSkip bool) IssuerModifier {
 	}
 }
 
+func SetIssuerACMEDisableAccountKeyGeneration(disabled bool) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.DisableAccountKeyGeneration = disabled
+	}
+}
+
 func SetIssuerACMEEAB(keyID, secretName string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
@@ -193,6 +203,26 @@ func SetIssuerACMEEABWithKeyAlgorithm(keyID, secretName string, keyAlgorithm cma
 				},
 			},
 		}
+	}
+}
+
+func SetIssuerACMEAccountURL(url string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		status := iss.GetStatus()
+		if status.ACME == nil {
+			status.ACME = &cmacme.ACMEIssuerStatus{}
+		}
+		status.ACME.URI = url
+	}
+}
+
+func SetIssuerACMELastRegisteredEmail(email string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		status := iss.GetStatus()
+		if status.ACME == nil {
+			status.ACME = &cmacme.ACMEIssuerStatus{}
+		}
+		status.ACME.LastRegisteredEmail = email
 	}
 }
 
