@@ -60,6 +60,15 @@ def go_repositories():
     )
 
     go_repository(
+        name = "com_github_akamai_AkamaiOPEN-edgegrid-golang",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/akamai/AkamaiOPEN-edgegrid-golang",
+        sum = "h1:NNsy0ugDFZbu6S11NlsR4Kmko9hJ00gv9U2JHbwpf3g=",
+        version = "v1.1.0",
+    )
+
+    go_repository(
         name = "com_github_alecthomas_template",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
