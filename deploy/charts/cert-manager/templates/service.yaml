@@ -11,6 +11,9 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "controller"
     helm.sh/chart: {{ include "cert-manager.chart" . }}
+{{- if .Values.serviceLabels }}
+{{ toYaml .Values.serviceLabels | indent 4 }}
+{{- end }}
 spec:
   type: ClusterIP
   ports:
