@@ -621,12 +621,14 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Init()
 	defer test.builder.Stop()
 
-	c := &controllerWrapper{}
-	_, _, err := c.Register(test.builder.Context)
+	cw := &controllerWrapper{}
+	_, _, err := cw.Register(test.builder.Context)
 	if err != nil {
 		t.Errorf("Error registering the controller: %v", err)
 	}
-	c.accountRegistry = &accountstest.FakeRegistry{
+
+	// Set some fields on the embedded controller.
+	cw.accountRegistry = &accountstest.FakeRegistry{
 		GetClientFunc: func(_ string) (acmecl.Interface, error) {
 			return test.acmeClient, nil
 		},
@@ -637,10 +639,11 @@ func runTest(t *testing.T, test testT) {
 			gotScheduled = true
 		},
 	}
-	c.scheduledWorkQueue = &fakeScheduler
+	cw.scheduledWorkQueue = &fakeScheduler
+
 	test.builder.Start()
 
-	err = c.Sync(context.Background(), test.order)
+	err = cw.Sync(context.Background(), test.order)
 	if err != nil && !test.expectErr {
 		t.Errorf("Expected function to not error, but got: %v", err)
 	}
@@ -648,7 +651,7 @@ func runTest(t *testing.T, test testT) {
 		t.Errorf("Expected function to get an error, but got: %v", err)
 	}
 	if gotScheduled != test.shouldSchedule {
-		t.Errorf("Expected Order to be re-queued: %v got requeued: %v", test.shouldSchedule, gotScheduled)
+		t.Errorf("Expected Order to be re-queued: %v got re-queued: %v", test.shouldSchedule, gotScheduled)
 	}
 
 	test.builder.CheckAndFinish(err)

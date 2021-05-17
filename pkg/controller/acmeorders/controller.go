@@ -191,8 +191,9 @@ const (
 	ControllerName = "orders"
 )
 
-// controllerWrapper wraps the `controller` structure to make it implement
-// the controllerpkg.queueingController interface
+// controllerWrapper wraps the `controller` structure to make it implement the
+// controllerpkg.queueingController interface. This allows for easier
+// instantiation of this controller in integration tests.
 type controllerWrapper struct {
 	*controller
 }

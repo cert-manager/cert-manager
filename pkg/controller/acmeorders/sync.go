@@ -42,10 +42,14 @@ import (
 )
 
 const (
-	RequeuePeriod time.Duration = time.Minute
-
 	reasonSolver  = "Solver"
 	reasonCreated = "Created"
+)
+
+var (
+	// RequeuePeriod is the default period after which an Order should be re-queued.
+	// It can be overriden in tests.
+	RequeuePeriod time.Duration = time.Second * 5
 )
 
 func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
@@ -149,9 +153,19 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	}
 
 	acmeOrder, err := getACMEOrder(ctx, cl, o)
+	// Order probably has been deleted, we cannot recover here.
+	if acmeErr, ok := err.(*acmeapi.Error); ok {
+		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
+			c.setOrderState(&o.Status, string(cmacme.Errored))
+			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
+			return nil
+		}
+	}
 	if err != nil {
 		return err
 	}
+
 	switch {
 	case o.Status.State == cmacme.Ready:
 		log.V(logf.DebugLevel).Info("Finalizing Order as order state is 'Ready'")
@@ -186,14 +200,18 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		// This is probably not needed as at this point the Order's status
 		// should already be Pending, but set it anyway to be explicit.
 		c.setOrderState(&o.Status, string(cmacme.Pending))
-		// Re-queue the Order to be processed after RequeuePeriod
 		key, err := cache.MetaNamespaceKeyFunc(o)
 		if err != nil {
-			// if we return an error here, at least the Order will get re-queued.
-			log.V(logf.InfoLevel).Info("Internal error: failed to construct key for pending Order")
-			return err
+			log.Error(err, "failed to construct key for pending Order")
+			// We should never end up here as this error would have been
+			// encountered in informers callback already. This probably cannot
+			// be fixed by re-queueing. If we do start encountering this
+			// scenario, we should consider whether the Order should be marked
+			// as failed here.
+			return nil
 		}
-		c.scheduledWorkQueue.Add(key, time.Second*5)
+		// Re-queue the Order to be processed again after 5 seconds.
+		c.scheduledWorkQueue.Add(key, RequeuePeriod)
 		return nil
 
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):

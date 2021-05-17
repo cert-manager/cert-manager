@@ -237,10 +237,16 @@ func TestAcmeOrdersController(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Override the default requeue period.
+	acmeorders.RequeuePeriod = time.Second * 2
+
 	// Sit here for a little bit checking that the Order status remains pending
 	// and also to verify that this test works.
+	// TODO: instead of waiting for the Order to remain 'pending', we should use
+	// Reason field on Order's status. Change this test once we are setting
+	// Reasons on intermittent Order states.
 	var pendingOrder *cmacme.Order
-	err = wait.Poll(time.Millisecond*200, time.Second*5, func() (bool, error) {
+	err = wait.Poll(time.Millisecond*200, acmeorders.RequeuePeriod, func() (bool, error) {
 		pendingOrder, err = cmCl.AcmeV1().Orders(testName).Get(ctx, testName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -259,11 +265,11 @@ func TestAcmeOrdersController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Set status of the ACME order to 'ready.
+	// Set status of the ACME order to 'ready'.
 	acmeOrder.Status = acmeapi.StatusReady
 
 	// Wait for the status of the Order to become Valid.
-	err = wait.Poll(time.Millisecond*100, time.Second*20, func() (bool, error) {
+	err = wait.Poll(time.Millisecond*100, acmeorders.RequeuePeriod*3, func() (bool, error) {
 		o, err := cmCl.AcmeV1().Orders(testName).Get(ctx, testName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
