@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certificaterequests
+package certificatesigningrequests
 
 import (
 	"fmt"
 
+	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -51,28 +54,29 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 	}
 }
 
-func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.CertificateRequest, error) {
-	crts, err := c.certificateRequestLister.List(labels.NewSelector())
+func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*certificatesv1.CertificateSigningRequest, error) {
+	csrs, err := c.csrLister.List(labels.NewSelector())
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates signing requests: %s", err.Error())
 	}
 
 	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)
 
-	var affected []*cmapi.CertificateRequest
-	for _, crt := range crts {
-		if isClusterIssuer && crt.Spec.IssuerRef.Kind != cmapi.ClusterIssuerKind {
+	var affected []*certificatesv1.CertificateSigningRequest
+	for _, csr := range csrs {
+		ref, ok := util.IssuerRefFromSignerName(csr.Spec.SignerName)
+
+		switch {
+		case !ok,
+			ref.Group != certmanager.GroupName,
+			iss.GetNamespace() != ref.Namespace,
+			iss.GetName() != ref.Name,
+			isClusterIssuer && ref.Type != "clusterissuers",
+			!isClusterIssuer && ref.Type != "issuers":
 			continue
 		}
-		if !isClusterIssuer {
-			if crt.Namespace != iss.GetObjectMeta().Namespace {
-				continue
-			}
-		}
-		if crt.Spec.IssuerRef.Name != iss.GetObjectMeta().Name {
-			continue
-		}
-		affected = append(affected, crt)
+
+		affected = append(affected, csr)
 	}
 
 	return affected, nil

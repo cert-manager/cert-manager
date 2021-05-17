@@ -20,6 +20,8 @@ import (
 	"crypto/x509"
 	"math/bits"
 
+	certificatesv1 "k8s.io/api/certificates/v1"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
@@ -52,6 +54,35 @@ var extKeyUsages = map[cmapi.KeyUsage]x509.ExtKeyUsage{
 	cmapi.UsageNetscapeSGC:     x509.ExtKeyUsageNetscapeServerGatedCrypto,
 }
 
+var keyUsagesKube = map[certificatesv1.KeyUsage]x509.KeyUsage{
+	certificatesv1.UsageSigning:           x509.KeyUsageDigitalSignature,
+	certificatesv1.UsageDigitalSignature:  x509.KeyUsageDigitalSignature,
+	certificatesv1.UsageContentCommitment: x509.KeyUsageContentCommitment,
+	certificatesv1.UsageKeyEncipherment:   x509.KeyUsageKeyEncipherment,
+	certificatesv1.UsageKeyAgreement:      x509.KeyUsageKeyAgreement,
+	certificatesv1.UsageDataEncipherment:  x509.KeyUsageDataEncipherment,
+	certificatesv1.UsageCertSign:          x509.KeyUsageCertSign,
+	certificatesv1.UsageCRLSign:           x509.KeyUsageCRLSign,
+	certificatesv1.UsageEncipherOnly:      x509.KeyUsageEncipherOnly,
+	certificatesv1.UsageDecipherOnly:      x509.KeyUsageDecipherOnly,
+}
+
+var extKeyUsagesKube = map[certificatesv1.KeyUsage]x509.ExtKeyUsage{
+	certificatesv1.UsageAny:             x509.ExtKeyUsageAny,
+	certificatesv1.UsageServerAuth:      x509.ExtKeyUsageServerAuth,
+	certificatesv1.UsageClientAuth:      x509.ExtKeyUsageClientAuth,
+	certificatesv1.UsageCodeSigning:     x509.ExtKeyUsageCodeSigning,
+	certificatesv1.UsageEmailProtection: x509.ExtKeyUsageEmailProtection,
+	certificatesv1.UsageSMIME:           x509.ExtKeyUsageEmailProtection,
+	certificatesv1.UsageIPsecEndSystem:  x509.ExtKeyUsageIPSECEndSystem,
+	certificatesv1.UsageIPsecTunnel:     x509.ExtKeyUsageIPSECTunnel,
+	certificatesv1.UsageIPsecUser:       x509.ExtKeyUsageIPSECUser,
+	certificatesv1.UsageTimestamping:    x509.ExtKeyUsageTimeStamping,
+	certificatesv1.UsageOCSPSigning:     x509.ExtKeyUsageOCSPSigning,
+	certificatesv1.UsageMicrosoftSGC:    x509.ExtKeyUsageMicrosoftServerGatedCrypto,
+	certificatesv1.UsageNetscapeSGC:     x509.ExtKeyUsageNetscapeServerGatedCrypto,
+}
+
 // KeyUsageType returns the relevant x509.KeyUsage or false if not found
 func KeyUsageType(usage cmapi.KeyUsage) (x509.KeyUsage, bool) {
 	u, ok := keyUsages[usage]
@@ -61,6 +92,18 @@ func KeyUsageType(usage cmapi.KeyUsage) (x509.KeyUsage, bool) {
 // ExtKeyUsageType returns the relevant x509.ExtKeyUsage or false if not found
 func ExtKeyUsageType(usage cmapi.KeyUsage) (x509.ExtKeyUsage, bool) {
 	eu, ok := extKeyUsages[usage]
+	return eu, ok
+}
+
+// TODO
+func KeyUsageTypeKube(usage certificatesv1.KeyUsage) (x509.KeyUsage, bool) {
+	u, ok := keyUsagesKube[usage]
+	return u, ok
+}
+
+// TOOD
+func ExtKeyUsageTypeKube(usage certificatesv1.KeyUsage) (x509.ExtKeyUsage, bool) {
+	eu, ok := extKeyUsagesKube[usage]
 	return eu, ok
 }
 

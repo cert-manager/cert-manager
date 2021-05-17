@@ -32,6 +32,8 @@ import (
 	"strings"
 	"time"
 
+	certificatesv1 "k8s.io/api/certificates/v1"
+
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -155,6 +157,27 @@ func BuildKeyUsages(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x5
 		if kuse, ok := apiutil.KeyUsageType(u); ok {
 			ku |= kuse
 		} else if ekuse, ok := apiutil.ExtKeyUsageType(u); ok {
+			eku = append(eku, ekuse)
+		} else {
+			unk = append(unk, u)
+		}
+	}
+	if len(unk) > 0 {
+		err = fmt.Errorf("unknown key usages: %v", unk)
+	}
+	return
+}
+
+func BuildKeyUsagesKube(usages []certificatesv1.KeyUsage) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
+	var unk []certificatesv1.KeyUsage
+	if len(usages) == 0 {
+		usages = []certificatesv1.KeyUsage{certificatesv1.UsageDigitalSignature, certificatesv1.UsageKeyEncipherment}
+	}
+
+	for _, u := range usages {
+		if kuse, ok := apiutil.KeyUsageTypeKube(u); ok {
+			ku |= kuse
+		} else if ekuse, ok := apiutil.ExtKeyUsageTypeKube(u); ok {
 			eku = append(eku, ekuse)
 		} else {
 			unk = append(unk, u)
@@ -338,6 +361,36 @@ func GenerateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Ce
 		return nil, err
 	}
 	return GenerateTemplateFromCSRPEMWithUsages(cr.Spec.Request, certDuration, cr.Spec.IsCA, keyUsage, extKeyUsage)
+}
+
+// GenerateTemplate will create a x509.Certificate for the given
+// CertificateSigningRequest resource
+func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
+	//certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
+	//keyUsage, extKeyUsage, err := BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return GenerateTemplateFromCSRPEMWithUsages(cr.Spec.Request, certDuration, cr.Spec.IsCA, keyUsage, extKeyUsage)
+	duration := v1.DefaultCertificateDuration
+	requestedDuration, ok := csr.Annotations[v1.CertificateSigningRequestDurationAnnotationKey]
+	if ok {
+		dur, err := time.ParseDuration(requestedDuration)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse requested duration on annotation %q: %w", v1.CertificateSigningRequestDurationAnnotationKey, err)
+		}
+		duration = dur
+	}
+	fmt.Println(duration)
+
+	ku, eku, err := BuildKeyUsagesKube(csr.Spec.Usages)
+	if err != nil {
+		return nil, err
+	}
+
+	isCA := csr.Annotations[v1.CertificateSigningRequestIsCAAnnotationKey] == "true"
+
+	return GenerateTemplateFromCSRPEMWithUsages(csr.Spec.Request, duration, isCA, ku, eku)
 }
 
 func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {

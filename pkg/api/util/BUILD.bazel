@@ -15,6 +15,7 @@ go_library(
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/logs:go_default_library",
+        "@io_k8s_api//certificates/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_utils//clock:go_default_library",
     ],
