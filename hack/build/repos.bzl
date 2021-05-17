@@ -1853,7 +1853,7 @@ def go_repositories():
         name = "com_github_mattbaird_jsonpatch",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
-        importpath = "github.com/mattbaird/jsonpatch",
+        importpath = "gomodules.xyz/jsonpatch/v2",
         sum = "h1:+J2gw7Bw77w/fbK7wnNJJDKmw1IbWft2Ul5BzrG1Qm8=",
         version = "v0.0.0-20171005235357-81af80346b1a",
     )

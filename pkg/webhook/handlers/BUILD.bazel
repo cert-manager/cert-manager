@@ -46,7 +46,6 @@ go_test(
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v2:go_default_library",
-        "@com_github_mattbaird_jsonpatch//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
@@ -55,6 +54,7 @@ go_test(
         "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_klog_v2//klogr:go_default_library",
         "@io_k8s_utils//diff:go_default_library",
+        "@xyz_gomodules_jsonpatch_v2//:go_default_library",
     ],
 )
 

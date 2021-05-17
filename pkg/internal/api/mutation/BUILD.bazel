@@ -6,12 +6,12 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/internal/api/mutation",
     visibility = ["//pkg:__subpackages__"],
     deps = [
-        "@com_github_mattbaird_jsonpatch//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
+        "@xyz_gomodules_jsonpatch_v2//:go_default_library",
     ],
 )
 

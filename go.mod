@@ -25,7 +25,6 @@ require (
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/hashicorp/vault/sdk v0.1.13
 	github.com/kr/pretty v0.2.1
-	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 	github.com/miekg/dns v1.1.31
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/munnerz/crd-schema-fuzz v1.0.0
@@ -43,6 +42,7 @@ require (
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/api v0.20.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.21.0
