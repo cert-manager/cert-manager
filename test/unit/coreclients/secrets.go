@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -87,6 +88,7 @@ type fakeSecretClient struct {
 	ListFn             func() (*corev1.SecretList, error)
 	WatchFn            func() (watch.Interface, error)
 	PatchFn            func() (*corev1.Secret, error)
+	ApplyFn            func() (*corev1.Secret, error)
 	// Currently there is no need to mock this interface
 	typedcorev1.SecretExpansion
 }
@@ -121,4 +123,8 @@ func (f *fakeSecretClient) Watch(context.Context, metav1.ListOptions) (watch.Int
 
 func (f *fakeSecretClient) Patch(context.Context, string, types.PatchType, []byte, metav1.PatchOptions, ...string) (*corev1.Secret, error) {
 	return f.PatchFn()
+}
+
+func (f *fakeSecretClient) Apply(context.Context, *applyconfigurationscorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
+	return f.ApplyFn()
 }

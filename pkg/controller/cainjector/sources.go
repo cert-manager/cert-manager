@@ -149,20 +149,20 @@ func (c *certificateDataSource) ApplyTo(ctx context.Context, mgr ctrl.Manager, s
 	}
 
 	if err := controller.Watch(source.NewKindWithCache(&cmapi.Certificate{}, ca),
-		&handler.EnqueueRequestsFromMapFunc{ToRequests: &certMapper{
+		handler.EnqueueRequestsFromMapFunc((&certMapper{
 			Client:       ca,
 			log:          ctrl.Log.WithName("cert-mapper"),
 			toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
-		}},
+		}).Map),
 	); err != nil {
 		return err
 	}
 	if err := controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
-		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForCertificateMapper{
+		handler.EnqueueRequestsFromMapFunc((&secretForCertificateMapper{
 			Client:                  ca,
 			log:                     ctrl.Log.WithName("secret-for-certificate-mapper"),
 			certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
-		}},
+		}).Map),
 	); err != nil {
 		return err
 	}
@@ -225,11 +225,11 @@ func (c *secretDataSource) ApplyTo(ctx context.Context, mgr ctrl.Manager, setup 
 		return err
 	}
 	if err := controller.Watch(source.NewKindWithCache(&corev1.Secret{}, ca),
-		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForInjectableMapper{
+		handler.EnqueueRequestsFromMapFunc((&secretForInjectableMapper{
 			Client:             ca,
 			log:                ctrl.Log.WithName("secret-mapper"),
 			secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
-		}},
+		}).Map),
 	); err != nil {
 		return err
 	}

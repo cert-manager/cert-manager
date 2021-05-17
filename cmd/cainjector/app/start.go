@@ -138,7 +138,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 			o.log.Error(err, "manager goroutine exited")
 		}()
 
-		if err = mgr.Start(gctx.Done()); err != nil {
+		if err = mgr.Start(gctx); err != nil {
 			return fmt.Errorf("error running manager: %v", err)
 		}
 		return nil

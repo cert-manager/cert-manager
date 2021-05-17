@@ -23,7 +23,6 @@ import (
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"golang.org/x/sync/errgroup"
-
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -32,9 +31,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -93,19 +92,19 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 	g, gctx := errgroup.WithContext(ctx)
 
 	g.Go(func() (err error) {
-		if err = ca.Start(gctx.Done()); err != nil {
+		if err = ca.Start(gctx); err != nil {
 			return err
 		}
 		return nil
 	})
-	if ca.WaitForCacheSync(gctx.Done()) {
+	if ca.WaitForCacheSync(gctx) {
 		for _, controller := range controllers {
 			if gctx.Err() != nil {
 				break
 			}
 			controller := controller
 			g.Go(func() (err error) {
-				return controller.Start(gctx.Done())
+				return controller.Start(gctx)
 			})
 		}
 	} else {
@@ -239,7 +238,8 @@ func newIndependentCacheAndDelegatingClient(mgr ctrl.Manager) (cache.Cache, clie
 		Scheme: mgr.GetScheme(),
 		Mapper: mgr.GetRESTMapper(),
 	}
-	client, err := manager.DefaultNewClient(ca, mgr.GetConfig(), clientOptions)
+
+	client, err := cluster.DefaultNewClient(ca, mgr.GetConfig(), clientOptions)
 	if err != nil {
 		return nil, nil, err
 	}

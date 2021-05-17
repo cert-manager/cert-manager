@@ -74,6 +74,7 @@ rules:
   #   see cmd/cainjector/start.go#L113
   # cert-manager-cainjector-leader-election-core is used by the SecretBased injector controller
   #   see cmd/cainjector/start.go#L137
+  # See also: https://github.com/kubernetes-sigs/controller-runtime/pull/1144#discussion_r480173688
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["cert-manager-cainjector-leader-election", "cert-manager-cainjector-leader-election-core"]
@@ -81,6 +82,14 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["create"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["cert-manager-cainjector-leader-election", "cert-manager-cainjector-leader-election-core"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+
 ---
 
 # grant cert-manager permission to manage the leaderelection configmap in the

@@ -19,8 +19,8 @@ package cainjector
 import (
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // this contains implementations of CertInjector (and dependents)
@@ -46,7 +46,7 @@ type mutatingWebhookTarget struct {
 	obj admissionreg.MutatingWebhookConfiguration
 }
 
-func (t *mutatingWebhookTarget) AsObject() runtime.Object {
+func (t *mutatingWebhookTarget) AsObject() client.Object {
 	return &t.obj
 }
 func (t *mutatingWebhookTarget) SetCA(data []byte) {
@@ -72,7 +72,7 @@ type validatingWebhookTarget struct {
 	obj admissionreg.ValidatingWebhookConfiguration
 }
 
-func (t *validatingWebhookTarget) AsObject() runtime.Object {
+func (t *validatingWebhookTarget) AsObject() client.Object {
 	return &t.obj
 }
 
@@ -99,7 +99,7 @@ type apiServiceTarget struct {
 	obj apireg.APIService
 }
 
-func (t *apiServiceTarget) AsObject() runtime.Object {
+func (t *apiServiceTarget) AsObject() client.Object {
 	return &t.obj
 }
 
@@ -124,7 +124,7 @@ type crdConversionTarget struct {
 	obj apiext.CustomResourceDefinition
 }
 
-func (t *crdConversionTarget) AsObject() runtime.Object {
+func (t *crdConversionTarget) AsObject() client.Object {
 	return &t.obj
 }
 

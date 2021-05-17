@@ -24,12 +24,13 @@ import (
 	unsafe "unsafe"
 
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	apismetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	metav1 "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	pkgapismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -419,7 +420,15 @@ func Convert_acme_ACMEChallenge_To_v1alpha2_ACMEChallenge(in *acme.ACMEChallenge
 func autoConvert_v1alpha2_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1alpha2.ACMEChallengeSolver, out *acme.ACMEChallengeSolver, s conversion.Scope) error {
 	out.Selector = (*acme.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
 	out.HTTP01 = (*acme.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*acme.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
+	if in.DNS01 != nil {
+		in, out := &in.DNS01, &out.DNS01
+		*out = new(acme.ACMEChallengeSolverDNS01)
+		if err := Convert_v1alpha2_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DNS01 = nil
+	}
 	return nil
 }
 
@@ -431,7 +440,15 @@ func Convert_v1alpha2_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1alph
 func autoConvert_acme_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(in *acme.ACMEChallengeSolver, out *v1alpha2.ACMEChallengeSolver, s conversion.Scope) error {
 	out.Selector = (*v1alpha2.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
 	out.HTTP01 = (*v1alpha2.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*v1alpha2.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
+	if in.DNS01 != nil {
+		in, out := &in.DNS01, &out.DNS01
+		*out = new(v1alpha2.ACMEChallengeSolverDNS01)
+		if err := Convert_acme_ACMEChallengeSolverDNS01_To_v1alpha2_ACMEChallengeSolverDNS01(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DNS01 = nil
+	}
 	return nil
 }
 
@@ -442,14 +459,78 @@ func Convert_acme_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(in *acme.A
 
 func autoConvert_v1alpha2_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *v1alpha2.ACMEChallengeSolverDNS01, out *acme.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	out.CNAMEStrategy = acme.CNAMEStrategy(in.CNAMEStrategy)
-	out.Akamai = (*acme.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	out.CloudDNS = (*acme.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
-	out.Cloudflare = (*acme.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
-	out.Route53 = (*acme.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
-	out.AzureDNS = (*acme.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
-	out.DigitalOcean = (*acme.ACMEIssuerDNS01ProviderDigitalOcean)(unsafe.Pointer(in.DigitalOcean))
-	out.AcmeDNS = (*acme.ACMEIssuerDNS01ProviderAcmeDNS)(unsafe.Pointer(in.AcmeDNS))
-	out.RFC2136 = (*acme.ACMEIssuerDNS01ProviderRFC2136)(unsafe.Pointer(in.RFC2136))
+	if in.Akamai != nil {
+		in, out := &in.Akamai, &out.Akamai
+		*out = new(acme.ACMEIssuerDNS01ProviderAkamai)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Akamai = nil
+	}
+	if in.CloudDNS != nil {
+		in, out := &in.CloudDNS, &out.CloudDNS
+		*out = new(acme.ACMEIssuerDNS01ProviderCloudDNS)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CloudDNS = nil
+	}
+	if in.Cloudflare != nil {
+		in, out := &in.Cloudflare, &out.Cloudflare
+		*out = new(acme.ACMEIssuerDNS01ProviderCloudflare)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Cloudflare = nil
+	}
+	if in.Route53 != nil {
+		in, out := &in.Route53, &out.Route53
+		*out = new(acme.ACMEIssuerDNS01ProviderRoute53)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Route53 = nil
+	}
+	if in.AzureDNS != nil {
+		in, out := &in.AzureDNS, &out.AzureDNS
+		*out = new(acme.ACMEIssuerDNS01ProviderAzureDNS)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureDNS = nil
+	}
+	if in.DigitalOcean != nil {
+		in, out := &in.DigitalOcean, &out.DigitalOcean
+		*out = new(acme.ACMEIssuerDNS01ProviderDigitalOcean)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DigitalOcean = nil
+	}
+	if in.AcmeDNS != nil {
+		in, out := &in.AcmeDNS, &out.AcmeDNS
+		*out = new(acme.ACMEIssuerDNS01ProviderAcmeDNS)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AcmeDNS = nil
+	}
+	if in.RFC2136 != nil {
+		in, out := &in.RFC2136, &out.RFC2136
+		*out = new(acme.ACMEIssuerDNS01ProviderRFC2136)
+		if err := Convert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.RFC2136 = nil
+	}
 	out.Webhook = (*acme.ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
 	return nil
 }
@@ -461,14 +542,78 @@ func Convert_v1alpha2_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(
 
 func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1alpha2_ACMEChallengeSolverDNS01(in *acme.ACMEChallengeSolverDNS01, out *v1alpha2.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	out.CNAMEStrategy = v1alpha2.CNAMEStrategy(in.CNAMEStrategy)
-	out.Akamai = (*v1alpha2.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	out.CloudDNS = (*v1alpha2.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
-	out.Cloudflare = (*v1alpha2.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
-	out.Route53 = (*v1alpha2.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
-	out.AzureDNS = (*v1alpha2.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
-	out.DigitalOcean = (*v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean)(unsafe.Pointer(in.DigitalOcean))
-	out.AcmeDNS = (*v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS)(unsafe.Pointer(in.AcmeDNS))
-	out.RFC2136 = (*v1alpha2.ACMEIssuerDNS01ProviderRFC2136)(unsafe.Pointer(in.RFC2136))
+	if in.Akamai != nil {
+		in, out := &in.Akamai, &out.Akamai
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderAkamai)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01ProviderAkamai(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Akamai = nil
+	}
+	if in.CloudDNS != nil {
+		in, out := &in.CloudDNS, &out.CloudDNS
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderCloudDNS)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.CloudDNS = nil
+	}
+	if in.Cloudflare != nil {
+		in, out := &in.Cloudflare, &out.Cloudflare
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderCloudflare)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Cloudflare = nil
+	}
+	if in.Route53 != nil {
+		in, out := &in.Route53, &out.Route53
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderRoute53)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1alpha2_ACMEIssuerDNS01ProviderRoute53(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Route53 = nil
+	}
+	if in.AzureDNS != nil {
+		in, out := &in.AzureDNS, &out.AzureDNS
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderAzureDNS)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureDNS = nil
+	}
+	if in.DigitalOcean != nil {
+		in, out := &in.DigitalOcean, &out.DigitalOcean
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DigitalOcean = nil
+	}
+	if in.AcmeDNS != nil {
+		in, out := &in.AcmeDNS, &out.AcmeDNS
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AcmeDNS = nil
+	}
+	if in.RFC2136 != nil {
+		in, out := &in.RFC2136, &out.RFC2136
+		*out = new(v1alpha2.ACMEIssuerDNS01ProviderRFC2136)
+		if err := Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01ProviderRFC2136(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.RFC2136 = nil
+	}
 	out.Webhook = (*v1alpha2.ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
 	return nil
 }
@@ -654,8 +799,7 @@ func Convert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1alpha2_ACMEChall
 
 func autoConvert_v1alpha2_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(in *v1alpha2.ACMEExternalAccountBinding, out *acme.ACMEExternalAccountBinding, s conversion.Scope) error {
 	out.KeyID = in.KeyID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.Key, &out.Key, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.Key, &out.Key, s); err != nil {
 		return err
 	}
 	out.KeyAlgorithm = acme.HMACKeyAlgorithm(in.KeyAlgorithm)
@@ -669,8 +813,7 @@ func Convert_v1alpha2_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBind
 
 func autoConvert_acme_ACMEExternalAccountBinding_To_v1alpha2_ACMEExternalAccountBinding(in *acme.ACMEExternalAccountBinding, out *v1alpha2.ACMEExternalAccountBinding, s conversion.Scope) error {
 	out.KeyID = in.KeyID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.Key, &out.Key, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.Key, &out.Key, s); err != nil {
 		return err
 	}
 	out.KeyAlgorithm = v1alpha2.HMACKeyAlgorithm(in.KeyAlgorithm)
@@ -687,12 +830,29 @@ func autoConvert_v1alpha2_ACMEIssuer_To_acme_ACMEIssuer(in *v1alpha2.ACMEIssuer,
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
 	out.SkipTLSVerify = in.SkipTLSVerify
-	out.ExternalAccountBinding = (*acme.ACMEExternalAccountBinding)(unsafe.Pointer(in.ExternalAccountBinding))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PrivateKey, &out.PrivateKey, 0); err != nil {
+	if in.ExternalAccountBinding != nil {
+		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
+		*out = new(acme.ACMEExternalAccountBinding)
+		if err := Convert_v1alpha2_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ExternalAccountBinding = nil
+	}
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PrivateKey, &out.PrivateKey, s); err != nil {
 		return err
 	}
-	out.Solvers = *(*[]acme.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
+	if in.Solvers != nil {
+		in, out := &in.Solvers, &out.Solvers
+		*out = make([]acme.ACMEChallengeSolver, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha2_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Solvers = nil
+	}
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
 	return nil
@@ -708,12 +868,29 @@ func autoConvert_acme_ACMEIssuer_To_v1alpha2_ACMEIssuer(in *acme.ACMEIssuer, out
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
 	out.SkipTLSVerify = in.SkipTLSVerify
-	out.ExternalAccountBinding = (*v1alpha2.ACMEExternalAccountBinding)(unsafe.Pointer(in.ExternalAccountBinding))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PrivateKey, &out.PrivateKey, 0); err != nil {
+	if in.ExternalAccountBinding != nil {
+		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
+		*out = new(v1alpha2.ACMEExternalAccountBinding)
+		if err := Convert_acme_ACMEExternalAccountBinding_To_v1alpha2_ACMEExternalAccountBinding(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ExternalAccountBinding = nil
+	}
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PrivateKey, &out.PrivateKey, s); err != nil {
 		return err
 	}
-	out.Solvers = *(*[]v1alpha2.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
+	if in.Solvers != nil {
+		in, out := &in.Solvers, &out.Solvers
+		*out = make([]v1alpha2.ACMEChallengeSolver, len(*in))
+		for i := range *in {
+			if err := Convert_acme_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Solvers = nil
+	}
 	out.DisableAccountKeyGeneration = in.DisableAccountKeyGeneration
 	out.EnableDurationFeature = in.EnableDurationFeature
 	return nil
@@ -726,8 +903,7 @@ func Convert_acme_ACMEIssuer_To_v1alpha2_ACMEIssuer(in *acme.ACMEIssuer, out *v1
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(in *v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS, out *acme.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
 	out.Host = in.Host
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccountSecret, &out.AccountSecret, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.AccountSecret, &out.AccountSecret, s); err != nil {
 		return err
 	}
 	return nil
@@ -740,8 +916,7 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01Prov
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS(in *acme.ACMEIssuerDNS01ProviderAcmeDNS, out *v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
 	out.Host = in.Host
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccountSecret, &out.AccountSecret, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.AccountSecret, &out.AccountSecret, s); err != nil {
 		return err
 	}
 	return nil
@@ -754,16 +929,13 @@ func Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01Prov
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(in *v1alpha2.ACMEIssuerDNS01ProviderAkamai, out *acme.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
 	out.ServiceConsumerDomain = in.ServiceConsumerDomain
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientToken, &out.ClientToken, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.ClientToken, &out.ClientToken, s); err != nil {
 		return err
 	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.ClientSecret, &out.ClientSecret, s); err != nil {
 		return err
 	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccessToken, &out.AccessToken, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.AccessToken, &out.AccessToken, s); err != nil {
 		return err
 	}
 	return nil
@@ -776,16 +948,13 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01Provi
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01ProviderAkamai(in *acme.ACMEIssuerDNS01ProviderAkamai, out *v1alpha2.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
 	out.ServiceConsumerDomain = in.ServiceConsumerDomain
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientToken, &out.ClientToken, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.ClientToken, &out.ClientToken, s); err != nil {
 		return err
 	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.ClientSecret, &out.ClientSecret, s); err != nil {
 		return err
 	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccessToken, &out.AccessToken, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.AccessToken, &out.AccessToken, s); err != nil {
 		return err
 	}
 	return nil
@@ -798,7 +967,15 @@ func Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01Provi
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(in *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, out *acme.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	out.ClientID = in.ClientID
-	out.ClientSecret = (*meta.SecretKeySelector)(unsafe.Pointer(in.ClientSecret))
+	if in.ClientSecret != nil {
+		in, out := &in.ClientSecret, &out.ClientSecret
+		*out = new(meta.SecretKeySelector)
+		if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientSecret = nil
+	}
 	out.SubscriptionID = in.SubscriptionID
 	out.TenantID = in.TenantID
 	out.ResourceGroupName = in.ResourceGroupName
@@ -814,7 +991,15 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01Pro
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS(in *acme.ACMEIssuerDNS01ProviderAzureDNS, out *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	out.ClientID = in.ClientID
-	out.ClientSecret = (*metav1.SecretKeySelector)(unsafe.Pointer(in.ClientSecret))
+	if in.ClientSecret != nil {
+		in, out := &in.ClientSecret, &out.ClientSecret
+		*out = new(apismetav1.SecretKeySelector)
+		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientSecret = nil
+	}
 	out.SubscriptionID = in.SubscriptionID
 	out.TenantID = in.TenantID
 	out.ResourceGroupName = in.ResourceGroupName
@@ -829,7 +1014,15 @@ func Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01Pro
 }
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	out.ServiceAccount = (*meta.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
+	if in.ServiceAccount != nil {
+		in, out := &in.ServiceAccount, &out.ServiceAccount
+		*out = new(meta.SecretKeySelector)
+		if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ServiceAccount = nil
+	}
 	out.Project = in.Project
 	out.HostedZoneName = in.HostedZoneName
 	return nil
@@ -841,7 +1034,15 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01Pro
 }
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	out.ServiceAccount = (*metav1.SecretKeySelector)(unsafe.Pointer(in.ServiceAccount))
+	if in.ServiceAccount != nil {
+		in, out := &in.ServiceAccount, &out.ServiceAccount
+		*out = new(apismetav1.SecretKeySelector)
+		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ServiceAccount = nil
+	}
 	out.Project = in.Project
 	out.HostedZoneName = in.HostedZoneName
 	return nil
@@ -854,8 +1055,24 @@ func Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01Pro
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, out *acme.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
-	out.APIKey = (*meta.SecretKeySelector)(unsafe.Pointer(in.APIKey))
-	out.APIToken = (*meta.SecretKeySelector)(unsafe.Pointer(in.APIToken))
+	if in.APIKey != nil {
+		in, out := &in.APIKey, &out.APIKey
+		*out = new(meta.SecretKeySelector)
+		if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.APIKey = nil
+	}
+	if in.APIToken != nil {
+		in, out := &in.APIToken, &out.APIToken
+		*out = new(meta.SecretKeySelector)
+		if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.APIToken = nil
+	}
 	return nil
 }
 
@@ -866,8 +1083,24 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01P
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
-	out.APIKey = (*metav1.SecretKeySelector)(unsafe.Pointer(in.APIKey))
-	out.APIToken = (*metav1.SecretKeySelector)(unsafe.Pointer(in.APIToken))
+	if in.APIKey != nil {
+		in, out := &in.APIKey, &out.APIKey
+		*out = new(apismetav1.SecretKeySelector)
+		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.APIKey = nil
+	}
+	if in.APIToken != nil {
+		in, out := &in.APIToken, &out.APIToken
+		*out = new(apismetav1.SecretKeySelector)
+		if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.APIToken = nil
+	}
 	return nil
 }
 
@@ -877,8 +1110,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01P
 }
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(in *v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean, out *acme.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.Token, &out.Token, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.Token, &out.Token, s); err != nil {
 		return err
 	}
 	return nil
@@ -890,8 +1122,7 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS0
 }
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean(in *acme.ACMEIssuerDNS01ProviderDigitalOcean, out *v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.Token, &out.Token, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.Token, &out.Token, s); err != nil {
 		return err
 	}
 	return nil
@@ -904,8 +1135,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS0
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(in *v1alpha2.ACMEIssuerDNS01ProviderRFC2136, out *acme.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
 	out.Nameserver = in.Nameserver
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.TSIGSecret, &out.TSIGSecret, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.TSIGSecret, &out.TSIGSecret, s); err != nil {
 		return err
 	}
 	out.TSIGKeyName = in.TSIGKeyName
@@ -920,8 +1150,7 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01Prov
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01ProviderRFC2136(in *acme.ACMEIssuerDNS01ProviderRFC2136, out *v1alpha2.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
 	out.Nameserver = in.Nameserver
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.TSIGSecret, &out.TSIGSecret, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.TSIGSecret, &out.TSIGSecret, s); err != nil {
 		return err
 	}
 	out.TSIGKeyName = in.TSIGKeyName
@@ -936,8 +1165,7 @@ func Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01Prov
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in *v1alpha2.ACMEIssuerDNS01ProviderRoute53, out *acme.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretAccessKey, &out.SecretAccessKey, 0); err != nil {
+	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
 	}
 	out.Role = in.Role
@@ -953,8 +1181,7 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01Prov
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1alpha2_ACMEIssuerDNS01ProviderRoute53(in *acme.ACMEIssuerDNS01ProviderRoute53, out *v1alpha2.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretAccessKey, &out.SecretAccessKey, 0); err != nil {
+	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
 	}
 	out.Role = in.Role
@@ -1123,8 +1350,7 @@ func autoConvert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.Chall
 	if err := Convert_v1alpha2_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(&in.Solver, &out.Solver, s); err != nil {
 		return err
 	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := metav1.Convert_v1_ObjectReference_To_meta_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1141,8 +1367,7 @@ func autoConvert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.Challenge
 	if err := Convert_acme_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(&in.Solver, &out.Solver, s); err != nil {
 		return err
 	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := metav1.Convert_meta_ObjectReference_To_v1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1250,27 +1475,25 @@ func Convert_acme_OrderList_To_v1alpha2_OrderList(in *acme.OrderList, out *v1alp
 
 func autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
 	// WARNING: in.CSR requires manual conversion: does not exist in peer-type
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := metav1.Convert_v1_ObjectReference_To_meta_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*pkgapismetav1.Duration)(unsafe.Pointer(in.Duration))
 	return nil
 }
 
 func autoConvert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v1alpha2.OrderSpec, s conversion.Scope) error {
 	// WARNING: in.Request requires manual conversion: does not exist in peer-type
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := metav1.Convert_meta_ObjectReference_To_v1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
-	out.Duration = (*apismetav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*pkgapismetav1.Duration)(unsafe.Pointer(in.Duration))
 	return nil
 }
 
@@ -1281,7 +1504,7 @@ func autoConvert_v1alpha2_OrderStatus_To_acme_OrderStatus(in *v1alpha2.OrderStat
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.State = acme.State(in.State)
 	out.Reason = in.Reason
-	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*pkgapismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -1297,7 +1520,7 @@ func autoConvert_acme_OrderStatus_To_v1alpha2_OrderStatus(in *acme.OrderStatus, 
 	out.State = v1alpha2.State(in.State)
 	out.Reason = in.Reason
 	out.Authorizations = *(*[]v1alpha2.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
-	out.FailureTime = (*apismetav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*pkgapismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
