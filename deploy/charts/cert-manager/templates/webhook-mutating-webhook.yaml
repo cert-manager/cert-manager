@@ -29,7 +29,7 @@ webhooks:
           - "*/*"
     admissionReviewVersions: ["v1", "v1beta1"]
     timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
-    failurePolicy: Fail
+    failurePolicy: {{ .Values.webhook.failurePolicy }}
     # Only include 'sideEffects' field in Kubernetes 1.12+
     sideEffects: None
     clientConfig:

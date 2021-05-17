@@ -231,6 +231,9 @@ webhook:
   # Optional additional arguments for webhook
   extraArgs: []
 
+  # Configure webhook failurePolicy
+  failurePolicy: Fail
+
   resources: {}
     # requests:
     #   cpu: 10m

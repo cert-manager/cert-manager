@@ -39,7 +39,7 @@ webhooks:
           - "*/*"
     admissionReviewVersions: ["v1", "v1beta1"]
     timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
-    failurePolicy: Fail
+    failurePolicy: {{ .Values.webhook.failurePolicy }}
     sideEffects: None
     clientConfig:
       {{- if .Values.webhook.url.host }}
