@@ -25,7 +25,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -258,22 +257,31 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 		os.Exit(1)
 	}
 
-	// Lock required for leader election
-	rl := resourcelock.ConfigMapLock{
-		ConfigMapMeta: metav1.ObjectMeta{
-			Namespace: opts.LeaderElectionNamespace,
-			Name:      "cert-manager-controller",
-		},
-		Client: leaderElectionClient.CoreV1(),
-		LockConfig: resourcelock.ResourceLockConfig{
-			Identity:      id + "-external-cert-manager-controller",
-			EventRecorder: recorder,
-		},
+	// Set up Multilock for leader election. This Multilock is here for the
+	// transitionary period from configmaps to leases see
+	// https://github.com/kubernetes-sigs/controller-runtime/pull/1144#discussion_r480173688
+	lockName := "cert-manager-controller"
+	lc := resourcelock.ResourceLockConfig{
+		Identity:      id + "-external-cert-manager-controller",
+		EventRecorder: recorder,
+	}
+	ml, err := resourcelock.New(resourcelock.ConfigMapsLeasesResourceLock,
+		opts.LeaderElectionNamespace,
+		lockName,
+		leaderElectionClient.CoreV1(),
+		leaderElectionClient.CoordinationV1(),
+		lc,
+	)
+	if err != nil {
+		// We should never get here.
+		log.Error(err, "error creating leader election lock")
+		os.Exit(1)
+
 	}
 
 	// Try and become the leader and start controller manager loops
 	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-		Lock:          &rl,
+		Lock:          ml,
 		LeaseDuration: opts.LeaderElectionLeaseDuration,
 		RenewDeadline: opts.LeaderElectionRenewDeadline,
 		RetryPeriod:   opts.LeaderElectionRetryPeriod,
