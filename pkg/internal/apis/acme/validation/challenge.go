@@ -27,7 +27,7 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 )
 
-func ValidateChallengeUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
+func ValidateChallengeUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
 	old, ok := oldObj.(*cmacme.Challenge)
 	new := newObj.(*cmacme.Challenge)
 	// if oldObj is not set, the Update operation is always valid.
@@ -35,11 +35,15 @@ func ValidateChallengeUpdate(_ *admissionv1.AdmissionRequest, oldObj, newObj run
 		return nil, nil
 	}
 
-	var warnings validation.WarningList
 	el := field.ErrorList{}
 	if !reflect.DeepEqual(old.Spec, new.Spec) {
 		el = append(el, field.Forbidden(field.NewPath("spec"), "challenge spec is immutable after creation"))
 	}
-
+	warnings := validateAPIVersion(a.Kind)
 	return el, warnings
+}
+
+func ValidateChallenge(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
+	warnings := validateAPIVersion(a.Kind)
+	return nil, warnings
 }
