@@ -29,7 +29,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"sort"
 
 	"gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -212,20 +211,12 @@ func (r *Registry) createMutatePatch(req *admissionv1.AdmissionRequest, obj runt
 		return nil, fmt.Errorf("failed to set mutation patch: %s", err)
 	}
 
-	sortOps(ops)
-
 	patch, err := json.Marshal(ops)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate json patch: %s", err)
 	}
 
 	return patch, nil
-}
-
-func sortOps(ops []jsonpatch.JsonPatchOperation) {
-	sort.Slice(ops, func(i, j int) bool {
-		return ops[i].Path < ops[j].Path
-	})
 }
 
 func (r *Registry) appendMutate(gvk schema.GroupVersionKind, fn MutateFunc) {
