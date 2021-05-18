@@ -17,14 +17,21 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	cmapiv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
@@ -1122,6 +1129,193 @@ func TestValidateVenafiTPP(t *testing.T) {
 				expectedErr := s.errs[i]
 				if !reflect.DeepEqual(e, expectedErr) {
 					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateIssuer(t *testing.T) {
+	baseIssuerConfig := cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			SelfSigned: &cmapi.SelfSignedIssuer{},
+		}}
+	scenarios := map[string]struct {
+		cfg       *cmapi.Issuer
+		a         *admissionv1.AdmissionRequest
+		expectedE []*field.Error
+		expectedW validation.WarningList
+	}{
+		"v1alpha2 Issuer created": {
+			a: &admissionv1.AdmissionRequest{
+				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1alpha2",
+					Kind:    "Issuer"},
+			},
+			cfg: &cmapi.Issuer{
+				Spec: baseIssuerConfig,
+			},
+			expectedE: []*field.Error{},
+			expectedW: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1alpha2.SchemeGroupVersion.String(),
+					"Issuer",
+					cmapiv1.SchemeGroupVersion.String(),
+					"Issuer"),
+			},
+		},
+		"v1alpha3 Issuer created": {
+			cfg: &cmapi.Issuer{
+				Spec: baseIssuerConfig,
+			},
+			a: &admissionv1.AdmissionRequest{
+				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1alpha3",
+					Kind:    "Issuer"},
+			},
+			expectedE: []*field.Error{},
+			expectedW: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1alpha3.SchemeGroupVersion.String(),
+					"Issuer",
+					cmapiv1.SchemeGroupVersion.String(),
+					"Issuer"),
+			},
+		},
+		"v1beta1 Issuer created": {
+			cfg: &cmapi.Issuer{
+				Spec: baseIssuerConfig,
+			},
+			a: &admissionv1.AdmissionRequest{
+				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1beta1",
+					Kind:    "Issuer"},
+			},
+			expectedE: []*field.Error{},
+			expectedW: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1beta1.SchemeGroupVersion.String(),
+					"Issuer",
+					cmapiv1.SchemeGroupVersion.String(),
+					"Issuer"),
+			},
+		},
+	}
+
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			gotE, gotW := ValidateIssuer(s.a, s.cfg)
+			if len(gotE) != len(s.expectedE) {
+				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
+			}
+			if len(gotW) != len(s.expectedW) {
+				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
+			}
+			for i, e := range gotE {
+				expectedErr := s.expectedE[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
+				}
+			}
+			for i, w := range gotW {
+				expectedWarning := s.expectedW[i]
+				if w != expectedWarning {
+					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
+				}
+			}
+		})
+	}
+}
+
+func TestUpdateValidateIssuer(t *testing.T) {
+	baseIssuerConfig := cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			SelfSigned: &cmapi.SelfSignedIssuer{},
+		}}
+	baseIssuer := cmapi.Issuer{
+		Spec: baseIssuerConfig,
+	}
+	scenarios := map[string]struct {
+		iss       *cmapi.Issuer
+		a         *admissionv1.AdmissionRequest
+		expectedE []*field.Error
+		expectedW validation.WarningList
+	}{
+		"Issuer updated to v1alpha2 version": {
+			iss: &cmapi.Issuer{
+				Spec: baseIssuerConfig,
+			},
+			a: &admissionv1.AdmissionRequest{
+				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1alpha2",
+					Kind:    "Issuer"},
+			},
+			expectedE: []*field.Error{},
+			expectedW: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1alpha2.SchemeGroupVersion.String(),
+					"Issuer",
+					cmapiv1.SchemeGroupVersion.String(),
+					"Issuer"),
+			},
+		},
+		"Issuer updated to v1alpha3 version": {
+			iss: &cmapi.Issuer{
+				Spec: baseIssuerConfig,
+			},
+			a: &admissionv1.AdmissionRequest{
+				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1alpha3",
+					Kind:    "Issuer"},
+			},
+			expectedE: []*field.Error{},
+			expectedW: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1alpha3.SchemeGroupVersion.String(),
+					"Issuer",
+					cmapiv1.SchemeGroupVersion.String(),
+					"Issuer"),
+			},
+		},
+		"Issuer updated to v1beta1 version": {
+			iss: &cmapi.Issuer{
+				Spec: baseIssuerConfig,
+			},
+			a: &admissionv1.AdmissionRequest{
+				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1beta1",
+					Kind:    "Issuer"},
+			},
+			expectedE: []*field.Error{},
+			expectedW: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1beta1.SchemeGroupVersion.String(),
+					"Issuer",
+					cmapiv1.SchemeGroupVersion.String(),
+					"Issuer"),
+			},
+		},
+	}
+
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			gotE, gotW := ValidateUpdateIssuer(s.a, &baseIssuer, s.iss)
+			if len(gotE) != len(s.expectedE) {
+				t.Fatalf("Expected errors %v but got %v", s.expectedE, gotE)
+			}
+			if len(gotW) != len(s.expectedW) {
+				t.Fatalf("Expected warnings %v but got %v", s.expectedE, gotE)
+			}
+			for i, e := range gotE {
+				expectedErr := s.expectedE[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected warnings %v but got %v", expectedErr, e)
+				}
+			}
+			for i, w := range gotW {
+				expectedWarning := s.expectedW[i]
+				if w != expectedWarning {
+					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
 				}
 			}
 		})
