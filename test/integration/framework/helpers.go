@@ -79,7 +79,7 @@ func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, config *rest.Config, gvk sc
 	err = wait.PollImmediate(time.Second, 2*time.Minute,
 		func() (bool, error) {
 			og := openapi.NewOpenAPIGetter(dc)
-			oapiResource, err := og.Get()
+			oapiResource, err := openapi.NewOpenAPIParser(og).Parse()
 			if err != nil {
 				return false, err
 			}

@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
@@ -41,7 +40,7 @@ type certificateToInjectableFunc func(log logr.Logger, cl client.Reader, certNam
 func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) certificateToInjectableFunc {
 	return func(log logr.Logger, cl client.Reader, certName types.NamespacedName) []ctrl.Request {
 		log = log.WithValues("type", resourceName)
-		objs := listTyp.DeepCopyObject()
+		objs := listTyp.DeepCopyObject().(client.ObjectList)
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromPath: certName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with certificate")
 			return nil
@@ -76,14 +75,14 @@ type secretForCertificateMapper struct {
 	certificateToInjectable certificateToInjectableFunc
 }
 
-func (m *secretForCertificateMapper) Map(obj handler.MapObject) []ctrl.Request {
+func (m *secretForCertificateMapper) Map(obj client.Object) []ctrl.Request {
 	// grab the certificate, if it exists
-	certName := OwningCertForSecret(obj.Object.(*corev1.Secret))
+	certName := OwningCertForSecret(obj.(*corev1.Secret))
 	if certName == nil {
 		return nil
 	}
 
-	secretName := types.NamespacedName{Name: obj.Meta.GetName(), Namespace: obj.Meta.GetNamespace()}
+	secretName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
 	log := m.log.WithValues("secret", secretName, "certificate", *certName)
 
 	var cert cmapi.Certificate
@@ -104,8 +103,8 @@ type certMapper struct {
 	toInjectable certificateToInjectableFunc
 }
 
-func (m *certMapper) Map(obj handler.MapObject) []ctrl.Request {
-	certName := types.NamespacedName{Name: obj.Meta.GetName(), Namespace: obj.Meta.GetNamespace()}
+func (m *certMapper) Map(obj client.Object) []ctrl.Request {
+	certName := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
 	log := m.log.WithValues("certificate", certName)
 	return m.toInjectable(log, m.Client, certName)
 }
@@ -117,7 +116,7 @@ var (
 
 // injectableCAFromIndexer is an IndexerFunc indexing on certificates
 // referenced by injectables.
-func injectableCAFromIndexer(rawObj runtime.Object) []string {
+func injectableCAFromIndexer(rawObj client.Object) []string {
 	metaInfo, err := meta.Accessor(rawObj)
 	if err != nil {
 		return nil
@@ -144,7 +143,7 @@ type secretToInjectableFunc func(log logr.Logger, cl client.Reader, certName typ
 func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) secretToInjectableFunc {
 	return func(log logr.Logger, cl client.Reader, secretName types.NamespacedName) []ctrl.Request {
 		log = log.WithValues("type", resourceName)
-		objs := listTyp.DeepCopyObject()
+		objs := listTyp.DeepCopyObject().(client.ObjectList)
 		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromSecretPath: secretName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with secret")
 			return nil
@@ -180,8 +179,8 @@ type secretForInjectableMapper struct {
 	secretToInjectable secretToInjectableFunc
 }
 
-func (m *secretForInjectableMapper) Map(obj handler.MapObject) []ctrl.Request {
-	secretName := types.NamespacedName{Namespace: obj.Meta.GetNamespace(), Name: obj.Meta.GetName()}
+func (m *secretForInjectableMapper) Map(obj client.Object) []ctrl.Request {
+	secretName := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
 	log := m.log.WithValues("secret", secretName)
 	return m.secretToInjectable(log, m.Client, secretName)
 }
@@ -194,7 +193,7 @@ var (
 
 // injectableCAFromSecretIndexer is an IndexerFunc indexing on secrets
 // referenced by injectables.
-func injectableCAFromSecretIndexer(rawObj runtime.Object) []string {
+func injectableCAFromSecretIndexer(rawObj client.Object) []string {
 	metaInfo, err := meta.Accessor(rawObj)
 	if err != nil {
 		return nil

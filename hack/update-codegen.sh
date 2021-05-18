@@ -248,12 +248,27 @@ gen-conversions() {
   clean pkg/internal/apis 'zz_generated.conversion.go'
   clean pkg/webhook/handlers/testdata/apis 'zz_generated.conversion.go'
   echo "Generating conversion functions..." >&2
-  prefixed_inputs=( "${conversion_inputs[@]/#/$module_name/}" )
-  joined=$( IFS=$','; echo "${prefixed_inputs[*]}" )
-  "$conversiongen" \
-    --go-header-file hack/boilerplate/boilerplate.generatego.txt \
-    --input-dirs "$joined" \
+  # meta api
+  "$conversiongen" --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --input-dirs github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1 \
     -O zz_generated.conversion
+  # acme and certmanager apis
+  for v in v1alpha2 v1alpha3 v1beta1 v1
+  do
+    "$conversiongen" --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+      --input-dirs "github.com/jetstack/cert-manager/pkg/internal/apis/acme/$v" \
+      -O zz_generated.conversion \
+      --extra-dirs github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1
+    "$conversiongen" --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+      --input-dirs "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/$v" \
+      -O zz_generated.conversion \
+      --extra-dirs "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1,github.com/jetstack/cert-manager/pkg/internal/apis/acme/$v"
+  done
+  # test apis
+  "$conversiongen" --go-header-file hack/boilerplate/boilerplate.generatego.txt \
+    --input-dirs github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2,github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1 \
+    -O zz_generated.conversion
+  # copy into source folder
   for dir in "${conversion_inputs[@]}"; do
     copyfiles "$dir" "zz_generated.conversion.go"
   done

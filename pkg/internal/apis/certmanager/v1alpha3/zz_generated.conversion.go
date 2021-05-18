@@ -23,12 +23,14 @@ package v1alpha3
 import (
 	unsafe "unsafe"
 
-	acmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
+	apisacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
 	v1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
 	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	acmev1alpha3 "github.com/jetstack/cert-manager/pkg/internal/apis/acme/v1alpha3"
 	certmanager "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	apismetav1 "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -451,8 +453,24 @@ func Convert_certmanager_CertificateCondition_To_v1alpha3_CertificateCondition(i
 }
 
 func autoConvert_v1alpha3_CertificateKeystores_To_certmanager_CertificateKeystores(in *v1alpha3.CertificateKeystores, out *certmanager.CertificateKeystores, s conversion.Scope) error {
-	out.JKS = (*certmanager.JKSKeystore)(unsafe.Pointer(in.JKS))
-	out.PKCS12 = (*certmanager.PKCS12Keystore)(unsafe.Pointer(in.PKCS12))
+	if in.JKS != nil {
+		in, out := &in.JKS, &out.JKS
+		*out = new(certmanager.JKSKeystore)
+		if err := Convert_v1alpha3_JKSKeystore_To_certmanager_JKSKeystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.JKS = nil
+	}
+	if in.PKCS12 != nil {
+		in, out := &in.PKCS12, &out.PKCS12
+		*out = new(certmanager.PKCS12Keystore)
+		if err := Convert_v1alpha3_PKCS12Keystore_To_certmanager_PKCS12Keystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PKCS12 = nil
+	}
 	return nil
 }
 
@@ -462,8 +480,24 @@ func Convert_v1alpha3_CertificateKeystores_To_certmanager_CertificateKeystores(i
 }
 
 func autoConvert_certmanager_CertificateKeystores_To_v1alpha3_CertificateKeystores(in *certmanager.CertificateKeystores, out *v1alpha3.CertificateKeystores, s conversion.Scope) error {
-	out.JKS = (*v1alpha3.JKSKeystore)(unsafe.Pointer(in.JKS))
-	out.PKCS12 = (*v1alpha3.PKCS12Keystore)(unsafe.Pointer(in.PKCS12))
+	if in.JKS != nil {
+		in, out := &in.JKS, &out.JKS
+		*out = new(v1alpha3.JKSKeystore)
+		if err := Convert_certmanager_JKSKeystore_To_v1alpha3_JKSKeystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.JKS = nil
+	}
+	if in.PKCS12 != nil {
+		in, out := &in.PKCS12, &out.PKCS12
+		*out = new(v1alpha3.PKCS12Keystore)
+		if err := Convert_certmanager_PKCS12Keystore_To_v1alpha3_PKCS12Keystore(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.PKCS12 = nil
+	}
 	return nil
 }
 
@@ -636,8 +670,7 @@ func Convert_certmanager_CertificateRequestList_To_v1alpha3_CertificateRequestLi
 
 func autoConvert_v1alpha3_CertificateRequestSpec_To_certmanager_CertificateRequestSpec(in *v1alpha3.CertificateRequestSpec, out *certmanager.CertificateRequestSpec, s conversion.Scope) error {
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_ObjectReference_To_meta_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	// WARNING: in.CSRPEM requires manual conversion: does not exist in peer-type
@@ -652,8 +685,7 @@ func autoConvert_v1alpha3_CertificateRequestSpec_To_certmanager_CertificateReque
 
 func autoConvert_certmanager_CertificateRequestSpec_To_v1alpha3_CertificateRequestSpec(in *certmanager.CertificateRequestSpec, out *v1alpha3.CertificateRequestSpec, s conversion.Scope) error {
 	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_ObjectReference_To_v1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	// WARNING: in.Request requires manual conversion: does not exist in peer-type
@@ -710,9 +742,16 @@ func autoConvert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
 	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
 	out.SecretName = in.SecretName
-	out.Keystores = (*certmanager.CertificateKeystores)(unsafe.Pointer(in.Keystores))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if in.Keystores != nil {
+		in, out := &in.Keystores, &out.Keystores
+		*out = new(certmanager.CertificateKeystores)
+		if err := Convert_v1alpha3_CertificateKeystores_To_certmanager_CertificateKeystores(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Keystores = nil
+	}
+	if err := apismetav1.Convert_v1_ObjectReference_To_meta_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.IsCA = in.IsCA
@@ -752,9 +791,16 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *cer
 	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
 	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
 	out.SecretName = in.SecretName
-	out.Keystores = (*v1alpha3.CertificateKeystores)(unsafe.Pointer(in.Keystores))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
+	if in.Keystores != nil {
+		in, out := &in.Keystores, &out.Keystores
+		*out = new(v1alpha3.CertificateKeystores)
+		if err := Convert_certmanager_CertificateKeystores_To_v1alpha3_CertificateKeystores(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Keystores = nil
+	}
+	if err := apismetav1.Convert_meta_ObjectReference_To_v1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
 	}
 	out.IsCA = in.IsCA
@@ -839,7 +885,17 @@ func Convert_certmanager_ClusterIssuer_To_v1alpha3_ClusterIssuer(in *certmanager
 
 func autoConvert_v1alpha3_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1alpha3.ClusterIssuerList, out *certmanager.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.ClusterIssuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.ClusterIssuer, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha3_ClusterIssuer_To_certmanager_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -850,7 +906,17 @@ func Convert_v1alpha3_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1a
 
 func autoConvert_certmanager_ClusterIssuerList_To_v1alpha3_ClusterIssuerList(in *certmanager.ClusterIssuerList, out *v1alpha3.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha3.ClusterIssuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1alpha3.ClusterIssuer, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_ClusterIssuer_To_v1alpha3_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -922,11 +988,35 @@ func Convert_certmanager_IssuerCondition_To_v1alpha3_IssuerCondition(in *certman
 }
 
 func autoConvert_v1alpha3_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha3.IssuerConfig, out *certmanager.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*acme.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(acme.ACMEIssuer)
+		if err := acmev1alpha3.Convert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	out.CA = (*certmanager.CAIssuer)(unsafe.Pointer(in.CA))
-	out.Vault = (*certmanager.VaultIssuer)(unsafe.Pointer(in.Vault))
+	if in.Vault != nil {
+		in, out := &in.Vault, &out.Vault
+		*out = new(certmanager.VaultIssuer)
+		if err := Convert_v1alpha3_VaultIssuer_To_certmanager_VaultIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Vault = nil
+	}
 	out.SelfSigned = (*certmanager.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
-	out.Venafi = (*certmanager.VenafiIssuer)(unsafe.Pointer(in.Venafi))
+	if in.Venafi != nil {
+		in, out := &in.Venafi, &out.Venafi
+		*out = new(certmanager.VenafiIssuer)
+		if err := Convert_v1alpha3_VenafiIssuer_To_certmanager_VenafiIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Venafi = nil
+	}
 	return nil
 }
 
@@ -936,11 +1026,35 @@ func Convert_v1alpha3_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha3.Issu
 }
 
 func autoConvert_certmanager_IssuerConfig_To_v1alpha3_IssuerConfig(in *certmanager.IssuerConfig, out *v1alpha3.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*acmev1alpha3.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(apisacmev1alpha3.ACMEIssuer)
+		if err := acmev1alpha3.Convert_acme_ACMEIssuer_To_v1alpha3_ACMEIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	out.CA = (*v1alpha3.CAIssuer)(unsafe.Pointer(in.CA))
-	out.Vault = (*v1alpha3.VaultIssuer)(unsafe.Pointer(in.Vault))
+	if in.Vault != nil {
+		in, out := &in.Vault, &out.Vault
+		*out = new(v1alpha3.VaultIssuer)
+		if err := Convert_certmanager_VaultIssuer_To_v1alpha3_VaultIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Vault = nil
+	}
 	out.SelfSigned = (*v1alpha3.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
-	out.Venafi = (*v1alpha3.VenafiIssuer)(unsafe.Pointer(in.Venafi))
+	if in.Venafi != nil {
+		in, out := &in.Venafi, &out.Venafi
+		*out = new(v1alpha3.VenafiIssuer)
+		if err := Convert_certmanager_VenafiIssuer_To_v1alpha3_VenafiIssuer(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Venafi = nil
+	}
 	return nil
 }
 
@@ -951,7 +1065,17 @@ func Convert_certmanager_IssuerConfig_To_v1alpha3_IssuerConfig(in *certmanager.I
 
 func autoConvert_v1alpha3_IssuerList_To_certmanager_IssuerList(in *v1alpha3.IssuerList, out *certmanager.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.Issuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]certmanager.Issuer, len(*in))
+		for i := range *in {
+			if err := Convert_v1alpha3_Issuer_To_certmanager_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -962,7 +1086,17 @@ func Convert_v1alpha3_IssuerList_To_certmanager_IssuerList(in *v1alpha3.IssuerLi
 
 func autoConvert_certmanager_IssuerList_To_v1alpha3_IssuerList(in *certmanager.IssuerList, out *v1alpha3.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha3.Issuer)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1alpha3.Issuer, len(*in))
+		for i := range *in {
+			if err := Convert_certmanager_Issuer_To_v1alpha3_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -997,7 +1131,15 @@ func Convert_certmanager_IssuerSpec_To_v1alpha3_IssuerSpec(in *certmanager.Issue
 
 func autoConvert_v1alpha3_IssuerStatus_To_certmanager_IssuerStatus(in *v1alpha3.IssuerStatus, out *certmanager.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanager.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	out.ACME = (*acme.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(acme.ACMEIssuerStatus)
+		if err := acmev1alpha3.Convert_v1alpha3_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	return nil
 }
 
@@ -1008,7 +1150,15 @@ func Convert_v1alpha3_IssuerStatus_To_certmanager_IssuerStatus(in *v1alpha3.Issu
 
 func autoConvert_certmanager_IssuerStatus_To_v1alpha3_IssuerStatus(in *certmanager.IssuerStatus, out *v1alpha3.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]v1alpha3.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	out.ACME = (*acmev1alpha3.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(apisacmev1alpha3.ACMEIssuerStatus)
+		if err := acmev1alpha3.Convert_acme_ACMEIssuerStatus_To_v1alpha3_ACMEIssuerStatus(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ACME = nil
+	}
 	return nil
 }
 
@@ -1019,8 +1169,7 @@ func Convert_certmanager_IssuerStatus_To_v1alpha3_IssuerStatus(in *certmanager.I
 
 func autoConvert_v1alpha3_JKSKeystore_To_certmanager_JKSKeystore(in *v1alpha3.JKSKeystore, out *certmanager.JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1033,8 +1182,7 @@ func Convert_v1alpha3_JKSKeystore_To_certmanager_JKSKeystore(in *v1alpha3.JKSKey
 
 func autoConvert_certmanager_JKSKeystore_To_v1alpha3_JKSKeystore(in *certmanager.JKSKeystore, out *v1alpha3.JKSKeystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1047,8 +1195,7 @@ func Convert_certmanager_JKSKeystore_To_v1alpha3_JKSKeystore(in *certmanager.JKS
 
 func autoConvert_v1alpha3_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1alpha3.PKCS12Keystore, out *certmanager.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1061,8 +1208,7 @@ func Convert_v1alpha3_PKCS12Keystore_To_certmanager_PKCS12Keystore(in *v1alpha3.
 
 func autoConvert_certmanager_PKCS12Keystore_To_v1alpha3_PKCS12Keystore(in *certmanager.PKCS12Keystore, out *v1alpha3.PKCS12Keystore, s conversion.Scope) error {
 	out.Create = in.Create
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PasswordSecretRef, &out.PasswordSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1096,8 +1242,7 @@ func Convert_certmanager_SelfSignedIssuer_To_v1alpha3_SelfSignedIssuer(in *certm
 func autoConvert_v1alpha3_VaultAppRole_To_certmanager_VaultAppRole(in *v1alpha3.VaultAppRole, out *certmanager.VaultAppRole, s conversion.Scope) error {
 	out.Path = in.Path
 	out.RoleId = in.RoleId
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1111,8 +1256,7 @@ func Convert_v1alpha3_VaultAppRole_To_certmanager_VaultAppRole(in *v1alpha3.Vaul
 func autoConvert_certmanager_VaultAppRole_To_v1alpha3_VaultAppRole(in *certmanager.VaultAppRole, out *v1alpha3.VaultAppRole, s conversion.Scope) error {
 	out.Path = in.Path
 	out.RoleId = in.RoleId
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1124,9 +1268,33 @@ func Convert_certmanager_VaultAppRole_To_v1alpha3_VaultAppRole(in *certmanager.V
 }
 
 func autoConvert_v1alpha3_VaultAuth_To_certmanager_VaultAuth(in *v1alpha3.VaultAuth, out *certmanager.VaultAuth, s conversion.Scope) error {
-	out.TokenSecretRef = (*meta.SecretKeySelector)(unsafe.Pointer(in.TokenSecretRef))
-	out.AppRole = (*certmanager.VaultAppRole)(unsafe.Pointer(in.AppRole))
-	out.Kubernetes = (*certmanager.VaultKubernetesAuth)(unsafe.Pointer(in.Kubernetes))
+	if in.TokenSecretRef != nil {
+		in, out := &in.TokenSecretRef, &out.TokenSecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TokenSecretRef = nil
+	}
+	if in.AppRole != nil {
+		in, out := &in.AppRole, &out.AppRole
+		*out = new(certmanager.VaultAppRole)
+		if err := Convert_v1alpha3_VaultAppRole_To_certmanager_VaultAppRole(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AppRole = nil
+	}
+	if in.Kubernetes != nil {
+		in, out := &in.Kubernetes, &out.Kubernetes
+		*out = new(certmanager.VaultKubernetesAuth)
+		if err := Convert_v1alpha3_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Kubernetes = nil
+	}
 	return nil
 }
 
@@ -1136,9 +1304,33 @@ func Convert_v1alpha3_VaultAuth_To_certmanager_VaultAuth(in *v1alpha3.VaultAuth,
 }
 
 func autoConvert_certmanager_VaultAuth_To_v1alpha3_VaultAuth(in *certmanager.VaultAuth, out *v1alpha3.VaultAuth, s conversion.Scope) error {
-	out.TokenSecretRef = (*metav1.SecretKeySelector)(unsafe.Pointer(in.TokenSecretRef))
-	out.AppRole = (*v1alpha3.VaultAppRole)(unsafe.Pointer(in.AppRole))
-	out.Kubernetes = (*v1alpha3.VaultKubernetesAuth)(unsafe.Pointer(in.Kubernetes))
+	if in.TokenSecretRef != nil {
+		in, out := &in.TokenSecretRef, &out.TokenSecretRef
+		*out = new(metav1.SecretKeySelector)
+		if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TokenSecretRef = nil
+	}
+	if in.AppRole != nil {
+		in, out := &in.AppRole, &out.AppRole
+		*out = new(v1alpha3.VaultAppRole)
+		if err := Convert_certmanager_VaultAppRole_To_v1alpha3_VaultAppRole(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AppRole = nil
+	}
+	if in.Kubernetes != nil {
+		in, out := &in.Kubernetes, &out.Kubernetes
+		*out = new(v1alpha3.VaultKubernetesAuth)
+		if err := Convert_certmanager_VaultKubernetesAuth_To_v1alpha3_VaultKubernetesAuth(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Kubernetes = nil
+	}
 	return nil
 }
 
@@ -1181,8 +1373,7 @@ func Convert_certmanager_VaultIssuer_To_v1alpha3_VaultIssuer(in *certmanager.Vau
 
 func autoConvert_v1alpha3_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *v1alpha3.VaultKubernetesAuth, out *certmanager.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	out.Role = in.Role
@@ -1196,8 +1387,7 @@ func Convert_v1alpha3_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in 
 
 func autoConvert_certmanager_VaultKubernetesAuth_To_v1alpha3_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *v1alpha3.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretRef, &out.SecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
 	out.Role = in.Role
@@ -1211,8 +1401,7 @@ func Convert_certmanager_VaultKubernetesAuth_To_v1alpha3_VaultKubernetesAuth(in 
 
 func autoConvert_v1alpha3_VenafiCloud_To_certmanager_VenafiCloud(in *v1alpha3.VenafiCloud, out *certmanager.VenafiCloud, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APITokenSecretRef, &out.APITokenSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.APITokenSecretRef, &out.APITokenSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1225,8 +1414,7 @@ func Convert_v1alpha3_VenafiCloud_To_certmanager_VenafiCloud(in *v1alpha3.Venafi
 
 func autoConvert_certmanager_VenafiCloud_To_v1alpha3_VenafiCloud(in *certmanager.VenafiCloud, out *v1alpha3.VenafiCloud, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APITokenSecretRef, &out.APITokenSecretRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.APITokenSecretRef, &out.APITokenSecretRef, s); err != nil {
 		return err
 	}
 	return nil
@@ -1239,8 +1427,24 @@ func Convert_certmanager_VenafiCloud_To_v1alpha3_VenafiCloud(in *certmanager.Ven
 
 func autoConvert_v1alpha3_VenafiIssuer_To_certmanager_VenafiIssuer(in *v1alpha3.VenafiIssuer, out *certmanager.VenafiIssuer, s conversion.Scope) error {
 	out.Zone = in.Zone
-	out.TPP = (*certmanager.VenafiTPP)(unsafe.Pointer(in.TPP))
-	out.Cloud = (*certmanager.VenafiCloud)(unsafe.Pointer(in.Cloud))
+	if in.TPP != nil {
+		in, out := &in.TPP, &out.TPP
+		*out = new(certmanager.VenafiTPP)
+		if err := Convert_v1alpha3_VenafiTPP_To_certmanager_VenafiTPP(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TPP = nil
+	}
+	if in.Cloud != nil {
+		in, out := &in.Cloud, &out.Cloud
+		*out = new(certmanager.VenafiCloud)
+		if err := Convert_v1alpha3_VenafiCloud_To_certmanager_VenafiCloud(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Cloud = nil
+	}
 	return nil
 }
 
@@ -1251,8 +1455,24 @@ func Convert_v1alpha3_VenafiIssuer_To_certmanager_VenafiIssuer(in *v1alpha3.Vena
 
 func autoConvert_certmanager_VenafiIssuer_To_v1alpha3_VenafiIssuer(in *certmanager.VenafiIssuer, out *v1alpha3.VenafiIssuer, s conversion.Scope) error {
 	out.Zone = in.Zone
-	out.TPP = (*v1alpha3.VenafiTPP)(unsafe.Pointer(in.TPP))
-	out.Cloud = (*v1alpha3.VenafiCloud)(unsafe.Pointer(in.Cloud))
+	if in.TPP != nil {
+		in, out := &in.TPP, &out.TPP
+		*out = new(v1alpha3.VenafiTPP)
+		if err := Convert_certmanager_VenafiTPP_To_v1alpha3_VenafiTPP(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.TPP = nil
+	}
+	if in.Cloud != nil {
+		in, out := &in.Cloud, &out.Cloud
+		*out = new(v1alpha3.VenafiCloud)
+		if err := Convert_certmanager_VenafiCloud_To_v1alpha3_VenafiCloud(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Cloud = nil
+	}
 	return nil
 }
 
@@ -1263,8 +1483,7 @@ func Convert_certmanager_VenafiIssuer_To_v1alpha3_VenafiIssuer(in *certmanager.V
 
 func autoConvert_v1alpha3_VenafiTPP_To_certmanager_VenafiTPP(in *v1alpha3.VenafiTPP, out *certmanager.VenafiTPP, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.CredentialsRef, &out.CredentialsRef, 0); err != nil {
+	if err := apismetav1.Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(&in.CredentialsRef, &out.CredentialsRef, s); err != nil {
 		return err
 	}
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
@@ -1278,8 +1497,7 @@ func Convert_v1alpha3_VenafiTPP_To_certmanager_VenafiTPP(in *v1alpha3.VenafiTPP,
 
 func autoConvert_certmanager_VenafiTPP_To_v1alpha3_VenafiTPP(in *certmanager.VenafiTPP, out *v1alpha3.VenafiTPP, s conversion.Scope) error {
 	out.URL = in.URL
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.CredentialsRef, &out.CredentialsRef, 0); err != nil {
+	if err := apismetav1.Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(&in.CredentialsRef, &out.CredentialsRef, s); err != nil {
 		return err
 	}
 	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
