@@ -1321,6 +1321,15 @@ def go_repositories():
         version = "v1.9.5",
     )
     go_repository(
+        name = "com_github_h2non_parth",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/h2non/parth",
+        sum = "h1:2VTzZjLZBgl62/EtslCrtky5vbi9dd7HrQPQIx6wqiw=",
+        version = "v0.0.0-20190131123155-b4df798d6542",
+    )
+
+    go_repository(
         name = "com_github_hailocab_go_hostpool",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -2122,6 +2131,15 @@ def go_repositories():
         version = "v1.0.1",
     )
     go_repository(
+        name = "com_github_nbio_st",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/nbio/st",
+        sum = "h1:W6apQkHrMkS0Muv8G/TipAy/FJl/rCYT0+EuS8+Z0z4=",
+        version = "v0.0.0-20140626010706-e9e8d9816f32",
+    )
+
+    go_repository(
         name = "com_github_niemeyer_pretty",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -2866,6 +2884,31 @@ def go_repositories():
         version = "v1.0.0",
     )
     go_repository(
+        name = "com_github_xeipuuv_gojsonpointer",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/xeipuuv/gojsonpointer",
+        sum = "h1:J9EGpcZtP0E/raorCMxlFGSTBrsSlaDGf3jU/qvAE2c=",
+        version = "v0.0.0-20180127040702-4e3ac2762d5f",
+    )
+    go_repository(
+        name = "com_github_xeipuuv_gojsonreference",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/xeipuuv/gojsonreference",
+        sum = "h1:EzJWgHovont7NscjpAxXsDA8S8BMYve8Y5+7cuRE7R0=",
+        version = "v0.0.0-20180127040603-bd5ef7bd5415",
+    )
+    go_repository(
+        name = "com_github_xeipuuv_gojsonschema",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/xeipuuv/gojsonschema",
+        sum = "h1:LhYJRs+L4fBtjZUfuSZIKGeVu0QRy8e5Xi7D17UxZ74=",
+        version = "v1.2.0",
+    )
+
+    go_repository(
         name = "com_github_xiang90_probing",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -3044,6 +3087,15 @@ def go_repositories():
         version = "v1.2.3",
     )
     go_repository(
+        name = "in_gopkg_h2non_gock_v1",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "gopkg.in/h2non/gock.v1",
+        sum = "h1:SzLqcIlb/fDfg7UvukMpNcWsu7sI5tWwL+KCATZqks0=",
+        version = "v1.0.15",
+    )
+
+    go_repository(
         name = "in_gopkg_inf_v0",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -3056,8 +3108,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "gopkg.in/ini.v1",
-        sum = "h1:AQvPpx3LzTDM0AjnIRlVFwFFGC+npRopjZxLJj6gdno=",
-        version = "v1.51.0",
+        sum = "h1:GyboHr4UqMiLUybYjd22ZjQIKEJEpgtLXtuGbR21Oho=",
+        version = "v1.51.1",
     )
     go_repository(
         name = "in_gopkg_mgo_v2",
