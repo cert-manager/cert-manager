@@ -231,17 +231,22 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableD
 	computeNameSpec := spec.DeepCopy()
 	// create a deep copy of the OrderSpec so we can overwrite the Request and NotAfter field
 	computeNameSpec.Request = nil
-	name, err := apiutil.ComputeName(
-		cr.Name,
-		// Pass an anonymous struct with the certificaterequest name to gaurantee a unique hash
-		// of the order name on renewal time (up to the k8s character limit of names)
-		struct {
+
+	var hashObj interface{}
+	hashObj = computeNameSpec
+	if len(cr.Name) >= 52 {
+		// Pass a unique struct for hashing so that names at or longer than 52 characters
+		// receive a unique hash. Otherwise, orders will have truncated names with collided
+		// hashes, possibly leading to non-renewal.
+		hashObj = struct {
 			CRName string            `json:"certificateRequestName"`
 			Spec   *cmacme.OrderSpec `json:"spec"`
 		}{
 			CRName: cr.Name,
 			Spec:   computeNameSpec,
-		})
+		}
+	}
+	name, err := apiutil.ComputeName(cr.Name, hashObj)
 	if err != nil {
 		return nil, err
 	}
