@@ -39,8 +39,10 @@ type VaultInitializer struct {
 
 	Details
 
-	RootMount          string
-	IntermediateMount  string
+	RootMount         string
+	IntermediateMount string
+	// Whether the intermediate CA should be configured with root CA
+	ConfigureWithRoot  bool
 	Role               string // AppRole auth Role
 	AppRoleAuthPath    string // AppRole auth mount point in Vault
 	KubernetesAuthPath string // Kubernetes auth mount point in Vault
@@ -188,8 +190,12 @@ func (v *VaultInitializer) Setup() error {
 	}
 
 	// Set the engine at v.IntermediateMount as an intermediateCA using the cert
-	// issued by v.RootMount, above.
-	if err := v.importSignIntermediate(intermediateCa, rootCa, v.IntermediateMount); err != nil {
+	// issued by v.RootMount, above and optionally the root CA cert.
+	caChain := intermediateCa
+	if v.ConfigureWithRoot {
+		caChain = fmt.Sprintf("%s\n%s", intermediateCa, rootCa)
+	}
+	if err := v.importSignIntermediate(caChain, v.IntermediateMount); err != nil {
 		return err
 	}
 
@@ -339,9 +345,9 @@ func (v *VaultInitializer) signCertificate(csr string) (string, error) {
 	return cert, nil
 }
 
-func (v *VaultInitializer) importSignIntermediate(intermediateCa, rootCa, intermediateMount string) error {
+func (v *VaultInitializer) importSignIntermediate(caChain, intermediateMount string) error {
 	params := map[string]string{
-		"certificate": intermediateCa,
+		"certificate": caChain,
 	}
 	url := path.Join("/v1", intermediateMount, "intermediate", "set-signed")
 
