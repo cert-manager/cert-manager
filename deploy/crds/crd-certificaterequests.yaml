@@ -83,7 +83,6 @@ spec:
               description: Desired state of the CertificateRequest resource.
               type: object
               required:
-                - csr
                 - issuerRef
               properties:
                 csr:
@@ -252,7 +251,6 @@ spec:
               description: Desired state of the CertificateRequest resource.
               type: object
               required:
-                - csr
                 - issuerRef
               properties:
                 csr:
@@ -424,7 +422,6 @@ spec:
               type: object
               required:
                 - issuerRef
-                - request
               properties:
                 duration:
                   description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types.
@@ -595,7 +592,6 @@ spec:
               type: object
               required:
                 - issuerRef
-                - request
               properties:
                 duration:
                   description: The requested 'duration' (i.e. lifetime) of the Certificate. This option may be ignored/overridden by some issuer types.
