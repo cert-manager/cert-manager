@@ -17,20 +17,28 @@ limitations under the License.
 package policies
 
 const (
-	// Certificate's spec.secretName secret does not exist
+	// DoesNotExist is a policy violation reason for a scenario where
+	// Certificate's spec.secretName secret does not exist.
 	DoesNotExist string = "DoesNotExist"
-	// Certificate's spec.secretName secret has missing data
+	// MissingData is a policy violation reason for a scenario where
+	// Certificate's spec.secretName secret has missing data.
 	MissingData string = "MissingData"
-	// Public key of certificate does not match private key
+	// InvalidKeyPair is a policy violation reason for a scenario where public
+	// key of certificate does not match private key.
 	InvalidKeyPair string = "InvalidKeyPair"
-	// Secret's private key does not match spec
+	// SecretMismatch is a policy violation reason for a scenario where Secret's
+	// private key does not match spec.
 	SecretMismatch string = "SecretMismatch"
-	// Certificate has been issued by incorrect Issuer
+	// IncorrectIssuer is a policy violation reason for a scenario where
+	// Certificate has been issued by incorrect Issuer.
 	IncorrectIssuer string = "IncorrectIssuer"
-	// CertificateRequest not valid for Certificate's spec
+	// RequestChanged is a policy violation reason for a scenario where
+	// CertificateRequest not valid for Certificate's spec.
 	RequestChanged string = "RequestChanged"
-	// Certificate's renewal time is now or in past
+	// Renewing is a policy violation reason for a scenario where
+	// Certificate's renewal time is now or in past.
 	Renewing string = "Renewing"
-	// Certificate has expired
+	// Expired is a policy violation reason for a scenario where Certificate has
+	// expired.
 	Expired string = "Expired"
 )

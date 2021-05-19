@@ -24,8 +24,10 @@ import (
 	coretesting "k8s.io/client-go/testing"
 )
 
+// ActionMatchFn is a type of custom matcher for two Actions.
 type ActionMatchFn func(coretesting.Action, coretesting.Action) error
 
+// Action implements a getter and a matcher for coretesting.Action type.
 type Action interface {
 	Action() coretesting.Action
 	Matches(coretesting.Action) error
@@ -38,6 +40,8 @@ type customMatchAction struct {
 
 var _ Action = &customMatchAction{}
 
+// NewCustomMatch takes an Action and a matcher function and returns a wrapper
+// that can be used to compare this Action with another one.
 func NewCustomMatch(a coretesting.Action, matchFn ActionMatchFn) Action {
 	return &customMatchAction{
 		action:  a,
@@ -45,10 +49,12 @@ func NewCustomMatch(a coretesting.Action, matchFn ActionMatchFn) Action {
 	}
 }
 
+// Action is a getter for customMatchAction.action.
 func (a *customMatchAction) Action() coretesting.Action {
 	return a.action
 }
 
+// Matches compares the action of customMatchAction with another Action.
 func (a *customMatchAction) Matches(act coretesting.Action) error {
 	return a.matchFn(a.action, act)
 }
@@ -59,19 +65,22 @@ type action struct {
 
 var _ Action = &action{}
 
+// NewAction takes coretesting.Action and wraps it with action.
 func NewAction(a coretesting.Action) Action {
 	return &action{
 		action: a,
 	}
 }
 
+// Action is a getter for action.action.
 func (a *action) Action() coretesting.Action {
 	return a.action
 }
 
+// Matches compares action.action with another Action.
 func (a *action) Matches(act coretesting.Action) error {
 	matches := reflect.DeepEqual(a.action, act)
-	if matches == true {
+	if matches {
 		return nil
 	}
 

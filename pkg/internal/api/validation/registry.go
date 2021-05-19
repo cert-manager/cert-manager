@@ -35,7 +35,12 @@ type Registry struct {
 	validateUpdateRegister map[schema.GroupVersionKind]ValidateUpdateFunc
 }
 
+// ValidateFunc is a function type that implements validation for an admission
+// request associated with a creation of an object of a particular type.
 type ValidateFunc func(req *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, WarningList)
+
+// ValidateUpdateFunc is a function type that implements validation for an
+// admission request associated with update of an object of a particular type.
 type ValidateUpdateFunc func(req *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, WarningList)
 
 // NewRegistry creates a new empty registry, backed by the provided Scheme.

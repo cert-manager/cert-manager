@@ -36,15 +36,22 @@ import (
 
 var _ Interface = &Vault{}
 
-type VaultClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
+// ClientBuilder is a function type that returns a new Interface.
+// Can be used in tests to create a mock signer of Vault certificate requests.
+type ClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
 	issuer v1.GenericIssuer) (Interface, error)
 
+// Interface implements various high level functionality related to connecting
+// with a Vault server, verifying its status and signing certificate request for
+// Vault's certificate.
+// TODO: Sys() is duplicated here and in Client interface
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
 	Sys() *vault.Sys
 	IsVaultInitializedAndUnsealed() error
 }
 
+// Client implements functionality to talk to a Vault server.
 type Client interface {
 	NewRequest(method, requestPath string) *vault.Request
 	RawRequest(r *vault.Request) (*vault.Response, error)
@@ -53,6 +60,8 @@ type Client interface {
 	Sys() *vault.Sys
 }
 
+// Vault implements Interface and holds a Vault issuer, secrets lister and a
+// Vault client.
 type Vault struct {
 	secretsLister corelisters.SecretLister
 	issuer        v1.GenericIssuer
@@ -61,6 +70,7 @@ type Vault struct {
 	client Client
 }
 
+// New returns a new Vault instance with the given namespace, issuer and secrets lister.
 func New(namespace string, secretsLister corelisters.SecretLister,
 	issuer v1.GenericIssuer) (Interface, error) {
 	v := &Vault{
@@ -88,6 +98,7 @@ func New(namespace string, secretsLister corelisters.SecretLister,
 	return v, nil
 }
 
+// Sign will connect to a Vault instance to sign a certificate signing request.
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(csrPEM)
 	if err != nil {
@@ -179,7 +190,7 @@ func (v *Vault) newConfig() (*vault.Config, error) {
 
 	caCertPool := x509.NewCertPool()
 	ok := caCertPool.AppendCertsFromPEM(certs)
-	if ok == false {
+	if !ok {
 		return nil, fmt.Errorf("error loading Vault CA bundle")
 	}
 

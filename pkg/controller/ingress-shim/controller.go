@@ -38,6 +38,7 @@ import (
 )
 
 const (
+	// ControllerName is the name of the ingress-shim controller.
 	ControllerName = "ingress-shim"
 )
 
