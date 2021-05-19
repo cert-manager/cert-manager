@@ -287,7 +287,7 @@ func RenewBeforeExpiryDuration(notBefore, notAfter time.Time, specRenewBefore *m
 		renewBefore = specRenewBefore.Duration
 	}
 	actualDuration := notAfter.Sub(notBefore)
-	if renewBefore >= actualDuration {
+	if renewBefore >= actualDuration / 3 {
 		renewBefore = actualDuration / 3
 	}
 	return renewBefore
