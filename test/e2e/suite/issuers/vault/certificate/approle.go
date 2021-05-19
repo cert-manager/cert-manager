@@ -36,15 +36,25 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole)", func() {
-	runVaultAppRoleTests(cmapi.IssuerKind)
+var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole, CA without root)", func() {
+	fs := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	runVaultAppRoleTests(cmapi.IssuerKind, false, fs)
+})
+var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole, CA with root)", func() {
+	fs := featureset.NewFeatureSet()
+	runVaultAppRoleTests(cmapi.IssuerKind, true, fs)
 })
 
-var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole)", func() {
-	runVaultAppRoleTests(cmapi.ClusterIssuerKind)
+var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole, CA without root)", func() {
+	fs := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	runVaultAppRoleTests(cmapi.ClusterIssuerKind, false, fs)
+})
+var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole, CA with root)", func() {
+	fs := featureset.NewFeatureSet()
+	runVaultAppRoleTests(cmapi.ClusterIssuerKind, true, fs)
 })
 
-func runVaultAppRoleTests(issuerKind string) {
+func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatures featureset.FeatureSet) {
 	f := framework.NewDefaultFramework("create-vault-certificate")
 
 	var (
@@ -85,6 +95,7 @@ func runVaultAppRoleTests(issuerKind string) {
 			Details:           *vault.Details(),
 			RootMount:         rootMount,
 			IntermediateMount: intermediateMount,
+			ConfigureWithRoot: testWithRoot,
 			Role:              role,
 			AppRoleAuthPath:   authPath,
 		}
@@ -172,7 +183,6 @@ func runVaultAppRoleTests(issuerKind string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
 		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)...)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -268,7 +278,6 @@ func runVaultAppRoleTests(issuerKind string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 
