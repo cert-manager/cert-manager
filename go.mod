@@ -42,7 +42,7 @@ require (
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	gomodules.xyz/jsonpatch/v2 v2.1.0
+	gomodules.xyz/jsonpatch/v2 v2.2.0
 	google.golang.org/api v0.20.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.21.0

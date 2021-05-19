@@ -1618,6 +1618,15 @@ def go_repositories():
         version = "v1.0.0",
     )
     go_repository(
+        name = "com_github_jessevdk_go_flags",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/jessevdk/go-flags",
+        sum = "h1:4IU2WS7AumrZ/40jfhf4QVDMsQwqA7VEHozFRrGARJA=",
+        version = "v1.4.0",
+    )
+
+    go_repository(
         name = "com_github_jmespath_go_jmespath",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -3763,6 +3772,6 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "gomodules.xyz/jsonpatch/v2",
-        sum = "h1:Phva6wqu+xR//Njw6iorylFFgn/z547tw5Ne3HZPQ+k=",
-        version = "v2.1.0",
+        sum = "h1:4pT439QV83L+G9FkcCriY6EkpcK6r6bK+A5FBUMI7qY=",
+        version = "v2.2.0",
     )
