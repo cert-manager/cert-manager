@@ -35,6 +35,7 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	schedulertest "github.com/jetstack/cert-manager/pkg/scheduler/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -340,9 +341,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 				},
 			},
 		},
-		// TODO: we should improve this behaviour as this is the 'stuck order' problem described in:
-		//  https://github.com/jetstack/cert-manager/issues/2868
-		"skip creating a Challenge for an already valid authorization, and do nothing if the order is pending": {
+		"skip creating a Challenge for an already valid authorization, reschedule if the ACME Order is still pending": {
 			order: gen.OrderFrom(testOrder, gen.SetOrderStatus(
 				cmacme.OrderStatus{
 					State:       cmacme.Pending,
@@ -379,6 +378,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					}, nil
 				},
 			},
+			shouldSchedule: true,
 		},
 		"skip creating a Challenge for an already valid authorization": {
 			order: gen.OrderFrom(testOrder, gen.SetOrderStatus(
@@ -452,6 +452,9 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderPending, nil
+				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
 					return "key", nil
@@ -606,10 +609,11 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 }
 
 type testT struct {
-	order      *cmacme.Order
-	builder    *testpkg.Builder
-	acmeClient acmecl.Interface
-	expectErr  bool
+	order          *cmacme.Order
+	builder        *testpkg.Builder
+	acmeClient     acmecl.Interface
+	shouldSchedule bool
+	expectErr      bool
 }
 
 func runTest(t *testing.T, test testT) {
@@ -617,24 +621,37 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Init()
 	defer test.builder.Stop()
 
-	c := &controller{}
-	_, _, err := c.Register(test.builder.Context)
+	cw := &controllerWrapper{}
+	_, _, err := cw.Register(test.builder.Context)
 	if err != nil {
 		t.Errorf("Error registering the controller: %v", err)
 	}
-	c.accountRegistry = &accountstest.FakeRegistry{
+
+	// Set some fields on the embedded controller.
+	cw.accountRegistry = &accountstest.FakeRegistry{
 		GetClientFunc: func(_ string) (acmecl.Interface, error) {
 			return test.acmeClient, nil
 		},
 	}
+	gotScheduled := false
+	fakeScheduler := schedulertest.FakeScheduler{
+		AddFunc: func(obj interface{}, duration time.Duration) {
+			gotScheduled = true
+		},
+	}
+	cw.scheduledWorkQueue = &fakeScheduler
+
 	test.builder.Start()
 
-	err = c.Sync(context.Background(), test.order)
+	err = cw.Sync(context.Background(), test.order)
 	if err != nil && !test.expectErr {
 		t.Errorf("Expected function to not error, but got: %v", err)
 	}
 	if err == nil && test.expectErr {
 		t.Errorf("Expected function to get an error, but got: %v", err)
+	}
+	if gotScheduled != test.shouldSchedule {
+		t.Errorf("Expected Order to be re-queued: %v got re-queued: %v", test.shouldSchedule, gotScheduled)
 	}
 
 	test.builder.CheckAndFinish(err)

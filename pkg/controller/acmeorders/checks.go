@@ -19,36 +19,44 @@ package acmeorders
 import (
 	"fmt"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/util/workqueue"
+
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
 )
 
-func (c *controller) handleGenericIssuer(obj interface{}) {
-	iss, ok := obj.(cmapi.GenericIssuer)
-	if !ok {
-		runtime.HandleError(fmt.Errorf("object does not implement GenericIssuer %#v", obj))
-		return
-	}
-
-	certs, err := c.ordersForGenericIssuer(iss)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetObjectMeta().Namespace, iss.GetObjectMeta().Name))
-		return
-	}
-	for _, crt := range certs {
-		key, err := keyFunc(crt)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
+func handleGenericIssuerFunc(
+	queue workqueue.RateLimitingInterface,
+	orderLister cmacmelisters.OrderLister,
+) func(interface{}) {
+	return func(obj interface{}) {
+		iss, ok := obj.(cmapi.GenericIssuer)
+		if !ok {
+			runtime.HandleError(fmt.Errorf("object does not implement GenericIssuer %#v", obj))
+			return
 		}
-		c.queue.Add(key)
+
+		certs, err := ordersForGenericIssuer(iss, orderLister)
+		if err != nil {
+			runtime.HandleError(fmt.Errorf("error looking up Orders observing Issuer/ClusterIssuer: %s/%s", iss.GetObjectMeta().Namespace, iss.GetObjectMeta().Name))
+			return
+		}
+		for _, crt := range certs {
+			key, err := keyFunc(crt)
+			if err != nil {
+				runtime.HandleError(err)
+				continue
+			}
+			queue.Add(key)
+		}
 	}
 }
 
-func (c *controller) ordersForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmacme.Order, error) {
-	orders, err := c.orderLister.List(labels.NewSelector())
+func ordersForGenericIssuer(iss cmapi.GenericIssuer, orderLister cmacmelisters.OrderLister) ([]*cmacme.Order, error) {
+	orders, err := orderLister.List(labels.NewSelector())
 
 	if err != nil {
 		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
