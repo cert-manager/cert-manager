@@ -92,7 +92,8 @@ type CertificateRequestSpec struct {
 
 	// The PEM-encoded x509 certificate signing request to be submitted to the
 	// CA for signing.
-	CSRPEM []byte `json:"csr"`
+	// +kubebuilder:validation:Required
+	CSRPEM []byte `json:"csr,omitempty"`
 
 	// IsCA will request to mark the certificate as valid for certificate signing
 	// when submitting to the issuer.
