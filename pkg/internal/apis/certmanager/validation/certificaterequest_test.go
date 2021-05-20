@@ -65,7 +65,7 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 		},
 	}
 	someAdmissionRequest := &admissionv1.AdmissionRequest{
-		Kind: metav1.GroupVersionKind{
+		RequestKind: &metav1.GroupVersionKind{
 			Group:   "test",
 			Kind:    "test",
 			Version: "test",
@@ -459,7 +459,7 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "CertificateRequest"},
 			},
@@ -485,7 +485,7 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "CertificateRequest"},
 			},
@@ -511,7 +511,7 @@ func TestValidateCertificateRequestUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "CertificateRequest"},
 			},
@@ -873,7 +873,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "CertificateRequest"},
 			},
@@ -898,7 +898,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "CertificateRequest"},
 			},
@@ -921,7 +921,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "CertificateRequest"},
 			},

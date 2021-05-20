@@ -1148,7 +1148,7 @@ func TestValidateIssuer(t *testing.T) {
 	}{
 		"v1alpha2 Issuer created": {
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "Issuer"},
 			},
@@ -1169,7 +1169,7 @@ func TestValidateIssuer(t *testing.T) {
 				Spec: baseIssuerConfig,
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "Issuer"},
 			},
@@ -1187,7 +1187,7 @@ func TestValidateIssuer(t *testing.T) {
 				Spec: baseIssuerConfig,
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "Issuer"},
 			},
@@ -1246,7 +1246,7 @@ func TestUpdateValidateIssuer(t *testing.T) {
 				Spec: baseIssuerConfig,
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "Issuer"},
 			},
@@ -1264,7 +1264,7 @@ func TestUpdateValidateIssuer(t *testing.T) {
 				Spec: baseIssuerConfig,
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "Issuer"},
 			},
@@ -1282,7 +1282,7 @@ func TestUpdateValidateIssuer(t *testing.T) {
 				Spec: baseIssuerConfig,
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "Issuer"},
 			},

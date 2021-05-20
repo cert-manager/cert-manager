@@ -29,6 +29,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	cmapiv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
@@ -40,7 +41,7 @@ var (
 		Kind: "ClusterIssuer",
 	}
 	someAdmissionRequest = &admissionv1.AdmissionRequest{
-		Kind: metav1.GroupVersionKind{
+		RequestKind: &metav1.GroupVersionKind{
 			Group:   "test",
 			Kind:    "test",
 			Version: "test",
@@ -571,7 +572,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "Certificate"},
 			},
@@ -592,7 +593,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "Certificate"},
 			},
@@ -613,13 +614,13 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1alpha3",
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1beta1",
 					Kind:    "Certificate"},
 			},
 			warnings: validation.WarningList{
 				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1alpha3.SchemeGroupVersion.String(),
+					cmapiv1beta1.SchemeGroupVersion.String(),
 					"Certificate",
 					cmapi.SchemeGroupVersion.String(),
 					"Certificate"),

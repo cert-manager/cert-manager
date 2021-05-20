@@ -41,7 +41,7 @@ var (
 	deprecationMessageTemplate = "%s %s is deprecated in v1.4+, unavailable in v1.6+; use %v %s"
 )
 
-func validateAPIVersion(gvk v1.GroupVersionKind) validation.WarningList {
+func validateAPIVersion(gvk *v1.GroupVersionKind) validation.WarningList {
 	// There might be a smarter way to get GroupVersion
 	gv := fmt.Sprintf("%s/%s", gvk.Group, gvk.Version)
 	kind := gvk.Kind

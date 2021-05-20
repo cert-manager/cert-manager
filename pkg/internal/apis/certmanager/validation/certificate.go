@@ -90,14 +90,14 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 func ValidateCertificate(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	w := validateAPIVersion(a.Kind)
+	w := validateAPIVersion(a.RequestKind)
 	return allErrs, w
 }
 
 func ValidateUpdateCertificate(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	crt := obj.(*internalcmapi.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	w := validateAPIVersion(a.Kind)
+	w := validateAPIVersion(a.RequestKind)
 	return allErrs, w
 }
 

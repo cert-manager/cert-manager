@@ -45,7 +45,7 @@ const (
 
 var (
 	someAdmissionRequest = &admissionv1.AdmissionRequest{
-		Kind: metav1.GroupVersionKind{
+		RequestKind: &metav1.GroupVersionKind{
 			Group:   "test",
 			Kind:    "test",
 			Version: "test",
@@ -251,7 +251,7 @@ func TestValidateOrderUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "Order"},
 			},
@@ -271,7 +271,7 @@ func TestValidateOrderUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "Order"},
 			},
@@ -291,7 +291,7 @@ func TestValidateOrderUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "Order"},
 			},
@@ -338,7 +338,7 @@ func TestValidateOrder(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "Order"},
 			},
@@ -357,7 +357,7 @@ func TestValidateOrder(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "Order"},
 			},
@@ -376,7 +376,7 @@ func TestValidateOrder(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "Order"},
 			},

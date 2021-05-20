@@ -40,7 +40,7 @@ func TestValidateChallengeUpdate(t *testing.T) {
 		},
 	}
 	someAdmissionRequest := &admissionv1.AdmissionRequest{
-		Kind: metav1.GroupVersionKind{
+		RequestKind: &metav1.GroupVersionKind{
 			Group:   "test",
 			Kind:    "test",
 			Version: "test",
@@ -98,7 +98,7 @@ func TestValidateChallengeUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "Challenge"},
 			},
@@ -118,7 +118,7 @@ func TestValidateChallengeUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "Challenge"},
 			},
@@ -138,7 +138,7 @@ func TestValidateChallengeUpdate(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "Challenge"},
 			},
@@ -185,7 +185,7 @@ func TestValidateChallenge(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha2",
 					Kind:    "Challenge"},
 			},
@@ -204,7 +204,7 @@ func TestValidateChallenge(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1alpha3",
 					Kind:    "Challenge"},
 			},
@@ -223,7 +223,7 @@ func TestValidateChallenge(t *testing.T) {
 				},
 			},
 			a: &admissionv1.AdmissionRequest{
-				Kind: metav1.GroupVersionKind{Group: "acme.cert-manager.io",
+				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
 					Version: "v1beta1",
 					Kind:    "Challenge"},
 			},

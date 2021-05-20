@@ -38,12 +38,12 @@ func ValidateOrderUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime
 	el := field.ErrorList{}
 	el = append(el, ValidateOrderSpecUpdate(old.Spec, new.Spec, field.NewPath("spec"))...)
 	el = append(el, ValidateOrderStatusUpdate(old.Status, new.Status, field.NewPath("status"))...)
-	warnings := validateAPIVersion(a.Kind)
+	warnings := validateAPIVersion(a.RequestKind)
 	return el, warnings
 }
 
 func ValidateOrder(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	warnings := validateAPIVersion(a.Kind)
+	warnings := validateAPIVersion(a.RequestKind)
 	return nil, warnings
 }
 
