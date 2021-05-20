@@ -1100,7 +1100,7 @@ func TestSync(t *testing.T) {
 						Usages: []cmapi.KeyUsage{
 							cmapi.UsageSigning,
 							cmapi.UsageDigitalSignature,
-							cmapi.UsageContentCommittment,
+							cmapi.UsageContentCommitment,
 						},
 					},
 				},
