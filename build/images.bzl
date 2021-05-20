@@ -15,11 +15,14 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 
 def define_base_images():
-    ## Use 'static' distroless image for all builds
+    # Use 'static' distroless image for all builds
+    # To get the latest-amd64 digest for gcr.io/distroless/static, assuming
+    # that $GOPATH/bin is in your $PATH, run:
+    # go get github.com/genuinetools/reg && reg digest gcr.io/distroless/static:latest-amd64
     container_pull(
         name = "static_base",
         registry = "gcr.io",
         repository = "distroless/static",
-        digest = "sha256:359e0c5c9a1364d82f567db01e1419dead4dfc04d33271248f9c713007d0c22e",
+        digest = "sha256:a7752b29b18bb106938caefd8dcce8a94199022cbd06ea42268b968f35e837a8",
     )
 
