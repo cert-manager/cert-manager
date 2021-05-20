@@ -31,6 +31,6 @@ check_tool kustomize
 # Install latest version of Kyverno
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
-helm upgrade --install --wait kyverno kyverno/kyverno --namespace kyverno --create-namespace
+helm upgrade --install --wait kyverno kyverno/kyverno --namespace kyverno --create-namespace --values ${SCRIPT_ROOT}/values.yaml
 # Install policies using local kustomization.yaml
 kustomize build ${SCRIPT_ROOT} | kubectl apply -f -

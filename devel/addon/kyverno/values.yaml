@@ -1,0 +1,24 @@
+config:
+  # resource types to be skipped by kyverno policy engine
+  # Make sure to surround each entry in quotes so that it doesn't get parsed
+  # as a nested YAML list. These are joined together without spaces in the configmap
+  resourceFilters:
+  - "[Event,*,*]"
+  - "[*,kube-system,*]"
+  - "[*,kube-public,*]"
+  - "[*,kube-node-lease,*]"
+  - "[Node,*,*]"
+  - "[APIService,*,*]"
+  - "[TokenReview,*,*]"
+  - "[SubjectAccessReview,*,*]"
+  - "[SelfSubjectAccessReview,*,*]"
+  - "[*,kyverno,*]"
+  - "[Binding,*,*]"
+  - "[ReplicaSet,*,*]"
+  - "[ReportChangeRequest,*,*]"
+  - "[ClusterReportChangeRequest,*,*]"
+  # Ignore some cert-manager E2E test components that can't easily be configured
+  # to meet the pod security policy.
+  - "[*,bind,*]"
+  - "[*,ingress-nginx,*]"
+  - "[*,sample-external-issuer-system,*]"
