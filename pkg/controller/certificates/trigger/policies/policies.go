@@ -213,8 +213,8 @@ func CurrentCertificateNearingExpiry(c clock.Clock, defaultRenewBeforeExpiryDura
 		notBefore := metav1.NewTime(x509cert.NotBefore)
 		notAfter := metav1.NewTime(x509cert.NotAfter)
 		crt := input.Certificate
-		renewBefore := certificates.RenewBeforeExpiryDuration(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore, defaultRenewBeforeExpiryDuration)
-		renewalTime := metav1.NewTime(notAfter.Add(-1 * renewBefore))
+		renewalTimeCalculator := certificates.RenewalTimeWrapper(defaultRenewBeforeExpiryDuration)
+		renewalTime := renewalTimeCalculator(notBefore.Time, notAfter.Time, crt.Spec.RenewBefore)
 
 		renewIn := renewalTime.Time.Sub(c.Now())
 		if renewIn > 0 {

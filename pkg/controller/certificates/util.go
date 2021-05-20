@@ -265,30 +265,27 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 	return b, nil
 }
 
-//RenewalTimeFunc is a custom function type for calculating renewal time of a certificate
-type RenewalTimeFunc func(time.Time, time.Time, *cmapi.Certificate) *metav1.Time
+//RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
+type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration) *metav1.Time
 
 // RenewalTimeWrapper returns RenewalTimeFunc implementation
-// TODO: potentially merge RenewBeforeExpiryDuration into this function and rewrite the tests accordingly
 func RenewalTimeWrapper(defaultRenewBeforeExpiryDuration time.Duration) RenewalTimeFunc {
-	return func(notBefore, notAfter time.Time, cert *cmapi.Certificate) *metav1.Time {
-		renewBefore := RenewBeforeExpiryDuration(notBefore, notAfter, cert.Spec.RenewBefore, defaultRenewBeforeExpiryDuration)
+	return func(notBefore, notAfter time.Time, renewBeforeHint *metav1.Duration) *metav1.Time {
+
+		// 1. Calculate how long before expiry a cert should be renewed
+		renewBefore := defaultRenewBeforeExpiryDuration
+		if renewBeforeHint != nil {
+			renewBefore = renewBeforeHint.Duration
+		}
+		actualDuration := notAfter.Sub(notBefore)
+		// renewBefore = min(renewBefore, actualDuration/3)
+		if renewBefore >= (actualDuration / 3) {
+			renewBefore = actualDuration / 3
+		}
+
+		// 2. Calculate when a cert should be renewed
 		rt := metav1.NewTime(notAfter.Add(-1 * renewBefore))
 		return &rt
 	}
 
-}
-
-// RenewBeforeExpiryDuration will return the amount of time before the given
-// NotAfter time that the certificate should be renewed.
-func RenewBeforeExpiryDuration(notBefore, notAfter time.Time, specRenewBefore *metav1.Duration, defaultRenewBeforeExpiryDuration time.Duration) time.Duration {
-	renewBefore := defaultRenewBeforeExpiryDuration
-	if specRenewBefore != nil {
-		renewBefore = specRenewBefore.Duration
-	}
-	actualDuration := notAfter.Sub(notBefore)
-	if renewBefore >= actualDuration {
-		renewBefore = actualDuration / 3
-	}
-	return renewBefore
 }
