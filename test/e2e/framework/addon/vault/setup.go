@@ -301,6 +301,8 @@ func (v *VaultInitializer) generateRootCert() (string, error) {
 		"common_name":          "Root CA",
 		"ttl":                  "87600h",
 		"exclude_cn_from_sans": "true",
+		"key_type":             "ec",
+		"key_bits":             "256",
 	}
 	url := path.Join("/v1", v.RootMount, "root", "generate", "internal")
 
@@ -317,6 +319,8 @@ func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 		"common_name":          "Intermediate CA",
 		"ttl":                  "43800h",
 		"exclude_cn_from_sans": "true",
+		"key_type":             "ec",
+		"key_bits":             "256",
 	}
 	url := path.Join("/v1", v.IntermediateMount, "intermediate", "generate", "internal")
 
