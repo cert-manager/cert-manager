@@ -54,7 +54,7 @@ type Input struct {
 // in the 'reason' and 'message' return parameters if so.
 type Func func(Input) (reason, message string, reissue bool)
 
-// A chain of PolicyFuncs to be evaluated in order.
+// A Chain of PolicyFuncs to be evaluated in order.
 type Chain []Func
 
 // Evaluate will evaluate the entire policy chain using the provided input.

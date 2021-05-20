@@ -40,19 +40,19 @@ type DNSProvider struct {
 // Credentials and acme-dns server host are given in environment variables
 func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	host := os.Getenv("ACME_DNS_HOST")
-	accountJson := os.Getenv("ACME_DNS_ACCOUNT_JSON")
-	return NewDNSProviderHostBytes(host, []byte(accountJson), dns01Nameservers)
+	accountJSON := os.Getenv("ACME_DNS_ACCOUNT_JSON")
+	return NewDNSProviderHostBytes(host, []byte(accountJSON), dns01Nameservers)
 }
 
 // NewDNSProviderHostBytes returns a DNSProvider instance configured for ACME DNS
 // acme-dns server host is given in a string
 // credentials are stored in json in the given string
-func NewDNSProviderHostBytes(host string, accountJson []byte, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProviderHostBytes(host string, accountJSON []byte, dns01Nameservers []string) (*DNSProvider, error) {
 	client := goacmedns.NewClient(host)
 
 	var accounts map[string]goacmedns.Account
-	if err := json.Unmarshal(accountJson, &accounts); err != nil {
-		return nil, fmt.Errorf("Error unmarshalling accountJson: %s", err)
+	if err := json.Unmarshal(accountJSON, &accounts); err != nil {
+		return nil, fmt.Errorf("Error unmarshalling accountJSON: %s", err)
 	}
 
 	return &DNSProvider{

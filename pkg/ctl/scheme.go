@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This package was created to have a scheme that has the internal cert-manager types,
+// Package ctl was created to have a scheme that has the internal cert-manager types,
 // and their conversion functions as well as the List object type registered, which is needed for ctl command like
 // `convert` or `create certificaterequest`.
+
 package ctl
 
 import (
