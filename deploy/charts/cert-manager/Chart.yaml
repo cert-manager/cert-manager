@@ -14,5 +14,5 @@ keywords:
 sources:
   - https://github.com/jetstack/cert-manager
 maintainers:
-  - name: munnerz
-    email: james@jetstack.io
+  - name: cert-manager-maintainers
+    email: cert-manager-maintainers@googlegroups.com
