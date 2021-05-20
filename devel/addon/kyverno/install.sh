@@ -32,5 +32,5 @@ check_tool kustomize
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
 helm upgrade --install --wait kyverno kyverno/kyverno --namespace kyverno --create-namespace
-# Install all Pod security policies
-kustomize build https://github.com/kyverno/policies/pod-security | kubectl apply -f -
+# Install policies using local kustomization.yaml
+kustomize build ${SCRIPT_ROOT} | kubectl apply -f -

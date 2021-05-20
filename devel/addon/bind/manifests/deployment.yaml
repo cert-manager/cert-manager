@@ -18,6 +18,10 @@ spec:
       - name: bind
         image: sameersbn/bind:bazel
         imagePullPolicy: Never
+        # TODO(wallrj): I couldn't figure out how to run Bind as a non-root user, using this Docker image.
+        # I think bind expects to start as root and then chown to a non-root BIND user.
+        # securityContext:
+        #   runAsNonRoot: true
         command:
         - /bin/bash
         - -c
