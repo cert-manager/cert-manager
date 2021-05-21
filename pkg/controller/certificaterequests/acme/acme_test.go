@@ -712,7 +712,7 @@ func Test_buildOrder(t *testing.T) {
 		return
 	}
 
-	t.Run("Builds two orders from different long CRs to gaurantee unique name", func(t *testing.T) {
+	t.Run("Builds two orders from different long CRs to guarantee unique name", func(t *testing.T) {
 		longCrTwo := gen.CertificateRequest(
 			"test-comparison-that-is-at-the-fifty-two-character-l-two",
 			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
