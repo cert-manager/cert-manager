@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/utils/pointer"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -168,6 +169,9 @@ func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyOnFailure,
+			SecurityContext: &corev1.PodSecurityContext{
+				RunAsNonRoot: pointer.BoolPtr(true),
+			},
 			Containers: []corev1.Container{
 				{
 					Name: "acmesolver",

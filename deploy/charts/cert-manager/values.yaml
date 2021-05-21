@@ -104,7 +104,8 @@ resources: {}
 
 # Pod Security Context
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-securityContext: {}
+securityContext:
+  runAsNonRoot: true
 # legacy securityContext parameter format: if enabled is set to true, only fsGroup and runAsUser are supported
 # securityContext:
 #   enabled: false
@@ -208,7 +209,10 @@ webhook:
     #   maxSurge: 0
     #   maxUnavailable: 1
 
-  securityContext: {}
+  # Pod Security Context to be set on the webhook component Pod
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  securityContext:
+    runAsNonRoot: true
 
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -329,7 +333,10 @@ cainjector:
     #   maxSurge: 0
     #   maxUnavailable: 1
 
-  securityContext: {}
+  # Pod Security Context to be set on the cainjector component Pod
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  securityContext:
+    runAsNonRoot: true
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
