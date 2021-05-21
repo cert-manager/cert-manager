@@ -28,7 +28,6 @@ spec:
             - --secure-port=8443
             - --tls-cert-file=/tls/tls.crt
             - --tls-private-key-file=/tls/tls.key
-          # These are explicitly set as they are not granted by default in OpenShift
           securityContext:
             runAsNonRoot: true
           env:
