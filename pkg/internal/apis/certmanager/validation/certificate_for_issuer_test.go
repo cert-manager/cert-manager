@@ -31,7 +31,6 @@ import (
 
 const (
 	defaultTestIssuerName = "test-issuer"
-	defaultTestCrtName    = "test-crt"
 	defaultTestNamespace  = gen.DefaultTestNamespace
 )
 

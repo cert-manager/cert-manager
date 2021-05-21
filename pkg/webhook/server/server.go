@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	ciphers "k8s.io/component-base/cli/flag"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -55,8 +56,9 @@ var (
 
 func init() {
 	apiextensionsinstall.Install(defaultScheme)
-	admissionv1beta1.AddToScheme(defaultScheme)
-	admissionv1.AddToScheme(defaultScheme)
+
+	runtimeutil.Must(admissionv1beta1.AddToScheme(defaultScheme))
+	runtimeutil.Must(admissionv1.AddToScheme(defaultScheme))
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
@@ -207,6 +209,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 
 	s.Log.V(logf.DebugLevel).Info("waiting for server to shutdown")
 	waitForAll(healthzChan, certSourceChan, listenerChan)
+
 	s.Log.V(logf.InfoLevel).Info("server shutdown successfully")
 
 	return err
@@ -377,7 +380,6 @@ func (s *Server) handle(inner handleFunc) func(w http.ResponseWriter, req *http.
 		codec := json.NewSerializerWithOptions(json.DefaultMetaFactory, s.scheme(), s.scheme(), json.SerializerOptions{
 			Pretty: true,
 		})
-		codec.Decode(data, nil, nil)
 		obj, _, err := codec.Decode(data, nil, nil)
 		if err != nil {
 			s.Log.Error(err, "failed to decode request body")

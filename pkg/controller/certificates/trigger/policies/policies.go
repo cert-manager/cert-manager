@@ -54,7 +54,7 @@ type Input struct {
 // in the 'reason' and 'message' return parameters if so.
 type Func func(Input) (reason, message string, reissue bool)
 
-// A chain of PolicyFuncs to be evaluated in order.
+// A Chain of PolicyFuncs to be evaluated in order.
 type Chain []Func
 
 // Evaluate will evaluate the entire policy chain using the provided input.
@@ -118,7 +118,7 @@ func SecretPublicKeysDiffer(input Input) (string, string, bool) {
 
 func SecretPrivateKeyMatchesSpec(input Input) (string, string, bool) {
 	if input.Secret.Data == nil || len(input.Secret.Data[corev1.TLSPrivateKeyKey]) == 0 {
-		return SecretMismatch, fmt.Sprintf("Existing issued Secret does not contain private key data"), true
+		return SecretMismatch, "Existing issued Secret does not contain private key data", true
 	}
 
 	pkBytes := input.Secret.Data[corev1.TLSPrivateKeyKey]

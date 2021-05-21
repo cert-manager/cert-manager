@@ -140,7 +140,6 @@ func convertCustomFieldsToVcert(customFields []api.CustomField) ([]certificate.C
 			switch field.Type {
 			case api.CustomFieldTypePlain, "":
 				fieldType = certificate.CustomFieldPlain
-				break
 			default:
 				return nil, ErrCustomFieldsType{Type: field.Type}
 			}

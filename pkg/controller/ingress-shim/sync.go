@@ -33,7 +33,6 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/logs"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
@@ -143,7 +142,7 @@ func validateIngressTLSBlock(tlsBlock networkingv1beta1.IngressTLS) []error {
 
 func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1beta1.Ingress,
 	issuerName, issuerKind, issuerGroup string) (new, update []*cmapi.Certificate, _ error) {
-	log := logs.FromContext(ctx)
+	log := logf.FromContext(ctx)
 
 	var newCrts []*cmapi.Certificate
 	var updateCrts []*cmapi.Certificate
@@ -187,7 +186,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *networkingv1bet
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
-			log := logs.WithRelatedResource(log, existingCrt)
+			log := logf.WithRelatedResource(log, existingCrt)
 			log.V(logf.DebugLevel).Info("certificate already exists for ingress resource, ensuring it is up to date")
 
 			if metav1.GetControllerOf(existingCrt) == nil {
@@ -298,7 +297,7 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networkingv1beta1.Ingr
 	}
 
 	// for ACME issuers
-	editInPlaceVal, _ := ingAnnotations[cmacme.IngressEditInPlaceAnnotationKey]
+	editInPlaceVal := ingAnnotations[cmacme.IngressEditInPlaceAnnotationKey]
 	editInPlace := editInPlaceVal == "true"
 	if editInPlace {
 		if crt.Annotations == nil {

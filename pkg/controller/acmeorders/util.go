@@ -18,9 +18,7 @@ package acmeorders
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"hash/fnv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -79,21 +77,6 @@ func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.Gener
 		},
 		Spec: *chSpec,
 	}, nil
-}
-
-func hashChallenge(spec cmacme.ChallengeSpec) (uint32, error) {
-	specBytes, err := json.Marshal(spec)
-	if err != nil {
-		return 0, err
-	}
-
-	hashF := fnv.New32()
-	_, err = hashF.Write(specBytes)
-	if err != nil {
-		return 0, err
-	}
-
-	return hashF.Sum32(), nil
 }
 
 func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.ChallengeSpec, error) {
