@@ -30,14 +30,19 @@ import (
 
 const vaultToken = "vault-root-token"
 
+// VaultInitializer holds the state of a configured Vault PKI. We use the same
+// Vault server for all tests. PKIs are mounted and unmounted for each test
+// scenario that uses them.
 type VaultInitializer struct {
 	client *vault.Client
 	proxy  *proxy
 
 	Details
 
-	RootMount          string
-	IntermediateMount  string
+	RootMount         string
+	IntermediateMount string
+	// Whether the intermediate CA should be configured with root CA
+	ConfigureWithRoot  bool
 	Role               string // AppRole auth Role
 	AppRoleAuthPath    string // AppRole auth mount point in Vault
 	KubernetesAuthPath string // Kubernetes auth mount point in Vault
@@ -127,6 +132,7 @@ func NewVaultKubernetesSecret(name string, serviceAccountName string) *corev1.Se
 	}
 }
 
+// Set up a new Vault client, port-forward to the Vault instance.
 func (v *VaultInitializer) Init() error {
 	if v.AppRoleAuthPath == "" {
 		v.AppRoleAuthPath = "approle"
@@ -146,39 +152,55 @@ func (v *VaultInitializer) Init() error {
 	return nil
 }
 
+// Set up a Vault PKI.
 func (v *VaultInitializer) Setup() error {
+	// Enable a new Vault secrets engine at v.RootMount
 	if err := v.mountPKI(v.RootMount, "87600h"); err != nil {
 		return err
 	}
 
+	// Generate a self-signed CA cert using the engine at v.RootMount
 	rootCa, err := v.generateRootCert()
 	if err != nil {
 		return err
 	}
 
+	// Configure issuing certificate endpoints and CRL distribution points to be
+	// set on certs issued by v.RootMount.
 	if err := v.configureCert(v.RootMount); err != nil {
 		return err
 
 	}
 
+	// Enable a new Vault secrets engine at v.IntermediateMount
 	if err := v.mountPKI(v.IntermediateMount, "43800h"); err != nil {
 		return err
 	}
 
+	// Generate a CSR for secrets engine at v.IntermediateMount
 	csr, err := v.generateIntermediateSigningReq()
 	if err != nil {
 		return err
 	}
 
+	// Issue a new intermediate CA from v.RootMount for the CSR created above.
 	intermediateCa, err := v.signCertificate(csr)
 	if err != nil {
 		return err
 	}
 
-	if err := v.importSignIntermediate(intermediateCa, rootCa, v.IntermediateMount); err != nil {
+	// Set the engine at v.IntermediateMount as an intermediateCA using the cert
+	// issued by v.RootMount, above and optionally the root CA cert.
+	caChain := intermediateCa
+	if v.ConfigureWithRoot {
+		caChain = fmt.Sprintf("%s\n%s", intermediateCa, rootCa)
+	}
+	if err := v.importSignIntermediate(caChain, v.IntermediateMount); err != nil {
 		return err
 	}
 
+	// Configure issuing certificate endpoints and CRL distribution points to be
+	// set on certs issued by v.IntermediateMount.
 	if err := v.configureCert(v.IntermediateMount); err != nil {
 		return err
 	}
@@ -279,6 +301,8 @@ func (v *VaultInitializer) generateRootCert() (string, error) {
 		"common_name":          "Root CA",
 		"ttl":                  "87600h",
 		"exclude_cn_from_sans": "true",
+		"key_type":             "ec",
+		"key_bits":             "256",
 	}
 	url := path.Join("/v1", v.RootMount, "root", "generate", "internal")
 
@@ -295,6 +319,8 @@ func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 		"common_name":          "Intermediate CA",
 		"ttl":                  "43800h",
 		"exclude_cn_from_sans": "true",
+		"key_type":             "ec",
+		"key_bits":             "256",
 	}
 	url := path.Join("/v1", v.IntermediateMount, "intermediate", "generate", "internal")
 
@@ -323,9 +349,9 @@ func (v *VaultInitializer) signCertificate(csr string) (string, error) {
 	return cert, nil
 }
 
-func (v *VaultInitializer) importSignIntermediate(intermediateCa, rootCa, intermediateMount string) error {
+func (v *VaultInitializer) importSignIntermediate(caChain, intermediateMount string) error {
 	params := map[string]string{
-		"certificate": intermediateCa,
+		"certificate": caChain,
 	}
 	url := path.Join("/v1", intermediateMount, "intermediate", "set-signed")
 
