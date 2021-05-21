@@ -22,10 +22,14 @@ import (
 	"testing"
 	"time"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
+	cmapiv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
@@ -35,6 +39,13 @@ var (
 	validIssuerRef = cmmeta.ObjectReference{
 		Name: "name",
 		Kind: "ClusterIssuer",
+	}
+	someAdmissionRequest = &admissionv1.AdmissionRequest{
+		RequestKind: &metav1.GroupVersionKind{
+			Group:   "test",
+			Kind:    "test",
+			Version: "test",
+		},
 	}
 )
 
@@ -50,6 +61,7 @@ func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
 		cfg      *internalcmapi.Certificate
+		a        *admissionv1.AdmissionRequest
 		errs     []*field.Error
 		warnings validation.WarningList
 	}{
@@ -61,6 +73,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid with blank issuerRef kind": {
 			cfg: &internalcmapi.Certificate{
@@ -72,6 +85,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid with 'Issuer' issuerRef kind": {
 			cfg: &internalcmapi.Certificate{
@@ -84,6 +98,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid with org set": {
 			cfg: &internalcmapi.Certificate{
@@ -96,6 +111,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef: validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"invalid issuerRef kind": {
 			cfg: &internalcmapi.Certificate{
@@ -108,6 +124,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("issuerRef", "kind"), "invalid", "must be one of Issuer or ClusterIssuer"),
 			},
@@ -122,6 +139,7 @@ func TestValidateCertificate(t *testing.T) {
 			errs: []*field.Error{
 				field.Required(fldPath.Child("secretName"), "must be specified"),
 			},
+			a: someAdmissionRequest,
 		},
 		"certificate with no domains, URIs or common name": {
 			cfg: &internalcmapi.Certificate{
@@ -130,6 +148,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath, "", "at least one of commonName, dnsNames, uris ipAddresses, or emailAddresses must be set"),
 			},
@@ -141,6 +160,7 @@ func TestValidateCertificate(t *testing.T) {
 					SecretName: "abc",
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Required(fldPath.Child("issuerRef", "name"), "must be specified"),
 			},
@@ -153,6 +173,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with rsa keyAlgorithm specified and no keySize": {
 			cfg: &internalcmapi.Certificate{
@@ -165,6 +186,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 2048": {
 			cfg: &internalcmapi.Certificate{
@@ -178,6 +200,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 4096": {
 			cfg: &internalcmapi.Certificate{
@@ -191,6 +214,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 8192": {
 			cfg: &internalcmapi.Certificate{
@@ -204,6 +228,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with ecdsa keyAlgorithm specified and no keySize": {
 			cfg: &internalcmapi.Certificate{
@@ -216,6 +241,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 256": {
 			cfg: &internalcmapi.Certificate{
@@ -229,6 +255,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 384": {
 			cfg: &internalcmapi.Certificate{
@@ -242,6 +269,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 521": {
 			cfg: &internalcmapi.Certificate{
@@ -255,6 +283,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with keyAlgorithm not specified and keySize specified": {
 			cfg: &internalcmapi.Certificate{
@@ -267,6 +296,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 1024": {
 			cfg: &internalcmapi.Certificate{
@@ -280,6 +310,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("privateKey", "size"), 1024, "must be between 2048 & 8192 for rsa keyAlgorithm"),
 			},
@@ -296,6 +327,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("privateKey", "size"), 8196, "must be between 2048 & 8192 for rsa keyAlgorithm"),
 			},
@@ -312,6 +344,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.NotSupported(fldPath.Child("privateKey", "size"), 100, []string{"256", "384", "521"}),
 			},
@@ -327,6 +360,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("privateKey", "algorithm"), internalcmapi.PrivateKeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
 			},
@@ -340,6 +374,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"certificate with invalid ipAddresses": {
 			cfg: &internalcmapi.Certificate{
@@ -350,6 +385,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
 			},
@@ -362,6 +398,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a:    someAdmissionRequest,
 			errs: []*field.Error{},
 		},
 		"invalid certificate with commonName longer than 64 bytes": {
@@ -372,6 +409,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.TooLong(fldPath.Child("commonName"), "this-is-a-big-long-string-which-has-exactly-sixty-five-characters", 64),
 			},
@@ -387,6 +425,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with commonName and first dnsName longer than 64 bytes": {
 			cfg: &internalcmapi.Certificate{
@@ -400,6 +439,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with basic keyusage": {
 			cfg: &internalcmapi.Certificate{
@@ -410,6 +450,7 @@ func TestValidateCertificate(t *testing.T) {
 					Usages:     []internalcmapi.KeyUsage{"signing"},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with multiple keyusage": {
 			cfg: &internalcmapi.Certificate{
@@ -420,6 +461,7 @@ func TestValidateCertificate(t *testing.T) {
 					Usages:     []internalcmapi.KeyUsage{"signing", "s/mime"},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"invalid certificate with nonexistent keyusage": {
 			cfg: &internalcmapi.Certificate{
@@ -430,6 +472,7 @@ func TestValidateCertificate(t *testing.T) {
 					Usages:     []internalcmapi.KeyUsage{"nonexistent"},
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("usages").Index(0), internalcmapi.KeyUsage("nonexistent"), "unknown keyusage"),
 			},
@@ -444,6 +487,7 @@ func TestValidateCertificate(t *testing.T) {
 					},
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"valid certificate with only email SAN": {
 			cfg: &internalcmapi.Certificate{
@@ -453,6 +497,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"invalid certificate with incorrect email": {
 			cfg: &internalcmapi.Certificate{
@@ -462,6 +507,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("emailAddresses").Index(0), "aliceexample.com", "invalid email address: mail: missing '@' or angle-addr"),
 			},
@@ -474,6 +520,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("emailAddresses").Index(0), "Alice <alice@example.com>", "invalid email address: make sure the supplied value only contains the email address itself"),
 			},
@@ -486,6 +533,7 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:  validIssuerRef,
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("emailAddresses").Index(0), "mailto:alice@example.com", "invalid email address: mail: expected comma"),
 			},
@@ -499,6 +547,7 @@ func TestValidateCertificate(t *testing.T) {
 					RevisionHistoryLimit: int32Ptr(1),
 				},
 			},
+			a: someAdmissionRequest,
 		},
 		"invalid certificate with revision history limit < 1": {
 			cfg: &internalcmapi.Certificate{
@@ -509,14 +558,78 @@ func TestValidateCertificate(t *testing.T) {
 					RevisionHistoryLimit: int32Ptr(0),
 				},
 			},
+			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("revisionHistoryLimit"), int32(0), "must not be less than 1"),
+			},
+		},
+		"v1alpha2 certificate created": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "abc",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			a: &admissionv1.AdmissionRequest{
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1alpha2",
+					Kind:    "Certificate"},
+			},
+			warnings: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1alpha2.SchemeGroupVersion.String(),
+					"Certificate",
+					cmapi.SchemeGroupVersion.String(),
+					"Certificate"),
+			},
+		},
+		"v1alpha3 certificate created": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "abc",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			a: &admissionv1.AdmissionRequest{
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1alpha3",
+					Kind:    "Certificate"},
+			},
+			warnings: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1alpha3.SchemeGroupVersion.String(),
+					"Certificate",
+					cmapi.SchemeGroupVersion.String(),
+					"Certificate"),
+			},
+		},
+		"v1beta1 certificate created": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "abc",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			a: &admissionv1.AdmissionRequest{
+				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
+					Version: "v1beta1",
+					Kind:    "Certificate"},
+			},
+			warnings: validation.WarningList{
+				fmt.Sprintf(deprecationMessageTemplate,
+					cmapiv1beta1.SchemeGroupVersion.String(),
+					"Certificate",
+					cmapi.SchemeGroupVersion.String(),
+					"Certificate"),
 			},
 		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs, warnings := ValidateCertificate(nil, s.cfg)
+			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected errors %v but got %v", s.errs, errs)
 				return

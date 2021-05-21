@@ -35,15 +35,18 @@ import (
 
 // Validation functions for cert-manager Issuer types.
 
-func ValidateIssuer(_ *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
+func ValidateIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	iss := obj.(*certmanager.Issuer)
 	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	warnings = append(warnings, validateAPIVersion(a.RequestKind)...)
 	return allErrs, warnings
 }
 
-func ValidateUpdateIssuer(_ *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
+func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	iss := obj.(*certmanager.Issuer)
 	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	// Admission request should never be nil
+	warnings = append(warnings, validateAPIVersion(a.RequestKind)...)
 	return allErrs, warnings
 }
 
