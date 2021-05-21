@@ -120,12 +120,12 @@ securityContext:
 
 # Container Security Context to be set on the controller component container
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-containerSecurityContext:
+containerSecurityContext: {}
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
-  runAsNonRoot: true
+  # runAsNonRoot: true
 
 
 volumes: []
@@ -206,17 +206,19 @@ webhook:
     #   maxSurge: 0
     #   maxUnavailable: 1
 
+  # Pod Security Context to be set on the webhook component Pod
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
     runAsNonRoot: true
 
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-  containerSecurityContext:
+  containerSecurityContext: {}
     # capabilities:
     #   drop:
     #   - ALL
     # readOnlyRootFilesystem: true
-    runAsNonRoot: true
+    # runAsNonRoot: true
 
   # Optional additional annotations to add to the webhook Deployment
   # deploymentAnnotations: {}
@@ -328,17 +330,19 @@ cainjector:
     #   maxSurge: 0
     #   maxUnavailable: 1
 
+  # Pod Security Context to be set on the cainjector component Pod
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
     runAsNonRoot: true
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-  containerSecurityContext:
+  containerSecurityContext: {}
     # capabilities:
     #   drop:
     #   - ALL
     # readOnlyRootFilesystem: true
-    runAsNonRoot: true
+    # runAsNonRoot: true
 
 
   # Optional additional annotations to add to the cainjector Deployment
