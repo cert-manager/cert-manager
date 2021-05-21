@@ -22,3 +22,7 @@ config:
   - "[*,bind,*]"
   - "[*,ingress-nginx,*]"
   - "[*,sample-external-issuer-system,*]"
+  # The Vault issuer E2E tests deploy Vault into each test namespace but it is
+  # difficult to get it running non-root.
+  # See https://github.com/jetstack/cert-manager/pull/4044
+  - "[*,e2e-tests-*,*]"
