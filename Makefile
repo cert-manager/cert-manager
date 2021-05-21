@@ -38,6 +38,7 @@ help:
 	#
 	### Build targets
 	#
+	# clean              - removes the entire output base tree and stop the Bazel server
 	# controller         - build a binary of the 'controller'
 	# cainjector         - build a binary of the 'cainjector'
 	# webhook            - build a binary of the 'webhook'
