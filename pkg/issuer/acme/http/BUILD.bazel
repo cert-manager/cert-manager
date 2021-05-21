@@ -28,6 +28,7 @@ go_library(
         "@io_k8s_client_go//listers/core/v1:go_default_library",
         "@io_k8s_client_go//listers/networking/v1beta1:go_default_library",
         "@io_k8s_utils//net:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 
