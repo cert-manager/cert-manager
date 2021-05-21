@@ -16,6 +16,10 @@
 
 # Installs an instance of Kyverno with its restrictive Pod security policies enabled.
 # * https://kyverno.io/policies/pod-security/
+#
+# We create custom Kyverno policies using a kustomization of the upstream
+# policies, as follows:
+#  kustomize build . > policy.yaml
 
 set -o nounset
 set -o errexit
@@ -26,11 +30,11 @@ source "${SCRIPT_ROOT}/../../lib/lib.sh"
 
 check_tool kubectl
 check_tool helm
-check_tool kustomize
 
 # Install latest version of Kyverno
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
-helm upgrade --install --wait kyverno kyverno/kyverno --namespace kyverno --create-namespace --values ${SCRIPT_ROOT}/values.yaml
-# Install Kyverno policies using a local kustomization.yaml
-kustomize build ${SCRIPT_ROOT} | kubectl apply -f -
+helm upgrade --install --wait kyverno kyverno/kyverno --namespace kyverno --create-namespace
+# Install cert-manager specific Pod security policy
+kubectl create ns cert-manager || true
+kubectl apply -f ${SCRIPT_ROOT}/policy.yaml
