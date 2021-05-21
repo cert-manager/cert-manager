@@ -57,6 +57,9 @@ help:
 # Alias targets
 ###############
 
+clean:
+	bazel clean --expunge
+
 build: ctl images
 
 verify:
