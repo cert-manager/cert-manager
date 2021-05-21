@@ -732,7 +732,7 @@ func Test_buildOrder(t *testing.T) {
 		}
 	})
 
-	t.Run("Builds two orders from the same long CRs to gaurantee same name", func(t *testing.T) {
+	t.Run("Builds two orders from the same long CRs to guarantee same name", func(t *testing.T) {
 		orderOne, err := buildOrder(longCrOne, csr, false)
 		if err != nil {
 			t.Errorf("buildOrder() received error %v", err)
