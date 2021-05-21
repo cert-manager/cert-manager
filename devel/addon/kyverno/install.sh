@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Installs an instance of Kyverno with all Pod security policies enabled.
+# Installs an instance of Kyverno with its restrictive Pod security policies enabled.
 # * https://kyverno.io/policies/pod-security/
 
 set -o nounset
@@ -32,5 +32,5 @@ check_tool kustomize
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
 helm upgrade --install --wait kyverno kyverno/kyverno --namespace kyverno --create-namespace --values ${SCRIPT_ROOT}/values.yaml
-# Install policies using local kustomization.yaml
+# Install Kyverno policies using a local kustomization.yaml
 kustomize build ${SCRIPT_ROOT} | kubectl apply -f -
