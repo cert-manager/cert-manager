@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"crypto"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -282,67 +283,82 @@ func selfSignCertificate(t *testing.T, spec cmapi.CertificateSpec) []byte {
 	return pemData
 }
 
-func TestRenewBeforeExpiryDuration(t *testing.T) {
-	type testCase struct {
-		notBefore                        time.Time
-		notAfter                         time.Time
-		specRenewBefore                  *metav1.Duration
-		defaultRenewBeforeExpiryDuration time.Duration
-		expected                         time.Duration
+func TestRenewalTimeWrapper(t *testing.T) {
+	type scenario struct {
+		notBefore           time.Time
+		notAfter            time.Time
+		renewBeforeHint     *metav1.Duration
+		defaultRenewBefore  time.Duration
+		expectedRenewalTime *metav1.Time
 	}
 	now := time.Now()
-	tests := map[string]testCase{
-		"use default": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  nil,
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour,
+	tests := map[string]scenario{
+		"no renewBeforeHint, defaultRenewBefore < (cert duration / 3)": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour * 24),
+			renewBeforeHint:     nil,
+			defaultRenewBefore:  time.Hour,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 23)},
 		},
-		"spec overrides default": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  &metav1.Duration{Duration: time.Hour * 2},
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour * 2,
+		"renewBeforeHint < (cert duration / 3)": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour * 24),
+			renewBeforeHint:     &metav1.Duration{Duration: time.Hour * 2},
+			defaultRenewBefore:  time.Hour,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 22)},
 		},
-		"default larger than actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  nil,
-			defaultRenewBeforeExpiryDuration: time.Hour * 24 * 7,
-			expected:                         time.Hour * 8,
+		"no renewBeforeHint, defaultRenewBefore > (cert duration / 3)": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour * 24),
+			renewBeforeHint:     nil,
+			defaultRenewBefore:  time.Hour * 24 * 7,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16)},
 		},
-		"spec larger than actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  &metav1.Duration{Duration: time.Hour * 24 * 7},
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour * 8,
+		"renewBeforeHint > (cert duration / 3)": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour * 24),
+			renewBeforeHint:     &metav1.Duration{Duration: time.Hour * 24 * 7},
+			defaultRenewBefore:  time.Hour,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16)},
 		},
-		"default equal to actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  nil,
-			defaultRenewBeforeExpiryDuration: time.Hour * 24,
-			expected:                         time.Hour * 8,
+		"no renewBeforeHint, defaultRenewBefore == cert duration": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour * 24),
+			renewBeforeHint:     nil,
+			defaultRenewBefore:  time.Hour * 24,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16)},
 		},
-		"spec equal to actual duration": {
-			notBefore:                        now,
-			notAfter:                         now.Add(time.Hour * 24),
-			specRenewBefore:                  &metav1.Duration{Duration: time.Hour * 24},
-			defaultRenewBeforeExpiryDuration: time.Hour,
-			expected:                         time.Hour * 8,
+		"renewBeforeHint == cert duration": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour * 24),
+			renewBeforeHint:     &metav1.Duration{Duration: time.Hour * 24},
+			defaultRenewBefore:  time.Hour,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16)},
+		},
+
+		// The following two test cases would catch the bug reported in
+		// https://github.com/jetstack/cert-manager/issues/3897
+		"cert duration very slightly more than defaultRenewBefore": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour*24 + time.Minute*3),
+			renewBeforeHint:     nil,
+			defaultRenewBefore:  time.Hour * 24,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour*16 + time.Minute*2)},
+		},
+		"cert duration very slightly more than renewBeforeHint": {
+			notBefore:           now,
+			notAfter:            now.Add(time.Hour*24 + time.Minute*3),
+			renewBeforeHint:     &metav1.Duration{Duration: time.Hour * 24},
+			defaultRenewBefore:  time.Hour,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour*16 + time.Minute*2)},
 		},
 	}
+	for n, s := range tests {
+		t.Run(n, func(t *testing.T) {
+			f := RenewalTimeWrapper(s.defaultRenewBefore)
+			renewalTime := f(s.notBefore, s.notAfter, s.renewBeforeHint)
+			assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			assert.Equal(
-				t,
-				tc.expected,
-				RenewBeforeExpiryDuration(tc.notBefore, tc.notAfter, tc.specRenewBefore, tc.defaultRenewBeforeExpiryDuration),
-			)
 		})
 	}
 }

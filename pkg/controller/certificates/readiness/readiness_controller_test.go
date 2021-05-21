@@ -45,7 +45,7 @@ func policyEvaluatorBuilder(c cmapi.CertificateCondition) policyEvaluatorFunc {
 
 // renewalTimeBuilder returns a fake renewalTimeFunc for ReadinessController.
 func renewalTimeBuilder(rt *metav1.Time) certificates.RenewalTimeFunc {
-	return func(notBefore, notAfter time.Time, cert *cmapi.Certificate) *metav1.Time {
+	return func(notBefore, notAfter time.Time, cert *metav1.Duration) *metav1.Time {
 		return rt
 	}
 }
