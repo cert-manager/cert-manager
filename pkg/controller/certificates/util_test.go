@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"crypto"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -337,26 +338,26 @@ func TestRenewalTimeWrapper(t *testing.T) {
 
 		// The following two test cases would catch the bug reported in
 		// https://github.com/jetstack/cert-manager/issues/3897
-		"cert duration very slightly less than defaultRenewBefore": {
+		"cert duration very slightly more than defaultRenewBefore": {
 			notBefore:           now,
-			notAfter:            now.Add(time.Hour * 24),
+			notAfter:            now.Add(time.Hour*24 + time.Minute*3),
 			renewBeforeHint:     nil,
-			defaultRenewBefore:  time.Hour*24 + time.Minute,
-			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16)},
+			defaultRenewBefore:  time.Hour * 24,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour*16 + time.Minute*2)},
 		},
-		"cert duration very slightly less than renewBeforeHint": {
+		"cert duration very slightly more than renewBeforeHint": {
 			notBefore:           now,
-			notAfter:            now.Add(time.Hour * 24),
-			renewBeforeHint:     nil,
-			defaultRenewBefore:  time.Hour*24 + time.Minute,
-			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour * 16)},
+			notAfter:            now.Add(time.Hour*24 + time.Minute*3),
+			renewBeforeHint:     &metav1.Duration{Duration: time.Hour * 24},
+			defaultRenewBefore:  time.Hour,
+			expectedRenewalTime: &metav1.Time{Time: now.Add(time.Hour*16 + time.Minute*2)},
 		},
 	}
 	for n, s := range tests {
 		t.Run(n, func(t *testing.T) {
 			f := RenewalTimeWrapper(s.defaultRenewBefore)
 			renewalTime := f(s.notBefore, s.notAfter, s.renewBeforeHint)
-			assert.Equal(t, s.expectedRenewalTime, renewalTime)
+			assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
 
 		})
 	}
