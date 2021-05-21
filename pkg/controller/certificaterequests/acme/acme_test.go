@@ -747,4 +747,54 @@ func Test_buildOrder(t *testing.T) {
 			}
 		})
 	}
+
+	longCrOne := gen.CertificateRequest(
+		"test-comparison-that-is-at-the-fifty-two-character-l",
+		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
+		gen.SetCertificateRequestCSR(csrPEM))
+	orderOne, err := buildOrder(longCrOne, csr, false)
+	if err != nil {
+		t.Errorf("buildOrder() received error %v", err)
+		return
+	}
+
+	t.Run("Builds two orders from different long CRs to guarantee unique name", func(t *testing.T) {
+		longCrTwo := gen.CertificateRequest(
+			"test-comparison-that-is-at-the-fifty-two-character-l-two",
+			gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour}),
+			gen.SetCertificateRequestCSR(csrPEM))
+
+		orderTwo, err := buildOrder(longCrTwo, csr, false)
+		if err != nil {
+			t.Errorf("buildOrder() received error %v", err)
+			return
+		}
+
+		if orderOne.Name == orderTwo.Name {
+			t.Errorf(
+				"orders built from different CR have equal names: %s == %s",
+				orderOne.Name,
+				orderTwo.Name)
+		}
+	})
+
+	t.Run("Builds two orders from the same long CRs to guarantee same name", func(t *testing.T) {
+		orderOne, err := buildOrder(longCrOne, csr, false)
+		if err != nil {
+			t.Errorf("buildOrder() received error %v", err)
+			return
+		}
+
+		orderTwo, err := buildOrder(longCrOne, csr, false)
+		if err != nil {
+			t.Errorf("buildOrder() received error %v", err)
+			return
+		}
+		if orderOne.Name != orderTwo.Name {
+			t.Errorf(
+				"orders built from the same CR have unequal names: %s != %s",
+				orderOne.Name,
+				orderTwo.Name)
+		}
+	})
 }
