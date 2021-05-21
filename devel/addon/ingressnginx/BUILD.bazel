@@ -3,7 +3,7 @@ load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 container_bundle(
     name = "bundle",
     images = {
-        "k8s.gcr.io/ingress-nginx/controller:v0.41.2": "@io_kubernetes_ingress-nginx//image",
+        "k8s.gcr.io/ingress-nginx/controller:v0.46.0": "@io_kubernetes_ingress-nginx//image",
     },
     tags = ["manual"],
 )

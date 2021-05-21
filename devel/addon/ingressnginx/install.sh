@@ -38,7 +38,7 @@ RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 # Require helm available on PATH
 check_tool kubectl
 check_tool helm
-require_image "k8s.gcr.io/ingress-nginx/controller:v0.41.2" "//devel/addon/ingressnginx:bundle"
+require_image "k8s.gcr.io/ingress-nginx/controller:v0.46.0" "//devel/addon/ingressnginx:bundle"
 
 # Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
@@ -51,7 +51,7 @@ helm repo update
 helm upgrade \
     --install \
     --wait \
-    --version 3.15.2 \
+    --version 3.31.0 \
     --namespace "${NAMESPACE}" \
     --set controller.image.digest="" \
     --set controller.image.pullPolicy=Never \
