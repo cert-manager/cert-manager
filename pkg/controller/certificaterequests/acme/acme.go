@@ -236,7 +236,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableD
 	hashObj = computeNameSpec
 	if len(cr.Name) >= 52 {
 		// Pass a unique struct for hashing so that names at or longer than 52 characters
-		// receive a unique hash. Otherwise, orders will have truncated names with collided
+		// receive a unique hash. Otherwise, orders will have truncated names with colliding
 		// hashes, possibly leading to non-renewal.
 		hashObj = struct {
 			CRName string            `json:"certificateRequestName"`
