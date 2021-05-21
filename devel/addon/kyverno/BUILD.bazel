@@ -1,5 +1,3 @@
-load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
