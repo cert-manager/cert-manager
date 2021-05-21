@@ -121,3 +121,28 @@ def helm_tmpl(
         tools = [helm_cmd],
         **kwargs,
     )
+
+def helm_chart_yaml(
+    name,
+    chart_yaml_template,
+    version_file = "//:version",
+    **kwargs,
+):
+    native.genrule(
+        name = name,
+        srcs = [version_file, chart_yaml_template],
+        stamp = 1,
+        outs = ["Chart.yaml"],
+        cmd = """
+        awk '
+          BEGIN{
+            getline v < "$(location %s)"
+            pr = match(v, "^v[0-9]+.[0-9]+.[0-9]+$$") == 0 ? "true" : "false"
+          }
+          /{PRERELEASE}/{
+            gsub("{PRERELEASE}", pr)
+          }1
+        ' $(location %s) > $@
+        """ % (version_file, chart_yaml_template),
+        **kwargs,
+    )
