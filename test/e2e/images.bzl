@@ -51,8 +51,8 @@ def install():
         name = "com_hashicorp_vault",
         registry = "index.docker.io",
         repository = "library/vault",
-        tag = "1.2.3",
-        digest = "sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01"
+        tag = "1.7.1",
+        digest = "sha256:7d07d64480897215cca86ce51750c888fae4d703529708517ecdd5fabba6cbb3"
     )
 
     ## Fetch bind for use during e2e tests
