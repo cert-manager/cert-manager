@@ -18,6 +18,7 @@ spec:
   ports:
   - name: https
     port: 443
+    protocol: TCP
     targetPort: {{ .Values.webhook.securePort }}
   selector:
     app.kubernetes.io/name: {{ include "webhook.name" . }}
