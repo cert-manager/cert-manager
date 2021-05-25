@@ -94,19 +94,22 @@ type CertificateSpec struct {
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
-	// The requested 'duration' (i.e. lifetime) of the Certificate.
-	// This option may be ignored/overridden by some issuer types.
-	// If overridden and `renewBefore` is greater than the actual certificate
-	// duration, the certificate will be automatically renewed 2/3rds of the
-	// way through the certificate's duration.
+	// The requested 'duration' (i.e. lifetime) of the Certificate. This option
+	// may be ignored/overridden by some issuer types. If unset this defaults to
+	// 90 days. Certificate will be renewed either 2/3 through its duration or
+	// `renewBefore` period before its expiry, whichever is later. Minimum
+	// accepted duration is 1 hour. Value must be in units accepted by Go
+	// time.ParseDuration https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
 
 	// The amount of time before the currently issued certificate's `notAfter`
-	// time that cert-manager will begin to attempt to renew the certificate.
-	// If this value is greater than the total duration of the certificate
-	// (i.e. notAfter - notBefore), it will be automatically renewed 2/3rds of
-	// the way through the certificate's duration.
+	// time that cert-manager will begin to attempt to renew the certificate. If
+	// unset this defaults to 30 days. Certificate will be renewed either 2/3
+	// through its duration or `renewBefore` period before its expiry, whichever
+	// is later. Minimum accepted value is 5 minutes. Value must be in units
+	// accepted by Go time.ParseDuration
+	// https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
 
