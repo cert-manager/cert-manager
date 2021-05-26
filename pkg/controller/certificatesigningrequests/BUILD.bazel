@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
@@ -14,15 +14,18 @@ go_library(
         "//pkg/apis/certmanager:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/client/listers/certmanager/v1:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/certificatesigningrequests/util:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
+        "@io_k8s_api//authorization/v1:go_default_library",
         "@io_k8s_api//certificates/v1:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/labels:go_default_library",
+        "@io_k8s_client_go//kubernetes/typed/authorization/v1:go_default_library",
         "@io_k8s_client_go//kubernetes/typed/certificates/v1:go_default_library",
         "@io_k8s_client_go//listers/certificates/v1:go_default_library",
         "@io_k8s_client_go//tools/cache:go_default_library",
@@ -44,8 +47,32 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/controller/certificatesigningrequests/ca:all-srcs",
+        "//pkg/controller/certificatesigningrequests/fake:all-srcs",
         "//pkg/controller/certificatesigningrequests/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["controller_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/api/util:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/controller/certificatesigningrequests/fake:go_default_library",
+        "//pkg/controller/certificatesigningrequests/util:go_default_library",
+        "//pkg/controller/test:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "@io_k8s_api//authorization/v1:go_default_library",
+        "@io_k8s_api//certificates/v1:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_client_go//testing:go_default_library",
+        "@io_k8s_utils//clock/testing:go_default_library",
+    ],
 )

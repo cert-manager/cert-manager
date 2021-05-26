@@ -164,7 +164,27 @@ var (
 		csrcacontroller.CSRControllerName,
 	}
 
-	defaultEnabledControllers = []string{"*"}
+	defaultEnabledControllers = []string{
+		issuerscontroller.ControllerName,
+		clusterissuerscontroller.ControllerName,
+		certificatesmetricscontroller.ControllerName,
+		ingressshimcontroller.ControllerName,
+		orderscontroller.ControllerName,
+		challengescontroller.ControllerName,
+		cracmecontroller.CRControllerName,
+		crapprovercontroller.ControllerName,
+		crcacontroller.CRControllerName,
+		crselfsignedcontroller.CRControllerName,
+		crvaultcontroller.CRControllerName,
+		crvenaficontroller.CRControllerName,
+		// certificate controllers
+		trigger.ControllerName,
+		issuing.ControllerName,
+		keymanager.ControllerName,
+		requestmanager.ControllerName,
+		readiness.ControllerName,
+		revisionmanager.ControllerName,
+	}
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -228,7 +248,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
 
-	fs.StringSliceVar(&s.controllers, "controllers", defaultEnabledControllers, fmt.Sprintf(""+
+	fs.StringSliceVar(&s.controllers, "controllers", []string{"*"}, fmt.Sprintf(""+
 		"A list of controllers to enable. '--controllers=*' enables all "+
 		"on-by-default controllers, '--controllers=foo' enables just the controller "+
 		"named 'foo', '--controllers=*,-foo' disables the controller named "+
@@ -354,7 +374,7 @@ func (o *ControllerOptions) EnabledControllers() sets.String {
 	for _, controller := range o.controllers {
 		switch {
 		case controller == "*":
-			enabled = enabled.Insert(allControllers...)
+			enabled = enabled.Insert(defaultEnabledControllers...)
 		case strings.HasPrefix(controller, "-"):
 			disabled = append(disabled, strings.TrimPrefix(controller, "-"))
 		default:

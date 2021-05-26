@@ -22,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	authzclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
 	certificateslisters "k8s.io/client-go/listers/certificates/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,7 +31,6 @@ import (
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -42,6 +42,8 @@ const (
 
 var keyFunc = controllerpkg.KeyFunc
 
+// Signer is an implementation of a Kubernetes CertificateSigningRequest
+// signer, backed by a cert-manager Issuer.
 type Signer interface {
 	Sign(context.Context, *certificatesv1.CertificateSigningRequest, cmapi.GenericIssuer) error
 }
@@ -49,11 +51,10 @@ type Signer interface {
 type Controller struct {
 	helper issuer.Helper
 
-	//// clientset used to update cert-manager API resources
-	//cmClient cmclient.Interface
+	// clientset used to update CertificateSigningRequest API resources
 	certClient certificatesclient.CertificateSigningRequestInterface
-
-	csrLister certificateslisters.CertificateSigningRequestLister
+	csrLister  certificateslisters.CertificateSigningRequestLister
+	sarClient  authzclient.SubjectAccessReviewInterface
 
 	queue workqueue.RateLimitingInterface
 
@@ -63,19 +64,14 @@ type Controller struct {
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
 
-	// the signer kind to react to when a certificate signing request is synced
-	signerType string
-
-	issuerLister        cmlisters.IssuerLister
-	clusterIssuerLister cmlisters.ClusterIssuerLister
-
 	// Signer to call sign function
 	signer Signer
 
-	//// used for testing
-	clock clock.Clock
+	// the signer kind to react to when a certificate signing request is synced
+	signerType string
 
-	//reporter *util.Reporter
+	// used for testing
+	clock clock.Clock
 }
 
 func New(signerType string, signer Signer) *Controller {
@@ -92,19 +88,15 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// create a queue used to queue up items to be processed
 	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
+	c.sarClient = ctx.Client.AuthorizationV1().SubjectAccessReviews()
+
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
-	c.issuerLister = issuerInformer.Lister()
 
 	// obtain references to all the informers used by this controller
 	csrInformer := ctx.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests()
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
-
-	//mustSync := append([]cache.InformerSynced{
-	//	certificateSigningRequestInformer.Informer().HasSynced,
-	//	issuerInformer.Informer().HasSynced,
-	//}, extraInformersMustSync...)
 	mustSync := []cache.InformerSynced{
 		csrInformer.Informer().HasSynced,
 		issuerInformer.Informer().HasSynced,
@@ -113,9 +105,8 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// if scoped to a single namespace
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
 	// register event handlers and obtain a lister for clusterissuers.
+	clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
 	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
-		c.clusterIssuerLister = clusterIssuerInformer.Lister()
 		// register handler function for clusterissuer resources
 		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
 		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
@@ -129,13 +120,11 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
 
 	// create an issuer helper for reading generic issuers
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	c.helper = issuer.NewHelper(issuerInformer.Lister(), clusterIssuerInformer.Lister())
 
-	// clock is used to set the FailureTime of failed CertificateRequests
 	c.clock = ctx.Clock
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder
-	//c.reporter = util.NewReporter(c.clock, c.recorder)
 	c.certClient = ctx.Client.CertificatesV1().CertificateSigningRequests()
 
 	c.log.V(logf.DebugLevel).Info("new certificate signing request controller registered",

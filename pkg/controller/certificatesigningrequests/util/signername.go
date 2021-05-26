@@ -25,7 +25,9 @@ type SignerIssuerRef struct {
 	Type, Group     string
 }
 
-func IssuerRefFromSignerName(name string) (SignerIssuerRef, bool) {
+// SignerIssuerRefFromSignerName will return a SignerIssuerRef from a
+// CertificateSigningRequests.SignerName
+func SignerIssuerRefFromSignerName(name string) (SignerIssuerRef, bool) {
 	split := strings.Split(name, "/")
 	if len(split) != 2 {
 		return SignerIssuerRef{}, false

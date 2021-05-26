@@ -13,6 +13,7 @@ go_library(
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/experimental/v1alpha1:go_default_library",
         "//pkg/util/errors:go_default_library",
         "@io_k8s_api//certificates/v1:go_default_library",
     ],

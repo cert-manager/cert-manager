@@ -38,7 +38,7 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 	}
 
 	log = logf.WithResource(log, iss)
-	crs, err := c.certificatesRequestsForGenericIssuer(iss)
+	crs, err := c.certificateSigningRequestsForGenericIssuer(iss)
 	if err != nil {
 		log.Error(err, "error looking up certificates observing issuer or clusterissuer")
 		return
@@ -54,7 +54,7 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 	}
 }
 
-func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*certificatesv1.CertificateSigningRequest, error) {
+func (c *Controller) certificateSigningRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*certificatesv1.CertificateSigningRequest, error) {
 	csrs, err := c.csrLister.List(labels.NewSelector())
 	if err != nil {
 		return nil, fmt.Errorf("error listing certificates signing requests: %s", err.Error())
@@ -64,7 +64,7 @@ func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssue
 
 	var affected []*certificatesv1.CertificateSigningRequest
 	for _, csr := range csrs {
-		ref, ok := util.IssuerRefFromSignerName(csr.Spec.SignerName)
+		ref, ok := util.SignerIssuerRefFromSignerName(csr.Spec.SignerName)
 
 		switch {
 		case !ok,

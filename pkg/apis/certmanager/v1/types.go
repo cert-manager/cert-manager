@@ -143,18 +143,6 @@ const (
 	VenafiPickupIDAnnotationKey = "venafi.cert-manager.io/pickup-id"
 )
 
-// TODO
-const (
-	// TODO
-	CertificateSigningRequestDurationAnnotationKey = "cert-manager.io/request-duration"
-
-	// TODO
-	CertificateSigningRequestIsCAAnnotationKey = "cert-manager.io/request-is-ca"
-
-	// TODO
-	CertificateSigningRequestCAAnnotationKey = "cert-manager.io/ca"
-)
-
 // KeyUsage specifies valid usage contexts for keys.
 // See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
 //      https://tools.ietf.org/html/rfc5280#section-4.2.1.12

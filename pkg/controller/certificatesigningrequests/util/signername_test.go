@@ -101,7 +101,7 @@ func TestIssuerRefFromSignerName(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			ref, ok := IssuerRefFromSignerName(test.inpName)
+			ref, ok := SignerIssuerRefFromSignerName(test.inpName)
 			if ok != test.expOK {
 				t.Errorf("unexpected ok, exp=%t got=%t",
 					test.expOK, ok)

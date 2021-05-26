@@ -36,6 +36,7 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	expirmentalapi "github.com/jetstack/cert-manager/pkg/apis/experimental/v1alpha1"
 )
 
 func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
@@ -366,18 +367,13 @@ func GenerateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Ce
 // GenerateTemplate will create a x509.Certificate for the given
 // CertificateSigningRequest resource
 func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
-	//certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	//keyUsage, extKeyUsage, err := BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//return GenerateTemplateFromCSRPEMWithUsages(cr.Spec.Request, certDuration, cr.Spec.IsCA, keyUsage, extKeyUsage)
 	duration := v1.DefaultCertificateDuration
-	requestedDuration, ok := csr.Annotations[v1.CertificateSigningRequestDurationAnnotationKey]
+	requestedDuration, ok := csr.Annotations[expirmentalapi.CertificateSigningRequestDurationAnnotationKey]
 	if ok {
 		dur, err := time.ParseDuration(requestedDuration)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse requested duration on annotation %q: %w", v1.CertificateSigningRequestDurationAnnotationKey, err)
+			return nil, fmt.Errorf("failed to parse requested duration on annotation %q: %w",
+				expirmentalapi.CertificateSigningRequestDurationAnnotationKey, err)
 		}
 		duration = dur
 	}
@@ -388,7 +384,7 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 		return nil, err
 	}
 
-	isCA := csr.Annotations[v1.CertificateSigningRequestIsCAAnnotationKey] == "true"
+	isCA := csr.Annotations[expirmentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true"
 
 	return GenerateTemplateFromCSRPEMWithUsages(csr.Spec.Request, duration, isCA, ku, eku)
 }

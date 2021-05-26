@@ -18,20 +18,25 @@ package ca
 
 import (
 	"context"
+	"crypto"
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/record"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	experimentalapi "github.com/jetstack/cert-manager/pkg/apis/experimental/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
+	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -43,6 +48,7 @@ const (
 )
 
 type templateGenerator func(*certificatesv1.CertificateSigningRequest) (*x509.Certificate, error)
+type signingFn func([]*x509.Certificate, crypto.Signer, *x509.Certificate) (pki.PEMBundle, error)
 
 type CA struct {
 	issuerOptions controllerpkg.IssuerOptions
@@ -50,10 +56,11 @@ type CA struct {
 
 	certClient certificatesclient.CertificateSigningRequestInterface
 
-	//reporter *crutil.Reporter
+	recorder record.EventRecorder
 
 	// Used for testing to get reproducible resulting certificates
 	templateGenerator templateGenerator
+	signingFn         signingFn
 }
 
 func init() {
@@ -67,11 +74,12 @@ func init() {
 
 func NewCA(ctx *controllerpkg.Context) *CA {
 	return &CA{
-		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
-		//reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		issuerOptions:     ctx.IssuerOptions,
+		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		certClient:        ctx.Client.CertificatesV1().CertificateSigningRequests(),
+		recorder:          ctx.Recorder,
 		templateGenerator: pki.GenerateTemplateFromCertificateSigningRequest,
+		signingFn:         pki.SignCSRTemplate,
 	}
 }
 
@@ -88,67 +96,62 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
 	if apierrors.IsNotFound(err) {
 		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
-
-		//c.reporter.Pending(cr, err, "SecretMissing", message)
-		log.Error(err, message)
-
+		c.recorder.Event(csr, corev1.EventTypeWarning, "SecretMissing", message)
 		return nil
 	}
 
 	if cmerrors.IsInvalidData(err) {
 		message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
-
-		//c.reporter.Pending(cr, err, "SecretInvalidData", message)
-		log.Error(err, message)
+		c.recorder.Eventf(csr, corev1.EventTypeWarning, "SecretInvalidData", "%s: %s", message, err)
 		return nil
 	}
 
 	if err != nil {
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
-		//c.reporter.Pending(cr, err, "SecretGetError", message)
-		log.Error(err, message)
+		c.recorder.Eventf(csr, corev1.EventTypeWarning, "SecretGetError", "%s: %s", message, err)
 		return err
 	}
 
 	template, err := c.templateGenerator(csr)
 	if err != nil {
-		message := "Error generating certificate template"
-		//c.reporter.Failed(csr, err, "SigningError", message)
-		log.Error(err, message)
+		message := fmt.Sprintf("Error generating certificate template: %s", err)
+		c.recorder.Event(csr, corev1.EventTypeWarning, "SigningError", message)
+		util.CertificateSigningRequestSetFailed(csr, "SigningError", message)
+		_, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 		return nil
 	}
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
 	template.OCSPServer = issuerObj.GetSpec().CA.OCSPServers
 
-	bundle, err := pki.SignCSRTemplate(caCerts, caKey, template)
+	bundle, err := c.signingFn(caCerts, caKey, template)
 	if err != nil {
-		message := "Error signing certificate"
-		//c.reporter.Failed(cr, err, "SigningError", message)
-		log.Error(err, message)
+		message := fmt.Sprintf("Error signing certificate: %s", err)
+		c.recorder.Event(csr, corev1.EventTypeWarning, "SigningError", message)
+		util.CertificateSigningRequestSetFailed(csr, "SigningError", message)
+		_, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 		return nil
 	}
 
 	csr.Status.Certificate = bundle.ChainPEM
 	csr, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
-		// TODO
 		message := "Error updating certificate"
-		log.Error(err, message)
+		c.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
 		return err
 	}
 
-	csr.Annotations[cmapi.CertificateSigningRequestCAAnnotationKey] = base64.StdEncoding.EncodeToString(bundle.CAPEM)
+	csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey] = base64.StdEncoding.EncodeToString(bundle.CAPEM)
 	_, err = c.certClient.Update(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
-		// TODO
-		message := fmt.Sprintf("Error updating %q", cmapi.CertificateSigningRequestCAAnnotationKey)
-		log.Error(err, message)
+		message := fmt.Sprintf("Error setting %q", experimentalapi.CertificateSigningRequestCAAnnotationKey)
+		c.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
 		return err
 	}
 
 	log.V(logf.DebugLevel).Info("certificate issued")
+	c.recorder.Event(csr, corev1.EventTypeNormal, "CertificateIssued", "Certificate fetched from issuer successfully")
 
 	return nil
 }
