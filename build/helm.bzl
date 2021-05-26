@@ -149,7 +149,8 @@ def helm_chart_yaml(
           }
           /{PRERELEASE}/{
             gsub(/{PRERELEASE}/, pr)
-          }1
+          }
+          { print }
         ' $(location %s) > $@
         """ % (version_file, chart_yaml_template),
         **kwargs,
