@@ -145,10 +145,10 @@ def helm_chart_yaml(
         awk '
           BEGIN{
             getline v < "$(location %s)"
-            pr = match(v, "^v[0-9]+.[0-9]+.[0-9]+$$") == 0 ? "true" : "false"
+            pr = match(v, /^v[0-9]+\.[0-9]+\.[0-9]+$$/) == 0 ? "true" : "false"
           }
           /{PRERELEASE}/{
-            gsub("{PRERELEASE}", pr)
+            gsub(/{PRERELEASE}/, pr)
           }1
         ' $(location %s) > $@
         """ % (version_file, chart_yaml_template),
