@@ -52,6 +52,7 @@ filegroup(
         "//pkg/controller/cainjector:all-srcs",
         "//pkg/controller/certificaterequests:all-srcs",
         "//pkg/controller/certificates:all-srcs",
+        "//pkg/controller/certificatesigningrequests:all-srcs",
         "//pkg/controller/clusterissuers:all-srcs",
         "//pkg/controller/ingress-shim:all-srcs",
         "//pkg/controller/issuers:all-srcs",

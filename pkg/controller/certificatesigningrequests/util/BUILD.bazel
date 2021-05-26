@@ -4,22 +4,23 @@ go_library(
     name = "go_default_library",
     srcs = [
         "conditions.go",
-        "duration.go",
-        "issuers.go",
-        "kube.go",
-        "names.go",
-        "usages.go",
+        "signername.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/api/util",
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/certmanager/v1:go_default_library",
-        "//pkg/apis/meta/v1:go_default_library",
         "//pkg/logs:go_default_library",
         "@io_k8s_api//certificates/v1:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_utils//clock:go_default_library",
     ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["signername_test.go"],
+    embed = [":go_default_library"],
 )
 
 filegroup(
@@ -34,15 +35,4 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["names_test.go"],
-    embed = [":go_default_library"],
-    deps = [
-        "//pkg/apis/certmanager/v1:go_default_library",
-        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
-        "@io_k8s_apimachinery//pkg/util/validation:go_default_library",
-    ],
 )
