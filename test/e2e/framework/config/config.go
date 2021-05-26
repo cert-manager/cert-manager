@@ -26,6 +26,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+type Framework struct {
+}
+
 type Config struct {
 	KubeConfig  string
 	KubeContext string
