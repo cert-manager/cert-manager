@@ -22,6 +22,7 @@ go_library(
         "//pkg/controller/certificates/requestmanager:go_default_library",
         "//pkg/controller/certificates/revisionmanager:go_default_library",
         "//pkg/controller/certificates/trigger:go_default_library",
+        "//pkg/controller/certificatesigningrequests/ca:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/ingress-shim:go_default_library",
         "//pkg/controller/issuers:go_default_library",
