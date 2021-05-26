@@ -128,6 +128,14 @@ def helm_chart_yaml(
     version_file = "//:version",
     **kwargs,
 ):
+    """
+    We don't want alpha and beta releases to show on ArtifactHub as releases.
+    To prevent pre-releases from appearing, we use the ArtifactHub-specific
+    annotation:
+      artifacthub.io/prerelease: "true"
+
+    See https://artifacthub.io/docs/topics/annotations/helm/
+    """
     native.genrule(
         name = name,
         srcs = [version_file, chart_yaml_template],
