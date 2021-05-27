@@ -45,7 +45,10 @@ import (
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
+	"github.com/jetstack/cert-manager/pkg/feature"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 type ControllerOptions struct {
@@ -161,7 +164,6 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
-		csrcacontroller.CSRControllerName,
 	}
 
 	defaultEnabledControllers = []string{
@@ -184,6 +186,10 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
+	}
+
+	experimentalCertificateSigningRequestControllers = []string{
+		csrcacontroller.CSRControllerName,
 	}
 )
 
@@ -383,6 +389,11 @@ func (o *ControllerOptions) EnabledControllers() sets.String {
 	}
 
 	enabled = enabled.Delete(disabled...)
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
+		logf.Log.Info("enabling all experimental certificatesigningrequest controllers")
+		enabled = enabled.Insert(experimentalCertificateSigningRequestControllers...)
+	}
 
 	return enabled
 }
