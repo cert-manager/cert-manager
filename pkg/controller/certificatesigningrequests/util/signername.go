@@ -49,15 +49,12 @@ func SignerIssuerRefFromSignerName(name string) (SignerIssuerRef, bool) {
 			Group:     signerTypeSplit[1],
 		}, true
 
-	case 2:
+	default:
 		return SignerIssuerRef{
 			Namespace: signerNameSplit[0],
-			Name:      signerNameSplit[1],
+			Name:      strings.Join(signerNameSplit[1:], "."),
 			Type:      signerTypeSplit[0],
 			Group:     signerTypeSplit[1],
 		}, true
-
-	default:
-		return SignerIssuerRef{}, false
 	}
 }

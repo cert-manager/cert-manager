@@ -23,7 +23,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"math"
@@ -61,11 +60,10 @@ var (
 )
 
 func generateCSR(t *testing.T, secretKey crypto.Signer, sigAlg x509.SignatureAlgorithm) []byte {
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
-	}.ToRDNSequence())
 	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
+		Subject: pkix.Name{
+			CommonName: "test",
+		},
 		SignatureAlgorithm: sigAlg,
 	}
 
@@ -161,7 +159,7 @@ func TestSign(t *testing.T) {
 
 	// generate a self signed root ca valid for 60d
 	rootCert, rootCertPEM := generateSelfSignedCACert(t, rootPK, "root")
-	rsaCASecret := &corev1.Secret{
+	ecCASecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "root-ca-secret",
 			Namespace: gen.DefaultTestNamespace,
@@ -172,7 +170,7 @@ func TestSign(t *testing.T) {
 		},
 	}
 
-	badDataSecret := rsaCASecret.DeepCopy()
+	badDataSecret := ecCASecret.DeepCopy()
 	badDataSecret.Data[corev1.TLSPrivateKeyKey] = []byte("bad key")
 
 	template, err := pki.GenerateTemplateFromCertificateSigningRequest(baseCSR)
@@ -279,7 +277,7 @@ func TestSign(t *testing.T) {
 		"an approved CSR that transiently fails a secret lookup should backoff error to retry": {
 			csr: baseCSR.DeepCopy(),
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rsaCASecret, baseCSR.DeepCopy()},
+				KubeObjects:        []runtime.Object{ecCASecret, baseCSR.DeepCopy()},
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					`Warning SecretGetError Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error`,
@@ -324,7 +322,7 @@ func TestSign(t *testing.T) {
 		"an approved CSR should exit nil and send event if referenced issuer is not ready": {
 			csr: baseCSR.DeepCopy(),
 			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{rsaCASecret, baseCSR.DeepCopy()},
+				KubeObjects: []runtime.Object{ecCASecret, baseCSR.DeepCopy()},
 				CertManagerObjects: []runtime.Object{gen.Issuer(baseIssuer.DeepCopy().Name,
 					gen.SetIssuerCA(cmapi.CAIssuer{}),
 				)},
@@ -364,7 +362,7 @@ func TestSign(t *testing.T) {
 				return nil, errors.New("this is a template generate error")
 			},
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rsaCASecret, baseCSR.DeepCopy()},
+				KubeObjects:        []runtime.Object{ecCASecret, baseCSR.DeepCopy()},
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					"Warning SigningError Error generating certificate template: this is a template generate error",
@@ -418,7 +416,7 @@ func TestSign(t *testing.T) {
 				return pki.PEMBundle{}, errors.New("this is a signing error")
 			},
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rsaCASecret, baseCSR.DeepCopy()},
+				KubeObjects:        []runtime.Object{ecCASecret, baseCSR.DeepCopy()},
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					"Warning SigningError Error signing certificate: this is a signing error",
@@ -469,6 +467,8 @@ func TestSign(t *testing.T) {
 		"a successful signing should update CertificateSigningRequest Certificate and CA annotation": {
 			csr: baseCSR.DeepCopy(),
 			templateGenerator: func(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
+				// Pass the given CSR to a "real" template generator to ensure that it
+				// doesn't err. Return the pre-generated template.
 				_, err := pki.GenerateTemplateFromCertificateSigningRequest(csr)
 				if err != nil {
 					return nil, err
@@ -480,7 +480,7 @@ func TestSign(t *testing.T) {
 				return pki.PEMBundle{CAPEM: certBundle.CAPEM, ChainPEM: certBundle.ChainPEM}, nil
 			},
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rsaCASecret, baseCSR.DeepCopy()},
+				KubeObjects:        []runtime.Object{ecCASecret, baseCSR.DeepCopy()},
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
 					"Normal CertificateIssued Certificate fetched from issuer successfully",

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import (
 	experimentalapi "github.com/jetstack/cert-manager/pkg/apis/experimental/v1alpha1"
 )
 
-// GenerateTemplate will create a x509.Certificate for the given
-// CertificateSigningRequest resource
+// GenerateTemplateFromCertificateSigningRequest will create an
+// *x509.Certificate from the given CertificateSigningRequest resource
 func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
 	duration := cmapi.DefaultCertificateDuration
 	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
@@ -41,7 +41,6 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 		}
 		duration = dur
 	}
-	fmt.Println(duration)
 
 	ku, eku, err := BuildKeyUsagesKube(csr.Spec.Usages)
 	if err != nil {
@@ -53,11 +52,16 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 	return GenerateTemplateFromCSRPEMWithUsages(csr.Spec.Request, duration, isCA, ku, eku)
 }
 
-func BuildKeyUsagesKube(usages []certificatesv1.KeyUsage) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
+func BuildKeyUsagesKube(usages []certificatesv1.KeyUsage) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 	var unk []certificatesv1.KeyUsage
 	if len(usages) == 0 {
 		usages = []certificatesv1.KeyUsage{certificatesv1.UsageDigitalSignature, certificatesv1.UsageKeyEncipherment}
 	}
+
+	var (
+		ku  x509.KeyUsage
+		eku []x509.ExtKeyUsage
+	)
 
 	for _, u := range usages {
 		if kuse, ok := apiutil.KeyUsageTypeKube(u); ok {
@@ -68,8 +72,10 @@ func BuildKeyUsagesKube(usages []certificatesv1.KeyUsage) (ku x509.KeyUsage, eku
 			unk = append(unk, u)
 		}
 	}
+
 	if len(unk) > 0 {
-		err = fmt.Errorf("unknown key usages: %v", unk)
+		return -1, nil, fmt.Errorf("unknown key usages: %v", unk)
 	}
-	return
+
+	return ku, eku, nil
 }

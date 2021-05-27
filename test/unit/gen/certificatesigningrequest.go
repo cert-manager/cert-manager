@@ -140,3 +140,9 @@ func SetCertificateSigningRequestExtra(extra map[string]certificatesv1.ExtraValu
 		csr.Spec.Extra = extra
 	}
 }
+
+func SetCertificateSigningRequestUsages(usages []certificatesv1.KeyUsage) CertificateSigningRequestModifier {
+	return func(csr *certificatesv1.CertificateSigningRequest) {
+		csr.Spec.Usages = usages
+	}
+}

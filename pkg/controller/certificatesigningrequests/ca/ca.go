@@ -50,6 +50,9 @@ const (
 type templateGenerator func(*certificatesv1.CertificateSigningRequest) (*x509.Certificate, error)
 type signingFn func([]*x509.Certificate, crypto.Signer, *x509.Certificate) (pki.PEMBundle, error)
 
+// CA is a Kubernetes CertificateSigningRequest controller, responsible for
+// signing CertificateSigningRequests that reference a cert-manager CA Issuer
+// or ClusterIssuer
 type CA struct {
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
@@ -83,9 +86,10 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 	}
 }
 
-// Returns a nil certificate and no error when the error is not retryable,
-// i.e., re-running the Sign command will lead to the same result. A
-// retryable error would be for example a network failure.
+// Sign attempts to sign the given CertificateSigningRequest based on the
+// provided CA Issuer or ClusterIssuer. This function will update the resource
+// if signing was successful. Returns an error which, if not nil, should
+// trigger a retry.
 func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningRequest, issuerObj cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx, "sign")
 

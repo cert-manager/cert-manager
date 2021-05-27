@@ -18,8 +18,9 @@ package v1alpha1
 
 // CertificateSigningRequest specific Annotations
 const (
-	// CertificateSigningRequestDuration is the annotation key used to request a
-	// particular duration represented as a Go Duration.
+	// CertificateSigningRequestDurationAnnotationKey is the
+	// annotation key used to request a particular duration
+	// represented as a Go Duration.
 	CertificateSigningRequestDurationAnnotationKey = "experimental.cert-manager.io/request-duration"
 
 	// CertificateSigningRequestIsCAAnnotationKey is the annotation key used to
@@ -27,6 +28,6 @@ const (
 	CertificateSigningRequestIsCAAnnotationKey = "experimental.cert-manager.io/request-is-ca"
 
 	// CertificateSigningRequestCAAnnotationKey is the annotation key which will
-	// contain the base 64 encoded resulting CA certificate from the signer.
+	// contain the base 64 encoded resulting CA certificate which signed the CSR.
 	CertificateSigningRequestCAAnnotationKey = "experimental.cert-manager.io/ca"
 )

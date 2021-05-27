@@ -40,7 +40,7 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 	log = logf.WithResource(log, iss)
 	crs, err := c.certificateSigningRequestsForGenericIssuer(iss)
 	if err != nil {
-		log.Error(err, "error looking up certificates observing issuer or clusterissuer")
+		log.Error(err, "error looking up certificate signing requests observing issuer or clusterissuer")
 		return
 	}
 	for _, cr := range crs {

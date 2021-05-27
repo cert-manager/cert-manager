@@ -52,10 +52,15 @@ func TestIssuerRefFromSignerName(t *testing.T) {
 			expSignerIssuerRef: SignerIssuerRef{},
 			expOK:              false,
 		},
-		"a reference with too many names should return false": {
-			inpName:            "foo.bar/hello.world.123",
-			expSignerIssuerRef: SignerIssuerRef{},
-			expOK:              false,
+		"a reference with multiple dots in the path should return a name with multiple dots": {
+			inpName: "foo.bar/hello.world.123",
+			expSignerIssuerRef: SignerIssuerRef{
+				Namespace: "hello",
+				Name:      "world.123",
+				Type:      "foo",
+				Group:     "bar",
+			},
+			expOK: true,
 		},
 		"a reference with 2 domains and 2 names should return namespaced issuer": {
 			inpName: "foo.bar/hello.world",
@@ -67,11 +72,11 @@ func TestIssuerRefFromSignerName(t *testing.T) {
 			},
 			expOK: true,
 		},
-		"a reference with 4 domains and 2 names should return namespaced issuer": {
-			inpName: "foo.bar.abc.dbc/hello.world",
+		"a reference with 4 domains and 4 names should return namespaced issuer": {
+			inpName: "foo.bar.abc.dbc/hello.world.123.456",
 			expSignerIssuerRef: SignerIssuerRef{
 				Namespace: "hello",
-				Name:      "world",
+				Name:      "world.123.456",
 				Type:      "foo",
 				Group:     "bar.abc.dbc",
 			},

@@ -48,6 +48,11 @@ type Signer interface {
 	Sign(context.Context, *certificatesv1.CertificateSigningRequest, cmapi.GenericIssuer) error
 }
 
+// Controller is a base Kubernetes CertificateSigningRequest controller. It is
+// responsible for orchestrating and performing shared operations that all
+// CertificateSigningRequest controllers do, before passing the
+// CertificateSigningRequest to a Singer implementation who instantiated this
+// controller.
 type Controller struct {
 	helper issuer.Helper
 
@@ -145,7 +150,7 @@ func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 
 	csr, err := c.csrLister.Get(name)
 	if apierrors.IsNotFound(err) {
-		dbg.Info("certificate request in work queue no longer exists", "error", err.Error())
+		dbg.Info("certificate signing request in work queue no longer exists", "error", err.Error())
 		return nil
 	}
 

@@ -17,7 +17,7 @@ limitations under the License.
 // +groupName=experimental.cert-manager.io
 // +groupGoName=Experimental
 
-// Package certmanager is the internal version of the API.
+// Package experimental is the internal version of the API.
 package experimental
 
 const GroupName = "experimental.cert-manager.io"
