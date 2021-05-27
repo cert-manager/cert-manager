@@ -121,37 +121,3 @@ def helm_tmpl(
         tools = [helm_cmd],
         **kwargs,
     )
-
-def helm_chart_yaml(
-    name,
-    chart_yaml_template,
-    version_file = "//:version",
-    **kwargs,
-):
-    """
-    We don't want alpha and beta releases to show on ArtifactHub as releases.
-    To prevent pre-releases from appearing, we use the ArtifactHub-specific
-    annotation:
-      artifacthub.io/prerelease: "true"
-
-    See https://artifacthub.io/docs/topics/annotations/helm/
-    """
-    native.genrule(
-        name = name,
-        srcs = [version_file, chart_yaml_template],
-        stamp = 1,
-        outs = ["Chart.yaml"],
-        cmd = """
-        awk '
-          BEGIN{
-            getline v < "$(location %s)"
-            pr = match(v, /^v[0-9]+\.[0-9]+\.[0-9]+$$/) == 0 ? "true" : "false"
-          }
-          /{PRERELEASE}/{
-            gsub(/{PRERELEASE}/, pr)
-          }
-          { print }
-        ' $(location %s) > $@
-        """ % (version_file, chart_yaml_template),
-        **kwargs,
-    )
