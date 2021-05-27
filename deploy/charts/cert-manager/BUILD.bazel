@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
-load("//build:helm.bzl", "helm_chart_yaml", "helm_pkg")
+load("//build:helm.bzl", "helm_pkg")
 
 pkg_tar(
     name = "release-tar",
@@ -18,7 +18,7 @@ helm_pkg(
     name = "cert-manager",
     srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"],
     chart_name = "cert-manager",
-    chart_yaml = ":annotated_chart_yaml",
+    chart_yaml = ":Chart.yaml",
     readme_file = ":README.md",
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
@@ -35,12 +35,6 @@ genrule(
     outs = ["README.md"],
     cmd = "cat $(location README.template.md) | sed -e \"s:{{RELEASE_VERSION}}:$$(cat $(location //:version)):g\" > $@",
     stamp = 1,
-    visibility = ["//visibility:public"],
-)
-
-helm_chart_yaml(
-    name = "annotated_chart_yaml",
-    chart_yaml_template = ":Chart.template.yaml",
     visibility = ["//visibility:public"],
 )
 
