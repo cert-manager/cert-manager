@@ -93,7 +93,7 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
 
 	// get a copy of the CA certificate named on the Issuer
-	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
+	caCerts, caKey, err := kube.SecretTLSKeyPairAndCA(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
 	if apierrors.IsNotFound(err) {
 		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
 		c.recorder.Event(csr, corev1.EventTypeWarning, "SecretMissing", message)
