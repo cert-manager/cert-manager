@@ -28,6 +28,12 @@ const (
 	//
 	// ValidateCAA enables CAA checking when issuing certificates
 	ValidateCAA featuregate.Feature = "ValidateCAA"
+
+	// alpha: v1.4.0
+	//
+	// ExperimentalCertificateSigningRequestControllers enables all CertificateSigningRequest
+	// controllers that sign Kubernetes CertificateSigningRequest resources
+	ExperimentalCertificateSigningRequestControllers featuregate.Feature = "ExperimentalCertificateSigningRequestControllers"
 )
 
 func init() {
@@ -39,4 +45,5 @@ func init() {
 // available throughout Kubernetes binaries.
 var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
+	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 }

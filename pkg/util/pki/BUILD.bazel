@@ -6,6 +6,7 @@ go_library(
         "csr.go",
         "generate.go",
         "keyusage.go",
+        "kube.go",
         "parse.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/util/pki",
@@ -13,7 +14,9 @@ go_library(
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/experimental/v1alpha1:go_default_library",
         "//pkg/util/errors:go_default_library",
+        "@io_k8s_api//certificates/v1:go_default_library",
     ],
 )
 
@@ -22,14 +25,17 @@ go_test(
     srcs = [
         "csr_test.go",
         "generate_test.go",
+        "kube_test.go",
         "parse_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/util:go_default_library",
+        "//test/unit/gen:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
+        "@io_k8s_api//certificates/v1:go_default_library",
     ],
 )
 

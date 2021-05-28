@@ -2,9 +2,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["doc.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/apis",
+    srcs = ["fake.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/fake",
     visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "@io_k8s_api//certificates/v1:go_default_library",
+    ],
 )
 
 filegroup(
@@ -16,13 +20,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//pkg/apis/acme:all-srcs",
-        "//pkg/apis/certmanager:all-srcs",
-        "//pkg/apis/experimental:all-srcs",
-        "//pkg/apis/meta:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
