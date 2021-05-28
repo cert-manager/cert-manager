@@ -55,10 +55,10 @@ func TestGenerateTemplateFromCertificateSigningRequest(t *testing.T) {
 		},
 		"a CSR that contains invalid usages should return an error": {
 			csr: gen.CertificateSigningRequest("",
-				gen.SetCertificateSigningRequestDuration("bad-duration"),
+				gen.SetCertificateSigningRequestDuration("10m"),
 				gen.SetCertificateSigningRequestUsages([]certificatesv1.KeyUsage{
 					certificatesv1.UsageKeyEncipherment,
-					certificatesv1.UsageDigitalSignature,
+					certificatesv1.KeyUsage("bad-usage"),
 				}),
 				gen.SetCertificateSigningRequestRequest(csr),
 			),

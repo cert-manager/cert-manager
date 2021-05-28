@@ -50,6 +50,17 @@ func SignerIssuerRefFromSignerName(name string) (SignerIssuerRef, bool) {
 		}, true
 
 	default:
+		// ClusterIssuers do not have Namespaces
+		if signerTypeSplit[0] == "clusterissuers" {
+			return SignerIssuerRef{
+				Namespace: "",
+				Name:      strings.Join(signerNameSplit[0:], "."),
+				Type:      signerTypeSplit[0],
+				Group:     signerTypeSplit[1],
+			}, true
+		}
+
+		// Non Cluster Scoped issuers always have Namespaces
 		return SignerIssuerRef{
 			Namespace: signerNameSplit[0],
 			Name:      strings.Join(signerNameSplit[1:], "."),

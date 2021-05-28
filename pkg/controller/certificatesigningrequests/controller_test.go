@@ -390,42 +390,6 @@ func TestController(t *testing.T) {
 				},
 			},
 		},
-		"if CertificateSigningRequest references a clusterissuers signer but the signer name contains a namespace, should update with failed": {
-			signerType: apiutil.IssuerCA,
-			existingCSR: gen.CertificateSigningRequest("csr-1",
-				gen.SetCertificateSigningRequestSignerName("clusterissuers.cert-manager.io/hello.world"),
-				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-					Type:    certificatesv1.CertificateApproved,
-					Status:  corev1.ConditionTrue,
-					Reason:  "ApprovedReason",
-					Message: "Approved message",
-				}),
-			),
-			signerImpl:  signerExpectNoCall,
-			sarReaction: sarReactionExpectNoCall,
-			existingIssuer: gen.ClusterIssuer("world",
-				gen.SetIssuerCA(cmapi.CAIssuer{
-					SecretName: "tls",
-				}),
-			),
-			wantEvent: "Warning BadSignerName Signer clusterissuers may not be referenced with namespace (hello)",
-			wantConditions: []certificatesv1.CertificateSigningRequestCondition{
-				{
-					Type:    certificatesv1.CertificateApproved,
-					Status:  corev1.ConditionTrue,
-					Reason:  "ApprovedReason",
-					Message: "Approved message",
-				},
-				{
-					Type:               certificatesv1.CertificateFailed,
-					Status:             corev1.ConditionTrue,
-					Reason:             "BadSignerName",
-					Message:            "Signer clusterissuers may not be referenced with namespace (hello)",
-					LastTransitionTime: metaFixedClockStart,
-					LastUpdateTime:     metaFixedClockStart,
-				},
-			},
-		},
 		"if CertificateSigningRequest references a issuers signer but the Issuer is not ready, fire event not Ready": {
 			signerType: apiutil.IssuerCA,
 			existingCSR: gen.CertificateSigningRequest("csr-1",

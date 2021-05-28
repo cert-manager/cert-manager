@@ -102,6 +102,16 @@ func TestIssuerRefFromSignerName(t *testing.T) {
 			},
 			expOK: true,
 		},
+		"a clusterissuers reference with 4 domains and multiple names should return no Namespace and multiple domain name": {
+			inpName: "clusterissuers.bar.abc.dbc/hello.world.123.456",
+			expSignerIssuerRef: SignerIssuerRef{
+				Namespace: "",
+				Name:      "hello.world.123.456",
+				Type:      "clusterissuers",
+				Group:     "bar.abc.dbc",
+			},
+			expOK: true,
+		},
 	}
 
 	for name, test := range tests {

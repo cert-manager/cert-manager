@@ -106,12 +106,12 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 		return nil
 	}
 
-	switch kind {
-	case cmapi.IssuerKind:
+	if kind == cmapi.IssuerKind {
 		ok, err := c.userCanReferenceSigner(ctx, csr, ref.Namespace, ref.Name)
 		if err != nil {
 			return err
 		}
+
 		if !ok {
 			message := fmt.Sprintf("Requester may not reference Namespaced Issuer %s/%s", ref.Namespace, ref.Name)
 			c.recorder.Event(csr, corev1.EventTypeWarning, "DeniedReference", message)
@@ -120,17 +120,6 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 				return err
 			}
 
-			return nil
-		}
-	case cmapi.ClusterIssuerKind:
-		// Namespace not valid for a clusterissuer
-		if len(ref.Namespace) > 0 {
-			message := fmt.Sprintf("Signer clusterissuers may not be referenced with namespace (%s)", ref.Namespace)
-			c.recorder.Event(csr, corev1.EventTypeWarning, "BadSignerName", message)
-			util.CertificateSigningRequestSetFailed(csr, "BadSignerName", message)
-			if _, err := c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{}); err != nil {
-				return err
-			}
 			return nil
 		}
 	}
