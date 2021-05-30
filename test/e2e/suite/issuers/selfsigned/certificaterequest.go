@@ -110,7 +110,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to obtain an ECDSA Certificate backed by a ECSDA key", func() {
+		It("should be able to obtain an ECDSA Certificate backed by a ECDSA key", func() {
 			// Replace RSA key secret with ECDSA one
 			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(ctx, newPrivateKeySecret(
 				certificateRequestSecretName, f.Namespace.Name, rootECKey), metav1.UpdateOptions{})
