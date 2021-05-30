@@ -65,7 +65,7 @@ var checkAuthoritativeNssTestsErr = []struct {
 	error       string
 }{
 	// invalid nameserver
-	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"invalidns.com."},
+	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"invalid.example.com."},
 		"",
 	},
 }
