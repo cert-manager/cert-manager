@@ -507,7 +507,7 @@ subjects:
 ---
 
 # Permission to:
-# - Update and sign CertificatSigningeRequests referencing cert-manager.io Issuers and ClusterIssuers
+# - Update and sign CertificateSigningRequests referencing cert-manager.io Issuers and ClusterIssuers
 # - Perform SubjectAccessReviews to test whether users are able to reference Namespaced Issuers
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
