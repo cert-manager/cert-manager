@@ -91,10 +91,10 @@ func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
 func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLister, namespace string) (*vcert.Config, error) {
-	venCfg := iss.GetSpec().Venafi
+	venaCfg := iss.GetSpec().Venafi
 	switch {
-	case venCfg.TPP != nil:
-		tpp := venCfg.TPP
+	case venaCfg.TPP != nil:
+		tpp := venaCfg.TPP
 		tppSecret, err := secretsLister.Secrets(namespace).Get(tpp.CredentialsRef.Name)
 		if err != nil {
 			return nil, err
@@ -108,7 +108,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeTPP,
 			BaseUrl:       tpp.URL,
-			Zone:          venCfg.Zone,
+			Zone:          venaCfg.Zone,
 			// always enable verbose logging for now
 			LogVerbose:      true,
 			ConnectionTrust: caBundle,
@@ -118,8 +118,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 				AccessToken: accessToken,
 			},
 		}, nil
-	case venCfg.Cloud != nil:
-		cloud := venCfg.Cloud
+	case venaCfg.Cloud != nil:
+		cloud := venaCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {
 			return nil, err
@@ -134,7 +134,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 		return &vcert.Config{
 			ConnectorType: endpoint.ConnectorTypeCloud,
 			BaseUrl:       cloud.URL,
-			Zone:          venCfg.Zone,
+			Zone:          venaCfg.Zone,
 			// always enable verbose logging for now
 			LogVerbose: true,
 			Credentials: &endpoint.Authentication{
