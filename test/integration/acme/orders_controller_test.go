@@ -201,8 +201,8 @@ func TestAcmeOrdersController(t *testing.T) {
 	// Wait for the Challenge to be created.
 	var chal *cmacme.Challenge
 	err = wait.Poll(time.Millisecond*100, time.Minute, func() (done bool, err error) {
-		chals, err := cmCl.AcmeV1().Challenges(testName).List(ctx, metav1.ListOptions{})
-		l := len(chals.Items)
+		challenges, err := cmCl.AcmeV1().Challenges(testName).List(ctx, metav1.ListOptions{})
+		l := len(challenges.Items)
 		// Challenge has not been created yet
 		if l == 0 {
 			return false, nil
@@ -212,7 +212,7 @@ func TestAcmeOrdersController(t *testing.T) {
 			return false, fmt.Errorf("expected maximum 1 challenge, got %d", l)
 		}
 		// Check that the Challenge is owned by our Order.
-		chal = &chals.Items[0]
+		chal = &challenges.Items[0]
 		if !metav1.IsControlledBy(chal, order) {
 			return false, fmt.Errorf("found an unexpected Challenge resource: %v", chal.Name)
 		}
