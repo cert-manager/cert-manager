@@ -318,7 +318,7 @@ func (o StubOpenDNSConfig) GetRecord(zone string, name string, record_type strin
 			return nil, fmt.Errorf("GetRecord: Unexpected nil")
 		}
 		rec = exp.(*dns.RecordBody)
-		// comare passed with expected
+		// compare passed with expected
 		if name != rec.Name {
 			return nil, fmt.Errorf("GetRecord: expected/actual Name don't match")
 		}
@@ -335,7 +335,7 @@ func (o StubOpenDNSConfig) RecordSave(rec *dns.RecordBody, zone string) error {
 
 	exp, ok := o.FuncOutput["RecordSave"]
 	if ok {
-		// comare passed with expected
+		// compare passed with expected
 		if rec.Name != exp.(*dns.RecordBody).Name {
 			return fmt.Errorf("RecordSave: expected/actual Name don't match")
 		}
@@ -362,7 +362,7 @@ func (o StubOpenDNSConfig) RecordUpdate(rec *dns.RecordBody, zone string) error 
 
 	exp, ok := o.FuncOutput["RecordUpdate"]
 	if ok {
-		// comare passed with expected
+		// compare passed with expected
 		if rec.Name != exp.(*dns.RecordBody).Name {
 			return fmt.Errorf("RecordUpdate: expected/actual Name don't match")
 		}
@@ -388,7 +388,7 @@ func (o StubOpenDNSConfig) RecordDelete(rec *dns.RecordBody, zone string) error 
 
 	exp, ok := o.FuncOutput["RecordDelete"]
 	if ok {
-		// comare passed with expected
+		// compare passed with expected
 		if rec.Name != exp.(*dns.RecordBody).Name {
 			return fmt.Errorf("RecordDelete: expected/actual Name don't match")
 		}
