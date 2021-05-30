@@ -48,7 +48,7 @@ func testRecordBodyDataExist() *dns.RecordBody {
 	}
 }
 
-// OpenEdggrid DNS Stub
+// OpenEdgegrid DNS Stub
 type StubOpenDNSConfig struct {
 	FuncOutput map[string]interface{}
 	FuncErrors map[string]error
