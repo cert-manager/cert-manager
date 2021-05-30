@@ -1,6 +1,6 @@
 ## Changelog since v0.1.0
 ### Action Required
-- Move to 'jetstack' organisation. Action required: this will require updating your existing deployments to point to the new image repository, as new tags will not be pushed to the old 'jetstackexperimental/cert-manager-controllerrepository. Ahelm upgrade` should take care of this. (#145, @munnerz)
+- Move to 'jetstack' organisation. Action required: this will require updating your existing deployments to point to the new image repository, as new tags will not be pushed to the old 'jetstackexperimental/cert-manager-controllerrepository. A helm upgrade should take care of this. (#145, @munnerz)
 - Set the Kubernetes secret type to TLS. Action required: this will cause renewals of existing certificates to fail. You must delete certificates that have been previously produced by cert-manager else cert-manager may enter a renewal loop when saving the new certificates. Alternatively, you may specify a new secret to store your certificate in and manually update your ingress resource/applications to reference the new secret. (#172, @munnerz)
 
 ### Other notable changes
