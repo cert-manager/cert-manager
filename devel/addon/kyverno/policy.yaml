@@ -178,7 +178,7 @@ spec:
       resources:
         kinds:
         - Pod
-    name: priviledged-containers
+    name: privileged-containers
     validate:
       message: Privileged mode is disallowed. The fields spec.containers[*].securityContext.privileged
         and spec.initContainers[*].securityContext.privileged must not be set to true.
