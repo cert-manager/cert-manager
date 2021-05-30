@@ -48,7 +48,7 @@ const (
 
 var (
 	// RequeuePeriod is the default period after which an Order should be re-queued.
-	// It can be overriden in tests.
+	// It can be overridden in tests.
 	RequeuePeriod time.Duration = time.Second * 5
 )
 
