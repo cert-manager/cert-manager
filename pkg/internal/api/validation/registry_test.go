@@ -201,7 +201,7 @@ func TestValidateUpdateNoErrorNoneRegistered(t *testing.T) {
 		t.Errorf("expected to not get an error but got: %v", errs.ToAggregate())
 	}
 	if len(warnings) > 0 {
-		t.Errorf("exptected to not get any warnings but got: %+v", warnings)
+		t.Errorf("expected to not get any warnings but got: %+v", warnings)
 	}
 }
 
