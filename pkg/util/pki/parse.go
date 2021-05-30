@@ -308,7 +308,7 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 //  +------+-------+      +------+-------+      +------+-------+
 //  leaf certificate                            root certificate
 //
-// The function returns false if the chains A and B are not gluable.
+// The function returns false if the chains A and B are not glueable.
 func (c *chainNode) tryMergeChain(chain *chainNode) (*chainNode, bool) {
 	// The given chain's root has been signed by this node. Add this node on top
 	// of the given chain.
