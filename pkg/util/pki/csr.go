@@ -179,7 +179,7 @@ func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.Ke
 // to the x509.CreateCertificateRequest function.
 func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := crt.Spec.CommonName
-	iPAddresses := IPAddressesForCertificate(crt)
+	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 	subject := SubjectForCertificate(crt)
 
@@ -226,7 +226,7 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 			CommonName:         commonName,
 		},
 		DNSNames:        dnsNames,
-		IPAddresses:     iPAddresses,
+		IPAddresses:     ipAddresses,
 		URIs:            uriNames,
 		EmailAddresses:  crt.Spec.EmailAddresses,
 		ExtraExtensions: extraExtensions,
