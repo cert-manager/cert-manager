@@ -76,7 +76,7 @@ func TestNewDNSProvider(t *testing.T) {
 
 	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
 	assert.NoError(t, err)
-	// samplee couple important fields
+	// sample couple important fields
 	assert.Equal(t, akamai.serviceConsumerDomain, "akamai.example.com")
 	assert.Equal(t, fmt.Sprintf("%T", akamai.dnsclient), "*akamai.OpenDNSConfig")
 
