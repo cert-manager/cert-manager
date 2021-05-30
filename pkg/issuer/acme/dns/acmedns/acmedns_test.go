@@ -45,7 +45,7 @@ func TestValidJsonAccount(t *testing.T) {
         "domain": {
             "fulldomain": "fooldom",
             "password": "secret",
-            "subdomain": "subdoom",
+            "subdomain": "subdom",
             "username": "usernom"
         }
     }`)
