@@ -502,14 +502,14 @@ func TestValidateCertificate(t *testing.T) {
 		"invalid certificate with incorrect email": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
-					EmailSANs:  []string{"aliceexample.com"},
+					EmailSANs:  []string{"alice-example.com"},
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 				},
 			},
 			a: someAdmissionRequest,
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("emailAddresses").Index(0), "aliceexample.com", "invalid email address: mail: missing '@' or angle-addr"),
+				field.Invalid(fldPath.Child("emailAddresses").Index(0), "alice-example.com", "invalid email address: mail: missing '@' or angle-addr"),
 			},
 		},
 		"invalid certificate with email formatted with name": {
