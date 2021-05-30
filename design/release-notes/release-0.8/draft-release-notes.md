@@ -70,7 +70,7 @@ have any issues!
 - Allow Openshift to install cert-manager chart (#1395, @JGodin-C2C)
 - Update documentation for new 'solvers' field (#1623, @munnerz)
 - Fix issue where ingress-shim would not clear old configuration when migrating to the new 'solvers' field (#1620, @munnerz)
-- Add new issuer.spec.acme.solvers field that replaces certificate.spec.acme'in order to make all certificate resources portable between issuer types. The previously syntax is still supported to allow easy migration to the new configuration format. (#1450, @munnerz)
+- Add new issuer.spec.acme.solvers field that replaces certificate.spec.acme in order to make all certificate resources portable between issuer types. The previously syntax is still supported to allow easy migration to the new configuration format. (#1450, @munnerz)
 - Fixes additionalPrinterColumn formatting for Certificate resources (#1616, @munnerz)
 - Fix update loop in certificates controller and add additional debug logging (#1602, @munnerz)
 - Automatically retry expired Challenge resources (#1603, @munnerz)
