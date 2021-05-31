@@ -126,3 +126,15 @@ Create the name of the service account to use
     {{ default "default" .Values.cainjector.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/* Generate basic labels */}}
+{{- define "cert-manager.labels" }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: "{{ .Chart.Version }}"
+app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+{{- if .Values.customLabels }}
+{{ toYaml .Values.customLabels }}
+{{- end }}
+{{- end }}

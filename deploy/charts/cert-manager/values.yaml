@@ -53,6 +53,10 @@ strategy: {}
 # controller pod.
 featureGates: ""
 
+## Additional labels for all resources
+customLabels: {}
+  # foo: bar
+
 image:
   repository: quay.io/jetstack/cert-manager-controller
   # You can manage a registry with

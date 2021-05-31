@@ -8,10 +8,8 @@ metadata:
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{ include "cert-manager.labels" . | indent 4 }}
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
@@ -32,10 +30,8 @@ metadata:
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{ include "cert-manager.labels" . | indent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -55,10 +51,8 @@ metadata:
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{ include "cert-manager.labels" . | indent 4 }}
 rules:
 - apiGroups: ["authorization.k8s.io"]
   resources: ["subjectaccessreviews"]
@@ -72,10 +66,8 @@ metadata:
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{ include "cert-manager.labels" . | indent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
