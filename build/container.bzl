@@ -33,6 +33,7 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 #     configure
 #   base: base image to use for the containers. The format string {ARCH} will
 #     be replaced with the configured GOARCH.
+#   binary: the Bazel target name that builds the Go binary.
 #   docker_tags: list of docker tags to apply to the image. The format string
 #     {ARCH} will be replaced with the configured GOARCH; any stamping variables
 #     should be escaped, e.g. {{STABLE_MY_VAR}}.
@@ -47,6 +48,7 @@ def multi_arch_container(
         name,
         architectures,
         base,
+        binary,
         docker_tags,
         stamp = True,
         docker_push_tags = None,
@@ -64,9 +66,9 @@ def multi_arch_container(
         }),
         stamp = stamp,
         tags = tags,
-        user = user,
         visibility = ["//visibility:private"],
-        **kwargs
+        binary = binary,
+        **kwargs,
     )
 
     # Create a tar file containing the created license files

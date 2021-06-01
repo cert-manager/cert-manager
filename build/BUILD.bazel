@@ -25,8 +25,8 @@ DOCKERIZED_BINARIES = {
 config_setting(
     name = "dynamic_image",
     values = {
-        "define": "image_type=dynamic"
-    }
+        "define": "image_type=dynamic",
+    },
 )
 
 # When pushing to quay.io, we want to use an arch, since the archless name is now used for a
