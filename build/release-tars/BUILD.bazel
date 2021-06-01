@@ -11,13 +11,19 @@ load(
 load("@io_k8s_repo_infra//defs:build.bzl", "release_filegroup")
 load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 
-# Bazel doesn't make the output filename
-# (such as kubernetes-server-{OS}-{ARCH}.tar.gz) configurable, so we instead
-# create rules for all platforms and tag them manual.
-# We then select the correct set of platform-specific tarballs in this filegroup
-# using a select() statement.
-# Thus the release-tars target always selects the correct set of tarballs
-# for the configured platform being built.
+# Bazel doesn't make the output filename (such as
+# kubernetes-server-{OS}-{ARCH}.tar.gz) configurable, so we instead create rules
+# for all platforms and tag them manual. We then select the correct set of
+# platform-specific tarballs in this filegroup using a select() statement. Thus
+# the release-tars target always selects the correct set of tarballs for the
+# configured platform being built.
+
+# This rule is called by 'cmrel stage' to create all release artifacts for a
+# particular os/arch combination. OS and ARCH args get substituted in one of the
+# functions that 'for_platforms' call. That way a Bazel target name gets built
+# that corresponds to the output of one of the rules below and thus invokes
+# rules below to generate the actual artifacts (server images, manifests,
+# kubectl plugin binaries).
 release_filegroup(
     name = "release-tars",
     conditioned_srcs = for_platforms(
@@ -62,6 +68,8 @@ filegroup(
     visibility = ["//visibility:private"],
 )
 
+# _server-images takes the files (image tars and docker tags) output by
+# //build:server-artifacts and tars them up
 pkg_tar(
     name = "_server-images",
     srcs = [
@@ -89,6 +97,14 @@ pkg_tar(
     visibility = ["//visibility:private"],
 )
 
+# This expands to a list of rules that each generate a tarball of server images
+# (controller, webhook etc) for an os/arch combination. A rule from this list is
+# invoked when 'release-tars' release filegroup (above) for the particular
+# os/arch is built. To follow where the images get built, look at the
+# '_server_images' pkg_tar above which gets invoked as a dependency of any rule
+# from this list. A rule from this list takes the .tar output from
+# '_server_images', extracts it and tars it together with licenses and a version
+# file into a .tar.gz archive.
 [[pkg_tar(
     name = "cert-manager-server-%s-%s" % (os, arch),
     srcs = [
@@ -102,6 +118,9 @@ pkg_tar(
         "manual",
         "no-cache",
     ],
+    # For a rule "cert-manager-server-linux-amd64" this will generate
+    # select({"@io_bazel_rules_go//go/platform:linux_amd64": [_server_images]})
+    # TODO: the select statement can probably be removed here.
     deps = select({
         go_platform_constraint(os, arch): [
             ":_server-images",
@@ -120,6 +139,9 @@ pkg_tar(
         "manual",
         "no-cache",
     ],
+    # For a rule "cert-manager-test-linux-amd64" this will generate
+    # select({"@io_bazel_rules_go//go/platform:linux_amd64": [_ctl]})
+    # TODO: the select statement can probably be removed here.
     deps = select({
         go_platform_constraint(os, arch): [
             ":_ctl",
@@ -165,6 +187,9 @@ pkg_tar(
         "manual",
         "no-cache",
     ],
+    # For a rule "cert-manager-test-linux-amd64" this will generate
+    # select({"@io_bazel_rules_go//go/platform:linux_amd64": [_test_bin]})
+    # TODO: the select statement can probably be removed here.
     deps = select({go_platform_constraint(os, arch): [":_test-bin"]}),
 ) for arch in archs] for os, archs in TEST_PLATFORMS.items()]
 

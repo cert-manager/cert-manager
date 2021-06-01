@@ -1,5 +1,12 @@
 ## Images
 
+### How the images are built
+
+`cert-manager` images in `quay.io` are multi-arch images for a number of `linux` architectures.
+The individual container bundles for each architecture are built using `Bazel` functionality in this repository.
+Docker [manifest list](https://docs.docker.com/registry/spec/manifest-v2-2/#manifest-list) is then created by [`cmrel`](https://github.com/cert-manager/release) and the arch-specific container bundles and the manifest list pushed to `quay.io`.
+Therefore the `multi_arch..`-named rules in this repository don't refer to 'multi-arch' in a sense of creating multi-arch images (i.e manifest lists) and the functionality related to pushing images is mostly unused.
+
 ### Stamping
 
 Bazel has a concept of stamping which allows embedding additional information into binaries and ensuring that those binaries get rebuilt when the information changes. 

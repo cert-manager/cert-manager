@@ -88,6 +88,10 @@ grep ^STABLE_BUILD_SCM_REVISION bazel-out/stable-status.txt \
     stamp = 1,
 )
 
+# Building this rule will result in invocation of multi_arch_container rule because
+# the srcs list contains Bazel labels that correspond to the output of the
+# native.genrule in multi_arch_container definiton.
+# This rule will produce tarballs and docker tags for all server images.
 release_filegroup(
     name = "server-artifacts",
     srcs = [":%s.tar" % binary for binary in DOCKERIZED_BINARIES.keys()] +
