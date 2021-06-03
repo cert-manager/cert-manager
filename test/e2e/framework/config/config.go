@@ -26,9 +26,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type Framework struct {
-}
-
 type Config struct {
 	KubeConfig  string
 	KubeContext string
@@ -41,10 +38,9 @@ type Config struct {
 	// require access to repo files, such as Helm charts and test fixtures.
 	RepoRoot string
 
-	Ginkgo    Ginkgo
-	Framework Framework
-	Addons    Addons
-	Suite     Suite
+	Ginkgo Ginkgo
+	Addons Addons
+	Suite  Suite
 }
 
 func (c *Config) Validate() error {
@@ -57,7 +53,7 @@ func (c *Config) Validate() error {
 	}
 
 	errs = append(errs, c.Ginkgo.Validate()...)
-	errs = append(errs, c.Framework.Validate()...)
+	errs = append(errs, nil)
 	errs = append(errs, c.Addons.Validate()...)
 	errs = append(errs, c.Suite.Validate()...)
 
@@ -84,7 +80,6 @@ func (c *Config) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.RepoRoot, "repo-root", "", "Path to the root of the repository, used for access to repo-homed test fixtures.")
 
 	c.Ginkgo.AddFlags(fs)
-	c.Framework.AddFlags(fs)
 	c.Addons.AddFlags(fs)
 	c.Suite.AddFlags(fs)
 }
