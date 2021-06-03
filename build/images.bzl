@@ -25,6 +25,12 @@ def define_base_images():
         repository = "distroless/static",
         digest = "sha256:a7752b29b18bb106938caefd8dcce8a94199022cbd06ea42268b968f35e837a8",
     )
+    # Use 'dynamic' distroless image for modified cert-manager deployments that
+    # are dynamically linked. (This is not the default and you probably don't
+    # need this.)
+    # To get the latest-amd64 digest for gcr.io/distroless/base,
+    # assuming that $GOPATH/bin is in your $PATH, run:
+    # go get github.com/genuinetools/reg && reg digest gcr.io/distroless/base:latest-amd64
     container_pull(
         name = "dynamic_base",
         registry = "gcr.io",
