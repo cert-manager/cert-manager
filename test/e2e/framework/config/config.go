@@ -53,7 +53,6 @@ func (c *Config) Validate() error {
 	}
 
 	errs = append(errs, c.Ginkgo.Validate()...)
-	errs = append(errs, nil)
 	errs = append(errs, c.Addons.Validate()...)
 	errs = append(errs, c.Suite.Validate()...)
 
