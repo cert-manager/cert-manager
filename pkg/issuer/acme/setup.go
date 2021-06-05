@@ -19,6 +19,7 @@ package acme
 import (
 	"context"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net/url"
@@ -147,6 +148,21 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return nil
 	}
 
+	rawCABundle := a.issuer.GetSpec().ACME.CABundle
+	caCertPool := x509.NewCertPool()
+	if len(rawCABundle) > 0 {
+		ok := caCertPool.AppendCertsFromPEM(rawCABundle)
+		if !ok {
+			// this should never happen since it was validated already.
+			reason = errorInvalidConfig
+			msg = "The CABundle is invalid."
+			// Return nil, because we do not want to re-queue an Issuer with an invalid spec.
+			return nil
+		}
+	} else {
+		caCertPool = nil
+	}
+
 	// TODO: don't always clear the client cache.
 	//  In future we should intelligently manage items in the account cache
 	//  and remove them when the corresponding issuer is updated/deleted.
@@ -155,7 +171,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// We could therefore move the removing of the client up to the start of
 	// this function.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
-	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify)
+	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify, caCertPool)
 	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk)
 
 	// TODO: perform a complex check to determine whether we need to verify

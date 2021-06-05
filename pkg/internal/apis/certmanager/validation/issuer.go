@@ -116,6 +116,16 @@ func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (fiel
 		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
 	}
 
+	// check if caBundle is valid
+	certs := iss.CABundle
+	if len(certs) > 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(certs)
+		if !ok {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+		}
+	}
+
 	if eab := iss.ExternalAccountBinding; eab != nil {
 		eabFldPath := fldPath.Child("externalAccountBinding")
 		if len(eab.KeyID) == 0 {

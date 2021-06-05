@@ -63,6 +63,15 @@ type ACMEIssuer struct {
 	// +optional
 	SkipTLSVerify bool `json:"skipTLSVerify,omitempty"`
 
+	// CABundle is a PEM encoded TLS certificate to use to verify connections to
+	// the ACME server.
+	// If specified, system roots will not be used and the issuing CA for the
+	// ACME server must be verifiable using the provided root.
+	// If not specified, the connection will be verified using the cert-manager
+	// system root certificates.
+	// +optional
+	CABundle []byte `json:"caBundle,omitempty"`
+
 	// ExternalAccountBinding is a reference to a CA external account of the ACME
 	// server.
 	// If set, upon registration cert-manager will attempt to associate the given

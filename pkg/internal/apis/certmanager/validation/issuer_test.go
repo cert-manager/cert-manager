@@ -129,6 +129,17 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("server"), "acme server URL is a required field"),
 			},
 		},
+		"acme issuer with invalid caBundle": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				CABundle:   []byte("invalid"),
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"),
+			},
+		},
 		"acme solver without any config": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",

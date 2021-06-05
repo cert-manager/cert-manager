@@ -19,6 +19,7 @@ package accounts
 import (
 	"crypto/rsa"
 	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
 	"time"
@@ -55,7 +56,7 @@ func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.Pr
 // itself.
 // In future, we may change to having two global HTTP clients - one that ignores
 // TLS connection errors, and the other that does not.
-func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client {
+func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool, certPool *x509.CertPool) *http.Client {
 	return acmecl.NewInstrumentedClient(metrics,
 		&http.Client{
 			Transport: &http.Transport{
@@ -64,7 +65,10 @@ func BuildHTTPClient(metrics *metrics.Metrics, skipTLSVerify bool) *http.Client 
 					Timeout:   30 * time.Second,
 					KeepAlive: 30 * time.Second,
 				}).DialContext,
-				TLSClientConfig:       &tls.Config{InsecureSkipVerify: skipTLSVerify},
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: skipTLSVerify,
+					RootCAs:            certPool,
+				},
 				MaxIdleConns:          100,
 				IdleConnTimeout:       90 * time.Second,
 				TLSHandshakeTimeout:   10 * time.Second,
