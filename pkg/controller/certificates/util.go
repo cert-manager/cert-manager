@@ -19,6 +19,7 @@ package certificates
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"fmt"
 	"reflect"
@@ -34,7 +35,7 @@ import (
 )
 
 // PrivateKeyMatchesSpec returns an error if the private key bit size
-// doesn't match the provided spec. Both RSA and ECDSA are supported.
+// doesn't match the provided spec. RSA, Ed25519 and ECDSA are supported.
 // If any error is returned, a list of violations will also be returned.
 func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
 	spec = *spec.DeepCopy()
@@ -44,6 +45,8 @@ func PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]
 	switch spec.PrivateKey.Algorithm {
 	case "", cmapi.RSAKeyAlgorithm:
 		return rsaPrivateKeyMatchesSpec(pk, spec)
+	case cmapi.Ed25519KeyAlgorithm:
+		return ed25519PrivateKeyMatchesSpec(pk, spec)
 	case cmapi.ECDSAKeyAlgorithm:
 		return ecdsaPrivateKeyMatchesSpec(pk, spec)
 	default:
@@ -91,6 +94,15 @@ func ecdsaPrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec
 		violations = append(violations, "spec.keySize")
 	}
 	return violations, nil
+}
+
+func ed25519PrivateKeyMatchesSpec(pk crypto.PrivateKey, spec cmapi.CertificateSpec) ([]string, error) {
+	_, ok := pk.(ed25519.PrivateKey)
+	if !ok {
+		return []string{"spec.keyAlgorithm"}, nil
+	}
+
+	return nil, nil
 }
 
 // RequestMatchesSpec compares a CertificateRequest with a CertificateSpec

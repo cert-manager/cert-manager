@@ -125,6 +125,27 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should be able to obtain an Ed25519 Certificate backed by a Ed25519 key", func() {
+			// Replace previous key secret with Ed25519 one
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(context.TODO(), newPrivateKeySecret(
+				certificateRequestSecretName, f.Namespace.Name, rootEd25519Key), metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			crClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
+			By("Creating a CertificateRequest")
+			csr, err := generateEd25519CSR()
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = crClient.Create(context.TODO(), gen.CertificateRequestFrom(basicCR,
+				gen.SetCertificateRequestCSR(csr),
+			), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Verifying the Certificate is valid")
+			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Second*30, rootEd25519Signer)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		cases := []struct {
 			inputDuration    *metav1.Duration
 			expectedDuration time.Duration

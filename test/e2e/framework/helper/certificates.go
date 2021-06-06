@@ -19,6 +19,7 @@ package helper
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -116,7 +117,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 		return nil, err
 	}
 
-	// validate private key is of the correct type (rsa or ecdsa)
+	// validate private key is of the correct type (rsa, ed25519 or ecdsa)
 	privateKey := certificate.Spec.PrivateKey
 	if privateKey == nil {
 		privateKey = &cmapi.CertificatePrivateKey{}
@@ -132,6 +133,11 @@ func (h *Helper) ValidateIssuedCertificate(certificate *cmapi.Certificate, rootC
 		_, ok := key.(*ecdsa.PrivateKey)
 		if !ok {
 			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
+		}
+	case cmapi.Ed25519KeyAlgorithm:
+		_, ok := key.(ed25519.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("Expected private key of type Ed25519, but it was: %T", key)
 		}
 	default:
 		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.PrivateKey.Algorithm)

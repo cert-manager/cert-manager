@@ -134,4 +134,9 @@ const (
 	// SaveRootCAToSecret denotes whether the CA certificate is expected to
 	// represent a root CA (sub-feature of SaveCAToSecret)
 	SaveRootCAToSecret = "SaveRootCAToSecret"
+
+	// Ed25519 denotes whether the target issuer is able to sign
+	// certificates with an Ed25519 private key. This is useful for some
+	// issuers that have may not support this feature.
+	Ed25519FeatureSet Feature = "Ed25519"
 )

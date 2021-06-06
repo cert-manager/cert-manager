@@ -53,7 +53,7 @@ type CertificateList struct {
 	Items []Certificate `json:"items"`
 }
 
-// +kubebuilder:validation:Enum=RSA;ECDSA
+// +kubebuilder:validation:Enum=RSA;ECDSA;Ed25519
 type PrivateKeyAlgorithm string
 
 const (
@@ -62,6 +62,9 @@ const (
 
 	// Denotes the ECDSA private key type.
 	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ECDSA"
+
+	// Denotes the Ed25519 private key type.
+	Ed25519KeyAlgorithm PrivateKeyAlgorithm = "Ed25519"
 )
 
 // +kubebuilder:validation:Enum=PKCS1;PKCS8
@@ -206,10 +209,11 @@ type CertificatePrivateKey struct {
 	Encoding PrivateKeyEncoding `json:"encoding,omitempty"`
 
 	// Algorithm is the private key algorithm of the corresponding private key
-	// for this certificate. If provided, allowed values are either `RSA` or `ECDSA`
+	// for this certificate. If provided, allowed values are either `RSA`,`Ed25519` or `ECDSA`
 	// If `algorithm` is specified and `size` is not provided,
 	// key size of 256 will be used for `ECDSA` key algorithm and
 	// key size of 2048 will be used for `RSA` key algorithm.
+	// key size is ignored when using the `Ed25519` key algorithm.
 	// +optional
 	Algorithm PrivateKeyAlgorithm `json:"algorithm,omitempty"`
 
@@ -218,6 +222,7 @@ type CertificatePrivateKey struct {
 	// and will default to `2048` if not specified.
 	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
 	// and will default to `256` if not specified.
+	// If `algorithm` is set to `Ed25519`, Size is ignored.
 	// No other values are allowed.
 	// +optional
 	Size int `json:"size,omitempty"` // Validated by webhook. Be mindful of adding OpenAPI validation- see https://github.com/jetstack/cert-manager/issues/3644

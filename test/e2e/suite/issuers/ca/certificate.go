@@ -105,6 +105,25 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should be able to obtain an Ed25519 key from a RSA backed issuer", func() {
+			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
+
+			crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
+			crt.Spec.PrivateKey.Algorithm = v1.Ed25519KeyAlgorithm
+
+			By("Creating a Certificate")
+			_, err := certClient.Create(context.TODO(), crt, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		cases := []struct {
 			inputDuration    *metav1.Duration
 			inputRenewBefore *metav1.Duration

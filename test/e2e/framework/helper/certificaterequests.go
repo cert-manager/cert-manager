@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -89,6 +90,11 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		if !ok {
 			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
 		}
+	case x509.Ed25519:
+		_, ok := key.(ed25519.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("Expected private key of type Ed25519, but it was: %T", key)
+		}
 	default:
 		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", csr.PublicKeyAlgorithm)
 	}
@@ -142,6 +148,8 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *cmapi.CertificateRequest, 
 		keyAlg = cmapi.RSAKeyAlgorithm
 	case x509.ECDSA:
 		keyAlg = cmapi.ECDSAKeyAlgorithm
+	case x509.Ed25519:
+		keyAlg = cmapi.Ed25519KeyAlgorithm
 	default:
 		return nil, fmt.Errorf("unsupported key algorithm type: %s", csr.PublicKeyAlgorithm)
 	}

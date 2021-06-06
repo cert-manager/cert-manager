@@ -120,6 +120,23 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should be able to obtain an Ed25519 key from a RSA backed issuer", func() {
+			certRequestClient := f.CertManagerClientSet.CertmanagerV1().CertificateRequests(f.Namespace.Name)
+
+			By("Creating a CertificateRequest")
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1.IssuerKind,
+				&metav1.Duration{
+					Duration: time.Hour * 24 * 90,
+				},
+				exampleDNSNames, exampleIPAddresses, exampleURIs, x509.Ed25519)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = certRequestClient.Create(context.TODO(), cr, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			By("Verifying the Certificate is valid")
+			err = h.WaitCertificateRequestIssuedValidTLS(f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		cases := []struct {
 			inputDuration    *metav1.Duration
 			expectedDuration time.Duration

@@ -19,6 +19,7 @@ package pki
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
@@ -72,6 +73,8 @@ func GeneratePrivateKeyForCertificate(crt *v1.Certificate) (crypto.Signer, error
 		}
 
 		return GenerateECPrivateKey(keySize)
+	case v1.Ed25519KeyAlgorithm:
+		return GenerateEd25519PrivateKey()
 	default:
 		return nil, fmt.Errorf("unsupported private key algorithm specified: %s", crt.Spec.PrivateKey.Algorithm)
 	}
@@ -111,6 +114,14 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(ecCurve, rand.Reader)
 }
 
+// GenerateEd25519PrivateKey will generate an Ed25519 private key
+func GenerateEd25519PrivateKey() (ed25519.PrivateKey, error) {
+
+	_, prvkey, err := ed25519.GenerateKey(rand.Reader)
+
+	return prvkey, err
+}
+
 // EncodePrivateKey will encode a given crypto.PrivateKey by first inspecting
 // the type of key encoding and then inspecting the type of key provided.
 // It only supports encoding RSA or ECDSA keys.
@@ -122,6 +133,8 @@ func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1.PrivateKeyEncoding) (
 			return EncodePKCS1PrivateKey(k), nil
 		case *ecdsa.PrivateKey:
 			return EncodeECPrivateKey(k)
+		case ed25519.PrivateKey:
+			return EncodePKCS8PrivateKey(k)
 		default:
 			return nil, fmt.Errorf("error encoding private key: unknown key type: %T", pk)
 		}
@@ -169,6 +182,8 @@ func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
 		return k.Public(), nil
 	case *ecdsa.PrivateKey:
 		return k.Public(), nil
+	case ed25519.PrivateKey:
+		return k.Public(), nil
 	default:
 		return nil, fmt.Errorf("unknown private key type: %T", pk)
 	}
@@ -201,6 +216,8 @@ func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
 	case *rsa.PublicKey:
 		return pub.Equal(b), nil
 	case *ecdsa.PublicKey:
+		return pub.Equal(b), nil
+	case ed25519.PublicKey:
 		return pub.Equal(b), nil
 	default:
 		return false, fmt.Errorf("unrecognised public key type: %T", a)

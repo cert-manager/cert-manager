@@ -47,6 +47,14 @@ func mustGenerateECDSA(t *testing.T, keySize int) crypto.PrivateKey {
 	return pk
 }
 
+func mustGenerateEd25519(t *testing.T) crypto.PrivateKey {
+	pk, err := pki.GenerateEd25519PrivateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pk
+}
+
 func TestPrivateKeyMatchesSpec(t *testing.T) {
 	tests := map[string]struct {
 		key          crypto.PrivateKey
@@ -82,6 +90,10 @@ func TestPrivateKeyMatchesSpec(t *testing.T) {
 			expectedAlgo: cmapi.RSAKeyAlgorithm,
 			expectedSize: 2048,
 			violations:   []string{"spec.keyAlgorithm"},
+		},
+		"should match if keySize and algorithm are correct (Ed25519)": {
+			key:          mustGenerateEd25519(t),
+			expectedAlgo: cmapi.Ed25519KeyAlgorithm,
 		},
 	}
 	for name, test := range tests {
