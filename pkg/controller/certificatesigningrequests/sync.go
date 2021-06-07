@@ -63,15 +63,8 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 		return nil
 	}
 
-	var kind string
-	switch ref.Type {
-	case "issuers":
-		kind = cmapi.IssuerKind
-
-	case "clusterissuers":
-		kind = cmapi.ClusterIssuerKind
-
-	default:
+	kind, ok := util.IssuerKindFromType(ref.Type)
+	if !ok {
 		dbg.Info("certificate signing request signerName type does not match 'issuers' or 'clusterissuers' so skipping processing")
 		return nil
 	}

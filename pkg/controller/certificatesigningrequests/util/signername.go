@@ -18,6 +18,8 @@ package util
 
 import (
 	"strings"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type SignerIssuerRef struct {
@@ -26,7 +28,7 @@ type SignerIssuerRef struct {
 }
 
 // SignerIssuerRefFromSignerName will return a SignerIssuerRef from a
-// CertificateSigningRequests.SignerName
+// CertificateSigningRequests.Spec.SignerName
 func SignerIssuerRefFromSignerName(name string) (SignerIssuerRef, bool) {
 	split := strings.Split(name, "/")
 	if len(split) != 2 {
@@ -66,4 +68,19 @@ func SignerIssuerRefFromSignerName(name string) (SignerIssuerRef, bool) {
 		Type:      signerTypeSplit[0],
 		Group:     signerTypeSplit[1],
 	}, true
+}
+
+// IssuerKindFromType will return the cert-manager.io Issuer Kind from a
+// resource type name.
+func IssuerKindFromType(issuerType string) (string, bool) {
+	switch issuerType {
+	case "issuers":
+		return cmapi.IssuerKind, true
+
+	case "clusterissuers":
+		return cmapi.ClusterIssuerKind, true
+
+	default:
+		return "", false
+	}
 }
