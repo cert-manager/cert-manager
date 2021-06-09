@@ -23,6 +23,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -82,12 +83,12 @@ func (h *Helper) ValidateIssuedCertificateSigningRequest(kubeCSR *certificatesv1
 	case x509.RSA:
 		_, ok := key.(*rsa.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
+			return nil, fmt.Errorf("expected private key of type RSA, but it was: %T", key)
 		}
 	case x509.ECDSA:
 		_, ok := key.(*ecdsa.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
+			return nil, fmt.Errorf("expected private key of type ECDSA, but it was: %T", key)
 		}
 	default:
 		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", csr.PublicKeyAlgorithm)
@@ -102,6 +103,14 @@ func (h *Helper) ValidateIssuedCertificateSigningRequest(kubeCSR *certificatesv1
 	cert, err := pki.DecodeX509CertificateBytes(kubeCSR.Status.Certificate)
 	if err != nil {
 		return nil, err
+	}
+
+	keysMatch, err := pki.PublicKeysEqual(key.Public(), cert.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+	if !keysMatch {
+		return nil, errors.New("signed certificate public key does not match CSR private key")
 	}
 
 	commonNameCorrect := true
@@ -122,11 +131,6 @@ func (h *Helper) ValidateIssuedCertificateSigningRequest(kubeCSR *certificatesv1
 		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v, IPs %v, URIs %v but got a certificate valid for CN %q, O %v, dnsNames %v, IPs %v URIs %v",
 			expectedCN, expectedOrganization, expectedDNSNames, expectedIPAddresses, expectedURIs,
 			cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.IPAddresses, cert.URIs)
-	}
-
-	var expectedDNSName string
-	if len(expectedDNSNames) > 0 {
-		expectedDNSName = expectedDNSNames[0]
 	}
 
 	certificateKeyUsages, certificateExtKeyUsages, err := pki.BuildKeyUsagesKube(kubeCSR.Spec.Usages)
@@ -186,8 +190,12 @@ func (h *Helper) ValidateIssuedCertificateSigningRequest(kubeCSR *certificatesv1
 		return nil, err
 	}
 
-	// TODO: move this verification step out of this function
 	if rootCAPEM != nil {
+		var expectedDNSName string
+		if len(expectedDNSNames) > 0 {
+			expectedDNSName = expectedDNSNames[0]
+		}
+
 		rootCertPool := x509.NewCertPool()
 		rootCertPool.AppendCertsFromPEM(rootCAPEM)
 		intermediateCertPool := x509.NewCertPool()
@@ -208,6 +216,9 @@ func (h *Helper) ValidateIssuedCertificateSigningRequest(kubeCSR *certificatesv1
 	}
 	if ctrlutil.CertificateSigningRequestIsDenied(kubeCSR) {
 		return nil, fmt.Errorf("CertificateSigningRequest has a Denied conditon: %+v", kubeCSR.Status.Conditions)
+	}
+	if ctrlutil.CertificateSigningRequestIsFailed(kubeCSR) {
+		return nil, fmt.Errorf("CertificateSigningRequest has a Failed conditon: %+v", kubeCSR.Status.Conditions)
 	}
 
 	return cert, nil
@@ -241,6 +252,8 @@ func (h *Helper) CertificateSigningRequestDurationValid(csr *certificatesv1.Cert
 		return err
 	}
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
+	// We accept a fuzz here since some Issuers like Vault will add a small
+	// duration to the certificate that was requested which we should tolerate.
 	if certDuration > (duration+fuzz) || certDuration < duration {
 		return fmt.Errorf("Expected duration of %s, got %s (fuzz: %s) [NotBefore: %s, NotAfter: %s]", duration, certDuration,
 			fuzz, cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
