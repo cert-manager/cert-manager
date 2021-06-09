@@ -37,6 +37,15 @@ func CertificateSigningRequestIsApproved(csr *certificatesv1.CertificateSigningR
 	return false
 }
 
+func CertificateSigningRequestIsDenied(csr *certificatesv1.CertificateSigningRequest) bool {
+	for _, cond := range csr.Status.Conditions {
+		if cond.Type == certificatesv1.CertificateDenied {
+			return true
+		}
+	}
+	return false
+}
+
 func CertificateSigningRequestIsFailed(csr *certificatesv1.CertificateSigningRequest) bool {
 	for _, cond := range csr.Status.Conditions {
 		if cond.Type == certificatesv1.CertificateFailed {

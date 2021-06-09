@@ -123,7 +123,7 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 		c.recorder.Event(csr, corev1.EventTypeWarning, "SigningError", message)
 		util.CertificateSigningRequestSetFailed(csr, "SigningError", message)
 		_, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return nil
+		return err
 	}
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().CA.CRLDistributionPoints
@@ -134,8 +134,8 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 		message := fmt.Sprintf("Error signing certificate: %s", err)
 		c.recorder.Event(csr, corev1.EventTypeWarning, "SigningError", message)
 		util.CertificateSigningRequestSetFailed(csr, "SigningError", message)
-		_, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return nil
+		_, err := c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		return err
 	}
 
 	csr.Status.Certificate = bundle.ChainPEM

@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "certificate.go",
         "certificaterequest.go",
+        "certificatesigningrequest.go",
         "clusterissuer.go",
         "fixtures.go",
         "issuer.go",
@@ -21,6 +22,7 @@ go_library(
         "//test/unit/gen:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",
+        "@io_k8s_api//certificates/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
     ],
