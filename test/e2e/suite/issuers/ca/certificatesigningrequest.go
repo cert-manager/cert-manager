@@ -35,6 +35,10 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
+// The tests in this file require that the CertificateSigningRequest
+// controllers are active
+// (--feature-gates=ExperimentalCertificateSigningRequestControllers=true). If
+// they are not active, these tests will fail.
 var _ = framework.CertManagerDescribe("CA CertificateSigningRequest", func() {
 	f := framework.NewDefaultFramework("create-ca-certificate-kube-csr")
 	h := f.Helper()
