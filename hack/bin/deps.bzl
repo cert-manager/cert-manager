@@ -118,18 +118,36 @@ def install_misc():
 
 # Install dependencies used by the controller-runtime integration test framework
 def install_integration_test_dependencies():
-    http_file(
+    http_archive(
         name = "kube-apiserver_darwin_amd64",
-        executable = 1,
-        sha256 = "a874d479f183f9e4c19a5c69b44955fabd2e250b467d2d9f0641ae91a82ddbea",
-        urls = ["https://storage.googleapis.com/cert-manager-testing-assets/kube-apiserver-1.17.3_darwin_amd64"],
+        sha256 = "f89b9d8594a6e944bbfb8f169138234d6aa40948e1eddcf41ba5322f4cc48f14",
+        urls = ["https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.20.2-darwin-amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "kubebuilder/bin/kube-apiserver",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+
     )
 
-    http_file(
+    http_archive(
         name = "kube-apiserver_linux_amd64",
-        executable = 1,
-        sha256 = "b4505b838b27b170531afbdef5e7bfaacf83da665f21b0e3269d1775b0defb7a",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.17.3/bin/linux/amd64/kube-apiserver"],
+        sha256 = "7bbc5ebbdb56fa25b6b098de157901b4b33eb6b60889201e614fbe5a26ed96db",
+        urls = ["https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.20.2-linux-amd64.tar.gz"],
+        build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "kubebuilder/bin/kube-apiserver",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+
     )
 
     http_archive(

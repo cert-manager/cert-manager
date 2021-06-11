@@ -60,8 +60,8 @@ genrule(
 genrule(
     name = "io_kubernetes_kube-apiserver",
     srcs = select({
-        ":darwin": ["@kube-apiserver_darwin_amd64//file"],
-        ":k8": ["@kube-apiserver_linux_amd64//file"],
+        ":darwin": ["@kube-apiserver_darwin_amd64//:file"],
+        ":k8": ["@kube-apiserver_linux_amd64//:file"],
     }),
     outs = ["kube-apiserver"],
     cmd = "cp $(SRCS) $@",
