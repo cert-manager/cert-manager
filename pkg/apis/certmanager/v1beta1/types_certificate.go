@@ -104,12 +104,10 @@ type CertificateSpec struct {
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
 
-	// The amount of time before the currently issued certificate's `notAfter`
-	// time that cert-manager will begin to attempt to renew the certificate. If
-	// unset this defaults to 30 days. Certificate will be renewed either 2/3
-	// through its duration or `renewBefore` period before its expiry, whichever
-	// is later. Minimum accepted value is 5 minutes. Value must be in units
-	// accepted by Go time.ParseDuration
+	// How long before the currently issued certificate's expiry
+	// cert-manager should renew the certificate. The default is 2/3 of the
+	// issued certificate's duration. Minimum accepted value is 5 minutes.
+	// Value must be in units accepted by Go time.ParseDuration
 	// https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`

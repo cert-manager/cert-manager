@@ -41,9 +41,6 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.Spec.Duration == nil {
 				s.Spec.Duration = &metav1.Duration{Duration: v1.DefaultCertificateDuration}
 			}
-			if s.Spec.RenewBefore == nil {
-				s.Spec.RenewBefore = &metav1.Duration{Duration: v1.DefaultRenewBefore}
-			}
 		},
 		func(s *certmanager.CertificateRequest, c fuzz.Continue) {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again

@@ -721,17 +721,6 @@ func TestValidateDuration(t *testing.T) {
 			},
 			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["ten years"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", cmapi.DefaultCertificateDuration, usefulDurations["ten years"].Duration))},
 		},
-		"default renewBefore is bigger than the set duration": {
-			cfg: &internalcmapi.Certificate{
-				Spec: internalcmapi.CertificateSpec{
-					Duration:   usefulDurations["one hour"],
-					CommonName: "testcn",
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), cmapi.DefaultRenewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one hour"].Duration, cmapi.DefaultRenewBefore))},
-		},
 		"renewBefore is bigger than the duration": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
