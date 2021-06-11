@@ -134,13 +134,13 @@ def install_integration_test_dependencies():
 
     http_archive(
         name = "com_coreos_etcd_darwin_amd64",
-        sha256 = "c8f36adf4f8fb7e974f9bafe6e390a03bc33e6e465719db71d7ed3c6447ce85a",
-        urls = ["https://github.com/etcd-io/etcd/releases/download/v3.3.12/etcd-v3.3.12-darwin-amd64.zip"],
+        sha256 = "39932ca56b9821b341ffb00e52de238334ba965a6b03d3d3715d328da57de24d",
+        urls = ["https://github.com/etcd-io/etcd/releases/download/v3.4.9/etcd-v3.4.9-darwin-amd64.zip"],
         build_file_content = """
 filegroup(
     name = "file",
     srcs = [
-        "etcd-v3.3.12-darwin-amd64/etcd",
+        "etcd-v3.4.9-darwin-amd64/etcd",
     ],
     visibility = ["//visibility:public"],
 )
@@ -149,13 +149,13 @@ filegroup(
 
     http_archive(
         name = "com_coreos_etcd_linux_amd64",
-        sha256 = "dc5d82df095dae0a2970e4d870b6929590689dd707ae3d33e7b86da0f7f211b6",
-        urls = ["https://github.com/etcd-io/etcd/releases/download/v3.3.12/etcd-v3.3.12-linux-amd64.tar.gz"],
+        sha256 = "bcab421f6bf4111accfceb004e0a0ac2bcfb92ac93081d9429e313248dd78c41",
+        urls = ["https://github.com/etcd-io/etcd/releases/download/v3.4.9/etcd-v3.4.9-linux-amd64.tar.gz"],
         build_file_content = """
 filegroup(
     name = "file",
     srcs = [
-        "etcd-v3.3.12-linux-amd64/etcd",
+        "etcd-v3.4.9-linux-amd64/etcd",
     ],
     visibility = ["//visibility:public"],
 )
