@@ -56,7 +56,7 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	// Here we start the API server so its address can be given to the webhook on
 	// start. We then restart the API with the CRDs in the webhook.
 	env := &envtest.Environment{
-		AttachControlPlaneOutput: false,
+		AttachControlPlaneOutput: true,
 	}
 
 	config, err := env.Start()
