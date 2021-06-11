@@ -167,18 +167,16 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	el := field.ErrorList{}
 
 	duration := util.DefaultCertDuration(crt.Duration)
-	renewBefore := cmapi.DefaultRenewBefore
-	if crt.RenewBefore != nil {
-		renewBefore = crt.RenewBefore.Duration
-	}
 	if duration < cmapi.MinimumCertificateDuration {
 		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", cmapi.MinimumCertificateDuration)))
 	}
-	if renewBefore < cmapi.MinimumRenewBefore {
-		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapi.MinimumRenewBefore)))
+	// If spec.renewBefore is set, check that it is not less than the minimum.
+	if crt.RenewBefore != nil && crt.RenewBefore.Duration < cmapi.MinimumRenewBefore {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), crt.RenewBefore.Duration, fmt.Sprintf("certificate renewBefore must be greater than %s", cmapi.MinimumRenewBefore)))
 	}
-	if duration <= renewBefore {
-		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, renewBefore)))
+	// If spec.renewBefore is set, it must be less than the duration.
+	if crt.RenewBefore != nil && crt.RenewBefore.Duration >= duration {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), crt.RenewBefore.Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, crt.RenewBefore.Duration)))
 	}
 	return el
 }

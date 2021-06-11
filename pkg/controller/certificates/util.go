@@ -268,24 +268,27 @@ func GenerateLocallySignedTemporaryCertificate(crt *cmapi.Certificate, pkData []
 //RenewalTimeFunc is a custom function type for calculating renewal time of a certificate.
 type RenewalTimeFunc func(time.Time, time.Time, *metav1.Duration) *metav1.Time
 
-// RenewalTimeWrapper returns RenewalTimeFunc implementation
-func RenewalTimeWrapper(defaultRenewBeforeExpiryDuration time.Duration) RenewalTimeFunc {
-	return func(notBefore, notAfter time.Time, renewBeforeHint *metav1.Duration) *metav1.Time {
+// RenewalTime calculates renewal time for a certificate. Default renewal time
+// is 2/3 through certificate's lifetime. If user has configured
+// spec.renewBefore, renewal time will be renewBefore period before expiry
+// (unless that is after the expiry).
+func RenewalTime(notBefore, notAfter time.Time, renewBeforeOverride *metav1.Duration) *metav1.Time {
 
-		// 1. Calculate how long before expiry a cert should be renewed
-		renewBefore := defaultRenewBeforeExpiryDuration
-		if renewBeforeHint != nil {
-			renewBefore = renewBeforeHint.Duration
-		}
-		actualDuration := notAfter.Sub(notBefore)
-		// renewBefore = min(renewBefore, actualDuration/3)
-		if renewBefore >= (actualDuration / 3) {
-			renewBefore = actualDuration / 3
-		}
+	// 1. Calculate how long before expiry a cert should be renewed
 
-		// 2. Calculate when a cert should be renewed
-		rt := metav1.NewTime(notAfter.Add(-1 * renewBefore))
-		return &rt
+	actualDuration := notAfter.Sub(notBefore)
+
+	renewBefore := actualDuration / 3
+
+	// If spec.renewBefore was set (and is less than duration)
+	// respect that. We don't want to prevent users from renewing
+	// longer lived certs more frequently.
+	if renewBeforeOverride != nil && renewBeforeOverride.Duration < actualDuration {
+		renewBefore = renewBeforeOverride.Duration
 	}
 
+	// 2. Calculate when a cert should be renewed
+
+	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore))
+	return &rt
 }

@@ -485,9 +485,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 			},
 		},
 	}
-	// we don't really test default renewal time here, it's just passed through
-	someDefaultRenewalTime := time.Hour * 5
-	policyChain := NewTriggerPolicyChain(clock, someDefaultRenewalTime)
+	policyChain := NewTriggerPolicyChain(clock)
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			reason, message, reissue := policyChain.Evaluate(Input{
