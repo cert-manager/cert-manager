@@ -109,7 +109,8 @@ type CertificateSpec struct {
 	// cert-manager  should renew the certificate. The default is 2/3 of the
 	// issued certificate's duration. Minimum accepted value is 5 minutes.
 	// Value must be in units accepted by Go time.ParseDuration
-	// https://golang.org/pkg/time/#ParseDuration +optional
+	// https://golang.org/pkg/time/#ParseDuration
+	// +optional
 	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
 
 	// DNSNames is a list of DNS subjectAltNames to be set on the Certificate.
