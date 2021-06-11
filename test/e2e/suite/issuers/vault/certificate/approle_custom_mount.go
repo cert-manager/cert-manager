@@ -36,7 +36,7 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole with a custom mount path, CA without root)", func() {
-	fs := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
 	runVaultCustomAppRoleTests(cmapi.IssuerKind, false, fs)
 })
 
@@ -45,7 +45,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer Certificate (AppRole with a 
 	runVaultCustomAppRoleTests(cmapi.IssuerKind, true, fs)
 })
 var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole with a custom mount path, CA without root)", func() {
-	fs := featureset.NewFeatureSet(featureset.SaveCAToSecret)
+	fs := featureset.NewFeatureSet(featureset.SaveRootCAToSecret)
 	runVaultCustomAppRoleTests(cmapi.ClusterIssuerKind, false, fs)
 })
 var _ = framework.CertManagerDescribe("Vault ClusterIssuer Certificate (AppRole with a custom mount path, CA with root)", func() {
