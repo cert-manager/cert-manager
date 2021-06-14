@@ -38,6 +38,7 @@ filegroup(
         ":package-srcs",
         "//test/e2e/suite/conformance/certificatesigningrequests/ca:all-srcs",
         "//test/e2e/suite/conformance/certificatesigningrequests/selfsigned:all-srcs",
+        "//test/e2e/suite/conformance/certificatesigningrequests/vault:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
