@@ -55,6 +55,7 @@ type Metrics struct {
 	log      logr.Logger
 	registry *prometheus.Registry
 
+	clockTimeSeconds                 prometheus.CounterFunc
 	certificateExpiryTimeSeconds     *prometheus.GaugeVec
 	certificateReadyStatus           *prometheus.GaugeVec
 	acmeClientRequestDurationSeconds *prometheus.SummaryVec
@@ -66,6 +67,17 @@ var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, c
 
 func New(log logr.Logger) *Metrics {
 	var (
+		clockTimeSeconds = prometheus.NewCounterFunc(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "clock_time_seconds",
+				Help:      "The clock time given in seconds (from 1970/01/01 UTC).",
+			},
+			func() float64 {
+				return float64(time.Now().Unix())
+			},
+		)
+
 		certificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
@@ -124,6 +136,7 @@ func New(log logr.Logger) *Metrics {
 		log:      log.WithName("metrics"),
 		registry: prometheus.NewRegistry(),
 
+		clockTimeSeconds:                 clockTimeSeconds,
 		certificateExpiryTimeSeconds:     certificateExpiryTimeSeconds,
 		certificateReadyStatus:           certificateReadyStatus,
 		acmeClientRequestCount:           acmeClientRequestCount,
@@ -136,6 +149,7 @@ func New(log logr.Logger) *Metrics {
 
 // Start will register the Prometheus metrics, and start the Prometheus server
 func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, error) {
+	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
