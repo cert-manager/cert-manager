@@ -31,7 +31,7 @@ import (
 )
 
 func TestGenerateTemplateFromCertificateSigningRequest(t *testing.T) {
-	csr, pk, err := gen.CSR(x509.RSA, gen.SetCSRDNSNames("example.com", "foo.example.com"))
+	csr, pk, err := gen.CSR(x509.RSA, gen.SetCSRCommonName("example.com"), gen.SetCSRDNSNames("example.com", "foo.example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
