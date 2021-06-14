@@ -42,6 +42,20 @@ func CertificateSigningRequest(name string, mods ...CertificateSigningRequestMod
 	return c
 }
 
+func CertificateSigningRequestWithRandomName(prefix string, mods ...CertificateSigningRequestModifier) *certificatesv1.CertificateSigningRequest {
+	c := &certificatesv1.CertificateSigningRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: prefix,
+			Annotations:  make(map[string]string),
+			Labels:       make(map[string]string),
+		},
+	}
+	for _, mod := range mods {
+		mod(c)
+	}
+	return c
+}
+
 func CertificateSigningRequestFrom(cr *certificatesv1.CertificateSigningRequest, mods ...CertificateSigningRequestModifier) *certificatesv1.CertificateSigningRequest {
 	cr = cr.DeepCopy()
 	for _, mod := range mods {

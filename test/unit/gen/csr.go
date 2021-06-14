@@ -19,7 +19,6 @@ package gen
 import (
 	"crypto"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"net"
@@ -65,13 +64,6 @@ func CSR(keyAlgorithm x509.PublicKeyAlgorithm, mods ...CSRModifier) (csr []byte,
 	for _, mod := range mods {
 		mod(cr)
 	}
-	cn := "test.domain.com"
-	if len(cr.DNSNames) > 0 {
-		cn = cr.DNSNames[0]
-	}
-	cr.Subject = pkix.Name{
-		CommonName: cn,
-	}
 
 	csrBytes, err := pki.EncodeCSR(cr, sk)
 	if err != nil {
@@ -98,5 +90,17 @@ func SetCSRIPAddresses(ips ...net.IP) CSRModifier {
 func SetCSRURIs(uris ...*url.URL) CSRModifier {
 	return func(c *x509.CertificateRequest) {
 		c.URIs = uris
+	}
+}
+
+func SetCSRCommonName(commonName string) CSRModifier {
+	return func(c *x509.CertificateRequest) {
+		c.Subject.CommonName = commonName
+	}
+}
+
+func SetCSREmails(emails []string) CSRModifier {
+	return func(c *x509.CertificateRequest) {
+		c.EmailAddresses = emails
 	}
 }
