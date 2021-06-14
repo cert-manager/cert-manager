@@ -80,10 +80,10 @@ func NewVaultServiceAccount(name string) *corev1.ServiceAccount {
 	}
 }
 
-func NewVaultServiceAccountRole(namespace string) *rbacv1.ClusterRole {
+func NewVaultServiceAccountRole(namespace, serviceAccountName string) *rbacv1.ClusterRole {
 	return &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("auth-delegator:%s:vault", namespace),
+			Name: fmt.Sprintf("auth-delegator:%s:%s", namespace, serviceAccountName),
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -393,11 +393,13 @@ func (v *VaultInitializer) setupRole() error {
 	}
 
 	params := map[string]string{
-		"allow_any_name":   "true",
-		"max_ttl":          "2160h",
-		"key_type":         "any",
-		"require_cn":       "false",
-		"allowed_uri_sans": "spiffe://cluster.local/*",
+		"allow_any_name":     "true",
+		"max_ttl":            "21600h",
+		"key_type":           "any",
+		"require_cn":         "false",
+		"allowed_uri_sans":   "spiffe://cluster.local/*",
+		"enforce_hostnames":  "false",
+		"allow_bare_domains": "true",
 	}
 	url := path.Join("/v1", v.IntermediateMount, "roles", v.Role)
 
@@ -453,7 +455,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 		return fmt.Errorf("error creating ServiceAccount for Kubernetes auth: %s", err.Error())
 	}
 
-	role := NewVaultServiceAccountRole(namespace)
+	role := NewVaultServiceAccountRole(namespace, serviceAccountName)
 	_, err = client.RbacV1().ClusterRoles().Create(context.TODO(), role, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount: %s", err.Error())
@@ -477,6 +479,44 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 	_, err = v.proxy.callVault("POST", url, "", roleParams)
 	if err != nil {
 		return fmt.Errorf("error configuring kubernetes auth role: %s", err.Error())
+	}
+
+	params := map[string]string{
+		"allow_any_name":                   "true",
+		"max_ttl":                          "21600h",
+		"key_type":                         "any",
+		"require_cn":                       "false",
+		"allowed_uri_sans":                 "spiffe://cluster.local/*",
+		"enforce_hostnames":                "false",
+		"allow_bare_domains":               "true",
+		"bound_service_account_names":      serviceAccountName,
+		"bound_service_account_namespaces": namespace,
+	}
+	url = path.Join("/v1", v.IntermediateMount, "roles", v.Role)
+
+	_, err = v.proxy.callVault("POST", url, "", params)
+	if err != nil {
+		return fmt.Errorf("Error creating role %s: %s", v.Role, err.Error())
+	}
+
+	// create policy
+	role_path := path.Join(v.IntermediateMount, "sign", v.Role)
+	policy := fmt.Sprintf("path \"%s\" { capabilities = [ \"create\", \"update\" ] }", role_path)
+	err = v.client.Sys().PutPolicy(v.Role, policy)
+	if err != nil {
+		return fmt.Errorf("Error creating policy: %s", err.Error())
+	}
+
+	// # create approle
+	params = map[string]string{
+		"period":   "24h",
+		"policies": v.Role,
+	}
+
+	baseUrl := path.Join("/v1", "auth", v.KubernetesAuthPath, "role", v.Role)
+	_, err = v.proxy.callVault("POST", baseUrl, "", params)
+	if err != nil {
+		return fmt.Errorf("Error creating kubernetes role: %s", err.Error())
 	}
 
 	return nil
