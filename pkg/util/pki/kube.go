@@ -31,15 +31,9 @@ import (
 // GenerateTemplateFromCertificateSigningRequest will create an
 // *x509.Certificate from the given CertificateSigningRequest resource
 func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
-	duration := cmapi.DefaultCertificateDuration
-	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
-	if ok {
-		dur, err := time.ParseDuration(requestedDuration)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse requested duration on annotation %q: %w",
-				experimentalapi.CertificateSigningRequestDurationAnnotationKey, err)
-		}
-		duration = dur
+	duration, err := DurationFromCertificateSigningRequest(csr)
+	if err != nil {
+		return nil, err
 	}
 
 	ku, eku, err := BuildKeyUsagesKube(csr.Spec.Usages)
@@ -50,6 +44,25 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 	isCA := csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true"
 
 	return GenerateTemplateFromCSRPEMWithUsages(csr.Spec.Request, duration, isCA, ku, eku)
+}
+
+// DurationFromCertificateSigningRequest will return the time.Duration of the
+// requested duration on the CertificateSigningRequest. If the annotation is
+// empty, will return the cert-manager default certificate duration
+func DurationFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (time.Duration, error) {
+	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
+	if !ok {
+		// Return default certificate duration if one not requested
+		return cmapi.DefaultCertificateDuration, nil
+	}
+
+	duration, err := time.ParseDuration(requestedDuration)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse requested duration on annotation %q: %w",
+			experimentalapi.CertificateSigningRequestDurationAnnotationKey, err)
+	}
+
+	return duration, nil
 }
 
 func BuildKeyUsagesKube(usages []certificatesv1.KeyUsage) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
