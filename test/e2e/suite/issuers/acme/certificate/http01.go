@@ -38,6 +38,7 @@ import (
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
@@ -65,7 +66,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	// ACME Issuer does not return a ca.crt. See:
 	// https://github.com/jetstack/cert-manager/issues/1571
 	unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
-	validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
+	validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 	BeforeEach(func() {
 		solvers := []cmacme.ACMEChallengeSolver{
