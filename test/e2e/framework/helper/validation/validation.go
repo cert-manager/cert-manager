@@ -50,12 +50,14 @@ func DefaultCertificateSigningRequestSet() []certificatesigningrequests.Validati
 		certificatesigningrequests.ExpectCertificateIPsToMatch,
 		certificatesigningrequests.ExpectValidCommonName,
 		certificatesigningrequests.ExpectValidDuration,
+		certificatesigningrequests.ExpectKeyUsageUsageDigitalSignature,
 		certificatesigningrequests.ExpectEmailsToMatch,
 		certificatesigningrequests.ExpectCorrectTrustChain,
 		certificatesigningrequests.ExpectCARootCertificate,
 		certificatesigningrequests.ExpectIsCA,
 		certificatesigningrequests.ExpectConditionApproved,
 		certificatesigningrequests.ExpectConditiotNotDenied,
+		certificatesigningrequests.ExpectConditionNotFailed,
 	}
 }
 
