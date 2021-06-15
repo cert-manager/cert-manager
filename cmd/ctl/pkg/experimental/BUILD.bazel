@@ -2,23 +2,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["cmd.go"],
-    importpath = "github.com/jetstack/cert-manager/cmd/ctl/cmd",
+    srcs = ["experimental.go"],
+    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/experimental",
     visibility = ["//visibility:public"],
     deps = [
-        "//cmd/ctl/pkg/approve:go_default_library",
-        "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create:go_default_library",
-        "//cmd/ctl/pkg/deny:go_default_library",
-        "//cmd/ctl/pkg/experimental:go_default_library",
-        "//cmd/ctl/pkg/inspect:go_default_library",
-        "//cmd/ctl/pkg/renew:go_default_library",
-        "//cmd/ctl/pkg/status:go_default_library",
-        "//cmd/ctl/pkg/version:go_default_library",
+        "//cmd/ctl/pkg/create/certificatesigningrequest:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
-        "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
-        "@io_k8s_klog_v2//:go_default_library",
         "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
     ],
 )

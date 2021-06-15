@@ -366,10 +366,6 @@ func buildCertificateSigningRequest(crt *cmapi.Certificate, pk []byte, crName, s
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	csr := &certificatesv1.CertificateSigningRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        crName,
