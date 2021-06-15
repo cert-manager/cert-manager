@@ -20,10 +20,12 @@ DOCKERIZED_BINARIES = {
     },
 }
 
-# Allows passing --define image_type=dynamic custom flag to Bazel command. Used
-# to allow optionally build with the dynamic base image. This would only be used
-# by alternative/experimental cert-manager builds that, for example, need to
-# create dynamically linked binaries due to linking to a C library.
+# Allows passing --define image_type custom flag to Bazel command. Used to allow
+# optionally build with the dynamic base image. This would only be used by
+# alternative/experimental cert-manager builds that, for example, need to create
+# dynamically linked binaries due to linking to a C library.
+# Example command to build server images with dynamic base:
+# bazel run --define image_type=dynamic --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //build:server-images.
 config_setting(
     name = "dynamic_image",
     values = {

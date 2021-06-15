@@ -44,6 +44,8 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 #   visibility: will be applied only to the container_bundles; the internal
 #     container_image is private
 #   All other args will be applied to the internal container_image.
+# TODO: remove kwargs, instead pass all args explicitly. I think we don't need
+# dynamic params and defining them explicitly would make this more clear.
 def multi_arch_container(
         name,
         architectures,
