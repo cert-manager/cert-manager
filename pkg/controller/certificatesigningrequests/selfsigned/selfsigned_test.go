@@ -303,7 +303,7 @@ func TestProcessItem(t *testing.T) {
 					},
 				},
 				ExpectedEvents: []string{
-					`Warning ErrorParsingKey Failed to parse signing CA key from secret default-unit-test-ns/test-secret: error decoding private key PEM block`,
+					`Warning ErrorParsingKey Failed to parse signing key from secret default-unit-test-ns/test-secret: error decoding private key PEM block`,
 				},
 
 				ExpectedActions: []testpkg.Action{
@@ -346,7 +346,7 @@ func TestProcessItem(t *testing.T) {
 								Type:               certificatesv1.CertificateFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "ErrorParsingKey",
-								Message:            "Failed to parse signing CA key from secret default-unit-test-ns/test-secret",
+								Message:            "Failed to parse signing key from secret default-unit-test-ns/test-secret",
 								LastTransitionTime: metaFixedClockStart,
 								LastUpdateTime:     metaFixedClockStart,
 							}),

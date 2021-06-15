@@ -89,7 +89,7 @@ func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 // should trigger a retry.
 // CertificateSigningRequests must have the
 // "experimental.cert-manager.io/private-key-secret-name" annotation present to
-// be signed. This annotation must reference a valid Secret containing a CA
+// be signed. This annotation must reference a valid Secret containing a
 // private key for signing.
 func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningRequest, issuerObj cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx, "sign")
@@ -117,7 +117,7 @@ func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSi
 	}
 
 	if cmerrors.IsInvalidData(err) {
-		message := fmt.Sprintf("Failed to parse signing CA key from secret %s/%s", resourceNamespace, secretName)
+		message := fmt.Sprintf("Failed to parse signing key from secret %s/%s", resourceNamespace, secretName)
 		log.Error(err, message)
 		s.recorder.Eventf(csr, corev1.EventTypeWarning, "ErrorParsingKey", "%s: %s", message, err)
 		util.CertificateSigningRequestSetFailed(csr, "ErrorParsingKey", message)
