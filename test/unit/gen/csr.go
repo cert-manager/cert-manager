@@ -46,6 +46,12 @@ func CSR(keyAlgorithm x509.PublicKeyAlgorithm, mods ...CSRModifier) (csr []byte,
 			return nil, nil, err
 		}
 		signatureAlgorithm = x509.ECDSAWithSHA256
+	case x509.Ed25519:
+		sk, err = pki.GenerateEd25519PrivateKey()
+		if err != nil {
+			return nil, nil, err
+		}
+		signatureAlgorithm = x509.PureEd25519
 	default:
 		return nil, nil, fmt.Errorf("unrecognised key algorithm: %s", err)
 	}

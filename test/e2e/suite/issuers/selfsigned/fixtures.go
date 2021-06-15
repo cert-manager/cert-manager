@@ -32,7 +32,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-var rootRSAKeySigner, rootECKeySigner crypto.Signer
+var rootRSAKeySigner, rootECKeySigner, rootEd25519Signer crypto.Signer
 
 func init() {
 	var err error
@@ -42,6 +42,11 @@ func init() {
 	}
 
 	rootECKeySigner, err = pki.DecodePrivateKeyBytes(rootECKey)
+	if err != nil {
+		panic(err)
+	}
+
+	rootEd25519Signer, err = pki.DecodePrivateKeyBytes(rootEd25519Key)
 	if err != nil {
 		panic(err)
 	}
@@ -83,6 +88,10 @@ H93j9Lw3gg3Z47vxMaGG5Oq1EHmSWQpb6rD8LGeDLeDY6YvqfGj0AuriAHemfaFC
 QRaEZO9OlMU8DNvkPwAWNp1+i/hjbti6Hv/j8ZAwM6aKNtCyiSmRCcaLMbjL4oFW
 Fnu7/uKI2glvtykTMk19eFuDY3Mv9wB54Cjk9NrQWg==
 -----END EC PRIVATE KEY-----`)
+
+	rootEd25519Key = []byte(`-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEIDILZEyxoAbFmJJFKSGuzFxBB1Q1cygU+g4a9dEZrVqS
+-----END PRIVATE KEY-----`)
 )
 
 func newPrivateKeySecret(name, namespace string, keyData []byte) *corev1.Secret {
@@ -108,6 +117,15 @@ func generateRSACSR() ([]byte, error) {
 
 func generateECCSR() ([]byte, error) {
 	csr, err := generateCSR(rootECKeySigner, x509.ECDSAWithSHA256)
+	if err != nil {
+		return nil, err
+	}
+
+	return csr, nil
+}
+
+func generateEd25519CSR() ([]byte, error) {
+	csr, err := generateCSR(rootEd25519Signer, x509.PureEd25519)
 	if err != nil {
 		return nil, err
 	}

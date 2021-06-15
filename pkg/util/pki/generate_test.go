@@ -19,6 +19,7 @@ package pki
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
@@ -98,6 +99,12 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 			expectErrStr: "unsupported private key algorithm specified",
 		},
 		{
+			name:      "eddsa key with random keysize",
+			keyAlgo:   v1.Ed25519KeyAlgorithm,
+			keySize:   100,
+			expectErr: false,
+		},
+		{
 			name:      "rsa key with keysize 2048",
 			keyAlgo:   v1.RSAKeyAlgorithm,
 			keySize:   2048,
@@ -141,6 +148,11 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 		{
 			name:      "ecdsa with keysize not specified",
 			keyAlgo:   v1.ECDSAKeyAlgorithm,
+			expectErr: false,
+		},
+		{
+			name:      "eddsa with keysize not specified",
+			keyAlgo:   v1.Ed25519KeyAlgorithm,
 			expectErr: false,
 		},
 	}
@@ -213,6 +225,15 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 
 					if !curve.IsOnCurve(key.PublicKey.X, key.PublicKey.Y) {
 						t.Error("expected key to be on specified curve")
+						return
+					}
+				}
+
+				if test.keyAlgo == "ed25519" {
+					// For eddsa algorithm keysize is ignored
+					_, ok := privateKey.(ed25519.PrivateKey)
+					if !ok {
+						t.Errorf("expected ed25519 private key, but got %T", privateKey)
 						return
 					}
 				}

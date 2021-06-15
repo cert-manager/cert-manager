@@ -19,6 +19,7 @@ package validations
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -67,7 +68,7 @@ func ExpectValidPrivateKeyData(certificate *cmapi.Certificate, secret *corev1.Se
 		return err
 	}
 
-	// validate private key is of the correct type (rsa or ecdsa)
+	// validate private key is of the correct type (rsa, ed25519 or ecdsa)
 	if certificate.Spec.PrivateKey != nil {
 		switch certificate.Spec.PrivateKey.Algorithm {
 		case cmapi.PrivateKeyAlgorithm(""),
@@ -80,6 +81,11 @@ func ExpectValidPrivateKeyData(certificate *cmapi.Certificate, secret *corev1.Se
 			_, ok := key.(*ecdsa.PrivateKey)
 			if !ok {
 				return fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
+			}
+		case cmapi.Ed25519KeyAlgorithm:
+			_, ok := key.(ed25519.PrivateKey)
+			if !ok {
+				return fmt.Errorf("Expected private key of type Ed25519, but it was: %T", key)
 			}
 		default:
 			return fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.PrivateKey.Algorithm)
