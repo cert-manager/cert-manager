@@ -215,7 +215,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		SharedInformerFactory:     sharedInformerFactory,
 		Namespace:                 opts.Namespace,
 		Clock:                     clock.RealClock{},
-		Metrics:                   metrics.New(log),
+		Metrics:                   metrics.New(log, clock.RealClock{}),
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,

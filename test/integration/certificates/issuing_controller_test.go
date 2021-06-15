@@ -60,7 +60,7 @@ func TestIssuingController(t *testing.T) {
 	c := controllerpkg.NewController(
 		context.Background(),
 		"issuing_test",
-		metrics.New(logf.Log),
+		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,
@@ -264,7 +264,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	c := controllerpkg.NewController(
 		context.Background(),
 		"issuing_test",
-		metrics.New(logf.Log),
+		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,

@@ -25,27 +25,32 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
 	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
+	fakeclock "k8s.io/utils/clock/testing"
+)
+
+var (
+	fixedClock = fakeclock.NewFakeClock(time.Now())
 )
 
 func TestClockMetrics(t *testing.T) {
 	type testT struct {
-		expectedFmt string
+		expected string
 	}
 	tests := map[string]testT{
 		"clock time seconds as expected": {
-			expectedFmt: `
+			expected: fmt.Sprintf(`
   # HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
   # TYPE certmanager_clock_time_seconds counter
 	certmanager_clock_time_seconds %f
-	`,
+	`, float64(fixedClock.Now().Unix())),
 		},
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			m := New(logtesting.TestLogger{T: t})
+			m := New(logtesting.TestLogger{T: t}, fixedClock)
 
 			if err := testutil.CollectAndCompare(m.clockTimeSeconds,
-				strings.NewReader(fmt.Sprintf(test.expectedFmt, float64(time.Now().Unix()))),
+				strings.NewReader(test.expected),
 				"certmanager_clock_time_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)

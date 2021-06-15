@@ -30,6 +30,7 @@ import (
 	"time"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"k8s.io/utils/clock"
 
 	"github.com/go-logr/logr"
 
@@ -65,7 +66,7 @@ type Metrics struct {
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
 
-func New(log logr.Logger) *Metrics {
+func New(log logr.Logger, c clock.Clock) *Metrics {
 	var (
 		clockTimeSeconds = prometheus.NewCounterFunc(
 			prometheus.CounterOpts{
@@ -74,7 +75,7 @@ func New(log logr.Logger) *Metrics {
 				Help:      "The clock time given in seconds (from 1970/01/01 UTC).",
 			},
 			func() float64 {
-				return float64(time.Now().Unix())
+				return float64(c.Now().Unix())
 			},
 		)
 

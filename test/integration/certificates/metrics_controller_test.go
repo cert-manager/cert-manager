@@ -26,6 +26,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/clock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -50,7 +51,7 @@ func TestMetricsController(t *testing.T) {
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
-	metricsHandler := metrics.New(logf.Log)
+	metricsHandler := metrics.New(logf.Log, clock.RealClock{})
 	server, err := metricsHandler.Start("127.0.0.1:0", false)
 	if err != nil {
 		t.Fatal(err)

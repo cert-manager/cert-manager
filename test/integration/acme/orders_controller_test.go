@@ -130,7 +130,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	c := controllerpkg.NewController(
 		context.Background(),
 		"orders_test",
-		metrics.New(logf.Log),
+		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,
