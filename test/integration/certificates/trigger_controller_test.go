@@ -25,6 +25,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -69,7 +70,7 @@ func TestTriggerController(t *testing.T) {
 	c := controllerpkg.NewController(
 		context.Background(),
 		"trigger_test",
-		metrics.New(logf.Log),
+		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,
@@ -181,7 +182,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	c := controllerpkg.NewController(
 		logf.NewContext(context.Background(), logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
-		metrics.New(logf.Log),
+		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,

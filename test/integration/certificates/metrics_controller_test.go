@@ -29,6 +29,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -38,6 +39,13 @@ import (
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+)
+
+var (
+	fixedClock  = fakeclock.NewFakeClock(time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC))
+	clockMetric = fmt.Sprintf(`# HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
+# TYPE certmanager_clock_time_seconds counter
+certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 )
 
 // TestMetricscontoller performs a basic test to ensure that Certificates
@@ -50,7 +58,7 @@ func TestMetricsController(t *testing.T) {
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
-	metricsHandler := metrics.New(logf.Log)
+	metricsHandler := metrics.New(logf.Log, fixedClock)
 	server, err := metricsHandler.Start("127.0.0.1:0", false)
 	if err != nil {
 		t.Fatal(err)
@@ -121,8 +129,8 @@ func TestMetricsController(t *testing.T) {
 		}
 	}
 
-	// Should expose no metrics
-	waitForMetrics("")
+	// Should expose no additional metrics
+	waitForMetrics(clockMetric)
 
 	// Create Certificate
 	crt := gen.Certificate(crtName,
@@ -147,6 +155,7 @@ certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="t
 certmanager_certificate_ready_status{condition="False",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespace="testns"} 1
+` + clockMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 1
@@ -176,6 +185,7 @@ certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="t
 certmanager_certificate_ready_status{condition="False",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",name="testcrt",namespace="testns"} 1
 certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespace="testns"} 0
+` + clockMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 2
@@ -187,7 +197,8 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 2
 	}
 
 	// Should expose no Certificates and only metrics sync count increase
-	waitForMetrics(`# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
+	waitForMetrics(clockMetric + `
+# HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 3
 `)

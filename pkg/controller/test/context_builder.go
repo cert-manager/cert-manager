@@ -114,7 +114,7 @@ func (b *Builder) Init() {
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
-	b.Metrics = metrics.New(logs.Log)
+	b.Metrics = metrics.New(logs.Log, clock.RealClock{})
 
 	// set the Clock on the context
 	if b.Clock == nil {

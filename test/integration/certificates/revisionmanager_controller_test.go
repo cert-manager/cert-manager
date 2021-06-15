@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -54,7 +55,7 @@ func TestRevisionManagerController(t *testing.T) {
 	c := controllerpkg.NewController(
 		context.Background(),
 		"revisionmanager_controller_test",
-		metrics.New(logf.Log),
+		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
 		mustSync,
 		nil,
