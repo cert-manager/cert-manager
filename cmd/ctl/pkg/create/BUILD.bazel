@@ -25,6 +25,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//cmd/ctl/pkg/create/certificaterequest:all-srcs",
+        "//cmd/ctl/pkg/create/certificatesigningrequest:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

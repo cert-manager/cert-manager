@@ -27,13 +27,17 @@ import (
 )
 
 func NewCmdCreate(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
-	cmds := &cobra.Command{
+	cmds := NewCmdCreateBare()
+	cmds.AddCommand(certificaterequest.NewCmdCreateCR(ctx, ioStreams, factory))
+
+	return cmds
+}
+
+// Create a bare Create Command, without any subcommands
+func NewCmdCreateBare() *cobra.Command {
+	return &cobra.Command{
 		Use:   "create",
 		Short: "Create cert-manager resources",
 		Long:  `Create cert-manager resources e.g. a CertificateRequest`,
 	}
-
-	cmds.AddCommand(certificaterequest.NewCmdCreateCR(ctx, ioStreams, factory))
-
-	return cmds
 }
