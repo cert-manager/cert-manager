@@ -299,7 +299,7 @@ func (v *VaultInitializer) mountPKI(mount, ttl string) error {
 func (v *VaultInitializer) generateRootCert() (string, error) {
 	params := map[string]string{
 		"common_name":          "Root CA",
-		"ttl":                  "87600h",
+		"ttl":                  "2160h",
 		"exclude_cn_from_sans": "true",
 		"key_type":             "ec",
 		"key_bits":             "256",

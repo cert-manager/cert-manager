@@ -192,6 +192,7 @@ func (a *approle) initVault(f *framework.Framework) *secrets {
 		IntermediateMount: intermediateMount,
 		ConfigureWithRoot: a.testWithRootCA,
 		Role:              role,
+		AppRoleAuthPath:   a.authPath,
 	}
 	Expect(a.initializer.Init()).NotTo(HaveOccurred(), "failed to init vault")
 	Expect(a.initializer.Setup()).NotTo(HaveOccurred(), "failed to setup vault")
