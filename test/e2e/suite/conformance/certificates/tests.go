@@ -195,7 +195,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", f.Helper().ValidationSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.Ed25519FeatureSet, featureset.CommonNameFeature)
 

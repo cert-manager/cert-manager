@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
@@ -82,6 +83,8 @@ func ExpectValidPrivateKeyData(csr *certificatesv1.CertificateSigningRequest, ke
 		case *rsa.PublicKey:
 			return pub.Equal(cert.PublicKey), nil
 		case *ecdsa.PublicKey:
+			return pub.Equal(cert.PublicKey), nil
+		case *ed25519.PublicKey:
 			return pub.Equal(cert.PublicKey), nil
 		default:
 			return false, fmt.Errorf("Unrecognised public key type: %T", key)

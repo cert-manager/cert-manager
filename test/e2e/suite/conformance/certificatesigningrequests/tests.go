@@ -99,6 +99,16 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.ECDSAFeature, featureset.OnlySAN},
 			},
 
+			"should issue an Ed25519 certificate for a single distinct DNS Name": {
+				keyAlgo:      x509.Ed25519,
+				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(s.newDomain())},
+				kubeCSRUsages: []certificatesv1.KeyUsage{
+					certificatesv1.UsageDigitalSignature,
+					certificatesv1.UsageKeyEncipherment,
+				},
+				requiredFeatures: []featureset.Feature{featureset.Ed25519FeatureSet, featureset.OnlySAN},
+			},
+
 			"should issue an RSA certificate for a single Common Name": {
 				keyAlgo:      x509.RSA,
 				csrModifiers: []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))},
@@ -117,6 +127,16 @@ func (s *Suite) Define() {
 					certificatesv1.UsageKeyEncipherment,
 				},
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.ECDSAFeature},
+			},
+
+			"should issue an Ed25519 certificate for a single Common Name": {
+				keyAlgo:      x509.Ed25519,
+				csrModifiers: []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))},
+				kubeCSRUsages: []certificatesv1.KeyUsage{
+					certificatesv1.UsageDigitalSignature,
+					certificatesv1.UsageKeyEncipherment,
+				},
+				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature, featureset.Ed25519FeatureSet},
 			},
 
 			"should issue a certificate that defines a Common Name and IP Address": {
