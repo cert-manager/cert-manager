@@ -17,6 +17,9 @@ load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
+
+# TODO: It seems like this code is never used, see https://github.com/jetstack/cert-manager/issues/3072
+# It should be either removed or the work on it finished.
 def covered_image(name, component, **kwargs):
     native.genrule(
         name = "%s.covered-testfile" % name,

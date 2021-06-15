@@ -1,5 +1,4 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//build:version.bzl", "version_x_defs")
 load("//build:go_binary.bzl", "go_binary")
 
 go_library(
@@ -17,7 +16,6 @@ go_library(
 go_binary(
     name = "controller",
     embed = [":go_default_library"],
-    pure = "on",
     visibility = ["//visibility:public"],
 )
 

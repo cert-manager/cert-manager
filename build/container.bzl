@@ -33,6 +33,7 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 #     configure
 #   base: base image to use for the containers. The format string {ARCH} will
 #     be replaced with the configured GOARCH.
+#   binary: the Bazel target name that builds the Go binary.
 #   docker_tags: list of docker tags to apply to the image. The format string
 #     {ARCH} will be replaced with the configured GOARCH; any stamping variables
 #     should be escaped, e.g. {{STABLE_MY_VAR}}.
@@ -43,10 +44,13 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 #   visibility: will be applied only to the container_bundles; the internal
 #     container_image is private
 #   All other args will be applied to the internal container_image.
+# TODO: remove kwargs, instead pass all args explicitly. I think we don't need
+# dynamic params and defining them explicitly would make this more clear.
 def multi_arch_container(
         name,
         architectures,
         base,
+        binary,
         docker_tags,
         stamp = True,
         docker_push_tags = None,
@@ -57,19 +61,16 @@ def multi_arch_container(
 
     go_image(
         name = "%s-internal-notimestamp" % name,
-        base = select({
-            go_platform_constraint(os = "linux", arch = arch): base.format(ARCH = arch)
-            for arch in architectures
-        }),
+        base = base,
         architecture = select({
             go_platform_constraint(os = "linux", arch = arch): arch
             for arch in architectures
         }),
         stamp = stamp,
         tags = tags,
-        user = user,
         visibility = ["//visibility:private"],
-        **kwargs
+        binary = binary,
+        **kwargs,
     )
 
     # Create a tar file containing the created license files
