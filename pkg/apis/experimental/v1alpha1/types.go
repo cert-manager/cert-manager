@@ -27,6 +27,13 @@ const (
 	// request whether the certificate should be marked as CA.
 	CertificateSigningRequestIsCAAnnotationKey = "experimental.cert-manager.io/request-is-ca"
 
+	// CertificateSigningRequestPrivateKeyAnnotationKey is the annotation key
+	// used to reference a Secret resource containing the private key used to
+	// sign the request.
+	// This annotation *may* not be present, and is used by the 'self signing'
+	// issuer type to self-sign certificates.
+	CertificateSigningRequestPrivateKeyAnnotationKey = "experimental.cert-manager.io/private-key-secret-name"
+
 	// CertificateSigningRequestCAAnnotationKey is the annotation key which will
 	// contain the base 64 encoded resulting CA certificate which signed the CSR.
 	CertificateSigningRequestCAAnnotationKey = "experimental.cert-manager.io/ca"

@@ -138,6 +138,8 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 		return err
 	}
 
+	// Update the status.certificate first so that the sync from updating will
+	// not cause another issuance before setting the CA.
 	csr.Status.Certificate = bundle.ChainPEM
 	csr, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
@@ -146,6 +148,9 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 		return err
 	}
 
+	if csr.Annotations == nil {
+		csr.Annotations = make(map[string]string)
+	}
 	csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey] = base64.StdEncoding.EncodeToString(bundle.CAPEM)
 	_, err = c.certClient.Update(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
