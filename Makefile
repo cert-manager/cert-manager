@@ -18,11 +18,9 @@ APP_VERSION :=
 HACK_DIR ?= hack
 
 # Get a list of all binaries to be built
-CMDS := $(shell find ./cmd/ -maxdepth 1 -type d -exec basename {} \; | grep -v cmd)
+CMDS := $(shell find ./cmd/ -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
 
-.PHONY: help build verify push $(CMDS) images images_push \
-	verify_deps verify_chart
-
+.PHONY: help
 help:
 	# This Makefile provides common wrappers around Bazel invocations.
 	#
@@ -43,6 +41,7 @@ help:
 	# cainjector         - build a binary of the 'cainjector'
 	# webhook            - build a binary of the 'webhook'
 	# acmesolver         - build a binary of the 'acmesolver'
+	# ctl                - build a binary of the cert-manager kubectl plugin
 	# images             - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push        - pushes docker images to the target registry
 	#
@@ -53,41 +52,47 @@ help:
 	# Images can be pushed with optional args DOCKER_REGISTRY and APP_VERSION:
 	#
 	# make images_push DOCKER_REGISTRY=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature
-	#
 
 # Alias targets
 ###############
 
+.PHONY: clean
 clean:
 	bazel clean --expunge
 
+.PHONY: build
 build: ctl images
 
+.PHONY: verify
 verify:
 	bazel test //...
 
 # TODO: remove this rule in favour of calling hack/verify-deps directly
+.PHONY: verify_deps
 verify_deps:
 	./hack/verify-deps.sh
 	# verify-deps-licenses.sh is implicitly checked by the verify-deps script
 
 # requires docker
+.PHONY: verify_chart
 verify_chart:
 	$(HACK_DIR)/verify-chart-version.sh
 
 # Go targets
 ############
+.PHONY: $(CMDS)
 $(CMDS):
-	bazel build \
-		//cmd/$@
+	bazel build //cmd/$@
 
 # Generate targets
 ##################
+.PHONY: generate
 generate:
 	./hack/update-all.sh
 
 # Docker targets
 ################
+.PHONY: images
 images:
 	APP_VERSION=$(APP_VERSION) \
 	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
@@ -97,7 +102,8 @@ images:
 		--@io_bazel_rules_go//go/config:pure \
 		//build:server-images
 
-images_push: 
+.PHONY: images_push
+images_push:
 	APP_VERSION=$(APP_VERSION) \
 	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
 	bazel run \
@@ -105,6 +111,3 @@ images_push:
 		--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 \
 		--@io_bazel_rules_go//go/config:pure \
 		//:images.push
-
-ctl:
-	bazel build //cmd/ctl
