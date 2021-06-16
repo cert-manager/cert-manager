@@ -27,6 +27,7 @@ go_library(
         "//pkg/controller/certificatesigningrequests/ca:go_default_library",
         "//pkg/controller/certificatesigningrequests/selfsigned:go_default_library",
         "//pkg/controller/certificatesigningrequests/vault:go_default_library",
+        "//pkg/controller/certificatesigningrequests/venafi:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/issuers:go_default_library",
         "//pkg/feature:go_default_library",
