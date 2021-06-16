@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package addon implements an addon for the Venafi platform.
+// Package venafi implements an addon for the Venafi platform.
 // It provides a means for e2e tests to consume credentials for Venafi TPP.
-package addon
+package venafi
