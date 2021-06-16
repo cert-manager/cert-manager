@@ -17,6 +17,7 @@ go_library(
         "//test/e2e/suite/conformance/certificatesigningrequests/ca:go_default_library",
         "//test/e2e/suite/conformance/certificatesigningrequests/selfsigned:go_default_library",
         "//test/e2e/suite/conformance/certificatesigningrequests/vault:go_default_library",
+        "//test/e2e/suite/conformance/certificatesigningrequests/venafi:go_default_library",
         "//test/e2e/suite/conformance/rbac:go_default_library",
     ],
 )
