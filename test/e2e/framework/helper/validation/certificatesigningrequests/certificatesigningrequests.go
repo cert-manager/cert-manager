@@ -84,7 +84,7 @@ func ExpectValidPrivateKeyData(csr *certificatesv1.CertificateSigningRequest, ke
 			return pub.Equal(cert.PublicKey), nil
 		case *ecdsa.PublicKey:
 			return pub.Equal(cert.PublicKey), nil
-		case *ed25519.PublicKey:
+		case ed25519.PublicKey:
 			return pub.Equal(cert.PublicKey), nil
 		default:
 			return false, fmt.Errorf("Unrecognised public key type: %T", key)

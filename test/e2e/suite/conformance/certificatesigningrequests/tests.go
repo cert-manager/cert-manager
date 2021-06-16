@@ -67,7 +67,7 @@ func (s *Suite) Define() {
 
 		sharedCommonName := s.newDomain()
 
-		tests := map[string]struct {
+		type testCase struct {
 			keyAlgo            x509.PublicKeyAlgorithm
 			csrModifiers       []gen.CSRModifier
 			kubeCSRUsages      []certificatesv1.KeyUsage
@@ -78,7 +78,9 @@ func (s *Suite) Define() {
 			// Extra validations which may be needed for testing, on a test case by
 			// case basis. All default validations will be run on every test.
 			extraValidations []certificatesigningrequests.ValidationFunc
-		}{
+		}
+
+		tests := map[string]testCase{
 			"should issue an RSA certificate for a single distinct DNS Name": {
 				keyAlgo:      x509.RSA,
 				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(s.newDomain())},
@@ -297,7 +299,7 @@ func (s *Suite) Define() {
 			},
 		}
 
-		for name, test := range tests {
+		defineTest := func(name string, test testCase) {
 			s.it(f, name, func(signerName string) {
 				// Generate request CSR
 				csr, key, err := gen.CSR(test.keyAlgo, test.csrModifiers...)
@@ -356,6 +358,10 @@ func (s *Suite) Define() {
 				err = f.Helper().ValidateCertificateSigningRequest(kubeCSR.Name, key, validations...)
 				Expect(err).NotTo(HaveOccurred())
 			}, test.requiredFeatures...)
+		}
+
+		for name := range tests {
+			defineTest(name, tests[name])
 		}
 	})
 }
