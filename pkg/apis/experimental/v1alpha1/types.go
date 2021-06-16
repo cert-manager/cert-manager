@@ -26,11 +26,29 @@ const (
 	// CertificateSigningRequestIsCAAnnotationKey is the annotation key used to
 	// request whether the certificate should be marked as CA.
 	CertificateSigningRequestIsCAAnnotationKey = "experimental.cert-manager.io/request-is-ca"
+)
 
+// SelfSigned Issuer specific Annotations
+const (
 	// CertificateSigningRequestPrivateKeyAnnotationKey is the annotation key
 	// used to reference a Secret resource containing the private key used to
 	// sign the request.
 	// This annotation *may* not be present, and is used by the 'self signing'
 	// issuer type to self-sign certificates.
 	CertificateSigningRequestPrivateKeyAnnotationKey = "experimental.cert-manager.io/private-key-secret-name"
+)
+
+// Venafi Issuer specific Annotations
+const (
+	// CertificateSigningRequestVenafiCustomFieldsAnnotationKey is the annotation
+	// that passes on JSON encoded custom fields to the Venafi issuer.
+	// This will only work with Venafi TPP v19.3 and higher.
+	// The value is an array with objects containing the name and value keys for
+	// example: `[{"name": "custom-field", "value": "custom-value"}]`
+	CertificateSigningRequestVenafiCustomFieldsAnnotationKey = "venafi.experimental.cert-manager.io/custom-fields"
+
+	// CertificateSigningRequestVenafiPickupIDAnnotationKey is the annotation key
+	// used to record the Venafi Pickup ID of a certificate signing request that
+	// has been submitted to the Venafi API for collection later.
+	CertificateSigningRequestVenafiPickupIDAnnotationKey = "venafi.experimental.cert-manager.io/pickup-id"
 )
