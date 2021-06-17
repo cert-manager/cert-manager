@@ -133,7 +133,7 @@ func (s *Suite) Define() {
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
 				},
-				requiredFeatures: []featureset.Feature{},
+				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
 			},
 
 			"should issue an ECDSA certificate for a single Common Name": {
