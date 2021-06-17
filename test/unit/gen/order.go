@@ -17,6 +17,10 @@ limitations under the License.
 package gen
 
 import (
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
@@ -105,5 +109,23 @@ func SetOrderNamespace(namespace string) OrderModifier {
 func SetOrderCsr(csr []byte) OrderModifier {
 	return func(order *cmacme.Order) {
 		order.Spec.Request = csr
+	}
+}
+
+func SetOrderDuration(duration time.Duration) OrderModifier {
+	return func(order *cmacme.Order) {
+		order.Spec.Duration = &metav1.Duration{Duration: duration}
+	}
+}
+
+func SetOrderAnnotations(annotations map[string]string) OrderModifier {
+	return func(order *cmacme.Order) {
+		order.Annotations = annotations
+	}
+}
+
+func SetOrderOwnerReference(ref metav1.OwnerReference) OrderModifier {
+	return func(order *cmacme.Order) {
+		order.OwnerReferences = []metav1.OwnerReference{ref}
 	}
 }
