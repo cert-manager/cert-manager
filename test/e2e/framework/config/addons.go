@@ -32,6 +32,9 @@ type Addons struct {
 	// tests.
 	ACMEServer ACMEServer
 
+	// Config details to be used during the ACME end-to-end tests
+	ACMEConfig ACMEConfig
+
 	// IngressController contains configuration for the ingress controller
 	// being used during ACME HTTP01 tests.
 	IngressController IngressController
@@ -51,6 +54,7 @@ func (a *Addons) AddFlags(fs *flag.FlagSet) {
 	a.Tiller.AddFlags(fs)
 	a.Helm.AddFlags(fs)
 	a.ACMEServer.AddFlags(fs)
+	a.ACMEConfig.AddFlags(fs)
 	a.IngressController.AddFlags(fs)
 	a.Venafi.AddFlags(fs)
 	a.CertManager.AddFlags(fs)
