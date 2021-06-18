@@ -50,22 +50,23 @@ import (
 
 var (
 	long = templates.LongDesc(i18n.T(`
-Experimental.
+Experimental. Only supported for Kubernetes versions 1.19+. Requires
+cert-manager versions 1.4+ with experimental controllers enabled.
 
 Create a new CertificateSigningRequest resource based on a Certificate resource, by generating a private key locally and create a 'certificate signing request' to be submitted to a cert-manager Issuer.`))
 
 	example = templates.Examples(i18n.T(`
 # Create a CertificateSigningRequest with the name 'my-csr', saving the private key in a file named 'my-cr.key'.
-kubectl cert-manager create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml
+kubectl cert-manager x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml
 
 # Create a CertificateSigningRequest and store private key in file 'new.key'.
-kubectl cert-manager create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml --output-key-file new.key
+kubectl cert-manager x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml --output-key-file new.key
 
 # Create a CertificateSigningRequest, wait for it to be signed for up to 5 minutes (default) and store the x509 certificate in file 'new.crt'.
-kubectl cert-manager create csr my-cr -f my-certificate.yaml -c new.crt -w
+kubectl cert-manager x create csr my-cr -f my-certificate.yaml -c new.crt -w
 
 # Create a CertificateSigningRequest, wait for it to be signed for up to 20 minutes and store the x509 certificate in file 'my-cr.crt'.
-kubectl cert-manager create csr my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
+kubectl cert-manager x create csr my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
 `))
 )
 
@@ -219,7 +220,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	// Convert to v1 because that version is needed for functions that follow
 	crtObj, err := scheme.ConvertToVersion(info.Object, cmapi.SchemeGroupVersion)
 	if err != nil {
-		return fmt.Errorf("failed to convert object into version v1: %w", err)
+		return fmt.Errorf("failed to convert object into version v1: %s", err)
 	}
 
 	// Cast Object into Certificate
@@ -233,14 +234,20 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 		crt.Spec.PrivateKey = &cmapi.CertificatePrivateKey{}
 	}
 
+	if len(crt.Namespace) == 0 {
+		// Default to the 'default' Namespace if no Namespaced defined on the
+		// Certificate
+		crt.Namespace = "default"
+	}
+
 	signer, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
-		return fmt.Errorf("error when generating new private key for CertificateSigningRequest: %w", err)
+		return fmt.Errorf("error when generating new private key for CertificateSigningRequest: %s", err)
 	}
 
 	keyPEM, err := pki.EncodePrivateKey(signer, crt.Spec.PrivateKey.Encoding)
 	if err != nil {
-		return fmt.Errorf("failed to encode new private key for CertificateSigningRequest: %w", err)
+		return fmt.Errorf("failed to encode new private key for CertificateSigningRequest: %s", err)
 	}
 
 	csrName := args[0]
@@ -251,29 +258,29 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 		keyFileName = o.KeyFilename
 	}
 	if err := os.WriteFile(keyFileName, keyPEM, 0600); err != nil {
-		return fmt.Errorf("error when writing private key to file: %w", err)
+		return fmt.Errorf("error when writing private key to file: %s", err)
 	}
-	fmt.Fprintf(o.ErrOut, "Private key written to file %s\n", keyFileName)
+	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
 
 	signerName, err := buildSignerName(o.Client.Discovery(), crt)
 	if err != nil {
-		return fmt.Errorf("failed to build signerName from Certificate: %w", err)
+		return fmt.Errorf("failed to build signerName from Certificate: %s", err)
 	}
 
 	// Build CertificateSigningRequest with name as specified by argument
 	req, err := buildCertificateSigningRequest(crt, keyPEM, csrName, signerName)
 	if err != nil {
-		return fmt.Errorf("error when building CertificateSigningRequest: %w", err)
+		return fmt.Errorf("error when building CertificateSigningRequest: %s", err)
 	}
 
 	req, err = o.Client.CertificatesV1().CertificateSigningRequests().Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("error creating CertificateSigningRequest: %w", err)
+		return fmt.Errorf("error creating CertificateSigningRequest: %s", err)
 	}
-	fmt.Fprintf(o.ErrOut, "CertificateSigningRequest %s has been created\n", req.Name)
+	fmt.Fprintf(o.Out, "CertificateSigningRequest %s has been created\n", req.Name)
 
 	if o.FetchCert {
-		fmt.Fprintf(o.ErrOut, "CertificateSigningRequest %s has not been signed yet. Wait until it is signed...\n", req.Name)
+		fmt.Fprintf(o.Out, "CertificateSigningRequest %s has not been signed yet. Wait until it is signed...\n", req.Name)
 
 		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
 			req, err = o.Client.CertificatesV1().CertificateSigningRequests().Get(ctx, req.Name, metav1.GetOptions{})
@@ -283,10 +290,10 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 			return len(req.Status.Certificate) > 0, nil
 		})
 		if err != nil {
-			return fmt.Errorf("error when waiting for CertificateSigningRequest to be signed: %w", err)
+			return fmt.Errorf("error when waiting for CertificateSigningRequest to be signed: %s", err)
 		}
 
-		fmt.Fprintf(o.ErrOut, "CertificateSigningRequest %s has been signed\n", req.Name)
+		fmt.Fprintf(o.Out, "CertificateSigningRequest %s has been signed\n", req.Name)
 
 		// Fetch x509 certificate and store to file
 		actualCertFileName := req.Name + ".crt"
@@ -296,9 +303,9 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 
 		err = storeCertificate(req, actualCertFileName)
 		if err != nil {
-			return fmt.Errorf("error when writing certificate to file: %w", err)
+			return fmt.Errorf("error when writing certificate to file: %s", err)
 		}
-		fmt.Fprintf(o.ErrOut, "Certificate written to file %s\n", actualCertFileName)
+		fmt.Fprintf(o.Out, "Certificate written to file %s\n", actualCertFileName)
 	}
 
 	return nil
@@ -425,7 +432,7 @@ func storeCertificate(req *certificatesv1.CertificateSigningRequest, fileName st
 	// Store certificate to file
 	err := os.WriteFile(fileName, req.Status.Certificate, 0600)
 	if err != nil {
-		return fmt.Errorf("error when writing certificate to file: %w", err)
+		return fmt.Errorf("error when writing certificate to file: %s", err)
 	}
 
 	return nil
