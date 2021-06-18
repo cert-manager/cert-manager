@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package create
+package experimental
 
 import (
 	"context"
@@ -23,21 +23,21 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificatesigningrequest"
 )
 
-func NewCmdCreate(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
-	cmds := NewCmdCreateBare()
-	cmds.AddCommand(certificaterequest.NewCmdCreateCR(ctx, ioStreams, factory))
+func NewCmdExperimental(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+	cmds := &cobra.Command{
+		Use:     "experimental",
+		Aliases: []string{"x"},
+		Short:   "Interact with experimental features",
+		Long:    "Interact with experimental features",
+	}
+
+	create := create.NewCmdCreateBare()
+	create.AddCommand(certificatesigningrequest.NewCmdCreateCSR(ctx, ioStreams, factory))
+	cmds.AddCommand(create)
 
 	return cmds
-}
-
-// Create a bare Create Command, without any subcommands
-func NewCmdCreateBare() *cobra.Command {
-	return &cobra.Command{
-		Use:   "create",
-		Short: "Create cert-manager resources",
-		Long:  `Create cert-manager resources e.g. a CertificateRequest`,
-	}
 }

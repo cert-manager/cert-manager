@@ -18,6 +18,7 @@ package util
 
 import (
 	"crypto/x509"
+	"math/bits"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 )
@@ -61,4 +62,51 @@ func KeyUsageTypeKube(usage certificatesv1.KeyUsage) (x509.KeyUsage, bool) {
 func ExtKeyUsageTypeKube(usage certificatesv1.KeyUsage) (x509.ExtKeyUsage, bool) {
 	eu, ok := extKeyUsagesKube[usage]
 	return eu, ok
+}
+
+// KubeKeyUsageStrings returns the certificatesv1.KeyUsage and "unknown" if not
+// found
+func KubeKeyUsageStrings(usage x509.KeyUsage) []certificatesv1.KeyUsage {
+	var usageStr []certificatesv1.KeyUsage
+
+	for i := 0; i < bits.UintSize; i++ {
+		if v := usage & (1 << uint(i)); v != 0 {
+			usageStr = append(usageStr, kubeKeyUsageString(v))
+		}
+	}
+
+	return usageStr
+}
+
+// ExtKeyUsageStrings returns the certificatesv1.KeyUsage and "unknown" if not found
+func KubeExtKeyUsageStrings(usage []x509.ExtKeyUsage) []certificatesv1.KeyUsage {
+	var usageStr []certificatesv1.KeyUsage
+
+	for _, u := range usage {
+		usageStr = append(usageStr, kubeExtKeyUsageString(u))
+	}
+
+	return usageStr
+}
+
+// kubeKeyUsageString returns the cmapi.KeyUsage and "unknown" if not found
+func kubeKeyUsageString(usage x509.KeyUsage) certificatesv1.KeyUsage {
+	for k, v := range keyUsagesKube {
+		if usage == v {
+			return k
+		}
+	}
+
+	return "unknown"
+}
+
+// kubeExtKeyUsageString returns the cmapi.ExtKeyUsage and "unknown" if not found
+func kubeExtKeyUsageString(usage x509.ExtKeyUsage) certificatesv1.KeyUsage {
+	for k, v := range extKeyUsagesKube {
+		if usage == v {
+			return k
+		}
+	}
+
+	return "unknown"
 }

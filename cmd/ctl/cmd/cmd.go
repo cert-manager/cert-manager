@@ -34,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/deny"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/experimental"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/inspect"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status"
@@ -73,6 +74,9 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	cmds.AddCommand(inspect.NewCmdInspect(ctx, ioStreams, factory))
 	cmds.AddCommand(approve.NewCmdApprove(ctx, ioStreams, factory))
 	cmds.AddCommand(deny.NewCmdDeny(ctx, ioStreams, factory))
+
+	// Experimental features
+	cmds.AddCommand(experimental.NewCmdExperimental(ctx, ioStreams, factory))
 
 	return cmds
 }
