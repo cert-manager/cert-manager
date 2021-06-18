@@ -39,10 +39,7 @@ func (fs FeatureSet) Add(f Feature) {
 
 // Delete removes a feature from the set
 func (fs FeatureSet) Delete(f Feature) {
-	_, ok := fs[f]
-	if ok {
-		delete(fs, f)
-	}
+	delete(fs, f)
 }
 
 // Contains returns true if the FeatureSet contains the given feature

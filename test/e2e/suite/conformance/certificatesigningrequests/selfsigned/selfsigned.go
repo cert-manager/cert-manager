@@ -35,7 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificatesigningrequests"
 )
 
-var _ = framework.ConformanceDescribe("Certificates", func() {
+var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 	(&certificatesigningrequests.Suite{
 		Name:             "SelfSigned Issuer",
 		CreateIssuerFunc: createSelfSignedIssuer,

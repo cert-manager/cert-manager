@@ -43,11 +43,7 @@ type ValidationFunc func(csr *certificatesv1.CertificateSigningRequest, key cryp
 // ExpectValidCertificateCertificate checks if the certificate is a valid x509 certificate
 func ExpectValidCertificate(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	_, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // ExpectCertificateOrganizationToMatch checks if the issued
@@ -102,8 +98,9 @@ func ExpectValidPrivateKeyData(csr *certificatesv1.CertificateSigningRequest, ke
 	return nil
 }
 
-// ExpectCertificateDNSNamesToMatch checks if the issued
-// certificate has all DNS names it requested
+// ExpectCertificateDNSNamesToMatch checks if the issued certificate has all
+// DNS names it requested, accounting for the CommonName being optionally
+// copied to the DNS Names
 func ExpectCertificateDNSNamesToMatch(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
 	cert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
 	if err != nil {
@@ -114,9 +111,9 @@ func ExpectCertificateDNSNamesToMatch(csr *certificatesv1.CertificateSigningRequ
 		return err
 	}
 
-	expectedDNSNames := req.DNSNames
-	if !util.Subset(cert.DNSNames, expectedDNSNames) {
-		return fmt.Errorf("Expected certificate valid for DNSNames %v, but got a certificate valid for DNSNames %v", expectedDNSNames, cert.DNSNames)
+	if !util.EqualUnsorted(cert.DNSNames, req.DNSNames) &&
+		!util.EqualUnsorted(cert.DNSNames, append(req.DNSNames, req.Subject.CommonName)) {
+		return fmt.Errorf("Expected certificate valid for DNSNames %v, but got a certificate valid for DNSNames %v", req.DNSNames, cert.DNSNames)
 	}
 
 	return nil
@@ -211,8 +208,8 @@ func ExpectValidDuration(csr *certificatesv1.CertificateSigningRequest, _ crypto
 	actualDuration := cert.NotAfter.Sub(cert.NotBefore)
 
 	// Here we ensure that the requested duration is what is signed on the
-	// certificate. We tolerate a 5 second fuzz either way.
-	if actualDuration > expectedDuration+time.Second*5 || actualDuration < expectedDuration-time.Second*5 {
+	// certificate. We tolerate a 30 second fuzz either way.
+	if actualDuration > expectedDuration+time.Second*30 || actualDuration < expectedDuration-time.Second*30 {
 		return fmt.Errorf("Expected certificate expiry date to be %v, but got %v", expectedDuration, actualDuration)
 	}
 
@@ -270,7 +267,7 @@ func ExpectKeyUsageUsageDigitalSignature(csr *certificatesv1.CertificateSigningR
 	usage := cert.KeyUsage
 	usage &= x509.KeyUsageDigitalSignature
 	if usage != x509.KeyUsageDigitalSignature {
-		return fmt.Errorf("Expected certificate to have KeyUsageDigitalSignature %#b, but got %v %#b", x509.KeyUsageDigitalSignature, usage, usage)
+		return fmt.Errorf("Expected certificate to have KeyUsageDigitalSignature %#b, but got %v %#b", x509.KeyUsageDigitalSignature, cert.KeyUsage, cert.KeyUsage)
 	}
 
 	return nil
