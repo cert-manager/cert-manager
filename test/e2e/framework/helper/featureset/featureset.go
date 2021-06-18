@@ -39,10 +39,7 @@ func (fs FeatureSet) Add(f Feature) {
 
 // Delete removes a feature from the set
 func (fs FeatureSet) Delete(f Feature) {
-	_, ok := fs[f]
-	if ok {
-		delete(fs, f)
-	}
+	delete(fs, f)
 }
 
 // Contains returns true if the FeatureSet contains the given feature
@@ -82,12 +79,6 @@ const (
 	// Some issuers enforce a particular certificate duration, meaning they
 	// will never pass tests that validate the duration is as expected.
 	DurationFeature Feature = "Duration"
-
-	// UsagesFeature denotes tests that set the 'usages' field to some
-	// custom value.
-	// Some issuers enforce key usages, meaning they
-	// will never pass tests that validate the duration is as expected.
-	UsagesFeature Feature = "Usages"
 
 	// WildcardsFeature denotes tests that request certificates for wildcard
 	// domains. Some issuer's disable wildcard certificate issuance, so this

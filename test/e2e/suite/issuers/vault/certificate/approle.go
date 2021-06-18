@@ -32,6 +32,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -183,7 +184,7 @@ func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatu
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)...)
+		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)...)
 		Expect(err).NotTo(HaveOccurred())
 
 	})
@@ -278,7 +279,7 @@ func runVaultAppRoleTests(issuerKind string, testWithRoot bool, unsupportedFeatu
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Vault subtract 30 seconds to the NotBefore date.

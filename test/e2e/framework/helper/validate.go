@@ -18,72 +18,19 @@ package helper
 
 import (
 	"context"
+	"crypto"
 
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validations"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificates"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificatesigningrequests"
 )
 
-// ValidationFunc describes a certificate validation helper function
-type ValidationFunc func(certificate *cmapi.Certificate, secret *v1.Secret) error
-
-func (h *Helper) DefaultValidationSet() []ValidationFunc {
-	return []ValidationFunc{
-		validations.Expect2Or3KeysInSecret,
-		validations.ExpectCertificateDNSNamesToMatch,
-		validations.ExpectCertificateOrganizationToMatch,
-		validations.ExpectCertificateURIsToMatch,
-		validations.ExpectCorrectTrustChain,
-		validations.ExpectCARootCertificate,
-		validations.ExpectEmailsToMatch,
-		validations.ExpectValidAnnotations,
-		validations.ExpectValidCertificate,
-		validations.ExpectValidCommonName,
-		validations.ExpectValidNotAfterDate,
-		validations.ExpectValidPrivateKeyData,
-		validations.ExpectConditionReadyObservedGeneration,
-	}
-}
-
-func (h *Helper) ValidationSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []ValidationFunc {
-	// basics
-	out := []ValidationFunc{
-		validations.Expect2Or3KeysInSecret,
-		validations.ExpectCertificateDNSNamesToMatch,
-		validations.ExpectCertificateOrganizationToMatch,
-		validations.ExpectValidAnnotations,
-		validations.ExpectValidCertificate,
-		validations.ExpectValidCommonName,
-		validations.ExpectValidNotAfterDate,
-		validations.ExpectValidPrivateKeyData,
-		validations.ExpectConditionReadyObservedGeneration,
-	}
-
-	if !fs.Contains(featureset.URISANsFeature) {
-		out = append(out, validations.ExpectCertificateURIsToMatch)
-	}
-
-	if !fs.Contains(featureset.EmailSANsFeature) {
-		out = append(out, validations.ExpectEmailsToMatch)
-	}
-
-	if !fs.Contains(featureset.SaveCAToSecret) {
-		out = append(out, validations.ExpectCorrectTrustChain)
-		if !fs.Contains(featureset.SaveRootCAToSecret) {
-			out = append(out, validations.ExpectCARootCertificate)
-		}
-	}
-
-	return out
-}
-
 // ValidateCertificate retrieves the issued certificate and runs all validation functions
-func (h *Helper) ValidateCertificate(ns, name string, validations ...ValidationFunc) error {
+func (h *Helper) ValidateCertificate(ns, name string, validations ...certificates.ValidationFunc) error {
 	if len(validations) == 0 {
-		validations = h.DefaultValidationSet()
+		validations = validation.DefaultCertificateSet()
 	}
 	certificate, err := h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
@@ -96,6 +43,26 @@ func (h *Helper) ValidateCertificate(ns, name string, validations ...ValidationF
 
 	for _, fn := range validations {
 		err := fn(certificate, secret)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ValidateCertificateSigningRequest retrieves the issued certificate and runs all validation functions
+func (h *Helper) ValidateCertificateSigningRequest(name string, key crypto.Signer, validations ...certificatesigningrequests.ValidationFunc) error {
+	if len(validations) == 0 {
+		validations = validation.DefaultCertificateSigningRequestSet()
+	}
+	csr, err := h.KubeClient.CertificatesV1().CertificateSigningRequests().Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, fn := range validations {
+		err := fn(csr, key)
 		if err != nil {
 			return err
 		}

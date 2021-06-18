@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -62,7 +63,7 @@ func testRFC2136DNSProvider() bool {
 		// ACME Issuer does not return a ca.crt. See:
 		// https://github.com/jetstack/cert-manager/issues/1571
 		unsupportedFeatures := featureset.NewFeatureSet(featureset.SaveCAToSecret)
-		validations := f.Helper().ValidationSetForUnsupportedFeatureSet(unsupportedFeatures)
+		validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 		BeforeEach(func() {
 			By("Creating an Issuer")

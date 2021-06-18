@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package validations
+package certificates
 
 import (
 	"bytes"
@@ -33,6 +33,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
+
+// ValidationFunc describes a Certificate validation helper function
+type ValidationFunc func(certificate *cmapi.Certificate, secret *corev1.Secret) error
 
 // Expect2Or3KeysInSecret checks if the secret resource has the correct amount of fields in the secret data
 func Expect2Or3KeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error {
