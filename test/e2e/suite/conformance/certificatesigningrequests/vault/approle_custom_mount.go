@@ -33,6 +33,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		DeleteIssuerFunc: issuer.delete,
 		UnsupportedFeatures: featureset.NewFeatureSet(
 			featureset.KeyUsagesFeature,
+			featureset.Ed25519FeatureSet,
 		),
 	}).Define()
 
@@ -47,6 +48,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		UnsupportedFeatures: featureset.NewFeatureSet(
 			featureset.SaveRootCAToSecret,
 			featureset.KeyUsagesFeature,
+			featureset.Ed25519FeatureSet,
 		),
 	}).Define()
 
@@ -60,6 +62,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		DeleteIssuerFunc: clusterIssuer.delete,
 		UnsupportedFeatures: featureset.NewFeatureSet(
 			featureset.KeyUsagesFeature,
+			featureset.Ed25519FeatureSet,
 		),
 	}).Define()
 
@@ -74,6 +77,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		UnsupportedFeatures: featureset.NewFeatureSet(
 			featureset.SaveRootCAToSecret,
 			featureset.KeyUsagesFeature,
+			featureset.Ed25519FeatureSet,
 		),
 	}).Define()
 })
