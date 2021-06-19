@@ -20,6 +20,8 @@ import (
 	"context"
 	"crypto/x509"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -30,8 +32,10 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/feature"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/util"
+	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -62,7 +66,7 @@ var _ = framework.CertManagerDescribe("CA CertificateSigningRequest", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err = e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
@@ -164,6 +168,13 @@ var _ = framework.CertManagerDescribe("CA CertificateSigningRequest", func() {
 
 		for name, tcase := range cases {
 			It("should generate a signed certificate valid for: "+name, func() {
+				// Skip CertificateSigningRequest E2E tests if the feature gate is not enabled
+				fgs := os.Getenv("FEATURE_GATES")
+				if !util.Contains(strings.Split(fgs, ","), string(feature.ExperimentalCertificateSigningRequestControllers)+"=true") {
+					framework.Skipf("skipping CertificateSigningRequest controller test since FEATURE_GATE %s is not enabled",
+						feature.ExperimentalCertificateSigningRequestControllers)
+				}
+
 				csrClient := f.KubeClientSet.CertificatesV1().CertificateSigningRequests()
 
 				By("Creating a CertificateSigningRequest")
