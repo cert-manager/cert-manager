@@ -24,7 +24,6 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
-	networkinglisters "k8s.io/client-go/listers/networking/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -38,13 +37,32 @@ import (
 )
 
 const (
-	// ControllerName is the name of the ingress-shim controller.
-	ControllerName = "ingress-shim"
+	// IngressShimControllerName is the name of the ingress-shim controller.
+	IngressShimControllerName = "ingress-shim"
 )
 
 type defaults struct {
 	autoCertificateAnnotations          []string
 	issuerName, issuerKind, issuerGroup string
+}
+
+type ingressShim struct {
+	controller
+}
+
+func (i *ingressShim) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	// construct a new named logger to be reused throughout the controller
+	i.log = logf.FromContext(ctx.RootContext, IngressShimControllerName)
+
+	// create a queue used to queue up items to be processed
+	i.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), IngressShimControllerName)
+
+	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
+	i.objectInformer = ingressInformer.Informer()
+
+	i.objectLister = &internalIngressLister{ingressInformer.Lister()}
+
+	return i.sharedRegister(ctx)
 }
 
 type controller struct {
@@ -59,7 +77,8 @@ type controller struct {
 	cmClient clientset.Interface
 	recorder record.EventRecorder
 
-	ingressLister       networkinglisters.IngressLister
+	objectLister        objectLister
+	objectInformer      cache.SharedIndexInformer
 	certificateLister   cmlisters.CertificateLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
@@ -71,27 +90,18 @@ type controller struct {
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	// construct a new named logger to be reused throughout the controller
-	c.log = logf.FromContext(ctx.RootContext, ControllerName)
-
-	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
-
-	// obtain references to all the informers used by this controller
-	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
+func (c *controller) sharedRegister(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
 	certificatesInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
-		ingressInformer.Informer().HasSynced,
+		c.objectInformer.HasSynced,
 		certificatesInformer.Informer().HasSynced,
 		issuerInformer.Informer().HasSynced,
 	}
 
 	// set all the references to the listers for used by the Sync function
-	c.ingressLister = ingressInformer.Lister()
 	c.certificateLister = certificatesInformer.Lister()
 	c.issuerLister = issuerInformer.Lister()
 
@@ -105,7 +115,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	}
 
 	// register handler functions
-	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+	c.objectInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 	certificatesInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.certificateDeleted})
 
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
@@ -128,13 +138,13 @@ func (c *controller) certificateDeleted(obj interface{}) {
 		runtime.HandleError(fmt.Errorf("Object is not a certificate object %#v", obj))
 		return
 	}
-	ings, err := c.ingressesForCertificate(crt)
+	objs, err := c.objectsForCertificate(crt)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("Error looking up ingress observing certificate: %s/%s", crt.Namespace, crt.Name))
 		return
 	}
-	for _, ing := range ings {
-		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(ing)
+	for _, o := range objs {
+		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(o)
 		if err != nil {
 			runtime.HandleError(err)
 			continue
@@ -150,7 +160,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	crt, err := c.ingressLister.Ingresses(namespace).Get(name)
+	obj, err := c.objectLister.Objects(namespace).Get(name)
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
@@ -161,13 +171,13 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	return c.Sync(ctx, crt)
+	return c.Sync(ctx, obj)
 }
 
 func init() {
-	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		return controllerpkg.NewBuilder(ctx, ControllerName).
-			For(&controller{}).
+	controllerpkg.Register(IngressShimControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+		return controllerpkg.NewBuilder(ctx, IngressShimControllerName).
+			For(&ingressShim{}).
 			Complete()
 	})
 }
