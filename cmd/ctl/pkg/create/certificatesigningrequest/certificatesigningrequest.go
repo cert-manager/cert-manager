@@ -88,7 +88,7 @@ type Options struct {
 	// specified, the private key will be written to '<NameOfCSR>.key'.
 	KeyFilename string
 
-	// If true, will wait for CertificateSigingRequest to be ready to store the
+	// If true, will wait for CertificateSigningRequest to be ready to store the
 	// x509 certificate in a file.
 	// Command will block until CertificateSigningRequest is ready or timeout as
 	// specified by Timeout happens.
