@@ -61,7 +61,6 @@ type Vault struct {
 }
 
 func init() {
-	// create certificate signing request controller for vault issuer
 	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CSRControllerName).
 			For(certificatesigningrequests.New(apiutil.IssuerVault, NewVault(ctx))).
@@ -80,9 +79,9 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 }
 
 // Sign attempts to sign the given CertificateSigningRequest based on the
-// provided Vault Issuer or ClusterIssuer. This function will update the
-// resource if signing was successful. Returns an error which, if not nil,
-// should trigger a retry.
+// provided Vault Issuer or ClusterIssuer. This function updates the
+// CertificateSigningRequest resource if signing was successful. Returns an
+// error which, if not nil, should trigger a retry.
 func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningRequest, issuerObj cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
@@ -128,6 +127,10 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 
 	log.V(logf.DebugLevel).Info("certificate issued")
 
+	// Kubernetes sub-resources, namely 'status', are separate API endpoints.
+	// We don't want to fire another re-sync of this CertificateSigningRequest
+	// before the `status.Certificate` field has been set as this will fire
+	// another sign call.
 	// Update the status.certificate first so that the sync from updating will
 	// not cause another issuance before setting the CA.
 	csr.Status.Certificate = certPEM
