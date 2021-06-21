@@ -394,7 +394,7 @@ func (v *VaultInitializer) setupRole() error {
 
 	params := map[string]string{
 		"allow_any_name":     "true",
-		"max_ttl":            "21600h",
+		"max_ttl":            "2160h",
 		"key_type":           "any",
 		"require_cn":         "false",
 		"allowed_uri_sans":   "spiffe://cluster.local/*",
@@ -483,7 +483,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 
 	params := map[string]string{
 		"allow_any_name":                   "true",
-		"max_ttl":                          "21600h",
+		"max_ttl":                          "2160h",
 		"key_type":                         "any",
 		"require_cn":                       "false",
 		"allowed_uri_sans":                 "spiffe://cluster.local/*",
@@ -496,7 +496,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 
 	_, err = v.proxy.callVault("POST", url, "", params)
 	if err != nil {
-		return fmt.Errorf("Error creating role %s: %s", v.Role, err.Error())
+		return fmt.Errorf("error creating role %s: %s", v.Role, err.Error())
 	}
 
 	// create policy
@@ -509,8 +509,10 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 
 	// # create approle
 	params = map[string]string{
-		"period":   "24h",
-		"policies": v.Role,
+		"period":                           "24h",
+		"policies":                         v.Role,
+		"bound_service_account_names":      serviceAccountName,
+		"bound_service_account_namespaces": namespace,
 	}
 
 	baseUrl := path.Join("/v1", "auth", v.KubernetesAuthPath, "role", v.Role)
