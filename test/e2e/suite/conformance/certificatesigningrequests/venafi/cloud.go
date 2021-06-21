@@ -39,9 +39,10 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		// Venafi TPP doesn't allow setting a duration
 		featureset.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
-		// support signing certificates that pair with an elliptic curve private
-		// key
+		// support signing certificates that pair with an elliptic curve or
+		// Ed255119 private keys
 		featureset.ECDSAFeature,
+		featureset.Ed25519FeatureSet,
 		// Our Venafi TPP doesn't allow setting non DNS SANs
 		// TODO: investigate options to enable these
 		featureset.EmailSANsFeature,
