@@ -27,11 +27,11 @@ FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Require kubectl & helm available on PATH
 check_tool kubectl
 check_tool helm
+check_tool kubectl-cert_manager
 
 # Use the current timestamp as the APP_VERSION so a rolling update will be
 # triggered on every call to this script.
@@ -46,22 +46,18 @@ load_image "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
 wait
 
-# Ensure the namespace exists, and if not create it
-kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
-
 # Build the Helm chart package .tgz
 bazel build //deploy/charts/cert-manager
 
+echo "${REPO_ROOT}/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
+
 # Upgrade or install cert-manager
-helm upgrade \
-    --install \
-    --wait \
+kubectl cert-manager install \
     --namespace "${NAMESPACE}" \
+    --release-name "${RELEASE_NAME}" \
+    --chart-name "${REPO_ROOT}/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz" \
     --set image.tag="${APP_VERSION}" \
     --set cainjector.image.tag="${APP_VERSION}" \
     --set webhook.image.tag="${APP_VERSION}" \
-    --set installCRDs=true \
     --set featureGates="${FEATURE_GATES:-}" \
-    --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
-    "$RELEASE_NAME" \
-    "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
+    --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}"

@@ -1,0 +1,46 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "install.go",
+        "uninstall.go",
+        "upgrade.go",
+        "util.go",
+        "verify.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/install",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cmd/ctl/pkg/install/helm:go_default_library",
+        "//cmd/ctl/pkg/install/verify:go_default_library",
+        "@com_github_spf13_cobra//:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
+        "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
+        "@io_k8s_client_go//util/homedir:go_default_library",
+        "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
+        "@sh_helm_helm_v3//pkg/action:go_default_library",
+        "@sh_helm_helm_v3//pkg/cli:go_default_library",
+        "@sh_helm_helm_v3//pkg/cli/values:go_default_library",
+        "@sh_helm_helm_v3//pkg/getter:go_default_library",
+        "@sh_helm_helm_v3//pkg/release:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//cmd/ctl/pkg/install/helm:all-srcs",
+        "//cmd/ctl/pkg/install/verify:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
