@@ -21,12 +21,14 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -76,6 +78,14 @@ func TestProcessItem(t *testing.T) {
 		},
 		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-2"}},
 	)
+	fixedNow := metav1.NewTime(time.Now())
+	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
+	failedCRCondition := cmapi.CertificateRequestCondition{
+		Type:               cmapi.CertificateRequestConditionReady,
+		Status:             cmmeta.ConditionFalse,
+		Reason:             cmapi.CertificateRequestReasonFailed,
+		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
+	}
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
 		// if not set, the 'namespace/name' of the 'Certificate' field will be used.
@@ -515,6 +525,39 @@ func TestProcessItem(t *testing.T) {
 				),
 			},
 		},
+		"should recreate the CertificateRequest if the current 'next' CertificateRequest failed during previous issuance cycle": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+					}),
+					gen.AddCertificateRequestStatusCondition(failedCRCondition),
+				),
+			},
+			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
+			expectedActions: []testpkg.Action{
+				testpkg.NewAction(coretesting.NewDeleteAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns", "test")),
+				testpkg.NewCustomMatch(coretesting.NewCreateAction(cmapi.SchemeGroupVersion.WithResource("certificaterequests"), "testns",
+					gen.CertificateRequestFrom(bundle1.certificateRequest,
+						gen.SetCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+						}),
+					)), relaxedCertificateRequestMatcher),
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -524,6 +567,7 @@ func TestProcessItem(t *testing.T) {
 				ExpectedEvents:  test.expectedEvents,
 				ExpectedActions: test.expectedActions,
 				StringGenerator: func(i int) string { return "notrandom" },
+				Clock:           fixedClock,
 			}
 			if test.certificate != nil {
 				builder.CertManagerObjects = append(builder.CertManagerObjects, test.certificate)

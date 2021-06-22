@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -66,6 +67,7 @@ type controller struct {
 	secretLister             corelisters.SecretLister
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
+	clock                    clock.Clock
 }
 
 func NewController(
@@ -74,6 +76,7 @@ func NewController(
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
+	clock clock.Clock,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -111,6 +114,7 @@ func NewController(
 		secretLister:             secretsInformer.Lister(),
 		client:                   client,
 		recorder:                 recorder,
+		clock:                    clock,
 	}, queue, mustSync
 }
 
@@ -191,6 +195,11 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
+	requests, err = c.deleteCurrentFailedRequests(ctx, requests...)
+	if err != nil {
+		return err
+	}
+
 	if len(requests) > 1 {
 		// TODO: we should handle this case better, but for now do nothing to
 		//  avoid getting into loops where we keep creating multiple requests
@@ -206,6 +215,37 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	}
 
 	return c.createNewCertificateRequest(ctx, crt, pk, nextRevision, nextPrivateKeySecret.Name)
+}
+
+func (c *controller) deleteCurrentFailedRequests(ctx context.Context, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
+	log := logf.FromContext(ctx)
+	var remaining []*cmapi.CertificateRequest
+	for _, req := range reqs {
+		log = logf.WithRelatedResource(log, req)
+		// Check if there are any 'current' CertificateRequests that
+		// failed during the previous issuance cycle. Those should be
+		// deleted so that a new one gets created and the issuance is
+		// re-tried. In practice no more than one CertificateRequest is
+		// expected at this point.
+		cond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
+		if cond == nil || cond.Status != cmmeta.ConditionFalse || cond.Reason != cmapi.CertificateRequestReasonFailed {
+			remaining = append(remaining, req)
+			continue
+		}
+		// TODO: once we have implemented exponential back off for
+		// Certificate failures, this should be changed accordingly.
+		now := c.clock.Now()
+		durationSinceFailure := now.Sub(cond.LastTransitionTime.Time)
+		if durationSinceFailure >= certificates.RetryAfterLastFailure {
+			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		remaining = append(remaining, req)
+
+	}
+	return remaining, nil
 }
 
 func (c *controller) deleteRequestsWithoutRevision(ctx context.Context, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
@@ -378,6 +418,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
+		ctx.Clock,
 	)
 	c.controller = ctrl
 

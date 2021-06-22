@@ -46,15 +46,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
 )
 
-const (
-	ControllerName = "certificates-trigger"
-
-	// the amount of time after the LastFailureTime of a Certificate
-	// before the request should be retried.
-	// In future this should be replaced with a more dynamic exponential
-	// back-off algorithm.
-	retryAfterLastFailure = time.Hour
-)
+const ControllerName = "certificates-trigger"
 
 // This controller observes the state of the certificate's currently
 // issued `spec.secretName` and the rest of the `certificate.spec` fields to
@@ -237,11 +229,11 @@ func shouldBackoffReissuingOnFailure(log logr.Logger, c clock.Clock, crt *cmapi.
 
 	now := c.Now()
 	durationSinceFailure := now.Sub(crt.Status.LastFailureTime.Time)
-	if durationSinceFailure >= retryAfterLastFailure {
+	if durationSinceFailure >= certificates.RetryAfterLastFailure {
 		log.V(logf.ExtendedInfoLevel).WithValues("since_failure", durationSinceFailure).Info("Certificate has been in failure state long enough, no need to back off")
 		return false, 0
 	}
-	return true, retryAfterLastFailure - durationSinceFailure
+	return true, certificates.RetryAfterLastFailure - durationSinceFailure
 }
 
 // scheduleRecheckOfCertificateIfRequired will schedule the resource with the
