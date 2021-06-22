@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -66,6 +67,7 @@ type controller struct {
 	secretLister             corelisters.SecretLister
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
+	clock                    clock.Clock
 }
 
 func NewController(
@@ -74,6 +76,7 @@ func NewController(
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
+	clock clock.Clock,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -111,6 +114,7 @@ func NewController(
 		secretLister:             secretsInformer.Lister(),
 		client:                   client,
 		recorder:                 recorder,
+		clock:                    clock,
 	}, queue, mustSync
 }
 
@@ -378,6 +382,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
+		ctx.Clock,
 	)
 	c.controller = ctrl
 
