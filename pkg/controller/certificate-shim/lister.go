@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	networkinglisters "k8s.io/client-go/listers/networking/v1beta1"
+	gatewaylisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha1"
 )
 
 type objectLister interface {
@@ -40,7 +41,7 @@ type internalIngressNamespaceLister struct {
 	l networkinglisters.IngressNamespaceLister
 }
 
-func (i *internalIngressLister) List(selector labels.Selector) (ret []runtime.Object, err error) {
+func (i *internalIngressLister) List(selector labels.Selector) ([]runtime.Object, error) {
 	ingresses, err := i.l.List(selector)
 	if err != nil {
 		return nil, err
@@ -58,7 +59,7 @@ func (i *internalIngressLister) Objects(namespace string) objectNamespaceLister 
 	return &internalIngressNamespaceLister{i.l.Ingresses(namespace)}
 }
 
-func (i *internalIngressNamespaceLister) List(selector labels.Selector) (ret []runtime.Object, err error) {
+func (i *internalIngressNamespaceLister) List(selector labels.Selector) ([]runtime.Object, error) {
 	ingresses, err := i.l.List(selector)
 	if err != nil {
 		return nil, err
@@ -74,4 +75,44 @@ func (i *internalIngressNamespaceLister) List(selector labels.Selector) (ret []r
 
 func (i *internalIngressNamespaceLister) Get(name string) (runtime.Object, error) {
 	return i.l.Get(name)
+}
+
+type internalGatewayLister struct {
+	gl gatewaylisters.GatewayLister
+}
+
+func (i *internalGatewayLister) List(selector labels.Selector) ([]runtime.Object, error) {
+	gateways, err := i.gl.List(selector)
+	if err != nil {
+		return nil, err
+	}
+	var objects []runtime.Object
+	for _, g := range gateways {
+		objects = append(objects, g)
+	}
+	return objects, nil
+}
+
+func (i *internalGatewayLister) Objects(namespace string) objectNamespaceLister {
+	return &internalGatewayNamespaceLister{gl: i.gl.Gateways(namespace)}
+}
+
+type internalGatewayNamespaceLister struct {
+	gl gatewaylisters.GatewayNamespaceLister
+}
+
+func (i *internalGatewayNamespaceLister) List(selector labels.Selector) ([]runtime.Object, error) {
+	gateways, err := i.gl.List(selector)
+	if err != nil {
+		return nil, err
+	}
+	var objects []runtime.Object
+	for _, g := range gateways {
+		objects = append(objects, g)
+	}
+	return objects, nil
+}
+
+func (i *internalGatewayNamespaceLister) Get(name string) (runtime.Object, error) {
+	return i.gl.Get(name)
 }

@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
+	gatewayapischeme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
@@ -190,9 +191,10 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	}
 
 	// Create event broadcaster
-	// Add cert-manager types to the default Kubernetes Scheme so Events can be
+	// Add cert-manager and gateway-api types to the default Kubernetes Scheme so Events can be
 	// logged properly
 	intscheme.AddToScheme(scheme.Scheme)
+	gatewayapischeme.AddToScheme(scheme.Scheme)
 	log.V(logf.DebugLevel).Info("creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(logf.WithInfof(log.V(logf.DebugLevel)).Infof)
@@ -232,7 +234,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
 		},
-		IngressShimOptions: controller.IngressShimOptions{
+		CertificateShimOptions: controller.CertificateShimOptions{
 			DefaultIssuerName:                 opts.DefaultIssuerName,
 			DefaultIssuerKind:                 opts.DefaultIssuerKind,
 			DefaultIssuerGroup:                opts.DefaultIssuerGroup,

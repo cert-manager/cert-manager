@@ -250,11 +250,11 @@ rules:
 
 ---
 
-# ingress-shim controller role
+# certificate-shim controller role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  name: {{ template "cert-manager.fullname" . }}-controller-certificate-shim
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
@@ -272,11 +272,17 @@ rules:
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.x-k8s.io"]
+    resources: ["gateways"]
+    verbs: ["get", "list", "watch"]
   # We require these rules to support users with the OwnerReferencesPermissionEnforcement
   # admission controller enabled:
   # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["networking.x-k8s.io"]
+    resources: ["gateways/finalizers"]
     verbs: ["update"]
   - apiGroups: [""]
     resources: ["events"]
@@ -397,7 +403,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  name: {{ template "cert-manager.fullname" . }}-controller-certificate-shim
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
@@ -408,7 +414,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  name: {{ template "cert-manager.fullname" . }}-controller-certificate-shim
 subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace | quote }}

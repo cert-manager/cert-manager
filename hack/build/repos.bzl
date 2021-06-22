@@ -58,6 +58,14 @@ def go_repositories():
         sum = "h1:3oJU7J3FGFmyhn8KHjmVaZCN5hxTr7GxgRue+sxIXdQ=",
         version = "v1.0.1",
     )
+    go_repository(
+        name = "com_github_ahmetb_gen_crd_api_reference_docs",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/ahmetb/gen-crd-api-reference-docs",
+        sum = "h1:Gz+Wcvp8CATSZBy3a2yj2IdkK1/LaVfy4JJlzxdmETY=",
+        version = "v0.2.1-0.20201224172655-df869c1245d4",
+    )
 
     go_repository(
         name = "com_github_akamai_AkamaiOPEN-edgegrid-golang",
@@ -3379,6 +3387,14 @@ def go_repositories():
         importpath = "sigs.k8s.io/controller-tools",
         sum = "h1:o2Fm1K7CmIp8OVaBtXsWB/ssBAzyoKZPPAGR3VuxaKs=",
         version = "v0.6.0",
+    )
+    go_repository(
+        name = "io_k8s_sigs_gateway_api",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "sigs.k8s.io/gateway-api",
+        sum = "h1:mKbQRlRIIY3dsCCbNF9Jv30V9vvOf6SRG82l0MfJQ9U=",
+        version = "v0.3.0",
     )
 
     go_repository(

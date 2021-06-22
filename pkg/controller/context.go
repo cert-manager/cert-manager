@@ -73,7 +73,7 @@ type Context struct {
 
 	IssuerOptions
 	ACMEOptions
-	IngressShimOptions
+	CertificateShimOptions
 	CertificateOptions
 	SchedulerOptions
 }
@@ -126,8 +126,8 @@ type ACMEOptions struct {
 	DNS01CheckRetryPeriod time.Duration
 }
 
-type IngressShimOptions struct {
-	// Default issuer/certificates details consumed by ingress-shim
+type CertificateShimOptions struct {
+	// Default issuer/certificates details consumed by certificate-shim
 	DefaultIssuerName                 string
 	DefaultIssuerKind                 string
 	DefaultIssuerGroup                string

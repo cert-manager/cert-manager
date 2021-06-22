@@ -19,14 +19,19 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gatewayclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	gatewayinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -39,6 +44,9 @@ import (
 const (
 	// IngressShimControllerName is the name of the ingress-shim controller.
 	IngressShimControllerName = "ingress-shim"
+
+	// GatewayShimControllerName is the name of the gateway-shim controller.
+	GatewayShimControllerName = "gateway-shim"
 )
 
 type defaults struct {
@@ -63,6 +71,40 @@ func (i *ingressShim) Register(ctx *controllerpkg.Context) (workqueue.RateLimiti
 	i.objectLister = &internalIngressLister{ingressInformer.Lister()}
 
 	return i.sharedRegister(ctx)
+}
+
+type gatewayShim struct {
+	controller
+}
+
+func (g *gatewayShim) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	// construct a new named logger to be reused throughout the controller
+	g.log = logf.FromContext(ctx.RootContext, GatewayShimControllerName)
+
+	g.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), GatewayShimControllerName)
+
+	// Discover if the gateway api is available
+	d, err := discovery.NewDiscoveryClientForConfig(ctx.RESTConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%s: couldn't construct discovery client: %w", GatewayShimControllerName, err)
+	}
+	resources, err := d.ServerResourcesForGroupVersion(gatewayapi.GroupVersion.String())
+	if err != nil {
+		return nil, nil, fmt.Errorf("%s: couldn't discover gateway API resources: %w", GatewayShimControllerName, err)
+	}
+	if len(resources.APIResources) == 0 {
+		return nil, nil, fmt.Errorf("%s: no gateway API resources were discovered (are the Gateway API CRDS installed?)", GatewayShimControllerName)
+	}
+
+	// 10 hours is default: https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
+	gatewayInformerFactory := gatewayinformers.NewSharedInformerFactory(gatewayclient.NewForConfigOrDie(ctx.RESTConfig), 10*time.Hour)
+	gatewayInformerLister := gatewayInformerFactory.Networking().V1alpha1().Gateways()
+	g.objectInformer = gatewayInformerLister.Informer()
+	gatewayInformerFactory.Start(ctx.StopCh)
+
+	g.objectLister = &internalGatewayLister{gatewayInformerLister.Lister()}
+
+	return g.sharedRegister(ctx)
 }
 
 type controller struct {
@@ -164,7 +206,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			runtime.HandleError(fmt.Errorf("ingress '%s' in work queue no longer exists", key))
+			runtime.HandleError(fmt.Errorf("object '%s' in work queue no longer exists", key))
 			return nil
 		}
 
@@ -178,6 +220,11 @@ func init() {
 	controllerpkg.Register(IngressShimControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, IngressShimControllerName).
 			For(&ingressShim{}).
+			Complete()
+	})
+	controllerpkg.Register(GatewayShimControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+		return controllerpkg.NewBuilder(ctx, GatewayShimControllerName).
+			For(&gatewayShim{}).
 			Complete()
 	})
 }

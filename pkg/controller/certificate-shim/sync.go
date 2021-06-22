@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
 	"strconv"
 	"strings"
@@ -30,12 +29,14 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 const (
@@ -46,10 +47,9 @@ const (
 )
 
 var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
+var gatewayGVK = gatewayapi.SchemeGroupVersion.WithKind("Gateway")
 
 func (c *controller) Sync(ctx context.Context, obj runtime.Object) error {
-	c.log.Info("Inside the Sync function", "obj", obj.DeepCopyObject())
-
 	ob, ok := obj.(metav1.Object)
 	if !ok {
 		return fmt.Errorf("sync: Expected metav1.Object, got %T", obj)
@@ -135,7 +135,27 @@ func (c *controller) validateObject(obj metav1.Object) []error {
 			}
 		}
 		return errs
-	// TODO (JS) - add support for gateway api here
+	case *gatewayapi.Gateway:
+		var errs []error
+		for _, listener := range o.Spec.Listeners {
+			if listener.TLS.CertificateRef.Group != "core" {
+				errs = append(errs, fmt.Errorf(
+					"unsupported certificateRef.group, want %s got %s",
+					"core",
+					listener.TLS.CertificateRef.Group,
+					),
+				)
+			}
+			if listener.TLS.CertificateRef.Kind != "secret" {
+				errs = append(errs, fmt.Errorf(
+					"unsupported certificateRef.kind, want %s got %s",
+					"secret",
+					listener.TLS.CertificateRef.Kind,
+				),
+				)
+			}
+		}
+		return errs
 	default:
 		return []error{fmt.Errorf("validateObject: can't handle object %T, expected ingress or gateway", obj)}
 	}
@@ -152,6 +172,11 @@ func validateIngressTLSBlock(tlsBlock networkingv1beta1.IngressTLS) []error {
 		errs = append(errs, fmt.Errorf("TLS entry for hosts %v must specify a secretName", tlsBlock.Hosts))
 	}
 	return errs
+}
+
+func validateGatewayTLSConfig(config gatewayapi.GatewayTLSConfig) []error {
+	var errs []error
+
 }
 
 func (c *controller) buildCertificates(ctx context.Context, obj metav1.Object,
@@ -231,6 +256,8 @@ func (c *controller) buildCertificates(ctx context.Context, obj metav1.Object,
 			}
 		}
 		return newCrts, updateCrts, nil
+	case *gatewayapi.Gateway:
+		return nil, nil, fmt.Errorf("not implemented")
 	default:
 		return nil, nil, fmt.Errorf("buildCertificates: expected ingress or gateway, got %T", obj)
 	}
@@ -342,7 +369,7 @@ func setIssuerSpecificConfig(crt *cmapi.Certificate, ing *networkingv1beta1.Ingr
 	}
 }
 
-// shouldSync returns true if this ingress should have a Certificate resource
+// shouldSync returns true if this object should have a Certificate resource
 // created for it
 func shouldSync(obj metav1.Object, autoCertificateAnnotations []string) bool {
 	annotations := obj.GetAnnotations()

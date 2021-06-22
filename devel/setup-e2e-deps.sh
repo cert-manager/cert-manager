@@ -34,6 +34,9 @@ setup_tools
 echo "Installing kyverno into cluster..."
 "${SCRIPT_ROOT}/addon/kyverno/install.sh"
 
+echo "Installing gateway-api CRDs into the cluster"
+"${SCRIPT_ROOT}/addon/gateway-api/install.sh"
+
 echo "Installing cert-manager into the cluster..."
 "${SCRIPT_ROOT}/addon/certmanager/install.sh"
 
