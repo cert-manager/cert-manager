@@ -131,6 +131,11 @@ workspace_binary(
     cmd = "@go_sdk//:bin/go",
 )
 
+workspace_binary(
+    name = "kubectl-cert_manager",
+    cmd = "//cmd/ctl:ctl",
+)
+
 genrule(
     name = "fetch_kind",
     srcs = select({

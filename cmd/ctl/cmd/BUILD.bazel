@@ -12,6 +12,7 @@ go_library(
         "//cmd/ctl/pkg/deny:go_default_library",
         "//cmd/ctl/pkg/experimental:go_default_library",
         "//cmd/ctl/pkg/inspect:go_default_library",
+        "//cmd/ctl/pkg/install:go_default_library",
         "//cmd/ctl/pkg/renew:go_default_library",
         "//cmd/ctl/pkg/status:go_default_library",
         "//cmd/ctl/pkg/version:go_default_library",
