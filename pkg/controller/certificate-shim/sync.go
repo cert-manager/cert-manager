@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@ const (
 var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
 var gatewayGVK = gatewayapi.SchemeGroupVersion.WithKind("Gateway")
 
+// Sync parses annotations of a runtime.Object to check if a corresponding certificate
+// should be reconciled.
 func (c *controller) Sync(ctx context.Context, obj runtime.Object) error {
 	ob, ok := obj.(metav1.Object)
 	if !ok {
@@ -123,6 +125,8 @@ func (c *controller) Sync(ctx context.Context, obj runtime.Object) error {
 	return nil
 }
 
+// validateObject checks if the *networkingv1beta1.Ingress or *gatewayapi.Gateway is well-formed
+// and can be used to construct a matching Certificate.
 func (c *controller) validateObject(obj metav1.Object) []error {
 	switch o := obj.(type) {
 	case *networkingv1beta1.Ingress:
@@ -213,7 +217,6 @@ func (c *controller) buildCertificates(ctx context.Context, obj metav1.Object,
 		certs.gvk = ingressGVK
 		for i, tls := range o.Spec.TLS {
 			errs := validateIngressTLSBlock(tls)
-			// if this tls entry is invalid, record an error event on IngressOrGateway object and continue to the next tls entry
 			if len(errs) > 0 {
 				errMsg := utilerrors.NewAggregate(errs).Error()
 				c.recorder.Eventf(o, corev1.EventTypeWarning, reasonBadConfig, fmt.Sprintf("TLS entry %d is invalid: %s", i, errMsg))
@@ -236,6 +239,7 @@ func (c *controller) buildCertificates(ctx context.Context, obj metav1.Object,
 				Namespace: o.Namespace,
 				Name:      l.TLS.CertificateRef.Name,
 			}
+			// gateway API hostname explicitly disallows IP addresses, so this should be OK.
 			certs.tlsHosts[secretRef] = append(certs.tlsHosts[secretRef], fmt.Sprintf("%s", *l.Hostname))
 		}
 	default:

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package controller implements the certificate-shim controllers -
+// ingress-shim and gateway-shim.
+//
+// A common use-case for cert-manager is to easily create publicly
+// trusted ACME certificates for services hosted inside a Kubernetes
+// cluster. The ingress-shim and gateway-shim controllers allow you
+// to annotate your Ingress or Gateway with a reference to a
+// cert-manager (Cluster)Issuer, which will automatically create a
+// corresponding cert-manager Certificate.
+//
+// This controller package contains a generic runtime.Object
+// certificate-shim controller, which should be embedded for each
+// Kubernetes API type that can be shimmed.
 package controller
 
 import (
@@ -47,69 +60,30 @@ const (
 
 	// GatewayShimControllerName is the name of the gateway-shim controller.
 	GatewayShimControllerName = "gateway-shim"
+
+	// resyncPeriod is set to 10 hours following the controller-runtime defaults
+	// and following discussion: https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
+	// which boils down to: never change this without an explicit reason
+	resyncPeriod = 10 * time.Hour
 )
 
+// defaults can be reconfigure from command line flags. They exist to
+// maintain compatibility with the kube-lego `kubernetes.io/tls-acme`
+// annotation by providing a reference to a default issuer.
 type defaults struct {
 	autoCertificateAnnotations          []string
 	issuerName, issuerKind, issuerGroup string
 }
 
-type ingressShim struct {
-	controller
-}
-
-func (i *ingressShim) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	// construct a new named logger to be reused throughout the controller
-	i.log = logf.FromContext(ctx.RootContext, IngressShimControllerName)
-
-	// create a queue used to queue up items to be processed
-	i.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), IngressShimControllerName)
-
-	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
-	i.objectInformer = ingressInformer.Informer()
-
-	i.objectLister = &internalIngressLister{ingressInformer.Lister()}
-
-	return i.sharedRegister(ctx)
-}
-
-type gatewayShim struct {
-	controller
-}
-
-func (g *gatewayShim) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	// construct a new named logger to be reused throughout the controller
-	g.log = logf.FromContext(ctx.RootContext, GatewayShimControllerName)
-
-	g.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), GatewayShimControllerName)
-
-	// Discover if the gateway api is available
-	d, err := discovery.NewDiscoveryClientForConfig(ctx.RESTConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: couldn't construct discovery client: %w", GatewayShimControllerName, err)
-	}
-	resources, err := d.ServerResourcesForGroupVersion(gatewayapi.GroupVersion.String())
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: couldn't discover gateway API resources: %w", GatewayShimControllerName, err)
-	}
-	if len(resources.APIResources) == 0 {
-		return nil, nil, fmt.Errorf("%s: no gateway API resources were discovered (are the Gateway API CRDS installed?)", GatewayShimControllerName)
-	}
-
-	// 10 hours is default: https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
-	gatewayInformerFactory := gatewayinformers.NewSharedInformerFactory(gatewayclient.NewForConfigOrDie(ctx.RESTConfig), 10*time.Hour)
-	gatewayInformerLister := gatewayInformerFactory.Networking().V1alpha1().Gateways()
-	g.objectInformer = gatewayInformerLister.Informer()
-	gatewayInformerFactory.Start(ctx.StopCh)
-
-	g.objectLister = &internalGatewayLister{gatewayInformerLister.Lister()}
-
-	return g.sharedRegister(ctx)
-}
-
+// controller is a generic certificate-shim controller.
+//
+// By setting controller.objectLister and controller.objectInformer
+// to watch / list any Kubernetes API type, the controller will
+// react to any changes to those types, check for supported
+// annotations and create matching certificates.
 type controller struct {
-	// maintain a reference to the workqueue for this controller
-	// so the handleOwnedResource method can enqueue resources
+	// queue is a reference to the workqueue for this controller
+	// so the handleOwnedResource method can enqueue resources.
 	queue workqueue.RateLimitingInterface
 
 	// logger to be used by this controller
@@ -129,7 +103,64 @@ type controller struct {
 	defaults defaults
 }
 
-// Register registers and constructs the controller using the provided context.
+// ingressShim is the ingress-shim variant of certificate-shim
+type ingressShim struct {
+	controller
+}
+
+// Register sets up a certificate-shim for *networkingv1beta1.Ingresses
+func (i *ingressShim) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	i.log = logf.FromContext(ctx.RootContext, IngressShimControllerName)
+	i.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), IngressShimControllerName)
+
+	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
+	i.objectInformer = ingressInformer.Informer()
+	i.objectLister = &internalIngressLister{ingressInformer.Lister()}
+
+	return i.sharedRegister(ctx)
+}
+
+// gatewayShim is the gateway-shim variant of certificate-shim
+type gatewayShim struct {
+	controller
+}
+
+// Register sets up a certificate-shim for *gatewayapi.Gateways
+func (g *gatewayShim) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	g.log = logf.FromContext(ctx.RootContext, GatewayShimControllerName)
+	g.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), GatewayShimControllerName)
+
+	// If the gateway-shim controller is enabled, but the CRDs have not been installed, return an error
+	// prompting the user to install the CRDs. This will cause cert-manager to go in to CrashLoopBackoff
+	// which is nice and obvious.
+
+	// Use the discovery client to find out if the Gateway API types are known to the API server
+	d, err := discovery.NewDiscoveryClientForConfig(ctx.RESTConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%s: couldn't construct discovery client: %w", GatewayShimControllerName, err)
+	}
+	resources, err := d.ServerResourcesForGroupVersion(gatewayapi.GroupVersion.String())
+	if err != nil {
+		return nil, nil, fmt.Errorf("%s: couldn't discover gateway API resources (are the Gateway API CRDS installed?): %w", GatewayShimControllerName, err)
+	}
+	if len(resources.APIResources) == 0 {
+		return nil, nil, fmt.Errorf("%s: no gateway API resources were discovered (are the Gateway API CRDS installed?)", GatewayShimControllerName)
+	}
+
+	// As gateways are a CRD their informers are not available in controllerpkg.Context,
+	// create a new InformerFactory for gatewayapi.Gateways and set the certificate-shim
+	// objectInformer / objectLister to use them.
+	gatewayInformerFactory := gatewayinformers.NewSharedInformerFactory(gatewayclient.NewForConfigOrDie(ctx.RESTConfig), resyncPeriod)
+	gatewayInformerLister := gatewayInformerFactory.Networking().V1alpha1().Gateways()
+	g.objectInformer = gatewayInformerLister.Informer()
+	g.objectLister = &internalGatewayLister{gatewayInformerLister.Lister()}
+
+	gatewayInformerFactory.Start(ctx.StopCh)
+	return g.sharedRegister(ctx)
+}
+
+// sharedRegister registers and constructs the certificate-shim controller using the provided context.
+// It should be called from the Register() function of a controller implementing a certificate-shim.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
 func (c *controller) sharedRegister(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
@@ -147,7 +178,6 @@ func (c *controller) sharedRegister(ctx *controllerpkg.Context) (workqueue.RateL
 	c.certificateLister = certificatesInformer.Lister()
 	c.issuerLister = issuerInformer.Lister()
 
-	// if scoped to a single namespace
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
 	// register event handlers and obtain a lister for clusterissuers.
 	if ctx.Namespace == "" {
@@ -180,7 +210,7 @@ func (c *controller) certificateDeleted(obj interface{}) {
 		runtime.HandleError(fmt.Errorf("Object is not a certificate object %#v", obj))
 		return
 	}
-	objs, err := c.objectsForCertificate(crt)
+	objs, err := c.ownersOfCertificate(crt)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("Error looking up ingress observing certificate: %s/%s", crt.Namespace, crt.Name))
 		return

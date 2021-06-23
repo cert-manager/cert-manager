@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
-func (c *controller) objectsForCertificate(crt *v1.Certificate) ([]runtime.Object, error) {
+// ownersOfCertificate returns references to controllers that are referred to in the
+// given Certificate's ownerRef.
+func (c *controller) ownersOfCertificate(crt *v1.Certificate) ([]runtime.Object, error) {
 	objs, err := c.objectLister.List(labels.NewSelector())
 
 	if err != nil {
