@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
 	"testing"
 
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -68,9 +69,13 @@ func TestShouldSync(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		shouldSync := shouldSync(buildIngress("", "", test.Annotations), []string{"kubernetes.io/tls-acme"})
-		if shouldSync != test.ShouldSync {
-			t.Errorf("Expected shouldSync=%v for annotations %#v", test.ShouldSync, test.Annotations)
+		shouldSyncIngress := shouldSync(buildIngress("", "", test.Annotations), []string{"kubernetes.io/tls-acme"})
+		shouldSyncGateway := shouldSync(buildGateway("", "", test.Annotations), []string{"kubernetes.io/tls-acme"})
+		if shouldSyncIngress != test.ShouldSync {
+			t.Errorf("Expected shouldSyncIngress=%v for annotations %#v", test.ShouldSync, test.Annotations)
+		}
+		if shouldSyncGateway != test.ShouldSync {
+			t.Errorf("Expected shouldSyncGateway=%v for annotations %#v", test.ShouldSync, test.Annotations)
 		}
 	}
 }
@@ -85,7 +90,7 @@ func TestSync(t *testing.T) {
 		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	type testT struct {
 		Name                string
-		Ingress             *networkingv1beta1.Ingress
+		IngressOrGateway    runtime.Object
 		Issuer              cmapi.GenericIssuer
 		IssuerLister        []runtime.Object
 		ClusterIssuerLister []runtime.Object
@@ -103,7 +108,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single Certificate for an ingress with a single valid TLS entry and common-name annotation",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -135,7 +140,80 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						CommonName: "my-cn",
+						SecretName: "example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
+			Name:   "return a single Certificate for a gateway with a single valid TLS entry and common-name annotation",
+			Issuer: acmeClusterIssuer,
+			IngressOrGateway: &gatewayapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.CommonNameAnnotationKey:               "my-cn",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gatewayapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gatewayapi.Listener{
+						{
+							Hostname: buildGatewayHostname("example.com"),
+							Port:     443,
+							Protocol: "HTTPS",
+							TLS: &gatewayapi.GatewayTLSConfig{
+								Mode: buildGatewayTLSTerminate(),
+								CertificateRef: &gatewayapi.LocalObjectReference{
+									Group: "core",
+									Kind:  "secret",
+									Name:  "example-com-tls",
+								},
+							},
+						},
+						{
+							Hostname: buildGatewayHostname("www.example.com"),
+							Port:     443,
+							Protocol: "HTTPS",
+							TLS: &gatewayapi.GatewayTLSConfig{
+								Mode: buildGatewayTLSTerminate(),
+								CertificateRef: &gatewayapi.LocalObjectReference{
+									Group: "core",
+									Kind:  "secret",
+									Name:  "example-com-tls",
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "example-com-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -153,7 +231,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -189,7 +267,7 @@ func TestSync(t *testing.T) {
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
 						},
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -206,7 +284,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "create a Certificate with the HTTP01 name override if the given ingress uses http01 annotations",
 			Issuer: gen.Issuer(acmeIssuer.Name),
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -242,7 +320,7 @@ func TestSync(t *testing.T) {
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
 							cmapi.IssueTemporaryCertificateAnnotation:       "true",
 						},
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -259,7 +337,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -284,7 +362,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -301,7 +379,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -327,7 +405,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -344,7 +422,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a certificate ingress class",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -371,7 +449,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 						Annotations: map[string]string{
 							cmacme.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
 						},
@@ -391,7 +469,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "edit-in-place set to false should not trigger editing the ingress in-place",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -418,7 +496,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -435,7 +513,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -460,7 +538,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -481,7 +559,7 @@ func TestSync(t *testing.T) {
 			DefaultIssuerKind:   "ClusterIssuer",
 			DefaultIssuerGroup:  "cert-manager.io",
 			ClusterIssuerLister: []runtime.Object{clusterIssuer},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -505,7 +583,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -528,7 +606,7 @@ func TestSync(t *testing.T) {
 				`Warning BadConfig TLS entry 0 is invalid: secret "example-com-tls-invalid" for ingress TLS has no hosts specified`,
 				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
 			},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -554,7 +632,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -577,7 +655,7 @@ func TestSync(t *testing.T) {
 				`Warning BadConfig TLS entry 0 is invalid: TLS entry for hosts [example.com] must specify a secretName`,
 				`Normal CreateCertificate Successfully created Certificate "example-com-tls"`,
 			},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -603,7 +681,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -619,7 +697,7 @@ func TestSync(t *testing.T) {
 		},
 		{
 			Name: "should error if the specified issuer is not found",
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -634,7 +712,7 @@ func TestSync(t *testing.T) {
 			Name:         "should not return any certificates if a correct Certificate already exists",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -659,7 +737,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -678,7 +756,7 @@ func TestSync(t *testing.T) {
 			Name:         "should update a certificate if an incorrect Certificate exists",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -699,7 +777,7 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				buildCertificate("existing-crt",
 					gen.DefaultTestNamespace,
-					buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 				),
 			},
 			DefaultIssuerKind: "Issuer",
@@ -709,7 +787,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -724,10 +802,10 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:         "should update an existing Certificate resource with new labels if they do not match those specified on the Ingress",
+			Name:         "should update an existing Certificate resource with new labels if they do not match those specified on the IngressOrGateway",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -757,7 +835,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"a-different-value": "should be removed",
 						},
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -779,7 +857,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -797,7 +875,7 @@ func TestSync(t *testing.T) {
 			Name:         "should not update certificate if it does not belong to any ingress",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -839,7 +917,7 @@ func TestSync(t *testing.T) {
 			Name:         "should not update certificate if it does not belong to the ingress",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -863,7 +941,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("not-ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("not-ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -881,7 +959,7 @@ func TestSync(t *testing.T) {
 			Name:         "should delete a Certificate if its SecretName is not present in the ingress",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -896,7 +974,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -915,7 +993,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -932,7 +1010,7 @@ func TestSync(t *testing.T) {
 			Name:         "should update a Certificate if is contains a Common Name that is not defined on the ingress annotations",
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -957,7 +1035,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -978,7 +1056,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -998,9 +1076,9 @@ func TestSync(t *testing.T) {
 			Issuer:       acmeIssuer,
 			IssuerLister: []runtime.Object{acmeIssuer},
 			ExpectedEvents: []string{
-				`Warning BadConfig Duplicate TLS entry for secretName "example-com-tls"`,
+				`Warning BadConfig duplicate TLS entry for secretName "example-com-tls"`,
 			},
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -1028,7 +1106,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "Failure to translateIngressAnnotations",
 			Issuer: acmeIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -1054,7 +1132,7 @@ func TestSync(t *testing.T) {
 		{
 			Name:   "return a single Certificate for an ingress with a single valid TLS entry with common-name and keyusage annotation",
 			Issuer: acmeClusterIssuer,
-			Ingress: &networkingv1beta1.Ingress{
+			IngressOrGateway: &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
@@ -1087,7 +1165,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -1165,7 +1243,7 @@ func TestSync(t *testing.T) {
 			}
 			b.Start()
 
-			err := c.Sync(context.Background(), test.Ingress)
+			err := c.Sync(context.Background(), test.IngressOrGateway)
 
 			// If test.Err == true, err should not be nil and vice versa
 			if test.Err == (err == nil) {
@@ -1266,7 +1344,7 @@ func TestIssuerForIngress(t *testing.T) {
 				issuerGroup: test.DefaultGroup,
 			},
 		}
-		name, kind, group, err := c.issuerForIngress(test.Ingress)
+		name, kind, group, err := c.issuerForObject(test.Ingress)
 		if err != nil {
 			if test.ExpectedError == nil || err.Error() != test.ExpectedError.Error() {
 				t.Errorf("unexpected error, exp=%v got=%s", test.ExpectedError, err)
@@ -1313,8 +1391,34 @@ func buildIngress(name, namespace string, annotations map[string]string) *networ
 	}
 }
 
-func buildOwnerReferences(name, namespace string) []metav1.OwnerReference {
+func buildGateway(name, namespace string, annotations map[string]string) *gatewayapi.Gateway {
+	return &gatewayapi.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Namespace:   namespace,
+			Annotations: annotations,
+		},
+	}
+}
+
+func buildIngressOwnerReferences(name, namespace string) []metav1.OwnerReference {
 	return []metav1.OwnerReference{
 		*metav1.NewControllerRef(buildIngress(name, namespace, nil), ingressGVK),
 	}
+}
+
+func buildGatewayOwnerReferences(name, namespace string) []metav1.OwnerReference {
+	return []metav1.OwnerReference{
+		*metav1.NewControllerRef(buildIngress(name, namespace, nil), gatewayGVK),
+	}
+}
+
+func buildGatewayHostname(hostname string) *gatewayapi.Hostname {
+	h := gatewayapi.Hostname(hostname)
+	return &h
+}
+
+func buildGatewayTLSTerminate() *gatewayapi.TLSModeType {
+	terminate := gatewayapi.TLSModeTerminate
+	return &terminate
 }

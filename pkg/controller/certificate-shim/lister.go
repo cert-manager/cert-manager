@@ -20,23 +20,23 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	networkinglisters "k8s.io/client-go/listers/networking/v1beta1"
+	"k8s.io/client-go/tools/cache"
 	gatewaylisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha1"
 )
 
+// objectLister is the most minimal generic lister.
+// it is used in certificate-shim as an interface that can list gateways or ingresses
 type objectLister interface {
 	List(selector labels.Selector) (ret []runtime.Object, err error)
-	Objects(namespace string) objectNamespaceLister
+	Objects(namespace string) cache.GenericNamespaceLister
 }
 
-type objectNamespaceLister interface {
-	List(selector labels.Selector) (ret []runtime.Object, err error)
-	Get(name string) (runtime.Object, error)
-}
-
+// internalIngressLister wraps an IngressLister into an objectLister
 type internalIngressLister struct {
 	l networkinglisters.IngressLister
 }
 
+// internalIngressNamespaceLister wraps an IngressNamespaceLister into a cache.GenericNamespaceLister
 type internalIngressNamespaceLister struct {
 	l networkinglisters.IngressNamespaceLister
 }
@@ -55,7 +55,7 @@ func (i *internalIngressLister) List(selector labels.Selector) ([]runtime.Object
 	return objs, nil
 }
 
-func (i *internalIngressLister) Objects(namespace string) objectNamespaceLister {
+func (i *internalIngressLister) Objects(namespace string) cache.GenericNamespaceLister {
 	return &internalIngressNamespaceLister{i.l.Ingresses(namespace)}
 }
 
@@ -77,6 +77,7 @@ func (i *internalIngressNamespaceLister) Get(name string) (runtime.Object, error
 	return i.l.Get(name)
 }
 
+// internalGatewayLister wraps a GatewayLister into an objectLister
 type internalGatewayLister struct {
 	gl gatewaylisters.GatewayLister
 }
@@ -93,10 +94,11 @@ func (i *internalGatewayLister) List(selector labels.Selector) ([]runtime.Object
 	return objects, nil
 }
 
-func (i *internalGatewayLister) Objects(namespace string) objectNamespaceLister {
+func (i *internalGatewayLister) Objects(namespace string) cache.GenericNamespaceLister {
 	return &internalGatewayNamespaceLister{gl: i.gl.Gateways(namespace)}
 }
 
+// internalGatewayNamespaceLister wraps a GatewayNamespaceLister into a cache.GenericNamespaceLister
 type internalGatewayNamespaceLister struct {
 	gl gatewaylisters.GatewayNamespaceLister
 }

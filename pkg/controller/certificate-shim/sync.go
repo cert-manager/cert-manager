@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
 
@@ -46,7 +47,7 @@ const (
 	reasonDeleteCertificate = "DeleteCertificate"
 )
 
-var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
+var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("IngressOrGateway")
 var gatewayGVK = gatewayapi.SchemeGroupVersion.WithKind("Gateway")
 
 func (c *controller) Sync(ctx context.Context, obj runtime.Object) error {
@@ -59,16 +60,19 @@ func (c *controller) Sync(ctx context.Context, obj runtime.Object) error {
 	ctx = logf.NewContext(ctx, log)
 
 	if !shouldSync(ob, c.defaults.autoCertificateAnnotations) {
-		logf.V(logf.DebugLevel).Infof("not syncing ingress resource as it does not contain a %q or %q annotation",
+		logf.V(logf.DebugLevel).Infof("not syncing %T as it does not contain a %q or %q annotation",
+			obj, ob.GetNamespace(), ob.GetName(),
 			cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey)
 		return nil
 	}
 
 	issuerName, issuerKind, issuerGroup, err := c.issuerForObject(ob)
 	if err != nil {
-		log.Error(err, "failed to determine issuer to be used for ingress resource")
-		c.recorder.Eventf(obj, corev1.EventTypeWarning, reasonBadConfig, "Could not determine issuer for ingress due to bad annotations: %s",
-			err)
+		log.Error(err, "failed to determine issuer to be used for resource")
+		c.recorder.Eventf(obj, corev1.EventTypeWarning, reasonBadConfig, "Could not determine issuer for %T due to bad annotations: %s",
+			obj,
+			err,
+		)
 		return nil
 	}
 
@@ -136,26 +140,7 @@ func (c *controller) validateObject(obj metav1.Object) []error {
 		}
 		return errs
 	case *gatewayapi.Gateway:
-		var errs []error
-		for _, listener := range o.Spec.Listeners {
-			if listener.TLS.CertificateRef.Group != "core" {
-				errs = append(errs, fmt.Errorf(
-					"unsupported certificateRef.group, want %s got %s",
-					"core",
-					listener.TLS.CertificateRef.Group,
-					),
-				)
-			}
-			if listener.TLS.CertificateRef.Kind != "secret" {
-				errs = append(errs, fmt.Errorf(
-					"unsupported certificateRef.kind, want %s got %s",
-					"secret",
-					listener.TLS.CertificateRef.Kind,
-				),
-				)
-			}
-		}
-		return errs
+		return validateGatewayListeners(o.Spec.Listeners)
 	default:
 		return []error{fmt.Errorf("validateObject: can't handle object %T, expected ingress or gateway", obj)}
 	}
@@ -174,93 +159,155 @@ func validateIngressTLSBlock(tlsBlock networkingv1beta1.IngressTLS) []error {
 	return errs
 }
 
-func validateGatewayTLSConfig(config gatewayapi.GatewayTLSConfig) []error {
+func validateGatewayListeners(listeners []gatewayapi.Listener) []error {
 	var errs []error
 
+	for _, l := range listeners {
+		if l.TLS == nil {
+			return []error{fmt.Errorf("listener for host %s does not specify a TLS block", *l.Hostname)}
+		}
+		if l.TLS.CertificateRef.Group != "core" {
+			errs = append(
+				errs,
+				fmt.Errorf(
+					"unsupported certificateRef.group, want %s got %s",
+					"core",
+					l.TLS.CertificateRef.Group,
+				),
+			)
+		}
+		if *l.TLS.Mode == gatewayapi.TLSModePassthrough {
+			errs = append(
+				errs,
+				fmt.Errorf(
+					"listener for %s has mode %s, the only valid mode is %s",
+					*l.Hostname,
+					gatewayapi.TLSModePassthrough,
+					gatewayapi.TLSModeTerminate,
+				),
+			)
+		}
+	}
+	return errs
 }
 
 func (c *controller) buildCertificates(ctx context.Context, obj metav1.Object,
 	issuerName, issuerKind, issuerGroup string) (new, update []*cmapi.Certificate, _ error) {
 	log := logf.FromContext(ctx)
 
+	var newCrts []*cmapi.Certificate
+	var updateCrts []*cmapi.Certificate
+
+	type certificateShimInfo struct {
+		// tlsHosts key = secret ref, value = dns host names
+		tlsHosts map[corev1.ObjectReference][]string
+		gvk      schema.GroupVersionKind
+	}
+
+	certs := certificateShimInfo{
+		tlsHosts: map[corev1.ObjectReference][]string{},
+	}
+
 	switch o := obj.(type) {
 	case *networkingv1beta1.Ingress:
-		var newCrts []*cmapi.Certificate
-		var updateCrts []*cmapi.Certificate
+		certs.gvk = ingressGVK
 		for i, tls := range o.Spec.TLS {
 			errs := validateIngressTLSBlock(tls)
-			// if this tls entry is invalid, record an error event on Ingress object and continue to the next tls entry
+			// if this tls entry is invalid, record an error event on IngressOrGateway object and continue to the next tls entry
 			if len(errs) > 0 {
 				errMsg := utilerrors.NewAggregate(errs).Error()
 				c.recorder.Eventf(o, corev1.EventTypeWarning, reasonBadConfig, fmt.Sprintf("TLS entry %d is invalid: %s", i, errMsg))
 				continue
 			}
-			existingCrt, err := c.certificateLister.Certificates(o.Namespace).Get(tls.SecretName)
-			if !apierrors.IsNotFound(err) && err != nil {
-				return nil, nil, err
-			}
-
-			crt := &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            tls.SecretName,
-					Namespace:       o.Namespace,
-					Labels:          o.Labels,
-					OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, ingressGVK)},
-				},
-				Spec: cmapi.CertificateSpec{
-					DNSNames:   tls.Hosts,
-					SecretName: tls.SecretName,
-					IssuerRef: cmmeta.ObjectReference{
-						Name:  issuerName,
-						Kind:  issuerKind,
-						Group: issuerGroup,
-					},
-					Usages: cmapi.DefaultKeyUsages(),
-				},
-			}
-
-			setIssuerSpecificConfig(crt, o)
-			if err := translateIngressAnnotations(crt, o.Annotations); err != nil {
-				return nil, nil, err
-			}
-
-			// check if a Certificate for this TLS entry already exists, and if it
-			// does then skip this entry
-			if existingCrt != nil {
-				log := logf.WithRelatedResource(log, existingCrt)
-				log.V(logf.DebugLevel).Info("certificate already exists for ingress resource, ensuring it is up to date")
-
-				if metav1.GetControllerOf(existingCrt) == nil {
-					log.V(logf.InfoLevel).Info("certificate resource has no owner. refusing to update non-owned certificate resource for ingress")
-					continue
-				}
-
-				if !metav1.IsControlledBy(existingCrt, o) {
-					log.V(logf.InfoLevel).Info("certificate resource is not owned by this ingress. refusing to update non-owned certificate resource for ingress")
-					continue
-				}
-
-				if !certNeedsUpdate(existingCrt, crt) {
-					log.V(logf.DebugLevel).Info("certificate resource is already up to date for ingress")
-					continue
-				}
-
-				updateCrt := existingCrt.DeepCopy()
-
-				updateCrt.Spec = crt.Spec
-				updateCrt.Labels = crt.Labels
-				setIssuerSpecificConfig(updateCrt, o)
-				updateCrts = append(updateCrts, updateCrt)
-			} else {
-				newCrts = append(newCrts, crt)
-			}
+			certs.tlsHosts[corev1.ObjectReference{
+				Namespace: o.Namespace,
+				Name:      tls.SecretName,
+			}] = tls.Hosts
 		}
-		return newCrts, updateCrts, nil
 	case *gatewayapi.Gateway:
-		return nil, nil, fmt.Errorf("not implemented")
+		certs.gvk = gatewayGVK
+		errs := validateGatewayListeners(o.Spec.Listeners)
+		if len(errs) > 0 {
+			c.recorder.Eventf(o, corev1.EventTypeWarning, reasonBadConfig, fmt.Sprintf("%s", utilerrors.NewAggregate(errs)))
+			return nil, nil, utilerrors.NewAggregate(errs)
+		}
+		for _, l := range o.Spec.Listeners {
+			secretRef := corev1.ObjectReference{
+				Namespace: o.Namespace,
+				Name:      l.TLS.CertificateRef.Name,
+			}
+			certs.tlsHosts[secretRef] = append(certs.tlsHosts[secretRef], fmt.Sprintf("%s", *l.Hostname))
+		}
 	default:
 		return nil, nil, fmt.Errorf("buildCertificates: expected ingress or gateway, got %T", obj)
 	}
+
+	for secretRef, hosts := range certs.tlsHosts {
+		existingCrt, err := c.certificateLister.Certificates(secretRef.Namespace).Get(secretRef.Name)
+		if !apierrors.IsNotFound(err) && err != nil {
+			return nil, nil, err
+		}
+
+		crt := &cmapi.Certificate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            secretRef.Name,
+				Namespace:       secretRef.Namespace,
+				Labels:          obj.GetLabels(),
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(obj, certs.gvk)},
+			},
+			Spec: cmapi.CertificateSpec{
+				DNSNames:   hosts,
+				SecretName: secretRef.Name,
+				IssuerRef: cmmeta.ObjectReference{
+					Name:  issuerName,
+					Kind:  issuerKind,
+					Group: issuerGroup,
+				},
+				Usages: cmapi.DefaultKeyUsages(),
+			},
+		}
+
+		if certs.gvk == ingressGVK {
+			setIssuerSpecificConfig(crt, obj.(*networkingv1beta1.Ingress))
+		}
+		if err := translateIngressAnnotations(crt, obj.GetAnnotations()); err != nil {
+			return nil, nil, err
+		}
+
+		// check if a Certificate for this TLS entry already exists, and if it
+		// does then skip this entry
+		if existingCrt != nil {
+			log := logf.WithRelatedResource(log, existingCrt)
+			log.V(logf.DebugLevel).Info("certificate already exists for this object, ensuring it is up to date")
+
+			if metav1.GetControllerOf(existingCrt) == nil {
+				log.V(logf.InfoLevel).Info("certificate resource has no owner. refusing to update non-owned certificate resource for object")
+				continue
+			}
+
+			if !metav1.IsControlledBy(existingCrt, obj) {
+				log.V(logf.InfoLevel).Info("certificate resource is not owned by this object. refusing to update non-owned certificate resource for object")
+				continue
+			}
+
+			if !certNeedsUpdate(existingCrt, crt) {
+				log.V(logf.DebugLevel).Info("certificate resource is already up to date for object")
+				continue
+			}
+
+			updateCrt := existingCrt.DeepCopy()
+
+			updateCrt.Spec = crt.Spec
+			updateCrt.Labels = crt.Labels
+			if certs.gvk == ingressGVK {
+				setIssuerSpecificConfig(updateCrt, obj.(*networkingv1beta1.Ingress))
+			}
+			updateCrts = append(updateCrts, updateCrt)
+		} else {
+			newCrts = append(newCrts, crt)
+		}
+	}
+	return newCrts, updateCrts, nil
 }
 
 func (c *controller) findUnrequiredCertificates(obj metav1.Object) ([]*cmapi.Certificate, error) {
@@ -292,9 +339,13 @@ func isUnrequiredCertificate(crt *cmapi.Certificate, obj metav1.Object) bool {
 				return false
 			}
 		}
-		// TODO: JS - add gateway API here
+	case *gatewayapi.Gateway:
+		for _, l := range o.Spec.Listeners {
+			if crt.Spec.SecretName == l.TLS.CertificateRef.Name {
+				return false
+			}
+		}
 	}
-
 	return true
 }
 
@@ -392,8 +443,8 @@ func shouldSync(obj metav1.Object, autoCertificateAnnotations []string) bool {
 	return false
 }
 
-// issuerForIngress will determine the issuer that should be specified on a
-// Certificate created for the given Ingress resource. If one is not set, the
+// issuerForObject will determine the issuer that should be specified on a
+// Certificate created for the given resource. If one is not set, the
 // default issuer given to the controller will be used.
 func (c *controller) issuerForObject(obj metav1.Object) (name, kind, group string, err error) {
 	var errs []string

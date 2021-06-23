@@ -18,10 +18,10 @@ package controller
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
