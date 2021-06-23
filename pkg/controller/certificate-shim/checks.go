@@ -39,7 +39,7 @@ func (c *controller) ownersOfCertificate(crt *v1.Certificate) ([]runtime.Object,
 	for _, obj := range objs {
 		o, ok := obj.(metav1.Object)
 		if !ok {
-			panic(fmt.Sprintf("object %T is not a metav1.object", obj))
+			return nil, fmt.Errorf("object %T is not a metav1.object", obj)
 		}
 		if crt.Namespace != o.GetNamespace() {
 			continue
