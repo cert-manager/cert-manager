@@ -104,6 +104,9 @@ const (
 	// that includes a EmailSANs.
 	EmailSANsFeature Feature = "EmailSANs"
 
+	// NonLetsEncryptFeature denotes those features which aren't supported by Let's Encrypt
+	NonLetsEncryptFeature Feature = "NonLetsEncrypt"
+
 	// CommonName denotes whether the target issuer is able to sign certificates
 	// with a distinct CommonName. This is useful for issuers such as ACME
 	// providers that ignore, or otherwise have special requirements for the
