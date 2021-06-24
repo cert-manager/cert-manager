@@ -41,7 +41,6 @@ import (
 
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-duration")
-
 	var acmeIngressDomain string
 	issuerName := "test-acme-issuer"
 	certificateName := "test-acme-certificate"
@@ -127,6 +126,10 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server with 1 hour validity", func() {
+		if f.Config.Addons.ACMEServer.URL == "https://acme-staging-v02.api.letsencrypt.org/directory" {
+			fmt.Println("$$$$$$$$$$$$$$$$$$")
+			Skip("skipped test")
+		}
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")

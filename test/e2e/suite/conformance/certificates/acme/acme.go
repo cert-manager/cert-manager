@@ -69,20 +69,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.SaveCAToSecret,
 	)
 
-	// unsupportedLetsEncryptFeatures is a list of features that are not supported by Let's Encrypt
-	// issuer type using DNS01
-	var unsupportedLetsEncryptFeatures = featureset.NewFeatureSet(
-		featureset.IPAddressFeature,
-		featureset.DurationFeature,
-		featureset.WildcardsFeature,
-		featureset.URISANsFeature,
-		featureset.CommonNameFeature,
-		featureset.KeyUsagesFeature,
-		featureset.EmailSANsFeature,
-		featureset.SaveCAToSecret,
-		featureset.NonLetsEncryptFeature,
-	)
-
 	provisionerHTTP01 := &acmeIssuerProvisioner{
 		eab: eab,
 	}
