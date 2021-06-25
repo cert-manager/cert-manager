@@ -622,22 +622,6 @@ func TestProcessItem(t *testing.T) {
 							gen.SetCertificateSigningRequestCertificate([]byte("signed-cert")),
 						),
 					)),
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
-						"",
-						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
-							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"experimental.cert-manager.io/private-key-secret-name": "test-secret",
-							}),
-							gen.SetCertificateSigningRequestRequest(csrBundle.csrPEM),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:   certificatesv1.CertificateApproved,
-								Status: corev1.ConditionTrue,
-							}),
-							gen.SetCertificateSigningRequestCertificate([]byte("signed-cert")),
-							gen.SetCertificateSigningRequestCA([]byte("signed-cert")),
-						),
-					)),
 				},
 			},
 		},

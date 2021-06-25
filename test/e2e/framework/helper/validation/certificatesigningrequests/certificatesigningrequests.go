@@ -17,13 +17,11 @@ limitations under the License.
 package certificatesigningrequests
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -306,69 +304,6 @@ func ExpectEmailsToMatch(csr *certificatesv1.CertificateSigningRequest, _ crypto
 
 	if !util.EqualUnsorted(cert.EmailAddresses, req.EmailAddresses) {
 		return fmt.Errorf("certificate doesn't contain Email SANs: exp=%v got=%v", req.EmailAddresses, cert.EmailAddresses)
-	}
-
-	return nil
-}
-
-// ExpectCorrectTrustChain checks if the cert is signed by the root CA if one is provided
-func ExpectCorrectTrustChain(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
-	cert, err := pki.DecodeX509CertificateBytes(csr.Status.Certificate)
-	if err != nil {
-		return err
-	}
-	req, err := pki.DecodeX509CertificateRequestBytes(csr.Spec.Request)
-	if err != nil {
-		return err
-	}
-
-	var dnsName string
-	if len(req.DNSNames) > 0 {
-		dnsName = req.DNSNames[0]
-	}
-
-	caPEM, err := base64.StdEncoding.DecodeString(csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey])
-	if err != nil {
-		return fmt.Errorf("failed to base 64 decode CA certificate annotation %q: %w",
-			experimentalapi.CertificateSigningRequestCAAnnotationKey, err)
-	}
-
-	rootCertPool := x509.NewCertPool()
-	rootCertPool.AppendCertsFromPEM(caPEM)
-	intermediateCertPool := x509.NewCertPool()
-	intermediateCertPool.AppendCertsFromPEM(csr.Status.Certificate)
-	opts := x509.VerifyOptions{
-		DNSName:       dnsName,
-		Intermediates: intermediateCertPool,
-		Roots:         rootCertPool,
-	}
-
-	if _, err := cert.Verify(opts); err != nil {
-		return fmt.Errorf(
-			"verify error. CERT:\n%s\nROOTS\n%s\nERROR\n%s\n",
-			csr.Status.Certificate,
-			caPEM,
-			err,
-		)
-	}
-
-	return nil
-}
-
-// ExpectCARootCertificate checks if the CA cert is root CA if one is provided
-func ExpectCARootCertificate(csr *certificatesv1.CertificateSigningRequest, _ crypto.Signer) error {
-	caPEM, err := base64.StdEncoding.DecodeString(csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey])
-	if err != nil {
-		return fmt.Errorf("failed to base 64 decode CA certificate annotation %q: %w",
-			experimentalapi.CertificateSigningRequestCAAnnotationKey, err)
-	}
-	caCert, err := pki.DecodeX509CertificateBytes(caPEM)
-	if err != nil {
-		return err
-	}
-
-	if !bytes.Equal(caCert.RawSubject, caCert.RawIssuer) {
-		return fmt.Errorf("expected CA certificate to be root CA; want Issuer %v, but got %v", caCert.Subject, caCert.Issuer)
 	}
 
 	return nil

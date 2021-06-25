@@ -33,8 +33,4 @@ const (
 	// This annotation *may* not be present, and is used by the 'self signing'
 	// issuer type to self-sign certificates.
 	CertificateSigningRequestPrivateKeyAnnotationKey = "experimental.cert-manager.io/private-key-secret-name"
-
-	// CertificateSigningRequestCAAnnotationKey is the annotation key which will
-	// contain the base 64 encoded resulting CA certificate which signed the CSR.
-	CertificateSigningRequestCAAnnotationKey = "experimental.cert-manager.io/ca"
 )

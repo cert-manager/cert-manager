@@ -17,7 +17,6 @@ limitations under the License.
 package gen
 
 import (
-	"encoding/base64"
 	"strconv"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -106,12 +105,6 @@ func SetCertificateSigningRequestCertificate(cert []byte) CertificateSigningRequ
 	return func(csr *certificatesv1.CertificateSigningRequest) {
 		csr.Status.Certificate = cert
 	}
-}
-
-func SetCertificateSigningRequestCA(ca []byte) CertificateSigningRequestModifier {
-	return AddCertificateSigningRequestAnnotations(map[string]string{
-		experimentalapi.CertificateSigningRequestCAAnnotationKey: base64.StdEncoding.EncodeToString(ca),
-	})
 }
 
 func SetCertificateSigningRequestStatusCondition(c certificatesv1.CertificateSigningRequestCondition) CertificateSigningRequestModifier {
