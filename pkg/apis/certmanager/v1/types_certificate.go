@@ -141,7 +141,7 @@ type CertificateSpec struct {
 	// SecretTemplate defines annotations and labels to be propagated
 	// to the Kubernetes Secret when it is created or updated.
 	// +optional
-	SecretTemplate CertificateSecretTemplate `json:"secretTemplate"`
+	SecretTemplate *CertificateSecretTemplate `json:"secretTemplate,omitempty"`
 
 	// Keystores configures additional keystore output formats stored in the
 	// `secretName` Secret resource.
