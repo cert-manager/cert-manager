@@ -501,7 +501,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 
 	// create policy
 	role_path := path.Join(v.IntermediateMount, "sign", v.Role)
-	policy := fmt.Sprintf("path \"%s\" { capabilities = [ \"create\", \"update\" ] }", role_path)
+	policy := fmt.Sprintf(`path "%s" { capabilities = [ "create", "update" ] }`, role_path)
 	err = v.client.Sys().PutPolicy(v.Role, policy)
 	if err != nil {
 		return fmt.Errorf("Error creating policy: %s", err.Error())
