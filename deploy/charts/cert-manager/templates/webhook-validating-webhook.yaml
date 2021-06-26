@@ -26,8 +26,9 @@ webhooks:
         operator: "NotIn"
         values:
         - {{ .Release.Namespace }}
-      - key: control-plane
-        operator: DoesNotExist
+      {{- if .Values.webhook.validatingWebhookConfigurationNamespaceSelectorMatchExpressions }}
+      {{- toYaml .Values.webhook.validatingWebhookConfigurationAnnotations | nindent 6 }}
+      {{- end }}
     rules:
       - apiGroups:
           - "cert-manager.io"
