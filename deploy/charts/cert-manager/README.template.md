@@ -133,6 +133,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.mutatingWebhookConfigurationAnnotations` | Annotations to add to the mutating webhook configuration | `{}` |
 | `webhook.validatingWebhookConfigurationAnnotations` | Annotations to add to the validating webhook configuration | `{}` |
+| `webhook.validatingWebhookConfigurationNamespaceSelectorMatchExpressions` | Additional matchExpressions for the namespaceSelector of the validating webhook configuration | `[]` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
 | `webhook.serviceAccount.create` | If `true`, create a new service account for the webhook component | `true` |
 | `webhook.serviceAccount.name` | Service account for the webhook component to be used. If not set and `webhook.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
