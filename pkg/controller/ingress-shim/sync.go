@@ -46,7 +46,7 @@ const (
 
 var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
-func (c *controller) Sync(ctx context.Context, ing *networkingv1beta1.Ingress) error {
+func (c *controller) sync(ctx context.Context, ing *networkingv1beta1.Ingress) error {
 	log := logf.WithResource(logf.FromContext(ctx), ing)
 	ctx = logf.NewContext(ctx, log)
 

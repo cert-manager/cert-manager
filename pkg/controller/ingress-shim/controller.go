@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	networkinglisters "k8s.io/client-go/listers/networking/v1beta1"
@@ -38,7 +39,6 @@ import (
 )
 
 const (
-	// ControllerName is the name of the ingress-shim controller.
 	ControllerName = "ingress-shim"
 )
 
@@ -48,16 +48,11 @@ type defaults struct {
 }
 
 type controller struct {
-	// maintain a reference to the workqueue for this controller
-	// so the handleOwnedResource method can enqueue resources
-	queue workqueue.RateLimitingInterface
-
-	// logger to be used by this controller
-	log logr.Logger
-
 	kClient  kubernetes.Interface
 	cmClient clientset.Interface
+
 	recorder record.EventRecorder
+	log      logr.Logger
 
 	ingressLister       networkinglisters.IngressLister
 	certificateLister   cmlisters.CertificateLister
@@ -72,41 +67,35 @@ type controller struct {
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	// construct a new named logger to be reused throughout the controller
+	kShared := ctx.KubeSharedInformerFactory
+	cmShared := ctx.SharedInformerFactory
+
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
+	queue := workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
-	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
-
-	// obtain references to all the informers used by this controller
-	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
-	certificatesInformer := ctx.SharedInformerFactory.Certmanager().V1().Certificates()
-	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
-	// build a list of InformerSynced functions that will be returned by the Register method.
-	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
-		ingressInformer.Informer().HasSynced,
-		certificatesInformer.Informer().HasSynced,
-		issuerInformer.Informer().HasSynced,
+		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
+		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
+		cmShared.Certmanager().V1().Issuers().Informer().HasSynced,
 	}
 
-	// set all the references to the listers for used by the Sync function
-	c.ingressLister = ingressInformer.Lister()
-	c.certificateLister = certificatesInformer.Lister()
-	c.issuerLister = issuerInformer.Lister()
+	c.ingressLister = kShared.Networking().V1beta1().Ingresses().Lister()
+	c.certificateLister = cmShared.Certmanager().V1().Certificates().Lister()
+	c.issuerLister = cmShared.Certmanager().V1().Issuers().Lister()
 
-	// if scoped to a single namespace
-	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
-	// register event handlers and obtain a lister for clusterissuers.
+	// We don't need to run the ClusterIssuer controller when cert-manager is
+	// running in non-namespaced mode (i.e. --namespace="").
 	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1().ClusterIssuers()
-		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
-		c.clusterIssuerLister = clusterIssuerInformer.Lister()
+		mustSync = append(mustSync, cmShared.Certmanager().V1().ClusterIssuers().Informer().HasSynced)
+		c.clusterIssuerLister = cmShared.Certmanager().V1().ClusterIssuers().Lister()
 	}
 
-	// register handler functions
-	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
-	certificatesInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.certificateDeleted})
+	kShared.Networking().V1beta1().Ingresses().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
+		Queue: queue,
+	})
+	cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+		WorkFunc: certificateDeleted(queue),
+	})
 
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	c.kClient = ctx.Client
@@ -119,28 +108,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		ctx.DefaultIssuerGroup,
 	}
 
-	return c.queue, mustSync, nil
-}
-
-func (c *controller) certificateDeleted(obj interface{}) {
-	crt, ok := obj.(*cmapi.Certificate)
-	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not a certificate object %#v", obj))
-		return
-	}
-	ings, err := c.ingressesForCertificate(crt)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up ingress observing certificate: %s/%s", crt.Namespace, crt.Name))
-		return
-	}
-	for _, ing := range ings {
-		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(ing)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		c.queue.Add(key)
-	}
+	return queue, mustSync, nil
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
@@ -161,7 +129,48 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	return c.Sync(ctx, crt)
+	return c.sync(ctx, crt)
+}
+
+// Whenever a Certificate gets deleted, we want to reconcile its parent Ingress.
+// This parent Ingress is called "controller object". For example, the following
+// Certificate is controlled by the Ingress "example":
+//
+//     kind: Certificate
+//     metadata:
+//       namespace: cert-that-was-deleted
+//       ownerReferences:
+//       - controller: true                                       ← this
+//         apiVersion: networking.k8s.io/v1beta1
+//         kind: Ingress
+//         name: example
+//         blockOwnerDeletion: true
+//         uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
+func certificateDeleted(queue workqueue.RateLimitingInterface) func(obj interface{}) {
+	return func(obj interface{}) {
+		crt, ok := obj.(*cmapi.Certificate)
+		if !ok {
+			runtime.HandleError(fmt.Errorf("not a Certificate object: %#v", obj))
+			return
+		}
+
+		ref := metav1.GetControllerOf(crt)
+		if ref == nil {
+			// No controller should care about orphans being deleted or
+			// updated.
+			return
+		}
+
+		// We don't check the apiVersion e.g. "networking.k8s.io/v1beta1"
+		// because there is no chance that another object called "Ingress" be
+		// the controller of a Certificate.
+		if ref.Kind != "Ingress" {
+			return
+		}
+
+		// Queue items are simple strings of the form "namespace-1/ingress-1".
+		queue.Add(crt.Namespace + "/" + ref.Name)
+	}
 }
 
 func init() {

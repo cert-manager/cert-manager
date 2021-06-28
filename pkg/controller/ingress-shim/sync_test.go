@@ -1165,7 +1165,7 @@ func TestSync(t *testing.T) {
 			}
 			b.Start()
 
-			err := c.Sync(context.Background(), test.Ingress)
+			err := c.sync(context.Background(), test.Ingress)
 
 			// If test.Err == true, err should not be nil and vice versa
 			if test.Err == (err == nil) {
