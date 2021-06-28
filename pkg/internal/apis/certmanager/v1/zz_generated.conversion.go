@@ -752,6 +752,7 @@ func autoConvert_v1_CertificateSpec_To_certmanager_CertificateSpec(in *v1.Certif
 	// WARNING: in.URIs requires manual conversion: does not exist in peer-type
 	// WARNING: in.EmailAddresses requires manual conversion: does not exist in peer-type
 	out.SecretName = in.SecretName
+	// WARNING: in.SecretTemplate requires manual conversion: does not exist in peer-type
 	if in.Keystores != nil {
 		in, out := &in.Keystores, &out.Keystores
 		*out = new(certmanager.CertificateKeystores)
