@@ -52,8 +52,6 @@ func DefaultCertificateSigningRequestSet() []certificatesigningrequests.Validati
 		certificatesigningrequests.ExpectValidDuration,
 		certificatesigningrequests.ExpectKeyUsageUsageDigitalSignature,
 		certificatesigningrequests.ExpectEmailsToMatch,
-		certificatesigningrequests.ExpectCorrectTrustChain,
-		certificatesigningrequests.ExpectCARootCertificate,
 		certificatesigningrequests.ExpectIsCA,
 		certificatesigningrequests.ExpectConditionApproved,
 		certificatesigningrequests.ExpectConditiotNotDenied,

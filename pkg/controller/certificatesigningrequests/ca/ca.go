@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -33,7 +32,6 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	experimentalapi "github.com/jetstack/cert-manager/pkg/apis/experimental/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
@@ -138,23 +136,10 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 		return err
 	}
 
-	// Update the status.certificate first so that the sync from updating will
-	// not cause another issuance before setting the CA.
 	csr.Status.Certificate = bundle.ChainPEM
 	csr, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
 		message := "Error updating certificate"
-		c.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
-		return err
-	}
-
-	if csr.Annotations == nil {
-		csr.Annotations = make(map[string]string)
-	}
-	csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey] = base64.StdEncoding.EncodeToString(bundle.CAPEM)
-	_, err = c.certClient.Update(ctx, csr, metav1.UpdateOptions{})
-	if err != nil {
-		message := fmt.Sprintf("Error setting %q", experimentalapi.CertificateSigningRequestCAAnnotationKey)
 		c.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
 		return err
 	}
