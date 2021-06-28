@@ -19,8 +19,11 @@ package install
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -30,8 +33,9 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/release"
 
-	helm "github.com/jetstack/cert-manager/cmd/ctl/pkg/install/helm"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install/helm"
 )
 
 type InstallOptions struct {
@@ -41,27 +45,26 @@ type InstallOptions struct {
 	valueOpts *values.Options
 
 	ChartName string
+	DryRun    bool
 
 	genericclioptions.IOStreams
 }
 
 const installCRDsFlagName = "installCRDs"
 const installDesc = `
-This command installs cert-manager.
+This command installs cert-manager. It uses the helm libraries to do so.
 
-It uses the latest published cert-manager chart on the "https://charts.jetstack.io" repo.
+The latest published cert-manager chart on the "https://charts.jetstack.io" repo is used.
 Most of the features supported by 'helm install' are also supported by this command.
 Additional the the functionallity that the helm command gives you, this command will
 also manage CRD resources.
 
 Some example uses:
-	$ kubectl cert-manager install
+	$ kubectl cert-manager install -n cert-manager
 or
-	$ kubectl cert-manager install --version v1.4.0
+	$ kubectl cert-manager install -n cert-manager --version v1.4.0
 or
-	$ kubectl cert-manager install --set prometheus.enabled=false
-or
-	$ kubectl cert-manager install --namespace cert-manager-namespace
+	$ kubectl cert-manager install -n cert-manager --set prometheus.enabled=false
 
 To override values in the cert-manager chart, use either the '--values' flag and pass in a file
 or use the '--set' flag and pass configuration from the command line, to force
@@ -70,13 +73,9 @@ you want not to use neither '--values' nor '--set', use '--set-file' to read the
 single large value from file.
 `
 
-func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory, kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	settings := cli.New()
 	cfg := new(action.Configuration)
-	if err := cfg.Init(settings.RESTClientGetter(), settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
-		log.Printf("%+v", err)
-		os.Exit(1)
-	}
 
 	options := &InstallOptions{
 		settings:  settings,
@@ -91,38 +90,54 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		Short: "install cert-manager",
 		Long:  installDesc,
 		RunE: func(_ *cobra.Command, args []string) error {
-			return options.runInstall(ctx)
+			if err := helm.CopyCliFlags(kubeConfigFlags, settings); err != nil {
+				return nil
+			}
+			options.client.Namespace = settings.Namespace()
+
+			rel, err := options.runInstall(ctx)
+			if err != nil {
+				return err
+			}
+			return writeRelease(ioStreams.Out, rel, false)
 		},
-		SilenceUsage: true,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 
-	addInstallFlags(cmd.Flags(), options.client)
+	addInstallUninstallFlags(cmd.Flags(), options.client)
 	addValueOptionsFlags(cmd.Flags(), options.valueOpts)
 	addChartPathOptionsFlags(cmd.Flags(), &options.client.ChartPathOptions)
 
+	cmd.Flags().BoolVar(&options.client.CreateNamespace, "create-namespace", true, "create the release namespace if not present")
 	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "name of the cert-manager chart")
+	cmd.Flags().BoolVar(&options.DryRun, "dry-run", false, "simulate an install")
 
 	return cmd
 }
 
-func (o *InstallOptions) runInstall(ctx context.Context) error {
+func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, error) {
 	log.SetFlags(0)
 	log.SetOutput(o.Out)
 
-	// 1. find chart
+	if err := o.cfg.Init(o.settings.RESTClientGetter(), o.settings.Namespace(), os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
+		return nil, err
+	}
+
+	// Find chart
 	cp, err := o.client.ChartPathOptions.LocateChart(o.ChartName, o.settings)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	chart, err := helm.LoadChart(cp, o.client, o.settings)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Check if chart is installable
 	if err := helm.CheckIfInstallable(chart); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Console print if chart is deprecated
@@ -134,54 +149,66 @@ func (o *InstallOptions) runInstall(ctx context.Context) error {
 	p := getter.All(o.settings)
 	chartValues, err := o.valueOpts.MergeValues(p)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// 2. do dryrun template generation (used for rendering the crds in /templates)
-	o.client.DryRun = true
-	o.client.IsUpgrade = true
-	chartValues[installCRDsFlagName] = true
+	// Dryrun template generation (used for rendering the crds in /templates)
+	o.client.DryRun = true                  // Do not apply install
+	o.client.IsUpgrade = true               // Do not validate against cluster
+	chartValues[installCRDsFlagName] = true // Make sure to render crds
 	dryRunResult, err := o.client.Run(chart, chartValues)
 	if err != nil {
-		return err
-	}
-	resouces, err := helm.GetChartResourceInfo(chart, dryRunResult.Manifest, true, o.cfg.KubeClient)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// 3. Collect all crds related to the chart
-	crds, err := helm.FilterCrdResources(resouces)
+	// Extract the resource.Info objects from the helm chart crds (/crds folder) and the manifest
+	resources, err := helm.GetChartResourceInfo(chart, dryRunResult.Manifest, true, o.cfg.KubeClient)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// 4. Check if any of these CRDs do already exist
+	// Filter resource.Info objects and only keep the crds
+	crds := helm.FilterCrdResources(resources)
+
+	// Check if any of these CRDs do already exist
 	installedCrds, err := helm.FetchResources(crds, o.cfg.KubeClient)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// User has to explicitly confirm in case crds are already installed
+	// Abort in case crds are already installed
 	if len(installedCrds) > 0 {
-		return fmt.Errorf("Found existing installed cert-manager crds! Cannot continue with installation.")
+		return nil, fmt.Errorf("Found existing installed cert-manager crds! Cannot continue with installation.")
 	}
 
-	// 5. install CRDs
-	if len(crds) > 0 {
+	// Install CRDs
+	if len(crds) > 0 && !o.DryRun {
 		if err := helm.ApplyCRDs(helm.Create, crds, o.cfg); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	// 6. install chart
-	o.client.DryRun = false
-	o.client.IsUpgrade = false
-	chartValues[installCRDsFlagName] = false
-	_, err = o.client.Run(chart, chartValues)
-	if err != nil {
-		return err
-	}
+	// Install chart
+	o.client.DryRun = o.DryRun               // Apply DryRun cli flags
+	o.client.IsUpgrade = false               // Reset value to false
+	o.client.Atomic = true                   // If part of the install fails, also undo other installed resources
+	chartValues[installCRDsFlagName] = false // Do not render crds, as this might cause problems when uninstalling using helm
 
+	return o.client.Run(chart, chartValues)
+}
+
+func writeRelease(out io.Writer, rel *release.Release, debug bool) error {
+	fmt.Fprintf(out, "NAME: %s\n", rel.Name)
+	if !rel.Info.LastDeployed.IsZero() {
+		fmt.Fprintf(out, "LAST DEPLOYED: %s\n", rel.Info.LastDeployed.Format(time.ANSIC))
+	}
+	fmt.Fprintf(out, "NAMESPACE: %s\n", rel.Namespace)
+	fmt.Fprintf(out, "STATUS: %s\n", rel.Info.Status.String())
+	fmt.Fprintf(out, "REVISION: %d\n", rel.Version)
+	fmt.Fprintf(out, "DESCRIPTION: %s\n", rel.Info.Description)
+
+	if len(rel.Info.Notes) > 0 {
+		fmt.Fprintf(out, "NOTES:\n%s\n", strings.TrimSpace(rel.Info.Notes))
+	}
 	return nil
 }

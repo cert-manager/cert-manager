@@ -17,7 +17,6 @@ limitations under the License.
 package helm
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -56,8 +55,7 @@ func ApplyCRDs(policy CRDsPolicy, allCrds []*resource.Info, cfg *action.Configur
 		}
 
 		if rr, err := cfg.KubeClient.Update(originalCrds, allCrds, true); err != nil {
-			log.Printf("failed to apply CRD %s", err)
-			return errors.New(fmt.Sprintf("failed to apply CRD %s", err))
+			return fmt.Errorf("failed to apply CRD %s", err)
 		} else {
 			if rr != nil {
 				if rr.Created != nil {
@@ -84,33 +82,33 @@ func ApplyCRDs(policy CRDsPolicy, allCrds []*resource.Info, cfg *action.Configur
 					}
 					continue
 				}
-				log.Printf("failed to create CRD %s: %s", crdName, err)
-				return errors.New(fmt.Sprintf("failed to create CRD %s: %s", crdName, err))
+				return fmt.Errorf("failed to create CRD %s: %s", crdName, err)
 			} else {
 				if rr != nil && rr.Created != nil {
 					totalItems = append(totalItems, rr.Created...)
 				}
 			}
 		}
-		break
 	}
+
 	if len(totalItems) > 0 {
 		// Invalidate the local cache, since it will not have the new CRDs
 		// present.
 		discoveryClient, err := cfg.RESTClientGetter.ToDiscoveryClient()
 		if err != nil {
-			log.Printf("Error in cfg.RESTClientGetter.ToDiscoveryClient(): %s", err)
 			return err
 		}
 		log.Printf("Clearing discovery cache")
 		discoveryClient.Invalidate()
 		// Give time for the CRD to be recognized.
 		if err := cfg.KubeClient.Wait(totalItems, 60*time.Second); err != nil {
-			log.Printf("Error waiting for items: %s", err)
 			return err
 		}
 		// Make sure to force a rebuild of the cache.
-		discoveryClient.ServerGroups()
+		if _, err := discoveryClient.ServerGroups(); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }

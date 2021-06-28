@@ -52,7 +52,7 @@ bazel build //deploy/charts/cert-manager
 echo "${REPO_ROOT}/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 
 # Upgrade or install cert-manager
-kubectl cert-manager install \
+kubectl cert-manager x install \
     --namespace "${NAMESPACE}" \
     --release-name "${RELEASE_NAME}" \
     --chart-name "${REPO_ROOT}/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz" \

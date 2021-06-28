@@ -25,9 +25,11 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificatesigningrequest"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install"
 )
 
-func NewCmdExperimental(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdExperimental(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory, kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmds := &cobra.Command{
 		Use:     "experimental",
 		Aliases: []string{"x"},
@@ -38,6 +40,8 @@ func NewCmdExperimental(ctx context.Context, ioStreams genericclioptions.IOStrea
 	create := create.NewCmdCreateBare()
 	create.AddCommand(certificatesigningrequest.NewCmdCreateCSR(ctx, ioStreams, factory))
 	cmds.AddCommand(create)
+	cmds.AddCommand(install.NewCmdInstall(ctx, ioStreams, factory, kubeConfigFlags))
+	cmds.AddCommand(install.NewCmdUninstall(ctx, ioStreams, factory, kubeConfigFlags))
 
 	return cmds
 }

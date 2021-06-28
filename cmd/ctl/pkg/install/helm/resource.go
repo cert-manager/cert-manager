@@ -20,23 +20,23 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/cli-runtime/pkg/resource"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/kube"
-	"k8s.io/cli-runtime/pkg/resource"
 )
 
 const (
-	customResourceDefinitionGroup    = "apiextensions.k8s.io"
-	customResourceDefinitionKind     = "CustomResourceDefinition"
-	customResourceDefinitionResource = "customresourcedefinition"
-
-	deploymentGroup    = "apps"
-	deploymentKind     = "Deployment"
-	deploymentResource = "deployment"
+	customResourceDefinitionGroup = "apiextensions.k8s.io"
+	customResourceDefinitionKind  = "CustomResourceDefinition"
 )
 
+// Build a list of resource.Info objects from a chart definition and its rendered manifest.
+// The chart is only used for its CRDObjects() function that returns a list of all files in the /crds folder.
+// The includeCrdFolder option is used to not include the /crds folder. Current versions of the cert-manager chart
+// don't have a crds folder, so this option is only in case this would ever change. The manifest includes
+// all types of resources (not only crds).
 func GetChartResourceInfo(ch *chart.Chart, manifest string, includeCrdFolder bool, kubeClient kube.Interface) ([]*resource.Info, error) {
 	resources := make([]*resource.Info, 0)
 
@@ -44,8 +44,7 @@ func GetChartResourceInfo(ch *chart.Chart, manifest string, includeCrdFolder boo
 		for _, obj := range ch.CRDObjects() {
 			res, err := kubeClient.Build(bytes.NewBuffer(obj.File.Data), false)
 			if err != nil {
-				fmt.Printf("failed to parse CRDs from %s: %s", obj.Name, err)
-				return nil, errors.New(fmt.Sprintf("failed to parse CRDs from %s: %s", obj.Name, err))
+				return nil, fmt.Errorf("failed to parse CRDs from %s: %s", obj.Name, err)
 			}
 			resources = append(resources, res...)
 		}
@@ -53,26 +52,25 @@ func GetChartResourceInfo(ch *chart.Chart, manifest string, includeCrdFolder boo
 
 	res, err := kubeClient.Build(bytes.NewBufferString(manifest), false)
 	if err != nil {
-		fmt.Printf("failed to parse CRDs from render: %s", err)
-		return nil, errors.New(fmt.Sprintf("failed to parse CRDs from render: %s", err))
+		return nil, fmt.Errorf("failed to parse CRDs from render: %s", err)
 	}
 	resources = append(resources, res...)
 
 	return resources, nil
 }
 
-func FilterResources(resources []*resource.Info, filter func(string, string) bool) ([]*resource.Info, error) {
+func filterResources(resources []*resource.Info, filter func(*resource.Info) bool) []*resource.Info {
 	crds := make([]*resource.Info, 0)
 	for _, res := range resources {
-		groupVersionKind := res.Object.GetObjectKind().GroupVersionKind()
-		if filter(groupVersionKind.Group, groupVersionKind.Kind) {
+		if filter(res) {
 			crds = append(crds, res)
 		}
 	}
 
-	return crds, nil
+	return crds
 }
 
+// Retrieve the latest version of the resources from the kubernetes cluster.
 func FetchResources(resources []*resource.Info, kubeClient kube.Interface) ([]*resource.Info, error) {
 	detected := make([]*resource.Info, 0)
 
@@ -88,8 +86,17 @@ func FetchResources(resources []*resource.Info, kubeClient kube.Interface) ([]*r
 	return detected, nil
 }
 
-func FilterCrdResources(resources []*resource.Info) ([]*resource.Info, error) {
-	return FilterResources(resources, func(group string, kind string) bool {
-		return (group == customResourceDefinitionGroup) && (kind == customResourceDefinitionKind)
+// Filter resources that are Custom Resource Definitions.
+func FilterCrdResources(resources []*resource.Info) []*resource.Info {
+	return filterResources(resources, func(res *resource.Info) bool {
+		groupVersionKind := res.Object.GetObjectKind().GroupVersionKind()
+		return (groupVersionKind.Group == customResourceDefinitionGroup) && (groupVersionKind.Kind == customResourceDefinitionKind)
+	})
+}
+
+// Filter resources that are scoped to a namespace and that live in the provided namespace.
+func FilterNamespacedResources(resources []*resource.Info, namespace string) []*resource.Info {
+	return filterResources(resources, func(res *resource.Info) bool {
+		return (res.Mapping.Scope.Name() == meta.RESTScopeNameNamespace) && (res.Namespace == namespace)
 	})
 }

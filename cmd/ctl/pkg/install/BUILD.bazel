@@ -17,6 +17,7 @@ go_library(
         "@io_k8s_client_go//util/homedir:go_default_library",
         "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
         "@sh_helm_helm_v3//pkg/action:go_default_library",
+        "@sh_helm_helm_v3//pkg/chart:go_default_library",
         "@sh_helm_helm_v3//pkg/cli:go_default_library",
         "@sh_helm_helm_v3//pkg/cli/values:go_default_library",
         "@sh_helm_helm_v3//pkg/getter:go_default_library",
