@@ -123,6 +123,11 @@ type CertificateSpec struct {
 	// denoted issuer.
 	SecretName string
 
+	// SecretTemplate defines annotations and labels to be propagated
+	// to the Kubernetes Secret when it is created or updated.
+	// +optional
+	SecretTemplate *CertificateSecretTemplate `json:"secretTemplate,omitempty"`
+
 	// Keystores configures additional keystore output formats stored in the
 	// `secretName` Secret resource.
 	Keystores *CertificateKeystores
@@ -385,3 +390,15 @@ const (
 	// It will be removed by the 'issuing' controller upon completing issuance.
 	CertificateConditionIssuing CertificateConditionType = "Issuing"
 )
+
+// CertificateSecretTemplate defines the default labels and annotations
+// to be copied to the Kubernetes Secret resource named in `CertificateSpec.secretName`.
+type CertificateSecretTemplate struct {
+	// Annotations is a key value map to be copied to the target Kubernetes Secret.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels is a key value map to be copied to the target Kubernetes Secret.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+}
