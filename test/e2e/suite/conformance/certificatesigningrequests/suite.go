@@ -134,22 +134,3 @@ func (s *Suite) checkFeatures(fs ...featureset.Feature) bool {
 	}
 	return false
 }
-
-// newDomain will generate a new random subdomain of the DomainSuffix
-func (s *Suite) newDomain() string {
-	return s.newDomainDepth(1)
-}
-
-// newDomainDepth return a new domain name with the given number of subdomains
-// beneath the domain suffix.
-// If depth is zero, the domain suffix will be returned,
-// If depth is one, a random subdomain will be returned e.g. abcd.example.com,
-// If depth is two, a random sub-subdomain will be returned e.g. abcd.efgh.example.com,
-// and so on
-func (s *Suite) newDomainDepth(depth int) string {
-	subdomains := make([]string, depth)
-	for i := 0; i < depth; i++ {
-		subdomains[i] = util.RandStringRunes(4)
-	}
-	return strings.Join(append(subdomains, s.DomainSuffix), ".")
-}

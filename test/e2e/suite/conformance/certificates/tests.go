@@ -62,7 +62,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 				},
 			}
 			By("Creating a Certificate")
@@ -89,7 +89,7 @@ func (s *Suite) Define() {
 					PrivateKey: &cmapi.CertificatePrivateKey{
 						Algorithm: cmapi.ECDSAKeyAlgorithm,
 					},
-					DNSNames:  []string{s.newDomain()},
+					DNSNames:  []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef: issuerRef,
 				},
 			}
@@ -292,12 +292,12 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					CommonName: s.newDomain(),
+					CommonName: e2eutil.RandomSubdomain(s.DomainSuffix),
 					IssuerRef:  issuerRef,
 				},
 			}
 			testCertificate.Spec.DNSNames = []string{
-				testCertificate.Spec.CommonName, s.newDomain(),
+				testCertificate.Spec.CommonName, e2eutil.RandomSubdomain(s.DomainSuffix),
 			}
 
 			By("Creating a Certificate")
@@ -321,9 +321,9 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					CommonName: s.newDomain(),
+					CommonName: e2eutil.RandomSubdomain(s.DomainSuffix),
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 				},
 			}
 
@@ -349,7 +349,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					Duration: &metav1.Duration{
 						Duration: time.Hour * 896,
 					},
@@ -384,7 +384,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{"foo." + s.newDomain()},
+					DNSNames:   []string{"foo." + e2eutil.RandomSubdomain(s.DomainSuffix)},
 				},
 			}
 			By("Creating a Certificate")
@@ -435,7 +435,7 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
 					Usages: []cmapi.KeyUsage{
 						cmapi.UsageSigning,
@@ -475,7 +475,7 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
 				},
 			}
@@ -534,7 +534,7 @@ func (s *Suite) Define() {
 				"cert-manager.io/issuer":       issuerRef.Name,
 				"cert-manager.io/issuer-kind":  issuerRef.Kind,
 				"cert-manager.io/issuer-group": issuerRef.Group,
-			}, s.newDomain()), metav1.CreateOptions{})
+			}, e2eutil.RandomSubdomain(s.DomainSuffix)), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			certName := ingress.Spec.TLS[0].SecretName
@@ -558,7 +558,7 @@ func (s *Suite) Define() {
 
 			name := "testcert-ingress"
 			secretName := "testcert-ingress-tls"
-			domain := s.newDomain()
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
 

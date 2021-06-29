@@ -35,14 +35,13 @@ import (
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
-	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -127,7 +126,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	JustBeforeEach(func() {
-		acmeIngressDomain = frameworkutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
+		acmeIngressDomain = e2eutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
 	})
 
 	AfterEach(func() {
@@ -195,7 +194,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-			gen.SetCertificateDNSNames(acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)),
+			gen.SetCertificateDNSNames(acmeIngressDomain, e2eutil.RandomSubdomainLength(acmeIngressDomain, maxLengthOfDomainSegment)),
 		)
 		cert.Namespace = f.Namespace.Name
 
@@ -218,7 +217,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-			gen.SetCertificateDNSNames(fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)),
+			gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(acmeIngressDomain)),
 		)
 		cert.Namespace = f.Namespace.Name
 
@@ -242,7 +241,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-			gen.SetCertificateDNSNames(fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)),
+			gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(acmeIngressDomain)),
 		)
 		cert.Namespace = f.Namespace.Name
 
@@ -264,7 +263,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Adding an additional dnsName to the Certificate")
-		newDNSName := fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)
+		newDNSName := e2eutil.RandomSubdomain(acmeIngressDomain)
 		cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
 
 		By("Updating the Certificate in the apiserver")
@@ -331,7 +330,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Replacing dnsNames with a valid dns name")
-		cert.Spec.DNSNames = []string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)}
+		cert.Spec.DNSNames = []string{e2eutil.RandomSubdomain(acmeIngressDomain)}
 		_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -587,7 +586,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-			gen.SetCertificateDNSNames(fmt.Sprintf("%s.%s", cmutil.RandStringRunes(2), acmeIngressDomain)),
+			gen.SetCertificateDNSNames(e2eutil.RandomSubdomainLength(acmeIngressDomain, 2)),
 			gen.SetCertificateIPs(f.Config.Addons.ACMEServer.IngressIP),
 		)
 		cert.Namespace = f.Namespace.Name
@@ -611,7 +610,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-			gen.SetCertificateDNSNames(fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)),
+			gen.SetCertificateDNSNames(e2eutil.RandomSubdomain(acmeIngressDomain)),
 		)
 		cert.Namespace = f.Namespace.Name
 
@@ -631,7 +630,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Adding an additional dnsName to the Certificate")
-		newDNSName := fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)
+		newDNSName := e2eutil.RandomSubdomain(acmeIngressDomain)
 		cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
 
 		By("Updating the Certificate in the apiserver")
