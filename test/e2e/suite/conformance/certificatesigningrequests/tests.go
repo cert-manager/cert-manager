@@ -35,6 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificatesigningrequests"
+	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -65,7 +66,7 @@ func (s *Suite) Define() {
 			panic(err)
 		}
 
-		sharedCommonName := s.newDomain()
+		sharedCommonName := e2eutil.RandomSubdomain(s.DomainSuffix)
 
 		type testCase struct {
 			keyAlgo            x509.PublicKeyAlgorithm
@@ -83,7 +84,7 @@ func (s *Suite) Define() {
 		tests := map[string]testCase{
 			"should issue an RSA certificate for a single distinct DNS Name": {
 				keyAlgo:      x509.RSA,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(s.newDomain())},
+				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -93,7 +94,7 @@ func (s *Suite) Define() {
 
 			"should issue an ECDSA certificate for a single distinct DNS Name": {
 				keyAlgo:      x509.ECDSA,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(s.newDomain())},
+				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -103,7 +104,7 @@ func (s *Suite) Define() {
 
 			"should issue an Ed25519 certificate for a single distinct DNS Name": {
 				keyAlgo:      x509.Ed25519,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(s.newDomain())},
+				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -183,7 +184,7 @@ func (s *Suite) Define() {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
 					gen.SetCSRCommonName(sharedCommonName),
-					gen.SetCSRDNSNames(sharedCommonName, s.newDomain()),
+					gen.SetCSRDNSNames(sharedCommonName, e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -195,8 +196,8 @@ func (s *Suite) Define() {
 			"should issue a certificate that defines a distinct DNS Name and another distinct Common Name": {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRCommonName(s.newDomain()),
-					gen.SetCSRDNSNames(s.newDomain()),
+					gen.SetCSRCommonName(e2eutil.RandomSubdomain(s.DomainSuffix)),
+					gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -224,7 +225,7 @@ func (s *Suite) Define() {
 			"should issue a certificate that defines a DNS Name and sets a duration": {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRDNSNames(s.newDomain()),
+					gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -239,7 +240,7 @@ func (s *Suite) Define() {
 			"should issue a certificate which has a wildcard DNS name defined": {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRDNSNames("*." + s.newDomain()),
+					gen.SetCSRDNSNames("*." + e2eutil.RandomSubdomain(s.DomainSuffix)),
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,

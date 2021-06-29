@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,15 @@ import (
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
+// RandomSubdomain returns a new subdomain domain of the domain suffix.
+// e.g. abcd.example.com.
 func RandomSubdomain(domain string) string {
-	return fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), domain)
+	return RandomSubdomainLength(domain, 5)
+}
+
+// RandomSubdomainLength returns a new subdomain domain of the domain suffix, where the
+// subdomain has `length` number of characters.
+// e.g. abcdefghij.example.com.
+func RandomSubdomainLength(domain string, length int) string {
+	return fmt.Sprintf("%s.%s", cmutil.RandStringRunes(length), domain)
 }

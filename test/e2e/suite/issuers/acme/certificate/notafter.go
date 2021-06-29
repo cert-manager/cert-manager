@@ -34,8 +34,8 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
-	frameworkutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -117,7 +117,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01 + Not After)", f
 	})
 
 	JustBeforeEach(func() {
-		acmeIngressDomain = frameworkutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
+		acmeIngressDomain = e2eutil.RandomSubdomain(f.Config.Addons.IngressController.Domain)
 	})
 
 	AfterEach(func() {

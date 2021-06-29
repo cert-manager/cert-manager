@@ -37,6 +37,7 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	testutil "github.com/jetstack/cert-manager/test/e2e/framework/util"
+	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -59,7 +60,7 @@ var _ = framework.CertManagerDescribe("Approval CertificateRequests", func() {
 		var err error
 		crdclient, err = crdclientset.NewForConfig(f.KubeClientConfig)
 		Expect(err).NotTo(HaveOccurred())
-		group = testutil.RandomSubdomain("example.io")
+		group = e2eutil.RandomSubdomain("example.io")
 
 		sa, err = f.KubeClientSet.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), &corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
