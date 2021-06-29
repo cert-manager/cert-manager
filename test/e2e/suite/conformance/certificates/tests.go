@@ -46,6 +46,8 @@ func (s *Suite) Define() {
 
 		sharedIPAddress := "127.0.0.1"
 
+		// Wrap this in a BeforeEach else flags will not have been parsed and
+		// f.Config will not be populated at the time that this code is run.
 		BeforeEach(func() {
 			if s.completed {
 				return

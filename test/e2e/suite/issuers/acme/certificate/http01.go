@@ -269,6 +269,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
+		// We are waiting for a ready condition where the observed generation is
+		// the same or a later generation than the latest spec that we just updated.
 		By("Waiting for the Certificate Ready condition to be updated")
 		_, err = f.Helper().WaitForCertificateReadyUpdate(cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
