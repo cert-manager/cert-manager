@@ -213,18 +213,24 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		delete(secret.Data, cmmeta.TLSCAKey)
 	}
 
-	if secret.Labels == nil {
-		secret.Labels = make(map[string]string)
-	}
-	for k, v := range crt.Spec.SecretTemplate.Labels {
-		secret.Labels[k] = v
-	}
-
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
-	for k, v := range crt.Spec.SecretTemplate.Annotations {
-		secret.Annotations[k] = v
+
+	if crt.Spec.SecretTemplate != nil {
+		// Only initialise Labels map if crt.Spec.SecretTemplate.Labels
+		// contains data. Otherwise keep it nil.
+		if len(crt.Spec.SecretTemplate.Labels) > 0 && secret.Labels == nil {
+			secret.Labels = make(map[string]string)
+		}
+
+		for k, v := range crt.Spec.SecretTemplate.Labels {
+			secret.Labels[k] = v
+		}
+
+		for k, v := range crt.Spec.SecretTemplate.Annotations {
+			secret.Annotations[k] = v
+		}
 	}
 
 	secret.Annotations[cmapi.CertificateNameKey] = crt.Name
