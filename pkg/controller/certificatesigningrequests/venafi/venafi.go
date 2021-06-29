@@ -18,7 +18,6 @@ package venafi
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -189,23 +188,10 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		return err
 	}
 
-	// Update the status.certificate first so that the sync from updating will
-	// not cause another issuance before setting the CA.
 	csr.Status.Certificate = bundle.ChainPEM
 	csr, err = v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
 		message := "Error updating certificate"
-		v.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
-		return err
-	}
-
-	if csr.Annotations == nil {
-		csr.Annotations = make(map[string]string)
-	}
-	csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey] = base64.StdEncoding.EncodeToString(bundle.CAPEM)
-	_, err = v.certClient.Update(ctx, csr, metav1.UpdateOptions{})
-	if err != nil {
-		message := fmt.Sprintf("Error setting %q", experimentalapi.CertificateSigningRequestCAAnnotationKey)
 		v.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
 		return err
 	}

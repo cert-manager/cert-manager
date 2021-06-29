@@ -791,7 +791,7 @@ func TestProcessItem(t *testing.T) {
 				},
 			},
 		},
-		"an approved CSR which has a pickup ID, retrieve certificate returns a CA and certificate should update with CA and certificate": {
+		"an approved CSR which has a pickup ID, retrieve certificate returns a CA and certificate should update with certificate": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.AddCertificateSigningRequestAnnotations(map[string]string{
 					"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
@@ -852,22 +852,6 @@ func TestProcessItem(t *testing.T) {
 								Status: corev1.ConditionTrue,
 							}),
 							gen.SetCertificateSigningRequestCertificate(certBundle.ChainPEM),
-						),
-					)),
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
-						"",
-						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
-							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"venafi.experimental.cert-manager.io/custom-fields": `[ {"name": "field-name", "value": "vield value"}]`,
-								"venafi.experimental.cert-manager.io/pickup-id":     "test-pickup-id",
-							}),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:   certificatesv1.CertificateApproved,
-								Status: corev1.ConditionTrue,
-							}),
-							gen.SetCertificateSigningRequestCertificate(certBundle.ChainPEM),
-							gen.SetCertificateSigningRequestCA(certBundle.CAPEM),
 						),
 					)),
 				},
