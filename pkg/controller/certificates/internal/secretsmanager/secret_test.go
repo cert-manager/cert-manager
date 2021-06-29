@@ -110,7 +110,6 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
 								},
-								Labels:          map[string]string{},
 								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(baseCertBundle.Certificate, certificateGvk)},
 							},
 							Data: map[string][]byte{
@@ -171,7 +170,6 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
 								},
-								Labels:          map[string]string{},
 								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(baseCertBundle.Certificate, certificateGvk)},
 							},
 							Data: map[string][]byte{
@@ -278,7 +276,6 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
 								},
-								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       baseCertBundle.CertBytes,
@@ -385,7 +382,6 @@ func TestSecretsManager(t *testing.T) {
 									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
 									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
 								},
-								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       baseCertBundle.CertBytes,

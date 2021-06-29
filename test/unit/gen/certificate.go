@@ -113,8 +113,10 @@ func SetCertificateSecretName(secretName string) CertificateModifier {
 // SetCertificateSecretTemplate sets annotations and labels to be attached to the secret metadata.
 func SetCertificateSecretTemplate(annotations, labels map[string]string) CertificateModifier {
 	return func(crt *v1.Certificate) {
-		crt.Spec.SecretTemplate.Annotations = annotations
-		crt.Spec.SecretTemplate.Labels = labels
+		crt.Spec.SecretTemplate = &v1.CertificateSecretTemplate{
+			Annotations: annotations,
+			Labels:      labels,
+		}
 	}
 }
 
