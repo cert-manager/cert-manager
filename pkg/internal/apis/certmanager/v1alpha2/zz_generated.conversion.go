@@ -743,6 +743,7 @@ func autoConvert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 	out.URISANs = *(*[]string)(unsafe.Pointer(&in.URISANs))
 	out.EmailSANs = *(*[]string)(unsafe.Pointer(&in.EmailSANs))
 	out.SecretName = in.SecretName
+	// WARNING: in.SecretTemplate requires manual conversion: does not exist in peer-type
 	if in.Keystores != nil {
 		in, out := &in.Keystores, &out.Keystores
 		*out = new(certmanager.CertificateKeystores)
