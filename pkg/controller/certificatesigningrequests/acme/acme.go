@@ -34,7 +34,6 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	experimentalapi "github.com/jetstack/cert-manager/pkg/apis/experimental/v1alpha1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmacmeclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
@@ -216,17 +215,6 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 	csr, err = a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
 		message := "Error updating certificate"
-		a.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
-		return err
-	}
-
-	if csr.Annotations == nil {
-		csr.Annotations = make(map[string]string)
-	}
-	csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey] = ""
-	_, err = a.certClient.Update(ctx, csr, metav1.UpdateOptions{})
-	if err != nil {
-		message := fmt.Sprintf("Error setting %q", experimentalapi.CertificateSigningRequestCAAnnotationKey)
 		a.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)
 		return err
 	}
