@@ -51,14 +51,7 @@ func (s *Suite) Define() {
 		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificatesigningrequests")
 
-		// wrap this in a BeforeEach else flags will not have been parsed at
-		// the time that the `complete` function is called.
-		BeforeEach(func() {
-			if !s.completed {
-				s.complete(f)
-			}
-		})
-
+		sharedCommonName := "<SHOULD_GET_REPLACED>"
 		sharedURI, err := url.Parse("spiffe://cluster.local/ns/sandbox/sa/foo")
 		if err != nil {
 			// This should never happen, and is a bug. Panic to prevent garbage test
@@ -66,7 +59,15 @@ func (s *Suite) Define() {
 			panic(err)
 		}
 
-		sharedCommonName := e2eutil.RandomSubdomain(s.DomainSuffix)
+		BeforeEach(func() {
+			if s.completed {
+				return
+			}
+
+			s.complete(f)
+
+			sharedCommonName = e2eutil.RandomSubdomain(s.DomainSuffix)
+		})
 
 		type testCase struct {
 			keyAlgo            x509.PublicKeyAlgorithm
