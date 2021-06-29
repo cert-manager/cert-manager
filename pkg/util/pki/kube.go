@@ -52,7 +52,8 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 func DurationFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (time.Duration, error) {
 	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
 	if !ok {
-		// Return default certificate duration if one not requested
+		// The user may not have set a duration annotation. Use the default
+		// duration in this case.
 		return cmapi.DefaultCertificateDuration, nil
 	}
 
