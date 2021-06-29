@@ -154,6 +154,27 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
 			if !apiutil.CertificateHasCondition(certificate, condition) {
+				log.Logf("Expected Certificate %v condition %v=%v but it has: %v", name, condition.Type, condition.Status, condition.ObservedGeneration, certificate.Status.Conditions)
+				return false, nil
+			}
+			return true, nil
+		},
+	)
+	return certificate, wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
+}
+
+// WaitForCertificateConditionWithObservedGeneration waits for the status of the named Certificate to contain
+// a condition whose type and status matches the supplied one.
+func WaitForCertificateConditionWithObservedGeneration(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
+	var certificate *v1.Certificate = nil
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
+		func() (bool, error) {
+			log.Logf("Waiting for Certificate %v condition %v=%v", name, condition.Type, condition.Status)
+			certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
+			if nil != err {
+				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+			}
+			if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, condition) {
 				log.Logf("Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v", name, condition.Type, condition.Status, condition.ObservedGeneration, certificate.Status.Conditions)
 				return false, nil
 			}

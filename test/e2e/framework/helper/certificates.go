@@ -62,7 +62,7 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 // Ready state. If the provided cert was in a Ready state already, the function
 // waits for a state transition to have happened.
 func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
-	result, err := e2eutil.WaitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
+	result, err := e2eutil.WaitForCertificateConditionWithObservedGeneration(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionTrue,
 		ObservedGeneration: cert.Generation,
@@ -74,7 +74,7 @@ func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout 
 // Ready=False state. If the provided cert was in a Ready=False state already,
 // the function waits for a state transition to have happened.
 func (h *Helper) WaitForCertificateNotReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
-	result, err := e2eutil.WaitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
+	result, err := e2eutil.WaitForCertificateConditionWithObservedGeneration(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionFalse,
 		ObservedGeneration: cert.Generation,
