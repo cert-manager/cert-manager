@@ -70,9 +70,11 @@ type Vault struct {
 	client Client
 }
 
-// New returns a new Vault instance with the given namespace, issuer and secrets lister.
-func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1.GenericIssuer) (Interface, error) {
+// New returns a new Vault instance with the given namespace, issuer and
+// secrets lister.
+// Returned errors may be network failures and should be considered for
+// retrying.
+func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
 	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
