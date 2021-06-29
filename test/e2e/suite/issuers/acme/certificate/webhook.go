@@ -54,10 +54,10 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
 					Server:        f.Config.Addons.ACMEServer.URL,
-					Email:         testingACMEEmail,
+					Email:         f.Config.Addons.ACMEServer.TestingACMEEmail,
 					PrivateKey: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: testingACMEPrivateKey,
+							Name: f.Config.Addons.ACMEServer.TestingACMEPrivateKey,
 						},
 					},
 					Solvers: []cmacme.ACMEChallengeSolver{
@@ -96,7 +96,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying ACME account private key exists")
-			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), testingACMEPrivateKey, metav1.GetOptions{})
+			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			if len(secret.Data) != 1 {
 				Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
@@ -106,7 +106,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 		AfterEach(func() {
 			By("Cleaning up")
 			f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
-			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), testingACMEPrivateKey, metav1.DeleteOptions{})
+			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), certificateSecretName, metav1.DeleteOptions{})
 		})
 

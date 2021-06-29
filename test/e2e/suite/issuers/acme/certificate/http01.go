@@ -45,8 +45,6 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-const testingACMEEmail = "e2e@cert-manager.io"
-const testingACMEPrivateKey = "test-acme-private-key"
 const foreverTestTimeout = time.Second * 60
 
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
@@ -91,9 +89,9 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		}
 		acmeIssuer := gen.Issuer(issuerName,
 			gen.SetIssuerNamespace(f.Namespace.Name),
-			gen.SetIssuerACMEEmail(testingACMEEmail),
+			gen.SetIssuerACMEEmail(f.Config.Addons.ACMEServer.TestingACMEEmail),
 			gen.SetIssuerACMEURL(f.Config.Addons.ACMEServer.URL),
-			gen.SetIssuerACMEPrivKeyRef(testingACMEPrivateKey),
+			gen.SetIssuerACMEPrivKeyRef(f.Config.Addons.ACMEServer.TestingACMEPrivateKey),
 			gen.SetIssuerACMESkipTLSVerify(true),
 			gen.SetIssuerACMESolvers(solvers))
 		By("Creating an Issuer")
@@ -118,7 +116,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), testingACMEPrivateKey, metav1.GetOptions{})
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		if len(secret.Data) != 1 {
 			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
@@ -132,7 +130,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.TODO(), issuerName, metav1.DeleteOptions{})
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), testingACMEPrivateKey, metav1.DeleteOptions{})
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
