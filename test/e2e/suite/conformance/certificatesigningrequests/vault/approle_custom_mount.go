@@ -46,7 +46,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		CreateIssuerFunc: issuerNoRoot.createIssuer,
 		DeleteIssuerFunc: issuerNoRoot.delete,
 		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.SaveRootCAToSecret,
 			featureset.KeyUsagesFeature,
 			featureset.Ed25519FeatureSet,
 		),
@@ -75,7 +74,6 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		CreateIssuerFunc: clusterIssuerNoRoot.createClusterIssuer,
 		DeleteIssuerFunc: clusterIssuerNoRoot.delete,
 		UnsupportedFeatures: featureset.NewFeatureSet(
-			featureset.SaveRootCAToSecret,
 			featureset.KeyUsagesFeature,
 			featureset.Ed25519FeatureSet,
 		),

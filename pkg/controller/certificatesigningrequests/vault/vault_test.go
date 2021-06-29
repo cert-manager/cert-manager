@@ -346,7 +346,7 @@ func TestProcessItem(t *testing.T) {
 				},
 			},
 		},
-		"an approved CSR which successfully signs, should update the Certificate and CA fields": {
+		"an approved CSR which successfully signs, should update the Certificate field": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR,
 				gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
 					Type:   certificatesv1.CertificateApproved,
@@ -395,18 +395,6 @@ func TestProcessItem(t *testing.T) {
 								Status: corev1.ConditionTrue,
 							}),
 							gen.SetCertificateSigningRequestCertificate([]byte("signed-cert")),
-						),
-					)),
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
-						"",
-						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:   certificatesv1.CertificateApproved,
-								Status: corev1.ConditionTrue,
-							}),
-							gen.SetCertificateSigningRequestCertificate([]byte("signed-cert")),
-							gen.SetCertificateSigningRequestCA([]byte("signing-ca")),
 						),
 					)),
 				},

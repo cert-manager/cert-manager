@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -33,7 +32,6 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	experimentalapi "github.com/jetstack/cert-manager/pkg/apis/experimental/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
@@ -115,7 +113,7 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 		return err
 	}
 
-	certPEM, caPEM, err := client.Sign(csr.Spec.Request, duration)
+	certPEM, _, err := client.Sign(csr.Spec.Request, duration)
 	if err != nil {
 		message := fmt.Sprintf("Vault failed to sign: %s", err)
 		log.Error(err, message)
@@ -127,28 +125,11 @@ func (v *Vault) Sign(ctx context.Context, csr *certificatesv1.CertificateSigning
 
 	log.V(logf.DebugLevel).Info("certificate issued")
 
-	// Kubernetes sub-resources, namely 'status', are separate API endpoints.
-	// We don't want to fire another re-sync of this CertificateSigningRequest
-	// before the `status.Certificate` field has been set as this will fire
-	// another sign call.
-	// Update the status.certificate first so that the sync from updating will
-	// not cause another issuance before setting the CA.
 	csr.Status.Certificate = certPEM
 	csr, err = v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
 		message := "Error updating certificate"
 		v.recorder.Eventf(csr, corev1.EventTypeWarning, "ErrorUpdate", "%s: %s", message, err)
-		return err
-	}
-
-	if csr.Annotations == nil {
-		csr.Annotations = make(map[string]string)
-	}
-	csr.Annotations[experimentalapi.CertificateSigningRequestCAAnnotationKey] = base64.StdEncoding.EncodeToString(caPEM)
-	_, err = v.certClient.Update(ctx, csr, metav1.UpdateOptions{})
-	if err != nil {
-		message := fmt.Sprintf("Error setting %q", experimentalapi.CertificateSigningRequestCAAnnotationKey)
-		v.recorder.Eventf(csr, corev1.EventTypeWarning, "ErrorCAUpdate", "%s: %s", message, err)
 		return err
 	}
 
