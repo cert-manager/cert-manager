@@ -139,3 +139,14 @@ images_push:
 		--define image_type=$(BASE_IMAGE) \
 		$(CGO_DISABLED) \
 		//:images.push
+
+# Release targets
+################
+
+.PHONY: release_tars
+release_tars:
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
+	bazel build \
+		--stamp \
+		--platforms=$(PLATFORM) \
+		//build/release-tars
