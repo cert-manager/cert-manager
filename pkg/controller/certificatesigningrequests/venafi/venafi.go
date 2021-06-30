@@ -127,6 +127,9 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		return err
 	}
 
+	// The signing process with Venafi is slow. The "pickupID" allows us to track
+	// the progress of the certificate signing. It is set as an annotation the
+	// first time the Certificate is reconciled.
 	pickupID := csr.GetAnnotations()[experimentalapi.CertificateSigningRequestVenafiPickupIDAnnotationKey]
 
 	// check if the pickup ID annotation is there, if not set it up.
