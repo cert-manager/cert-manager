@@ -136,7 +136,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -158,7 +158,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -180,7 +180,7 @@ func testRFC2136DNSProvider() bool {
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*10)
+			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*10)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")

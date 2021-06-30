@@ -85,8 +85,20 @@ type Suite struct {
 
 // complete will validate configuration and set default values.
 func (s *Suite) complete(f *framework.Framework) {
+	if s.Name == "" {
+		Fail("Name must be set")
+	}
+
+	if s.CreateIssuerFunc == nil {
+		Fail("CreateIssuerFunc must be set")
+	}
+
 	if s.DomainSuffix == "" {
 		s.DomainSuffix = f.Config.Addons.IngressController.Domain
+	}
+
+	if s.UnsupportedFeatures == nil {
+		s.UnsupportedFeatures = make(featureset.FeatureSet)
 	}
 
 	s.completed = true

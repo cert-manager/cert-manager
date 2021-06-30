@@ -178,7 +178,7 @@ func runVaultCustomAppRoleTests(issuerKind string, testWithRoot bool, unsupporte
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certificateName, time.Minute*5)
+		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")

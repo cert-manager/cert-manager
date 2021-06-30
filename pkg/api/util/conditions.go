@@ -113,6 +113,25 @@ func CertificateHasCondition(crt *cmapi.Certificate, c cmapi.CertificateConditio
 	return false
 }
 
+// CertificateHasConditionWithObservedGeneration will return true if the given Certificate has a
+// condition matching the provided CertificateCondition with a ObservedGeneration
+// that is bigger or equal to the ObservedGeneration of the provided CertificateCondition.
+// Only the Type, Status and ObservedGeneration field will be used in the comparison,
+// meaning that this function will return 'true' even if the Reason, Message and
+// LastTransitionTime fields do not match.
+func CertificateHasConditionWithObservedGeneration(crt *cmapi.Certificate, c cmapi.CertificateCondition) bool {
+	if crt == nil {
+		return false
+	}
+	existingConditions := crt.Status.Conditions
+	for _, cond := range existingConditions {
+		if c.Type == cond.Type && c.Status == cond.Status && c.ObservedGeneration <= cond.ObservedGeneration {
+			return true
+		}
+	}
+	return false
+}
+
 func GetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType) *cmapi.CertificateCondition {
 	for _, cond := range crt.Status.Conditions {
 		if cond.Type == conditionType {
