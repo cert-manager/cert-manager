@@ -37,7 +37,7 @@ help:
 	#
 	### Build targets
 	#
-	# clean              - removes the entire output base tree and stop the Bazel server
+	# clean              - removes the entire output base tree, stops the Bazel server and removes test artifacts
 	# controller         - build a binary of the 'controller'
 	# cainjector         - build a binary of the 'cainjector'
 	# webhook            - build a binary of the 'webhook'
@@ -61,6 +61,8 @@ help:
 .PHONY: clean
 clean:
 	bazel clean --expunge
+	rm -rf \
+		$(CURDIR)/_artifacts
 
 .PHONY: build
 build: ctl images
