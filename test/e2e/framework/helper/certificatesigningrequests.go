@@ -43,7 +43,7 @@ func (h *Helper) WaitForCertificateSigningRequestSigned(name string, timeout tim
 			}
 
 			if util.CertificateSigningRequestIsFailed(csr) {
-				return false, fmt.Errorf("CertificateSigningRequest is failed: %v", csr.Status)
+				return false, fmt.Errorf("CertificateSigningRequest has failed: %v", csr.Status)
 			}
 
 			if len(csr.Status.Certificate) == 0 {

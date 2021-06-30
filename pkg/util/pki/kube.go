@@ -46,9 +46,11 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 	return GenerateTemplateFromCSRPEMWithUsages(csr.Spec.Request, duration, isCA, ku, eku)
 }
 
-// DurationFromCertificateSigningRequest will return the time.Duration of the
-// requested duration on the CertificateSigningRequest. If the annotation is
-// empty, will return the cert-manager default certificate duration
+// DurationFromCertificateSigningRequest returns the duration that the user may
+// have requested using the annotation
+// "experimental.cert-manager.io/request-duration".
+// Returns the cert-manager default certificate duration when the user hasn't
+// provided the annotation.
 func DurationFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (time.Duration, error) {
 	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
 	if !ok {

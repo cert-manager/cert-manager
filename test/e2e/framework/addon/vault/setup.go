@@ -504,7 +504,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 	policy := fmt.Sprintf(`path "%s" { capabilities = [ "create", "update" ] }`, role_path)
 	err = v.client.Sys().PutPolicy(v.Role, policy)
 	if err != nil {
-		return fmt.Errorf("Error creating policy: %s", err.Error())
+		return fmt.Errorf("error creating policy: %s", err.Error())
 	}
 
 	// # create approle
@@ -518,7 +518,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 	baseUrl := path.Join("/v1", "auth", v.KubernetesAuthPath, "role", v.Role)
 	_, err = v.proxy.callVault("POST", baseUrl, "", params)
 	if err != nil {
-		return fmt.Errorf("Error creating kubernetes role: %s", err.Error())
+		return fmt.Errorf("error creating kubernetes role: %s", err.Error())
 	}
 
 	return nil
