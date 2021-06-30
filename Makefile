@@ -74,7 +74,7 @@ verify:
 # TODO: remove this rule in favour of calling hack/verify-deps directly
 .PHONY: verify_deps
 verify_deps:
-	./hack/verify-deps.sh
+	$(HACK_DIR)/verify-deps.sh
 	# verify-deps-licenses.sh is implicitly checked by the verify-deps script
 
 # requires docker
@@ -100,7 +100,7 @@ $(CMDS):
 ##################
 .PHONY: generate
 generate:
-	./hack/update-all.sh
+	$(HACK_DIR)/update-all.sh
 
 # Docker targets
 ################
