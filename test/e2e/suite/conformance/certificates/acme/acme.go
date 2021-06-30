@@ -208,7 +208,15 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-issuer-dns01-",
 		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, []cmacme.ACMEChallengeSolver{
+			{
+				DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+						Nameserver: f.Config.Addons.ACMEServer.DNSServer,
+					},
+				},
+			},
+		}),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
@@ -228,7 +236,15 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-cluster-issuer-dns01-",
 		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, f.Config.Addons.ACMEServer.DNSServer),
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, []cmacme.ACMEChallengeSolver{
+			{
+				DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+						Nameserver: f.Config.Addons.ACMEServer.DNSServer,
+					},
+				},
+			},
+		}),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
@@ -240,7 +256,7 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 	}
 }
 
-func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL, dnsServer string) cmapi.IssuerSpec {
+func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL string, solvers []cmacme.ACMEChallengeSolver) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
 			ACME: &cmacme.ACMEIssuer{
@@ -252,15 +268,16 @@ func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL, dnsServer strin
 					},
 				},
 				ExternalAccountBinding: a.eab,
-				Solvers: []cmacme.ACMEChallengeSolver{
-					{
-						DNS01: &cmacme.ACMEChallengeSolverDNS01{
-							RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
-								Nameserver: dnsServer,
-							},
-						},
-					},
-				},
+				Solvers:                solvers,
+				// Solvers: []cmacme.ACMEChallengeSolver{
+				// 	{
+				// 		DNS01: &cmacme.ACMEChallengeSolverDNS01{
+				// 			RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
+				// 				Nameserver: dnsServer,
+				// 			},
+				// 		},
+				// 	},
+				// },
 			},
 		},
 	}
