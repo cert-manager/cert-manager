@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/webhook/server",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/profiling:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
@@ -23,6 +24,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
         "@io_k8s_component_base//cli/flag:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
     ],
 )

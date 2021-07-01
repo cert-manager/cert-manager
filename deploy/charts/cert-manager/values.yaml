@@ -254,7 +254,13 @@ webhook:
     timeoutSeconds: 1
   readinessProbe:
     failureThreshold: 3
-    initialDelaySeconds: 5
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 1
+  startupProbe:
+    failureThreshold: 12
+    initialDelaySeconds: 20
     periodSeconds: 5
     successThreshold: 1
     timeoutSeconds: 1

@@ -93,6 +93,17 @@ spec:
             timeoutSeconds: {{ .Values.webhook.readinessProbe.timeoutSeconds }}
             successThreshold: {{ .Values.webhook.readinessProbe.successThreshold }}
             failureThreshold: {{ .Values.webhook.readinessProbe.failureThreshold }}
+          startupProbe:
+            httpGet:
+              path: /startupz
+              port: 6080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.webhook.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webhook.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.webhook.startupProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.webhook.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.webhook.startupProbe.failureThreshold }}
+
           {{- if .Values.webhook.containerSecurityContext }}
           securityContext:
             {{- toYaml .Values.webhook.containerSecurityContext | nindent 12 }}

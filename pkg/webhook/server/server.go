@@ -38,8 +38,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	ciphers "k8s.io/component-base/cli/flag"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
@@ -115,6 +117,8 @@ type Server struct {
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MinTLSVersion string
 
+	Client client.Client
+
 	listener net.Listener
 }
 
@@ -147,6 +151,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/healthz", s.handleHealthz)
 		mux.HandleFunc("/livez", s.handleLivez)
+		mux.HandleFunc("/startupz", s.handleStartupz)
 		s.Log.V(logf.InfoLevel).Info("listening for insecure healthz connections", "address", s.HealthzAddr)
 		healthzChan = s.startServer(l, internalStopCh, mux)
 	}
@@ -410,6 +415,26 @@ func (s *Server) handleHealthz(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleStartupz(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+
+	// kubectl apply -f test-resource.yaml
+	cert := &v1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-certificate",
+			Namespace: "default",
+		},
+		Spec: v1.CertificateSpec{},
+	}
+	if err := s.Client.Create(context.TODO(), cert, client.DryRunAll); err != nil {
+		s.Log.Error(err, "Startup check failed as API is unhealthy")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	s.Log.Info("Startup check success")
 	w.WriteHeader(http.StatusOK)
 }
 

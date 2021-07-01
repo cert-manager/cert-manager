@@ -22,10 +22,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/webhook"
@@ -80,7 +83,16 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 	default:
 		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
 	}
-
+	scheme := runtime.NewScheme()
+	if err := v1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	cli, err := client.New(restcfg, client.Options{
+		Scheme: scheme,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", opts.ListenPort),
 		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
@@ -92,6 +104,7 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
 		Log:               log,
+		Client:            cli,
 	}, nil
 }
 
