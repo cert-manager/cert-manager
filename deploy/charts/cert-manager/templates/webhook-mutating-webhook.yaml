@@ -21,7 +21,7 @@ webhooks:
           - "cert-manager.io"
           - "acme.cert-manager.io"
         apiVersions:
-          - "*"
+          - "v1"
         operations:
           - CREATE
           - UPDATE
