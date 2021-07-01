@@ -19,5 +19,6 @@ def go_binary(name, **kwargs):
     real_go_binary(
         name = name,
         x_defs = version_x_defs(),
+        gc_linkopts = ["-s", "-w"],
         **kwargs,
     )
