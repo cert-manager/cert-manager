@@ -22,6 +22,12 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["create"]
+# Allows the webhook server to perform a health check on the cert-manager CRDs.
+# It will perform a *dry-run* create Certificate operation only,
+# in the namespace where the webhook is running.
+- apiGroups: ["cert-manager.io"]
+  resources: ["certificates"]
+  verbs: ["create"]
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1

@@ -38,14 +38,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	ciphers "k8s.io/component-base/cli/flag"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/cmapichecker"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
@@ -120,7 +116,8 @@ type Server struct {
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MinTLSVersion string
 
-	Client client.Client
+	// APIChecker is used to check that the cert-manager CRDs have been installed on the K8S API server and that the cert-manager webhooks
+	APIChecker cmapichecker.Interface
 
 	listener net.Listener
 }
@@ -423,26 +420,13 @@ func (s *Server) handleHealthz(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) handleStartupz(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
-
-	cert := &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "webhook-dry-run",
-			Namespace: "default",
-		},
-		Spec: v1.CertificateSpec{
-			DNSNames:   []string{"www.example.com"},
-			SecretName: "webhook-dry-run",
-			IssuerRef: cmmeta.ObjectReference{
-				Name: "webhook-dry-run",
-			},
-		},
-	}
-	if err := s.Client.Create(context.TODO(), cert, client.DryRunAll); err != nil {
-		s.Log.Error(err, "Startup check failed as API is unhealthy")
+	log := s.Log.WithName("startupz")
+	if err := s.APIChecker.Check(req.Context()); err != nil {
+		log.V(logf.DebugLevel).Info("Failure", "reason", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	s.Log.Info("Startup check success")
+	log.V(logf.DebugLevel).Info("Success")
 	w.WriteHeader(http.StatusOK)
 }
 

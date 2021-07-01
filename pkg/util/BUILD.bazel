@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "context.go",
+        "get_incluster_namespace.go",
         "useragent.go",
         "util.go",
         "version.go",
@@ -33,6 +34,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/util/cmapichecker:all-srcs",
         "//pkg/util/cmd:all-srcs",
         "//pkg/util/coverage:all-srcs",
         "//pkg/util/errors:all-srcs",

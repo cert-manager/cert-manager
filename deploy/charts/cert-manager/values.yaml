@@ -243,8 +243,19 @@ webhook:
     #   cpu: 10m
     #   memory: 32Mi
 
-  ## Liveness and readiness probe values
+  ## Liveness, Readiness and Startup probe values
   ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ##
+  ## The Startup probe verifies that the cert-manager API is usable by
+  ## attempting to connect to the K8S API and create a cert-manager Certificate,
+  ## which will only succeed when the K8S API server has a TLS client
+  ## certificate to authenticate with the webhook server, and a CA certificate
+  ## to verify the webhook TLS serving certificate.
+  ## On first startup this will be delayed by the time taken to generate a new
+  ## webhook key pair and the time taken to pull the cainjector image and for
+  ## cainjector to inject the webhook CA certifcate in to the various webhook
+  ## and CRD resources.
+  ## See https://cert-manager.io/docs/concepts/webhook/#diagnosing-other-webhook-problems
   ##
   livenessProbe:
     failureThreshold: 3
@@ -260,7 +271,7 @@ webhook:
     timeoutSeconds: 1
   startupProbe:
     failureThreshold: 12
-    initialDelaySeconds: 20
+    initialDelaySeconds: 0
     periodSeconds: 5
     successThreshold: 1
     timeoutSeconds: 1
