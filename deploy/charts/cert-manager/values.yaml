@@ -331,7 +331,7 @@ webhook:
 
 cainjector:
   enabled: true
-  replicaCount: 1
+  replicaCount: 0
 
   strategy: {}
     # type: RollingUpdate
