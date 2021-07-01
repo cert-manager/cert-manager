@@ -203,12 +203,11 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec(serverURL string) cmapi.I
 func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Namespace.Name)
 
-	By("Creating an ACME DNS01 Issuer")
-	issuer := &cmapi.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-issuer-dns01-",
-		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, []cmacme.ACMEChallengeSolver{
+	var solver []cmacme.ACMEChallengeSolver
+
+	switch f.Config.Addons.ACMEServer.DNSProvider {
+	case "rfc-2136":
+		solver = []cmacme.ACMEChallengeSolver{
 			{
 				DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
@@ -216,7 +215,25 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 					},
 				},
 			},
-		}),
+		}
+	case "route-53":
+		solver = []cmacme.ACMEChallengeSolver{
+			{
+				DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+						// Pass additional config here,
+					},
+				},
+			},
+		}
+	}
+
+	By("Creating an ACME DNS01 Issuer")
+	issuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "acme-issuer-dns01-",
+		},
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, solver),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 Issuer")
@@ -231,12 +248,11 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
-	By("Creating an ACME DNS01 ClusterIssuer")
-	issuer := &cmapi.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "acme-cluster-issuer-dns01-",
-		},
-		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, []cmacme.ACMEChallengeSolver{
+	var solver []cmacme.ACMEChallengeSolver
+
+	switch f.Config.Addons.ACMEServer.DNSProvider {
+	case "rfc-2136":
+		solver = []cmacme.ACMEChallengeSolver{
 			{
 				DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
@@ -244,7 +260,25 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 					},
 				},
 			},
-		}),
+		}
+	case "route-53":
+		solver = []cmacme.ACMEChallengeSolver{
+			{
+				DNS01: &cmacme.ACMEChallengeSolverDNS01{
+					Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+						// Pass additional config here,
+					},
+				},
+			},
+		}
+	}
+
+	By("Creating an ACME DNS01 ClusterIssuer")
+	issuer := &cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "acme-cluster-issuer-dns01-",
+		},
+		Spec: a.createDNS01IssuerSpec(f.Config.Addons.ACMEServer.URL, solver),
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 ClusterIssuer")
