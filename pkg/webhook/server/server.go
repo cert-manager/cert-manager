@@ -41,7 +41,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
@@ -421,13 +424,18 @@ func (s *Server) handleHealthz(w http.ResponseWriter, req *http.Request) {
 func (s *Server) handleStartupz(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
-	// kubectl apply -f test-resource.yaml
-	cert := &v1.Certificate{
+	cert := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-certificate",
+			Name:      "webhook-dry-run",
 			Namespace: "default",
 		},
-		Spec: v1.CertificateSpec{},
+		Spec: v1.CertificateSpec{
+			DNSNames:   []string{"www.example.com"},
+			SecretName: "webhook-dry-run",
+			IssuerRef: cmmeta.ObjectReference{
+				Name: "webhook-dry-run",
+			},
+		},
 	}
 	if err := s.Client.Create(context.TODO(), cert, client.DryRunAll); err != nil {
 		s.Log.Error(err, "Startup check failed as API is unhealthy")
