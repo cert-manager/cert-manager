@@ -19,6 +19,10 @@ def go_binary(name, **kwargs):
     real_go_binary(
         name = name,
         x_defs = version_x_defs(),
+        # reduce the go binary size with this simple trick
+        # (https://blog.filippo.io/shrink-your-go-binaries-with-this-one-weird-trick/)
+        # it strips the DWARF tables needed for debuggers, not the annotations
+        # needed for stack traces, so our panics are still readable!
         gc_linkopts = ["-s", "-w"],
         **kwargs,
     )
