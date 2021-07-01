@@ -52,9 +52,11 @@ the provided chart and chart parameters and are used to determine what resources
 from the kubernetes cluster.
 
 Some example uses:
-	$ kubectl cert-manager uninstall -n cert-manager
+	$ kubectl cert-manager uninstall
 or
-	$ kubectl cert-manager uninstall -n cert-manager --remove-crds
+	$ kubectl cert-manager uninstall --remove-crds
+or
+	$ kubectl cert-manager uninstall -n new-cert-manager
 `
 
 type UninstallOptions struct {
@@ -71,7 +73,7 @@ type UninstallOptions struct {
 }
 
 // TODO: should wait for uninstall (https://github.com/helm/helm/pull/9702)
-func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory, kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	settings := cli.New()
 	cfg := new(action.Configuration)
 
@@ -84,12 +86,16 @@ func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams,
 		IOStreams:       ioStreams,
 	}
 
+	// Set default namespace cli flag value
+	defaults := make(map[string]string)
+	defaults["namespace"] = "cert-manager"
+
 	cmd := &cobra.Command{
 		Use:   "uninstall",
 		Short: "uninstall cert-manager",
 		Long:  uninstallDesc,
-		RunE: func(_ *cobra.Command, args []string) error {
-			if err := helm.CopyCliFlags(kubeConfigFlags, settings); err != nil {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := helm.CopyCliFlags(cmd.Root().PersistentFlags(), defaults, settings); err != nil {
 				return nil
 			}
 			options.installClient.Namespace = settings.Namespace()
@@ -152,7 +158,7 @@ func (o *UninstallOptions) runUninstall() error {
 	}
 
 	// Extract all resources that are present in the chart
-	resources, err := helm.GetChartResourceInfo(ch, dryRunResult.Manifest, o.RemoveCrds, o.cfg.KubeClient)
+	resources, err := helm.GetChartResourceInfo(dryRunResult.Manifest, o.cfg.KubeClient)
 	if err != nil {
 		return err
 	}

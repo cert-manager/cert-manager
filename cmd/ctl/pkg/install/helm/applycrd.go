@@ -35,6 +35,9 @@ const (
 	CreateReplace
 )
 
+// TODO: Currently, only CRDsPolicy.Create is used. In the future,
+// CRDsPolicy.CreateReplace will allow the cli tool to also upgrade crds.
+
 func (policy CRDsPolicy) String() string {
 	return [...]string{"Skip", "Create", "CreateReplace"}[policy]
 }

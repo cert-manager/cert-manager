@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/cli-runtime/pkg/resource"
 
-	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/kube"
 )
 
@@ -32,23 +31,9 @@ const (
 	customResourceDefinitionKind  = "CustomResourceDefinition"
 )
 
-// Build a list of resource.Info objects from a chart definition and its rendered manifest.
-// The chart is only used for its CRDObjects() function that returns a list of all files in the /crds folder.
-// The includeCrdFolder option is used to not include the /crds folder. Current versions of the cert-manager chart
-// don't have a crds folder, so this option is only in case this would ever change. The manifest includes
-// all types of resources (not only crds).
-func GetChartResourceInfo(ch *chart.Chart, manifest string, includeCrdFolder bool, kubeClient kube.Interface) ([]*resource.Info, error) {
+// Build a list of resource.Info objects from a rendered manifest.
+func GetChartResourceInfo(manifest string, kubeClient kube.Interface) ([]*resource.Info, error) {
 	resources := make([]*resource.Info, 0)
-
-	if includeCrdFolder {
-		for _, obj := range ch.CRDObjects() {
-			res, err := kubeClient.Build(bytes.NewBuffer(obj.File.Data), false)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse CRDs from %s: %s", obj.Name, err)
-			}
-			resources = append(resources, res...)
-		}
-	}
 
 	res, err := kubeClient.Build(bytes.NewBufferString(manifest), false)
 	if err != nil {

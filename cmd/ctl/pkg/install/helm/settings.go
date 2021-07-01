@@ -17,30 +17,36 @@ limitations under the License.
 package helm
 
 import (
-	flag "github.com/spf13/pflag"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"github.com/spf13/pflag"
 
 	"helm.sh/helm/v3/pkg/cli"
 )
 
-func CopyCliFlags(kubeConfigFlags *genericclioptions.ConfigFlags, cliEnvSettings *cli.EnvSettings) error {
+func CopyCliFlags(flags *pflag.FlagSet, defaults map[string]string, cliEnvSettings *cli.EnvSettings) error {
 	// Pass namespace value through fake flags, because it is a private property
-	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
+	fakefs := pflag.NewFlagSet("fake", pflag.ExitOnError)
 	cliEnvSettings.AddFlags(fakefs)
-	if err := fakefs.Set("namespace", *kubeConfigFlags.Namespace); err != nil {
-		return err
+
+	for name, value := range defaults {
+		if err := fakefs.Set(name, value); err != nil {
+			return err
+		}
 	}
-	if err := fakefs.Parse([]string{}); err != nil {
+
+	var err error = nil
+	flags.VisitAll(func(flag *pflag.Flag) {
+		if err != nil || !flag.Changed {
+			return
+		}
+		err = fakefs.Set(flag.Name, flag.Value.String())
+	})
+	if err != nil {
 		return err
 	}
 
-	cliEnvSettings.KubeConfig = *kubeConfigFlags.KubeConfig
-	cliEnvSettings.KubeContext = *kubeConfigFlags.Context
-	cliEnvSettings.KubeToken = *kubeConfigFlags.BearerToken
-	cliEnvSettings.KubeAsUser = *kubeConfigFlags.Impersonate
-	cliEnvSettings.KubeAsGroups = *kubeConfigFlags.ImpersonateGroup
-	cliEnvSettings.KubeAPIServer = *kubeConfigFlags.APIServer
-	cliEnvSettings.KubeCaFile = *kubeConfigFlags.CAFile
+	if err := fakefs.Parse([]string{}); err != nil {
+		return err
+	}
 
 	return nil
 }

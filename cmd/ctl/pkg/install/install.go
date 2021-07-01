@@ -52,19 +52,20 @@ type InstallOptions struct {
 
 const installCRDsFlagName = "installCRDs"
 const installDesc = `
-This command installs cert-manager. It uses the helm libraries to do so.
+This command installs cert-manager. It uses the Helm libraries to do so.
 
 The latest published cert-manager chart on the "https://charts.jetstack.io" repo is used.
 Most of the features supported by 'helm install' are also supported by this command.
-Additional the the functionallity that the helm command gives you, this command will
-also manage CRD resources.
+In addition his command will always install CRD resources.
 
 Some example uses:
-	$ kubectl cert-manager install -n cert-manager
+	$ kubectl cert-manager install
 or
-	$ kubectl cert-manager install -n cert-manager --version v1.4.0
+	$ kubectl cert-manager install -n new-cert-manager
 or
-	$ kubectl cert-manager install -n cert-manager --set prometheus.enabled=false
+	$ kubectl cert-manager install --version v1.4.0
+or
+	$ kubectl cert-manager install --set prometheus.enabled=false
 
 To override values in the cert-manager chart, use either the '--values' flag and pass in a file
 or use the '--set' flag and pass configuration from the command line, to force
@@ -73,7 +74,7 @@ you want not to use neither '--values' nor '--set', use '--set-file' to read the
 single large value from file.
 `
 
-func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory, kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	settings := cli.New()
 	cfg := new(action.Configuration)
 
@@ -85,12 +86,16 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		IOStreams: ioStreams,
 	}
 
+	// Set default namespace cli flag value
+	defaults := make(map[string]string)
+	defaults["namespace"] = "cert-manager"
+
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "install cert-manager",
 		Long:  installDesc,
-		RunE: func(_ *cobra.Command, args []string) error {
-			if err := helm.CopyCliFlags(kubeConfigFlags, settings); err != nil {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := helm.CopyCliFlags(cmd.Root().PersistentFlags(), defaults, settings); err != nil {
 				return nil
 			}
 			options.client.Namespace = settings.Namespace()
@@ -99,7 +104,7 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 			if err != nil {
 				return err
 			}
-			return writeRelease(ioStreams.Out, rel, false)
+			return writeRelease(ioStreams.Out, rel, options.DryRun)
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -161,8 +166,12 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 		return nil, err
 	}
 
+	if o.DryRun {
+		return dryRunResult, nil
+	}
+
 	// Extract the resource.Info objects from the helm chart crds (/crds folder) and the manifest
-	resources, err := helm.GetChartResourceInfo(chart, dryRunResult.Manifest, true, o.cfg.KubeClient)
+	resources, err := helm.GetChartResourceInfo(dryRunResult.Manifest, o.cfg.KubeClient)
 	if err != nil {
 		return nil, err
 	}
@@ -182,14 +191,14 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	}
 
 	// Install CRDs
-	if len(crds) > 0 && !o.DryRun {
+	if len(crds) > 0 {
 		if err := helm.ApplyCRDs(helm.Create, crds, o.cfg); err != nil {
 			return nil, err
 		}
 	}
 
 	// Install chart
-	o.client.DryRun = o.DryRun               // Apply DryRun cli flags
+	o.client.DryRun = false                  // Apply DryRun cli flags
 	o.client.IsUpgrade = false               // Reset value to false
 	o.client.Atomic = true                   // If part of the install fails, also undo other installed resources
 	chartValues[installCRDsFlagName] = false // Do not render crds, as this might cause problems when uninstalling using helm
@@ -197,7 +206,12 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	return o.client.Run(chart, chartValues)
 }
 
-func writeRelease(out io.Writer, rel *release.Release, debug bool) error {
+func writeRelease(out io.Writer, rel *release.Release, dryRun bool) error {
+	if dryRun {
+		fmt.Fprintf(out, "%s", rel.Manifest)
+		return nil
+	}
+
 	fmt.Fprintf(out, "NAME: %s\n", rel.Name)
 	if !rel.Info.LastDeployed.IsZero() {
 		fmt.Fprintf(out, "LAST DEPLOYED: %s\n", rel.Info.LastDeployed.Format(time.ANSIC))

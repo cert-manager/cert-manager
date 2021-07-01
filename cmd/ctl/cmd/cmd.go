@@ -18,23 +18,19 @@ package cmd
 
 import (
 	"context"
-	"flag"
-	"fmt"
 	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	// Load all auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/klog/v2"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/approve"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/deny"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/experimental"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/flags"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/inspect"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status"
@@ -50,20 +46,7 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	}
 	cmds.SetUsageTemplate(usageTemplate)
 
-	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
-	kubeConfigFlags.AddFlags(cmds.PersistentFlags())
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
-	matchVersionKubeConfigFlags.AddFlags(cmds.PersistentFlags())
-	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
-
-	cmds.Flags().AddGoFlagSet(flag.CommandLine)
-	flag.CommandLine.Parse([]string{})
-	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
-	klog.InitFlags(fakefs)
-	if err := fakefs.Parse([]string{"-logtostderr=false"}); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
-	}
+	factory := flags.AddFlags(cmds)
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 	cmds.AddCommand(version.NewCmdVersion(ctx, ioStreams))
@@ -76,7 +59,7 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	cmds.AddCommand(deny.NewCmdDeny(ctx, ioStreams, factory))
 
 	// Experimental features
-	cmds.AddCommand(experimental.NewCmdExperimental(ctx, ioStreams, factory, kubeConfigFlags))
+	cmds.AddCommand(experimental.NewCmdExperimental(ctx, ioStreams, factory))
 
 	return cmds
 }

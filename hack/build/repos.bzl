@@ -4392,8 +4392,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "helm.sh/helm/v3",
-        sum = "h1:TQ6q4pAatXr7qh2fbLcb0oNd0I3J7kv26oo5cExKTtc=",
-        version = "v3.6.1",
+        sum = "h1:7YbEhLC6AUgmcDoh5BGFUGNtR/o43pr0AIelSNjhuFU=",
+        version = "v3.6.2",
     )
 
     go_repository(
