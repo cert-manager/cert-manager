@@ -430,6 +430,7 @@ func TestIssuingController(t *testing.T) {
 									cmapi.IPSANAnnotationKey:       "",
 									cmapi.URISANAnnotationKey:      "",
 								},
+								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
@@ -473,6 +474,7 @@ func TestIssuingController(t *testing.T) {
 							Annotations: map[string]string{
 								"my-custom": "annotation",
 							},
+							Labels: map[string]string{},
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -504,6 +506,7 @@ func TestIssuingController(t *testing.T) {
 									cmapi.IPSANAnnotationKey:       "",
 									cmapi.URISANAnnotationKey:      "",
 								},
+								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
@@ -563,6 +566,7 @@ func TestIssuingController(t *testing.T) {
 									cmapi.IPSANAnnotationKey:       "",
 									cmapi.URISANAnnotationKey:      "",
 								},
+								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
@@ -634,6 +638,7 @@ func TestIssuingController(t *testing.T) {
 									cmapi.IPSANAnnotationKey:       "",
 									cmapi.URISANAnnotationKey:      "",
 								},
+								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
@@ -681,6 +686,7 @@ func TestIssuingController(t *testing.T) {
 							Annotations: map[string]string{
 								"my-custom": "annotation",
 							},
+							Labels: map[string]string{},
 						},
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundleAlt.CertBytes,
@@ -726,6 +732,7 @@ func TestIssuingController(t *testing.T) {
 							Annotations: map[string]string{
 								"my-custom": "annotation",
 							},
+							Labels: map[string]string{},
 						},
 						Data: map[string][]byte{
 							corev1.TLSPrivateKeyKey: []byte("abc"),
@@ -752,6 +759,7 @@ func TestIssuingController(t *testing.T) {
 									cmapi.IPSANAnnotationKey:       "",
 									cmapi.URISANAnnotationKey:      "",
 								},
+								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes,
@@ -799,6 +807,7 @@ func TestIssuingController(t *testing.T) {
 							Annotations: map[string]string{
 								"my-custom": "annotation",
 							},
+							Labels: map[string]string{},
 						},
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes, // Cert not valid but still matches private key
@@ -866,6 +875,7 @@ func TestIssuingController(t *testing.T) {
 									cmapi.IPSANAnnotationKey:       "",
 									cmapi.URISANAnnotationKey:      "",
 								},
+								Labels: map[string]string{},
 							},
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.CertificateRequestReady.Status.Certificate,
