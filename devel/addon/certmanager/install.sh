@@ -65,3 +65,30 @@ helm upgrade \
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
+# Verify that Helm does not exit until the cert-manager API is usable
+# by submitting some cert-manager CRs in server-side dry-run mode.
+# This will fail unless the K8S API server has the CRDs installed and has a
+# working TLS connection to the cert-manager webhook server.
+# These test resources are adapted from:
+# https://cert-manager.io/docs/installation/kubernetes/#verifying-the-installation
+kubectl apply --dry-run=server -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: test-selfsigned
+  namespace: ${NAMESPACE}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: selfsigned-cert
+  namespace: ${NAMESPACE}
+spec:
+  dnsNames:
+    - example.com
+  secretName: selfsigned-cert-tls
+  issuerRef:
+    name: test-selfsigned
+EOF
