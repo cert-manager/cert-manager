@@ -29,6 +29,8 @@ type ACMEServer struct {
 	TestingACMEEmailAlternative string
 	TestingACMEPrivateKey       string
 	DNSProvider                 string
+	Route53Zone                 string
+	Route53Region               string
 }
 
 func (p *ACMEServer) AddFlags(fs *flag.FlagSet) {
@@ -40,6 +42,8 @@ func (p *ACMEServer) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.TestingACMEEmailAlternative, "testing-acme-email-alternative", "another-test@example.com", "Alternate email to be used for the tests")
 	fs.StringVar(&p.TestingACMEPrivateKey, "testing-acme-private-key", "test-acme-private-key", "Private key for the ACME tests")
 	fs.StringVar(&p.DNSProvider, "dns-provider", "rfc-2136", "Type of DNS01 provider to be used for the tests")
+	fs.StringVar(&p.Route53Zone, "route53-zone", "??", "Zone to be used when the DNS01 challenge provider is Route53")
+	fs.StringVar(&p.Route53Region, "route53-region", "??", "Region to be used when the DNS01 challenge provider is Route53")
 }
 
 func (p *ACMEServer) Validate() []error {

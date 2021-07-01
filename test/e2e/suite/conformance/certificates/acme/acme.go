@@ -221,7 +221,8 @@ func (a *acmeIssuerProvisioner) createDNS01Issuer(f *framework.Framework) cmmeta
 			{
 				DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-						// Pass additional config here,
+						HostedZoneID: f.Config.Addons.ACMEServer.Route53Zone,
+						Region:       f.Config.Addons.ACMEServer.Route53Region,
 					},
 				},
 			},
@@ -266,7 +267,8 @@ func (a *acmeIssuerProvisioner) createDNS01ClusterIssuer(f *framework.Framework)
 			{
 				DNS01: &cmacme.ACMEChallengeSolverDNS01{
 					Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
-						// Pass additional config here,
+						HostedZoneID: f.Config.Addons.ACMEServer.Route53Zone,
+						Region:       f.Config.Addons.ACMEServer.Route53Region,
 					},
 				},
 			},
@@ -303,15 +305,6 @@ func (a *acmeIssuerProvisioner) createDNS01IssuerSpec(serverURL string, solvers 
 				},
 				ExternalAccountBinding: a.eab,
 				Solvers:                solvers,
-				// Solvers: []cmacme.ACMEChallengeSolver{
-				// 	{
-				// 		DNS01: &cmacme.ACMEChallengeSolverDNS01{
-				// 			RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
-				// 				Nameserver: dnsServer,
-				// 			},
-				// 		},
-				// 	},
-				// },
 			},
 		},
 	}
