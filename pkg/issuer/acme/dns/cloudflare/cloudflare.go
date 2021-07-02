@@ -18,6 +18,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -28,12 +29,24 @@ import (
 // TODO: Unexport?
 const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
+// Mockable Interface
+type DNSProviderType interface {
+	makeRequest(method, uri string, body io.Reader) (json.RawMessage, error)
+}
+
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
 	dns01Nameservers []string
 	authEmail        string
 	authKey          string
 	authToken        string
+}
+
+// DNSZone is the Zone-Record returned from Cloudflare (we`ll ignore everything we don't need)
+// See https://api.cloudflare.com/#zone-properties
+type DNSZone struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
@@ -74,6 +87,46 @@ func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []stri
 		authToken:        token,
 		dns01Nameservers: dns01Nameservers,
 	}, nil
+}
+
+// This will try to traverse the official Cloudflare API to find the nearest valid Zone.
+// It's a replacement for /pkg/issuer/acme/dns/util/wait.go#FindZoneByFqdn
+//  example.com.                                   ← Zone-Record found for the SLD (in most cases)
+//  └── foo.example.com.                           ← Zone-Record could be possibly here, but in this case not.
+//      └── _acme-challenge.foo.example.com.       ← Starting point, the FQDN.
+// It will try to call the API for each branch (from bottom to top) and see if there's a Zone-Record returned.
+// Calling See https://api.cloudflare.com/#zone-list-zones
+func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
+	if fqdn == "" {
+		return DNSZone{}, fmt.Errorf("FindNearestZoneForFQDN: FQDN-Parameter can't be empty, please specify a domain!")
+	}
+	mappedFQDN := strings.Split(fqdn, ".")
+	nextName := util.UnFqdn(fqdn) //remove the trailing dot
+	for i := 0; i < len(mappedFQDN)-1; i++ {
+		var from, to = len(mappedFQDN[i]) + 1, len(nextName)
+		if from > to {
+			continue
+		}
+		if mappedFQDN[i] == "*" { //skip wildcard sub-domain-entries
+			nextName = string([]rune(nextName)[from:to])
+			continue
+		}
+		result, err := c.makeRequest("GET", "/zones?name="+nextName, nil)
+		if err != nil {
+			continue
+		}
+		var zones []DNSZone
+		err = json.Unmarshal(result, &zones)
+		if err != nil {
+			return DNSZone{}, err
+		}
+
+		if len(zones) > 0 {
+			return zones[0], nil //we're returning the first zone found, might need to test that further
+		}
+		nextName = string([]rune(nextName)[from:to])
+	}
+	return DNSZone{}, fmt.Errorf("Found no Zones for domain %s (neither in the sub-domain noir in the SLD) please make sure your domain-entries in the config are correct and the API is correctly setup with Zone.read rights.", fqdn)
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
@@ -140,33 +193,11 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 }
 
 func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
-	// HostedZone represents a CloudFlare DNS zone
-	type HostedZone struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	}
-
-	authZone, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+	hostedZone, err := FindNearestZoneForFQDN(c, fqdn)
 	if err != nil {
 		return "", err
 	}
-
-	result, err := c.makeRequest("GET", "/zones?name="+util.UnFqdn(authZone), nil)
-	if err != nil {
-		return "", err
-	}
-
-	var hostedZone []HostedZone
-	err = json.Unmarshal(result, &hostedZone)
-	if err != nil {
-		return "", err
-	}
-
-	if len(hostedZone) != 1 {
-		return "", fmt.Errorf("Zone %s not found in CloudFlare for domain %s", authZone, fqdn)
-	}
-
-	return hostedZone[0].ID, nil
+	return hostedZone.ID, nil
 }
 
 var errNoExistingRecord = errors.New("No existing record found")
