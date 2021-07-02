@@ -25,7 +25,11 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	// Use v1alpha2 API to ensure that the API server has also connected to the
+	// cert-manager conversion webhook.
+	// TODO(wallrj): Only change this when the old deprecated APIs are removed,
+	// at which point the conversion webhook may be removed anyway.
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
@@ -61,9 +65,11 @@ func New(restcfg *rest.Config, namespace string) (Interface, error) {
 	}, nil
 }
 
-// Check attempts to perform a dry-run create of a cert-manager Certificate
-// resource in order to verify that CRDs are installed and all the required
-// webhooks are reachable by the K8S API server.
+// Check attempts to perform a dry-run create of a cert-manager *v1alpha2*
+// Certificate resource in order to verify that CRDs are installed and all the
+// required webhooks are reachable by the K8S API server.
+// We use v1alpha2 API to ensure that the API server has also connected to the
+// cert-manager conversion webhook.
 func (o *cmapiChecker) Check(ctx context.Context) error {
 	cert := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
