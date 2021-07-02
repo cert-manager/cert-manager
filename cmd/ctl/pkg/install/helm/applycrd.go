@@ -44,7 +44,7 @@ func (policy CRDsPolicy) String() string {
 
 // This has been adapted from https://github.com/fluxcd/helm-controller/blob/main/internal/runner/runner.go#L212
 func ApplyCRDs(policy CRDsPolicy, allCrds []*resource.Info, cfg *action.Configuration) error {
-	log.Printf("apply CRDs with policy %v", policy)
+	log.Printf("Applying CRDs with policy %v", policy)
 
 	totalItems := []*resource.Info{}
 	switch policy {

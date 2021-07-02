@@ -21,16 +21,19 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/resource"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
-	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
 
 	helm "github.com/jetstack/cert-manager/cmd/ctl/pkg/install/helm"
@@ -42,14 +45,11 @@ This command uninstalls cert-manager.
 It can uninstall cert-manager even if it was installed by another install tool.
 
 This command will also delete CRD resources when providing the '--remove-crds' flag.
-It is safer to use this cli than using helm directly (which might automatically remove
+It is safer to use this cli than using Helm directly (which might automatically remove
 cert-manager crds when uninstalling, depending on the install parameters).
 
-The tool first tries to find a helm-based cert-manager install (installed directly by helm
-or by this cli tool) and removes the resources based on the found helm release. In case no
-helm-based cert-manager install is found, a kubernetes manifest yamls are generated from
-the provided chart and chart parameters and are used to determine what resources to remove
-from the kubernetes cluster.
+The tool tries to find a Helm-based cert-manager install (installed directly by Helm or
+by this cli tool) and removes the resources based on the found Helm release.
 
 Some example uses:
 	$ kubectl cert-manager uninstall
@@ -60,11 +60,10 @@ or
 `
 
 type UninstallOptions struct {
-	settings        *cli.EnvSettings
-	installClient   *action.Install
-	uninstallClient *action.Uninstall
-	cfg             *action.Configuration
-	valueOpts       *values.Options
+	settings  *cli.EnvSettings
+	cfg       *action.Configuration
+	client    *action.Install
+	valueOpts *values.Options
 
 	ChartName  string
 	RemoveCrds bool
@@ -72,18 +71,17 @@ type UninstallOptions struct {
 	genericclioptions.IOStreams
 }
 
-// TODO: should wait for uninstall (https://github.com/helm/helm/pull/9702)
 func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	settings := cli.New()
 	cfg := new(action.Configuration)
 
 	options := &UninstallOptions{
-		settings:        settings,
-		installClient:   action.NewInstall(cfg),
-		uninstallClient: action.NewUninstall(cfg),
-		cfg:             cfg,
-		valueOpts:       &values.Options{},
-		IOStreams:       ioStreams,
+		settings:  settings,
+		cfg:       cfg,
+		client:    action.NewInstall(cfg),
+		valueOpts: &values.Options{},
+
+		IOStreams: ioStreams,
 	}
 
 	// Set default namespace cli flag value
@@ -98,7 +96,7 @@ func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams,
 			if err := helm.CopyCliFlags(cmd.Root().PersistentFlags(), defaults, settings); err != nil {
 				return nil
 			}
-			options.installClient.Namespace = settings.Namespace()
+			options.client.Namespace = settings.Namespace()
 
 			return options.runUninstall()
 		},
@@ -106,12 +104,10 @@ func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams,
 		SilenceErrors: true,
 	}
 
-	addInstallUninstallFlags(cmd.Flags(), options.installClient)
-	addValueOptionsFlags(cmd.Flags(), options.valueOpts)
-	addChartPathOptionsFlags(cmd.Flags(), &options.installClient.ChartPathOptions)
+	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.client.Wait)
 
-	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "name of the cert-manager chart")
-	cmd.Flags().BoolVar(&options.RemoveCrds, "remove-crds", false, "also remove cert-manager crds")
+	cmd.Flags().BoolVar(&options.RemoveCrds, "remove-crds", false, "also remove crds")
+	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "name of the chart to uninstall")
 
 	return cmd
 }
@@ -136,23 +132,22 @@ func (o *UninstallOptions) runUninstall() error {
 		log.Printf(">> Found more than 1 cert-manager installation. Only one one of these installations will get uninstalled. Please rerun to also uninstall the other installations.")
 	}
 
-	var ch *chart.Chart
-	var chartValues map[string]interface{}
-	if len(certManagerReleases) > 0 {
-		log.Printf(">> Found a helm-based installation, will use the original chart for removal.")
-		ch, chartValues, err = o.chartAndOptionsFromRelease(certManagerReleases[0])
-	} else {
-		ch, chartValues, err = o.chartAndOptionsFromCliOptions()
+	if len(certManagerReleases) == 0 {
+		return fmt.Errorf("No helm-based (installed via helm or the cert-manager kubectl plugin) installation was found.")
 	}
+
+	log.Printf(">> Found a helm-based installation, will use the original chart for removal.")
+	releaseName, ch, chartValues, err := o.chartAndOptionsFromRelease(certManagerReleases[0])
 	if err != nil {
 		return err
 	}
+	o.client.ReleaseName = releaseName
 
 	// Dryrun template generation (used for rendering the resources that should be deleted)
-	o.installClient.DryRun = true                   // Do not apply install
-	o.installClient.IsUpgrade = true                // Do not validate against cluster
+	o.client.DryRun = true                          // Do not apply install
+	o.client.IsUpgrade = true                       // Do not validate against cluster
 	chartValues[installCRDsFlagName] = o.RemoveCrds // Only render crds if cli flag is provided
-	dryRunResult, err := o.installClient.Run(ch, chartValues)
+	dryRunResult, err := o.client.Run(ch, chartValues)
 	if err != nil {
 		return err
 	}
@@ -177,6 +172,12 @@ func (o *UninstallOptions) runUninstall() error {
 		if _, err := o.cfg.KubeClient.Delete(resources); err != nil {
 			return fmt.Errorf("failed to delete %s", err)
 		}
+
+		if o.client.Wait {
+			if err := o.waitForDeletedResources(resources); err != nil {
+				return err
+			}
+		}
 	} else if len(installedResources) > 0 {
 		// Resources linked to cert-manager were found, but none were found in the current namespace.
 		return fmt.Errorf("Only found non-namespaced resources linked to cert-manager. Make sure \"--namespace\" flag is set correctly.")
@@ -190,23 +191,23 @@ func (o *UninstallOptions) runUninstall() error {
 	}
 
 	if len(certManagerReleases) > 0 {
-		log.Printf(">> Everything was removed, also removing helm entry.")
-		return o.removeReleaseAndHistory(certManagerReleases[0])
+		log.Printf(">> Everything was removed, also removing Helm entry.")
+		return o.removeHelmReleaseAndHistory(certManagerReleases[0])
 	}
 
 	return nil
 }
 
-func (o *UninstallOptions) chartAndOptionsFromRelease(rel *release.Release) (*chart.Chart, map[string]interface{}, error) {
+func (o *UninstallOptions) chartAndOptionsFromRelease(rel *release.Release) (string, *chart.Chart, map[string]interface{}, error) {
 	// Overwrite the installCRDs flag so that crds are ONLY removed if the command flag is set
 	rel.Config[installCRDsFlagName] = o.RemoveCrds
 
-	return rel.Chart, rel.Config, nil
+	return rel.Name, rel.Chart, rel.Config, nil
 }
 
 // For sake of simplicity, don't allow to keep history. Equivalent with not allowing
 // --keep-hisory flag to be true (https://helm.sh/docs/helm/helm_uninstall/).
-func (o *UninstallOptions) removeReleaseAndHistory(rel *release.Release) error {
+func (o *UninstallOptions) removeHelmReleaseAndHistory(rel *release.Release) error {
 	rels, err := o.cfg.Releases.History(rel.Name)
 	if err != nil {
 		return err
@@ -220,34 +221,21 @@ func (o *UninstallOptions) removeReleaseAndHistory(rel *release.Release) error {
 	return nil
 }
 
-func (o *UninstallOptions) chartAndOptionsFromCliOptions() (*chart.Chart, map[string]interface{}, error) {
-	// Find chart
-	cp, err := o.installClient.ChartPathOptions.LocateChart(o.ChartName, o.settings)
-	if err != nil {
-		return nil, nil, err
-	}
+// TODO: wait for uninstall should get merged into Helm (https://github.com/helm/helm/pull/9702)
+// waitForDeletedResources polls to check if all the resources are deleted or a timeout is reached
+func (o *UninstallOptions) waitForDeletedResources(deleted []*resource.Info) error {
+	log.Printf("beginning wait for %d resources to be deleted with timeout of %v", len(deleted), o.client.Timeout)
 
-	chart, err := helm.LoadChart(cp, o.installClient, o.settings)
-	if err != nil {
-		return nil, nil, err
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), o.client.Timeout)
+	defer cancel()
 
-	// Check if chart is installable
-	if err := helm.CheckIfInstallable(chart); err != nil {
-		return nil, nil, err
-	}
-
-	// Console print if chart is deprecated
-	if chart.Metadata.Deprecated {
-		log.Printf("This chart is deprecated")
-	}
-
-	// Merge all values flags
-	p := getter.All(o.settings)
-	chartValues, err := o.valueOpts.MergeValues(p)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return chart, chartValues, nil
+	return wait.PollImmediateUntil(2*time.Second, func() (bool, error) {
+		for _, v := range deleted {
+			err := v.Get()
+			if err == nil || !apierrors.IsNotFound(err) {
+				return false, err
+			}
+		}
+		return true, nil
+	}, ctx.Done())
 }

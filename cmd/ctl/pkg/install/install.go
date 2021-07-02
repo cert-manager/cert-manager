@@ -80,9 +80,10 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 
 	options := &InstallOptions{
 		settings:  settings,
-		client:    action.NewInstall(cfg),
 		cfg:       cfg,
+		client:    action.NewInstall(cfg),
 		valueOpts: &values.Options{},
+
 		IOStreams: ioStreams,
 	}
 
@@ -110,13 +111,14 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		SilenceErrors: true,
 	}
 
-	addInstallUninstallFlags(cmd.Flags(), options.client)
+	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.client.Wait)
+	addInstallFlags(cmd.Flags(), options.client)
 	addValueOptionsFlags(cmd.Flags(), options.valueOpts)
 	addChartPathOptionsFlags(cmd.Flags(), &options.client.ChartPathOptions)
 
 	cmd.Flags().BoolVar(&options.client.CreateNamespace, "create-namespace", true, "create the release namespace if not present")
-	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "name of the cert-manager chart")
-	cmd.Flags().BoolVar(&options.DryRun, "dry-run", false, "simulate an install")
+	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "name of the chart to install")
+	cmd.Flags().BoolVar(&options.DryRun, "dry-run", false, "simulate install and output manifest")
 
 	return cmd
 }

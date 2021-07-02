@@ -29,13 +29,16 @@ import (
 )
 
 // Flags that are shared between the Install and the Uninstall command
-func addInstallUninstallFlags(f *pflag.FlagSet, client *action.Install) {
-	f.DurationVar(&client.Timeout, "timeout", 300*time.Second, "time to wait for any individual Kubernetes operation (like Jobs for hooks)")
-	f.BoolVar(&client.Wait, "wait", true, "if set, will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment, StatefulSet, or ReplicaSet are in a ready state before marking the release as successful. It will wait for as long as --timeout")
+func addInstallUninstallFlags(f *pflag.FlagSet, timeout *time.Duration, wait *bool) {
+	f.DurationVar(timeout, "timeout", 300*time.Second, "time to wait for any individual Kubernetes operation (like Jobs for hooks)")
+	f.BoolVar(wait, "wait", true, "if set, will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment, StatefulSet, or ReplicaSet are in a ready state before marking the release as successful. It will wait for as long as --timeout")
+}
+
+func addInstallFlags(f *pflag.FlagSet, client *action.Install) {
+	f.StringVar(&client.ReleaseName, "release-name", "cert-manager", "name of the helm release")
 	f.BoolVarP(&client.GenerateName, "generate-name", "g", false, "generate the name (instead of using the default 'cert-manager' value)")
 	f.StringVar(&client.NameTemplate, "name-template", "", "specify template used to name the release")
 	f.StringVar(&client.Description, "description", "Cert-manager was installed using the cert-manager kubectl plugin", "add a custom description")
-	f.StringVar(&client.ReleaseName, "release-name", "cert-manager", "name of the helm release")
 }
 
 func addValueOptionsFlags(f *pflag.FlagSet, v *values.Options) {
