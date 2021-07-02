@@ -18,8 +18,8 @@ package cmapichecker
 
 import (
 	"context"
-	"fmt"
 
+	errors "github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -35,25 +35,29 @@ type Interface interface {
 }
 
 type cmapiChecker struct {
-	dryRunClient client.Client
-	namespace    string
+	// The client controller-runtime client.New function fails if can't reach
+	// the API server, so we load it lazily, to avoid breaking integration tests
+	// which rely on being able to start the webhook server before the API
+	// server.
+	clientBuilder func() (client.Client, error)
 }
 
 // New returns a cert-manager API checker
 func New(restcfg *rest.Config, namespace string) (Interface, error) {
 	scheme := runtime.NewScheme()
 	if err := cmapi.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	cl, err := client.New(restcfg, client.Options{
-		Scheme: scheme,
-	})
-	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "while configuring scheme")
 	}
 	return &cmapiChecker{
-		dryRunClient: client.NewDryRunClient(cl),
-		namespace:    namespace,
+		clientBuilder: func() (client.Client, error) {
+			cl, err := client.New(restcfg, client.Options{
+				Scheme: scheme,
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "while creating client")
+			}
+			return client.NewNamespacedClient(client.NewDryRunClient(cl), namespace), nil
+		},
 	}, nil
 }
 
@@ -64,7 +68,6 @@ func (o *cmapiChecker) Check(ctx context.Context) error {
 	cert := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cmapichecker-",
-			Namespace:    o.namespace,
 		},
 		Spec: cmapi.CertificateSpec{
 			DNSNames:   []string{"cmapichecker.example"},
@@ -74,8 +77,12 @@ func (o *cmapiChecker) Check(ctx context.Context) error {
 			},
 		},
 	}
-	if err := o.dryRunClient.Create(ctx, cert); err != nil {
-		return fmt.Errorf("error creating Certificate: %v", err)
+	cl, err := o.clientBuilder()
+	if err != nil {
+		return err
+	}
+	if err := cl.Create(ctx, cert); err != nil {
+		return errors.Wrap(err, "while attempting dry-run creation of Certificate")
 	}
 	return nil
 }
