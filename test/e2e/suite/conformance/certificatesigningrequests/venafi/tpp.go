@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
+	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/venafi"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
@@ -60,6 +61,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		CreateIssuerFunc:    venafiIssuer.createIssuer,
 		DeleteIssuerFunc:    venafiIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,
+		DomainSuffix:        fmt.Sprintf("%s-venafi-e2e", cmutil.RandStringRunes(5)),
 	}).Define()
 
 	venafiClusterIssuer := new(tpp)
@@ -68,6 +70,7 @@ var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
 		CreateIssuerFunc:    venafiClusterIssuer.createClusterIssuer,
 		DeleteIssuerFunc:    venafiClusterIssuer.delete,
 		UnsupportedFeatures: unsupportedFeatures,
+		DomainSuffix:        fmt.Sprintf("%s-venafi-e2e", cmutil.RandStringRunes(5)),
 	}).Define()
 })
 

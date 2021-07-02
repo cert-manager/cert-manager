@@ -10,6 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/controller/certificatesigningrequests/util:go_default_library",
+        "//pkg/util:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/addon/venafi:go_default_library",
         "//test/e2e/framework/helper/featureset:go_default_library",
