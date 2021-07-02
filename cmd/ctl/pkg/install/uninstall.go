@@ -52,11 +52,11 @@ The tool tries to find a Helm-based cert-manager install (installed directly by 
 by this cli tool) and removes the resources based on the found Helm release.
 
 Some example uses:
-	$ kubectl cert-manager uninstall
+	$ kubectl cert-manager x uninstall
 or
-	$ kubectl cert-manager uninstall --remove-crds
+	$ kubectl cert-manager x uninstall --remove-crds
 or
-	$ kubectl cert-manager uninstall -n new-cert-manager
+	$ kubectl cert-manager x uninstall -n new-cert-manager
 `
 
 type UninstallOptions struct {
@@ -90,7 +90,7 @@ func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams,
 
 	cmd := &cobra.Command{
 		Use:   "uninstall",
-		Short: "uninstall cert-manager",
+		Short: "Uninstall cert-manager",
 		Long:  uninstallDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := helm.CopyCliFlags(cmd.Root().PersistentFlags(), defaults, settings); err != nil {
@@ -106,8 +106,8 @@ func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams,
 
 	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.client.Wait)
 
-	cmd.Flags().BoolVar(&options.RemoveCrds, "remove-crds", false, "also remove crds")
-	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "name of the chart to uninstall")
+	cmd.Flags().BoolVar(&options.RemoveCrds, "remove-crds", false, "Also remove crds")
+	cmd.Flags().StringVar(&options.ChartName, "chart-name", "Cert-manager", "name of the chart to uninstall")
 
 	return cmd
 }

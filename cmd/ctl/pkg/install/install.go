@@ -59,13 +59,13 @@ Most of the features supported by 'helm install' are also supported by this comm
 In addition his command will always install CRD resources.
 
 Some example uses:
-	$ kubectl cert-manager install
+	$ kubectl cert-manager x install
 or
-	$ kubectl cert-manager install -n new-cert-manager
+	$ kubectl cert-manager x install -n new-cert-manager
 or
-	$ kubectl cert-manager install --version v1.4.0
+	$ kubectl cert-manager x install --version v1.4.0
 or
-	$ kubectl cert-manager install --set prometheus.enabled=false
+	$ kubectl cert-manager x install --set prometheus.enabled=false
 
 To override values in the cert-manager chart, use either the '--values' flag and pass in a file
 or use the '--set' flag and pass configuration from the command line, to force
@@ -93,7 +93,7 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "install cert-manager",
+		Short: "Install cert-manager",
 		Long:  installDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := helm.CopyCliFlags(cmd.Root().PersistentFlags(), defaults, settings); err != nil {
@@ -116,9 +116,9 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 	addValueOptionsFlags(cmd.Flags(), options.valueOpts)
 	addChartPathOptionsFlags(cmd.Flags(), &options.client.ChartPathOptions)
 
-	cmd.Flags().BoolVar(&options.client.CreateNamespace, "create-namespace", true, "create the release namespace if not present")
-	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "name of the chart to install")
-	cmd.Flags().BoolVar(&options.DryRun, "dry-run", false, "simulate install and output manifest")
+	cmd.Flags().BoolVar(&options.client.CreateNamespace, "create-namespace", true, "Create the release namespace if not present")
+	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "Name of the chart to install")
+	cmd.Flags().BoolVar(&options.DryRun, "dry-run", false, "Simulate install and output manifest")
 
 	return cmd
 }
