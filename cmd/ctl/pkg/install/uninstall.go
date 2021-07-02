@@ -199,6 +199,9 @@ func (o *UninstallOptions) runUninstall() error {
 }
 
 func (o *UninstallOptions) chartAndOptionsFromRelease(rel *release.Release) (string, *chart.Chart, map[string]interface{}, error) {
+	if rel.Config == nil {
+		rel.Config = make(map[string]interface{})
+	}
 	// Overwrite the installCRDs flag so that crds are ONLY removed if the command flag is set
 	rel.Config[installCRDsFlagName] = o.RemoveCrds
 
