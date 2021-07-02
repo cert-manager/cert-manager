@@ -20,10 +20,10 @@ import (
 	"bytes"
 	"fmt"
 
+	"helm.sh/helm/v3/pkg/kube"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/cli-runtime/pkg/resource"
-
-	"helm.sh/helm/v3/pkg/kube"
 )
 
 const (
@@ -32,12 +32,12 @@ const (
 )
 
 // Build a list of resource.Info objects from a rendered manifest.
-func GetChartResourceInfo(manifest string, kubeClient kube.Interface) ([]*resource.Info, error) {
+func ParseMultiDocumentYAML(manifest string, kubeClient kube.Interface) ([]*resource.Info, error) {
 	resources := make([]*resource.Info, 0)
 
 	res, err := kubeClient.Build(bytes.NewBufferString(manifest), false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse CRDs from render: %s", err)
+		return nil, fmt.Errorf("Parsing the CRDs from the rendered manifest was not successful: %w", err)
 	}
 	resources = append(resources, res...)
 
@@ -45,14 +45,14 @@ func GetChartResourceInfo(manifest string, kubeClient kube.Interface) ([]*resour
 }
 
 func filterResources(resources []*resource.Info, filter func(*resource.Info) bool) []*resource.Info {
-	crds := make([]*resource.Info, 0)
+	filtered := make([]*resource.Info, 0)
 	for _, res := range resources {
 		if filter(res) {
-			crds = append(crds, res)
+			filtered = append(filtered, res)
 		}
 	}
 
-	return crds
+	return filtered
 }
 
 // Retrieve the latest version of the resources from the kubernetes cluster.
@@ -61,11 +61,17 @@ func FetchResources(resources []*resource.Info, kubeClient kube.Interface) ([]*r
 
 	for _, info := range resources {
 		helper := resource.NewHelper(info.Client, info.Mapping)
-		if obj, err := helper.Get(info.Namespace, info.Name); err == nil && obj != nil {
-			info.Object = obj
+		obj, err := helper.Get(info.Namespace, info.Name)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
 
-			detected = append(detected, info)
+			return nil, err
 		}
+
+		info.Object = obj
+		detected = append(detected, info)
 	}
 
 	return detected, nil

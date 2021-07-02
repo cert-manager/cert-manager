@@ -17,100 +17,42 @@ limitations under the License.
 package helm
 
 import (
-	"fmt"
 	"log"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/cli-runtime/pkg/resource"
-
 	"helm.sh/helm/v3/pkg/action"
+	"k8s.io/cli-runtime/pkg/resource"
 )
 
-type CRDsPolicy int
+// Create CRDs. Before calling this function, we made sure that the CRDs
+// are not yet installed on the cluster.
+func CreateCRDs(allCRDs []*resource.Info, cfg *action.Configuration) error {
+	log.Printf("Creating the cert-manager CRDs")
+	// Create all CRDs
+	rr, err := cfg.KubeClient.Create(allCRDs)
+	if err != nil {
+		return err
+	}
+	createdCRDs := rr.Created
 
-const (
-	Skip CRDsPolicy = iota
-	Create
-	CreateReplace
-)
-
-// TODO: Currently, only CRDsPolicy.Create is used. In the future,
-// CRDsPolicy.CreateReplace will allow the cli tool to also upgrade crds.
-
-func (policy CRDsPolicy) String() string {
-	return [...]string{"Skip", "Create", "CreateReplace"}[policy]
-}
-
-// This has been adapted from https://github.com/fluxcd/helm-controller/blob/main/internal/runner/runner.go#L212
-func ApplyCRDs(policy CRDsPolicy, allCrds []*resource.Info, cfg *action.Configuration) error {
-	log.Printf("Applying CRDs with policy %v", policy)
-
-	totalItems := []*resource.Info{}
-	switch policy {
-	case Skip:
-		break
-	case CreateReplace:
-		// 1. Update exising crds
-		originalCrds, err := FetchResources(allCrds, cfg.KubeClient)
-		if err != nil {
-			return nil
-		}
-
-		if rr, err := cfg.KubeClient.Update(originalCrds, allCrds, true); err != nil {
-			return fmt.Errorf("failed to apply CRD %s", err)
-		} else {
-			if rr != nil {
-				if rr.Created != nil {
-					totalItems = append(totalItems, rr.Created...)
-				}
-				if rr.Updated != nil {
-					totalItems = append(totalItems, rr.Updated...)
-				}
-				if rr.Deleted != nil {
-					totalItems = append(totalItems, rr.Deleted...)
-				}
-			}
-		}
-		// 2. Passthrough and install all missing crds
-	case Create:
-		for i := range allCrds {
-			if rr, err := cfg.KubeClient.Create(allCrds[i : i+1]); err != nil {
-				crdName := allCrds[i].Name
-				// If the error is CRD already exists, continue.
-				if apierrors.IsAlreadyExists(err) {
-					log.Printf("CRD %s is already present. Skipping.", crdName)
-					if rr != nil && rr.Created != nil {
-						totalItems = append(totalItems, rr.Created...)
-					}
-					continue
-				}
-				return fmt.Errorf("failed to create CRD %s: %s", crdName, err)
-			} else {
-				if rr != nil && rr.Created != nil {
-					totalItems = append(totalItems, rr.Created...)
-				}
-			}
-		}
+	// Invalidate the local cache, since it will not have the new CRDs
+	// present.
+	discoveryClient, err := cfg.RESTClientGetter.ToDiscoveryClient()
+	if err != nil {
+		return err
 	}
 
-	if len(totalItems) > 0 {
-		// Invalidate the local cache, since it will not have the new CRDs
-		// present.
-		discoveryClient, err := cfg.RESTClientGetter.ToDiscoveryClient()
-		if err != nil {
-			return err
-		}
-		log.Printf("Clearing discovery cache")
-		discoveryClient.Invalidate()
-		// Give time for the CRD to be recognized.
-		if err := cfg.KubeClient.Wait(totalItems, 60*time.Second); err != nil {
-			return err
-		}
-		// Make sure to force a rebuild of the cache.
-		if _, err := discoveryClient.ServerGroups(); err != nil {
-			return err
-		}
+	log.Printf("Clearing discovery cache")
+	discoveryClient.Invalidate()
+
+	// Give time for the CRD to be recognized.
+	if err := cfg.KubeClient.Wait(createdCRDs, 60*time.Second); err != nil {
+		return err
+	}
+
+	// Make sure to force a rebuild of the cache.
+	if _, err := discoveryClient.ServerGroups(); err != nil {
+		return err
 	}
 
 	return nil

@@ -25,7 +25,6 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificatesigningrequest"
-
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install"
 )
 
@@ -41,7 +40,6 @@ func NewCmdExperimental(ctx context.Context, ioStreams genericclioptions.IOStrea
 	create.AddCommand(certificatesigningrequest.NewCmdCreateCSR(ctx, ioStreams, factory))
 	cmds.AddCommand(create)
 	cmds.AddCommand(install.NewCmdInstall(ctx, ioStreams, factory))
-	cmds.AddCommand(install.NewCmdUninstall(ctx, ioStreams, factory))
 
 	return cmds
 }
