@@ -6,6 +6,7 @@ go_library(
         "cloudflare.go",
         "dnsproviders.go",
         "rfc2136.go",
+        "route53.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders",
     tags = ["manual"],

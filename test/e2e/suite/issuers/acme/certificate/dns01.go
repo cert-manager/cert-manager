@@ -44,6 +44,7 @@ type dns01Provider interface {
 var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 	// TODO: add better logic to handle other DNS providers
 	testRFC2136DNSProvider()
+	testRoute53DNSProvider()
 })
 
 func testRFC2136DNSProvider() bool {
@@ -186,6 +187,24 @@ func testRFC2136DNSProvider() bool {
 			By("Validating the issued Certificate...")
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+}
+
+func testRoute53DNSProvider() bool {
+	name := "route53"
+	return Context("With "+name+" credentials configured", func() {
+		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
+
+		//issuerName := "test-acme-issuer"
+		//certificateName := "test-acme-certificate"
+		//certificateSecretName := "test-acme-certificate"
+
+		p := &dnsproviders.Route53{}
+		f.RequireAddon(p)
+		By("TODO: Add tests here")
+		It("does nothing", func(){
+			Expect(nil).NotTo(HaveOccurred())
 		})
 	})
 }

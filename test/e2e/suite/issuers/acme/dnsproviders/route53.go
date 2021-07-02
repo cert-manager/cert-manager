@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,42 +23,43 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
 
-type RFC2136 struct {
+type Route53 struct {
 	details    Details
 	nameserver string
 }
 
-func (b *RFC2136) Setup(c *config.Config) error {
-	if c.Addons.ACMEServer.DNSProvider != "rfc-2136" {
-		return errors.NewSkip(fmt.Errorf("skipping RFC2136 tests as DNS provider is set to %s",
+func (r *Route53) Setup(c *config.Config) error {
+	if c.Addons.ACMEServer.DNSProvider != "route-53" {
+		return errors.NewSkip(fmt.Errorf("skipping Route53 tests as DNS provider is set to %s",
 			c.Addons.ACMEServer.DNSProvider,
 		))
 	}
-	b.nameserver = c.Addons.ACMEServer.DNSServer
+	r.nameserver = c.Addons.ACMEServer.DNSServer
+	r.details.BaseDomain = c.Addons.IngressController.Domain
+	r.details.ProviderConfig = cmacme.ACMEChallengeSolverDNS01{
+		Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
+			HostedZoneID: c.Addons.ACMEServer.Route53Zone,
+			Region:       c.Addons.ACMEServer.Route53Region,
+		},
+	}
 	return nil
 }
 
 // Provision will create a copy of the DNS provider credentials in a secret in
 // the APIServer, and return a portion of an Issuer that can be used to
 // utilise these credentials in tests.
-func (b *RFC2136) Provision() error {
-	b.details.ProviderConfig = cmacme.ACMEChallengeSolverDNS01{
-		RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
-			Nameserver: b.nameserver,
-		},
-	}
-	b.details.BaseDomain = "dns01.example.com"
+func (r *Route53) Provision() error {
 	return nil
 }
 
-func (b *RFC2136) Deprovision() error {
+func (r *Route53) Deprovision() error {
 	return nil
 }
 
-func (b *RFC2136) Details() *Details {
-	return &b.details
+func (r *Route53) Details() *Details {
+	return &r.details
 }
 
-func (b *RFC2136) SupportsGlobal() bool {
+func (r *Route53) SupportsGlobal() bool {
 	return false
 }
