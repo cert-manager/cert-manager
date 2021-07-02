@@ -12,7 +12,6 @@ go_library(
     deps = [
         "@com_github_spf13_pflag//:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
-        "@io_k8s_apimachinery//pkg/api/meta:go_default_library",
         "@io_k8s_cli_runtime//pkg/resource:go_default_library",
         "@sh_helm_helm_v3//pkg/action:go_default_library",
         "@sh_helm_helm_v3//pkg/cli:go_default_library",

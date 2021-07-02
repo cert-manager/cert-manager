@@ -22,7 +22,6 @@ import (
 
 	"helm.sh/helm/v3/pkg/kube"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
@@ -82,12 +81,5 @@ func FilterCrdResources(resources []*resource.Info) []*resource.Info {
 	return filterResources(resources, func(res *resource.Info) bool {
 		groupVersionKind := res.Object.GetObjectKind().GroupVersionKind()
 		return (groupVersionKind.Group == customResourceDefinitionGroup) && (groupVersionKind.Kind == customResourceDefinitionKind)
-	})
-}
-
-// Filter resources that are scoped to a namespace and that live in the provided namespace.
-func FilterNamespacedResources(resources []*resource.Info, namespace string) []*resource.Info {
-	return filterResources(resources, func(res *resource.Info) bool {
-		return (res.Mapping.Scope.Name() == meta.RESTScopeNameNamespace) && (res.Namespace == namespace)
 	})
 }
