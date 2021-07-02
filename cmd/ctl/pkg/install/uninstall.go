@@ -107,7 +107,7 @@ func NewCmdUninstall(ctx context.Context, ioStreams genericclioptions.IOStreams,
 	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.client.Wait)
 
 	cmd.Flags().BoolVar(&options.RemoveCrds, "remove-crds", false, "Also remove crds")
-	cmd.Flags().StringVar(&options.ChartName, "chart-name", "Cert-manager", "name of the chart to uninstall")
+	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "Name of the chart to uninstall")
 
 	return cmd
 }
