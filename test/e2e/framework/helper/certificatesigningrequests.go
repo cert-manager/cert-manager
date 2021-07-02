@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
@@ -40,6 +41,11 @@ func (h *Helper) WaitForCertificateSigningRequestSigned(name string, timeout tim
 			if err != nil {
 				return false, fmt.Errorf("error getting CertificateSigningRequest %s: %v", name, err)
 			}
+
+			if util.CertificateSigningRequestIsFailed(csr) {
+				return false, fmt.Errorf("CertificateSigningRequest has failed: %v", csr.Status)
+			}
+
 			if len(csr.Status.Certificate) == 0 {
 				return false, nil
 			}

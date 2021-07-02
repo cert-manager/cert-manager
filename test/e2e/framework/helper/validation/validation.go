@@ -92,6 +92,5 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 }
 
 func CertificateSigningRequestSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certificatesigningrequests.ValidationFunc {
-	// Add exclusions if and when needed
 	return DefaultCertificateSigningRequestSet()
 }
