@@ -236,6 +236,31 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.Ed25519FeatureSet, featureset.CommonNameFeature)
 
+		s.it(f, "should issue a certificate that defines an IP Address", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName:  "testcert-tls",
+					IPAddresses: []string{sharedIPAddress},
+					IssuerRef:   issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.IPAddressFeature)
+
 		s.it(f, "should issue a certificate that defines a Common Name and IP Address", func(issuerRef cmmeta.ObjectReference) {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
