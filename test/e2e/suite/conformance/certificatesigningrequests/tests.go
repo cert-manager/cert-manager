@@ -170,7 +170,7 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.EmailSANsFeature},
 			},
 
-			"should issue a certificate that defines a CommonName and URI SAN": {
+			"should issue a certificate that defines a Common Name and URI SAN": {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
 					gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10)),
@@ -209,7 +209,7 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.CommonNameFeature},
 			},
 
-			"should issue a certificate that defines a CommonName, DNS Name, and sets a duration": {
+			"should issue a certificate that defines a Common Name, DNS Name, and sets a duration": {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
 					gen.SetCSRDNSNames(sharedCommonName),
@@ -240,7 +240,7 @@ func (s *Suite) Define() {
 				requiredFeatures: []featureset.Feature{featureset.OnlySAN, featureset.DurationFeature},
 			},
 
-			"should issue a certificate which has a wildcard DNS name defined": {
+			"should issue a certificate which has a wildcard DNS Name defined": {
 				keyAlgo: x509.RSA,
 				csrModifiers: []gen.CSRModifier{
 					gen.SetCSRDNSNames("*." + e2eutil.RandomSubdomain(s.DomainSuffix)),
