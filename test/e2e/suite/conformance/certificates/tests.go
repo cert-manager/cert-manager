@@ -87,7 +87,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue an ECDSA, defaulted certificate for a single distinct dnsName", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue an ECDSA, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -291,7 +291,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.EmailSANsFeature, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate that defines a CommonName and URI SAN", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a Common Name and URI SAN", func(issuerRef cmmeta.ObjectReference) {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
@@ -321,7 +321,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.URISANsFeature, featureset.CommonNameFeature)
 
-		s.it(f, "should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a 2 distinct DNS Names with one copied to the Common Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -412,7 +412,7 @@ func (s *Suite) Define() {
 			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
 		}, featureset.DurationFeature, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate which has a wildcard DNS name defined", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a wildcard DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -560,7 +560,7 @@ func (s *Suite) Define() {
 			}
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
-		s.it(f, "should issue a basic certificate for a single distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
 			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 
 			name := "testcert-ingress"
@@ -590,7 +590,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a basic certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
 			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 
 			name := "testcert-ingress"
@@ -643,7 +643,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		s.it(f, "should obtain a signed certificate for a long domain", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a long domain", func(issuerRef cmmeta.ObjectReference) {
 			// the maximum length of a single segment of the domain being requested
 			const maxLengthOfDomainSegment = 63
 
@@ -672,8 +672,8 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
-		
-		s.it(f, "should allow updating an existing certificate with a new dns name", func(issuerRef cmmeta.ObjectReference) {
+
+		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -720,7 +720,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should obtain a signed certificate for a wildcard and apex domain", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a wildcard DNS Name and its apex DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			dnsDomain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{

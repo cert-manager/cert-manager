@@ -132,10 +132,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), f.Config.Addons.ACMEServer.TestingACMEPrivateKey, metav1.DeleteOptions{})
 	})
 
-	It("should allow updating the dns name of a failing certificate that had an incorrect dns name", func() {
+	It("should allow updating an existing failing certificate that had a blocked dns name", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating a failing Certificate")
+		// In "devel/addon/pebble/chart/templates/configmap.yaml"
+		// the "google.com" domain is configured in the pebble blocklist.
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
@@ -201,9 +203,10 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
-		// create test fixture
+	It("should fail to obtain a certificate for a blocked ACME dns name", func() {
 		By("Creating a Certificate")
+		// In "devel/addon/pebble/chart/templates/configmap.yaml"
+		// the "google.com" domain is configured in the pebble blocklist.
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
 			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
