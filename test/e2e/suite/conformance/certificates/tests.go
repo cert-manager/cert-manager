@@ -644,5 +644,52 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
+		
+		s.it(f, "should allow updating an existing certificate with a new dns name", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+					IssuerRef:  issuerRef,
+				},
+			}
+			validations := validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be ready")
+			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Sanity-check the issued Certificate")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Getting the latest version of the Certificate")
+			cert, err := f.Helper().CMClient.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.TODO(), "testcert", metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Adding an additional dnsName to the Certificate")
+			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
+			cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
+
+			By("Updating the Certificate in the apiserver")
+			err = f.CRClient.Update(context.TODO(), cert)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate Ready condition to be updated")
+			_, err = f.Helper().WaitForCertificateReadyUpdate(cert, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Sanity-check the issued Certificate")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OnlySAN)
 	})
 }
