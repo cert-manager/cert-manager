@@ -23,6 +23,6 @@ def go_binary(name, **kwargs):
         # (https://blog.filippo.io/shrink-your-go-binaries-with-this-one-weird-trick/)
         # it strips the DWARF tables needed for debuggers, not the annotations
         # needed for stack traces, so our panics are still readable!
-        gc_linkopts = ["-s", "-w"],
+        gc_linkopts = ["-w"],
         **kwargs,
     )
