@@ -73,7 +73,7 @@ func TestNewDNSProviderKeyAndTokenProvided(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
 	_, err := NewDNSProviderCredentials("123", "123", "123", util.RecursiveNameservers)
-	assert.EqualError(t, err, "CloudFlare key and token are both present")
+	assert.EqualError(t, err, "the Cloudflare API key and API token cannot be both present simultaneously")
 	restoreCloudFlareEnv()
 }
 
@@ -89,7 +89,7 @@ func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
 	_, err := NewDNSProvider(util.RecursiveNameservers)
-	assert.EqualError(t, err, "CloudFlare credentials missing")
+	assert.EqualError(t, err, "no Cloudflare credential has been given (can be either an API key or an API token)")
 	restoreCloudFlareEnv()
 }
 

@@ -62,10 +62,10 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // DNSProvider instance configured for cloudflare.
 func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string) (*DNSProvider, error) {
 	if (email == "" && key != "") || (key == "" && token == "") {
-		return nil, fmt.Errorf("no cloudflare credential has been given (can be either an API key or an API token)")
+		return nil, fmt.Errorf("no Cloudflare credential has been given (can be either an API key or an API token)")
 	}
 	if key != "" && token != "" {
-		return nil, fmt.Errorf("the Cloudflare API key and API token cannot be both present simultanously")
+		return nil, fmt.Errorf("the Cloudflare API key and API token cannot be both present simultaneously")
 	}
 	// Cloudflare uses the X-Auth-Key header for its authentication.
 	// However, if the value of the X-Auth-Key header is invalid, the go
@@ -287,9 +287,9 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 					errStr += fmt.Sprintf("<- %d: %s", chainErr.Code, chainErr.Message)
 				}
 			}
-			return nil, fmt.Errorf("error from the Cloudflare API for %s %q \n%s", method, uri, errStr)
+			return nil, fmt.Errorf("while querying the Cloudflare API for %s %q \n%s", method, uri, errStr)
 		}
-		return nil, fmt.Errorf("error from the Cloudflare API for %s %q", method, uri)
+		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q", method, uri)
 	}
 
 	return r.Result, nil
