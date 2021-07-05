@@ -181,6 +181,11 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
 | `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | `{}` |
+| `cainjector.startupProbe.failureThreshold` | The startup probe failure threshold | `12` |
+| `cainjector.startupProbe.initialDelaySeconds` | The startup probe initial delay (in seconds) | `20` |
+| `cainjector.startupProbe.periodSeconds` | The startup probe period (in seconds) | `5` |
+| `cainjector.startupProbe.successThreshold` | The startup probe success threshold | `1` |
+| `cainjector.startupProbe.timeoutSeconds` | The startup probe timeout (in seconds) | `1` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 

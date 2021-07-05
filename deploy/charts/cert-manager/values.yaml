@@ -347,6 +347,15 @@ cainjector:
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
 
+  ## Startup probe values
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ##
+  startupProbe:
+    failureThreshold: 12
+    initialDelaySeconds: 20
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 1
 
   # Optional additional annotations to add to the cainjector Deployment
   # deploymentAnnotations: {}

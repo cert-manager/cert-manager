@@ -75,10 +75,10 @@ var (
 
 // registerAllInjectors registers all injectors and based on the
 // graduation state of the injector decides how to log no kind/resource match errors
-func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache) error {
+func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manager, sources []caDataSource, client client.Client, ca cache.Cache, state *InjectorState) error {
 	controllers := make([]controller.Controller, len(injectorSetups))
 	for i, setup := range injectorSetups {
-		controller, err := newGenericInjectionController(ctx, groupName, mgr, setup, sources, ca, client)
+		controller, err := newGenericInjectionController(ctx, groupName, mgr, setup, sources, ca, client, state)
 		if err != nil {
 			if !meta.IsNoMatchError(err) || !setup.injector.IsAlpha() {
 				return err
@@ -88,6 +88,9 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 				"injector", setup.resourceName)
 		}
 		controllers[i] = controller
+	}
+	if err := state.DoneSetup(); err != nil {
+		return err
 	}
 	g, gctx := errgroup.WithContext(ctx)
 
@@ -124,10 +127,14 @@ func registerAllInjectors(ctx context.Context, groupName string, mgr ctrl.Manage
 // * https://github.com/kubernetes-sigs/controller-runtime/issues/764
 func newGenericInjectionController(ctx context.Context, groupName string, mgr ctrl.Manager,
 	setup injectorSetup, sources []caDataSource, ca cache.Cache,
-	client client.Client) (controller.Controller, error) {
+	client client.Client, state *InjectorState) (controller.Controller, error) {
 	log := ctrl.Log.WithName(groupName).WithName(setup.resourceName)
 	typ := setup.injector.NewTarget().AsObject()
 
+	handle, err := state.Fork()
+	if err != nil {
+		return nil, err
+	}
 	c, err := controller.NewUnmanaged(
 		fmt.Sprintf("controller-for-%s-%s", groupName, setup.resourceName),
 		mgr,
@@ -138,6 +145,7 @@ func newGenericInjectionController(ctx context.Context, groupName string, mgr ct
 				log:          log.WithName("generic-inject-reconciler"),
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
+				stateHandle:  handle,
 			},
 			Log: log,
 		})
@@ -178,7 +186,7 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 // indices.
 // The registered controllers require the cert-manager API to be available
 // in order to run.
-func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
+func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager, state *InjectorState) error {
 	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
 	if err != nil {
 		return err
@@ -192,6 +200,7 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 		},
 		client,
 		cache,
+		state,
 	)
 }
 
@@ -200,7 +209,7 @@ func RegisterCertificateBased(ctx context.Context, mgr ctrl.Manager) error {
 // indices.
 // The registered controllers only require the corev1 APi to be available in
 // order to run.
-func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
+func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager, state *InjectorState) error {
 	cache, client, err := newIndependentCacheAndDelegatingClient(mgr)
 	if err != nil {
 		return err
@@ -215,6 +224,7 @@ func RegisterSecretBased(ctx context.Context, mgr ctrl.Manager) error {
 		},
 		client,
 		cache,
+		state,
 	)
 }
 

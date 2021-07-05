@@ -103,6 +103,8 @@ type genericInjectReconciler struct {
 	// the conversion webhook not being available.
 	sources []caDataSource
 
+	stateHandle *InjectorStateHandle
+
 	log logr.Logger
 	client.Client
 
@@ -122,6 +124,8 @@ func splitNamespacedName(nameStr string) types.NamespacedName {
 // Reconcile attempts to ensure that a particular object has all the CAs injected that
 // it has requested.
 func (r *genericInjectReconciler) Reconcile(_ context.Context, req ctrl.Request) (ctrl.Result, error) {
+	defer r.stateHandle.DoneRound()
+
 	ctx := context.Background()
 	log := r.log.WithValues(r.resourceName, req.NamespacedName)
 

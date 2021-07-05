@@ -76,6 +76,16 @@ spec:
           {{- if .Values.cainjector.extraArgs }}
 {{ toYaml .Values.cainjector.extraArgs | indent 10 }}
           {{- end }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 6080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.cainjector.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.cainjector.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.cainjector.startupProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.cainjector.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.cainjector.startupProbe.failureThreshold }}
           env:
           - name: POD_NAMESPACE
             valueFrom:

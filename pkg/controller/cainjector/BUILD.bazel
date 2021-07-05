@@ -8,6 +8,7 @@ go_library(
         "injectors.go",
         "setup.go",
         "sources.go",
+        "state.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/controller/cainjector",
     visibility = ["//visibility:public"],

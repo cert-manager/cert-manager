@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -42,6 +43,7 @@ type InjectorControllerOptions struct {
 	LeaseDuration           time.Duration
 	RenewDeadline           time.Duration
 	RetryPeriod             time.Duration
+	HealthzPort             int
 
 	StdOut io.Writer
 	StdErr io.Writer
@@ -74,6 +76,7 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&o.RetryPeriod, "leader-election-retry-period", 2*time.Second, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
+	fs.IntVar(&o.HealthzPort, "healthz-port", 6080, "port number to listen on for insecure healthz connections")
 }
 
 func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOptions {
@@ -126,9 +129,21 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		RenewDeadline:           &o.RenewDeadline,
 		RetryPeriod:             &o.RetryPeriod,
 		MetricsBindAddress:      "0",
+		HealthProbeBindAddress:  fmt.Sprintf(":%d", o.HealthzPort),
 	})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
+	}
+
+	injectorCertificateState := cainjector.NewInjectorState()
+	injectorSecretState := cainjector.NewInjectorState()
+	if err := mgr.AddHealthzCheck("reconciling", func(_ *http.Request) error {
+		if (injectorCertificateState.GetState() != cainjector.Reconciling) || (injectorSecretState.GetState() != cainjector.Reconciling) {
+			return fmt.Errorf("first reconciliation is not done yet")
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error creating healtz check: %v", err)
 	}
 
 	g, gctx := errgroup.WithContext(ctx)
@@ -163,7 +178,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	// Never retry if the controller exits cleanly.
 	g.Go(func() (err error) {
 		for {
-			err = cainjector.RegisterCertificateBased(gctx, mgr)
+			err = cainjector.RegisterCertificateBased(gctx, mgr, injectorCertificateState)
 			if err == nil {
 				return
 			}
@@ -182,7 +197,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	// We do not retry this controller because it only interacts with core APIs
 	// which should always be in a working state.
 	g.Go(func() (err error) {
-		if err = cainjector.RegisterSecretBased(gctx, mgr); err != nil {
+		if err = cainjector.RegisterSecretBased(gctx, mgr, injectorSecretState); err != nil {
 			return fmt.Errorf("error registering secret controller: %v", err)
 		}
 		return
