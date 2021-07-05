@@ -393,7 +393,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{"foo." + e2eutil.RandomSubdomain(s.DomainSuffix)},
+					DNSNames:   []string{"*." + e2eutil.RandomSubdomain(s.DomainSuffix)},
 				},
 			}
 			By("Creating a Certificate")
