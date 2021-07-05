@@ -120,52 +120,6 @@ func testRFC2136DNSProvider() bool {
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(context.TODO(), certificateSecretName, metav1.DeleteOptions{})
 		})
 
-		It("should obtain a signed certificate for a regular domain", func() {
-			By("Creating a Certificate")
-
-			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
-
-			cert := gen.Certificate(certificateName,
-				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-				gen.SetCertificateDNSNames(dnsDomain),
-			)
-			cert.Namespace = f.Namespace.Name
-
-			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("should obtain a signed certificate for a wildcard domain", func() {
-			By("Creating a Certificate")
-
-			cert := gen.Certificate(certificateName,
-				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-				gen.SetCertificateDNSNames("*."+dnsDomain),
-			)
-			cert.Namespace = f.Namespace.Name
-
-			cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Create(context.TODO(), cert, metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
 			By("Creating a Certificate")
 
