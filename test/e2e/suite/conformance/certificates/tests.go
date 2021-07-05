@@ -691,5 +691,32 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
+
+		s.it(f, "should obtain a signed certificate for a wildcard and apex domain", func(issuerRef cmmeta.ObjectReference) {
+			dnsDomain := e2eutil.RandomSubdomain(s.DomainSuffix)
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{"*." + dnsDomain, dnsDomain},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			// use a longer timeout for this, as it requires performing 2 dns validations in serial
+			By("Waiting for the Certificate to be issued...")
+			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*10)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.WildcardsFeature, featureset.OnlySAN)
 	})
 }
