@@ -180,33 +180,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should obtain a signed certificate for a long domain using http01 validation", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
-
-		// the maximum length of a single segment of the domain being requested
-		const maxLengthOfDomainSegment = 63
-		By("Creating a Certificate")
-
-		By("Creating a Certificate")
-		cert := gen.Certificate(certificateName,
-			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-			gen.SetCertificateDNSNames(acmeIngressDomain, e2eutil.RandomSubdomainLength(acmeIngressDomain, maxLengthOfDomainSegment)),
-		)
-		cert.Namespace = f.Namespace.Name
-
-		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Waiting for the Certificate to be issued...")
-		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
