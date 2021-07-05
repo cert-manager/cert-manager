@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1000,7 +1001,8 @@ func TestIssuingController(t *testing.T) {
 			defer test.builder.Stop()
 
 			w := controllerWrapper{}
-			_, _, _ = w.Register(test.builder.Context)
+			_, _, err := w.Register(test.builder.Context)
+			require.NoError(t, err)
 			w.controller.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle.LocalTemporaryCertificateBytes)
 			test.builder.Start()
 
