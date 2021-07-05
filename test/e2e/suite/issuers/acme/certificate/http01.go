@@ -404,30 +404,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
-
-	It("should obtain a signed certificate with an IP and DNS names from the ACME server", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
-
-		By("Creating a Certificate")
-		cert := gen.Certificate(certificateName,
-			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
-			gen.SetCertificateDNSNames(e2eutil.RandomSubdomainLength(acmeIngressDomain, 2)),
-			gen.SetCertificateIPs(f.Config.Addons.ACMEServer.IngressIP),
-		)
-		cert.Namespace = f.Namespace.Name
-
-		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Waiting for the Certificate to be issued...")
-		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
-		Expect(err).NotTo(HaveOccurred())
-	})
 })
 
 // findDNSNames decodes and returns the dns names (SANs) contained in a
