@@ -39,6 +39,7 @@ filegroup(
         "//cmd/ctl/pkg/deny:all-srcs",
         "//cmd/ctl/pkg/experimental:all-srcs",
         "//cmd/ctl/pkg/inspect:all-srcs",
+        "//cmd/ctl/pkg/install:all-srcs",
         "//cmd/ctl/pkg/renew:all-srcs",
         "//cmd/ctl/pkg/status:all-srcs",
         "//cmd/ctl/pkg/util:all-srcs",
