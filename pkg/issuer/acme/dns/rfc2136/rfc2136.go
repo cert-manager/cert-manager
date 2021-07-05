@@ -78,7 +78,7 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 		if value, ok := supportedAlgorithms[strings.ToUpper(tsigAlgorithm)]; ok {
 			tsigAlgorithm = value
 		} else {
-			return nil, fmt.Errorf("the algorithm '%v' is not supported", tsigAlgorithm)
+			return nil, fmt.Errorf("algorithm '%v' is not supported", tsigAlgorithm)
 
 		}
 	}
