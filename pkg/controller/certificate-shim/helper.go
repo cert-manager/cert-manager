@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package shimhelper
 
 import (
 	"errors"
@@ -33,7 +33,7 @@ var (
 	errInvalidIngressAnnotation = errors.New("invalid ingress annotation")
 )
 
-func translateIngressAnnotations(crt *cmapi.Certificate, annotations map[string]string) error {
+func translateAnnotations(crt *cmapi.Certificate, annotations map[string]string) error {
 	if crt == nil {
 		return errNilCertificate
 	}

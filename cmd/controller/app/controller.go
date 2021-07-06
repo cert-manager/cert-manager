@@ -35,6 +35,10 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
+	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
@@ -116,6 +120,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		log.V(logf.DebugLevel).Info("starting shared informer factories")
 		ctx.SharedInformerFactory.Start(stopCh)
 		ctx.KubeSharedInformerFactory.Start(stopCh)
+		ctx.GWShared.Start(stopCh)
 		wg.Wait()
 		log.V(logf.InfoLevel).Info("control loops exited")
 		ctx.Metrics.Shutdown(metricsServer)
@@ -163,6 +168,24 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
+	// The user may have enabled the gateway-shim controller but forgotten to
+	// install the Gateway API CRDs. Failing here will cause cert-manager to go
+	// into CrashLoopBackoff which is nice and obvious.
+	d := cl.Discovery()
+	resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
+	if err != nil {
+		return nil, nil, fmt.Errorf("couldn't discover Gateway API resources (are the Gateway API CRDs installed?): %w", err)
+	}
+	if len(resources.APIResources) == 0 {
+		return nil, nil, fmt.Errorf("no gateway API resources were discovered (are the Gateway API CRDs installed?)")
+	}
+
+	// Create a GatewayAPI client
+	gwcl, err := gwclient.NewForConfig(kubeCfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
+	}
+
 	nameservers := opts.DNS01RecursiveNameservers
 	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
@@ -193,6 +216,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly
 	intscheme.AddToScheme(scheme.Scheme)
+	gwscheme.AddToScheme(scheme.Scheme)
 	log.V(logf.DebugLevel).Info("creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(logf.WithInfof(log.V(logf.DebugLevel)).Infof)
@@ -201,6 +225,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 
 	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, resyncPeriod, informers.WithNamespace(opts.Namespace))
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, resyncPeriod, kubeinformers.WithNamespace(opts.Namespace))
+	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(gwcl, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
 
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
@@ -210,9 +235,11 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		RESTConfig:                kubeCfg,
 		Client:                    cl,
 		CMClient:                  intcl,
+		GWClient:                  gwcl,
 		Recorder:                  recorder,
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
+		GWShared:                  gwSharedInformerFactory,
 		Namespace:                 opts.Namespace,
 		Clock:                     clock.RealClock{},
 		Metrics:                   metrics.New(log, clock.RealClock{}),

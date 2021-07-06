@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
+	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
@@ -50,14 +52,15 @@ func init() {
 }
 
 // Builder is a structure used to construct new Contexts for use during tests.
-// Currently, only KubeObjects and CertManagerObjects can be specified.
-// These will be auto loaded into the constructed fake Clientsets.
+// Currently, only KubeObjects, CertManagerObjects and GWObjects can be
+// specified. These will be auto loaded into the constructed fake Clientsets.
 // Call ToContext() to construct a new context using the given values.
 type Builder struct {
 	T *testing.T
 
 	KubeObjects        []runtime.Object
 	CertManagerObjects []runtime.Object
+	GWObjects          []runtime.Object
 	ExpectedActions    []Action
 	ExpectedEvents     []string
 	StringGenerator    StringGenerator
@@ -107,12 +110,14 @@ func (b *Builder) Init() {
 	b.requiredReactors = make(map[string]bool)
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
+	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
 	b.Recorder = new(FakeRecorder)
-
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
+	b.FakeGWClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
+	b.GWShared = gwinformers.NewSharedInformerFactory(b.GWClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
 	b.Metrics = metrics.New(logs.Log, clock.RealClock{})
 
@@ -137,6 +142,10 @@ func (b *Builder) FakeKubeInformerFactory() kubeinformers.SharedInformerFactory 
 
 func (b *Builder) FakeCMClient() *cmfake.Clientset {
 	return b.Context.CMClient.(*cmfake.Clientset)
+}
+
+func (b *Builder) FakeGWClient() *gwfake.Clientset {
+	return b.Context.GWClient.(*gwfake.Clientset)
 }
 
 func (b *Builder) FakeCMInformerFactory() informers.SharedInformerFactory {
@@ -202,6 +211,7 @@ func (b *Builder) AllEventsCalled() error {
 func (b *Builder) AllActionsExecuted() error {
 	firedActions := b.FakeCMClient().Actions()
 	firedActions = append(firedActions, b.FakeKubeClient().Actions()...)
+	firedActions = append(firedActions, b.FakeGWClient().Actions()...)
 
 	var unexpectedActions []coretesting.Action
 	var errs []error
@@ -270,6 +280,8 @@ func (b *Builder) Stop() {
 func (b *Builder) Start() {
 	b.KubeSharedInformerFactory.Start(b.stopCh)
 	b.SharedInformerFactory.Start(b.stopCh)
+	b.GWShared.Start(b.stopCh)
+
 	// wait for caches to sync
 	b.Sync()
 }
@@ -280,6 +292,9 @@ func (b *Builder) Sync() {
 	}
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for SharedInformerFactory to sync: " + err.Error())
+	}
+	if err := mustAllSync(b.GWShared.WaitForCacheSync(b.stopCh)); err != nil {
+		panic("Error waiting for GWShared to sync: " + err.Error())
 	}
 	if b.additionalSyncFuncs != nil {
 		cache.WaitForCacheSync(b.stopCh, b.additionalSyncFuncs...)
