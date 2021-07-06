@@ -29,6 +29,7 @@ help:
 	# verify             - runs all test targets (bazel test //...)
 	# verify_deps        - ensure go module files are up to date (hack/update-deps.sh)
 	# verify_chart       - runs Helm chart linter
+	# verify_upgrade     - verifies upgrade from latest published release to current master with both Helm charts and static manifests
 	#
 	### Generate targets
 	#
@@ -78,6 +79,9 @@ verify_deps:
 verify_chart:
 	$(HACK_DIR)/verify-chart-version.sh
 
+.PHONY: verify_upgrade
+verify_upgrade:
+	$(HACK_DIR)/verify-upgrade.sh
 # Go targets
 ############
 .PHONY: $(CMDS)
