@@ -90,6 +90,7 @@ filegroup(
         "//test/acme/dns:all-srcs",
         "//test/e2e:all-srcs",
         "//test/integration:all-srcs",
+        "//test/internal/apiserver:all-srcs",
         "//test/unit/coreclients:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",

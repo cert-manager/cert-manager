@@ -19,14 +19,14 @@ go_library(
         "//pkg/acme/webhook:go_default_library",
         "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
+        "//test/internal/apiserver:go_default_library",
         "@com_github_miekg_dns//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
-        "@io_k8s_client_go//rest:go_default_library",
-        "@io_k8s_sigs_testing_frameworks//integration:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/envtest:go_default_library",
     ],
 )
 

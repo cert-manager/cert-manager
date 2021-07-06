@@ -23,13 +23,12 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/testing_frameworks/integration"
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
+	"github.com/jetstack/cert-manager/test/internal/apiserver"
 )
 
 func init() {
@@ -52,7 +51,6 @@ type fixture struct {
 	strictMode              bool
 	useAuthoritative        *bool
 	kubectlManifestsPath    string
-	binariesPath            string
 
 	// testDNSServer is the address:port of the DNS server to send requests to
 	// when validating that records are set as expected.
@@ -72,37 +70,15 @@ type fixture struct {
 	// Default: "123d=="
 	dnsChallengeKey string
 
-	// controlPlane is a reference to the control plane that is used to run the
-	// test suite.
-	// It is constructed when a Run* method is called.
-	controlPlane *integration.ControlPlane
-	restConfig   *rest.Config
-	clientset    kubernetes.Interface
-	kubectl      *integration.KubeCtl
-	setupLock    sync.Mutex
+	setupLock   sync.Mutex
+	environment *envtest.Environment
+	clientset   kubernetes.Interface
 
 	pollInterval     time.Duration
 	propagationLimit time.Duration
 }
 
-var DefaultKubeAPIServerFlags = []string{
-	"--etcd-servers={{ if .EtcdURL }}{{ .EtcdURL.String }}{{ end }}",
-	"--cert-dir={{ .CertDir }}",
-	"--insecure-port={{ if .URL }}{{ .URL.Port }}{{ end }}",
-	"--insecure-bind-address={{ if .URL }}{{ .URL.Hostname }}{{ end }}",
-	"--secure-port={{ if .SecurePort }}{{ .SecurePort }}{{ end }}",
-	"--admission-control=AlwaysAdmit",
-}
-
-// Setup will set up the test fixture by running kube-apiserver and etcd.
-// One instance of the apiserver and etcd will be shared throughout all of the
-// suite.
-// The first time this function is called, the function that is returned will
-// be the control plane's Stop function. Subsequent calls to setup will return
-// a function that does nothing. This allows all the Run* functions to call
-// setup, and defer cleaning up the fixture, but only the first 'entrypoint'
-// Run function will actually clean up the apiserver.
-func (f *fixture) setup(t *testing.T) func() error {
+func (f *fixture) setup(t *testing.T) func() {
 	f.setupLock.Lock()
 	defer f.setupLock.Unlock()
 
@@ -110,40 +86,21 @@ func (f *fixture) setup(t *testing.T) func() error {
 		t.Fatalf("error validating test fixture configuration: %v", err)
 	}
 
-	if f.controlPlane != nil {
-		return func() error { return nil }
+	env, stopFunc := apiserver.RunBareControlPlane(t)
+	f.environment = env
+
+	cl, err := kubernetes.NewForConfig(env.Config)
+	if err != nil {
+		t.Fatal(err)
 	}
-	f.controlPlane = &integration.ControlPlane{}
-	f.controlPlane.APIServer = &integration.APIServer{
-		Args: DefaultKubeAPIServerFlags,
-		Path: f.binariesPath + "/kube-apiserver",
-	}
-	f.controlPlane.Etcd = &integration.Etcd{
-		Path: f.binariesPath + "/etcd",
-	}
-	if err := f.controlPlane.Start(); err != nil {
-		t.Fatalf("error starting apiserver: %v", err)
-	}
-	t.Logf("started apiserver on %q", f.controlPlane.APIURL())
-	// Create the *rest.Config for creating new clients
-	f.restConfig = &rest.Config{
-		Host: f.controlPlane.APIURL().Host,
-		// gotta go fast during tests -- we don't really care about overwhelming our test API server
-		QPS:   1000.0,
-		Burst: 2000.0,
-	}
-	var err error
-	if f.clientset, err = kubernetes.NewForConfig(f.restConfig); err != nil {
-		t.Fatalf("error constructing clientset: %v", err)
-	}
-	f.kubectl = f.controlPlane.KubeCtl()
-	f.kubectl.Path = f.binariesPath + "/kubectl"
+	f.clientset = cl
 
 	stopCh := make(chan struct{})
-	f.testSolver.Initialize(f.restConfig, stopCh)
-	return func() error {
+	f.testSolver.Initialize(env.Config, stopCh)
+
+	return func() {
 		close(stopCh)
-		return f.controlPlane.Stop()
+		stopFunc()
 	}
 }
 

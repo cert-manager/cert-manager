@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 
@@ -58,12 +57,6 @@ func applyDefaults(f *fixture) {
 	if f.dnsChallengeKey == "" {
 		f.dnsChallengeKey = "123d=="
 	}
-	runfiles := os.Getenv("TEST_SRCDIR")
-	if f.binariesPath == "" {
-		if runfiles != "" {
-			f.binariesPath = runfiles + "/com_github_jetstack_cert_manager/hack/bin"
-		}
-	}
 	if f.jsonConfig == nil {
 		if f.kubectlManifestsPath != "" {
 			d, err := ioutil.ReadFile(f.kubectlManifestsPath + "/config.json")
@@ -90,9 +83,6 @@ func validate(f *fixture) error {
 	}
 	if f.resolvedZone == "" {
 		errs = append(errs, fmt.Errorf("resolvedZone must be provided"))
-	}
-	if f.binariesPath == "" {
-		errs = append(errs, fmt.Errorf("binariesPath must be provided"))
 	}
 	if f.jsonConfig == nil {
 		errs = append(errs, fmt.Errorf("jsonConfig must be provided"))
@@ -156,12 +146,6 @@ func SetManifestPath(s string) Option {
 func SetDNSServer(s string) Option {
 	return func(f *fixture) {
 		f.testDNSServer = s
-	}
-}
-
-func SetBinariesPath(s string) Option {
-	return func(f *fixture) {
-		f.binariesPath = s
 	}
 }
 

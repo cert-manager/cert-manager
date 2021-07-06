@@ -63,7 +63,6 @@ require (
 	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/controller-tools v0.6.0
-	sigs.k8s.io/testing_frameworks v0.1.2
 	sigs.k8s.io/yaml v1.2.0
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200830195227-52f69702a001
 )
