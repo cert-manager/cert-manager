@@ -78,7 +78,7 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 		if value, ok := supportedAlgorithms[strings.ToUpper(tsigAlgorithm)]; ok {
 			tsigAlgorithm = value
 		} else {
-			return nil, fmt.Errorf("The algorithm '%v' is not supported", tsigAlgorithm)
+			return nil, fmt.Errorf("algorithm '%v' is not supported", tsigAlgorithm)
 
 		}
 	}
@@ -124,7 +124,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) er
 	case "REMOVE":
 		m.Remove(rrs)
 	default:
-		return fmt.Errorf("Unexpected action: %s", action)
+		return fmt.Errorf("unexpected action: %s", action)
 	}
 
 	// Setup client

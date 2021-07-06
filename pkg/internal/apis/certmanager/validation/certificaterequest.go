@@ -136,23 +136,27 @@ func ValidateCertificateRequestApprovalCondition(crConds []cmapi.CertificateRequ
 		}
 	}
 
-	for _, cond := range []struct {
-		condType   cmapi.CertificateRequestConditionType
-		conditions []cmapi.CertificateRequestCondition
+	for _, condType := range []struct {
+		condType cmapi.CertificateRequestConditionType
+		found    []cmapi.CertificateRequestCondition
 	}{
 		{cmapi.CertificateRequestConditionApproved, approvedConditions},
 		{cmapi.CertificateRequestConditionDenied, deniedConditions},
 	} {
-		switch len(cond.conditions) {
-		case 0:
-			break
-		case 1:
-			if condition := cond.conditions[0]; condition.Status != cmmeta.ConditionTrue {
-				el = append(el, field.Invalid(fldPath.Child(string(condition.Type)), condition.Status,
-					fmt.Sprintf("%q condition may only be set to True", cond.condType)))
-			}
-		default:
-			el = append(el, field.Forbidden(fldPath, fmt.Sprintf("multiple %q conditions present", cond.condType)))
+		if len(condType.found) == 0 {
+			continue
+		}
+
+		if len(condType.found) > 1 {
+			el = append(el, field.Forbidden(fldPath, fmt.Sprintf("multiple %q conditions present", condType.condType)))
+			continue
+		}
+
+		first := condType.found[0]
+		if first.Status != cmmeta.ConditionTrue {
+			el = append(el, field.Invalid(fldPath.Child(string(first.Type)), first.Status,
+				fmt.Sprintf("%q condition may only be set to True", condType.condType)))
+			continue
 		}
 	}
 

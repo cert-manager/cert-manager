@@ -62,23 +62,23 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // DNSProvider instance configured for cloudflare.
 func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string) (*DNSProvider, error) {
 	if (email == "" && key != "") || (key == "" && token == "") {
-		return nil, fmt.Errorf("CloudFlare credentials missing")
+		return nil, fmt.Errorf("no Cloudflare credential has been given (can be either an API key or an API token)")
 	}
 	if key != "" && token != "" {
-		return nil, fmt.Errorf("CloudFlare key and token are both present")
+		return nil, fmt.Errorf("the Cloudflare API key and API token cannot be both present simultaneously")
 	}
-	// cloudflare uses X-Auth-Key as a header for its
-	// authentication. However, if it's an invalid value, the go
+	// Cloudflare uses the X-Auth-Key header for its authentication.
+	// However, if the value of the X-Auth-Key header is invalid, the go
 	// http library will "helpfully" print out the value to help with
-	// debugging.
-	//
-	// Check that the auth key is a valid header value before we leak it to the logs
+	// debugging. To prevent leaking the X-Auth-Key value into the logs, we
+	// first check that the X-Auth-Key header contains a valid value to
+	// prevent the Go HTTP library from displaying it.
 	if !validHeaderFieldValue(key) {
-		return nil, fmt.Errorf("Cloudflare key invalid (does the key contain a newline?)")
+		return nil, fmt.Errorf("the Cloudflare API key is invalid (does the API key contain a newline?)")
 	}
 
 	if !validHeaderFieldValue(token) {
-		return nil, fmt.Errorf("Cloudflare token invalid (does the token contain a newline?)")
+		return nil, fmt.Errorf("the Cloudflare API token is invalid (does the API token contain a newline?)")
 	}
 
 	return &DNSProvider{
@@ -267,7 +267,7 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Error querying Cloudflare API for %s %q -> %v", method, uri, err)
+		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q: %v", method, uri, err)
 	}
 
 	defer resp.Body.Close()
@@ -287,9 +287,9 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 					errStr += fmt.Sprintf("<- %d: %s", chainErr.Code, chainErr.Message)
 				}
 			}
-			return nil, fmt.Errorf("Cloudflare API Error for %s %q \n%s", method, uri, errStr)
+			return nil, fmt.Errorf("while querying the Cloudflare API for %s %q \n%s", method, uri, errStr)
 		}
-		return nil, fmt.Errorf("Cloudflare API error for %s %q", method, uri)
+		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q", method, uri)
 	}
 
 	return r.Result, nil
