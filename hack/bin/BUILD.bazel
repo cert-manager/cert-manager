@@ -147,8 +147,8 @@ genrule(
 genrule(
     name = "fetch_ytt",
     srcs = select({
-        ":darwin": ["@ytt_darwin"],
-        ":k8": ["@ytt_linux"],
+        ":darwin": ["@ytt_darwin//file"],
+        ":k8": ["@ytt_linux//file"],
     }),
     outs = ["ytt"],
     cmd = "cp $(SRCS) $@",
