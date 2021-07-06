@@ -144,6 +144,16 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "fetch_ytt",
+    srcs = select({
+        ":darwin": ["@ytt_darwin"],
+        ":k8": ["@ytt_linux"],
+    }),
+    outs = ["ytt"],
+    cmd = "cp $(SRCS) $@",
+)
+
 config_setting(
     name = "k8",
     values = {"host_cpu": "k8"},
