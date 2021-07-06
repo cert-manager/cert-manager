@@ -230,6 +230,7 @@ func TestConversion(t *testing.T) {
 			convertedObjMeta.GetObjectMeta().SetUID("")
 			convertedObjMeta.GetObjectMeta().SetSelfLink("")
 			convertedObjMeta.GetObjectMeta().SetResourceVersion("")
+			convertedObjMeta.GetObjectMeta().SetManagedFields([]metav1.ManagedFieldsEntry{})
 
 			if !equality.Semantic.DeepEqual(test.output, convertedObj) {
 				t.Errorf("unexpected output: %s", diff.ObjectReflectDiff(test.output, convertedObj))

@@ -27,8 +27,8 @@ genrule(
 genrule(
     name = "com_coreos_etcd",
     srcs = select({
-        ":darwin": ["@com_coreos_etcd_darwin_amd64//:file"],
-        ":k8": ["@com_coreos_etcd_linux_amd64//:file"],
+        ":darwin": ["@kubebuilder-tools_darwin_amd64//:etcd"],
+        ":k8": ["@kubebuilder-tools_linux_amd64//:etcd"],
     }),
     outs = ["etcd"],
     cmd = "cp $(SRCS) $@",
@@ -47,21 +47,10 @@ genrule(
 )
 
 genrule(
-    name = "fetch_kustomize",
-    srcs = select({
-        ":darwin": ["@kustomize_osx//:file"],
-        ":k8": ["@kustomize_linux//:file"],
-    }),
-    outs = ["kustomize"],
-    cmd = "cp $(SRCS) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
     name = "io_kubernetes_kube-apiserver",
     srcs = select({
-        ":darwin": ["@kube-apiserver_darwin_amd64//file"],
-        ":k8": ["@kube-apiserver_linux_amd64//file"],
+        ":darwin": ["@kubebuilder-tools_darwin_amd64//:kube-apiserver"],
+        ":k8": ["@kubebuilder-tools_linux_amd64//:kube-apiserver"],
     }),
     outs = ["kube-apiserver"],
     cmd = "cp $(SRCS) $@",
@@ -71,8 +60,8 @@ genrule(
 genrule(
     name = "fetch_kubectl",
     srcs = select({
-        ":darwin": ["@kubectl_1_18_darwin//file"],
-        ":k8": ["@kubectl_1_18_linux//file"],
+        ":darwin": ["@kubectl_1_21_darwin//file"],
+        ":k8": ["@kubectl_1_21_linux//file"],
     }),
     outs = ["kubectl"],
     cmd = "cp $(SRCS) $@",

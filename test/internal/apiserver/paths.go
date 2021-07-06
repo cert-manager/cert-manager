@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package framework
+package apiserver
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func maybeSetEnv(key, bin string, path ...string) {
 	p, err := getPath(bin, path...)
 	if err != nil {
 		panic(fmt.Sprintf(`Failed to find integration test dependency %q.
-Either re-run this test using "bazel test //test/integration/{name}" or set the %s environment variable.`, bin, key))
+Either re-run this test or set the %s environment variable.`, bin, key))
 	}
 	os.Setenv(key, p)
 }
