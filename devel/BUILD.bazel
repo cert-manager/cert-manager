@@ -11,6 +11,7 @@ filegroup(
         ":package-srcs",
         "//devel/addon/bind:all-srcs",
         "//devel/addon/certmanager:all-srcs",
+        "//devel/addon/gatewayapi:all-srcs",
         "//devel/addon/ingressnginx:all-srcs",
         "//devel/addon/kyverno:all-srcs",
         "//devel/addon/pebble:all-srcs",
