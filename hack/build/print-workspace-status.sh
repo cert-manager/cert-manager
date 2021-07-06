@@ -47,6 +47,8 @@ gitTreeState ${KUBE_GIT_TREE_STATE-}
 gitVersion ${KUBE_GIT_VERSION-}
 gitMajor ${KUBE_GIT_MAJOR-}
 gitMinor ${KUBE_GIT_MINOR-}
+gitPatch ${KUBE_GIT_PATCH-}
+lastRelease ${KUBE_LAST_RELEASE}
 buildDate $(date \
   ${SOURCE_DATE_EPOCH:+"--date=@${SOURCE_DATE_EPOCH}"} \
  -u +'%Y-%m-%dT%H:%M:%SZ')

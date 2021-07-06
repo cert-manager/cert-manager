@@ -118,11 +118,14 @@ kube::version::get_version_vars() {
 
 
       # Try to match the "git describe" output to a regex to try to extract
-      # the "major" and "minor" versions and whether this is the exact tagged
+      # the "major", "minor" and "patch" versions and whether this is the exact tagged
       # version or whether the tree is between two tagged versions.
-      if [[ "${KUBE_GIT_VERSION}" =~ ^v([0-9]+)\.([0-9]+)(\.[0-9]+)?([-].*)?([+].*)?$ ]]; then
+      # Cert-manager release tag always has all three of major, minor and patch versions.
+      if [[ "${KUBE_GIT_VERSION}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)([-].*)?([+].*)?$ ]]; then
         KUBE_GIT_MAJOR=${BASH_REMATCH[1]}
         KUBE_GIT_MINOR=${BASH_REMATCH[2]}
+        KUBE_GIT_PATCH=${BASH_REMATCH[3]}
+        KUBE_LAST_RELEASE="v${KUBE_GIT_MAJOR}.${KUBE_GIT_MINOR}.${KUBE_GIT_PATCH}"
         if [[ -n "${BASH_REMATCH[4]}" ]]; then
           KUBE_GIT_MINOR+="+"
         fi
