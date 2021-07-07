@@ -39,6 +39,8 @@ go_library(
         "@io_k8s_client_go//rest:go_default_library",
         "@io_k8s_kube_aggregator//pkg/apis/apiregistration/v1:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
+        "@io_k8s_sigs_gateway_api//apis/v1alpha1:go_default_library",
+        "@io_k8s_sigs_gateway_api//pkg/client/clientset/versioned:go_default_library",
     ],
 )
 

@@ -22,6 +22,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -32,8 +34,6 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificates"
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Defines simple conformance tests that can be run against any issuer type.
@@ -692,6 +692,50 @@ func (s *Suite) Define() {
 			By("Validating the issued Certificate...")
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
+			name := "testcert-gateway"
+			secretName := "testcert-gateway-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+			duration := time.Hour * 999
+			renewBefore := time.Hour * 111
+
+			By("Creating a Gateway with annotations for issuerRef and other Certificate fields")
+			gw, route := e2eutil.NewGateway(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":       issuerRef.Name,
+				"cert-manager.io/issuer-kind":  issuerRef.Kind,
+				"cert-manager.io/issuer-group": issuerRef.Group,
+				"cert-manager.io/common-name":  domain,
+				"cert-manager.io/duration":     duration.String(),
+				"cert-manager.io/renew-before": renewBefore.String(),
+			}, domain)
+
+			gw, err := f.GWClientSet.NetworkingV1alpha1().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = f.GWClientSet.NetworkingV1alpha1().HTTPRoutes(f.Namespace.Name).Create(context.TODO(), route, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// XXX(Mael): the CertificateRef seems to contain the Gateway name
+			// "testcert-gateway" instead of the secretName
+			// "testcert-gateway-tls".
+			certName := gw.Spec.Listeners[0].TLS.CertificateRef.Name
+
+			By("Waiting for the Certificate to exist...")
+			Expect(e2eutil.WaitForCertificateToExist(
+				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
+			)).NotTo(HaveOccurred())
+
+			// Verify that the ingres-shim has translated all the supplied
+			// annotations into equivalent Certificate field values
+			By("Validating the created Certificate")
+			cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.TODO(), certName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.CommonName).To(Equal(domain))
+			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
+			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
 		})
 
 		s.it(f, "should issue a certificate that defines a long domain", func(issuerRef cmmeta.ObjectReference) {

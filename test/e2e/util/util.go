@@ -37,6 +37,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gwapiv1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -427,4 +429,79 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 			},
 		},
 	}
+}
+
+func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) (*gwapiv1alpha1.Gateway, *gwapiv1alpha1.HTTPRoute) {
+	var hostnames []gwapiv1alpha1.Hostname
+	for _, dnsName := range dnsNames {
+		hostnames = append(hostnames, gwapiv1alpha1.Hostname(dnsName))
+	}
+
+	return &gwapiv1alpha1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        gatewayName,
+				Annotations: annotations,
+			},
+			Spec: gwapiv1alpha1.GatewaySpec{
+				GatewayClassName: "istio",
+				Listeners: []v1alpha1.Listener{{
+					Routes: gwapiv1alpha1.RouteBindingSelector{
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+							"gw": gatewayName,
+						}},
+					},
+					Port:     gwapiv1alpha1.PortNumber(80),
+					Hostname: (*gwapiv1alpha1.Hostname)(&dnsNames[0]),
+					TLS: &gwapiv1alpha1.GatewayTLSConfig{
+						CertificateRef: &gwapiv1alpha1.LocalObjectReference{
+							Name:  secretName,
+							Kind:  "Secret",
+							Group: "core",
+						},
+					},
+				}},
+			},
+		},
+		&gwapiv1alpha1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        gatewayName,
+				Annotations: annotations,
+				Labels: map[string]string{
+					"gw": gatewayName,
+				},
+			},
+			Spec: gwapiv1alpha1.HTTPRouteSpec{
+				Gateways: &gwapiv1alpha1.RouteGateways{
+					GatewayRefs: []gwapiv1alpha1.GatewayReference{{
+						Name:      gatewayName,
+						Namespace: ns,
+					}},
+				},
+				Hostnames: hostnames,
+				Rules: []gwapiv1alpha1.HTTPRouteRule{{
+					Matches: []gwapiv1alpha1.HTTPRouteMatch{{
+						Path: &gwapiv1alpha1.HTTPPathMatch{
+							Type:  ptrPathMatch(gwapiv1alpha1.PathMatchExact),
+							Value: ptrStr("/"),
+						},
+					}},
+					ForwardTo: []gwapiv1alpha1.HTTPRouteForwardTo{{
+						ServiceName: ptrStr("dummy-service"),
+						Port:        ptrPort(80),
+					}},
+				}},
+			},
+		}
+}
+func ptrPathMatch(p gwapiv1alpha1.PathMatchType) *gwapiv1alpha1.PathMatchType {
+	return &p
+}
+
+func ptrStr(s string) *string {
+	return &s
+}
+
+func ptrPort(port int32) *gwapiv1alpha1.PortNumber {
+	p := gwapiv1alpha1.PortNumber(port)
+	return &p
 }
