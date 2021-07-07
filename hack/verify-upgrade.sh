@@ -21,7 +21,6 @@ set -o pipefail
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${REPO_ROOT}/devel/lib/lib.sh"
-source "${REPO_ROOT}/devel/lib/cert.sh"
 source "${REPO_ROOT}/hack/build/version.sh"
 
 kube::version::get_version_vars
@@ -33,6 +32,23 @@ CURRENT_VERSION="${KUBE_GIT_VERSION}"
 bazel build //hack/bin:helm //hack/bin:kind //hack/bin:ytt //hack/bin:jq //hack/bin:kubectl
 bindir="$(bazel info bazel-bin)"
 export PATH="${bindir}/hack/bin/:$PATH"
+
+apply_cm_resources() {
+	selector="$1"
+	# If there is an actual error, this won't work with set -o errexit
+	set +e
+	count=0
+	until kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" \
+		--selector=test="$1"; do
+	((count++))
+	if [[ $count -gt 30 ]]; then
+		echo "failed to apply cert-manger resources"
+		exit 1
+	fi
+	sleep 1
+	done
+	set -e
+}
 
 echo "Testing upgrade from ${LATEST_RELEASE} to ${CURRENT_VERSION}"
 
@@ -66,16 +82,11 @@ helm upgrade \
     "$RELEASE_NAME" \
     "$HELM_CHART"
 
-# TODO: This is a dumb sleep that must be removed once we have a check for webhook to be ready.
-echo "Sleep for 30s whilst waiting for cert-manager installation to be ready..."
-sleep 30
-
 # Create a cert-manager issuer and cert
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" \
-	--selector=test=first
+apply_cm_resources "first"
 
 # Ensure cert becomes ready
-ensure_cert_ready "test1"
+kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 # 1. BUILD AND UPGRADE TO HELM CHART FROM THE CURRENT MASTER
 
@@ -85,12 +96,11 @@ echo "Upgrading cert-manager Helm release to ${CURRENT_VERSION}..."
 # Test that the existing cert-manager resources can still be retrieved
 kubectl get issuer/selfsigned-issuer cert/test1
 
-# Create another certificate
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" \
-	--selector=test=second
+# # Create another certificate
+apply_cm_resources "second"
 
 # Ensure cert becomes ready
-ensure_cert_ready "test2"
+kubectl wait --for=condition=Ready cert/test2 --timeout=180s
 
 # 1. UNINSTALL HELM RELEASE
 kubectl delete \
@@ -119,16 +129,11 @@ kubectl wait \
 	--timeout=180s deployment/cert-manager-webhook \
 	--namespace "${NAMESPACE}"
 
-# TODO: This is a dumb sleep that must be removed once we have a check for webhook to be ready.
-echo "Sleep for 30s whilst waiting for cert-manager installation to be ready..."
-sleep 30
-
 # Create a cert-manager issuer and cert
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" \
-	--selector=test=first
+apply_cm_resources "first"
 
 # Ensure cert becomes ready
-ensure_cert_ready "test1"
+kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 # 2. VERIFY UPGRADE TO THE LATEST BUILD FROM MASTER
 
@@ -139,8 +144,7 @@ bazel build //deploy/manifests
 
 # TODO: refactor this functionality here and in
 # devel/addon/certmanager/install.sh so it can be reused.
-# Use the current timestamp as the APP_VERSION so a rolling update will be
-# triggered on every call to this script.
+# Tag images with APP_VERSION for consistency with devel/addon/certmanager/install.sh.
 export APP_VERSION="$(date +"%s")"
 # Build cert-manager images.
 bazel run --stamp=true \
@@ -163,24 +167,26 @@ ytt -f "${REPO_ROOT}/test/fixtures/upgrade/overlay/controller-ops.yaml" \
 	--data-value app_version="${APP_VERSION}" \
 	--ignore-unknown-comments | kubectl apply -f -
 
-# Partially borrowed from https://www.jeffgeerling.com/blog/2018/updating-kubernetes-deployment-and-waiting-it-roll-out-shell-script
-ROLLOUT_STATUS_CMD="kubectl rollout status deployment/cert-manager-webhook --namespace ${NAMESPACE}"
-ATTEMPTS=0
-until $ROLLOUT_STATUS_CMD || [ $ATTEMPTS -eq 60 ]; do
-  $ROLLOUT_STATUS_CMD
-  ATTEMPTS=$((attempts + 1))
+rollout_cmd="kubectl rollout status deployment/cert-manager-webhook --namespace ${NAMESPACE}"
+attempts=0
+until $rollout_cmd; do
+  $rollout_cmd
+  ((attempts++))
+  if [[ $attempts -gt  30 ]]; then
+    echo "Upgrade failed to complete in 5 minutes"
+    exit 1
+  fi
   sleep 10
 done
 
 # Test that the existing cert-manager resources can still be retrieved
 kubectl get issuer/selfsigned-issuer cert/test1
 
-# Create another certificate
-kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" \
-	--selector=test=second
+# # Create another certificate
+apply_cm_resources "second"
 
 # Ensure cert becomes ready
-ensure_cert_ready "test2"
+kubectl wait --for=condition=Ready cert/test2 --timeout=180s
 
 # 3. UNINSTALL
 kubectl delete \
