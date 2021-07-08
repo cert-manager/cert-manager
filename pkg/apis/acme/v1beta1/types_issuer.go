@@ -204,6 +204,11 @@ type ACMEChallengeSolverHTTP01 struct {
 	// provisioned by cert-manager for each Challenge to be completed.
 	// +optional
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress,omitempty"`
+
+	// The Gateway API is a sig-network community API that models service networking
+	// in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will
+	// create or modify HTTPRoutes for a particular gateway class.
+	Gateway *ACMEChallengeSolverHTTP01Gateway `json:"gateway,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
@@ -234,6 +239,22 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// ingress used for HTTP01 challenges
 	// +optional
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate `json:"ingressTemplate,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01Gateway struct {
+	// Optional service type for Kubernetes solver service
+	// +optional
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
+
+	// The Gateway class to use when creating HTTPRoute resources to solve ACME
+	// challenges that use this challenge solver.
+	// +optional
+	Class *string `json:"class,omitempty"`
+
+	// Optional pod template used to configure the ACME challenge solver pods
+	// used for HTTP01 challenges
+	// +optional
+	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
@@ -320,7 +341,7 @@ type ACMEChallengeSolverDNS01 struct {
 
 	// Use the Google Cloud DNS API to manage DNS01 challenge records.
 	// +optional
-	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"cloudDNS,omitempty"`
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
 
 	// Use the Cloudflare API to manage DNS01 challenge records.
 	// +optional
@@ -332,7 +353,7 @@ type ACMEChallengeSolverDNS01 struct {
 
 	// Use the Microsoft Azure DNS API to manage DNS01 challenge records.
 	// +optional
-	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azureDNS,omitempty"`
+	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azuredns,omitempty"`
 
 	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
 	// +optional
@@ -341,7 +362,7 @@ type ACMEChallengeSolverDNS01 struct {
 	// Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage
 	// DNS01 challenge records.
 	// +optional
-	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmeDNS,omitempty"`
+	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmedns,omitempty"`
 
 	// Use RFC2136 ("Dynamic Updates in the Domain Name System") (https://datatracker.ietf.org/doc/rfc2136/)
 	// to manage DNS01 challenge records.

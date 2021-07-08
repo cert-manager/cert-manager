@@ -229,7 +229,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("solvers").Index(0).Child("http01"), "no HTTP01 solver type configured"),
 			},
 		},
-		"acme solver with valid http01 config": {
+		"acme solver with valid http01 ingress config": {
 			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -241,6 +241,65 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						},
 					},
 				},
+			},
+		},
+		"acme solver with valid http01 gateway config": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{
+								Class: strPtr("valid-gateway-class"),
+							},
+						},
+					},
+				},
+			},
+		},
+		"acme solver with invalid http01 gateway config": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(
+					fldPath.Child("solvers").Index(0).Child("http01", "gateway"),
+					"gateway class must be set",
+				),
+			},
+		},
+		"acme solver with multiple http01 solver configs": {
+			spec: &cmacme.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{
+								Class: strPtr("valid-gateway-class"),
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(
+					fldPath.Child("solvers").Index(0).Child("http01"),
+					"only 1 HTTP01 solver type may be configured",
+				),
 			},
 		},
 		"acme issue with valid pod template ObjectMeta attributes": {
