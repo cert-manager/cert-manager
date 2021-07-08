@@ -46,6 +46,7 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	shimgw "github.com/jetstack/cert-manager/pkg/controller/certificate-shim/gateways"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -168,19 +169,21 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
-	// The user may have enabled the gateway-shim controller but forgotten to
-	// install the Gateway API CRDs. Failing here will cause cert-manager to go
-	// into CrashLoopBackoff which is nice and obvious.
-	d := cl.Discovery()
-	resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
-	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't discover Gateway API resources (are the Gateway API CRDs installed?): %w", err)
-	}
-	if len(resources.APIResources) == 0 {
-		return nil, nil, fmt.Errorf("no gateway API resources were discovered (are the Gateway API CRDs installed?)")
+	if opts.EnabledControllers().Has(shimgw.ControllerName) {
+		// The user may have enabled the gateway-shim controller but forgotten to
+		// install the Gateway API CRDs. Failing here will cause cert-manager to go
+		// into CrashLoopBackoff which is nice and obvious.
+		d := cl.Discovery()
+		resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
+		if err != nil {
+			return nil, nil, fmt.Errorf("couldn't discover Gateway API resources (are the Gateway API CRDs installed?): %w", err)
+		}
+		if len(resources.APIResources) == 0 {
+			return nil, nil, fmt.Errorf("no gateway API resources were discovered (are the Gateway API CRDs installed?)")
+		}
 	}
 
-	// Create a GatewayAPI client
+	// Create a GatewayAPI client.
 	gwcl, err := gwclient.NewForConfig(kubeCfg)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
