@@ -83,14 +83,11 @@ func (r *Route53) Setup(c *config.Config) error {
 // Provision will create a copy of the DNS provider credentials in a secret in
 // the APIServer, and return a portion of an Issuer that can be used to
 // utilise these credentials in tests.
-func (r *Route53) Provision() error {
-	if len(r.Namespace) == 0 {
-		return fmt.Errorf("route53: namespace must be set")
-	}
+func (r *Route53) Provision(n *corev1.Namespace) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-e2e-route53-",
-			Namespace:    r.Namespace,
+			Namespace:    n.Name,
 		},
 		Data: map[string][]byte{
 			"AWS_SECRET_ACCESS_KEY": []byte(r.secretAccessKey),

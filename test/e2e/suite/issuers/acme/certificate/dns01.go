@@ -67,7 +67,6 @@ func testRFC2136DNSProvider() bool {
 		validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 		BeforeEach(func() {
-			By("Creating an Issuer")
 			dnsDomain = util.RandomSubdomain(p.Details().BaseDomain)
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
@@ -214,7 +213,6 @@ func testRoute53DNSProvider() bool {
 		validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 		BeforeEach(func() {
-			p.Namespace = f.Namespace.Name
 			By("Creating an Issuer")
 			dnsDomain = util.RandomSubdomain(p.Details().BaseDomain)
 			//dnsDomain = "lol." + p.Details().BaseDomain

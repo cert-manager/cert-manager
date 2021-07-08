@@ -18,6 +18,9 @@ package dnsproviders
 
 import (
 	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
+
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
@@ -41,7 +44,7 @@ func (b *RFC2136) Setup(c *config.Config) error {
 // Provision will create a copy of the DNS provider credentials in a secret in
 // the APIServer, and return a portion of an Issuer that can be used to
 // utilise these credentials in tests.
-func (b *RFC2136) Provision() error {
+func (b *RFC2136) Provision(_ *corev1.Namespace) error {
 	b.details.ProviderConfig = cmacme.ACMEChallengeSolverDNS01{
 		RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 			Nameserver: b.nameserver,

@@ -219,7 +219,7 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 		}
 		Expect(err).NotTo(HaveOccurred())
 
-		err = a.Provision()
+		err = a.Provision(f.Namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 }

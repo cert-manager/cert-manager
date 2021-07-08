@@ -19,6 +19,7 @@ package addon
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
@@ -28,7 +29,7 @@ import (
 
 type Addon interface {
 	Setup(*config.Config) error
-	Provision() error
+	Provision(n *corev1.Namespace) error
 	Deprovision() error
 	SupportsGlobal() bool
 }
@@ -152,7 +153,7 @@ func provisionGlobal(a Addon, cfg *config.Config) error {
 		}
 	}
 	provisioned = append(provisioned, a)
-	if err := a.Provision(); err != nil {
+	if err := a.Provision(nil); err != nil {
 		return err
 	}
 	return nil

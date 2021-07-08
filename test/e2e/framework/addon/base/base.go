@@ -19,6 +19,7 @@ limitations under the License.
 package base
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
@@ -68,7 +69,7 @@ func (b *Base) Setup(c *config.Config) error {
 	return nil
 }
 
-func (b *Base) Provision() error {
+func (b *Base) Provision(_ *corev1.Namespace) error {
 	return nil
 }
 
