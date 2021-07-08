@@ -200,7 +200,7 @@ func testRoute53DNSProvider() bool {
 		certificateName := "test-acme-certificate"
 		certificateSecretName := "test-acme-certificate"
 
-		p := &dnsproviders.Route53{Namespace: f.Namespace.Name}
+		p := &dnsproviders.Route53{}
 		f.RequireAddon(p)
 
 		dnsDomain := ""
@@ -214,6 +214,7 @@ func testRoute53DNSProvider() bool {
 		validations := validation.CertificateSetForUnsupportedFeatureSet(unsupportedFeatures)
 
 		BeforeEach(func() {
+			p.Namespace = f.Namespace.Name
 			By("Creating an Issuer")
 			dnsDomain = util.RandomSubdomain(p.Details().BaseDomain)
 			//dnsDomain = "lol." + p.Details().BaseDomain
