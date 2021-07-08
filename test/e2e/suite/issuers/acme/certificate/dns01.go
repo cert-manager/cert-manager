@@ -200,7 +200,7 @@ func testRoute53DNSProvider() bool {
 		certificateName := "test-acme-certificate"
 		certificateSecretName := "test-acme-certificate"
 
-		p := &dnsproviders.Route53{}
+		p := &dnsproviders.Route53{Namespace: f.Namespace.Name}
 		f.RequireAddon(p)
 
 		dnsDomain := ""
