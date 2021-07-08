@@ -222,6 +222,12 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 
+	rootBundleData, err := bundlePEM(testIntermediateCa, testRootCa)
+	if err != nil {
+		t.Errorf("failed to encode root bundle for testing: %s", err)
+		t.FailNow()
+	}
+
 	tests := map[string]testSignT{
 		"a garbage csr should return err": {
 			csrPEM:       []byte("a bad csr"),
@@ -241,7 +247,7 @@ func TestSign(t *testing.T) {
 			expectedCA:   "",
 		},
 
-		"a good csr and good response should return a certificate": {
+		"a good csr and good response with no root should return a certificate with the intermediate in the chain and as the CA": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{}),
@@ -251,8 +257,22 @@ func TestSign(t *testing.T) {
 					Body: ioutil.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate,
+			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testIntermediateCa,
+		},
+
+		"a good csr and good response with a root should return a certificate without the root in the chain but with the root as the CA": {
+			csrPEM: csrPEM,
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(cmapi.VaultIssuer{}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: ioutil.NopCloser(bytes.NewReader(rootBundleData))},
+			}, nil),
+			expectedErr:  nil,
+			expectedCert: testLeafCertificate + testIntermediateCa,
+			expectedCA:   testRootCa,
 		},
 
 		"vault issuer with namespace specified": {
@@ -265,7 +285,7 @@ func TestSign(t *testing.T) {
 					Body: ioutil.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
-			expectedCert: testLeafCertificate,
+			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testIntermediateCa,
 		},
 	}
@@ -321,7 +341,7 @@ func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
 	tests := map[string]testExtractCertificatesFromVaultCertT{
 		"when a Vault engine is a root CA": {
 			secret:       signedCertificateSecret(testIntermediateCa),
-			expectedCert: testLeafCertificate,
+			expectedCert: testLeafCertificate + testIntermediateCa,
 			expectedCA:   testIntermediateCa,
 		},
 		"when a Vault engine is an intermediate CA, and its parent is a root CA": {
