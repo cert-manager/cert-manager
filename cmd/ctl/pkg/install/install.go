@@ -230,7 +230,7 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	// Install chart
 	o.client.DryRun = false                  // Apply DryRun cli flags
 	o.client.ClientOnly = false              // Perform install against cluster
-	o.client.Atomic = true                   // If part of the install fails, also undo other installed resources
+	o.client.Atomic = o.client.Wait          // If part of the install fails, also undo other installed resources
 	chartValues[installCRDsFlagName] = false // Do not render CRDs, as this might cause problems when uninstalling using helm
 
 	return o.client.Run(chart, chartValues)
