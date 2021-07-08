@@ -316,6 +316,11 @@ func TestParseSingleCertificateChain(t *testing.T) {
 			expPEMBundle: PEMBundle{},
 			expErr:       true,
 		},
+		"if certificate chain does not have a root ca, should append all intermediates to chain pem": {
+			inputBundle:  joinPEM(intA1.pem, intA2.pem, leaf.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: intA1.pem},
+			expErr:       false,
+		},
 	}
 
 	for name, test := range tests {
