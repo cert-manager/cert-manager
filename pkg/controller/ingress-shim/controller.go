@@ -75,7 +75,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	mustSync := []cache.InformerSynced{
 		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
-		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
 		cmShared.Certmanager().V1().Issuers().Informer().HasSynced,
 	}
 
