@@ -28,7 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-func TestTranslateIngressAnnotations(t *testing.T) {
+func Test_translateAnnotations(t *testing.T) {
 	type testCase struct {
 		crt           *cmapi.Certificate
 		annotations   map[string]string
