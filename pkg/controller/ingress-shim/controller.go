@@ -148,14 +148,14 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 //         uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
 func certificateDeleted(queue workqueue.RateLimitingInterface) func(obj interface{}) {
 	return func(obj interface{}) {
-		crt, ok := obj.(*cmapi.Certificate)
+		cert, ok := obj.(*cmapi.Certificate)
 		if !ok {
 			runtime.HandleError(fmt.Errorf("not a Certificate object: %#v", obj))
 			return
 		}
 
-		ref := metav1.GetControllerOf(crt)
-		if ref == nil {
+		ingress := metav1.GetControllerOf(cert)
+		if ingress == nil {
 			// No controller should care about orphans being deleted or
 			// updated.
 			return
@@ -164,12 +164,17 @@ func certificateDeleted(queue workqueue.RateLimitingInterface) func(obj interfac
 		// We don't check the apiVersion e.g. "networking.k8s.io/v1beta1"
 		// because there is no chance that another object called "Ingress" be
 		// the controller of a Certificate.
-		if ref.Kind != "Ingress" {
+		if ingress.Kind != "Ingress" {
 			return
 		}
 
-		// Queue items are simple strings of the form "namespace-1/ingress-1".
-		queue.Add(crt.Namespace + "/" + ref.Name)
+		// Owner references don't know about the namespace of the referenced
+		// object. That's because owner refs do not support cross-namespace
+		// references. We also know that the Certificate and its parent Ingress
+		// must both be on the same namespace. We thus use the Certificate's
+		// namespace to trigger a resync of the parent Ingress (the string below
+		// is a "key" of the form "namespace-1/my-ingress").
+		queue.Add(cert.Namespace + "/" + ingress.Name)
 	}
 }
 
