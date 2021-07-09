@@ -145,6 +145,8 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 //         name: example
 //         blockOwnerDeletion: true
 //         uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
+//
+// Note that the owner reference doesn't know about the Ingress's namespace.
 func certificateDeleted(queue workqueue.RateLimitingInterface) func(obj interface{}) {
 	return func(obj interface{}) {
 		cert, ok := obj.(*cmapi.Certificate)
@@ -167,12 +169,6 @@ func certificateDeleted(queue workqueue.RateLimitingInterface) func(obj interfac
 			return
 		}
 
-		// Owner references don't know about the namespace of the referenced
-		// object. That's because owner refs do not support cross-namespace
-		// references. We also know that the Certificate and its parent Ingress
-		// must both be on the same namespace. We thus use the Certificate's
-		// namespace to trigger a resync of the parent Ingress (the string below
-		// is a "key" of the form "namespace-1/my-ingress").
 		queue.Add(cert.Namespace + "/" + ingress.Name)
 	}
 }
