@@ -56,8 +56,8 @@ func TestE2E(t *testing.T) {
 	// Disable skipped tests unless they are explicitly requested.
 	// Copied from https://github.com/kubernetes/kubernetes/blob/960e5e78255dd148d4dae49f62e729ea940f4f07/test/e2e/e2e.go#L103-L106
 	// See https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/flaky-tests.md#quarantining-flakes
-	if ginkgoconfig.GinkgoConfig.FocusString == "" && ginkgoconfig.GinkgoConfig.SkipString == "" {
-		ginkgoconfig.GinkgoConfig.SkipString = `\[Flaky\]|\[Feature:.+\]`
+	if len(ginkgoconfig.GinkgoConfig.FocusStrings) == 0 && len(ginkgoconfig.GinkgoConfig.SkipStrings) == 0 {
+		ginkgoconfig.GinkgoConfig.SkipStrings = []string{`\[Flaky\]|\[Feature:.+\]`}
 	}
 
 	if err := framework.DefaultConfig.Validate(); err != nil {
