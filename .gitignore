@@ -12,3 +12,4 @@ bazel-*
 /.settings/
 /.project
 _artifacts/
+/vendor/
