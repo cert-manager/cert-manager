@@ -24,6 +24,7 @@ def install():
     install_kubectl()
     install_oc3()
     install_kind()
+    install_ytt()
 
     # Install golang.org/x/build as kubernetes/repo-infra requires it for the
     # build-tar bazel target.
@@ -235,3 +236,19 @@ def install_kind():
         urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.11.1/kind-linux-amd64"],
     )
 
+
+# ytt is a yaml interpolator from the Carvel toolchain https://carvel.dev/.
+def install_ytt():
+    http_file(
+        name = "ytt_darwin",
+        executable = 1,
+        sha256 = "a874395924e670f2c89160efeffc35b94a9bcf4e515e49935cb1ceb22be7f08a",
+        urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.34.0/ytt-darwin-amd64"],
+    )
+
+    http_file(
+        name = "ytt_linux",
+        executable = 1,
+        sha256 = "49741ac5540fc64da8566f3d1c9538f4f0fec22c62b8ba83e5e3d8efb91ee170",
+        urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.34.0/ytt-linux-amd64"],
+    )
