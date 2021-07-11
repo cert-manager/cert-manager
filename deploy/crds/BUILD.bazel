@@ -46,6 +46,9 @@ helm_tmpl(
     helm_pkg = ":package",
     release_name = "cert-manager",
     release_namespace = "cert-manager",
+    values = {
+        "creator": "static",
+    },
     visibility = ["//visibility:public"],
 )
 
@@ -67,6 +70,9 @@ helm_tmpl(
     helm_pkg = ":crd-%s.package" % crd,
     release_name = "cert-manager",
     release_namespace = "cert-manager",
+    values = {
+        "creator": "static",
+    },
     visibility = ["//visibility:public"],
 ) for crd in crds]
 
