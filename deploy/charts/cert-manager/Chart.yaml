@@ -1,8 +1,8 @@
 apiVersion: v1
-name: {{ .Chart.Name }}
+name: cert-manager
 # The version and appVersion fields are set automatically by the release tool
-version: {{ .Chart.Version }}
-appVersion: {{ .Chart.Version }}
+version: v0.0.1
+appVersion: v0.0.1
 description: A Helm chart for cert-manager
 home: https://github.com/jetstack/cert-manager
 icon: https://raw.githubusercontent.com/jetstack/cert-manager/master/logo/logo.png
@@ -17,4 +17,5 @@ maintainers:
   - name: cert-manager-maintainers
     email: cert-manager-maintainers@googlegroups.com
 annotations:
-  artifacthub.io/prerelease: "{{ .Chart.IsPrerelease }}"
+  artifacthub.io/prerelease: "true"
+

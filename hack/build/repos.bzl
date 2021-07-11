@@ -1022,8 +1022,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/go-errors/errors",
-        sum = "h1:LUHzmkK3GUKUrL/1gfBUxAHzcev3apQlezX/+O7ma6w=",
-        version = "v1.0.1",
+        sum = "h1:xMxH9j2fNg/L4hLn/4y3M0IUsn0M6Wbu/Uh9QlOfBh4=",
+        version = "v1.0.2",
     )
 
     go_repository(
@@ -1368,6 +1368,31 @@ def go_repositories():
         sum = "h1:KhcknUwkWHKZPbFy2P7jH5LKJ3La+0ZeknkkmrSgqb0=",
         version = "v0.0.0-20180327235837-af21d9c3145e",
     )
+    go_repository(
+        name = "com_github_gomatic_clock",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/gomatic/clock",
+        sum = "h1:xzAfBShN+Ko1S6pYt+HQZv79PcPVkIYG2c2eE4GkW6o=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_gomatic_funcmap",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/gomatic/funcmap",
+        sum = "h1:Mu4vBNhJqhdh1klll9sKi0dfKve8G5zfRnPZ6pEmYVs=",
+        version = "v1.0.1",
+    )
+    go_repository(
+        name = "com_github_gomatic_renderizer_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/gomatic/renderizer/v2",
+        sum = "h1:X68FldZ/gnV4M99LfXfEGy8cmB8npDplnAjoE8kmHGQ=",
+        version = "v2.0.13",
+    )
+
     go_repository(
         name = "com_github_google_btree",
         build_file_generation = "on",
@@ -1927,6 +1952,14 @@ def go_repositories():
         importpath = "github.com/julienschmidt/httprouter",
         sum = "h1:U0609e9tgbseu3rBINet9P48AI/D3oJs4dN7jwJOQ1U=",
         version = "v1.3.0",
+    )
+    go_repository(
+        name = "com_github_kardianos_osext",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/kardianos/osext",
+        sum = "h1:iQTw/8FWTuc7uiaSepXwyf3o52HaUYcV+Tu66S3F5GA=",
+        version = "v0.0.0-20190222173326-2bc1f35cddc0",
     )
 
     go_repository(
@@ -3145,8 +3178,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/urfave/cli/v2",
-        sum = "h1:Qt8FeAtxE/vfdrLmR3rxR6JRE0RoVmbXu8+6kZtYU4k=",
-        version = "v2.1.1",
+        sum = "h1:qph92Y649prgesehzOrQjdWyxFOp/QVM+6imKHad91M=",
+        version = "v2.3.0",
     )
     go_repository(
         name = "com_github_vektah_gqlparser",
@@ -3342,6 +3375,16 @@ def go_repositories():
         sum = "h1:AVd6O+azYjVQYW1l55IqkbL8/JxjrLtO6q4FCmV8N5c=",
         version = "v0.0.0-20200830195227-52f69702a001",
     )
+    go_repository(
+        name = "dev_kubepack_chart_doc_gen",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "kubepack.dev/chart-doc-gen",
+        replace = "github.com/acookin/chart-doc-gen",
+        sum = "h1:pYtTX5X85kfSGUPuJo+8q4QRY7g0ZA9e83RYB4tlKD0=",
+        version = "v0.4.1-0.20210610164749-5d8baa3c1716",
+    )
+
     go_repository(
         name = "in_gopkg_alecthomas_kingpin_v2",
         build_file_generation = "on",

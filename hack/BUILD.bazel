@@ -280,3 +280,36 @@ filegroup(
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
+
+# Helm docgen rules
+
+sh_binary(
+    name = "update-helmgen",
+    srcs = ["update-helmgen.sh"],
+    args = [
+        "unversioned",
+        "$(location @dev_kubepack_chart_doc_gen//:chart-doc-gen)",
+        "$(location @com_github_gomatic_renderizer_v2//cmd/renderizer)",
+    ],
+    data = [
+        "@com_github_gomatic_renderizer_v2//cmd/renderizer",
+        "@dev_kubepack_chart_doc_gen//:chart-doc-gen",
+    ],
+)
+
+sh_test(
+    name = "verify-helmgen",
+    srcs = ["verify-helmgen.sh"],
+    args = [
+        "$(location :update-helmgen)",
+        "unversioned",
+        "$(location @dev_kubepack_chart_doc_gen//:chart-doc-gen)",
+        "$(location @com_github_gomatic_renderizer_v2//cmd/renderizer)",
+    ],
+    data = [
+        ":update-helmgen",
+        "//deploy/charts/cert-manager:all-srcs",
+        "@com_github_gomatic_renderizer_v2//cmd/renderizer",
+        "@dev_kubepack_chart_doc_gen//:chart-doc-gen",
+    ],
+)

@@ -28,3 +28,4 @@ hack=$(dirname "${BASH_SOURCE[0]}")
 # This is already run automatically by update-deps.sh
 #"$hack"/update-deps-licenses.sh
 "$hack"/update-gofmt.sh
+"$hack"/update-helmgen.sh

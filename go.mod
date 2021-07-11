@@ -21,6 +21,7 @@ require (
 	github.com/cpu/goacmedns v0.0.3
 	github.com/digitalocean/godo v1.44.0
 	github.com/go-logr/logr v0.4.0
+	github.com/gomatic/renderizer/v2 v2.0.13
 	github.com/google/gofuzz v1.2.0
 	github.com/googleapis/gnostic v0.5.5
 	github.com/hashicorp/vault/api v1.0.4
@@ -60,6 +61,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	k8s.io/kubectl v0.21.1
 	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b
+	kubepack.dev/chart-doc-gen v0.4.1
 	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/controller-tools v0.6.0
@@ -79,3 +81,6 @@ replace k8s.io/gengo => github.com/kmodules/gengo v0.0.0-20210428002657-a8850da6
 
 // See https://github.com/kubernetes/kubernetes/pull/99817
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
+
+// See https://github.com/kubepack/chart-doc-gen/pull/30
+replace kubepack.dev/chart-doc-gen => github.com/acookin/chart-doc-gen v0.4.1-0.20210610164749-5d8baa3c1716
