@@ -34,7 +34,6 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -54,12 +53,9 @@ type controller struct {
 	recorder record.EventRecorder
 	log      logr.Logger
 
-	ingressLister       networkinglisters.IngressLister
-	certificateLister   cmlisters.CertificateLister
-	issuerLister        cmlisters.IssuerLister
-	clusterIssuerLister cmlisters.ClusterIssuerLister
+	ingressLister     networkinglisters.IngressLister
+	certificateLister cmlisters.CertificateLister
 
-	helper   issuer.Helper
 	defaults defaults
 }
 
@@ -74,20 +70,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	queue := workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
 	mustSync := []cache.InformerSynced{
-		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
 		kShared.Networking().V1beta1().Ingresses().Informer().HasSynced,
+		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
 	}
 
 	c.ingressLister = kShared.Networking().V1beta1().Ingresses().Lister()
 	c.certificateLister = cmShared.Certmanager().V1().Certificates().Lister()
-	c.issuerLister = cmShared.Certmanager().V1().Issuers().Lister()
-
-	// We don't need to run the ClusterIssuer controller when cert-manager is
-	// running in non-namespaced mode (i.e. --namespace="").
-	if ctx.Namespace == "" {
-		mustSync = append(mustSync, cmShared.Certmanager().V1().ClusterIssuers().Informer().HasSynced)
-		c.clusterIssuerLister = cmShared.Certmanager().V1().ClusterIssuers().Lister()
-	}
 
 	kShared.Networking().V1beta1().Ingresses().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: queue,
@@ -96,7 +84,6 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		WorkFunc: certificateDeleted(queue),
 	})
 
-	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	c.kClient = ctx.Client
 	c.cmClient = ctx.CMClient
 	c.recorder = ctx.Recorder
