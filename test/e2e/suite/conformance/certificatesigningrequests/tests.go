@@ -72,8 +72,11 @@ func (s *Suite) Define() {
 		})
 
 		type testCase struct {
-			keyAlgo            x509.PublicKeyAlgorithm
-			csrModifiers       []gen.CSRModifier
+			keyAlgo x509.PublicKeyAlgorithm
+			// csrModifers define the shape of the X.509 CSR which is used in the
+			// test case. We use a function to allow access to variables that are
+			// initialized at test runtime by complete().
+			csrModifiers       func() []gen.CSRModifier
 			kubeCSRUsages      []certificatesv1.KeyUsage
 			kubeCSRAnnotations map[string]string
 			// The list of features that are required by the Issuer for the test to
@@ -86,8 +89,10 @@ func (s *Suite) Define() {
 
 		tests := map[string]testCase{
 			"should issue an RSA certificate for a single distinct DNS Name": {
-				keyAlgo:      x509.RSA,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))},
+				keyAlgo: x509.RSA,
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))}
+				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -96,8 +101,10 @@ func (s *Suite) Define() {
 			},
 
 			"should issue an ECDSA certificate for a single distinct DNS Name": {
-				keyAlgo:      x509.ECDSA,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))},
+				keyAlgo: x509.ECDSA,
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))}
+				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -106,8 +113,10 @@ func (s *Suite) Define() {
 			},
 
 			"should issue an Ed25519 certificate for a single distinct DNS Name": {
-				keyAlgo:      x509.Ed25519,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))},
+				keyAlgo: x509.Ed25519,
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix))}
+				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -116,8 +125,10 @@ func (s *Suite) Define() {
 			},
 
 			"should issue an RSA certificate for a single Common Name": {
-				keyAlgo:      x509.RSA,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))},
+				keyAlgo: x509.RSA,
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
+				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -126,8 +137,10 @@ func (s *Suite) Define() {
 			},
 
 			"should issue an ECDSA certificate for a single Common Name": {
-				keyAlgo:      x509.ECDSA,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))},
+				keyAlgo: x509.ECDSA,
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
+				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -136,8 +149,10 @@ func (s *Suite) Define() {
 			},
 
 			"should issue an Ed25519 certificate for a single Common Name": {
-				keyAlgo:      x509.Ed25519,
-				csrModifiers: []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))},
+				keyAlgo: x509.Ed25519,
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10))}
+				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
 					certificatesv1.UsageKeyEncipherment,
@@ -147,9 +162,11 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that defines a Common Name and IP Address": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10)),
-					gen.SetCSRIPAddresses(net.IPv4(127, 0, 0, 1), net.IPv4(8, 8, 8, 8)),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10)),
+						gen.SetCSRIPAddresses(net.IPv4(127, 0, 0, 1), net.IPv4(8, 8, 8, 8)),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -160,8 +177,10 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that defines an Email Address": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSREmails([]string{"alice@example.com", "bob@cert-manager.io"}),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSREmails([]string{"alice@example.com", "bob@cert-manager.io"}),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -172,9 +191,11 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that defines a Common Name and URI SAN": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10)),
-					gen.SetCSRURIs(sharedURI),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRCommonName("test-common-name-" + util.RandStringRunes(10)),
+						gen.SetCSRURIs(sharedURI),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -185,9 +206,11 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRCommonName(sharedCommonName),
-					gen.SetCSRDNSNames(sharedCommonName, e2eutil.RandomSubdomain(s.DomainSuffix)),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRCommonName(sharedCommonName),
+						gen.SetCSRDNSNames(sharedCommonName, e2eutil.RandomSubdomain(s.DomainSuffix)),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -198,9 +221,11 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that defines a distinct DNS Name and another distinct Common Name": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRCommonName(e2eutil.RandomSubdomain(s.DomainSuffix)),
-					gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRCommonName(e2eutil.RandomSubdomain(s.DomainSuffix)),
+						gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -211,9 +236,11 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that defines a Common Name, DNS Name, and sets a duration": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRDNSNames(sharedCommonName),
-					gen.SetCSRDNSNames(sharedCommonName),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRDNSNames(sharedCommonName),
+						gen.SetCSRDNSNames(sharedCommonName),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -227,8 +254,10 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that defines a DNS Name and sets a duration": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRDNSNames(e2eutil.RandomSubdomain(s.DomainSuffix)),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -242,8 +271,10 @@ func (s *Suite) Define() {
 
 			"should issue a certificate which has a wildcard DNS Name defined": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRDNSNames("*." + e2eutil.RandomSubdomain(s.DomainSuffix)),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRDNSNames("*." + e2eutil.RandomSubdomain(s.DomainSuffix)),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -254,8 +285,10 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that includes only a URISANs name": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRURIs(sharedURI),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRURIs(sharedURI),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -266,9 +299,11 @@ func (s *Suite) Define() {
 
 			"should issue a certificate that includes arbitrary key usages": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRCommonName(sharedCommonName),
-					gen.SetCSRDNSNames(sharedCommonName),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRCommonName(sharedCommonName),
+						gen.SetCSRDNSNames(sharedCommonName),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageServerAuth,
@@ -287,8 +322,10 @@ func (s *Suite) Define() {
 
 			"should issue a signing CA certificate that has a large duration": {
 				keyAlgo: x509.RSA,
-				csrModifiers: []gen.CSRModifier{
-					gen.SetCSRCommonName("cert-manager-ca"),
+				csrModifiers: func() []gen.CSRModifier {
+					return []gen.CSRModifier{
+						gen.SetCSRCommonName("cert-manager-ca"),
+					}
 				},
 				kubeCSRUsages: []certificatesv1.KeyUsage{
 					certificatesv1.UsageDigitalSignature,
@@ -306,7 +343,7 @@ func (s *Suite) Define() {
 		defineTest := func(name string, test testCase) {
 			s.it(f, name, func(signerName string) {
 				// Generate request CSR
-				csr, key, err := gen.CSR(test.keyAlgo, test.csrModifiers...)
+				csr, key, err := gen.CSR(test.keyAlgo, test.csrModifiers()...)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create CertificateSigningRequest
