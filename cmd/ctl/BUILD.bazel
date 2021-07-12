@@ -34,6 +34,7 @@ filegroup(
         ":package-srcs",
         "//cmd/ctl/cmd:all-srcs",
         "//cmd/ctl/pkg/approve:all-srcs",
+        "//cmd/ctl/pkg/check:all-srcs",
         "//cmd/ctl/pkg/convert:all-srcs",
         "//cmd/ctl/pkg/create:all-srcs",
         "//cmd/ctl/pkg/deny:all-srcs",

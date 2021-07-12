@@ -33,6 +33,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/util/cmapichecker:all-srcs",
         "//pkg/util/cmd:all-srcs",
         "//pkg/util/coverage:all-srcs",
         "//pkg/util/errors:all-srcs",
