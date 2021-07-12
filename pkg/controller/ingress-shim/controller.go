@@ -80,8 +80,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	kShared.Networking().V1beta1().Ingresses().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: queue,
 	})
-	cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: certificateDeleted(queue),
+	cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: certificateDeleted(queue),
 	})
 
 	c.kClient = ctx.Client
