@@ -26,7 +26,7 @@ SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 
 # Ensure a running Kubernetes cluster
-"${SCRIPT_ROOT}/devel/ci-cluster.sh"
+"${SCRIPT_ROOT}/ci-cluster.sh"
 
 echo "Ensuring all e2e test dependencies are installed..."
 "${SCRIPT_ROOT}/setup-e2e-deps.sh"
