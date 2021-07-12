@@ -16,6 +16,13 @@ sources:
 maintainers:
   - name: cert-manager-maintainers
     email: cert-manager-maintainers@googlegroups.com
+# We don't want alpha and beta releases to show on ArtifactHUB as releases.
+# To prevent pre-releases from appearing, we use the ArtifactHUB-specific:
+#
+#   annotation:
+#     artifacthub.io/prerelease: "true"
+#
+# See https://artifacthub.io/docs/topics/annotations/helm/
 annotations:
   artifacthub.io/prerelease: "true"
 
