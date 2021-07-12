@@ -26,6 +26,9 @@ SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
+# Configure PATH to use bazel provided e2e tools
+setup_tools
+
 # Ensure a running Kubernetes cluster
 "${SCRIPT_ROOT}/ci-cluster.sh"
 

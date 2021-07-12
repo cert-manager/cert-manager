@@ -59,7 +59,7 @@ setup_tools() {
 check_tool() {
   tool="$1"
   if ! command -v "$tool" &>/dev/null; then
-    echo "Install $tool or run: export PATH=\"$REPO_ROOT/devel/bin:\$PATH\"" >&2
+    echo "Fatal error: $tool not found. Install $tool or run: export PATH=\"$REPO_ROOT/devel/bin:\$PATH\"" >&2
     exit 1
   fi
 }
