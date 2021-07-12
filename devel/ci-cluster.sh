@@ -22,11 +22,6 @@ set -o pipefail
 # This is intended to be run in a CI environment and *not* for development.
 # It is not optimised for quick, iterative development.
 
-export_logs() {
-  echo "Exporting cluster logs to artifacts..."
-  "${SCRIPT_ROOT}/cluster/export-logs.sh"
-}
-
 SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
@@ -39,13 +34,14 @@ if [[ "$IS_OPENSHIFT" == "true" ]] ; then
   export SERVICE_IP_PREFIX="172.30.0"
 fi
 
-# When running in our CI environment the Docker network's subnet choice will cause issues with routing
-# This works this around till we have a way to properly patch this.
+# When running in our CI environment the Docker network's subnet choice will
+# cause issues with routing. This works this around till we have a way to
+# properly patch this.
 if ! docker network inspect kind ; then
   docker network create --driver=bridge --subnet=192.168.0.0/16 --gateway 192.168.0.1 kind
 fi
 
-# Wait for the network to be created so kind does not overwrite it
+# Wait for the network to be created so kind does not overwrite it.
 while ! docker network inspect kind ; do
   sleep 100ms
 done

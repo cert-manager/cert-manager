@@ -110,3 +110,8 @@ load_image() {
   fi
   kind load docker-image --name "$KIND_CLUSTER_NAME" "$IMAGE_NAME"
 }
+
+export_logs() {
+  echo "Exporting cluster logs to artifacts..."
+  "${SCRIPT_ROOT}/cluster/export-logs.sh"
+}
