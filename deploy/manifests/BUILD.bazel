@@ -10,35 +10,21 @@ RELEASE_NAME = "cert-manager"
 
 RELEASE_NAMESPACE = "cert-manager"
 
-# This genrule removes helm annotations.
-genrule(
-    name = "crds.nohelm.yaml",
-    srcs = [
-        "//deploy/crds",
-    ],
-    outs = ["crds.nohelm.out"],
-    cmd = " ".join([
-        "$(location //hack/filter-crd)",
-        "-variant=no-helm",
-        "$(location //deploy/crds:crds)",
-        "> $@",
-    ]),
-    tools = [
-        "//hack/filter-crd",
-    ],
-    visibility = ["//visibility:public"],
-)
-
 helm_tmpl(
     name = "manifests.helm",
     helm_pkg = "//deploy/charts/cert-manager",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
+    values = {
+        # Set creator to "static", so the Helm chart does
+        # not add Helm-specific labels to the resources.
+        "creator": "static",
+    },
 )
 
 licensed_file(
     name = "cert-manager.crds.yaml",
-    src = ":crds.nohelm.yaml",
+    src = "//deploy/crds",
 )
 
 genrule(
@@ -58,28 +44,9 @@ genrule(
     ]),
 )
 
-# This genrule removes helm annotations.
-genrule(
-    name = "unlicensed.nohelm",
-    srcs = [
-        ":unlicensed",
-    ],
-    outs = ["unlicensed.nohelm.yaml"],
-    cmd = " ".join([
-        "$(location //hack/filter-crd)",
-        "-variant=no-helm",
-        "$(location :unlicensed)",
-        "> $@",
-    ]),
-    tools = [
-        "//hack/filter-crd",
-    ],
-    visibility = ["//visibility:public"],
-)
-
 licensed_file(
     name = "cert-manager.yaml",
-    src = "unlicensed.nohelm",
+    src = ":unlicensed",
 )
 
 pkg_tar(

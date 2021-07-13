@@ -102,7 +102,7 @@ def helm_tmpl(
     cmds = []
     set_args = []
     for k, v in values.items():
-        set_args = set_args + ["--set=%s=%s" % (k, v)]
+        set_args = set_args + ["--set=\"%s=%s\"" % (k, v)]
     tmpl_cmd = [
         "$(location %s)" % helm_cmd,
         "template",

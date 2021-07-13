@@ -46,6 +46,11 @@ helm_tmpl(
     helm_pkg = ":package",
     release_name = "cert-manager",
     release_namespace = "cert-manager",
+    values = {
+        # Set creator to "static", so the Helm chart does
+        # not add Helm-specific labels to the resources.
+        "creator": "static",
+    },
     visibility = ["//visibility:public"],
 )
 
@@ -67,6 +72,11 @@ helm_tmpl(
     helm_pkg = ":crd-%s.package" % crd,
     release_name = "cert-manager",
     release_namespace = "cert-manager",
+    values = {
+        # Set creator to "static", so the Helm chart does
+        # not add Helm-specific labels to the resources.
+        "creator": "static",
+    },
     visibility = ["//visibility:public"],
 ) for crd in crds]
 
