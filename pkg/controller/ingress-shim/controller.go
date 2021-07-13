@@ -77,11 +77,27 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.ingressLister = kShared.Networking().V1beta1().Ingresses().Lister()
 	c.certificateLister = cmShared.Certmanager().V1().Certificates().Lister()
 
+	// We still requeue on "Deleted" for consistency with the rest of the
+	// controllers, but we don't actually need to. "Deleted" is only emitted
+	// after the apiserver has removed the object entirely from etcd; if we had
+	// to do some cleanup, we would use a finalizer, and the cleanup logic would
+	// be triggered by the "Updated" event when the object gets marked for
+	// deletion.
 	kShared.Networking().V1beta1().Ingresses().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: queue,
 	})
-	cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: certificateDeleted(queue),
+
+	// We still re-queue on "Add" because the workqueue will remove any
+	// duplicate key, although the Ingress controller already re-queues the
+	// Ingress after creating the Certificate.
+	//
+	// We re-queue on "Update" because we need to check if the Certificate is
+	// still up to date.
+	//
+	// We want to immediately recreate a Certificate when the Certificate is
+	// deleted.
+	cmShared.Certmanager().V1().Certificates().Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
+		WorkFunc: certificateHandler(queue),
 	})
 
 	c.kClient = ctx.Client
@@ -118,23 +134,21 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return c.sync(ctx, crt)
 }
 
-// Whenever a Certificate gets deleted, we want to reconcile its parent Ingress.
-// This parent Ingress is called "controller object". For example, the following
-// Certificate is controlled by the Ingress "example":
+// Whenever a Certificate gets updated, added or deleted, we want to reconcile
+// its parent Ingress. This parent Ingress is called "controller object". For
+// example, the following Certificate is controlled by the Ingress "example":
 //
 //     kind: Certificate
-//     metadata:
-//       namespace: cert-that-was-deleted
-//       ownerReferences:
-//       - controller: true                                       ← this
-//         apiVersion: networking.k8s.io/v1beta1
-//         kind: Ingress
+//     metadata:                                           Note that the owner
+//       namespace: cert-that-was-deleted                  reference does not
+//       ownerReferences:                                  have a namespace,
+//       - controller: true                                since owner refs
+//         apiVersion: networking.k8s.io/v1beta1           only work inside
+//         kind: Ingress                                   the same namespace.
 //         name: example
 //         blockOwnerDeletion: true
 //         uid: 7d3897c2-ce27-4144-883a-e1b5f89bd65a
-//
-// Note that the owner reference doesn't know about the Ingress's namespace.
-func certificateDeleted(queue workqueue.RateLimitingInterface) func(obj interface{}) {
+func certificateHandler(queue workqueue.RateLimitingInterface) func(obj interface{}) {
 	return func(obj interface{}) {
 		cert, ok := obj.(*cmapi.Certificate)
 		if !ok {

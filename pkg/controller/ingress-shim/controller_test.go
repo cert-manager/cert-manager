@@ -33,8 +33,6 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
-var _ = cmapi.Certificate{}
-
 func Test_controller_Register(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -44,7 +42,7 @@ func Test_controller_Register(t *testing.T) {
 		expectRequeueKey  string
 	}{
 		{
-			name: "ingress should be queued when it is created",
+			name: "ingress is re-queued when an 'Added' event is received for this ingress",
 			givenCall: func(t *testing.T, _ cmclient.Interface, c kclient.Interface) {
 				_, err := c.NetworkingV1beta1().Ingresses("namespace-1").Create(context.Background(), &networkingv1beta1.Ingress{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "ingress-1",
@@ -54,7 +52,7 @@ func Test_controller_Register(t *testing.T) {
 			expectRequeueKey: "namespace-1/ingress-1",
 		},
 		{
-			name: "ingress should be queued when it is updated",
+			name: "ingress is re-queued when an 'Updated' event is received for this ingress",
 			existingKObjects: []runtime.Object{&networkingv1beta1.Ingress{ObjectMeta: metav1.ObjectMeta{
 				Namespace: "namespace-1", Name: "ingress-1",
 			}}},
@@ -67,7 +65,7 @@ func Test_controller_Register(t *testing.T) {
 			expectRequeueKey: "namespace-1/ingress-1",
 		},
 		{
-			name: "ingress should be queued when it is deleted",
+			name: "ingress is re-queued when a 'Deleted' event is received for this ingress",
 			existingKObjects: []runtime.Object{&networkingv1beta1.Ingress{ObjectMeta: metav1.ObjectMeta{
 				Namespace: "namespace-1", Name: "ingress-1",
 			}}},
@@ -78,7 +76,7 @@ func Test_controller_Register(t *testing.T) {
 			expectRequeueKey: "namespace-1/ingress-1",
 		},
 		{
-			name: "ingress should not be queued when its child certificate is added",
+			name: "ingress is re-queued when an 'Added' event is received for its child Certificate",
 			givenCall: func(t *testing.T, c cmclient.Interface, _ kclient.Interface) {
 				_, err := c.CertmanagerV1().Certificates("namespace-1").Create(context.Background(), &cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
 					Namespace: "namespace-1", Name: "cert-1",
@@ -88,10 +86,10 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.CreateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "",
+			expectRequeueKey: "namespace-1/ingress-2",
 		},
 		{
-			name: "ingress should not be queued when its child certificate is updated",
+			name: "ingress is re-queued when an 'Updated' event is received for its child Certificate",
 			existingCMObjects: []runtime.Object{&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
 				Namespace: "namespace-1", Name: "cert-1",
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&networkingv1beta1.Ingress{ObjectMeta: metav1.ObjectMeta{
@@ -107,10 +105,10 @@ func Test_controller_Register(t *testing.T) {
 				}}, metav1.UpdateOptions{})
 				require.NoError(t, err)
 			},
-			expectRequeueKey: "",
+			expectRequeueKey: "namespace-1/ingress-2",
 		},
 		{
-			name: "ingress should be queued when its child certificate is deleted",
+			name: "ingress is re-queued when a 'Deleted' event is received for its child Certificate",
 			existingCMObjects: []runtime.Object{&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{
 				Namespace: "namespace-1", Name: "cert-1",
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(&networkingv1beta1.Ingress{ObjectMeta: metav1.ObjectMeta{
@@ -148,15 +146,24 @@ func Test_controller_Register(t *testing.T) {
 			// done. To work around that, we do a second queue.Get and expect it
 			// to be nil.
 			time.AfterFunc(50*time.Millisecond, queue.ShutDown)
-			gotKey, _ := queue.Get()
-			shouldBeNil, done := queue.Get()
-			assert.True(t, done)
-			assert.Nil(t, shouldBeNil)
-			assert.Equal(t, 0, queue.Len())
+
+			var gotKeys []string
+			for {
+				// Get blocks until either (1) a key is returned, or (2) the
+				// queue is shut down.
+				gotKey, done := queue.Get()
+				if done {
+					break
+				}
+				gotKeys = append(gotKeys, gotKey.(string))
+			}
+			assert.Equal(t, 0, queue.Len(), "queue should be empty")
+
+			// We only expect 0 or 1 keys received in the queue.
 			if test.expectRequeueKey != "" {
-				assert.Equal(t, test.expectRequeueKey, gotKey)
+				assert.Equal(t, []string{test.expectRequeueKey}, gotKeys)
 			} else {
-				assert.Nil(t, gotKey)
+				assert.Nil(t, gotKeys)
 			}
 		})
 	}
