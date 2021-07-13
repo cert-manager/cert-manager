@@ -118,7 +118,7 @@ Labels that should be added on each resource
 */}}
 {{- define "labels" -}}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- if eq (default .Values.creator "helm") "helm" }}
+{{- if eq (default "helm" .Values.creator) "helm" }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ include "chartName" . }}
 {{- end -}}
