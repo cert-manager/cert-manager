@@ -202,6 +202,9 @@ func TestAcmeOrdersController(t *testing.T) {
 	var chal *cmacme.Challenge
 	err = wait.Poll(time.Millisecond*100, time.Minute, func() (done bool, err error) {
 		chals, err := cmCl.AcmeV1().Challenges(testName).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return false, err
+		}
 		l := len(chals.Items)
 		// Challenge has not been created yet
 		if l == 0 {
