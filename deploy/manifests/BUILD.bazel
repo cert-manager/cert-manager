@@ -16,6 +16,8 @@ helm_tmpl(
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
     values = {
+        # Set creator to "static", so the Helm chart does
+        # not add Helm-specific labels to the resources.
         "creator": "static",
     },
 )
