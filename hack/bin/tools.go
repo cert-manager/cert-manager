@@ -22,6 +22,7 @@ limitations under the License.
 package bin
 
 import (
+	_ "github.com/amurant/tem/cmd/tem"
 	_ "github.com/onsi/ginkgo/ginkgo"
 	_ "k8s.io/code-generator/cmd/client-gen"
 	_ "k8s.io/code-generator/cmd/conversion-gen"

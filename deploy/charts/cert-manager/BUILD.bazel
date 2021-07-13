@@ -3,6 +3,33 @@ package(default_visibility = ["//visibility:public"])
 load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 load("//build:helm.bzl", "helm_pkg")
 
+# Rerender README.md and Chart.yaml, but now with the version included.
+genrule(
+    name = "chart_files",
+    srcs = [
+        "README.template.md",
+        "Chart.template.yaml",
+        "values.yaml",
+    ],
+    outs = [
+        "README.versioned.md",
+        "Chart.versioned.yaml",
+    ],
+    cmd = """
+        IN_DIR="./deploy/charts/cert-manager" \
+        OUT_DIR=$(@D) \
+        $(location //hack:update-helmgen.sh) \
+        $(location //:version) \
+        $(location @com_github_amurant_tem//cmd/tem)
+    """,
+    stamp = 1,
+    tools = [
+        "//:version",
+        "//hack:update-helmgen.sh",
+        "@com_github_amurant_tem//cmd/tem",
+    ],
+)
+
 pkg_tar(
     name = "release-tar",
     srcs = [
@@ -18,58 +45,12 @@ helm_pkg(
     name = "cert-manager",
     srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"],
     chart_name = "cert-manager",
-    chart_yaml = ":Chart.yaml",
-    readme_file = ":README.md",
+    chart_yaml = ":Chart.versioned.yaml",
+    readme_file = ":README.versioned.md",
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
     ],
-    values_yaml = ":values.yaml",
-)
-
-genrule(
-    name = "README",
-    srcs = [
-        "README.template.md",
-        "//:version",
-    ],
-    outs = ["README.md"],
-    cmd = "cat $(location README.template.md) | sed -e \"s:{{RELEASE_VERSION}}:$$(cat $(location //:version)):g\" > $@",
-    stamp = 1,
-    visibility = ["//visibility:public"],
-)
-
-# We don't want alpha and beta releases to show on ArtifactHUB as releases.
-# To prevent pre-releases from appearing, we use the ArtifactHUB-specific:
-#
-#   annotation:
-#     artifacthub.io/prerelease: "true"
-#
-# See https://artifacthub.io/docs/topics/annotations/helm/
-genrule(
-    name = "chart-yaml",
-    srcs = [
-        "Chart.template.yaml",
-        "//:version",
-    ],
-    outs = ["Chart.yaml"],
-    cmd = """
-    IS_PRERELEASE=$$(grep -q '^v[0-9]\\+.[0-9]\\+.[0-9]\\+$$' $(location //:version) && echo "false" || echo "true")
-    sed -e "s:{{IS_PRERELEASE}}:$${IS_PRERELEASE}:g" < $(location Chart.template.yaml) > $@
-    """,
-    stamp = 1,
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "chart-srcs",
-    srcs = ["//deploy/charts/cert-manager/templates:chart-srcs"] + glob(
-        [
-            ".helmignore",
-            "Chart.yaml",
-            "README.md",
-            "values.yaml",
-        ],
-    ),
+    values_yaml = "values.yaml",
 )
 
 filegroup(

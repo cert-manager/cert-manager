@@ -45,11 +45,11 @@ def helm_pkg(
     pkg_tar(
         name = "%s.chart_files" % name,
         package_dir = "/%s" % chart_name,
-        srcs = [
-            chart_yaml,
-            values_yaml,
-            readme_file,
-        ],
+        files = {
+            chart_yaml: "Chart.yaml",
+            values_yaml: "values.yaml",
+            readme_file: "README.md",
+        },
         mode = "0644",
         visibility = ["//visibility:private"],
     )

@@ -16,6 +16,7 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.1.0 // indirect
 	github.com/Venafi/vcert/v4 v4.13.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.1.0
+	github.com/amurant/tem v1.0.3
 	github.com/aws/aws-sdk-go v1.34.30
 	github.com/cloudflare/cloudflare-go v0.13.2
 	github.com/cpu/goacmedns v0.0.3
@@ -36,15 +37,15 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gomodules.xyz/jsonpatch/v2 v2.2.0
-	google.golang.org/api v0.20.0
+	google.golang.org/api v0.44.0
 	helm.sh/helm/v3 v3.6.2
 	k8s.io/api v0.21.2
 	k8s.io/apiextensions-apiserver v0.21.2
@@ -78,3 +79,6 @@ replace k8s.io/gengo => github.com/kmodules/gengo v0.0.0-20210428002657-a8850da6
 
 // See https://github.com/kubernetes/kubernetes/pull/99817
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
+
+// Can be removed once https://github.com/kubernetes/apiserver/commit/6365bf912405ce92ce4cfc612d754ddb238ba23a is released
+replace google.golang.org/grpc => google.golang.org/grpc v1.29.0

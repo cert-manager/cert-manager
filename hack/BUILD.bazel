@@ -279,3 +279,32 @@ filegroup(
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
+
+# Helm docgen rules
+
+sh_binary(
+    name = "update-helmgen",
+    srcs = ["update-helmgen.sh"],
+    args = [
+        "unversioned",
+        "$(location @com_github_amurant_tem//cmd/tem)",
+    ],
+    data = [
+        "@com_github_amurant_tem//cmd/tem",
+    ],
+)
+
+sh_test(
+    name = "verify-helmgen",
+    srcs = ["verify-helmgen.sh"],
+    args = [
+        "$(location :update-helmgen)",
+        "unversioned",
+        "$(location @com_github_amurant_tem//cmd/tem)",
+    ],
+    data = [
+        ":update-helmgen",
+        "//deploy/charts/cert-manager:all-srcs",
+        "@com_github_amurant_tem//cmd/tem",
+    ],
+)
