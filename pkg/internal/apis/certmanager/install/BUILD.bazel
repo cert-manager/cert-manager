@@ -42,7 +42,7 @@ go_test(
         "roundtrip_test.go",
     ],
     data = [
-        "//deploy/crds:templated_files",
+        "//deploy/manifests:templated_crds",
     ],
     embed = [":go_default_library"],
     deps = [

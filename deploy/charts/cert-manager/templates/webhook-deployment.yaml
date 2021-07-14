@@ -1,3 +1,4 @@
+{{- if has "webhook" .Values.components }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -114,3 +115,4 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
+{{- end -}}

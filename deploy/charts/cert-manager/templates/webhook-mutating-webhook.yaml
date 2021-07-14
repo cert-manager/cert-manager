@@ -1,3 +1,4 @@
+{{- if has "webhook" .Values.components }}
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -44,3 +45,4 @@ webhooks:
         namespace: {{ .Release.Namespace | quote }}
         path: /mutate
       {{- end }}
+{{- end -}}

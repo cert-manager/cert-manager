@@ -29,7 +29,7 @@ import (
 // the word 'foobar'.
 func PathForCRD(t *testing.T, name string) string {
 	dir := CRDDirectory(t)
-	path := filepath.Join(dir, fmt.Sprintf("crd-%s.templated.yaml", name))
+	path := filepath.Join(dir, fmt.Sprintf("crd-%s.yaml", name))
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
@@ -51,9 +51,9 @@ func CRDDirectory(t *testing.T) string {
 	}
 	var path string
 	if bazelDir != "" {
-		path = filepath.Join(bazelDir, "deploy", "crds")
+		path = filepath.Join(bazelDir, "deploy", "manifests")
 	} else {
-		path = filepath.Join(runfiles, "com_github_jetstack_cert_manager", "deploy", "crds")
+		path = filepath.Join(runfiles, "com_github_jetstack_cert_manager", "deploy", "manifests")
 	}
 	info, err := os.Stat(path)
 	if err != nil {

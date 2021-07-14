@@ -1,3 +1,4 @@
+{{- if has "certmanager" .Values.components }}
 {{- if .Values.global.podSecurityPolicy.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -17,4 +18,5 @@ subjects:
   - kind: ServiceAccount
     name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
-{{- end }}
+{{- end -}}
+{{- end -}}

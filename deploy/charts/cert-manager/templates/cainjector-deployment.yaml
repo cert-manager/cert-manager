@@ -1,4 +1,5 @@
-{{- if .Values.cainjector.enabled -}}
+{{- if has "cainjector" .Values.components }}
+{{- if .Values.cainjector.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -97,4 +98,5 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
-{{- end -}}
+{{- end }}
+{{- end }}

@@ -1,7 +1,3 @@
-package(default_visibility = ["//visibility:public"])
-
-exports_files(["00-crds.yaml"])
-
 load("@io_k8s_repo_infra//defs:pkg.bzl", "pkg_tar")
 load("//build:helm.bzl", "helm_tmpl")
 load("//build:licensing.bzl", "licensed_file")
@@ -11,7 +7,7 @@ RELEASE_NAME = "cert-manager"
 RELEASE_NAMESPACE = "cert-manager"
 
 helm_tmpl(
-    name = "manifests.helm",
+    name = "render-components",
     helm_pkg = "//deploy/charts/cert-manager",
     release_name = RELEASE_NAME,
     release_namespace = RELEASE_NAMESPACE,
@@ -19,34 +15,48 @@ helm_tmpl(
         # Set creator to "static", so the Helm chart does
         # not add Helm-specific labels to the resources.
         "creator": "static",
+        "components": "{crd,certmanager,webhook,cainjector}",
     },
 )
 
-licensed_file(
-    name = "cert-manager.crds.yaml",
-    src = "//deploy/crds",
-)
-
 genrule(
-    name = "unlicensed",
+    name = "render-all",
     srcs = [
-        "//deploy/crds",
         "01-namespace.yaml",
-        "manifests.helm",
+        "render-components.yaml",
     ],
-    outs = ["unlicensed.yaml"],
+    outs = ["render-all.yaml"],
     cmd = " ".join([
         "cat",
-        "$(location //deploy/crds:crds)",
         "$(location 01-namespace.yaml)",
-        "$(location manifests.helm)",
+        "$(location render-components.yaml)",
         "> $@",
     ]),
 )
 
 licensed_file(
     name = "cert-manager.yaml",
-    src = ":unlicensed",
+    src = ":render-all.yaml",
+    visibility = ["//visibility:public"],
+)
+
+helm_tmpl(
+    name = "render-crds",
+    helm_pkg = "//deploy/charts/cert-manager",
+    release_name = RELEASE_NAME,
+    release_namespace = RELEASE_NAMESPACE,
+    values = {
+        # Set creator to "static", so the Helm chart does
+        # not add Helm-specific labels to the resources.
+        "creator": "static",
+        "components": "{crd}",
+    },
+)
+
+licensed_file(
+    name = "cert-manager.crds.yaml",
+    src = ":render-crds.yaml",
+    visibility = ["//visibility:public"],
 )
 
 pkg_tar(
@@ -59,6 +69,7 @@ pkg_tar(
     mode = "0644",
     package_dir = "manifests",
     strip_prefix = ".",
+    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -72,5 +83,32 @@ filegroup(
     name = "all-srcs",
     srcs = [":package-srcs"],
     tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+##### TESTING ONLY:
+crds = [
+    "certificaterequests",
+    "certificates",
+    "challenges",
+    "clusterissuers",
+    "issuers",
+    "orders",
+]
+
+# Copy the rendered static crds, so they are usable by the tests
+# Output crds as individual files, is used for testing
+helm_tmpl(
+    name = "templated_crds",
+    outs = ["crd-%s.yaml" % file for file in crds],
+    helm_pkg = "//deploy/charts/cert-manager",
+    release_name = RELEASE_NAME,
+    release_namespace = RELEASE_NAMESPACE,
+    values = {
+        # Set creator to "static", so the Helm chart does
+        # not add Helm-specific labels to the resources.
+        "creator": "static",
+        "components": "{crd}",
+    },
     visibility = ["//visibility:public"],
 )

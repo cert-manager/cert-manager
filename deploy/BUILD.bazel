@@ -24,7 +24,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//deploy/charts/cert-manager:all-srcs",
-        "//deploy/crds:all-srcs",
         "//deploy/manifests:all-srcs",
     ],
     tags = ["automanaged"],

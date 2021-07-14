@@ -20,7 +20,7 @@ set -o pipefail
 SCRIPT_ROOT=$(realpath $(dirname "${BASH_SOURCE}"))
 REPO_ROOT=$(dirname "${SCRIPT_ROOT}}")
 
-bazel build //deploy/crds:crds.yaml
+bazel build //deploy/manifests:templated_crds
 bazel build //hack/bin:com_coreos_etcd
 bazel build //hack/bin:io_kubernetes_kube-apiserver
 bazel build //hack/bin:kubectl

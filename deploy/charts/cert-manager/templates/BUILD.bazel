@@ -1,21 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//build:files.bzl", "modify_file")
-
-modify_file(
-    name = "crds",
-    src = "//deploy/crds:templates",
-    out = "crds.yaml",
-    prefix = """{{- if .Values.installCRDs }}""",
-    suffix = """{{- end }}""",
-    visibility = ["//visibility:private"],
-)
-
 filegroup(
     name = "chart-srcs",
-    srcs = [
-        ":crds",
-    ] + glob(
+    srcs = glob(
         [
             "*.yaml",
             "*.txt",

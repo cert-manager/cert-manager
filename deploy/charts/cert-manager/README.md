@@ -88,7 +88,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.leaderElection.leaseDuration` | The duration that non-leader candidates will wait after observing a leadership renewal until attempting to acquire leadership of a led but unrenewed leader slot. This is effectively the maximum duration that a leader can be stopped before it is replaced by another candidate. <pre lang="yaml">leaseDuration: 60s</pre> | `` |
 | `global.leaderElection.renewDeadline` | The interval between attempts by the acting master to renew a leadership slot before it stops leading. This must be less than or equal to the lease duration. <pre lang="yaml">renewDeadline: 40s</pre> | `` |
 | `global.leaderElection.retryPeriod` | The duration the clients should wait between attempting acquisition and renewal of a leadership. <pre lang="yaml">retryPeriod: 15s</pre> | `` |
-| `installCRDs` | If true, CRD resources will be installed as part of the Helm chart. If enabled, when uninstalling CRD resources will be deleted causing all installed custom resources to be DELETED. | `false` |
+| `installCRDs` | DEPRECATED: use components instead! Setting this value to true is the same as adding "crd" to the components list. CRDs will be rendered if "crd" is added to components OR installCRDs is set to true. | `false` |
 | `replicaCount` | Number of cert-manager replicas | `1` |
 | `strategy` | <pre lang="yaml">strategy:<br>  type: RollingUpdate<br>  rollingUpdate:<br>    maxSurge: 0<br>    maxUnavailable: 1</pre> | `{}` |
 | `featureGates` | Comma separated list of feature gates that should be enabled on the controller pod. | `""` |

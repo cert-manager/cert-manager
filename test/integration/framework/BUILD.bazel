@@ -7,7 +7,7 @@ go_library(
         "helpers.go",
     ],
     data = [
-        "//deploy/crds:crds.yaml",
+        "//deploy/manifests:templated_crds",
         "//hack/bin:com_coreos_etcd",
         "//hack/bin:io_kubernetes_kube-apiserver",
         "//hack/bin:kubectl",

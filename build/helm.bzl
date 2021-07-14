@@ -17,10 +17,11 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 def helm_pkg(
     name,
     chart_name,
+    helmignore,
+    readme_file,
     chart_yaml,
     values_yaml,
-    readme_file,
-    tpl_files,
+    tpl_files = [],
     srcs = [],
     helm_cmd = "//hack/bin:helm",
     version_file = "//:version",
@@ -46,9 +47,10 @@ def helm_pkg(
         name = "%s.chart_files" % name,
         package_dir = "/%s" % chart_name,
         files = {
+            helmignore: ".helmignore",
+            readme_file: "README.md",
             chart_yaml: "Chart.yaml",
             values_yaml: "values.yaml",
-            readme_file: "README.md",
         },
         mode = "0644",
         visibility = ["//visibility:private"],
@@ -97,12 +99,9 @@ def helm_tmpl(
         additional_api_versions = "",
         values = {},
         helm_cmd = "//hack/bin:helm",
+        outs = [],
         **kwargs,
 ):
-    cmds = []
-    set_args = []
-    for k, v in values.items():
-        set_args = set_args + ["--set=\"%s=%s\"" % (k, v)]
     tmpl_cmd = [
         "$(location %s)" % helm_cmd,
         "template",
@@ -110,13 +109,24 @@ def helm_tmpl(
         "--namespace=%s" % release_namespace,
         release_name,
         "$(location %s)" % helm_pkg,
-    ] + set_args + ["> $@"]
-    cmds = cmds + [" ".join(tmpl_cmd)]
+    ]
+
+    for k, v in values.items():
+        tmpl_cmd = tmpl_cmd + ["--set=\"%s=%s\"" % (k, v)]
+
+    if len(outs) == 0:
+        tmpl_cmd = tmpl_cmd + ["> $@"]
+        outs = ["%s.yaml" % name]
+        cmds = [" ".join(tmpl_cmd)]
+    else:
+        tmpl_cmd = tmpl_cmd + ["--output-dir=$(@D)"]
+        cmds = [" ".join(tmpl_cmd), "mv $(@D)/%s/templates/* $(@D)" % release_name]
+
     native.genrule(
         name = name,
         srcs = [helm_pkg, "//:version"],
         stamp = 1,
-        outs = ["%s.yaml" % name],
+        outs = outs,
         cmd = "; ".join(cmds),
         tools = [helm_cmd],
         **kwargs,

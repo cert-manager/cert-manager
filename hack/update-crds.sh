@@ -39,7 +39,13 @@ export PATH=$(dirname "$go"):$PATH
 REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY}
 cd "${REPO_ROOT}"
 
+tempdir=$(mktemp -d -t crds.XXXX)
+
+cp ./deploy/charts/cert-manager/templates/crd-* "$tempdir"
+
 "$controllergen" \
-  schemapatch:manifests=./deploy/crds \
-  output:dir=./deploy/crds \
+  schemapatch:manifests="$tempdir" \
+  output:dir="$tempdir" \
   paths=./pkg/apis/...
+
+cp -aL "$tempdir/." ./deploy/charts/cert-manager/templates/

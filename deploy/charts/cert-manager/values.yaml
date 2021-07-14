@@ -47,9 +47,19 @@ global:
     # retryPeriod: 15s
     retryPeriod:
 
-# If true, CRD resources will be installed as part of the Helm chart.
-# If enabled, when uninstalling CRD resources will be deleted causing all
-# installed custom resources to be DELETED.
+# Each resource is part of one of these 4 components: "crd", "certmanager",
+# "webhook" and "cainjector". Each template filenames is prefixed with the name
+# of the component. This option can be used to only include a subset of the
+# components.
+components:
+- certmanager
+- webhook
+- cainjector
+# - crd
+
+# DEPRECATED: use components instead!
+# Setting this value to true is the same as adding "crd" to the components list.
+# CRDs will be rendered if "crd" is added to components OR installCRDs is set to true.
 installCRDs: false
 
 # Number of cert-manager replicas
