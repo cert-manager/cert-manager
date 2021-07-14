@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -1149,23 +1148,20 @@ func TestSync(t *testing.T) {
 			b.Init()
 			defer b.Stop()
 			c := &controller{
-				kClient:             b.Client,
-				cmClient:            b.CMClient,
-				recorder:            b.Recorder,
-				issuerLister:        b.SharedInformerFactory.Certmanager().V1().Issuers().Lister(),
-				clusterIssuerLister: b.SharedInformerFactory.Certmanager().V1().ClusterIssuers().Lister(),
-				certificateLister:   b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(),
+				kClient:           b.Client,
+				cmClient:          b.CMClient,
+				recorder:          b.Recorder,
+				certificateLister: b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(),
 				defaults: defaults{
 					issuerName:                 test.DefaultIssuerName,
 					issuerKind:                 test.DefaultIssuerKind,
 					issuerGroup:                test.DefaultIssuerGroup,
 					autoCertificateAnnotations: []string{testAcmeTLSAnnotation},
 				},
-				helper: &fakeHelper{issuer: test.Issuer},
 			}
 			b.Start()
 
-			err := c.Sync(context.Background(), test.Ingress)
+			err := c.sync(context.Background(), test.Ingress)
 
 			// If test.Err == true, err should not be nil and vice versa
 			if test.Err == (err == nil) {
@@ -1186,17 +1182,6 @@ func TestSync(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, testFn(test))
 	}
-}
-
-type fakeHelper struct {
-	issuer cmapi.GenericIssuer
-}
-
-func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
-	if f.issuer == nil {
-		return nil, fmt.Errorf("no issuer specified on fake helper")
-	}
-	return f.issuer, nil
 }
 
 func TestIssuerForIngress(t *testing.T) {
