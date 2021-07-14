@@ -280,7 +280,6 @@ ensure-in-gopath
 old=${GOCACHE:-}
 export GOCACHE=$(mktemp -d -t codegen.gocache.XXXX)
 export GO111MODULE=on
-export GOPROXY=https://proxy.golang.org
 export GOSUMDB=sum.golang.org
 "$go_sdk/bin/go" mod vendor
 export GO111MODULE=off

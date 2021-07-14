@@ -45,6 +45,7 @@ help:
 	# ctl                - build a binary of the cert-manager kubectl plugin
 	# images             - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push        - pushes docker images to the target registry
+	# crds               - runs the update-crds script to ensure that generated CRDs are up to date
 	# cluster            - creates a Kubernetes cluster for testing in CI (KIND by default)
 	#
 	# Image targets can be run with optional args DOCKER_REGISTRY and APP_VERSION:
@@ -83,6 +84,10 @@ verify_chart:
 .PHONY: verify_upgrade
 verify_upgrade:
 	$(HACK_DIR)/verify-upgrade.sh
+
+.PHONY: crds
+crds:
+	bazel run //hack:update-crds
 
 .PHONY: cluster
 cluster:
