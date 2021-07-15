@@ -24,6 +24,8 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -798,12 +800,18 @@ func (s *Suite) Define() {
 			cert, err := f.Helper().CMClient.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.TODO(), "testcert", metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Adding an additional dnsName to the Certificate")
+			By("Updating the Certificate after having added an additional dnsName")
 			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
-			cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
+			err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				err := f.CRClient.Get(context.Background(), types.NamespacedName{Namespace: f.Namespace.Name, Name: "testcert"}, cert)
+				if err != nil {
+					return err
+				}
 
-			By("Updating the Certificate in the apiserver")
-			err = f.CRClient.Update(context.TODO(), cert)
+				cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
+
+				return f.CRClient.Update(context.TODO(), cert)
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate Ready condition to be updated")
