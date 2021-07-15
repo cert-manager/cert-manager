@@ -18,6 +18,7 @@ package cmapichecker
 
 import (
 	"context"
+	"regexp"
 
 	errors "github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,9 +34,35 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
+var (
+	ErrAPIServerUnreachable                  = errors.New("unable to connect to the Kubernetes API server")
+	ErrCertManagerCRDsNotFound               = errors.New("the cert-manager CRDs are not yet installed on the Kubernetes API server")
+	ErrCertManagerAPIEndpointsNotEstablished = errors.New("the cert-manager API endpoints have not yet been published by the Kubernetes API server")
+	ErrWebhookConnectionFailure              = errors.New("the cert-manager webhook server can't be reached yet")
+	ErrWebhookCertificateFailure             = errors.New("the client CA bundle is not yet updated to the certificate of the cert-manager webhook")
+
+	regexErrCertManagerCRDsNotFound               = regexp.MustCompile(`^error finding the scope of the object: failed to get restmapping: no matches for kind "Certificate" in group "cert-manager.io"$`)
+	regexErrCertManagerAPIEndpointsNotEstablished = regexp.MustCompile(`failed calling webhook "(.*)\.cert-manager\.io": Post "(.*)\/mutate(.*)": service "(.*)-webhook" not found$`)
+	regexErrWebhookConnectionFailure              = regexp.MustCompile(`failed calling webhook "(.*)\.cert-manager\.io": Post "(.*)\/mutate(.*)": (.*): connect: connection refused$`)
+	regexErrWebhookCertificateFailure             = regexp.MustCompile(`Post "(.*)": x509: certificate signed by unknown authority`)
+)
+
+type ApiCheckError struct {
+	SimpleError     error
+	UnderlyingError error
+}
+
+func (e *ApiCheckError) Error() string {
+	return e.SimpleError.Error()
+}
+
+func (e *ApiCheckError) Cause() error {
+	return e.UnderlyingError
+}
+
 // Interface is used to check that the cert-manager CRDs have been installed and are usable.
 type Interface interface {
-	Check(context.Context) error
+	Check(context.Context) *ApiCheckError
 }
 
 type cmapiChecker struct {
@@ -49,8 +76,7 @@ type cmapiChecker struct {
 }
 
 // New returns a cert-manager API checker
-func New(restcfg *rest.Config, namespace string) (Interface, error) {
-	scheme := runtime.NewScheme()
+func New(restcfg *rest.Config, scheme *runtime.Scheme, namespace string) (Interface, error) {
 	if err := cmapi.AddToScheme(scheme); err != nil {
 		return nil, errors.Wrap(err, "while configuring scheme")
 	}
@@ -86,12 +112,8 @@ func (o *cmapiChecker) Client() (client.Client, error) {
 // required webhooks are reachable by the K8S API server.
 // We use v1alpha2 API to ensure that the API server has also connected to the
 // cert-manager conversion webhook.
-func (o *cmapiChecker) Check(ctx context.Context) error {
+func (o *cmapiChecker) Check(ctx context.Context) *ApiCheckError {
 	cert := &cmapi.Certificate{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Certificate",
-			APIVersion: "cert-manager.io/v1alpha2",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cmapichecker-",
 		},
@@ -103,13 +125,42 @@ func (o *cmapiChecker) Check(ctx context.Context) error {
 			},
 		},
 	}
+
+	// while creating client: Get "http://localhost:8080/api?timeout=32s": dial tcp 127.0.0.1:8080: connect: connection refused
 	cl, err := o.Client()
 	if err != nil {
-		return err
+		return &ApiCheckError{
+			SimpleError:     ErrAPIServerUnreachable,
+			UnderlyingError: err,
+		}
 	}
 
+	// error finding the scope of the object: failed to get restmapping: no matches for kind "Certificate" in group "cert-manager.io"
+	// Internal error occurred: failed calling webhook "webhook.cert-manager.io": Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": service "cert-manager-webhook" not found
+	// Internal error occurred: failed calling webhook "webhook.cert-manager.io": Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": dial tcp 10.96.38.90:443: connect: connection refused
+	// Internal error occurred: failed calling webhook "webhook.cert-manager.io": Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" while trying to verify candidate authority certificate "cert-manager-webhook-ca")
+	// conversion webhook for cert-manager.io/v1alpha2, Kind=Certificate failed: Post "https://cert-manager-webhook.cert-manager.svc:443/convert?timeout=30s": x509: certificate signed by unknown authority
 	if err := cl.Create(ctx, cert); err != nil {
-		return errors.Wrap(err, "while attempting dry-run creation of Certificate")
+		return &ApiCheckError{
+			SimpleError:     translateToSimpleError(err),
+			UnderlyingError: err,
+		}
 	}
 	return nil
+}
+
+func translateToSimpleError(err error) error {
+	s := err.Error()
+
+	if regexErrCertManagerCRDsNotFound.MatchString(s) {
+		return ErrCertManagerCRDsNotFound
+	} else if regexErrCertManagerAPIEndpointsNotEstablished.MatchString(s) {
+		return ErrCertManagerAPIEndpointsNotEstablished
+	} else if regexErrWebhookConnectionFailure.MatchString(s) {
+		return ErrWebhookConnectionFailure
+	} else if regexErrWebhookCertificateFailure.MatchString(s) {
+		return ErrWebhookCertificateFailure
+	}
+
+	return err
 }

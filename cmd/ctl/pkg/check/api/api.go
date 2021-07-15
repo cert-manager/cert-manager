@@ -18,30 +18,28 @@ package api
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/util/cmapichecker"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/scheme"
+	"k8s.io/kubectl/pkg/util/i18n"
+	"k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/jetstack/cert-manager/pkg/util/cmapichecker"
 )
 
 // Options is a struct to support check api command
 type Options struct {
-	RESTConfig *restclient.Config
-
 	// APIChecker is used to check that the cert-manager CRDs have been installed on the K8S
 	// API server and that the cert-manager webhooks are all working
 	APIChecker cmapichecker.Interface
 
-	// If set to true, command will wait until creating resources against the api is possible
-	Wait bool
-
 	// Time before timeout when waiting
-	Timeout time.Duration
+	Wait time.Duration
 
 	// Time between checks when waiting
 	Interval time.Duration
@@ -49,8 +47,18 @@ type Options struct {
 	// Namespace that is used to dry-run create the certificate resource in
 	Namespace string
 
+	// Print details regarding encountered errors
+	Verbose bool
+
 	genericclioptions.IOStreams
 }
+
+var checkApiDesc = templates.LongDesc(i18n.T(`
+This check attempts to perform a dry-run create of a cert-manager *v1alpha2*
+Certificate resource in order to verify that CRDs are installed and all the
+required webhooks are reachable by the K8S API server.
+We use v1alpha2 API to ensure that the API server has also connected to the
+cert-manager conversion webhook.`))
 
 // NewOptions returns initialized Options
 func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
@@ -65,17 +73,20 @@ func (o *Options) Complete(factory cmdutil.Factory) error {
 
 	o.Namespace, _, err = factory.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
-		return err
+		return fmt.Errorf("Error: cannot get the namespace: %v", err)
 	}
 
-	o.RESTConfig, err = factory.ToRESTConfig()
+	restConfig, err := factory.ToRESTConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("Error: cannot create the REST config: %v", err)
 	}
 
-	o.APIChecker, err = cmapichecker.New(o.RESTConfig, o.Namespace)
+	// We pass the scheme that is used in the RESTConfig's NegotiatedSerializer,
+	// this makes sure that the cmapi is also added to NegotiatedSerializer's scheme
+	// see: https://github.com/jetstack/cert-manager/pull/4205#discussion_r668660271
+	o.APIChecker, err = cmapichecker.New(restConfig, scheme.Scheme, o.Namespace)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error: %v", err)
 	}
 
 	return nil
@@ -86,14 +97,9 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
-		Use: "api",
-		Short: `
-			This check attempts to perform a dry-run create of a cert-manager *v1alpha2*
-			Certificate resource in order to verify that CRDs are installed and all the
-			required webhooks are reachable by the K8S API server.
-			We use v1alpha2 API to ensure that the API server has also connected to the
-			cert-manager conversion webhook.
-		`,
+		Use:   "api",
+		Short: "This check attempts to perform a dry-run create of a cert-manager Certificate",
+		Long:  checkApiDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := o.Complete(factory); err != nil {
 				return err
@@ -103,35 +109,39 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	cmd.Flags().BoolVar(&o.Wait, "wait", true, "If set to true, command will wait until creating resources against the api is possible")
-	cmd.Flags().DurationVar(&o.Timeout, "timeout", 30*time.Second, "Time before timeout when waiting, must include unit, e.g. 5s or 10m")
-	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 5s or 10m")
+	cmd.Flags().DurationVar(&o.Wait, "wait", 1*time.Minute, "Time before timeout when waiting, must include unit, e.g. 0s or 20s")
+	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
+	cmd.Flags().BoolVarP(&o.Verbose, "verbose", "v", false, "Print details regarding encountered errors")
 
 	return cmd
 }
 
 // Run executes check api command
 func (o *Options) Run(ctx context.Context) error {
-	log.SetFlags(0) // Disable prefixing logs with timestamps.
+	pollContext, cancel := context.WithTimeout(ctx, o.Wait)
+	defer cancel()
 
-	if !o.Wait {
+	pollErr := wait.PollImmediateUntil(o.Interval, func() (done bool, err error) {
 		if err := o.APIChecker.Check(ctx); err != nil {
-			return err
-		}
-
-		log.Print("The Kubernetes Api is ready to created cert-manager resources against")
-
-		return nil
-	}
-
-	return wait.PollImmediate(o.Interval, o.Timeout, func() (done bool, err error) {
-		if err := o.APIChecker.Check(ctx); err != nil {
-			log.Printf("%v", err)
+			if o.Verbose {
+				fmt.Fprintf(o.ErrOut, "Not ready: %v (%v)\n", err, err.Cause())
+			} else {
+				fmt.Fprintf(o.ErrOut, "Not ready: %v\n", err)
+			}
 			return false, nil
 		}
 
-		log.Print("The Kubernetes Api is ready to created cert-manager resources against")
+		fmt.Fprintln(o.Out, "The cert-manager API is ready")
 
 		return true, nil
-	})
+	}, pollContext.Done())
+
+	if pollErr != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return pollErr
+	}
+
+	return nil
 }

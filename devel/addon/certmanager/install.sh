@@ -31,6 +31,7 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Require kubectl & helm available on PATH
 check_tool kubectl
+check_tool kubectl-cert_manager
 check_tool helm
 
 # Use the current timestamp as the APP_VERSION so a rolling update will be
@@ -65,3 +66,5 @@ helm upgrade \
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
+
+kubectl cert-manager check api

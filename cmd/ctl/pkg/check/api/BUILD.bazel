@@ -10,8 +10,10 @@ go_library(
         "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
-        "@io_k8s_client_go//rest:go_default_library",
         "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
+        "@io_k8s_kubectl//pkg/scheme:go_default_library",
+        "@io_k8s_kubectl//pkg/util/i18n:go_default_library",
+        "@io_k8s_kubectl//pkg/util/templates:go_default_library",
     ],
 )
 
