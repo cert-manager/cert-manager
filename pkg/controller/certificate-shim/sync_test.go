@@ -2207,6 +2207,91 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
+			Name:         "if a Gateway contains two listeners with different Secret names, it should create two Certificates",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			IngressLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gateway-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IssuerKindAnnotationKey:        "Issuer",
+						cmapi.IssuerGroupAnnotationKey:       "cert-manager.io",
+					},
+					UID: types.UID("gateway-name"),
+				},
+				Spec: gwapi.GatewaySpec{
+					GatewayClassName: "test-gateway",
+					Listeners: []gwapi.Listener{{
+						Hostname: ptrHostname("foo.example.com"),
+						Port:     443,
+						Protocol: "HTTPS",
+						TLS: &gwapi.GatewayTLSConfig{
+							Mode: ptrMode(gwapi.TLSModeTerminate),
+							CertificateRef: &gwapi.LocalObjectReference{
+								Group: "core",
+								Kind:  "Secret",
+								Name:  "foo-example-com-tls",
+							},
+						},
+					}, {
+						Hostname: ptrHostname("bar.example.com"),
+						Port:     443,
+						Protocol: "HTTPS",
+						TLS: &gwapi.GatewayTLSConfig{
+							Mode: ptrMode(gwapi.TLSModeTerminate),
+							CertificateRef: &gwapi.LocalObjectReference{
+								Group: "core",
+								Kind:  "Secret",
+								Name:  "bar-example-com-tls",
+							},
+						},
+					}},
+				},
+			},
+			ExpectedEvents: []string{
+				`Normal CreateCertificate Successfully created Certificate "foo-example-com-tls"`,
+				`Normal CreateCertificate Successfully created Certificate "bar-example-com-tls"`,
+			},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "foo-example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"foo.example.com"},
+						SecretName: "foo-example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "bar-example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildGatewayOwnerReferences("gateway-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"bar.example.com"},
+						SecretName: "bar-example-com-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
+		{
 			Name:   "Failure to translate the Gateway annotations",
 			Issuer: acmeIssuer,
 			IngressLike: &gwapi.Gateway{
