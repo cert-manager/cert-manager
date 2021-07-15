@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/rest"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	gwapiv1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gwapi "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -71,6 +73,7 @@ type Framework struct {
 
 	// Kubernetes API clientsets
 	KubeClientSet          kubernetes.Interface
+	GWClientSet            gwapi.Interface
 	CertManagerClientSet   clientset.Interface
 	APIExtensionsClientSet apiextcs.Interface
 
@@ -135,6 +138,20 @@ func (f *Framework) BeforeEach() {
 	By("Creating a controller-runtime client")
 	f.CRClient, err = crclient.New(kubeConfig, crclient.Options{Scheme: Scheme})
 	Expect(err).NotTo(HaveOccurred())
+
+	By("Creating a gateway-api client")
+	f.GWClientSet, err = gwapi.NewForConfig(kubeConfig)
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Creating a gateway-api class for istio")
+	f.GWClientSet.NetworkingV1alpha1().GatewayClasses().Create(context.Background(), &gwapiv1alpha1.GatewayClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "istio",
+		},
+		Spec: gwapiv1alpha1.GatewayClassSpec{
+			Controller: "istio.io/gateway-controller",
+		},
+	}, metav1.CreateOptions{})
 
 	By("Building a namespace api object")
 	f.Namespace, err = f.CreateKubeNamespace(f.BaseName)

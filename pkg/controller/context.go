@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
+	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -50,6 +52,9 @@ type Context struct {
 	Client kubernetes.Interface
 	// CMClient is a cert-manager clientset
 	CMClient clientset.Interface
+	// GWClient is a GatewayAPI clientset.
+	GWClient gwclient.Interface
+
 	// Recorder to record events to
 	Recorder record.EventRecorder
 
@@ -59,6 +64,10 @@ type Context struct {
 	// SharedInformerFactory can be used to obtain shared SharedIndexInformer
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
+
+	// The Gateway API is an external CRD, which means its shared informers are
+	// not available in controllerpkg.Context.
+	GWShared gwinformers.SharedInformerFactory
 
 	// Namespace is the namespace to operate within.
 	// If unset, operates on all namespaces
@@ -126,8 +135,10 @@ type ACMEOptions struct {
 	DNS01CheckRetryPeriod time.Duration
 }
 
+// IngressShimOptions contain default Issuer GVK config for the certificate-shim controllers.
+// These are set from the cmd cli flags, allowing the controllers to support legacy annotations
+// such as `kubernetes.io/tls-acme`.
 type IngressShimOptions struct {
-	// Default issuer/certificates details consumed by ingress-shim
 	DefaultIssuerName                 string
 	DefaultIssuerKind                 string
 	DefaultIssuerGroup                string

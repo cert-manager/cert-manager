@@ -33,6 +33,8 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
+var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
+
 func Test_controller_Register(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -129,7 +131,7 @@ func Test_controller_Register(t *testing.T) {
 			b.Init()
 
 			// We don't care about the HasSynced functions since we already know
-			// whether they have been properly "used": if no Ingress or
+			// whether they have been properly "used": if no Gateway or
 			// Certificate event is received then HasSynced has not been setup
 			// properly.
 			queue, _, err := (&controller{}).Register(b.Context)

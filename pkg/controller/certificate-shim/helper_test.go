@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package shimhelper
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-func TestTranslateIngressAnnotations(t *testing.T) {
+func Test_translateAnnotations(t *testing.T) {
 	type testCase struct {
 		crt           *cmapi.Certificate
 		annotations   map[string]string
@@ -110,7 +110,7 @@ func TestTranslateIngressAnnotations(t *testing.T) {
 			}
 			crt := tc.crt.DeepCopy()
 
-			err := translateIngressAnnotations(crt, tc.annotations)
+			err := translateAnnotations(crt, tc.annotations)
 
 			if tc.expectedError != nil {
 				assertErrorIs(t, err, tc.expectedError)

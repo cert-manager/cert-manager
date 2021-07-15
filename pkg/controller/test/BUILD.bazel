@@ -28,6 +28,8 @@ go_library(
         "@io_k8s_client_go//kubernetes/fake:go_default_library",
         "@io_k8s_client_go//testing:go_default_library",
         "@io_k8s_client_go//tools/cache:go_default_library",
+        "@io_k8s_sigs_gateway_api//pkg/client/clientset/versioned/fake:go_default_library",
+        "@io_k8s_sigs_gateway_api//pkg/client/informers/externalversions:go_default_library",
         "@io_k8s_utils//clock:go_default_library",
         "@io_k8s_utils//clock/testing:go_default_library",
     ],

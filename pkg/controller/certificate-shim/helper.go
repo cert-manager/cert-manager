@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package shimhelper
 
 import (
 	"errors"
@@ -33,28 +33,53 @@ var (
 	errInvalidIngressAnnotation = errors.New("invalid ingress annotation")
 )
 
-func translateIngressAnnotations(crt *cmapi.Certificate, annotations map[string]string) error {
+// translateAnnotations updates the Certificate spec using the ingress-like
+// annotations. For example, the following Ingress:
+//
+//   kind: Ingress
+//   metadata:
+//     annotations:
+//       cert-manager.io/common-name: example.com
+//       cert-manager.io/duration: 2160h
+//       cert-manager.io/renew-before: 1440h
+//       cert-manager.io/usages: "digital signature,key encipherment"
+//
+// is mapped to the following Certificate:
+//
+//   kind: Certificate
+//   spec:
+//     commonName: example.com
+//     duration: 2160h
+//     renewBefore: 1440h
+//     usages:
+//       - digital signature
+//       - key encipherment
+func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]string) error {
 	if crt == nil {
 		return errNilCertificate
 	}
-	if commonName, found := annotations[cmapi.CommonNameAnnotationKey]; found {
+
+	if commonName, found := ingLikeAnnotations[cmapi.CommonNameAnnotationKey]; found {
 		crt.Spec.CommonName = commonName
 	}
-	if duration, found := annotations[cmapi.DurationAnnotationKey]; found {
+
+	if duration, found := ingLikeAnnotations[cmapi.DurationAnnotationKey]; found {
 		duration, err := time.ParseDuration(duration)
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.DurationAnnotationKey, err)
 		}
 		crt.Spec.Duration = &metav1.Duration{Duration: duration}
 	}
-	if renewBefore, found := annotations[cmapi.RenewBeforeAnnotationKey]; found {
+
+	if renewBefore, found := ingLikeAnnotations[cmapi.RenewBeforeAnnotationKey]; found {
 		duration, err := time.ParseDuration(renewBefore)
 		if err != nil {
 			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.RenewBeforeAnnotationKey, err)
 		}
 		crt.Spec.RenewBefore = &metav1.Duration{Duration: duration}
 	}
-	if usages, found := annotations[cmapi.UsagesAnnotationKey]; found {
+
+	if usages, found := ingLikeAnnotations[cmapi.UsagesAnnotationKey]; found {
 		var newUsages []cmapi.KeyUsage
 		for _, usageName := range strings.Split(usages, ",") {
 			usage := cmapi.KeyUsage(strings.Trim(usageName, " "))
