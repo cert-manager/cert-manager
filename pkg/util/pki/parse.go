@@ -252,7 +252,10 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 
 	for {
 		// If the issuer is nil, we have hit the root of the chain. Assign the CA
-		// to this certificate and stop traversing.
+		// to this certificate and stop traversing. If the root certificate is not
+		// a self-signed certificate, i.e. is not a root CA, append the certificate
+		// to the certificate chain.
+
 		if c.issuer == nil {
 			if !isSelfSignedCertificate(c.cert) {
 				certs = append(certs, c.cert)
@@ -340,6 +343,8 @@ func (c *chainNode) root() *chainNode {
 	return c
 }
 
+// isSelfSignedCertificate returns true if the given X.509 certificate has been
+// signed by itself (self-signed).
 func isSelfSignedCertificate(cert *x509.Certificate) bool {
-	return cert.Issuer.CommonName == cert.Subject.CommonName
+	return cert.CheckSignatureFrom(cert) == nil
 }
