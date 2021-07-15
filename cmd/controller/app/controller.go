@@ -24,6 +24,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -169,17 +170,19 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
+	// cert-manager will try watching the Gateway resources with an exponential
+	// back-off, which allows the user to install the CRDs after cert-manager
+	// itself. Let's let the user know that the CRDs have not been found yet.
 	if opts.EnabledControllers().Has(shimgw.ControllerName) {
-		// The user may have enabled the gateway-shim controller but forgotten to
-		// install the Gateway API CRDs. Failing here will cause cert-manager to go
-		// into CrashLoopBackoff which is nice and obvious.
 		d := cl.Discovery()
 		resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
-		if err != nil {
-			return nil, nil, fmt.Errorf("couldn't discover Gateway API resources (are the Gateway API CRDs installed?): %w", err)
-		}
-		if len(resources.APIResources) == 0 {
-			return nil, nil, fmt.Errorf("no gateway API resources were discovered (are the Gateway API CRDs installed?)")
+		switch {
+		case apierrors.IsNotFound(err):
+			log.Info("the Gateway API CRDs do not seem to be present, cert-manager will keep retrying watching for them")
+		case err != nil:
+			return nil, nil, fmt.Errorf("while checking if the Gateway API CRD is installed: %s", err.Error())
+		case len(resources.APIResources) == 0:
+			log.Info("the Gateway API CRDs do not seem to be present, cert-manager will keep retrying watching for them")
 		}
 	}
 
