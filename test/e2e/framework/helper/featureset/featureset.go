@@ -87,13 +87,11 @@ const (
 	WildcardsFeature Feature = "Wildcards"
 
 	// ECDSAFeature denotes whether the target issuer is able to sign
-	// certificates with an elliptic curve private key. This is useful for some
-	// issuers that have trouble being configured to support this feature.
+	// certificates with an elliptic curve private key.
 	ECDSAFeature Feature = "ECDSA"
 
 	// ReusePrivateKey denotes whether the target issuer is able to sign multiple
-	// certificates for the same private key. This is useful for some issuers
-	// that have trouble being configured to support this feature.
+	// certificates for the same private key.
 	ReusePrivateKeyFeature Feature = "ReusePrivateKey"
 
 	// URISANs denotes whether to the target issuer is able to sign a certificate
@@ -126,8 +124,7 @@ const (
 	// represent a root CA (sub-feature of SaveCAToSecret)
 	SaveRootCAToSecret = "SaveRootCAToSecret"
 
-	// Ed25519 denotes whether the target issuer is able to sign
-	// certificates with an Ed25519 private key. This is useful for some
-	// issuers that have may not support this feature.
+	// Ed25519FeatureSet denotes whether the target issuer is able to sign
+	// certificates with an Ed25519 private key.
 	Ed25519FeatureSet Feature = "Ed25519"
 )
