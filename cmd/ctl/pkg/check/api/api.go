@@ -18,7 +18,10 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -98,50 +101,57 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 
 	cmd := &cobra.Command{
 		Use:   "api",
-		Short: "This check attempts to perform a dry-run create of a cert-manager Certificate",
+		Short: "Check if the cert-manager API is ready",
 		Long:  checkApiDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := o.Complete(factory); err != nil {
 				return err
 			}
-			return o.Run(ctx)
+			o.Run(ctx)
+			return nil
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	cmd.Flags().DurationVar(&o.Wait, "wait", 1*time.Minute, "Time before timeout when waiting, must include unit, e.g. 0s or 20s")
+	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s)")
 	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
-	cmd.Flags().BoolVarP(&o.Verbose, "verbose", "v", false, "Print details regarding encountered errors")
+	cmd.Flags().BoolVarP(&o.Verbose, "verbose", "v", false, "Print detailed error messages")
 
 	return cmd
 }
 
 // Run executes check api command
-func (o *Options) Run(ctx context.Context) error {
+func (o *Options) Run(ctx context.Context) {
+	if !o.Verbose {
+		log.SetFlags(0) // Disable prefixing logs with timestamps.
+	}
+	log.SetOutput(o.ErrOut) // Log all intermediate errors to stderr
+
 	pollContext, cancel := context.WithTimeout(ctx, o.Wait)
 	defer cancel()
 
 	pollErr := wait.PollImmediateUntil(o.Interval, func() (done bool, err error) {
 		if err := o.APIChecker.Check(ctx); err != nil {
-			if o.Verbose {
-				fmt.Fprintf(o.ErrOut, "Not ready: %v (%v)\n", err, err.Cause())
-			} else {
-				fmt.Fprintf(o.ErrOut, "Not ready: %v\n", err)
+			if !o.Verbose && errors.Unwrap(err) != nil {
+				err = errors.Unwrap(err)
 			}
+
+			log.Printf("Not ready: %v", err)
 			return false, nil
 		}
-
-		fmt.Fprintln(o.Out, "The cert-manager API is ready")
 
 		return true, nil
 	}, pollContext.Done())
 
+	log.SetOutput(o.Out) // Log conclusion to stdout
+
 	if pollErr != nil {
-		if ctx.Err() != nil {
-			return ctx.Err()
+		if errors.Is(pollContext.Err(), context.DeadlineExceeded) && o.Wait > 0 {
+			log.Printf("Timed out after %s", o.Wait)
 		}
-		return pollErr
+
+		os.Exit(1)
 	}
 
-	return nil
+	log.Printf("The cert-manager API is ready")
 }

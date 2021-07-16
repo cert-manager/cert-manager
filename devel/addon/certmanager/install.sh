@@ -53,6 +53,9 @@ kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 # Build the Helm chart package .tgz
 bazel build //deploy/charts/cert-manager
 
+# Pre-compile the kubectl plugin, so it can quickly check the api status
+bazel build //hack/bin:kubectl-cert_manager
+
 # Upgrade or install cert-manager
 helm upgrade \
     --install \
@@ -67,4 +70,4 @@ helm upgrade \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 
-kubectl cert-manager check api
+kubectl cert-manager check api --wait=1m -v
