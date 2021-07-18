@@ -587,7 +587,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried",
+					"Normal IssuancePending Venafi certificate still in a pending state, waiting",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -638,7 +638,7 @@ func TestProcessItem(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried",
+					"Normal IssuancePending Venafi certificate still in a pending state, waiting",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
