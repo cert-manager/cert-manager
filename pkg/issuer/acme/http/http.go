@@ -31,11 +31,11 @@ import (
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	networkingv1beta1listers "k8s.io/client-go/listers/networking/v1beta1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/internal/ingress"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
@@ -57,9 +57,10 @@ var (
 type Solver struct {
 	*controller.Context
 
-	podLister     corev1listers.PodLister
-	serviceLister corev1listers.ServiceLister
-	ingressLister networkingv1beta1listers.IngressLister
+	podLister            corev1listers.PodLister
+	serviceLister        corev1listers.ServiceLister
+	ingressLister        ingress.InternalIngressLister
+	ingressCreateUpdater ingress.InternalIngressCreateUpdater
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -67,17 +68,25 @@ type Solver struct {
 
 type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 
-// NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
-// TODO: refactor this to have fewer args
-func NewSolver(ctx *controller.Context) *Solver {
-	return &Solver{
-		Context:          ctx,
-		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
-		testReachability: testReachability,
-		requiredPasses:   5,
+// NewSolver returns a new ACME HTTP01 solver for the given *controller.Context.
+func NewSolver(ctx *controller.Context) (*Solver, error) {
+	ingressLister, _, err := ingress.NewListerInformer(ctx)
+	if err != nil {
+		return nil, err
 	}
+	ingressCreateUpdater, err := ingress.NewCreateUpdater(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Solver{
+		Context:              ctx,
+		podLister:            ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:        ingressLister,
+		ingressCreateUpdater: ingressCreateUpdater,
+		testReachability:     testReachability,
+		requiredPasses:       5,
+	}, nil
 }
 
 func http01LogCtx(ctx context.Context) context.Context {

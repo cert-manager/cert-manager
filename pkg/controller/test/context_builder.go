@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -40,6 +41,7 @@ import (
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	fakediscovery "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins/fake"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -111,6 +113,29 @@ func (b *Builder) Init() {
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
+	b.Discovery = fakediscovery.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+		if groupVersion == networkingv1.SchemeGroupVersion.String() {
+			return &metav1.APIResourceList{
+				TypeMeta:     metav1.TypeMeta{},
+				GroupVersion: networkingv1.SchemeGroupVersion.String(),
+				APIResources: []metav1.APIResource{
+					{
+						Name:               "Ingresses",
+						SingularName:       "Ingress",
+						Namespaced:         true,
+						Group:              networkingv1.GroupName,
+						Version:            networkingv1.SchemeGroupVersion.Version,
+						Kind:               networkingv1.SchemeGroupVersion.WithKind("Ingress").Kind,
+						Verbs:              metav1.Verbs{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+						ShortNames:         []string{"ing"},
+						Categories:         []string{"all"},
+						StorageVersionHash: "testing",
+					},
+				},
+			}, nil
+		}
+		return &metav1.APIResourceList{}, nil
+	})
 	b.Recorder = new(FakeRecorder)
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)

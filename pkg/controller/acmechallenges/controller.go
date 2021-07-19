@@ -128,10 +128,13 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
-	c.httpSolver = http.NewSolver(ctx)
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
 	var err error
+	c.httpSolver, err = http.NewSolver(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	c.dnsSolver, err = dns.NewSolver(ctx)
 	if err != nil {
 		return nil, nil, err

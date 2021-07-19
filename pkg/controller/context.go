@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"k8s.io/client-go/discovery"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -54,6 +55,8 @@ type Context struct {
 	CMClient clientset.Interface
 	// GWClient is a GatewayAPI clientset.
 	GWClient gwclient.Interface
+	// Discovery is a discovery interface
+	Discovery discovery.DiscoveryInterface
 
 	// Recorder to record events to
 	Recorder record.EventRecorder
