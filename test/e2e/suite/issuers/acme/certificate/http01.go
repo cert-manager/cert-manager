@@ -27,10 +27,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/pointer"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -226,7 +226,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
-		ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+		ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 		By("Creating an Ingress with the issuer name annotation set")
@@ -287,8 +287,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
 		// using the TLS secret that we just got from the self-sign
-		ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
-		_, err = ingress.Create(context.TODO(), &networkingv1beta1.Ingress{
+		ingress := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
+		_, err = ingress.Create(context.TODO(), &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fixedIngressName,
 				Annotations: map[string]string{
@@ -296,24 +296,29 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					"kubernetes.io/ingress.class":                    "nginx",
 				},
 			},
-			Spec: networkingv1beta1.IngressSpec{
-				TLS: []networkingv1beta1.IngressTLS{
+			Spec: networkingv1.IngressSpec{
+				IngressClassName: pointer.StringPtr("nginx"),
+				TLS: []networkingv1.IngressTLS{
 					{
 						Hosts:      []string{acmeIngressDomain},
 						SecretName: secretname,
 					},
 				},
-				Rules: []networkingv1beta1.IngressRule{
+				Rules: []networkingv1.IngressRule{
 					{
 						Host: acmeIngressDomain,
-						IngressRuleValue: networkingv1beta1.IngressRuleValue{
-							HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-								Paths: []networkingv1beta1.HTTPIngressPath{
+						IngressRuleValue: networkingv1.IngressRuleValue{
+							HTTP: &networkingv1.HTTPIngressRuleValue{
+								Paths: []networkingv1.HTTPIngressPath{
 									{
 										Path: "/",
-										Backend: networkingv1beta1.IngressBackend{
-											ServiceName: "doesnotexist",
-											ServicePort: intstr.FromInt(443),
+										Backend: networkingv1.IngressBackend{
+											Service: &networkingv1.IngressServiceBackend{
+												Name: "doesnotexist",
+												Port: networkingv1.ServiceBackendPort{
+													Number: 443,
+												},
+											},
 										},
 									},
 								},

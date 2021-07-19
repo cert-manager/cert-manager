@@ -30,11 +30,10 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/gateway-api/apis/v1alpha1"
@@ -417,30 +416,35 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
-func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1beta1.Ingress {
-	return &networkingv1beta1.Ingress{
+func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1.Ingress {
+	return &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Annotations: annotations,
 		},
-		Spec: networkingv1beta1.IngressSpec{
-			TLS: []networkingv1beta1.IngressTLS{
+		Spec: networkingv1.IngressSpec{
+			TLS: []networkingv1.IngressTLS{
 				{
 					Hosts:      dnsNames,
 					SecretName: secretName,
 				},
 			},
-			Rules: []networkingv1beta1.IngressRule{
+			Rules: []networkingv1.IngressRule{
 				{
 					Host: dnsNames[0],
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-							Paths: []networkingv1beta1.HTTPIngressPath{
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
 								{
 									Path: "/",
-									Backend: networkingv1beta1.IngressBackend{
-										ServiceName: "dummy-service",
-										ServicePort: intstr.FromInt(80),
+									PathType: pathTypePrefix(),
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: "http",
+											Port: networkingv1.ServiceBackendPort{
+												Number: 80,
+											},
+										},
 									},
 								},
 							},
@@ -450,6 +454,11 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 			},
 		},
 	}
+}
+
+func pathTypePrefix() *networkingv1.PathType {
+	p := networkingv1.PathTypePrefix
+	return &p
 }
 
 func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) (*gwapiv1alpha1.Gateway, *gwapiv1alpha1.HTTPRoute) {
