@@ -28,8 +28,11 @@ To install the chart with the release name `my-release`:
 ## Add the Jetstack Helm repository
 $ helm repo add jetstack https://charts.jetstack.io
 
-## Install the cert-manager helm chart
+## Install the cert-manager helm2 chart
 $ helm install --name my-release --namespace cert-manager jetstack/cert-manager
+
+## Install the cert-manager helm3 chart
+$ helm install --namespace cert-manager my-release jetstack/cert-manager
 ```
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
