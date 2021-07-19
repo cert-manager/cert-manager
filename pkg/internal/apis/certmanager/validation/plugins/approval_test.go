@@ -33,9 +33,9 @@ import (
 	coretesting "k8s.io/client-go/testing"
 
 	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	pluginsfake "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins/fake"
 	internalcmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/webhook"
+	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
 )
 
 var (
@@ -54,7 +54,7 @@ var (
 	}
 
 	expNoDiscovery = func(t *testing.T) discovery.DiscoveryInterface {
-		return pluginsfake.NewDiscovery().
+		return discoveryfake.NewDiscovery().
 			WithServerGroups(expNoServerGroups(t)).
 			WithServerResourcesForGroupVersion(expNoServerResourcesForGroupVersion(t))
 	}
@@ -147,7 +147,7 @@ func TestValidate(t *testing.T) {
 			newCR:       approvedCR,
 			sarreaction: expNoSARReaction,
 			discoverclient: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
@@ -175,7 +175,7 @@ func TestValidate(t *testing.T) {
 			oldCR: baseCR,
 			newCR: approvedCR,
 			discoverclient: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
@@ -229,7 +229,7 @@ func TestValidate(t *testing.T) {
 			oldCR: baseCR,
 			newCR: approvedCR,
 			discoverclient: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
@@ -683,7 +683,7 @@ func TestSignerResource(t *testing.T) {
 			},
 
 			client: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return nil, errors.New("this is an error")
 					}).
@@ -708,7 +708,7 @@ func TestSignerResource(t *testing.T) {
 			},
 
 			client: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
@@ -738,7 +738,7 @@ func TestSignerResource(t *testing.T) {
 			},
 
 			client: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
@@ -776,7 +776,7 @@ func TestSignerResource(t *testing.T) {
 			},
 
 			client: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
@@ -824,7 +824,7 @@ func TestSignerResource(t *testing.T) {
 			},
 
 			client: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{
@@ -880,7 +880,7 @@ func TestSignerResource(t *testing.T) {
 			},
 
 			client: func(t *testing.T) discovery.DiscoveryInterface {
-				return pluginsfake.NewDiscovery().
+				return discoveryfake.NewDiscovery().
 					WithServerGroups(func() (*metav1.APIGroupList, error) {
 						return &metav1.APIGroupList{
 							Groups: []metav1.APIGroup{

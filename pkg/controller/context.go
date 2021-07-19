@@ -55,8 +55,8 @@ type Context struct {
 	CMClient clientset.Interface
 	// GWClient is a GatewayAPI clientset.
 	GWClient gwclient.Interface
-	// Discovery is a discovery interface
-	Discovery discovery.DiscoveryInterface
+	// DiscoveryClient is a discovery interface. Usually set to Client.Discovery unless a fake client is in use.
+	DiscoveryClient discovery.DiscoveryInterface
 
 	// Recorder to record events to
 	Recorder record.EventRecorder

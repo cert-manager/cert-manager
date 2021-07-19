@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/jetstack/cert-manager/pkg/controller"
-	fakediscovery "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins/fake"
+	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
 )
 
 func TestNewLister(t *testing.T) {
@@ -49,7 +49,7 @@ func TestNewLister(t *testing.T) {
 		CMClient:    nil,
 		GWClient:    nil,
 		Recorder:    nil,
-		Discovery: fakediscovery.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+		DiscoveryClient: discoveryfake.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
 			if groupVersion == networkingv1.SchemeGroupVersion.String() {
 				return &metav1.APIResourceList{
 					TypeMeta:     metav1.TypeMeta{},

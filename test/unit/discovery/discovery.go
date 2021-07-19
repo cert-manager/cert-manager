@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fake
+package discovery
 
 import (
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"

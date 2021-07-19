@@ -20,6 +20,8 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"sync"
+	"sync/atomic"
 
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -31,6 +33,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack/cert-manager/pkg/controller"
+)
+
+// keep an internal cache of known API types so calls to the discovery API are kept to a minimum
+// https://pkg.go.dev/sync/atomic#example-Value-ReadMostly
+var (
+	knownAPIVersionCache atomic.Value
+	cacheLock            sync.Mutex
 )
 
 // InternalIngressCreateUpdater mimics a client-go networking/v1 or
@@ -63,13 +72,13 @@ type InternalIngressNamespaceLister interface {
 // NewListerInformer returns an InternalIngressLister configured for v1 or v1beta1 ingresses depending on the
 // API Versions available in the discovery client.
 func NewListerInformer(ctx *controller.Context) (InternalIngressLister, cache.SharedIndexInformer, error) {
-	if hasVersion(ctx.Discovery, networkingv1.SchemeGroupVersion.String()) {
+	if hasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()) {
 		return &v1Lister{
 				lister: ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Lister(),
 			},
 			ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Informer(),
 			nil
-	} else if hasVersion(ctx.Discovery, networkingv1beta1.SchemeGroupVersion.String()) {
+	} else if hasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()) {
 		sch := runtime.NewScheme()
 		clientgoscheme.AddToScheme(sch)
 		return &v1beta1Lister{
@@ -85,11 +94,11 @@ func NewListerInformer(ctx *controller.Context) (InternalIngressLister, cache.Sh
 // NewCreateUpdater returns an InternalIngressCreateUpdater configured for v1 or v1beta1 ingresses depending on the
 // versions available in the discovery client
 func NewCreateUpdater(ctx *controller.Context, discoveryOverrides ...discovery.DiscoveryInterface) (InternalIngressCreateUpdater, error) {
-	if hasVersion(ctx.Discovery, networkingv1.SchemeGroupVersion.String()) {
+	if hasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()) {
 		return &v1CreaterUpdater{
 			client: ctx.Client,
 		}, nil
-	} else if hasVersion(ctx.Discovery, networkingv1beta1.SchemeGroupVersion.String()) {
+	} else if hasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()) {
 		sch := runtime.NewScheme()
 		clientgoscheme.AddToScheme(sch)
 		return &v1beta1CreaterUpdater{
@@ -102,12 +111,33 @@ func NewCreateUpdater(ctx *controller.Context, discoveryOverrides ...discovery.D
 }
 
 func hasVersion(d discovery.DiscoveryInterface, GroupVersion string) bool {
+	// check whether the GroupVersion is already known
+	knownVersions := knownAPIVersionCache.Load().(map[string]bool)
+	if knownVersions[GroupVersion] == true {
+		return true
+	}
+
 	resourceList, err := d.ServerResourcesForGroupVersion(GroupVersion)
 	if err != nil {
 		return false
 	}
 	if len(resourceList.APIResources) > 0 {
+		// Now we know the APIServer supports this GroupVersion, store the result atomically
+		// in the knownVersions cache. Lock, get the latest copy, atomically update.
+		cacheLock.Lock()
+		defer cacheLock.Unlock()
+		oldCache := knownAPIVersionCache.Load().(map[string]bool)
+		newCache := make(map[string]bool)
+		for k, v := range oldCache {
+			newCache[k] = v
+		}
+		newCache[GroupVersion] = true
+		knownAPIVersionCache.Store(newCache)
 		return true
 	}
 	return false
+}
+
+func init() {
+	knownAPIVersionCache.Store(make(map[string]bool))
 }

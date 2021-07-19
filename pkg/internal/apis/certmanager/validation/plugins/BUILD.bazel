@@ -31,9 +31,9 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/internal/apis/certmanager:go_default_library",
-        "//pkg/internal/apis/certmanager/validation/plugins/fake:go_default_library",
         "//pkg/internal/apis/meta:go_default_library",
         "//pkg/webhook:go_default_library",
+        "//test/unit/discovery:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_api//authentication/v1:go_default_library",
         "@io_k8s_api//authorization/v1:go_default_library",
@@ -55,10 +55,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//pkg/internal/apis/certmanager/validation/plugins/fake:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

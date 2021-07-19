@@ -93,6 +93,7 @@ filegroup(
         "//test/integration:all-srcs",
         "//test/internal/apiserver:all-srcs",
         "//test/unit/coreclients:all-srcs",
+        "//test/unit/discovery:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",
         "//tools/cobra:all-srcs",

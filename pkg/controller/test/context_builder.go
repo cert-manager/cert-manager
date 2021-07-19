@@ -41,10 +41,10 @@ import (
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	fakediscovery "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins/fake"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
+	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
 )
 
 func init() {
@@ -113,7 +113,7 @@ func (b *Builder) Init() {
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
-	b.Discovery = fakediscovery.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
+	b.DiscoveryClient = discoveryfake.NewDiscovery().WithServerResourcesForGroupVersion(func(groupVersion string) (*metav1.APIResourceList, error) {
 		if groupVersion == networkingv1.SchemeGroupVersion.String() {
 			return &metav1.APIResourceList{
 				TypeMeta:     metav1.TypeMeta{},

@@ -436,7 +436,7 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 						HTTP: &networkingv1.HTTPIngressRuleValue{
 							Paths: []networkingv1.HTTPIngressPath{
 								{
-									Path: "/",
+									Path:     "/",
 									PathType: pathTypePrefix(),
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{

@@ -31,7 +31,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/controller:go_default_library",
-        "//pkg/internal/apis/certmanager/validation/plugins/fake:go_default_library",
+        "//test/unit/discovery:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//networking/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
