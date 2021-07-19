@@ -18,10 +18,10 @@ package controller
 
 import (
 	"context"
-	"k8s.io/client-go/discovery"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/client-go/discovery"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
