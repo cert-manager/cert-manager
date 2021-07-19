@@ -112,8 +112,8 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 			message := fmt.Sprintf("Failed to parse %q annotation: %s", experimentalapi.CertificateSigningRequestVenafiCustomFieldsAnnotationKey, err)
 			v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorCustomFields", message)
 			util.CertificateSigningRequestSetFailed(csr, "ErrorCustomFields", message)
-			_, err = v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-			return err
+			_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+			return userr
 		}
 	}
 
@@ -123,8 +123,8 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		log.Error(err, message)
 		v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorParseDuration", message)
 		util.CertificateSigningRequestSetFailed(csr, "ErrorParseDuration", message)
-		_, err := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return err
+		_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		return userr
 	}
 
 	// The signing process with Venafi is slow. The "pickupID" allows us to track
@@ -143,16 +143,16 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 				log.Error(err, "")
 				v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorCustomFields", err.Error())
 				util.CertificateSigningRequestSetFailed(csr, "ErrorCustomFields", err.Error())
-				_, err := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-				return err
+				_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+				return userr
 
 			default:
 				message := fmt.Sprintf("Failed to request venafi certificate: %s", err)
 				log.Error(err, message)
 				v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorRequest", message)
 				util.CertificateSigningRequestSetFailed(csr, "ErrorRequest", message)
-				_, err := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-				return err
+				_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+				return userr
 			}
 		}
 
@@ -160,17 +160,23 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 			csr.Annotations = make(map[string]string)
 		}
 		csr.Annotations[experimentalapi.CertificateSigningRequestVenafiPickupIDAnnotationKey] = pickupID
-		_, err = v.certClient.Update(ctx, csr, metav1.UpdateOptions{})
-		return err
+		_, uerr := v.certClient.Update(ctx, csr, metav1.UpdateOptions{})
+		return uerr
 	}
 
 	certPem, err := client.RetrieveCertificate(pickupID, csr.Spec.Request, duration, customFields)
 	if err != nil {
 		switch err.(type) {
-		case endpoint.ErrCertificatePending, endpoint.ErrRetrieveCertificateTimeout:
+		case endpoint.ErrCertificatePending:
 			message := "Venafi certificate still in a pending state, waiting"
-			log.Error(err, message)
+			log.V(2).Info(message, "error", err.Error())
 			v.recorder.Event(csr, corev1.EventTypeNormal, "IssuancePending", message)
+			return err
+
+		case endpoint.ErrRetrieveCertificateTimeout:
+			message := "Venafi retrieve certificate timeout, retrying"
+			log.Error(err, message)
+			v.recorder.Event(csr, corev1.EventTypeWarning, "RetrieveCertificateTimeout", message)
 			return err
 
 		default:
@@ -187,8 +193,8 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		log.Error(err, message)
 		v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorParse", message)
 		util.CertificateSigningRequestSetFailed(csr, "ErrorParse", message)
-		_, err := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return err
+		_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		return userr
 	}
 
 	csr.Status.Certificate = bundle.ChainPEM

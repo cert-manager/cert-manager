@@ -107,6 +107,9 @@ func (c *cloud) createIssuer(f *framework.Framework) string {
 	return fmt.Sprintf("issuers.cert-manager.io/%s.%s", issuer.Namespace, issuer.Name)
 }
 
+// createClusterIssuer creates and returns name of a Venafi Cloud
+// ClusterIssuer. The name is of the form
+// "clusterissuers.cert-manager.io/issuer-ab3de1".
 func (c *cloud) createClusterIssuer(f *framework.Framework) string {
 	By("Creating a Venafi Cloud ClusterIssuer")
 
