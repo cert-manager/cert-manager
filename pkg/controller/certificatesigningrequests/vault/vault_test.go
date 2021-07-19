@@ -99,10 +99,13 @@ func TestProcessItem(t *testing.T) {
 		clientBuilder internalvault.ClientBuilder
 		expectedErr   bool
 	}{
-		"a CertificateSigningRequest without an approved condition should do nothing": {
+		"a CertificateSigningRequest without an approved condition should fire an event": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal WaitingApproval Waiting for the Approved condition before issuing",
+				},
 			},
 		},
 		"a CertificateSigningRequest with a denied condition should do nothing": {

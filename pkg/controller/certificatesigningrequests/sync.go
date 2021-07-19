@@ -58,7 +58,12 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 		dbg.Info("certificate signing request has failed so skipping processing")
 		return nil
 	}
+	if util.CertificateSigningRequestIsDenied(csr) {
+		dbg.Info("certificate signing request has been denied so skipping processing")
+		return nil
+	}
 	if !util.CertificateSigningRequestIsApproved(csr) {
+		c.recorder.Event(csr, corev1.EventTypeNormal, "WaitingApproval", "Waiting for the Approved condition before issuing")
 		dbg.Info("certificate signing request is not approved so skipping processing")
 		return nil
 	}
