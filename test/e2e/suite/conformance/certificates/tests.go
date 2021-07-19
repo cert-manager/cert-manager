@@ -22,13 +22,11 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -91,6 +89,32 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
+
+		s.it(f, "should issue a CA certificate with the CA basicConstraint set", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					IsCA:       true,
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.IssueCAFeature)
 
 		s.it(f, "should issue an ECDSA, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{

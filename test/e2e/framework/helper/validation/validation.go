@@ -37,6 +37,7 @@ func DefaultCertificateSet() []certificates.ValidationFunc {
 		certificates.ExpectValidNotAfterDate,
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectConditionReadyObservedGeneration,
+		certificates.ExpectValidBasicConstraints,
 	}
 }
 
@@ -71,6 +72,7 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectValidNotAfterDate,
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectConditionReadyObservedGeneration,
+		certificates.ExpectValidBasicConstraints,
 	}
 
 	if !fs.Contains(featureset.URISANsFeature) {
@@ -83,6 +85,7 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 
 	if !fs.Contains(featureset.SaveCAToSecret) {
 		out = append(out, certificates.ExpectCorrectTrustChain)
+
 		if !fs.Contains(featureset.SaveRootCAToSecret) {
 			out = append(out, certificates.ExpectCARootCertificate)
 		}

@@ -127,4 +127,8 @@ const (
 	// Ed25519FeatureSet denotes whether the target issuer is able to sign
 	// certificates with an Ed25519 private key.
 	Ed25519FeatureSet Feature = "Ed25519"
+
+	// IssueCAFeature denotes whether the target issuer is able to issue CA
+	// certificates (i.e., certificates for which the CA basicConstraint is true)
+	IssueCAFeature Feature = "IssueCA"
 )
