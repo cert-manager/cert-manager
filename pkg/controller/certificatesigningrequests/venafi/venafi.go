@@ -83,7 +83,8 @@ func NewVenafi(ctx *controllerpkg.Context) *Venafi {
 // trigger a retry.
 // Since this signer takes some time to sign the request, this controller will
 // set a "pick ID" annotation value that is used to fetch the latest state of
-// the request in subsequent re-syncs.
+// the request in subsequent re-syncs. The re-syncs are triggered by using the
+// workqueue's back-off mechanism.
 func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningRequest, issuerObj cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx, "sign")
 	log = logf.WithRelatedResource(log, issuerObj)
