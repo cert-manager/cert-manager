@@ -18,19 +18,19 @@ package ingress
 
 import (
 	"context"
-	fakediscovery "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins/fake"
-	networkingv1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	networkingv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/jetstack/cert-manager/pkg/controller"
+	fakediscovery "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins/fake"
 )
 
 func TestNewLister(t *testing.T) {

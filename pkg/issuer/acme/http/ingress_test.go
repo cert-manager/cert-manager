@@ -232,7 +232,6 @@ func TestCleanupIngresses(t *testing.T) {
 								Service: &v1.IngressServiceBackend{
 									Name: "",
 									Port: v1.ServiceBackendPort{
-										Name:   "http",
 										Number: 8080,
 									},
 								},
@@ -249,7 +248,6 @@ func TestCleanupIngresses(t *testing.T) {
 														Service: &v1.IngressServiceBackend{
 															Name: "solversvc",
 															Port: v1.ServiceBackendPort{
-																Name:   "http",
 																Number: 8081,
 															},
 														},
@@ -313,7 +311,6 @@ func TestCleanupIngresses(t *testing.T) {
 								Service: &v1.IngressServiceBackend{
 									Name: "testsvc",
 									Port: v1.ServiceBackendPort{
-										Name:   "http",
 										Number: 8080,
 									},
 								},
@@ -330,7 +327,6 @@ func TestCleanupIngresses(t *testing.T) {
 														Service: &v1.IngressServiceBackend{
 															Name: "solversvc",
 															Port: v1.ServiceBackendPort{
-																Name:   "http",
 																Number: 8081,
 															},
 														},
@@ -351,7 +347,6 @@ func TestCleanupIngresses(t *testing.T) {
 														Service: &v1.IngressServiceBackend{
 															Name: "real-backend-svc",
 															Port: v1.ServiceBackendPort{
-																Name:   "http",
 																Number: 8081,
 															},
 														},
