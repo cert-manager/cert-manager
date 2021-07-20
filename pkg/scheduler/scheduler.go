@@ -27,7 +27,7 @@ import (
 // This little bit of wrapping needs to be done because go doesn't do
 // covariance, but it does coerce *time.Timer into stoppable implicitly if we
 // write it out like so.
-var afterFunc = func(c clock.Clock, d time.Duration, f func()) stoppable {
+func afterFunc(c clock.Clock, d time.Duration, f func()) stoppable {
 	t := c.NewTimer(d)
 
 	go func() {
@@ -66,6 +66,9 @@ type scheduledWorkQueue struct {
 	clock       clock.Clock
 	work        map[interface{}]stoppable
 	workLock    sync.Mutex
+
+	// Testing purposes.
+	afterFunc func(clock.Clock, time.Duration, func()) stoppable
 }
 
 // NewScheduledWorkQueue will create a new workqueue with the given processFunc
