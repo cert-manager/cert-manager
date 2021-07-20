@@ -396,3 +396,66 @@ cainjector:
     # annotations: {}
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
+
+startupapicheck:
+  enabled: true
+
+  # Pod Security Context to be set on the cainjector component Pod
+  # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  securityContext:
+    runAsNonRoot: true
+
+  # Timeout for 'kubectl check api' command
+  timeout: 1m
+
+  # Job backoffLimit
+  backoffLimit: 4
+
+  # Optional additional annotations to add to the cainjector Job
+  # jobAnnotations: {}
+
+  # Optional additional annotations to add to the cainjector Pods
+  # podAnnotations: {}
+
+  # Optional additional arguments for cainjector
+  extraArgs: []
+
+  resources: {}
+    # requests:
+    #   cpu: 10m
+    #   memory: 32Mi
+
+  nodeSelector: {}
+
+  affinity: {}
+
+  tolerations: []
+
+  # Optional additional labels to add to the CA Injector Pods
+  podLabels: {}
+
+  image:
+    repository: quay.io/jetstack/cert-manager-ctl
+    # You can manage a registry with
+    # registry: quay.io
+    # repository: jetstack/cert-manager-ctl
+
+    # Override the image tag to deploy by setting this variable.
+    # If no value is set, the chart's appVersion will be used.
+    # tag: canary
+
+    # Setting a digest will override any tag
+    # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+
+    pullPolicy: IfNotPresent
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    # name: ""
+    # Optional additional annotations to add to the controller's ServiceAccount
+    # annotations: {}
+    # Automount API credentials for a Service Account.
+    automountServiceAccountToken: true

@@ -45,6 +45,7 @@ load_image "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-ctl:${APP_VERSION}" &
 wait
 
 # Ensure the namespace exists, and if not create it
@@ -53,10 +54,8 @@ kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 # Build the Helm chart package .tgz
 bazel build //deploy/charts/cert-manager
 
-# Pre-compile the kubectl plugin, so it can quickly check the api status
-bazel build //hack/bin:kubectl-cert_manager
-
 # Upgrade or install cert-manager
+# --wait flag should wait for Job to complete
 helm upgrade \
     --install \
     --wait \
@@ -70,4 +69,5 @@ helm upgrade \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 
-kubectl cert-manager check api --wait=1m -v
+# Sanity check (fail if api is not yet available)
+kubectl cert-manager check api
