@@ -53,6 +53,7 @@ func (c *Controller) Sync(ctx context.Context, cr *cmapi.CertificateRequest) (er
 	}
 
 	// Update the CertificateRequest approved condition to true.
+	cr = cr.DeepCopy()
 	apiutil.SetCertificateRequestCondition(cr,
 		cmapi.CertificateRequestConditionApproved,
 		cmmeta.ConditionTrue,
