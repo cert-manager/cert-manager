@@ -39,15 +39,15 @@ func Test_afterFunc(t *testing.T) {
 		// huge number of afterFunc and check that the number of goroutines before
 		// and after more or less match.
 		expected := runtime.NumGoroutine()
-		var items []stoppable
+		var cancels []func()
 		for i := 1; i <= 10000; i++ {
-			items = append(items, afterFunc(clock.RealClock{}, 1*time.Hour, func() {
+			cancels = append(cancels, afterFunc(clock.RealClock{}, 1*time.Hour, func() {
 				t.Errorf("should never be called")
 			}))
 		}
 
-		for _, item := range items {
-			item.Stop()
+		for _, cancel := range cancels {
+			cancel()
 		}
 
 		// We don't know when the goroutines will actually finish.
@@ -198,7 +198,7 @@ func newMockAfter() *mockAfter {
 	}
 }
 
-func (m *mockAfter) AfterFunc(c clock.Clock, d time.Duration, f func()) stoppable {
+func (m *mockAfter) AfterFunc(c clock.Clock, d time.Duration, f func()) func() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -207,7 +207,9 @@ func (m *mockAfter) AfterFunc(c clock.Clock, d time.Duration, f func()) stoppabl
 		t: m.currentTime.Add(d),
 	}
 	m.queue = append(m.queue, item)
-	return item
+	return func() {
+		item.Stop()
+	}
 }
 
 func (m *mockAfter) warp(d time.Duration) {
