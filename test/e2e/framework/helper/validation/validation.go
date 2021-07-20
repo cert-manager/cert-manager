@@ -49,7 +49,6 @@ func DefaultCertificateSigningRequestSet() []certificatesigningrequests.Validati
 		certificatesigningrequests.ExpectCertificateURIsToMatch,
 		certificatesigningrequests.ExpectCertificateIPsToMatch,
 		certificatesigningrequests.ExpectValidCommonName,
-		certificatesigningrequests.ExpectValidDuration,
 		certificatesigningrequests.ExpectKeyUsageUsageDigitalSignature,
 		certificatesigningrequests.ExpectEmailsToMatch,
 		certificatesigningrequests.ExpectIsCA,
@@ -92,5 +91,11 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 }
 
 func CertificateSigningRequestSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certificatesigningrequests.ValidationFunc {
-	return DefaultCertificateSigningRequestSet()
+	validations := DefaultCertificateSigningRequestSet()
+
+	if !fs.Contains(featureset.DurationFeature) {
+		validations = append(validations, certificatesigningrequests.ExpectValidDuration)
+	}
+
+	return validations
 }

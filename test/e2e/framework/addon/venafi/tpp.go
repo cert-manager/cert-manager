@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package addon
+package venafi
 
 import (
 	"context"
@@ -30,23 +30,23 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
 
-type VenafiCloud struct {
+type VenafiTPP struct {
 	Base   *base.Base
 	config *config.Config
 
 	// Namespace to create supporting credential resources in
 	Namespace string
 
-	details CloudDetails
+	details TPPDetails
 
 	createdSecret *corev1.Secret
 }
 
-type CloudDetails struct {
+type TPPDetails struct {
 	issuerTemplate cmapi.VenafiIssuer
 }
 
-func (v *VenafiCloud) Setup(cfg *config.Config) error {
+func (v *VenafiTPP) Setup(cfg *config.Config) error {
 	v.config = cfg
 
 	if v.Base == nil {
@@ -57,24 +57,35 @@ func (v *VenafiCloud) Setup(cfg *config.Config) error {
 		}
 	}
 
-	if v.config.Addons.Venafi.Cloud.Zone == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi Cloud Zone must be set"))
+	if v.config.Addons.Venafi.TPP.URL == "" {
+		return errors.NewSkip(fmt.Errorf("Venafi TPP URL must be set"))
 	}
-	if v.config.Addons.Venafi.Cloud.APIToken == "" {
-		return errors.NewSkip(fmt.Errorf("Venafi Cloud APIToken must be set"))
+	if v.config.Addons.Venafi.TPP.Zone == "" {
+		return errors.NewSkip(fmt.Errorf("Venafi TPP Zone must be set"))
+	}
+
+	if v.config.Addons.Venafi.TPP.AccessToken == "" {
+		if v.config.Addons.Venafi.TPP.Username == "" {
+			return errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing username"))
+		}
+		if v.config.Addons.Venafi.TPP.Password == "" {
+			return errors.NewSkip(fmt.Errorf("Venafi TPP requires either an access-token or username-password to be set: missing password"))
+		}
 	}
 
 	return nil
 }
 
-func (v *VenafiCloud) Provision() error {
+func (v *VenafiTPP) Provision() error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-e2e-venafi-cloud-",
+			GenerateName: "cm-e2e-venafi-",
 			Namespace:    v.Namespace,
 		},
 		Data: map[string][]byte{
-			"apikey": []byte(v.config.Addons.Venafi.Cloud.APIToken),
+			"username":     []byte(v.config.Addons.Venafi.TPP.Username),
+			"password":     []byte(v.config.Addons.Venafi.TPP.Password),
+			"access-token": []byte(v.config.Addons.Venafi.TPP.AccessToken),
 		},
 	}
 
@@ -85,35 +96,33 @@ func (v *VenafiCloud) Provision() error {
 
 	v.createdSecret = s
 	v.details.issuerTemplate = cmapi.VenafiIssuer{
-		Zone: v.config.Addons.Venafi.Cloud.Zone,
-		Cloud: &cmapi.VenafiCloud{
-			APITokenSecretRef: cmmeta.SecretKeySelector{
-				LocalObjectReference: cmmeta.LocalObjectReference{
-					Name: s.Name,
-				},
-				Key: "apikey",
+		Zone: v.config.Addons.Venafi.TPP.Zone,
+		TPP: &cmapi.VenafiTPP{
+			URL: v.config.Addons.Venafi.TPP.URL,
+			CredentialsRef: cmmeta.LocalObjectReference{
+				Name: s.Name,
 			},
 		},
 	}
 	return nil
 }
 
-func (v *VenafiCloud) Details() *CloudDetails {
+func (v *VenafiTPP) Details() *TPPDetails {
 	return &v.details
 }
 
-func (v *VenafiCloud) Deprovision() error {
+func (v *VenafiTPP) Deprovision() error {
 	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(context.TODO(), v.createdSecret.Name, metav1.DeleteOptions{})
 }
 
-func (v *VenafiCloud) SupportsGlobal() bool {
+func (v *VenafiTPP) SupportsGlobal() bool {
 	return true
 }
 
-func (t *CloudDetails) BuildIssuer() *cmapi.Issuer {
+func (t *TPPDetails) BuildIssuer() *cmapi.Issuer {
 	return &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-cloud-",
+			GenerateName: "venafi-tpp-",
 		},
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
@@ -123,10 +132,10 @@ func (t *CloudDetails) BuildIssuer() *cmapi.Issuer {
 	}
 }
 
-func (t *CloudDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
+func (t *TPPDetails) BuildClusterIssuer() *cmapi.ClusterIssuer {
 	return &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "venafi-cloud-",
+			GenerateName: "venafi-tpp-",
 		},
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{

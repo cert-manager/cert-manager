@@ -38,6 +38,11 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 	log := logf.WithResource(logf.FromContext(ctx), csr).WithValues("signerName", csr.Spec.SignerName)
 	dbg := log.V(logf.DebugLevel)
 
+	// Deep copy CertificateSigningRequest to prevent writing to the shared local
+	// cache making it invalid. Done early in the sync to avoid accidental
+	// invalidation by future contributions.
+	csr = csr.DeepCopy()
+
 	ref, ok := util.SignerIssuerRefFromSignerName(csr.Spec.SignerName)
 	if !ok {
 		dbg.Info("certificate signing request has malformed signer name,", "signerName", csr.Spec.SignerName)

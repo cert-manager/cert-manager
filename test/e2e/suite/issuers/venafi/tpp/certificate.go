@@ -28,7 +28,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
+	vaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/venafi"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 

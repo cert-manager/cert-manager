@@ -70,6 +70,8 @@ type connector interface {
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
+// New constructs a Venafi client Interface. Errors may be network errors and
+// should be considered for retrying.
 func New(namespace string, secretsLister corelisters.SecretLister, issuer cmapi.GenericIssuer) (Interface, error) {
 	cfg, err := configForIssuer(issuer, secretsLister, namespace)
 	if err != nil {
