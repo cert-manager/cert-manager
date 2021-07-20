@@ -23,36 +23,6 @@ import (
 	"k8s.io/utils/clock"
 )
 
-// We are writting our own time.AfterFunc to be able to mock the clock. The
-// cancel function can be called concurrently.
-func afterFunc(c clock.Clock, d time.Duration, f func()) (cancel func()) {
-	t := c.NewTimer(d)
-	cancelCh := make(chan struct{})
-	cancelOnce := sync.Once{}
-	cancel = func() {
-		t.Stop()
-		cancelOnce.Do(func() {
-			close(cancelCh)
-		})
-	}
-
-	go func() {
-		defer cancel()
-
-		select {
-		case <-t.C():
-			// We don't need to check whether the channel has returned a zero
-			// value since t.C is never closed as per the timer.Stop
-			// documentation.
-			f()
-		case <-cancelCh:
-			return
-		}
-	}()
-
-	return cancel
-}
-
 // ProcessFunc is a function to process an item in the work queue.
 type ProcessFunc func(interface{})
 
@@ -117,4 +87,35 @@ func (s *scheduledWorkQueue) Forget(obj interface{}) {
 		cancel()
 		delete(s.work, obj)
 	}
+}
+
+// We are writting our own time.AfterFunc to be able to mock the clock. The
+// cancel function can be called concurrently.
+func afterFunc(c clock.Clock, d time.Duration, f func()) (cancel func()) {
+	t := c.NewTimer(d)
+
+	// The caller expects `cancel` to stop the goroutine. Since `t.C` is not
+	// closed after calling `t.Stop`, we need to create our own `cancelCh`
+	// channel to stop the goroutine.
+	cancelCh := make(chan struct{})
+	cancelOnce := sync.Once{}
+	cancel = func() {
+		t.Stop()
+		cancelOnce.Do(func() {
+			close(cancelCh)
+		})
+	}
+
+	go func() {
+		defer cancel()
+
+		select {
+		case <-t.C():
+			f()
+		case <-cancelCh:
+			return
+		}
+	}()
+
+	return cancel
 }
