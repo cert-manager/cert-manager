@@ -33,23 +33,6 @@ bazel build //hack/bin:helm //hack/bin:kind //hack/bin:ytt //hack/bin:jq //hack/
 bindir="$(bazel info bazel-bin)"
 export PATH="${bindir}/hack/bin/:$PATH"
 
-apply_cm_resources() {
-	selector="$1"
-	# If there is an actual error, this won't work with set -o errexit
-	set +e
-	count=0
-	until kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" \
-		--selector=test="$1"; do
-	((count++))
-	if [[ $count -gt 30 ]]; then
-		echo "failed to apply cert-manger resources"
-		exit 1
-	fi
-	sleep 1
-	done
-	set -e
-}
-
 echo "Testing upgrade from ${LATEST_RELEASE} to ${CURRENT_VERSION}"
 
 # Namespace to deploy into
@@ -82,8 +65,11 @@ helm upgrade \
     "$RELEASE_NAME" \
     "$HELM_CHART"
 
+# Wait for the cert-manager api to be available
+kubectl cert-manager check api --wait=1m -v
+
 # Create a cert-manager issuer and cert
-apply_cm_resources "first"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="first"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test1 --timeout=180s
@@ -93,11 +79,14 @@ kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 echo "Upgrading cert-manager Helm release to ${CURRENT_VERSION}..."
 "${REPO_ROOT}/devel/addon/certmanager/install.sh"
 
+# Wait for the cert-manager api to be available
+kubectl cert-manager check api --wait=1m -v
+
 # Test that the existing cert-manager resources can still be retrieved
 kubectl get issuer/selfsigned-issuer cert/test1
 
 # # Create another certificate
-apply_cm_resources "second"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="second"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test2 --timeout=180s
@@ -129,8 +118,11 @@ kubectl wait \
 	--timeout=180s deployment/cert-manager-webhook \
 	--namespace "${NAMESPACE}"
 
+# Wait for the cert-manager api to be available
+kubectl cert-manager check api --wait=1m -v
+
 # Create a cert-manager issuer and cert
-apply_cm_resources "first"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="first"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test1 --timeout=180s
@@ -179,11 +171,14 @@ until $rollout_cmd; do
   sleep 10
 done
 
+# Wait for the cert-manager api to be available
+kubectl cert-manager check api --wait=1m -v
+
 # Test that the existing cert-manager resources can still be retrieved
 kubectl get issuer/selfsigned-issuer cert/test1
 
 # # Create another certificate
-apply_cm_resources "second"
+kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="second"
 
 # Ensure cert becomes ready
 kubectl wait --for=condition=Ready cert/test2 --timeout=180s
