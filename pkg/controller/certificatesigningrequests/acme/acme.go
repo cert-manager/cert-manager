@@ -51,7 +51,7 @@ const (
 
 // ACME is a Kubernetes CertificateSigningRequest controller, responsible for
 // signing CertificateSigningRequests that reference a cert-manager ACME Issuer
-// or ClusterIssuer
+// or ClusterIssuer.
 type ACME struct {
 	issuerOptions controllerpkg.IssuerOptions
 
@@ -63,7 +63,6 @@ type ACME struct {
 }
 
 func init() {
-	// create certificate request controller for acme issuer
 	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CSRControllerName).
 			For(certificatesigningrequests.New(apiutil.IssuerACME, NewACME(ctx), ctx.SharedInformerFactory.Acme().V1().Orders().Informer())).
@@ -91,18 +90,19 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningRequest, issuerObj cmapi.GenericIssuer) error {
 	log := logf.FromContext(ctx, "sign")
 
-	// If we can't decode the CSR PEM we have to hard fail
+	// If we can't decode the CSR PEM we have to hard fail.
 	req, err := pki.DecodeX509CertificateRequestBytes(csr.Spec.Request)
 	if err != nil {
 		message := fmt.Sprintf("Failed to decode CSR in spec.request: %s", err)
 		log.Error(err, message)
 		a.recorder.Event(csr, corev1.EventTypeWarning, "RequestParsingError", message)
 		ctrlutil.CertificateSigningRequestSetFailed(csr, "RequestParsingError", message)
-		_, err = a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return err
+		_, uerr := a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		return uerr
 	}
 
-	// If the CommonName is also not present in the DNS names or IP Addresses of the Request then hard fail.
+	// If the CommonName is also not present in the DNS names or IP Addresses of
+	// the Request then hard fail.
 	if len(req.Subject.CommonName) > 0 && !util.Contains(req.DNSNames, req.Subject.CommonName) && !util.Contains(pki.IPAddressesToString(req.IPAddresses), req.Subject.CommonName) {
 		err = fmt.Errorf("%q does not exist in %s or %s", req.Subject.CommonName, req.DNSNames, pki.IPAddressesToString(req.IPAddresses))
 		message := fmt.Sprintf("The CSR PEM requests a commonName that is not present in the list of dnsNames or ipAddresses. If a commonName is set, ACME requires that the value is also present in the list of dnsNames or ipAddresses: %s", err)
@@ -110,8 +110,8 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 		log.Error(err, message)
 		a.recorder.Event(csr, corev1.EventTypeWarning, "InvalidOrder", message)
 		ctrlutil.CertificateSigningRequestSetFailed(csr, "InvalidOrder", message)
-		_, err = a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return err
+		_, uerr := a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		return uerr
 	}
 
 	// If we fail to build the order we have to hard fail.
@@ -122,19 +122,18 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 		log.Error(err, message)
 		a.recorder.Event(csr, corev1.EventTypeWarning, "OrderBuildingError", message)
 		ctrlutil.CertificateSigningRequestSetFailed(csr, "OrderBuildingError", message)
-		_, err = a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return err
+		_, uerr := a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		return uerr
 	}
 
 	order, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
 	if apierrors.IsNotFound(err) {
 		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(ctx, expectedOrder, metav1.CreateOptions{})
 		if err != nil {
-			// Failing to create the order here is most likely network related.
-			// We should backoff and keep trying.
-			message := fmt.Sprintf("Failed create new order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
-			log.Error(err, message)
-			return err
+			// Failing to create the order here is most likely network related. We
+			// should backoff and keep trying.
+			return fmt.Errorf("failed create new order resource %s/%s: %w",
+				expectedOrder.Namespace, expectedOrder.Name, err)
 		}
 
 		message := fmt.Sprintf("Created Order resource %s/%s",
@@ -145,7 +144,7 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 	}
 
 	if err != nil {
-		// We are probably in a network error here so we should backoff and retry
+		// We are probably in a network error here so we should backoff and retry.
 		message := fmt.Sprintf("Failed to get order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
 		log.Error(err, message)
 		return err
@@ -166,11 +165,10 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 		err := fmt.Errorf("order is in %q state: %s", order.Status.State, order.Status.Reason)
 		message := fmt.Sprintf("Failed to wait for order resource %s/%s to become ready: %s", expectedOrder.Namespace, expectedOrder.Name, err)
 
-		log.Error(err, message)
 		a.recorder.Event(csr, corev1.EventTypeWarning, "OrderFailed", message)
 		ctrlutil.CertificateSigningRequestSetFailed(csr, "OrderFailed", message)
-		_, err = a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
-		return err
+		_, uerr := a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		return uerr
 	}
 
 	if order.Status.State != cmacme.Valid {
@@ -197,7 +195,7 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 		a.recorder.Event(csr, corev1.EventTypeWarning, "OrderBadCertificate", message)
 		log.Error(err, "failed to decode x509 certificate data on Order resource.")
 		// Deleting the order here will cause a re-sync since the Order is owned by
-		// this CertificateSigningRequest
+		// this CertificateSigningRequest.
 		return a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
 	}
 
@@ -205,7 +203,7 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 		a.recorder.Event(csr, corev1.EventTypeWarning, "OrderBadCertificate", "Deleting Order as the signed certificate's key does not match the request")
 		log.Error(err, "The public key in Order.Status.Certificate does not match the public key in CertificateSigningRequest.Spec.Request. Deleting the order.")
 		// Deleting the order here will cause a re-sync since the Order is owned by
-		// this CertificateSigningRequest
+		// this CertificateSigningRequest.
 		return a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
 	}
 
@@ -268,15 +266,16 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 	}
 
 	computeNameSpec := spec.DeepCopy()
-	// create a deep copy of the OrderSpec so we can overwrite the Request and NotAfter field
+	// Create a deep copy of the OrderSpec so we can overwrite the Request and
+	// NotAfter field.
 	computeNameSpec.Request = nil
 
 	var hashObj interface{}
 	hashObj = computeNameSpec
 	if len(csr.Name) >= 52 {
-		// Pass a unique struct for hashing so that names at or longer than 52 characters
-		// receive a unique hash. Otherwise, orders will have truncated names with colliding
-		// hashes, possibly leading to non-renewal.
+		// Pass a unique struct for hashing so that names at or longer than 52
+		// characters receive a unique hash. Otherwise, orders will have truncated
+		// names with colliding hashes, possibly leading to non-renewal.
 		hashObj = struct {
 			CSRName string            `json:"certificateSigningRequestName"`
 			Spec    *cmacme.OrderSpec `json:"spec"`
@@ -290,9 +289,8 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 		return nil, err
 	}
 
-	// truncate certificate name so final name will be <= 63 characters.
-	// hash (uint32) will be at most 10 digits long, and we account for
-	// the hyphen.
+	// Truncate certificate name so final name will be <= 63 characters. Hash
+	// (uint32) will be at most 10 digits long, and we account for the hyphen.
 	return &cmacme.Order{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
