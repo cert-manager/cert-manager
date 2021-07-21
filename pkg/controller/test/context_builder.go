@@ -120,7 +120,7 @@ func (b *Builder) Init() {
 				GroupVersion: networkingv1.SchemeGroupVersion.String(),
 				APIResources: []metav1.APIResource{
 					{
-						Name:               "Ingresses",
+						Name:               "ingresses",
 						SingularName:       "Ingress",
 						Namespaced:         true,
 						Group:              networkingv1.GroupName,
