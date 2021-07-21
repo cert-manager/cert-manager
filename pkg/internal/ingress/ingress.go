@@ -93,7 +93,7 @@ func NewListerInformer(ctx *controller.Context) (InternalIngressLister, cache.Sh
 
 // NewCreateUpdater returns an InternalIngressCreateUpdater configured for v1 or v1beta1 ingresses depending on the
 // versions available in the discovery client
-func NewCreateUpdater(ctx *controller.Context, discoveryOverrides ...discovery.DiscoveryInterface) (InternalIngressCreateUpdater, error) {
+func NewCreateUpdater(ctx *controller.Context) (InternalIngressCreateUpdater, error) {
 	if hasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()) {
 		return &v1CreaterUpdater{
 			client: ctx.Client,
@@ -106,7 +106,7 @@ func NewCreateUpdater(ctx *controller.Context, discoveryOverrides ...discovery.D
 			scheme: sch,
 		}, nil
 	} else {
-		return nil, fmt.Errorf("neither %s or %s have any APIResources", networkingv1.SchemeGroupVersion, networkingv1beta1.SchemeGroupVersion)
+		return nil, fmt.Errorf("neither %s nor %s have any APIResources", networkingv1.SchemeGroupVersion, networkingv1beta1.SchemeGroupVersion)
 	}
 }
 
