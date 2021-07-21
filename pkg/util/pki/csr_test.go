@@ -656,6 +656,7 @@ func TestSignCSRTemplate(t *testing.T) {
 			wantErr:  true,
 		},
 	}
+
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			actualBundle, err := SignCSRTemplate(test.caCerts, test.caKey, test.template)
@@ -669,14 +670,90 @@ func TestSignCSRTemplate(t *testing.T) {
 				// into strings and do a textual diff.
 				expected, _ := DecodeX509CertificateBytes(test.expectedCertPem)
 				actual, _ := DecodeX509CertificateBytes(actualBundle.ChainPEM)
+
 				assert.Equal(t, expected.Subject.String(), actual.Subject.String())
 			}
+
 			if !bytes.Equal(test.expectedCaCertPem, actualBundle.CAPEM) {
 				// To help us identify where the mismatch is, we decode turn the
 				// into strings and do a textual diff.
 				expected, _ := DecodeX509CertificateBytes(test.expectedCaCertPem)
 				actual, _ := DecodeX509CertificateBytes(actualBundle.CAPEM)
+
 				assert.Equal(t, expected.Subject.String(), actual.Subject.String())
+			}
+		})
+	}
+}
+
+func TestEncodeX509Chain(t *testing.T) {
+	root := mustCreateBundle(t, nil, "root")
+	intA1 := mustCreateBundle(t, root, "intA-1")
+	intA2 := mustCreateBundle(t, intA1, "intA-2")
+	leafA1 := mustCreateBundle(t, intA1, "leaf-a1")
+	leafA2 := mustCreateBundle(t, intA2, "leaf-a2")
+	leafInterCN := mustCreateBundle(t, intA1, intA1.cert.Subject.CommonName)
+
+	tests := map[string]struct {
+		inputCerts []*x509.Certificate
+		expChain   []byte
+		expErr     bool
+	}{
+		"simple 3 cert chain should be encoded in the same order as passed, with no root": {
+			inputCerts: []*x509.Certificate{root.cert, intA1.cert, leafA1.cert},
+			expChain:   joinPEM(intA1.pem, leafA1.pem),
+			expErr:     false,
+		},
+		"simple 4 cert chain should be encoded in the same order as passed, with no root": {
+			inputCerts: []*x509.Certificate{root.cert, intA1.cert, intA2.cert, leafA2.cert},
+			expChain:   joinPEM(intA1.pem, intA2.pem, leafA2.pem),
+			expErr:     false,
+		},
+		"3 cert chain with no leaf be encoded in the same order as passed, with no root": {
+			inputCerts: []*x509.Certificate{root.cert, intA1.cert, intA2.cert},
+			expChain:   joinPEM(intA1.pem, intA2.pem),
+			expErr:     false,
+		},
+		"chain with a non-root cert where issuer matches subject should include that cert but not root": {
+			// see https://github.com/jetstack/cert-manager/issues/4142#issuecomment-884248923
+			inputCerts: []*x509.Certificate{root.cert, intA1.cert, leafInterCN.cert},
+			expChain:   joinPEM(intA1.pem, leafInterCN.pem),
+			expErr:     false,
+		},
+		"empty input chain should result in no output and no error": {
+			inputCerts: []*x509.Certificate{},
+			expChain:   []byte(""),
+			expErr:     false,
+		},
+		"chain with just a root should result in no output and no error": {
+			inputCerts: []*x509.Certificate{root.cert},
+			expChain:   []byte(""),
+			expErr:     false,
+		},
+		"chain with just a leaf should result in just the leaf": {
+			inputCerts: []*x509.Certificate{leafA1.cert},
+			expChain:   leafA1.pem,
+			expErr:     false,
+		},
+		"nil certs are ignored": {
+			inputCerts: []*x509.Certificate{leafA1.cert, nil},
+			expChain:   leafA1.pem,
+			expErr:     false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			chainOut, err := EncodeX509Chain(test.inputCerts)
+
+			if (err != nil) != test.expErr {
+				t.Errorf("unexpected error, exp=%t got=%v",
+					test.expErr, err)
+			}
+
+			if !reflect.DeepEqual(chainOut, test.expChain) {
+				t.Errorf("unexpected output from EncodeX509Chain, exp=%+s got=%+s",
+					test.expChain, chainOut)
 			}
 		})
 	}
