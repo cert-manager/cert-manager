@@ -46,8 +46,9 @@ var _ = framework.ConformanceDescribe("[Feature:Issuers:Venafi:Cloud] Certificat
 		featureset.URISANsFeature,
 		// Venafi doesn't allow certs with empty CN & DN
 		featureset.OnlySAN,
-		//Venafi Cloud seems to only support for SSH Ed25519
+		// Venafi seems to only support SSH Ed25519 keys
 		featureset.Ed25519FeatureSet,
+		featureset.IssueCAFeature,
 	)
 
 	provisioner := new(venafiProvisioner)

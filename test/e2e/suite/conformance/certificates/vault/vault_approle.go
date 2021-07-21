@@ -44,8 +44,9 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	var unsupportedFeatures = featureset.NewFeatureSet(
 		featureset.KeyUsagesFeature,
 		featureset.SaveRootCAToSecret,
-		//Vault does not support signing using Ed25519
+		// Vault does not support signing using Ed25519
 		featureset.Ed25519FeatureSet,
+		featureset.IssueCAFeature,
 	)
 
 	provisioner := new(vaultAppRoleProvisioner)
