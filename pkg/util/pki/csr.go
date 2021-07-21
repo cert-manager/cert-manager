@@ -450,7 +450,7 @@ func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, er
 	return derBytes, nil
 }
 
-// EncodeX509 will encode a *x509.Certificate into PEM format.
+// EncodeX509 will encode a single *x509.Certificate into PEM format.
 func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 	caPem := bytes.NewBuffer([]byte{})
 	err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
@@ -461,14 +461,24 @@ func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 	return caPem.Bytes(), nil
 }
 
-// EncodeX509Chain will encode an *x509.Certificate chain into PEM format.
+// EncodeX509Chain will encode a list of *x509.Certificates into a PEM format chain.
+// Self-signed certificates are not included as per
+// https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
+// Certificates are output in the order they're given; if the input is not ordered
+// as specified in RFC5246 section 7.4.2, the resulting chain might not be valid
+// for use in TLS.
 func EncodeX509Chain(certs []*x509.Certificate) ([]byte, error) {
 	caPem := bytes.NewBuffer([]byte{})
 	for _, cert := range certs {
-		if bytes.Equal(cert.RawIssuer, cert.RawSubject) {
+		if cert == nil {
+			continue
+		}
+
+		if cert.CheckSignatureFrom(cert) == nil {
 			// Don't include self-signed certificate
 			continue
 		}
+
 		err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 		if err != nil {
 			return nil, err
