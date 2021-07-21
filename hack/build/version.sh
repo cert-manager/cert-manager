@@ -53,6 +53,8 @@ export GO_PACKAGE="github.com/jetstack/cert-manager"
 #
 # If KUBE_GIT_VERSION_FILE, this function will load from that file instead of
 # querying git.
+# This function reads the path to cert-manager repo from a
+# REPO_PATH variable that needs to be set before calling it.
 kube::version::get_version_vars() {
   if [[ -n ${KUBE_GIT_VERSION_FILE-} ]]; then
     kube::version::load_version_vars "${KUBE_GIT_VERSION_FILE}"
@@ -125,7 +127,6 @@ kube::version::get_version_vars() {
         KUBE_GIT_MAJOR=${BASH_REMATCH[1]}
         KUBE_GIT_MINOR=${BASH_REMATCH[2]}
         KUBE_GIT_PATCH=${BASH_REMATCH[3]}
-        KUBE_LAST_RELEASE="v${KUBE_GIT_MAJOR}.${KUBE_GIT_MINOR}.${KUBE_GIT_PATCH}"
         if [[ -n "${BASH_REMATCH[4]}" ]]; then
           KUBE_GIT_MINOR+="+"
         fi
@@ -139,6 +140,41 @@ kube::version::get_version_vars() {
       fi
     fi
   fi
+}
+
+# This function can be used to find the version of last published release that
+# is not alpha or beta release (i.e in upgrade test script)
+# If the latest published release is v1.2.3 it will set KUBE_LAST_VERSION to
+# v1.2.3.
+# If the last published releases are v1.2.3 and v1.3.0-alpha.0 it will set
+# KUBE_LAST_VERSION to v1.2.3
+# This function reads the path to cert-manager
+# repo from a REPO_PATH variable that needs to be set before calling it.
+kube::version::last_published_release() {
+    # KUBE_GIT_COMMIT get_version_vars
+    kube::version::get_version_vars
+
+    local git=(git --work-tree "${REPO_ROOT}")
+
+    # Find the newest git tag which is not alpha or beta tag
+    local latest=$("${git[@]}" describe \
+      --tags \
+      --match='v*' \
+      --abbrev=14 \
+      --exclude='*alpha*' \
+      --exclude='*beta*' \
+      "${KUBE_GIT_COMMIT}^{commit}" 2>/dev/null)
+
+    if [[ "${latest}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)([-].*)?([+].*)?$ ]]; then
+      major=${BASH_REMATCH[1]}
+      minor=${BASH_REMATCH[2]}
+      patch=${BASH_REMATCH[3]}
+      KUBE_LAST_RELEASE="v${major}.${minor}.${patch}"
+    else
+      echo "Latest found Git tag that is not alpha or beta tag is not a valid semver tag: ${latest}"
+      echo "Please see more details here: https://semver.org"
+      exit 1
+    fi
 }
 
 # Saves the environment flags to $1

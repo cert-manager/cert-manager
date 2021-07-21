@@ -23,13 +23,13 @@ export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${REPO_ROOT}/devel/lib/lib.sh"
 source "${REPO_ROOT}/hack/build/version.sh"
 
-kube::version::get_version_vars
+kube::version::last_published_release
 
 LATEST_RELEASE="${KUBE_LAST_RELEASE}"
 CURRENT_VERSION="${KUBE_GIT_VERSION}"
 
 # Ensure helm, kind, kubectl, ytt, jq are available
-bazel build //hack/bin:helm //hack/bin:kind //hack/bin:ytt //hack/bin:jq //hack/bin:kubectl
+bazel build //hack/bin:helm //hack/bin:kind //hack/bin:ytt //hack/bin:jq //hack/bin:kubectl //hack/bin:kubectl-cert_manager
 bindir="$(bazel info bazel-bin)"
 export PATH="${bindir}/hack/bin/:$PATH"
 
