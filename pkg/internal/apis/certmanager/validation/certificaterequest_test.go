@@ -566,6 +566,17 @@ func TestValidateCertificateRequest(t *testing.T) {
 			a:     someAdmissionRequest,
 			wantE: []*field.Error{},
 		},
+		"Empty CSR should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:   []byte(""),
+					IssuerRef: validIssuerRef,
+					Usages:    nil,
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{field.Required(fldPath.Child("request"), "must be specified")},
+		},
 		"Test csr with double signature usages": {
 			cr: &cminternal.CertificateRequest{
 				Spec: cminternal.CertificateRequestSpec{
@@ -721,7 +732,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			wantE: []*field.Error{
-				field.Invalid(fldPathConditions.Child("Approved"), nil,
+				field.Invalid(fldPathConditions.Child("Approved"), cminternalmeta.ConditionFalse,
 					`"Approved" condition may only be set to True`),
 			},
 		},
@@ -745,7 +756,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			wantE: []*field.Error{
-				field.Invalid(fldPathConditions.Child("Denied"), nil,
+				field.Invalid(fldPathConditions.Child("Denied"), cminternalmeta.ConditionFalse,
 					`"Denied" condition may only be set to True`),
 			},
 		},
@@ -774,9 +785,9 @@ func TestValidateCertificateRequest(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 			wantE: []*field.Error{
-				field.Invalid(field.NewPath("status", "conditions", "Approved"), nil,
+				field.Invalid(field.NewPath("status", "conditions", "Approved"), cminternalmeta.ConditionFalse,
 					`"Approved" condition may only be set to True`),
-				field.Invalid(field.NewPath("status", "conditions", "Denied"), nil,
+				field.Invalid(field.NewPath("status", "conditions", "Denied"), cminternalmeta.ConditionFalse,
 					`"Denied" condition may only be set to True`),
 				field.Forbidden(fldPathConditions, "both 'Denied' and 'Approved' conditions cannot coexist"),
 			},
@@ -865,7 +876,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 				field.Forbidden(fldPathConditions, `multiple "Denied" conditions present`),
 			},
 		},
-		"CertificateRequest  against v1alpha2 API should throw a warning": {
+		"CertificateRequest against v1alpha2 API should throw a warning": {
 			cr: &cminternal.CertificateRequest{
 				Spec: cminternal.CertificateRequestSpec{
 					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
@@ -886,7 +897,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 			},
 			wantE: field.ErrorList{},
 		},
-		"CertificateRequest  against v1alpha3 API should throw a warning": {
+		"CertificateRequest against v1alpha3 API should throw a warning": {
 			cr: &cminternal.CertificateRequest{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: cmapiv1alpha3.SchemeGroupVersion.String(),
@@ -911,7 +922,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 			},
 			wantE: field.ErrorList{},
 		},
-		"CertificateRequest  against v1beta1 API should throw a warning": {
+		"CertificateRequest against v1beta1 API should throw a warning": {
 			cr: &cminternal.CertificateRequest{
 				Spec: cminternal.CertificateRequestSpec{
 					Request:   mustGenerateCSR(t, gen.Certificate("spec", gen.SetCertificateDNSNames("example.com"), gen.SetCertificateKeyUsages(cmapi.UsageAny), gen.SetCertificateIsCA(true))),
@@ -935,18 +946,27 @@ func TestValidateCertificateRequest(t *testing.T) {
 			wantE: field.ErrorList{},
 		},
 	}
+
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotE, gotW := ValidateCertificateRequest(test.a, test.cr)
 			for i := range gotE {
-				if gotE[i].Type != field.ErrorTypeForbidden {
-					// filter out the value so it does not print the full CSR in tests
+				if gotE[i].Field == "spec.request" {
+					if gotE[i].Type == field.ErrorTypeRequired {
+						// modifying the BadValue on a "required" error changes the underlying value of
+						// the error, so we don't touch it in this case.
+						continue
+					}
+
+					// filter out the value on the request field so it doesn't print the full CSR in tests
 					gotE[i].BadValue = nil
 				}
 			}
+
 			if !reflect.DeepEqual(gotE, test.wantE) {
 				t.Errorf("errors from ValidateCertificateRequest() = %v, want %v", gotE, test.wantE)
 			}
+
 			if !reflect.DeepEqual(test.wantW, gotW) {
 				t.Errorf("warnings from ValidateCertificateRequest() = %v, want  %v", gotW, test.wantW)
 			}
