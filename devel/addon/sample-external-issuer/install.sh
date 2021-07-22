@@ -21,7 +21,7 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-SEI_VERSION="v0.1.0"
+SEI_VERSION="v0.1.1"
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
