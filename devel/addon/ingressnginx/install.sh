@@ -36,10 +36,12 @@ fi
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 IMAGE_TAG=""
 
-# Require helm available on PATH
+# Require helm, kubectl and jq available on PATH
 check_tool kubectl
 check_tool helm
-check_tool jq
+bazel build //hack/bin:jq
+bindir="$(bazel info bazel-bin)"
+export PATH="${bindir}/hack/bin/:$PATH"
 
 # We need to install different versions of Ingress depending on which version of
 # Kubernetes we are running as the NGINX Ingress controller does not have a
