@@ -69,7 +69,7 @@ helm repo update
 helm upgrade \
     --install \
     --wait \
-    --version 3.31.0 \
+    --version 3.34.0 \
     --namespace "${NAMESPACE}" \
     --set controller.image.digest="" \
     --set controller.image.tag="${IMAGE_TAG}" \
