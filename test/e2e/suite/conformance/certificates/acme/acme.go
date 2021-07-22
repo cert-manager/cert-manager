@@ -34,10 +34,15 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
+// TODO @Arsh: should this be a flag? Maybe instead of mentioning Let's Encrypt
+// directly make it Public ACME server?
+const LetsEncryptStagingURL = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	runACMEIssuerTests(nil)
 })
 var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
+	// TODO: make this skippable? Not all ACME issuers support EAB.
 	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
 		KeyID: "kid-1",
 	})
@@ -70,12 +75,24 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.IssueCAFeature,
 	)
 
+	// UnsupportedLetsEncryptFeatures are additional ACME features not supported by
+	// Let's Encrypt
+	var unsupportedLetsEncryptFeatures = featureset.NewFeatureSet(
+		featureset.IPAddressFeature,
+		featureset.Ed25519FeatureSet,
+	)
+
 	provisionerHTTP01 := &acmeIssuerProvisioner{
 		eab: eab,
 	}
 
 	provisionerDNS01 := &acmeIssuerProvisioner{
 		eab: eab,
+	}
+
+	// Let's Encrypt does not support EAB
+	provisionerLEHTTP01 := &acmeIssuerProvisioner{
+		eab: nil,
 	}
 
 	(&certificates.Suite{
@@ -108,6 +125,14 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerDNS01.createDNS01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "Let's Encrypt HTTP01 Issuer",
+		UseIngressIPAddress: true,
+		CreateIssuerFunc:    provisionerLEHTTP01.createLetsEncryptStagingHTTP01Issuer,
+		DeleteIssuerFunc:    provisionerLEHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01Features.Copy().Add(unsupportedLetsEncryptFeatures.List()...),
 	}).Define()
 }
 
@@ -147,6 +172,26 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createLetsEncryptStagingHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a Let's Encrypt Staging HTTP01 Issuer")
+
+	issuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "le-issuer-http01-",
+		},
+		Spec: a.createHTTP01IssuerSpec(LetsEncryptStagingURL),
+	}
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to create Let's Encrypt Staging HTTP01 issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
