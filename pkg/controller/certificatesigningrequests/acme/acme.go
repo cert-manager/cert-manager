@@ -207,8 +207,6 @@ func (a *ACME) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningR
 		return a.acmeClientV.Orders(order.Namespace).Delete(ctx, order.Name, metav1.DeleteOptions{})
 	}
 
-	// Update the status.certificate first so that the sync from updating will
-	// not cause another issuance before setting the CA.
 	csr.Status.Certificate = order.Status.Certificate
 	csr, err = a.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
