@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
@@ -41,10 +42,11 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
-	"github.com/jetstack/cert-manager/pkg/webhook/server/util"
+	webhookutil "github.com/jetstack/cert-manager/pkg/webhook/server/util"
 )
 
 var (
@@ -125,21 +127,12 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		s.Log = crlog.NullLogger{}
 	}
 
-	internalStopCh := make(chan struct{})
-	// only close the internalStopCh if it hasn't already been closed
-	shutdown := false
-	defer func() {
-		if !shutdown {
-			close(internalStopCh)
-		}
-	}()
-
-	var healthzChan <-chan error
-	var certSourceChan <-chan error
+	gctx := util.ContextWithStopCh(context.Background(), stopCh)
+	g, gctx := errgroup.WithContext(gctx)
 
 	// if a HealthzAddr is provided, start the healthz listener
 	if s.HealthzAddr != "" {
-		l, err := net.Listen("tcp", s.HealthzAddr)
+		healthzListener, err := net.Listen("tcp", s.HealthzAddr)
 		if err != nil {
 			return err
 		}
@@ -148,20 +141,43 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		mux.HandleFunc("/healthz", s.handleHealthz)
 		mux.HandleFunc("/livez", s.handleLivez)
 		s.Log.V(logf.InfoLevel).Info("listening for insecure healthz connections", "address", s.HealthzAddr)
-		healthzChan = s.startServer(l, internalStopCh, mux)
+		server := &http.Server{
+			Handler: mux,
+		}
+		g.Go(func() error {
+			<-gctx.Done()
+			// allow a timeout for graceful shutdown
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := server.Shutdown(ctx); err != nil {
+				return err
+			}
+			return nil
+		})
+		g.Go(func() error {
+			if err := server.Serve(healthzListener); err != http.ErrServerClosed {
+				return err
+			}
+			return nil
+		})
 	}
 
 	// create a listener for actual webhook requests
-	l, err := net.Listen("tcp", s.ListenAddr)
+	listerner, err := net.Listen("tcp", s.ListenAddr)
 	if err != nil {
 		return err
 	}
-	s.listener = l
 
 	// wrap the listener with TLS if a CertificateSource is provided
 	if s.CertificateSource != nil {
 		s.Log.V(logf.InfoLevel).Info("listening for secure connections", "address", s.ListenAddr)
-		certSourceChan = s.startCertificateSource(internalStopCh)
+		g.Go(func() error {
+			if err := s.CertificateSource.Run(gctx.Done()); (err != nil) && !errors.Is(err, context.Canceled) {
+				return err
+			}
+			return nil
+		})
 		cipherSuites, err := ciphers.TLSCipherSuites(s.CipherSuites)
 		if err != nil {
 			return err
@@ -170,7 +186,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
-		l = tls.NewListener(l, &tls.Config{
+		listerner = tls.NewListener(listerner, &tls.Config{
 			GetCertificate:           s.CertificateSource.GetCertificate,
 			CipherSuites:             cipherSuites,
 			MinVersion:               minVersion,
@@ -180,6 +196,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		s.Log.V(logf.InfoLevel).Info("listening for insecure connections", "address", s.ListenAddr)
 	}
 
+	s.listener = listerner
 	mux := http.NewServeMux()
 	mux.HandleFunc("/validate", s.handle(s.validate))
 	mux.HandleFunc("/mutate", s.handle(s.mutate))
@@ -188,31 +205,28 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		profiling.Install(mux)
 		s.Log.V(logf.InfoLevel).Info("registered pprof handlers")
 	}
-	listenerChan := s.startServer(l, internalStopCh, mux)
-
-	if certSourceChan == nil {
-		certSourceChan = blockingChan(internalStopCh)
+	server := &http.Server{
+		Handler: mux,
 	}
-	if healthzChan == nil {
-		healthzChan = blockingChan(internalStopCh)
-	}
+	g.Go(func() error {
+		<-gctx.Done()
+		// allow a timeout for graceful shutdown
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-	select {
-	case err = <-healthzChan:
-	case err = <-certSourceChan:
-	case err = <-listenerChan:
-	case <-stopCh:
-	}
+		if err := server.Shutdown(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
+	g.Go(func() error {
+		if err := server.Serve(s.listener); err != http.ErrServerClosed {
+			return err
+		}
+		return nil
+	})
 
-	close(internalStopCh)
-	shutdown = true
-
-	s.Log.V(logf.DebugLevel).Info("waiting for server to shutdown")
-	waitForAll(healthzChan, certSourceChan, listenerChan)
-
-	s.Log.V(logf.InfoLevel).Info("server shutdown successfully")
-
-	return err
+	return g.Wait()
 }
 
 // Port returns the port number that the webhook listener is listening on
@@ -225,67 +239,6 @@ func (s *Server) Port() (int, error) {
 		return 0, errors.New("unexpected listen address type (expected tcp)")
 	}
 	return tcpAddr.Port, nil
-}
-
-func (s *Server) startServer(l net.Listener, stopCh <-chan struct{}, handle http.Handler) <-chan error {
-	ch := make(chan error)
-	go func() {
-		defer close(ch)
-
-		srv := &http.Server{
-			Handler: handle,
-		}
-		select {
-		case err := <-channelWrapper(func() error { return srv.Serve(l) }):
-			ch <- err
-		case <-stopCh:
-			// allow a fixed 5s for graceful shutdown
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-			defer cancel()
-			if err := srv.Shutdown(ctx); err != nil {
-				s.Log.Error(err, "failed to gracefully shutdown http server")
-				ch <- err
-			}
-			s.Log.V(logf.DebugLevel).Info("shutdown HTTP server gracefully")
-		}
-	}()
-	return ch
-}
-
-func (s *Server) startCertificateSource(stopCh <-chan struct{}) <-chan error {
-	fn := func() error {
-		return s.CertificateSource.Run(stopCh)
-	}
-	return channelWrapper(fn)
-}
-
-func waitForAll(chs ...<-chan error) error {
-	for _, ch := range chs {
-		if err := <-ch; err != nil {
-			return fmt.Errorf("error waiting for goroutine to exit: %w", err)
-		}
-	}
-	return nil
-}
-
-func channelWrapper(fn func() error) <-chan error {
-	ch := make(chan error)
-	go func() {
-		defer close(ch)
-		ch <- fn()
-	}()
-	return ch
-}
-
-// blockingChan returns a 'no-op' error channel.
-// When stopCh is closed, the error channel will also be closed.
-func blockingChan(stopCh <-chan struct{}) <-chan error {
-	ch := make(chan error)
-	go func() {
-		defer close(ch)
-		<-stopCh
-	}()
-	return ch
 }
 
 func (s *Server) scheme() *runtime.Scheme {
@@ -305,7 +258,7 @@ func (s *Server) validate(ctx context.Context, obj runtime.Object) (runtime.Obje
 			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 		}
 		review = &admissionv1.AdmissionReview{}
-		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
+		webhookutil.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
 	resp := s.ValidationWebhook.Validate(ctx, review.Request)
 	review.Response = resp
@@ -317,7 +270,7 @@ func (s *Server) validate(ctx context.Context, obj runtime.Object) (runtime.Obje
 
 	// reply v1beta1
 	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
-	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
+	webhookutil.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
 	return reviewv1beta1, nil
 }
 
@@ -331,7 +284,7 @@ func (s *Server) mutate(ctx context.Context, obj runtime.Object) (runtime.Object
 			return nil, errors.New("request is not of type apiextensions v1 or v1beta1")
 		}
 		review = &admissionv1.AdmissionReview{}
-		util.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
+		webhookutil.Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(reviewv1beta1, review)
 	}
 	resp := s.MutationWebhook.Mutate(ctx, review.Request)
 	review.Response = resp
@@ -343,7 +296,7 @@ func (s *Server) mutate(ctx context.Context, obj runtime.Object) (runtime.Object
 
 	// reply v1beta1
 	reviewv1beta1 := &admissionv1beta1.AdmissionReview{}
-	util.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
+	webhookutil.Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(review, reviewv1beta1)
 	return reviewv1beta1, nil
 }
 

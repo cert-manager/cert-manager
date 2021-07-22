@@ -19,10 +19,12 @@ package app
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
-	"sync"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -65,10 +67,11 @@ const resyncPeriod = 10 * time.Hour
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	rootCtx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
+	g, rootCtx := errgroup.WithContext(rootCtx)
 	rootCtx = logf.NewContext(rootCtx, nil, "controller")
 	log := logf.FromContext(rootCtx)
 
-	ctx, kubeCfg, err := buildControllerContext(rootCtx, stopCh, opts)
+	ctx, kubeCfg, err := buildControllerContext(rootCtx, opts)
 	if err != nil {
 		log.Error(err, "error building controller context", "options", opts)
 		os.Exit(1)
@@ -77,13 +80,32 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	enabledControllers := opts.EnabledControllers()
 	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers.List()))
 
-	metricsServer, err := ctx.Metrics.Start(opts.MetricsListenAddress, opts.EnablePprof)
+	ln, err := net.Listen("tcp", opts.MetricsListenAddress)
 	if err != nil {
 		log.Error(err, "failed to listen on prometheus address", "address", opts.MetricsListenAddress)
 		os.Exit(1)
 	}
+	server := ctx.Metrics.NewServer(ln, opts.EnablePprof)
 
-	var wg sync.WaitGroup
+	g.Go(func() error {
+		<-rootCtx.Done()
+		// allow a timeout for graceful shutdown
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
+	g.Go(func() error {
+		log.WithValues("address", ln.Addr()).V(logf.InfoLevel).Info("listening for connections on")
+		if err := server.Serve(ln); err != http.ErrServerClosed {
+			return err
+		}
+		return nil
+	})
+
 	run := func(_ context.Context) {
 		for n, fn := range controller.Known() {
 			log := log.WithValues("controller", n)
@@ -100,33 +122,33 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				continue
 			}
 
-			wg.Add(1)
 			iface, err := fn(ctx)
 			if err != nil {
 				log.Error(err, "error starting controller")
 				os.Exit(1)
 			}
-			go func(n string, fn controller.Interface) {
-				defer wg.Done()
-				log.V(logf.InfoLevel).Info("starting controller")
+
+			g.Go(func() error {
+				log.V(logf.InfoLevel).Info("starting controller", n)
 
 				workers := 5
-				err := fn.Run(workers, stopCh)
-
-				if err != nil {
-					log.Error(err, "error starting controller")
-					os.Exit(1)
-				}
-			}(n, iface)
+				return iface.Run(workers, rootCtx.Done())
+			})
 		}
 
 		log.V(logf.DebugLevel).Info("starting shared informer factories")
-		ctx.SharedInformerFactory.Start(stopCh)
-		ctx.KubeSharedInformerFactory.Start(stopCh)
-		ctx.GWShared.Start(stopCh)
-		wg.Wait()
+		// TODO: we should wait for these informers to finish
+		ctx.SharedInformerFactory.Start(rootCtx.Done())
+		ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
+		ctx.GWShared.Start(rootCtx.Done())
+
+		err := g.Wait()
+		if err != nil {
+			log.Error(err, "error starting controller")
+			os.Exit(1)
+		}
 		log.V(logf.InfoLevel).Info("control loops exited")
-		ctx.Metrics.Shutdown(metricsServer)
+
 		os.Exit(0)
 	}
 
@@ -145,7 +167,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	startLeaderElection(rootCtx, opts, leaderElectionClient, ctx.Recorder, run)
 }
 
-func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
+func buildControllerContext(ctx context.Context, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
 	log := logf.FromContext(ctx, "build-context")
 	// Load the users Kubernetes config
 	kubeCfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.Kubeconfig)
@@ -238,7 +260,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 
 	return &controller.Context{
 		RootContext:               ctx,
-		StopCh:                    stopCh,
+		StopCh:                    ctx.Done(),
 		RESTConfig:                kubeCfg,
 		Client:                    cl,
 		CMClient:                  intcl,

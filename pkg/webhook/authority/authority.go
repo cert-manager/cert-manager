@@ -210,6 +210,7 @@ func (d *DynamicAuthority) WatchRotation(stopCh <-chan struct{}) <-chan struct{}
 	ch := make(chan struct{}, 1)
 	d.watches = append(d.watches, ch)
 	go func() {
+		defer close(ch)
 		<-stopCh
 		d.watchMutex.Lock()
 		defer d.watchMutex.Unlock()
