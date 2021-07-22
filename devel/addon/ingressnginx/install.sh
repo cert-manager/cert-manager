@@ -39,12 +39,19 @@ IMAGE_TAG=""
 # Require helm available on PATH
 check_tool kubectl
 check_tool helm
+check_tool jq
 
 # We need to install different versions of Ingress depending on which version of
 # Kubernetes we are running as the NGINX Ingress controller does not have a
 # release where they would support both v1 and v1beta1 versions of networking API.
+# If running the setup script locally against Kubernetes v1.22, make sure to pass K8S_VERSION
+# K8S_VERSION=1.22 ./devel/setup-e2e-deps.sh for this to work.
 # TODO: Remove this once we no longer need to test against Kubernetes below v1.19.
-if [[ $K8S_VERSION =~ 1\.22 ]]; then
+
+# This allows running ./devel/setup-e2e-deps.sh locally against Kubernetes v1.22
+# without passing the K8S_VERSION env var.
+k8s_version=$(kubectl version -ojson | jq  -r '.serverVersion | "\(.major).\(.minor)"')
+if [[ $k8s_version =~ 1\.22 ]]; then
   IMAGE_TAG="v1.0.0-alpha.2"
 else
   IMAGE_TAG="v0.48.1"
