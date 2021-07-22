@@ -34,11 +34,22 @@ if [[ "$IS_OPENSHIFT" == "true" ]] ; then
 fi
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
+IMAGE_TAG=""
 
 # Require helm available on PATH
 check_tool kubectl
 check_tool helm
-require_image "k8s.gcr.io/ingress-nginx/controller:v0.46.0" "//devel/addon/ingressnginx:bundle"
+
+# We need to install different versions of Ingress depending on which version of
+# Kubernetes we are running as the NGINX Ingress controller does not have a
+# release where they would support both v1 and v1beta1 versions of networking API.
+# TODO: Remove this once we no longer need to test against Kubernetes below v1.19.
+if [[ $K8S_VERSION =~ 1\.22 ]]; then
+  IMAGE_TAG="v1.0.0-alpha.2"
+else
+  IMAGE_TAG="v0.48.1"
+fi
+require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle_${IMAGE_TAG}"
 
 # Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
@@ -54,6 +65,7 @@ helm upgrade \
     --version 3.31.0 \
     --namespace "${NAMESPACE}" \
     --set controller.image.digest="" \
+    --set controller.image.tag="${IMAGE_TAG}" \
     --set controller.image.pullPolicy=Never \
     --set "controller.service.clusterIP=${SERVICE_IP_PREFIX}.15"\
     --set controller.service.type=ClusterIP \

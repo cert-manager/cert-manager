@@ -35,13 +35,23 @@ def install():
 
     ## Fetch nginx-ingress for use during e2e tests
     ## You can change the version of nginx-ingress used for tests by changing the
-    ## 'tag' field in this rule
+    ## 'tag' and 'digest' fields in these rules.
+    ## The digest here is the digest of a platform-specific image, so it will not
+    ## match the manifest list digest in ingress-nginx release notes- you will
+    ## have to find the value by other means.
     container_pull(
-        name = "io_kubernetes_ingress-nginx",
+        name = "io_kubernetes_ingress-nginx_old",
         registry = "k8s.gcr.io",
         repository = "ingress-nginx/controller",
-        tag = "v0.41.2",
-        digest = "sha256:e11b7d264cac4cfc7566b78bb150c94168ea4612a4e9769ca549eb03469db906",
+        tag = "v0.48.1",
+        digest = "sha256:dcc2d529a9cb95408ba9896639382793fb84361ef43cee9195f264c321e6b638",
+    )
+    container_pull(
+        name = "io_kubernetes_ingress-nginx_new",
+        registry = "k8s.gcr.io",
+        repository = "ingress-nginx/controller",
+        tag = "v1.0.0-alpha.2",
+        digest = "sha256:90f417ffd979f6493ea302f6757763365263d2f8112447139dffa97d927f5dfb"
     )
 
     ## Fetch vault for use during e2e tests
