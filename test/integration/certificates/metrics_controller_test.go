@@ -59,11 +59,21 @@ func TestMetricsController(t *testing.T) {
 	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
 	metricsHandler := metrics.New(logf.Log, fixedClock)
-	server, err := metricsHandler.Start("127.0.0.1:0", false)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer metricsHandler.Shutdown(server)
+	server := ctx.Metrics.NewServer(ln, false)
+
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			return err
+		}
+	}()
 
 	ctrl, queue, mustSync := controllermetrics.NewController(factory, cmFactory, metricsHandler)
 	c := controllerpkg.NewController(

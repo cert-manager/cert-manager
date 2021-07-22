@@ -24,12 +24,10 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"k8s.io/utils/clock"
 
 	"github.com/go-logr/logr"
@@ -149,7 +147,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 }
 
 // Start will register the Prometheus metrics, and start the Prometheus server
-func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, error) {
+func (m *Metrics) NewServer(ln net.Listener, enablePprof bool) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
@@ -163,11 +161,6 @@ func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, e
 		profiling.Install(mux)
 	}
 
-	ln, err := net.Listen("tcp", listenAddress)
-	if err != nil {
-		return nil, err
-	}
-
 	server := &http.Server{
 		Addr:           ln.Addr().String(),
 		ReadTimeout:    prometheusMetricsServerReadTimeout,
@@ -175,35 +168,10 @@ func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, e
 		MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
 		Handler:        mux,
 	}
-
-	go func() {
-		log := m.log.WithValues("address", ln.Addr())
-		log.V(logf.InfoLevel).Info("listening for connections on")
-
-		if err := server.Serve(ln); err != nil {
-			log.Error(err, "error running prometheus metrics server")
-			return
-		}
-	}()
-
-	return server, nil
+	return server
 }
 
 // IncrementSyncCallCount will increase the sync counter for that controller.
 func (m *Metrics) IncrementSyncCallCount(controllerName string) {
 	m.controllerSyncCallCount.WithLabelValues(controllerName).Inc()
-}
-
-func (m *Metrics) Shutdown(server *http.Server) {
-	m.log.V(logf.InfoLevel).Info("stopping Prometheus metrics server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), prometheusMetricsServerShutdownTimeout)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		m.log.Error(err, "prometheus metrics server shutdown failed", err)
-		return
-	}
-
-	m.log.V(logf.InfoLevel).Info("prometheus metrics server gracefully stopped")
 }
