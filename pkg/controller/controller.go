@@ -107,12 +107,12 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) error {
 
 	var wg sync.WaitGroup
 	for i := 0; i < workers; i++ {
-		wg.Add(1)
 		// TODO (@munnerz): make time.Second duration configurable
-		go wait.Until(func() {
+		wg.Add(1)
+		go func() {
 			defer wg.Done()
-			c.worker(ctx)
-		}, time.Second, stopCh)
+			wait.Until(func() { c.worker(ctx) }, time.Second, stopCh)
+		}()
 	}
 
 	for _, f := range c.runFirstFuncs {
