@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	k8scmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -72,7 +72,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(factory cmdutil.Factory) error {
+func (o *Options) Complete(factory k8scmdutil.Factory) error {
 	var err error
 
 	o.Namespace, _, err = factory.ToRawKubeConfigLoader().Namespace()
@@ -97,7 +97,7 @@ func (o *Options) Complete(factory cmdutil.Factory) error {
 }
 
 // NewCmdCheckApi returns a cobra command for checking creating cert-manager resources against the K8S API server
-func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, factory k8scmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
