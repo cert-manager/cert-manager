@@ -42,6 +42,7 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
+	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
@@ -63,7 +64,7 @@ const controllerAgentName = "cert-manager"
 const resyncPeriod = 10 * time.Hour
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
-	rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
+	rootCtx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
 	rootCtx = logf.NewContext(rootCtx, nil, "controller")
 	log := logf.FromContext(rootCtx)
 

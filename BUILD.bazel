@@ -60,6 +60,7 @@ filegroup(
         "//cmd/cainjector:all-srcs",
         "//cmd/controller:all-srcs",
         "//cmd/ctl:all-srcs",
+        "//cmd/util:all-srcs",
         "//cmd/webhook:all-srcs",
         "//deploy:all-srcs",
         "//devel:all-srcs",

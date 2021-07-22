@@ -3,11 +3,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
+        "context.go",
+        "exit.go",
         "signal.go",
         "signal_posix.go",
         "signal_windows.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/util/cmd",
+    importpath = "github.com/jetstack/cert-manager/cmd/util",
     visibility = ["//visibility:public"],
 )
 

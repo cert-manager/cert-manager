@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,19 +18,12 @@ package util
 
 import (
 	"context"
+	"errors"
 )
 
-// ContextWithStopCh will wrap a context with a stop channel.
-// When the provided stopCh closes, the cancel() will be called on the context.
-// This provides a convenient way to represent a stop channel as a context.
-func ContextWithStopCh(ctx context.Context, stopCh <-chan struct{}) context.Context {
-	ctx, cancel := context.WithCancel(ctx)
-	go func() {
-		defer cancel()
-		select {
-		case <-ctx.Done():
-		case <-stopCh:
-		}
-	}()
-	return ctx
+// SetExitCode sets the exit code to 1 if the error is not a context.Canceled error.
+func SetExitCode(err error) {
+	if (err != nil) && !errors.Is(err, context.Canceled) {
+		errorExitCodeChannel <- 1 // Indicate that there was an error
+	}
 }

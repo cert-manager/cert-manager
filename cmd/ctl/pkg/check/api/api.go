@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
+	"runtime"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -32,6 +32,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	cmcmdutil "github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/pkg/util/cmapichecker"
 )
 
@@ -150,7 +151,9 @@ func (o *Options) Run(ctx context.Context) {
 			log.Printf("Timed out after %s", o.Wait)
 		}
 
-		os.Exit(1)
+		cmcmdutil.SetExitCode(pollContext.Err())
+
+		runtime.Goexit() // Do soft exit (handle all defers, that should set correct exit code)
 	}
 
 	log.Printf("The cert-manager API is ready")

@@ -18,24 +18,25 @@ package main
 
 import (
 	"flag"
-	"os"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app"
+	"github.com/jetstack/cert-manager/cmd/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
 )
 
 func main() {
+	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	defer exit() // This function might call os.Exit, so defer last
+
 	logf.InitLogs(flag.CommandLine)
 	defer logf.FlushLogs()
 
-	stopCh := utilcmd.SetupSignalHandler()
 	cmd := app.NewCommandStartCertManagerController(stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
 		logf.Log.Error(err, "error executing command")
-		os.Exit(1)
+		util.SetExitCode(err)
 	}
 }
