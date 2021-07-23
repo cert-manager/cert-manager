@@ -23,29 +23,6 @@ import (
 	"k8s.io/utils/clock"
 )
 
-// For mocking purposes.
-// This little bit of wrapping needs to be done because go doesn't do
-// covariance, but it does coerce *time.Timer into stoppable implicitly if we
-// write it out like so.
-var afterFunc = func(c clock.Clock, d time.Duration, f func()) stoppable {
-	t := c.NewTimer(d)
-
-	go func() {
-		defer t.Stop()
-		if ti := <-t.C(); ti == (time.Time{}) {
-			return
-		}
-		f()
-	}()
-
-	return t
-}
-
-// stoppable is the subset of time.Timer which we use, split out for mocking purposes
-type stoppable interface {
-	Stop() bool
-}
-
 // ProcessFunc is a function to process an item in the work queue.
 type ProcessFunc func(interface{})
 
@@ -64,8 +41,11 @@ type ScheduledWorkQueue interface {
 type scheduledWorkQueue struct {
 	processFunc ProcessFunc
 	clock       clock.Clock
-	work        map[interface{}]stoppable
+	work        map[interface{}]func()
 	workLock    sync.Mutex
+
+	// Testing purposes.
+	afterFunc func(clock.Clock, time.Duration, func()) func()
 }
 
 // NewScheduledWorkQueue will create a new workqueue with the given processFunc
@@ -73,8 +53,10 @@ func NewScheduledWorkQueue(clock clock.Clock, processFunc ProcessFunc) Scheduled
 	return &scheduledWorkQueue{
 		processFunc: processFunc,
 		clock:       clock,
-		work:        make(map[interface{}]stoppable),
+		work:        make(map[interface{}]func()),
 		workLock:    sync.Mutex{},
+
+		afterFunc: afterFunc,
 	}
 }
 
@@ -84,7 +66,12 @@ func NewScheduledWorkQueue(clock clock.Clock, processFunc ProcessFunc) Scheduled
 func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
-	s.forget(obj)
+
+	if cancel, ok := s.work[obj]; ok {
+		cancel()
+		delete(s.work, obj)
+	}
+
 	s.work[obj] = afterFunc(s.clock, duration, func() {
 		defer s.Forget(obj)
 		s.processFunc(obj)
@@ -95,13 +82,40 @@ func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
 func (s *scheduledWorkQueue) Forget(obj interface{}) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
-	s.forget(obj)
-}
 
-// forget cancels and removes an item. It *must* be called with the lock already held
-func (s *scheduledWorkQueue) forget(obj interface{}) {
-	if timer, ok := s.work[obj]; ok {
-		timer.Stop()
+	if cancel, ok := s.work[obj]; ok {
+		cancel()
 		delete(s.work, obj)
 	}
+}
+
+// We are writting our own time.AfterFunc to be able to mock the clock. The
+// cancel function can be called concurrently.
+func afterFunc(c clock.Clock, d time.Duration, f func()) (cancel func()) {
+	t := c.NewTimer(d)
+
+	// The caller expects `cancel` to stop the goroutine. Since `t.C` is not
+	// closed after calling `t.Stop`, we need to create our own `cancelCh`
+	// channel to stop the goroutine.
+	cancelCh := make(chan struct{})
+	cancelOnce := sync.Once{}
+	cancel = func() {
+		t.Stop()
+		cancelOnce.Do(func() {
+			close(cancelCh)
+		})
+	}
+
+	go func() {
+		defer cancel()
+
+		select {
+		case <-t.C():
+			f()
+		case <-cancelCh:
+			return
+		}
+	}()
+
+	return cancel
 }

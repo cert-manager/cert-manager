@@ -17,16 +17,65 @@ limitations under the License.
 package scheduler
 
 import (
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/clock"
 )
 
+func Test_afterFunc(t *testing.T) {
+	// Note that re-implimenting AfterFunc is not a good idea, since testing it
+	// is tricky as seen in time_test.go in the standard library. We will just
+	// focus on two important cases: "f" should be run after the duration
+
+	t.Run("stop works", func(t *testing.T) {
+		// This test makes sure afterFunc does not leak goroutines.
+		//
+		// This test may be run concurrently to other tests, so we want to avoid
+		// being affected by the goroutines from other tests. To do that, we start a
+		// huge number of afterFunc and check that the number of goroutines before
+		// and after more or less match.
+		expected := runtime.NumGoroutine()
+		var cancels []func()
+		for i := 1; i <= 10000; i++ {
+			cancels = append(cancels, afterFunc(clock.RealClock{}, 1*time.Hour, func() {
+				t.Errorf("should never be called")
+			}))
+		}
+
+		for _, cancel := range cancels {
+			cancel()
+		}
+
+		// We don't know when the goroutines will actually finish.
+		time.Sleep(100 * time.Millisecond)
+
+		t.Logf("%d goroutines before, %d goroutines after", expected, runtime.NumGoroutine())
+
+		assert.InDelta(t, expected, runtime.NumGoroutine(), 100)
+	})
+
+	t.Run("f is called after 100 milliseconds", func(t *testing.T) {
+		var end time.Time
+		wait := make(chan struct{})
+
+		start := time.Now()
+
+		afterFunc(clock.RealClock{}, 100*time.Millisecond, func() {
+			end = time.Now()
+			close(wait)
+		})
+
+		<-wait
+		assert.InDelta(t, 100*time.Millisecond, end.Sub(start), float64(1*time.Millisecond))
+	})
+}
+
 func TestAdd(t *testing.T) {
 	after := newMockAfter()
-	afterFunc = after.AfterFunc
 
 	var wg sync.WaitGroup
 	type testT struct {
@@ -56,6 +105,7 @@ func TestAdd(t *testing.T) {
 					}
 					waitSubtest <- struct{}{}
 				})
+				queue.(*scheduledWorkQueue).afterFunc = after.AfterFunc
 				queue.Add(test.obj, test.duration)
 				after.warp(test.duration + time.Millisecond)
 				<-waitSubtest
@@ -68,7 +118,6 @@ func TestAdd(t *testing.T) {
 
 func TestForget(t *testing.T) {
 	after := newMockAfter()
-	afterFunc = after.AfterFunc
 
 	var wg sync.WaitGroup
 	type testT struct {
@@ -85,9 +134,10 @@ func TestForget(t *testing.T) {
 		t.Run(test.obj, func(test testT) func(*testing.T) {
 			return func(t *testing.T) {
 				defer wg.Done()
-				queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj interface{}) {
+				queue := NewScheduledWorkQueue(clock.RealClock{}, func(_ interface{}) {
 					t.Errorf("scheduled function should never be called")
 				})
+				queue.(*scheduledWorkQueue).afterFunc = after.AfterFunc
 				queue.Add(test.obj, test.duration)
 				queue.Forget(test.obj)
 				after.warp(test.duration * 2)
@@ -102,11 +152,12 @@ func TestForget(t *testing.T) {
 // doesn't end up hitting a data-race / leaking a timer.
 func TestConcurrentAdd(t *testing.T) {
 	after := newMockAfter()
-	afterFunc = after.AfterFunc
+
 	var wg sync.WaitGroup
 	queue := NewScheduledWorkQueue(clock.RealClock{}, func(obj interface{}) {
 		t.Fatalf("should not be called, but was called with %v", obj)
 	})
+	queue.(*scheduledWorkQueue).afterFunc = after.AfterFunc
 
 	for i := 0; i < 1000; i++ {
 		wg.Add(1)
@@ -147,7 +198,7 @@ func newMockAfter() *mockAfter {
 	}
 }
 
-func (m *mockAfter) AfterFunc(c clock.Clock, d time.Duration, f func()) stoppable {
+func (m *mockAfter) AfterFunc(c clock.Clock, d time.Duration, f func()) func() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -156,7 +207,9 @@ func (m *mockAfter) AfterFunc(c clock.Clock, d time.Duration, f func()) stoppabl
 		t: m.currentTime.Add(d),
 	}
 	m.queue = append(m.queue, item)
-	return item
+	return func() {
+		item.Stop()
+	}
 }
 
 func (m *mockAfter) warp(d time.Duration) {

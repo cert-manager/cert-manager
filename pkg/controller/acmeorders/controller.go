@@ -158,6 +158,13 @@ func NewController(
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
+	// We don't want to leak goroutines, so let's remove this key from the
+	// scheduled queue in case it has been scheduled. We only need to
+	// un-schedule the key for 'Deleted' events, but ProcessItem does not allow
+	// us to distinguish between 'Added', 'Updated' and 'Deleted'. Note that
+	// there is no unit test around this.
+	c.scheduledWorkQueue.Forget(key)
+
 	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
