@@ -76,7 +76,7 @@ func Test_controllerBuilder(t *testing.T) {
 			givenCall:         func(t *testing.T, _ cmclient.Interface, _ kubernetes.Interface) {},
 			expectRequeueKey:  "",
 		},
-		"if no changes then no request should sync": {
+		"if no changes to request or order, then no request should sync": {
 			existingCSR:       baseCSR,
 			existingCMObjects: []runtime.Object{baseOrder},
 			givenCall:         func(t *testing.T, _ cmclient.Interface, _ kubernetes.Interface) {},
