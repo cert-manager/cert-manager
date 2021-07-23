@@ -183,11 +183,14 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]testT{
-		"a CertificateSigningRequest without an approved condition should do nothing": {
+		"a CertificateSigningRequest without an approved condition should fire event": {
 			csr: baseCSRNotApproved.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{baseCSRNotApproved.DeepCopy()},
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal WaitingApproval Waiting for the Approved condition before issuing",
+				},
 			},
 		},
 		"a CertificateSigningRequest with a denied condition should do nothing": {
