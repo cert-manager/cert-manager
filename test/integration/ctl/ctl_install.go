@@ -129,13 +129,9 @@ func executeCommandAndCheckOutput(
 		diffs := dmp.DiffMain(strings.TrimSpace(expOutput), strings.TrimSpace(stdout.String()), false)
 		t.Errorf(
 			"got unexpected output, diff (ignoring line anchors ^ and $ and regex for creation time):\n"+
-				"%s\n"+
-				"\n"+
-				"expected: \n"+
-				"%s\n"+
-				"\n"+
-				"got: \n"+
-				"%s",
+				"diff: %s\n\n"+
+				" exp: %s\n\n"+
+				" got: %s",
 			dmp.DiffPrettyText(diffs),
 			expOutput,
 			stdout.String(),

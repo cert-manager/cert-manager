@@ -17,7 +17,6 @@ limitations under the License.
 package install_framework
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -78,7 +77,7 @@ func NewTestInstallApiServer(t *testing.T) (*TestInstallApiServer, CleanupFuncti
 }
 
 func createKubeConfigFile(t *testing.T, user *envtest.AuthenticatedUser) (string, CleanupFunction) {
-	tmpfile, err := ioutil.TempFile("", "config")
+	tmpfile, err := os.CreateTemp("", "config")
 	if err != nil {
 		t.Fatal(err)
 	}
