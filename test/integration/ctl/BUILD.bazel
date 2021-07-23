@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_test(
     name = "go_default_test",
@@ -9,6 +9,7 @@ go_test(
         "ctl_status_certificate_test.go",
     ],
     data = glob(["testdata/**"]),
+    embed = [":go_default_library"],
     deps = [
         "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create/certificaterequest:go_default_library",
@@ -42,7 +43,22 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//test/integration/ctl/install_framework:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["ctl_install.go"],
+    importpath = "github.com/jetstack/cert-manager/test/integration/ctl",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cmd/ctl/cmd:go_default_library",
+        "//test/integration/ctl/install_framework:go_default_library",
+        "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
+    ],
 )

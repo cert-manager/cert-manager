@@ -228,9 +228,14 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	}
 
 	// Install chart
-	o.client.DryRun = false                  // Apply DryRun cli flags
-	o.client.ClientOnly = false              // Perform install against cluster
-	o.client.Atomic = true                   // If part of the install fails, also undo other installed resources
+	o.client.DryRun = false     // Apply DryRun cli flags
+	o.client.ClientOnly = false // Perform install against cluster
+	// 'Atomic=True' means that if part of the install fails, all resource installs are reverted;
+	// Helm supports 3 diffent combinations of the (Atomic, Wait) boolean couple:
+	// (False, False), (False, True) or (True, True)
+	// For simplicity, we want do not support Waiting without the Atomic option (False, True),
+	// this allows this cli to use a single --wait=(True|False) flag
+	o.client.Atomic = o.client.Wait
 	chartValues[installCRDsFlagName] = false // Do not render CRDs, as this might cause problems when uninstalling using helm
 
 	return o.client.Run(chart, chartValues)
