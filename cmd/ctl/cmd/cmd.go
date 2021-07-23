@@ -28,7 +28,7 @@ import (
 	// Load all auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/approve"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/check"
@@ -53,9 +53,9 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 
 	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
 	kubeConfigFlags.AddFlags(cmds.PersistentFlags())
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
+	matchVersionKubeConfigFlags := util.NewMatchVersionFlags(kubeConfigFlags)
 	matchVersionKubeConfigFlags.AddFlags(cmds.PersistentFlags())
-	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+	factory := util.NewFactory(matchVersionKubeConfigFlags)
 
 	cmds.Flags().AddGoFlagSet(flag.CommandLine)
 	flag.CommandLine.Parse([]string{})

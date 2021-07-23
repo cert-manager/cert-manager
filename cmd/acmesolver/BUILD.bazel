@@ -8,7 +8,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//cmd/acmesolver/app:go_default_library",
-        "//pkg/util/cmd:go_default_library",
+        "//cmd/util:go_default_library",
     ],
 )
 

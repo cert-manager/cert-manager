@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/jetstack/cert-manager/cmd/acmesolver/app"
-	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
+	"github.com/jetstack/cert-manager/cmd/util"
 )
 
 // acmesolver solves ACME http-01 challenges. This is intended to run as a pod
@@ -29,10 +29,13 @@ import (
 // cert-manager.
 
 func main() {
-	stopCh := utilcmd.SetupSignalHandler()
+	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	defer exit() // This function might call os.Exit, so defer last
+
 	cmd := app.NewACMESolverCommand(stopCh)
 
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
+		util.SetExitCode(err)
 	}
 }

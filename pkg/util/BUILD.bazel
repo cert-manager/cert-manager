@@ -3,7 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "context.go",
         "useragent.go",
         "util.go",
         "version.go",
@@ -34,7 +33,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/util/cmapichecker:all-srcs",
-        "//pkg/util/cmd:all-srcs",
         "//pkg/util/coverage:all-srcs",
         "//pkg/util/errors:all-srcs",
         "//pkg/util/feature:all-srcs",

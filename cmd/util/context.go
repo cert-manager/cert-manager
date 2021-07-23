@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2021 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package util
 
 import (
-	"os"
+	"context"
 )
 
-var shutdownSignals = []os.Signal{os.Interrupt}
+// ContextWithStopCh will wrap a context with a stop channel.
+// When the provided stopCh closes, the cancel() will be called on the context.
+// This provides a convenient way to represent a stop channel as a context.
+func ContextWithStopCh(ctx context.Context, stopCh <-chan struct{}) context.Context {
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		defer cancel()
+		select {
+		case <-ctx.Done():
+		case <-stopCh:
+		}
+	}()
+	return ctx
+}
