@@ -47,6 +47,10 @@ elif [[ "$K8S_VERSION" =~ 1\.20 ]] ; then
   KIND_IMAGE_SHA="sha256:b40ecf8bcb188f6a0d0f5d406089c48588b75edc112c6f635d26be5de1c89040"
 elif [[ "$K8S_VERSION" =~ 1\.21 ]] ; then
   KIND_IMAGE_SHA="sha256:fae9a58f17f18f06aeac9772ca8b5ac680ebbed985e266f711d936e91d113bad"
+elif [[ "$K8S_VERSION" =~ 1\.22 ]] ; then
+  KIND_IMAGE_SHA="sha256:0d32eba8eb762fde6e8e92dbb92811c327add2f7f3c8d6206f9f668a3ae1dee7"
+  # Override KIND_IMAGE_REPO set in devel/lib/lib.sh till there is a 1.22 image in kindest/node.
+  KIND_IMAGE_REPO="eu.gcr.io/jetstack-build-infra-images/kind"
 else
   echo "Unrecognised Kubernetes version '${K8S_VERSION}'! Aborting..."
   exit 1
