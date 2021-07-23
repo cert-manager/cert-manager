@@ -41,11 +41,10 @@ import (
 
 const (
 	// Namespace is the namespace for cert-manager metric names
-	namespace                              = "certmanager"
-	prometheusMetricsServerShutdownTimeout = 5 * time.Second
-	prometheusMetricsServerReadTimeout     = 8 * time.Second
-	prometheusMetricsServerWriteTimeout    = 8 * time.Second
-	prometheusMetricsServerMaxHeaderBytes  = 1 << 20 // 1 MiB
+	namespace                             = "certmanager"
+	prometheusMetricsServerReadTimeout    = 8 * time.Second
+	prometheusMetricsServerWriteTimeout   = 8 * time.Second
+	prometheusMetricsServerMaxHeaderBytes = 1 << 20 // 1 MiB
 )
 
 // Metrics is designed to be a shared object for updating the metrics exposed

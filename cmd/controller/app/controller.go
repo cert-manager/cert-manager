@@ -129,7 +129,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}
 
 			g.Go(func() error {
-				log.V(logf.InfoLevel).Info("starting controller", n)
+				log.V(logf.InfoLevel).Info("starting controller")
 
 				workers := 5
 				return iface.Run(workers, rootCtx.Done())

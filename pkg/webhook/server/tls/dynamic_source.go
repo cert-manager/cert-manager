@@ -115,14 +115,23 @@ func (f *DynamicSource) Run(stopCh <-chan struct{}) error {
 			}
 
 			for {
-				timer := time.NewTimer(renewMoment.Sub(time.Now()))
+				timer := time.NewTimer(time.Until(renewMoment))
 				defer timer.Stop()
 
 				select {
 				case <-stopCh:
 					return
 				case <-timer.C:
-					ch <- struct{}{}
+					// Try to send a message on ch, but also allow for a stop signal or
+					// a new renewMoment to be received
+					select {
+					case <-stopCh:
+						return
+					case ch <- struct{}{}:
+						// Message was sent on channel
+					case renewMoment = <-nextRenewCh:
+						// We recevieved a renew moment, next loop iteration will update the timer
+					}
 				case renewMoment = <-nextRenewCh:
 					// We recevieved a renew moment, next loop iteration will update the timer
 				}

@@ -41,8 +41,8 @@ import (
 	ciphers "k8s.io/component-base/cli/flag"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	servertls "github.com/jetstack/cert-manager/pkg/webhook/server/tls"
@@ -127,7 +127,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		s.Log = crlog.NullLogger{}
 	}
 
-	gctx := util.ContextWithStopCh(context.Background(), stopCh)
+	gctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
 	g, gctx := errgroup.WithContext(gctx)
 
 	// if a HealthzAddr is provided, start the healthz listener
@@ -164,7 +164,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	}
 
 	// create a listener for actual webhook requests
-	listerner, err := net.Listen("tcp", s.ListenAddr)
+	listener, err := net.Listen("tcp", s.ListenAddr)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
-		listerner = tls.NewListener(listerner, &tls.Config{
+		listener = tls.NewListener(listener, &tls.Config{
 			GetCertificate:           s.CertificateSource.GetCertificate,
 			CipherSuites:             cipherSuites,
 			MinVersion:               minVersion,
@@ -196,7 +196,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		s.Log.V(logf.InfoLevel).Info("listening for insecure connections", "address", s.ListenAddr)
 	}
 
-	s.listener = listerner
+	s.listener = listener
 	mux := http.NewServeMux()
 	mux.HandleFunc("/validate", s.handle(s.validate))
 	mux.HandleFunc("/mutate", s.handle(s.mutate))
