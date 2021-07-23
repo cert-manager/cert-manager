@@ -65,9 +65,13 @@ type ACME struct {
 func init() {
 	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CSRControllerName).
-			For(certificatesigningrequests.New(apiutil.IssuerACME, NewACME(ctx), ctx.SharedInformerFactory.Acme().V1().Orders().Informer())).
+			For(controllerBuilder(ctx)).
 			Complete()
 	})
+}
+
+func controllerBuilder(ctx *controllerpkg.Context) *certificatesigningrequests.Controller {
+	return certificatesigningrequests.New(apiutil.IssuerACME, NewACME(ctx), ctx.SharedInformerFactory.Acme().V1().Orders().Informer())
 }
 
 func NewACME(ctx *controllerpkg.Context) *ACME {

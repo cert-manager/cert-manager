@@ -24,11 +24,15 @@ import (
 	"time"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	authzv1 "k8s.io/api/authorization/v1"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -36,6 +40,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -46,9 +51,138 @@ import (
 var (
 	fixedClockStart = time.Now()
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
+
+	certificatesigningrequestGVK = schema.GroupVersionKind{Group: "certificates.k8s.io", Version: "v1", Kind: "CertificateSigningRequest"}
 )
 
-func TestProcessItem(t *testing.T) {
+func Test_controllerBuilder(t *testing.T) {
+	baseCSR := gen.CertificateSigningRequest("test-csr",
+		gen.SetCertificateSigningRequestCertificate([]byte("csr")),
+	)
+
+	baseOrder := gen.Order("test-order",
+		gen.SetOrderNamespace("test-namespace"),
+	)
+
+	tests := map[string]struct {
+		existingCSR       runtime.Object
+		existingCMObjects []runtime.Object
+		givenCall         func(*testing.T, cmclient.Interface, kubernetes.Interface)
+		expectRequeueKey  string
+	}{
+		"if no request then no request should sync": {
+			existingCSR:       nil,
+			existingCMObjects: []runtime.Object{baseOrder},
+			givenCall:         func(t *testing.T, _ cmclient.Interface, _ kubernetes.Interface) {},
+			expectRequeueKey:  "",
+		},
+		"if no changes then no request should sync": {
+			existingCSR:       baseCSR,
+			existingCMObjects: []runtime.Object{baseOrder},
+			givenCall:         func(t *testing.T, _ cmclient.Interface, _ kubernetes.Interface) {},
+			expectRequeueKey:  "",
+		},
+		"request should be synced if an owned order is updated": {
+			existingCSR: baseCSR,
+			existingCMObjects: []runtime.Object{
+				gen.OrderFrom(baseOrder,
+					gen.SetOrderOwnerReference(*metav1.NewControllerRef(baseCSR, certificatesigningrequestGVK)),
+				),
+			},
+			givenCall: func(t *testing.T, cmclient cmclient.Interface, _ kubernetes.Interface) {
+				order := gen.OrderFrom(baseOrder,
+					gen.SetOrderOwnerReference(*metav1.NewControllerRef(baseCSR, certificatesigningrequestGVK)),
+					gen.SetOrderURL("update"),
+				)
+				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(context.TODO(), order, metav1.UpdateOptions{})
+				require.NoError(t, err)
+			},
+			expectRequeueKey: "test-csr",
+		},
+		"request should not be synced if updated order is not owned": {
+			existingCSR: baseCSR,
+			existingCMObjects: []runtime.Object{
+				gen.OrderFrom(baseOrder),
+			},
+			givenCall: func(t *testing.T, cmclient cmclient.Interface, _ kubernetes.Interface) {
+				order := gen.OrderFrom(baseOrder,
+					gen.SetOrderURL("update"),
+				)
+				_, err := cmclient.AcmeV1().Orders("test-namespace").Update(context.TODO(), order, metav1.UpdateOptions{})
+				require.NoError(t, err)
+			},
+			expectRequeueKey: "",
+		},
+		"request should be synced if request is updated": {
+			existingCSR:       baseCSR,
+			existingCMObjects: []runtime.Object{baseOrder},
+			givenCall: func(t *testing.T, _ cmclient.Interface, kubeclient kubernetes.Interface) {
+				csr := gen.CertificateSigningRequestFrom(baseCSR,
+					gen.SetCertificateSigningRequestCertificate([]byte("update")),
+				)
+				_, err := kubeclient.CertificatesV1().CertificateSigningRequests().UpdateStatus(context.TODO(), csr, metav1.UpdateOptions{})
+				require.NoError(t, err)
+			},
+			expectRequeueKey: "test-csr",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			b := &testpkg.Builder{T: t, CertManagerObjects: test.existingCMObjects}
+			if test.existingCSR != nil {
+				b.KubeObjects = append(b.KubeObjects, test.existingCSR)
+			}
+			b.Init()
+
+			queue, hasSynced, err := controllerBuilder(b.Context).Register(b.Context)
+			require.NoError(t, err)
+
+			b.Start()
+			defer b.Stop()
+
+			for _, hs := range hasSynced {
+				require.True(t, hs())
+			}
+
+			// Remove all objects from the queue before continuing.
+			for queue.Len() != 0 {
+				o, _ := queue.Get()
+				queue.Done(o)
+			}
+
+			test.givenCall(t, b.CMClient, b.Client)
+
+			// We have no way of knowing when the informers will be done adding
+			// items to the queue due to the "shared informer" architecture:
+			// Start(stop) does not allow you to wait for the informers to be
+			// done. To work around that, we do a second queue.Get and expect it
+			// to be nil.
+			time.AfterFunc(50*time.Millisecond, queue.ShutDown)
+
+			var gotKeys []string
+			for {
+				// Get blocks until either (1) a key is returned, or (2) the
+				// queue is shut down.
+				gotKey, done := queue.Get()
+				if done {
+					break
+				}
+				gotKeys = append(gotKeys, gotKey.(string))
+			}
+			assert.Equal(t, 0, queue.Len(), "queue should be empty")
+
+			// We only expect 0 or 1 keys received in the queue.
+			if test.expectRequeueKey != "" {
+				assert.Equal(t, []string{test.expectRequeueKey}, gotKeys)
+			} else {
+				assert.Nil(t, gotKeys)
+			}
+		})
+	}
+}
+
+func Test_ProcessItem(t *testing.T) {
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	util.Clock = fixedClock
 
