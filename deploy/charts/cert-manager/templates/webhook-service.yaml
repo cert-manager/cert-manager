@@ -9,6 +9,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "webhook"
     {{- include "labels" . | nindent 4 }}
+{{- if .Values.serviceLabels }}
+{{ toYaml .Values.serviceLabels | indent 4 }}
+{{- end }}
 spec:
   type: {{ .Values.webhook.serviceType }}
   {{- if .Values.webhook.loadBalancerIP }}
