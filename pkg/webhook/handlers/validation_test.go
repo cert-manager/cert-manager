@@ -252,35 +252,6 @@ func TestRegistryBackedValidator(t *testing.T) {
 				Allowed: true,
 			},
 		},
-		"should validate in the current APIVersion if RequestKind is not set (for Kubernetes <1.15 support)": {
-			inputRequest: admissionv1.AdmissionRequest{
-				UID:       types.UID("abc"),
-				Kind:      *testTypeGVKV2,
-				Operation: admissionv1.Create,
-				Object: runtime.RawExtension{
-					Raw: []byte(fmt.Sprintf(`
-{
-	"apiVersion": "testgroup.testing.cert-manager.io/v2",
-	"kind": "TestType",
-	"metadata": {
-		"name": "testing",
-		"namespace": "abc",
-		"creationTimestamp": null
-	},
-	"testField": "%s"
-}
-`, v2.DisallowedTestFieldValue)),
-				},
-			},
-			expectedResponse: admissionv1.AdmissionResponse{
-				UID:     types.UID("abc"),
-				Allowed: false,
-				Result: &metav1.Status{
-					Status: metav1.StatusFailure, Code: http.StatusNotAcceptable, Reason: metav1.StatusReasonNotAcceptable,
-					Message: "testField: Invalid value: \"not-allowed-in-v2\": value not allowed",
-				},
-			},
-		},
 	}
 
 	for n, test := range tests {
