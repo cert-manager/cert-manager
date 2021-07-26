@@ -25,6 +25,9 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/discovery"
 	"net"
 	"net/url"
 	"time"
@@ -440,11 +443,46 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 									PathType: pathTypePrefix(),
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
-											Name: "http",
+											Name: "somesvc",
 											Port: networkingv1.ServiceBackendPort{
 												Number: 80,
 											},
 										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func NewV1Beta1Ingress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1beta1.Ingress {
+	return &networkingv1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: annotations,
+		},
+		Spec: networkingv1beta1.IngressSpec{
+			TLS: []networkingv1beta1.IngressTLS{
+				{
+					Hosts:      dnsNames,
+					SecretName: secretName,
+				},
+			},
+			Rules: []networkingv1beta1.IngressRule{
+				{
+					Host: dnsNames[0],
+					IngressRuleValue: networkingv1beta1.IngressRuleValue{
+						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+							Paths: []networkingv1beta1.HTTPIngressPath{
+								{
+									Path: "/",
+									Backend: networkingv1beta1.IngressBackend{
+										ServiceName: "somesvc",
+										ServicePort: intstr.FromInt(80),
 									},
 								},
 							},
@@ -534,4 +572,17 @@ func ptrStr(s string) *string {
 func ptrPort(port int32) *gwapiv1alpha1.PortNumber {
 	p := gwapiv1alpha1.PortNumber(port)
 	return &p
+}
+
+// HasAPIVersion lets you know if an API exists in the discovery API
+// calling this function always performs a request to the API server.
+func HasAPIVersion(d discovery.DiscoveryInterface, GroupVersion string) bool {
+	resourceList, err := d.ServerResourcesForGroupVersion(GroupVersion)
+	if err != nil {
+		return false
+	}
+	if len(resourceList.APIResources) > 0 {
+		return true
+	}
+	return false
 }

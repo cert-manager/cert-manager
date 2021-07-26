@@ -21,16 +21,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 	"strings"
 	"time"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -43,6 +38,12 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const foreverTestTimeout = time.Second * 60
@@ -226,17 +227,29 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
-		ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
+
+		switch {
+		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+			ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
+			By("Creating an Ingress with the issuer name annotation set")
+			_, err := ingClient.Create(context.TODO(), util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
+				"cert-manager.io/issuer": issuerName,
+			}, acmeIngressDomain), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+			By("Creating an Ingress with the issuer name annotation set")
+			_, err := ingClient.Create(context.TODO(), util.NewV1Beta1Ingress(certificateSecretName, certificateSecretName, map[string]string{
+				"cert-manager.io/issuer": issuerName,
+			}, acmeIngressDomain), metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		default:
+			Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
+		}
+
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
-
-		By("Creating an Ingress with the issuer name annotation set")
-		_, err := ingClient.Create(context.TODO(), util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
-			"cert-manager.io/issuer": issuerName,
-		}, acmeIngressDomain), metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
 		By("Waiting for Certificate to exist")
-		err = util.WaitForCertificateToExist(certClient, certificateSecretName, foreverTestTimeout)
+		err := util.WaitForCertificateToExist(certClient, certificateSecretName, foreverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
@@ -287,36 +300,39 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
 		// using the TLS secret that we just got from the self-sign
-		ingress := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
-		_, err = ingress.Create(context.TODO(), &networkingv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: fixedIngressName,
-				Annotations: map[string]string{
-					"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
-					"kubernetes.io/ingress.class":                    "nginx",
-				},
-			},
-			Spec: networkingv1.IngressSpec{
-				IngressClassName: pointer.StringPtr("nginx"),
-				TLS: []networkingv1.IngressTLS{
-					{
-						Hosts:      []string{acmeIngressDomain},
-						SecretName: secretname,
+
+		switch {
+		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+			ingress := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
+			_, err = ingress.Create(context.TODO(), &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fixedIngressName,
+					Annotations: map[string]string{
+						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
 					},
 				},
-				Rules: []networkingv1.IngressRule{
-					{
-						Host: acmeIngressDomain,
-						IngressRuleValue: networkingv1.IngressRuleValue{
-							HTTP: &networkingv1.HTTPIngressRuleValue{
-								Paths: []networkingv1.HTTPIngressPath{
-									{
-										Path: "/",
-										Backend: networkingv1.IngressBackend{
-											Service: &networkingv1.IngressServiceBackend{
-												Name: "doesnotexist",
-												Port: networkingv1.ServiceBackendPort{
-													Number: 443,
+				Spec: networkingv1.IngressSpec{
+					IngressClassName: pointer.StringPtr("nginx"),
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{acmeIngressDomain},
+							SecretName: secretname,
+						},
+					},
+					Rules: []networkingv1.IngressRule{
+						{
+							Host: acmeIngressDomain,
+							IngressRuleValue: networkingv1.IngressRuleValue{
+								HTTP: &networkingv1.HTTPIngressRuleValue{
+									Paths: []networkingv1.HTTPIngressPath{
+										{
+											Path: "/",
+											Backend: networkingv1.IngressBackend{
+												Service: &networkingv1.IngressServiceBackend{
+													Name: "doesnotexist",
+													Port: networkingv1.ServiceBackendPort{
+														Number: 443,
+													},
 												},
 											},
 										},
@@ -326,11 +342,50 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 						},
 					},
 				},
-			},
-		}, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+			ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+			_, err = ingress.Create(context.TODO(), &networkingv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fixedIngressName,
+					Annotations: map[string]string{
+						"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+					},
+				},
+				Spec: networkingv1beta1.IngressSpec{
+					IngressClassName: pointer.StringPtr("nginx"),
+					TLS: []networkingv1beta1.IngressTLS{
+						{
+							Hosts:      []string{acmeIngressDomain},
+							SecretName: secretname,
+						},
+					},
+					Rules: []networkingv1beta1.IngressRule{
+						{
+							Host: acmeIngressDomain,
+							IngressRuleValue: networkingv1beta1.IngressRuleValue{
+								HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+									Paths: []networkingv1beta1.HTTPIngressPath{
+										{
+											Path: "/",
+											Backend: networkingv1beta1.IngressBackend{
+												ServiceName: "doesnotexist",
+												ServicePort: intstr.FromInt(443),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		default:
+			Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
+		}
 
-		By("Creating a Certificate")
 		// This is a special cert for the test suite, where we specify an ingress rather than a
 		// class
 		By("Creating a Certificate")
