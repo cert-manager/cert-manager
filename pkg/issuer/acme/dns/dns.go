@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
@@ -416,7 +416,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1.GenericIssuer, ch *cmacme.Cha
 		ResourceNamespace:       resourceNamespace,
 		Key:                     ch.Spec.Key,
 		DNSName:                 ch.Spec.DNSName,
-		Config:                  &apiext.JSON{Raw: b},
+		Config:                  &apiextensionsv1.JSON{Raw: b},
 	}
 
 	return webhookSolver, req, nil
