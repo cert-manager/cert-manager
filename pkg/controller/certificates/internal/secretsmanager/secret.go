@@ -102,6 +102,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 		secret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}
 	}
 
+	secret = secret.DeepCopy()
 	err = s.setValues(crt, secret, data)
 	if err != nil {
 		return err
