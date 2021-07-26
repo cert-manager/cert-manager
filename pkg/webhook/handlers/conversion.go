@@ -22,7 +22,6 @@ import (
 	"net/http"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,7 +86,7 @@ func (c *SchemeBackedConverter) convertObjects(desiredAPIVersion string, objects
 	return convertedObjects, nil
 }
 
-func (c *SchemeBackedConverter) ConvertV1(conversionSpec *apiextensionsv1.ConversionRequest) *apiextensionsv1.ConversionResponse {
+func (c *SchemeBackedConverter) Convert(conversionSpec *apiextensionsv1.ConversionRequest) *apiextensionsv1.ConversionResponse {
 	result := metav1.Status{Status: metav1.StatusSuccess}
 	convertedObjects, err := c.convertObjects(conversionSpec.DesiredAPIVersion, conversionSpec.Objects)
 	if err != nil {
@@ -97,21 +96,6 @@ func (c *SchemeBackedConverter) ConvertV1(conversionSpec *apiextensionsv1.Conver
 		result.Message = err.Error()
 	}
 	return &apiextensionsv1.ConversionResponse{
-		UID:              conversionSpec.UID,
-		ConvertedObjects: convertedObjects,
-		Result:           result,
-	}
-}
-func (c *SchemeBackedConverter) ConvertV1Beta1(conversionSpec *apiextensionsv1beta1.ConversionRequest) *apiextensionsv1beta1.ConversionResponse {
-	result := metav1.Status{Status: metav1.StatusSuccess}
-	convertedObjects, err := c.convertObjects(conversionSpec.DesiredAPIVersion, conversionSpec.Objects)
-	if err != nil {
-		result.Status = metav1.StatusFailure
-		result.Code = http.StatusBadRequest
-		result.Reason = metav1.StatusReasonBadRequest
-		result.Message = err.Error()
-	}
-	return &apiextensionsv1beta1.ConversionResponse{
 		UID:              conversionSpec.UID,
 		ConvertedObjects: convertedObjects,
 		Result:           result,

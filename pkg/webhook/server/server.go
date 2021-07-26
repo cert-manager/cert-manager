@@ -31,7 +31,6 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -353,13 +352,7 @@ func (s *Server) convert(_ context.Context, obj runtime.Object) (runtime.Object,
 		if review.Request == nil {
 			return nil, errors.New("review.request was nil")
 		}
-		review.Response = s.ConversionWebhook.ConvertV1(review.Request)
-		return review, nil
-	case *apiextensionsv1beta1.ConversionReview:
-		if review.Request == nil {
-			return nil, errors.New("review.request was nil")
-		}
-		review.Response = s.ConversionWebhook.ConvertV1Beta1(review.Request)
+		review.Response = s.ConversionWebhook.Convert(review.Request)
 		return review, nil
 	default:
 		return nil, fmt.Errorf("unsupported conversion review type: %T", review)
