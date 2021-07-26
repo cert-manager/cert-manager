@@ -574,15 +574,17 @@ func ptrPort(port int32) *gwapiv1alpha1.PortNumber {
 	return &p
 }
 
-// HasAPIVersion lets you know if an API exists in the discovery API
+// HasIngresses lets you know if an API exists in the discovery API
 // calling this function always performs a request to the API server.
-func HasAPIVersion(d discovery.DiscoveryInterface, GroupVersion string) bool {
+func HasIngresses(d discovery.DiscoveryInterface, GroupVersion string) bool {
 	resourceList, err := d.ServerResourcesForGroupVersion(GroupVersion)
 	if err != nil {
 		return false
 	}
-	if len(resourceList.APIResources) > 0 {
-		return true
+	for _, r := range resourceList.APIResources {
+		if r.Kind == "Ingress" {
+			return true
+		}
 	}
 	return false
 }

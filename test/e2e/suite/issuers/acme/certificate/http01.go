@@ -229,14 +229,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
 
 		switch {
-		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 			ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 			By("Creating an Ingress with the issuer name annotation set")
 			_, err := ingClient.Create(context.TODO(), util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
 				"cert-manager.io/issuer": issuerName,
 			}, acmeIngressDomain), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 			By("Creating an Ingress with the issuer name annotation set")
 			_, err := ingClient.Create(context.TODO(), util.NewV1Beta1Ingress(certificateSecretName, certificateSecretName, map[string]string{
@@ -302,7 +302,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// using the TLS secret that we just got from the self-sign
 
 		switch {
-		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 			_, err = ingress.Create(context.TODO(), &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -345,7 +345,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				},
 			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-		case util.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+		case util.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 			ingress := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 			_, err = ingress.Create(context.TODO(), &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{

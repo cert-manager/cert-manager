@@ -645,7 +645,7 @@ func (s *Suite) Define() {
 		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
 			var certName string
 			switch {
-			case e2eutil.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 				ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 
 				name := "testcert-ingress"
@@ -659,7 +659,7 @@ func (s *Suite) Define() {
 				}, e2eutil.RandomSubdomain(s.DomainSuffix)), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				certName = ingress.Spec.TLS[0].SecretName
-			case e2eutil.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 				ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 				name := "testcert-ingress"
 				secretName := "testcert-ingress-tls"
@@ -697,7 +697,7 @@ func (s *Suite) Define() {
 			renewBefore := time.Hour * 111
 
 			switch {
-			case e2eutil.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
 				ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 
 				name := "testcert-ingress"
@@ -715,7 +715,7 @@ func (s *Suite) Define() {
 				Expect(err).NotTo(HaveOccurred())
 
 				certName = ingress.Spec.TLS[0].SecretName
-			case e2eutil.HasAPIVersion(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
 				ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
 
 				name := "testcert-ingress"

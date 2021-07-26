@@ -53,6 +53,7 @@ type InternalIngressInterface interface {
 	Create(ctx context.Context, ingress *networkingv1.Ingress, opts metav1.CreateOptions) (*networkingv1.Ingress, error)
 	Update(ctx context.Context, ingress *networkingv1.Ingress, opts metav1.UpdateOptions) (*networkingv1.Ingress, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*networkingv1.Ingress, error)
 }
 
 // InternalIngressLister mimics a client-go networking/v1/IngressLister.
@@ -107,28 +108,41 @@ func NewCreateUpdater(ctx *controller.Context) (InternalIngressCreateUpdater, er
 func hasVersion(d discovery.DiscoveryInterface, GroupVersion string) bool {
 	// check whether the GroupVersion is already known
 	knownVersions := knownAPIVersionCache.Load().(map[string]bool)
-	if knownVersions[GroupVersion] == true {
-		return true
+	knownVersion, found := knownVersions[GroupVersion]
+	if found {
+		return knownVersion
 	}
 
 	resourceList, err := d.ServerResourcesForGroupVersion(GroupVersion)
 	if err != nil {
 		return false
 	}
-	if len(resourceList.APIResources) > 0 {
-		// Now we know the APIServer supports this GroupVersion, store the result atomically
-		// in the knownVersions cache. Lock, get the latest copy, atomically update.
-		cacheLock.Lock()
-		defer cacheLock.Unlock()
-		oldCache := knownAPIVersionCache.Load().(map[string]bool)
-		newCache := make(map[string]bool)
-		for k, v := range oldCache {
-			newCache[k] = v
+	for _, r := range resourceList.APIResources {
+		if r.Kind == "Ingress" {
+			// Now we know the APIServer supports this GroupVersion, store the result atomically
+			// in the knownVersions cache. Lock, get the latest copy, atomically update.
+			cacheLock.Lock()
+			oldCache := knownAPIVersionCache.Load().(map[string]bool)
+			newCache := make(map[string]bool)
+			for k, v := range oldCache {
+				newCache[k] = v
+			}
+			newCache[GroupVersion] = true
+			knownAPIVersionCache.Store(newCache)
+			cacheLock.Unlock()
+			return true
 		}
-		newCache[GroupVersion] = true
-		knownAPIVersionCache.Store(newCache)
-		return true
 	}
+	// no networking error and no Ingresses found in networking.k8s.io/<version>, cache negative result
+	cacheLock.Lock()
+	oldCache := knownAPIVersionCache.Load().(map[string]bool)
+	newCache := make(map[string]bool)
+	for k, v := range oldCache {
+		newCache[k] = v
+	}
+	newCache[GroupVersion] = false
+	knownAPIVersionCache.Store(newCache)
+	cacheLock.Unlock()
 	return false
 }
 

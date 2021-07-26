@@ -66,6 +66,10 @@ type v1Interface struct {
 	ns     string
 }
 
+func (v1 *v1Interface) Get(ctx context.Context, name string, opts metav1.GetOptions) (*networkingv1.Ingress, error) {
+	return v1.client.NetworkingV1().Ingresses(v1.ns).Get(ctx, name, opts)
+}
+
 func (v1 *v1Interface) Create(ctx context.Context, ingress *networkingv1.Ingress, opts metav1.CreateOptions) (*networkingv1.Ingress, error) {
 	return v1.client.NetworkingV1().Ingresses(v1.ns).Create(ctx, ingress, opts)
 }

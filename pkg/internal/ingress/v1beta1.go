@@ -133,6 +133,14 @@ type v1beta1Interface struct {
 	ns     string
 }
 
+func (v *v1beta1Interface) Get(ctx context.Context, name string, opts metav1.GetOptions) (*networkingv1.Ingress, error) {
+	ing, err := v.client.NetworkingV1beta1().Ingresses(v.ns).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	return convertV1Beta1ToV1(ing)
+}
+
 func (v *v1beta1Interface) Create(ctx context.Context, ingress *networkingv1.Ingress, opts metav1.CreateOptions) (*networkingv1.Ingress, error) {
 	ing, err := convertV1ToV1Beta1(ingress)
 	if err != nil {
