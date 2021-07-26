@@ -338,7 +338,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.StringSliceVar(&s.CopiedAnnotationPrefixes, "copied-annotation-prefixes", defaultCopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
-		"from Certificate to CertificateRequest and Order by passing a list of annotation key prefixes."+
+		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
 		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 

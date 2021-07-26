@@ -18,6 +18,7 @@ package controller
 
 import (
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -160,4 +161,33 @@ func (b *BlockingEventHandler) OnDelete(obj interface{}) {
 		obj = tombstone.Obj
 	}
 	b.WorkFunc(obj)
+}
+
+// BuildAnnotationsCopy takes a map of annotations and a list of prefix
+// filters and builds a filtered map of annotations. It is used to filter
+// annotations to be copied from Certificate to CertificateRequest and from
+// CertificateSigningRequest to Order.
+func BuildAnnotationsToCopy(allAnnotations map[string]string, prefixes []string) map[string]string {
+	filteredAnnotations := make(map[string]string)
+	includeAll := false
+	for _, v := range prefixes {
+		if v == "*" {
+			includeAll = true
+		}
+	}
+	for _, annotation := range prefixes {
+		prefix := strings.TrimPrefix(annotation, "-")
+		for k, v := range allAnnotations {
+			if strings.HasPrefix(annotation, "-") {
+				if strings.HasPrefix(k, prefix) {
+					// If this is an annotation to not be copied.
+					delete(filteredAnnotations, k)
+				}
+			} else if includeAll || strings.HasPrefix(k, annotation) {
+				// If this is an annotation to be copied or if 'all' should be copied.
+				filteredAnnotations[k] = v
+			}
+		}
+	}
+	return filteredAnnotations
 }

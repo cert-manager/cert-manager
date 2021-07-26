@@ -23,7 +23,6 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -310,31 +309,4 @@ func RenewalTime(notBefore, notAfter time.Time, renewBeforeOverride *metav1.Dura
 
 	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore))
 	return &rt
-}
-
-// BuildAnnotationsToCopy builds a map of annotations from a Certificate that
-// should be copied to the CertificateRequests for that Certificate.
-func BuildAnnotationsToCopy(cert *cmapi.Certificate, copiedAnnotations []string) map[string]string {
-	annotations := make(map[string]string)
-	all := false
-	for _, v := range copiedAnnotations {
-		if v == "*" {
-			all = true
-		}
-	}
-	for _, annotation := range copiedAnnotations {
-		prefix := strings.TrimPrefix(annotation, "-")
-		for k, v := range cert.Annotations {
-			if strings.HasPrefix(annotation, "-") {
-				if strings.HasPrefix(k, prefix) {
-					// If this is an annotation to not be copied.
-					delete(annotations, k)
-				}
-			} else if all || strings.HasPrefix(k, annotation) {
-				// If this is an annotation to be copied or if 'all' should be copied.
-				annotations[k] = v
-			}
-		}
-	}
-	return annotations
 }

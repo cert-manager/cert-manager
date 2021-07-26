@@ -60,6 +60,8 @@ type ACME struct {
 	certClient  certificatesclient.CertificateSigningRequestInterface
 
 	recorder record.EventRecorder
+
+	copiedAnnotationPrefixes []string
 }
 
 func init() {
@@ -76,11 +78,12 @@ func controllerBuilder(ctx *controllerpkg.Context) *certificatesigningrequests.C
 
 func NewACME(ctx *controllerpkg.Context) *ACME {
 	return &ACME{
-		issuerOptions: ctx.IssuerOptions,
-		orderLister:   ctx.SharedInformerFactory.Acme().V1().Orders().Lister(),
-		acmeClientV:   ctx.CMClient.AcmeV1(),
-		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
-		recorder:      ctx.Recorder,
+		issuerOptions:            ctx.IssuerOptions,
+		orderLister:              ctx.SharedInformerFactory.Acme().V1().Orders().Lister(),
+		acmeClientV:              ctx.CMClient.AcmeV1(),
+		certClient:               ctx.Client.CertificatesV1().CertificateSigningRequests(),
+		recorder:                 ctx.Recorder,
+		copiedAnnotationPrefixes: ctx.CertificateOptions.CopiedAnnotationPrefixes,
 	}
 }
 
@@ -291,6 +294,9 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 		return nil, err
 	}
 
+	// Filter the annotations copied from CertificateSigningRequest to the Order.
+	annotations := controllerpkg.BuildAnnotationsToCopy(csr.Annotations, a.copiedAnnotationPrefixes)
+
 	// Truncate certificate name so final name will be <= 63 characters. Hash
 	// (uint32) will be at most 10 digits long, and we account for the hyphen.
 	return &cmacme.Order{
@@ -298,7 +304,7 @@ func (a *ACME) buildOrder(csr *certificatesv1.CertificateSigningRequest, req *x5
 			Name:        name,
 			Namespace:   a.issuerOptions.ResourceNamespace(iss),
 			Labels:      csr.Labels,
-			Annotations: csr.Annotations,
+			Annotations: annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(csr, schema.GroupVersionKind{Group: "certificates.k8s.io", Version: "v1", Kind: "CertificateSigningRequest"}),
 			},
