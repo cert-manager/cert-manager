@@ -32,9 +32,9 @@ import (
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 )
 
-func (h *Helper) handleResult(ns, name string, cert *cmapi.Certificate, err error) (*cmapi.Certificate, error) {
+func (h *Helper) handleResult(ns, name string, cert *cmapi.Certificate, state string, err error) (*cmapi.Certificate, error) {
 	if err != nil {
-		log.Logf("Error waiting for Certificate to become Ready: %v", err)
+		log.Logf("Error waiting for Certificate to become %s: %v", state, err)
 		h.Kubectl(ns).DescribeResource("certificate", name)
 		h.Kubectl(ns).Describe("order", "challenge")
 		h.describeCertificateRequestFromCertificate(ns, cert)
@@ -42,37 +42,61 @@ func (h *Helper) handleResult(ns, name string, cert *cmapi.Certificate, err erro
 	return cert, err
 }
 
-// WaitForCertificateReady waits for the certificate resource to enter a Ready state.
+// waitForCertificateNotIssuing waits for the certificate resource to leave the Issuing state.
+func (h *Helper) waitForCertificateNotIssuing(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
+	result, err := e2eutil.WaitForMissingCertificateCondition(h.CMClient.CertmanagerV1().Certificates(ns), name, cmapi.CertificateCondition{
+		Type:   cmapi.CertificateConditionIssuing,
+		Status: cmmeta.ConditionTrue,
+	}, timeout)
+	return h.handleResult(ns, name, result, "Not Issuing", err)
+}
+
+// WaitForCertificateReady waits for the certificate resource to enter a Ready state and to leave the Issuing state.
 func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
 	result, err := e2eutil.WaitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(ns), name, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionReady,
 		Status: cmmeta.ConditionTrue,
 	}, timeout)
-	return h.handleResult(ns, name, result, err)
+	if err != nil {
+		return h.handleResult(ns, name, result, "Ready", err)
+	}
+	// Making sure that the Certificate is stable (see #4239) by also waiting for the Issuing state to disappear.
+	// A certificate that has state Ready=True and Issuing not set, is stable and will not change without outside changes.
+	return h.waitForCertificateNotIssuing(ns, name, timeout)
 }
 
 // WaitForCertificateReadyUpdate waits for the certificate resource to enter a
-// Ready state. If the provided cert was in a Ready state already, the function
-// waits for a state transition to have happened.
+// Ready state and to leave the Issuing state. If the provided cert was in a
+// Ready state already, the function waits for a state transition to have happened.
 func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
 	result, err := e2eutil.WaitForCertificateConditionWithObservedGeneration(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionTrue,
 		ObservedGeneration: cert.Generation,
 	}, timeout)
-	return h.handleResult(cert.Namespace, cert.Name, result, err)
+	if err != nil {
+		return h.handleResult(cert.Namespace, cert.Name, result, "Ready", err)
+	}
+	// Making sure that the Certificate is stable (see #4239) by also waiting for the Issuing state to disappear.
+	// A certificate that has state Ready=True and Issuing not set, is stable and will not change without outside changes.
+	return h.waitForCertificateNotIssuing(cert.Namespace, cert.Name, timeout)
 }
 
 // WaitForCertificateReadyUpdate waits for the certificate resource to enter a
-// Ready=False state. If the provided cert was in a Ready=False state already,
-// the function waits for a state transition to have happened.
+// Ready=False state and to leave the Issuing state. If the provided cert was
+// in a Ready=False state already, the function waits for a state transition to have happened.
 func (h *Helper) WaitForCertificateNotReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
 	result, err := e2eutil.WaitForCertificateConditionWithObservedGeneration(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionFalse,
 		ObservedGeneration: cert.Generation,
 	}, timeout)
-	return h.handleResult(cert.Namespace, cert.Name, result, err)
+	if err != nil {
+		return h.handleResult(cert.Namespace, cert.Name, result, "Not Ready", err)
+	}
+	// Making sure that the Certificate is stable (see #4239) by also waiting for the Issuing state to disappear.
+	// A certificate that has state Ready=False and Issuing not set, is stable and will not change without outside changes.
+	return h.waitForCertificateNotIssuing(cert.Namespace, cert.Name, timeout)
 }
 
 func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsage {
