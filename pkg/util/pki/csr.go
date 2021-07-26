@@ -389,10 +389,10 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 }
 
 // SignCertificate returns a signed *x509.Certificate given a template
-// *x509.Certificate crt and an issuer.
+// *x509.Certificate certificate and an issuer.
 // publicKey is the public key of the signee, and signerKey is the private
 // key of the signer.
-// It returns a PEM encoded copy of the Certificate as well as a *x509.Certificate
+// It returns a PEM encoded copy of the Certificate as well as an *x509.Certificate
 // which can be used for reading the encoded values.
 func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey interface{}) ([]byte, *x509.Certificate, error) {
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
@@ -415,10 +415,11 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	return pemBytes.Bytes(), cert, err
 }
 
-// SignCSRTemplate signs a certificate template usually based upon a CSR. This
+// SignCSRTemplate signs a certificate template, which is usually based upon a CSR. This
 // function expects all fields to be present in the certificate template,
-// including it's public key.
-// It returns the PEM bundle containing certificate data and the CA data, encoded in PEM format.
+// including its public key.
+// It returns a PEM bundle containing certificate data along with any available chain
+// certificates which were passed in caCerts.
 func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (PEMBundle, error) {
 	if len(caCerts) == 0 {
 		return PEMBundle{}, errors.New("no CA certificates given to sign CSR template")
