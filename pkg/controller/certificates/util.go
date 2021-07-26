@@ -312,6 +312,8 @@ func RenewalTime(notBefore, notAfter time.Time, renewBeforeOverride *metav1.Dura
 	return &rt
 }
 
+// BuildAnnotationsToCopy builds a map of annotations from a Certificate that
+// should be copied to the CertificateRequests for that Certificate.
 func BuildAnnotationsToCopy(cert *cmapi.Certificate, copiedAnnotations []string) map[string]string {
 	annotations := make(map[string]string)
 	all := false

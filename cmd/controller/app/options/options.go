@@ -110,7 +110,7 @@ type ControllerOptions struct {
 	// Annotations copied Certificate -> CertificateRequest,
 	// CertificateRequest -> Order. Slice of string literals that are
 	// treated as prefixes for annotation keys.
-	CopiedAnnotations []string
+	CopiedAnnotationPrefixes []string
 }
 
 const (
@@ -208,7 +208,7 @@ var (
 	}
 	// Annotations that will be copied from Certificate to CertificateRequest and to Order.
 	// By default, copy all annotations except for the ones applied by kubectl, fluxcd, argocd.
-	defaultCopiedAnnotations = []string{
+	defaultCopiedAnnotationPrefixes = []string{
 		"*",
 		"-kubectl.kubernetes.io/",
 		"-fluxcd.io/",
@@ -337,9 +337,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
-	fs.StringSliceVar(&s.CopiedAnnotations, "copied-annotations", defaultCopiedAnnotations, "Annotations that should/shouldn't be copied"+
-		"Certificate -> CertificateRequest, CertificateRequest -> Order. Each value is considered as a prefix for annotation key."+
-		"Prefix annotation with '-' to specify that it should not be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
+	fs.StringSliceVar(&s.CopiedAnnotationPrefixes, "copied-annotation-prefixes", defaultCopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
+		"from Certificate to CertificateRequest and Order by passing a list of annotation key prefixes."+
+		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
 		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
 
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+

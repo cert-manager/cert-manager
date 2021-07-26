@@ -68,7 +68,7 @@ type controller struct {
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
 	clock                    clock.Clock
-	copiedAnnotations        []string
+	copiedAnnotationPrefixes []string
 }
 
 func NewController(
@@ -117,7 +117,7 @@ func NewController(
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
-		copiedAnnotations:        certificateControllerOptions.CopiedAnnotations,
+		copiedAnnotationPrefixes: certificateControllerOptions.CopiedAnnotationPrefixes,
 	}, queue, mustSync
 }
 
@@ -356,7 +356,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		return err
 	}
 
-	annotations := certificates.BuildAnnotationsToCopy(crt, c.copiedAnnotations)
+	annotations := certificates.BuildAnnotationsToCopy(crt, c.copiedAnnotationPrefixes)
 	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = strconv.Itoa(nextRevision)
 	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = nextPrivateKeySecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name

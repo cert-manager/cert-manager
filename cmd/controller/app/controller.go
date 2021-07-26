@@ -273,8 +273,8 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
 		},
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef:    opts.EnableCertificateOwnerRef,
-			CopiedAnnotations: opts.CopiedAnnotations,
+			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
+			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
 		},
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,

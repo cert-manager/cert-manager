@@ -149,10 +149,9 @@ type CertificateOptions struct {
 	// EnableOwnerRef controls whether the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
 	EnableOwnerRef bool
-	// Annotations copied Certificate -> CertificateRequest,
-	// CertificateRequest -> Order. Slice of string literals that are
-	// treated as prefixes for annotation keys.
-	CopiedAnnotations []string
+	// CopiedAnnotationPrefixes defines which annotations should be copied
+	// Certificate -> CertificateRequest, CertificateRequest -> Order.
+	CopiedAnnotationPrefixes []string
 }
 
 type SchedulerOptions struct {
