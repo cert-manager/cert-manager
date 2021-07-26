@@ -18,7 +18,7 @@ package acme
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
@@ -474,7 +474,7 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// should use a SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.
-	Config *apiext.JSON
+	Config *apiextensionsv1.JSON
 }
 
 type ACMEIssuerStatus struct {
