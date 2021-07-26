@@ -29,6 +29,7 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 func mustGenerateRSA(t *testing.T, keySize int) crypto.PrivateKey {
@@ -349,6 +350,53 @@ func TestRenewalTime(t *testing.T) {
 			renewalTime := RenewalTime(s.notBefore, s.notAfter, s.renewBeforeOverride)
 			assert.Equal(t, s.expectedRenewalTime, renewalTime, fmt.Sprintf("Expected renewal time: %v got: %v", s.expectedRenewalTime, renewalTime))
 
+		})
+	}
+}
+func TestBuildAnnotationsToCopy(t *testing.T) {
+	testCert := gen.Certificate("test")
+	tests := map[string]struct {
+		cert              *cmapi.Certificate
+		copiedAnnotations []string
+		want              map[string]string
+	}{
+		"no annotations should be copied": {
+			cert: gen.CertificateFrom(testCert,
+				gen.AddCertificateAnnotations(map[string]string{"foo": "bar", "bar": "bat"})),
+			copiedAnnotations: []string{},
+			want:              make(map[string]string),
+		},
+		"all annotations should be copied": {
+			cert: gen.CertificateFrom(testCert,
+				gen.AddCertificateAnnotations(map[string]string{"foo": "bar", "bar": "bat"})),
+			copiedAnnotations: []string{"*"},
+			want:              map[string]string{"foo": "bar", "bar": "bat"},
+		},
+		"all except some should be copied": {
+			cert: gen.CertificateFrom(testCert,
+				gen.AddCertificateAnnotations(map[string]string{"foo": "bar", "foo.io/thing": "bar", "foo.io/anotherthing": "bat", "bar": "bat"})),
+			copiedAnnotations: []string{"*", "-foo.io/"},
+			want:              map[string]string{"foo": "bar", "bar": "bat"},
+		},
+		"only some should be copied": {
+			cert: gen.CertificateFrom(testCert,
+				gen.AddCertificateAnnotations(map[string]string{
+					"foo": "bar", "foo.io/thing": "bar", "foo.io/anotherthing": "bat", "bar": "bat",
+				})),
+			copiedAnnotations: []string{"foo.io/"},
+			want:              map[string]string{"foo.io/thing": "bar", "foo.io/anotherthing": "bat"},
+		},
+		"some annotations have been specified, but none found on the cert": {
+			cert:              gen.CertificateFrom(testCert),
+			copiedAnnotations: []string{"*", "-foo.io/"},
+			want:              map[string]string{},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := BuildAnnotationsToCopy(test.cert, test.copiedAnnotations); !reflect.DeepEqual(got, test.want) {
+				t.Errorf("BuildAnnotationsToCopy() = %+#v, want %+#v", got, test.want)
+			}
 		})
 	}
 }
