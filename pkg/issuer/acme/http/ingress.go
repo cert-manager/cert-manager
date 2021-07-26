@@ -175,7 +175,9 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 					Host: httpHost,
 					IngressRuleValue: networkingv1.IngressRuleValue{
 						HTTP: &networkingv1.HTTPIngressRuleValue{
-							Paths: []networkingv1.HTTPIngressPath{ingPathToAdd},
+							Paths: []networkingv1.HTTPIngressPath{
+								ingPathToAdd,
+							},
 						},
 					},
 				},
@@ -351,12 +353,12 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 // challenge.
 func ingressPath(token, serviceName string) networkingv1.HTTPIngressPath {
 	return networkingv1.HTTPIngressPath{
-		Path: solverPathFn(token),
+		Path:     solverPathFn(token),
+		PathType: func() *networkingv1.PathType { s := networkingv1.PathTypeExact; return &s }(),
 		Backend: networkingv1.IngressBackend{
 			Service: &networkingv1.IngressServiceBackend{
 				Name: serviceName,
 				Port: networkingv1.ServiceBackendPort{
-					Name:   "http",
 					Number: acmeSolverListenPort,
 				},
 			},
