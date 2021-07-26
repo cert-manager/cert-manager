@@ -22,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	authzclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1"
 	certificateslisters "k8s.io/client-go/listers/certificates/v1"
@@ -75,14 +76,31 @@ type Controller struct {
 	// the signer kind to react to when a certificate signing request is synced
 	signerType string
 
+	// Extra informers that should be watched by this CertificateSigningRequest
+	// controller instance. These resources can be owned by
+	// CertificateSigningRequests that we resolve.
+	extraInformers []cache.SharedIndexInformer
+
 	// used for testing
 	clock clock.Clock
 }
 
-func New(signerType string, signer Signer) *Controller {
+// New will construct a new certificatesigningrequest controller using the
+// given Signer implementation.
+// Note: the extraInformers passed here will be 'waited' for when starting to
+// ensure their corresponding listers have synced.
+// An event handler will then be set on these informers that automatically
+// resyncs CertificateSigningRequest resources that 'own' the objects in the
+// informer.
+// It's the callers responsibility to ensure the Run function on the informer
+// is called in order to start the reflector. This is handled automatically
+// when the informer factory's Start method is called, if the given informer
+// was obtained using a SharedInformerFactory.
+func New(signerType string, signer Signer, extraInformers ...cache.SharedIndexInformer) *Controller {
 	return &Controller{
-		signerType: signerType,
-		signer:     signer,
+		signerType:     signerType,
+		signer:         signer,
+		extraInformers: extraInformers,
 	}
 }
 
@@ -100,12 +118,18 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// obtain references to all the informers used by this controller
 	csrInformer := ctx.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests()
 
+	// Ensure we also catch all extra informers for this certificate controller instance
+	var extraInformersMustSync []cache.InformerSynced
+	for _, i := range c.extraInformers {
+		extraInformersMustSync = append(extraInformersMustSync, i.HasSynced)
+	}
+
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
-	mustSync := []cache.InformerSynced{
+	mustSync := append([]cache.InformerSynced{
 		csrInformer.Informer().HasSynced,
 		issuerInformer.Informer().HasSynced,
-	}
+	}, extraInformersMustSync...)
 
 	// if scoped to a single namespace
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
@@ -123,6 +147,17 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// register handler functions
 	csrInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
+
+	// Ensure we catch extra informers that are owned by certificate signing requests
+	for _, i := range c.extraInformers {
+		i.AddEventHandler(&controllerpkg.BlockingEventHandler{
+			WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(c.log, c.queue,
+				schema.GroupVersionKind{Version: "v1", Group: "certificates.k8s.io", Kind: "CertificateSigningRequest"},
+				func(_, name string) (interface{}, error) {
+					return c.csrLister.Get(name)
+				}),
+		})
+	}
 
 	// create an issuer helper for reading generic issuers
 	c.helper = issuer.NewHelper(issuerInformer.Lister(), clusterIssuerInformer.Lister())
