@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -108,7 +108,7 @@ type ChallengeRequest struct {
 	// Secret values should not be passed in this field, in favour of
 	// references to Kubernetes Secret resources that the webhook can fetch.
 	// +optional
-	Config *apiext.JSON `json:"config,omitempty"`
+	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 }
 
 // ChallengeAction represents an action associated with a challenge such as
