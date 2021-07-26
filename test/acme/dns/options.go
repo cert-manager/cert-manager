@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 )
@@ -61,7 +61,7 @@ func applyDefaults(f *fixture) {
 		if f.kubectlManifestsPath != "" {
 			d, err := ioutil.ReadFile(f.kubectlManifestsPath + "/config.json")
 			if err == nil {
-				f.jsonConfig = &extapi.JSON{
+				f.jsonConfig = &apiextensionsv1.JSON{
 					Raw: d,
 				}
 			}
@@ -121,7 +121,7 @@ func SetConfig(i interface{}) Option {
 		if err != nil {
 			panic(err)
 		}
-		f.jsonConfig = &extapi.JSON{Raw: d}
+		f.jsonConfig = &apiextensionsv1.JSON{Raw: d}
 	}
 }
 

@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -47,7 +47,7 @@ type fixture struct {
 	resolvedFQDN            string
 	resolvedZone            string
 	allowAmbientCredentials bool
-	jsonConfig              *v1beta1.JSON
+	jsonConfig              *apiextensionsv1.JSON
 	strictMode              bool
 	useAuthoritative        *bool
 	kubectlManifestsPath    string
