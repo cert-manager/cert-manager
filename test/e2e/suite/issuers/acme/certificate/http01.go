@@ -326,7 +326,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 								HTTP: &networkingv1.HTTPIngressRuleValue{
 									Paths: []networkingv1.HTTPIngressPath{
 										{
-											Path: "/",
+											Path:     "/",
+											PathType: func() *networkingv1.PathType { s := networkingv1.PathTypePrefix; return &s }(),
 											Backend: networkingv1.IngressBackend{
 												Service: &networkingv1.IngressServiceBackend{
 													Name: "doesnotexist",
