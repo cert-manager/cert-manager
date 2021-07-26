@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "convert.go",
         "ingress.go",
         "v1.go",
         "v1beta1.go",
@@ -11,14 +12,15 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/controller:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//networking/v1:go_default_library",
         "@io_k8s_api//networking/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/conversion:go_default_library",
         "@io_k8s_apimachinery//pkg/labels:go_default_library",
-        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/intstr:go_default_library",
         "@io_k8s_client_go//discovery:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
-        "@io_k8s_client_go//kubernetes/scheme:go_default_library",
         "@io_k8s_client_go//listers/networking/v1:go_default_library",
         "@io_k8s_client_go//listers/networking/v1beta1:go_default_library",
         "@io_k8s_client_go//tools/cache:go_default_library",
@@ -34,11 +36,13 @@ go_test(
         "//test/unit/discovery:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//networking/v1:go_default_library",
+        "@io_k8s_api//networking/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/labels:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_client_go//informers:go_default_library",
-        "@io_k8s_client_go//kubernetes:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/envtest:go_default_library",
-        "@io_k8s_utils//clock:go_default_library",
+        "@io_k8s_client_go//kubernetes/fake:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 
