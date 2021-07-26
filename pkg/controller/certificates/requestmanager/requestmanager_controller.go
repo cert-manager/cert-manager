@@ -68,6 +68,7 @@ type controller struct {
 	client                   cmclient.Interface
 	recorder                 record.EventRecorder
 	clock                    clock.Clock
+	copiedAnnotations        []string
 }
 
 func NewController(
@@ -77,6 +78,7 @@ func NewController(
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
 	clock clock.Clock,
+	certificateControllerOptions controllerpkg.CertificateOptions,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -115,6 +117,7 @@ func NewController(
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
+		copiedAnnotations:        certificateControllerOptions.CopiedAnnotations,
 	}, queue, mustSync
 }
 
@@ -353,10 +356,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		return err
 	}
 
-	annotations := make(map[string]string)
-	for k, v := range crt.Annotations {
-		annotations[k] = v
-	}
+	annotations := certificates.BuildAnnotationsToCopy(crt, c.copiedAnnotations)
 	annotations[cmapi.CertificateRequestRevisionAnnotationKey] = strconv.Itoa(nextRevision)
 	annotations[cmapi.CertificateRequestPrivateKeyAnnotationKey] = nextPrivateKeySecretName
 	annotations[cmapi.CertificateNameKey] = crt.Name
@@ -419,6 +419,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
+		ctx.CertificateOptions,
 	)
 	c.controller = ctrl
 

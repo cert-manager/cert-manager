@@ -106,6 +106,11 @@ type ControllerOptions struct {
 	EnablePprof bool
 
 	DNS01CheckRetryPeriod time.Duration
+
+	// Annotations copied Certificate -> CertificateRequest,
+	// CertificateRequest -> Order. Slice of string literals that are
+	// treated as prefixes for annotation keys.
+	CopiedAnnotations []string
 }
 
 const (
@@ -200,6 +205,14 @@ var (
 		csrselfsignedcontroller.CSRControllerName,
 		csrvenaficontroller.CSRControllerName,
 		csrvaultcontroller.CSRControllerName,
+	}
+	// Annotations that will be copied from Certificate to CertificateRequest and to Order.
+	// By default, copy all annotations except for the ones applied by kubectl, fluxcd, argocd.
+	defaultCopiedAnnotations = []string{
+		"*",
+		"-kubectl.kubernetes.io/",
+		"-fluxcd.io/",
+		"-argocd.argoproj.io/",
 	}
 )
 
@@ -320,9 +333,15 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"DNS01 check requests. This should be a list containing host and port, "+
 			"for example 8.8.8.8:53,8.8.4.4:53")
 	fs.MarkDeprecated("dns01-self-check-nameservers", "Deprecated in favour of dns01-recursive-nameservers")
+
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
+	fs.StringSliceVar(&s.CopiedAnnotations, "copied-annotations", defaultCopiedAnnotations, "Annotations that should/shouldn't be copied"+
+		"Certificate -> CertificateRequest, CertificateRequest -> Order. Each value is considered as a prefix for annotation key."+
+		"Prefix annotation with '-' to specify that it should not be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
+		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
+
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 	fs.DurationVar(&s.DNS01CheckRetryPeriod, "dns01-check-retry-period", defaultDNS01CheckRetryPeriod, ""+
