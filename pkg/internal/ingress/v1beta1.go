@@ -24,7 +24,6 @@ import (
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	listersv1beta1 "k8s.io/client-go/listers/networking/v1beta1"
 )
@@ -32,12 +31,10 @@ import (
 const ConvertedGVKAnnotation = `internal.cert-manager.io/converted-gvk`
 
 type v1beta1Lister struct {
-	scheme *runtime.Scheme
 	lister listersv1beta1.IngressLister
 }
 
 type v1beta1NamespaceLister struct {
-	scheme   *runtime.Scheme
 	nsLister listersv1beta1.IngressNamespaceLister
 }
 
@@ -46,12 +43,11 @@ func (l *v1beta1Lister) List(selector labels.Selector) ([]*networkingv1.Ingress,
 	if err != nil {
 		return nil, err
 	}
-	return convertV1Beta1ListToV1(all, l.scheme)
+	return convertV1Beta1ListToV1(all)
 }
 
 func (l *v1beta1Lister) Ingresses(namespace string) InternalIngressNamespaceLister {
 	return &v1beta1NamespaceLister{
-		scheme:   l.scheme,
 		nsLister: l.lister.Ingresses(namespace),
 	}
 }
@@ -61,7 +57,7 @@ func (nl *v1beta1NamespaceLister) List(selector labels.Selector) ([]*networkingv
 	if err != nil {
 		return nil, err
 	}
-	return convertV1Beta1ListToV1(all, nl.scheme)
+	return convertV1Beta1ListToV1(all)
 }
 
 func (nl *v1beta1NamespaceLister) Get(name string) (*networkingv1.Ingress, error) {
@@ -69,13 +65,13 @@ func (nl *v1beta1NamespaceLister) Get(name string) (*networkingv1.Ingress, error
 	if err != nil {
 		return nil, err
 	}
-	return convertV1Beta1ToV1(ing, nl.scheme)
+	return convertV1Beta1ToV1(ing)
 }
 
-func convertV1Beta1ListToV1(list []*networkingv1beta1.Ingress, scheme *runtime.Scheme) ([]*networkingv1.Ingress, error) {
+func convertV1Beta1ListToV1(list []*networkingv1beta1.Ingress) ([]*networkingv1.Ingress, error) {
 	var ret []*networkingv1.Ingress
 	for _, in := range list {
-		out, err := convertV1Beta1ToV1(in, scheme)
+		out, err := convertV1Beta1ToV1(in)
 		if err != nil {
 			return nil, err
 		}
@@ -84,43 +80,44 @@ func convertV1Beta1ListToV1(list []*networkingv1beta1.Ingress, scheme *runtime.S
 	return ret, nil
 }
 
-func convertV1Beta1ToV1(in *networkingv1beta1.Ingress, scheme *runtime.Scheme) (*networkingv1.Ingress, error) {
-	out, err := scheme.ConvertToVersion(in, networkingv1.SchemeGroupVersion)
+func convertV1Beta1ToV1(in *networkingv1beta1.Ingress) (*networkingv1.Ingress, error) {
+	out := new(networkingv1.Ingress)
+	err := Convert_v1beta1_Ingress_To_networking_Ingress(in.DeepCopy(), out, nil)
+
 	if err != nil {
-		return nil, err
-	}
-	v1Ingress, ok := out.(*networkingv1.Ingress)
-	if !ok {
 		return nil, fmt.Errorf(
-			"could not convert %s to %s when processing object %s/%s",
+			"could not convert %s to %s when processing object %s/%s: %w",
 			networkingv1beta1.SchemeGroupVersion,
 			networkingv1.SchemeGroupVersion,
 			in.Namespace,
-			in.Name)
+			in.Name,
+			err,
+		)
 	}
-	v1Ingress.Annotations[ConvertedGVKAnnotation] = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress").String()
-	return v1Ingress, nil
+	if out.Annotations == nil {
+		out.Annotations = make(map[string]string)
+	}
+	out.Annotations[ConvertedGVKAnnotation] = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress").String()
+	return out, nil
 }
 
-func convertV1ToV1Beta1(in *networkingv1.Ingress, scheme *runtime.Scheme) (*networkingv1beta1.Ingress, error) {
-	out, err := scheme.ConvertToVersion(in, networkingv1beta1.SchemeGroupVersion)
+func convertV1ToV1Beta1(in *networkingv1.Ingress) (*networkingv1beta1.Ingress, error) {
+	out := new(networkingv1beta1.Ingress)
+	err := Convert_networking_Ingress_To_v1beta1_Ingress(in.DeepCopy(), out, nil)
 	if err != nil {
-		return nil, err
-	}
-	v1Beta1Ingress, ok := out.(*networkingv1beta1.Ingress)
-	if !ok {
 		return nil, fmt.Errorf(
-			"could not convert %s to %s when processing object %s/%s",
-			networkingv1beta1.SchemeGroupVersion,
+			"could not convert %s to %s when processing object %s/%s: %w",
 			networkingv1.SchemeGroupVersion,
+			networkingv1beta1.SchemeGroupVersion,
 			in.Namespace,
-			in.Name)
+			in.Name,
+			err,
+		)
 	}
-	return v1Beta1Ingress, nil
+	return out, nil
 }
 
 type v1beta1CreaterUpdater struct {
-	scheme *runtime.Scheme
 	client kubernetes.Interface
 }
 
@@ -128,18 +125,16 @@ func (v *v1beta1CreaterUpdater) Ingresses(namespace string) InternalIngressInter
 	return &v1beta1Interface{
 		client: v.client,
 		ns:     namespace,
-		scheme: v.scheme,
 	}
 }
 
 type v1beta1Interface struct {
-	scheme *runtime.Scheme
 	client kubernetes.Interface
 	ns     string
 }
 
 func (v *v1beta1Interface) Create(ctx context.Context, ingress *networkingv1.Ingress, opts metav1.CreateOptions) (*networkingv1.Ingress, error) {
-	ing, err := convertV1ToV1Beta1(ingress, v.scheme)
+	ing, err := convertV1ToV1Beta1(ingress)
 	if err != nil {
 		return nil, err
 	}
@@ -147,11 +142,11 @@ func (v *v1beta1Interface) Create(ctx context.Context, ingress *networkingv1.Ing
 	if err != nil {
 		return nil, err
 	}
-	return convertV1Beta1ToV1(newIng, v.scheme)
+	return convertV1Beta1ToV1(newIng)
 }
 
 func (v *v1beta1Interface) Update(ctx context.Context, ingress *networkingv1.Ingress, opts metav1.UpdateOptions) (*networkingv1.Ingress, error) {
-	ing, err := convertV1ToV1Beta1(ingress, v.scheme)
+	ing, err := convertV1ToV1Beta1(ingress)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +154,7 @@ func (v *v1beta1Interface) Update(ctx context.Context, ingress *networkingv1.Ing
 	if err != nil {
 		return nil, err
 	}
-	return convertV1Beta1ToV1(newIng, v.scheme)
+	return convertV1Beta1ToV1(newIng)
 }
 
 func (v *v1beta1Interface) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {

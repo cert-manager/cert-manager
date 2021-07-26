@@ -27,9 +27,7 @@ import (
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -72,23 +70,22 @@ type InternalIngressNamespaceLister interface {
 // NewListerInformer returns an InternalIngressLister configured for v1 or v1beta1 ingresses depending on the
 // API Versions available in the discovery client.
 func NewListerInformer(ctx *controller.Context) (InternalIngressLister, cache.SharedIndexInformer, error) {
-	if hasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()) {
+	switch {
+	case hasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()):
 		return &v1Lister{
 				lister: ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Lister(),
 			},
 			ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Informer(),
 			nil
-	} else if hasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()) {
-		sch := runtime.NewScheme()
-		clientgoscheme.AddToScheme(sch)
+	case hasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()):
 		return &v1beta1Lister{
-				scheme: sch,
 				lister: ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
 			},
 			ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Informer(),
 			nil
+	default:
+		return nil, nil, fmt.Errorf("neither %s nor %s have any APIResources", networkingv1.SchemeGroupVersion, networkingv1beta1.SchemeGroupVersion)
 	}
-	return nil, nil, fmt.Errorf("neither %s or %s have any APIResources", networkingv1.SchemeGroupVersion, networkingv1beta1.SchemeGroupVersion)
 }
 
 // NewCreateUpdater returns an InternalIngressCreateUpdater configured for v1 or v1beta1 ingresses depending on the
@@ -99,11 +96,8 @@ func NewCreateUpdater(ctx *controller.Context) (InternalIngressCreateUpdater, er
 			client: ctx.Client,
 		}, nil
 	} else if hasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()) {
-		sch := runtime.NewScheme()
-		clientgoscheme.AddToScheme(sch)
 		return &v1beta1CreaterUpdater{
 			client: ctx.Client,
-			scheme: sch,
 		}, nil
 	} else {
 		return nil, fmt.Errorf("neither %s nor %s have any APIResources", networkingv1.SchemeGroupVersion, networkingv1beta1.SchemeGroupVersion)
