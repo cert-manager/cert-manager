@@ -288,6 +288,11 @@ func TestParseSingleCertificateChain(t *testing.T) {
 			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: root.pem},
 			expErr:       false,
 		},
+		"if only CAs are passed, should still output the best chain possible": {
+			inputBundle:  joinPEM(root.pem, intA2.pem, intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(intA2.pem, intA1.pem), CAPEM: root.pem},
+			expErr:       false,
+		},
 		"if certificate chain has two certs with the same CN, shouldn't affect output": {
 			// see https://github.com/jetstack/cert-manager/issues/4142
 			inputBundle:  joinPEM(leafInterCN.pem, intA1.pem, intA2.pem, root.pem),
