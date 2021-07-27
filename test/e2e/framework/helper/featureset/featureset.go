@@ -153,4 +153,8 @@ const (
 	// IssueCAFeature denotes whether the target issuer is able to issue CA
 	// certificates (i.e., certificates for which the CA basicConstraint is true)
 	IssueCAFeature Feature = "IssueCA"
+
+	// LongDomainFeatureSet denotes whether the target issuer is able to sign
+	// a certificate that defines a long domain
+	LongDomainFeatureSet Feature = "LongDomain"
 )

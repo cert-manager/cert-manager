@@ -795,7 +795,7 @@ func (s *Suite) Define() {
 			By("Sanity-check the issued Certificate")
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
-		}, featureset.OnlySAN)
+		}, featureset.OnlySAN, featureset.LongDomainFeatureSet)
 
 		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{

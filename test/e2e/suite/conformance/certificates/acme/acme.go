@@ -19,6 +19,7 @@ package acme
 import (
 	"context"
 	"encoding/base64"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -34,15 +35,10 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
-// TODO @Arsh: should this be a flag? Maybe instead of mentioning Let's Encrypt
-// directly make it Public ACME server?
-const LetsEncryptStagingURL = "https://acme-staging-v02.api.letsencrypt.org/directory"
-
 var _ = framework.ConformanceDescribe("Certificates", func() {
 	runACMEIssuerTests(nil)
 })
 var _ = framework.ConformanceDescribe("Certificates with External Account Binding", func() {
-	// TODO: make this skippable? Not all ACME issuers support EAB.
 	runACMEIssuerTests(&cmacme.ACMEExternalAccountBinding{
 		KeyID: "kid-1",
 	})
@@ -75,11 +71,12 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.IssueCAFeature,
 	)
 
-	// UnsupportedLetsEncryptFeatures are additional ACME features not supported by
-	// Let's Encrypt
-	var unsupportedLetsEncryptFeatures = featureset.NewFeatureSet(
+	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
+	// public ACME servers
+	var unsupportedPublicACMEServerFeatures = featureset.NewFeatureSet(
 		featureset.IPAddressFeature,
 		featureset.Ed25519FeatureSet,
+		featureset.LongDomainFeatureSet,
 	)
 
 	provisionerHTTP01 := &acmeIssuerProvisioner{
@@ -90,8 +87,7 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		eab: eab,
 	}
 
-	// Let's Encrypt does not support EAB
-	provisionerLEHTTP01 := &acmeIssuerProvisioner{
+	provisionerPACMEHTTP01 := &acmeIssuerProvisioner{
 		eab: nil,
 	}
 
@@ -128,11 +124,11 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "Let's Encrypt HTTP01 Issuer",
+		Name:                "Public ACME Server HTTP01 Issuer",
 		UseIngressIPAddress: true,
-		CreateIssuerFunc:    provisionerLEHTTP01.createLetsEncryptStagingHTTP01Issuer,
-		DeleteIssuerFunc:    provisionerLEHTTP01.delete,
-		UnsupportedFeatures: unsupportedHTTP01Features.Copy().Add(unsupportedLetsEncryptFeatures.List()...),
+		CreateIssuerFunc:    provisionerPACMEHTTP01.createPublicACMEServerStagingHTTP01Issuer,
+		DeleteIssuerFunc:    provisionerPACMEHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01Features.Copy().Add(unsupportedPublicACMEServerFeatures.List()...),
 	}).Define()
 }
 
@@ -180,18 +176,25 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	}
 }
 
-func (a *acmeIssuerProvisioner) createLetsEncryptStagingHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
-	By("Creating a Let's Encrypt Staging HTTP01 Issuer")
+func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a Public ACME Server Staging HTTP01 Issuer")
+
+	var PublicACMEServerStagingURL string
+	if strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
+		PublicACMEServerStagingURL = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	} else {
+		PublicACMEServerStagingURL = f.Config.Addons.ACMEServer.URL
+	}
 
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "le-issuer-http01-",
+			GenerateName: "pacme-issuer-http01-",
 		},
-		Spec: a.createHTTP01IssuerSpec(LetsEncryptStagingURL),
+		Spec: a.createHTTP01IssuerSpec(PublicACMEServerStagingURL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred(), "failed to create Let's Encrypt Staging HTTP01 issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to create Public ACME Server Staging HTTP01 issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
