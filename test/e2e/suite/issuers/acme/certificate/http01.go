@@ -21,11 +21,19 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
 	"strings"
 	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/pointer"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -38,12 +46,6 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const foreverTestTimeout = time.Second * 60
@@ -175,13 +177,22 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = f.Helper().WaitForCertificateNotReadyUpdate(cert, 30*time.Second)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Getting the latest version of the Certificate")
-		cert, err = certClient.Get(context.TODO(), certificateName, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			By("Getting the latest version of the Certificate")
+			cert, err = certClient.Get(context.TODO(), certificateName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 
-		By("Replacing dnsNames with a valid dns name")
-		cert.Spec.DNSNames = []string{e2eutil.RandomSubdomain(acmeIngressDomain)}
-		_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
+			By("Replacing dnsNames with a valid dns name")
+			cert = cert.DeepCopy()
+			cert.Spec.DNSNames = []string{e2eutil.RandomSubdomain(acmeIngressDomain)}
+			_, err = certClient.Update(context.TODO(), cert, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to have the Ready=True condition")
