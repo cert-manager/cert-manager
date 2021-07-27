@@ -400,7 +400,7 @@ cainjector:
 startupapicheck:
   enabled: true
 
-  # Pod Security Context to be set on the cainjector component Pod
+  # Pod Security Context to be set on the startupapicheck component Pod
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
     runAsNonRoot: true
@@ -411,13 +411,13 @@ startupapicheck:
   # Job backoffLimit
   backoffLimit: 4
 
-  # Optional additional annotations to add to the cainjector Job
+  # Optional additional annotations to add to the startupapicheck Job
   # jobAnnotations: {}
 
-  # Optional additional annotations to add to the cainjector Pods
+  # Optional additional annotations to add to the startupapicheck Pods
   # podAnnotations: {}
 
-  # Optional additional arguments for cainjector
+  # Optional additional arguments for startupapicheck
   extraArgs: []
 
   resources: {}
@@ -431,7 +431,7 @@ startupapicheck:
 
   tolerations: []
 
-  # Optional additional labels to add to the CA Injector Pods
+  # Optional additional labels to add to the startupapicheck Pods
   podLabels: {}
 
   image:
@@ -455,7 +455,7 @@ startupapicheck:
     # The name of the service account to use.
     # If not set and create is true, a name is generated using the fullname template
     # name: ""
-    # Optional additional annotations to add to the controller's ServiceAccount
+    # Optional additional annotations to add to the Job's ServiceAccount
     # annotations: {}
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true

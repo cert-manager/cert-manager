@@ -55,10 +55,11 @@ kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 bazel build //deploy/charts/cert-manager
 
 # Upgrade or install cert-manager
-# --wait flag should wait for Job to complete
+# --wait & --wait-for-jobs flags should wait for resources and Jobs to complete
 helm upgrade \
     --install \
     --wait \
+    --wait-for-jobs \
     --namespace "${NAMESPACE}" \
     --set image.tag="${APP_VERSION}" \
     --set cainjector.image.tag="${APP_VERSION}" \
