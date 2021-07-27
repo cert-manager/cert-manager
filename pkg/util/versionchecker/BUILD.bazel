@@ -9,9 +9,15 @@ genrule(
 
 genrule(
     name = "test_manifests",
-    srcs = [":git_tags.txt"],
+    srcs = [
+        ":git_tags.txt",
+        "//deploy/manifests:cert-manager.yaml",
+        "//:version",
+    ],
     outs = ["test_manifests.tar"],
     cmd = """
+CURRENT_VERSION=$$(cat $(location //:version))
+cp $(location //deploy/manifests:cert-manager.yaml) "$$CURRENT_VERSION.yaml"
 for tag in $$(cat $(location :git_tags.txt))
 do
     # The "v1.2.0-alpha.1" manifest contains duplicate crds, skip for tests
