@@ -67,7 +67,7 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	}
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
-	cmds.AddCommand(version.NewCmdVersion(ctx, ioStreams))
+	cmds.AddCommand(version.NewCmdVersion(ctx, ioStreams, factory))
 	cmds.AddCommand(convert.NewCmdConvert(ctx, ioStreams))
 	cmds.AddCommand(create.NewCmdCreate(ctx, ioStreams, factory))
 	cmds.AddCommand(renew.NewCmdRenew(ctx, ioStreams, factory))

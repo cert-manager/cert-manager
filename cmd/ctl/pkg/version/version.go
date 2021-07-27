@@ -25,19 +25,32 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/yaml"
 
 	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/versionchecker"
 )
+
+// Version is a struct for version information
+type Version struct {
+	ClientVersion *util.Version       `json:"clientVersion,omitempty"`
+	ServerVersion *util.ServerVersion `json:"serverVersion,omitempty"`
+}
 
 // Options is a struct to support version command
 type Options struct {
+	// If true, don't try to retrieve the installed version
+	ClientOnly bool
+
+	// If true, only prints the version number.
+	Short bool
+
 	// Output is the target output format for the version string. This may be of
 	// value "", "json" or "yaml".
 	Output string
 
-	// If true, prints the version number.
-	Short bool
+	VersionChecker versionchecker.Interface
 
 	genericclioptions.IOStreams
 }
@@ -50,22 +63,23 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdVersion returns a cobra command for fetching versions
-func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print the kubectl cert-manager version",
-		Long:  "Print the kubectl cert-manager version",
+		Short: "Print the cert-manager kubectl plugin version and the deployed cert-manager version",
+		Long:  "Print the cert-manager kubectl plugin version and the deployed cert-manager version",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate())
-			cmdutil.CheckErr(o.Run())
+			cmdutil.CheckErr(o.Complete(factory))
+			cmdutil.CheckErr(o.Run(ctx))
 		},
 	}
 
-	cmd.Flags().StringVarP(&o.Output, "output", "o", "", "One of '', 'yaml' or 'json'.")
-	cmd.Flags().BoolVar(&o.Short, "short", false, "If true, print just the version number.")
-
+	cmd.Flags().BoolVar(&o.ClientOnly, "client", o.ClientOnly, "If true, shows client version only (no server required).")
+	cmd.Flags().BoolVar(&o.Short, "short", o.Short, "If true, print just the version number.")
+	cmd.Flags().StringVarP(&o.Output, "output", "o", o.Output, "One of 'yaml' or 'json'.")
 	return cmd
 }
 
@@ -79,16 +93,58 @@ func (o *Options) Validate() error {
 	}
 }
 
+// Complete takes the command arguments and factory and infers any remaining options.
+func (o *Options) Complete(factory cmdutil.Factory) error {
+	if o.ClientOnly {
+		return nil
+	}
+
+	restConfig, err := factory.ToRESTConfig()
+	if err != nil {
+		return fmt.Errorf("Error: cannot create the REST config: %v", err)
+	}
+
+	o.VersionChecker, err = versionchecker.New(restConfig, scheme.Scheme)
+	if err != nil {
+		return fmt.Errorf("Error: %v", err)
+	}
+	return nil
+}
+
 // Run executes version command
-func (o *Options) Run() error {
-	versionInfo := util.VersionInfo()
+func (o *Options) Run(ctx context.Context) error {
+	var (
+		serverVersion *util.ServerVersion
+		serverErr     error
+		versionInfo   Version
+	)
+
+	clientVersion := util.VersionInfo()
+	versionInfo.ClientVersion = &clientVersion
+
+	if !o.ClientOnly {
+		var version string
+		version, serverErr = o.VersionChecker.Version(ctx)
+		if serverErr == nil {
+			serverVersion = &util.ServerVersion{
+				GitVersion: version,
+			}
+			versionInfo.ServerVersion = serverVersion
+		}
+	}
 
 	switch o.Output {
 	case "":
 		if o.Short {
-			fmt.Fprintf(o.Out, "%s\n", versionInfo.GitVersion)
+			fmt.Fprintf(o.Out, "Client Version: %s\n", clientVersion.GitVersion)
+			if serverVersion != nil {
+				fmt.Fprintf(o.Out, "Server Version: %s\n", serverVersion.GitVersion)
+			}
 		} else {
-			fmt.Fprintf(o.Out, "%#v\n", versionInfo)
+			fmt.Fprintf(o.Out, "Client Version: %s\n", fmt.Sprintf("%#v", clientVersion))
+			if serverVersion != nil {
+				fmt.Fprintf(o.Out, "Server Version: %s\n", fmt.Sprintf("%#v", *serverVersion))
+			}
 		}
 	case "yaml":
 		marshalled, err := yaml.Marshal(&versionInfo)
@@ -108,5 +164,5 @@ func (o *Options) Run() error {
 		return fmt.Errorf("VersionOptions were not validated: --output=%q should have been rejected", o.Output)
 	}
 
-	return nil
+	return serverErr
 }

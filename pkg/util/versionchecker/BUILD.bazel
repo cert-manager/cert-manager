@@ -1,0 +1,95 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+# Clone empty version of cert-manager repo and list all tags
+genrule(
+    name = "git_tags",
+    outs = [":git_tags.txt"],
+    cmd = "git ls-remote -t --refs https://github.com/jetstack/cert-manager.git | awk '{print $$2;}' | sed 's/refs\\/tags\\///' | sed -n '/v1.0.0-alpha.0/,$$p' > $@",
+)
+
+genrule(
+    name = "test_manifests",
+    srcs = [":git_tags.txt"],
+    outs = ["test_manifests.tar"],
+    cmd = """
+for tag in $$(cat $(location :git_tags.txt))
+do
+    # The "v1.2.0-alpha.1" manifest contains duplicate crds, skip for tests
+    if [[ $$tag == "v1.2.0-alpha.1" ]]; then
+        continue
+    fi
+
+    {
+        HTTP_CODE=$$(curl --compressed -sLo "$$tag.yaml" --write-out "%{http_code}" https://github.com/jetstack/cert-manager/releases/download/$$tag/cert-manager.yaml)
+        if [[ $${HTTP_CODE} -lt 200 || $${HTTP_CODE} -gt 299 ]]; then
+            (mv "$$tag.yaml" "$$tag.notfound")
+        fi
+    } &
+done
+wait
+tar -cvf $@ *.yaml
+    """,
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "fromcrd.go",
+        "fromlabels.go",
+        "fromservice.go",
+        "getpodfromtemplate.go",
+        "versionchecker.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/util/versionchecker",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/util:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_api//rbac/v1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/meta:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/validation:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/labels:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["versionchecker_test.go"],
+    embed = [":go_default_library"],
+    embedsrcs = ["test_manifests.tar"],
+    deps = [
+        "@io_k8s_api//apps/v1:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_api//rbac/v1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_cli_runtime//pkg/resource:go_default_library",
+        "@io_k8s_client_go//kubernetes/scheme:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/client/fake:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
