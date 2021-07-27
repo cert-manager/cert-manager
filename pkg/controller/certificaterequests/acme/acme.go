@@ -266,9 +266,10 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableD
 	// the hyphen.
 	return &cmacme.Order{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   cr.Namespace,
-			Labels:      cr.Labels,
+			Name:      name,
+			Namespace: cr.Namespace,
+			Labels:    cr.Labels,
+			// Annotations include the filtered annotations copied from the Certificate.
 			Annotations: cr.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(cr, v1.SchemeGroupVersion.WithKind(v1.CertificateRequestKind)),
