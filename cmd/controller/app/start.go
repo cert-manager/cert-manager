@@ -73,8 +73,7 @@ to renew certificates at an appropriate time before expiry.`,
 			}
 
 			logf.Log.V(logf.InfoLevel).Info("starting controller", "version", util.AppVersion, "git-commit", util.AppGitCommit)
-			o.RunCertManagerController(stopCh)
-			return nil
+			return o.RunCertManagerController(stopCh)
 		},
 	}
 
@@ -91,6 +90,6 @@ func (o CertManagerControllerOptions) Validate(args []string) error {
 	return utilerrors.NewAggregate(errors)
 }
 
-func (o CertManagerControllerOptions) RunCertManagerController(stopCh <-chan struct{}) {
-	Run(o.ControllerOptions, stopCh)
+func (o CertManagerControllerOptions) RunCertManagerController(stopCh <-chan struct{}) error {
+	return Run(o.ControllerOptions, stopCh)
 }
