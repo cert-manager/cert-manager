@@ -100,6 +100,9 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+            {{- if .Values.extraEnv }}
+{{ toYaml .Values.extraEnv | indent 10 }}
+            {{- end }}
           resources:
 {{ toYaml .Values.webhook.resources | indent 12 }}
     {{- with .Values.webhook.nodeSelector }}

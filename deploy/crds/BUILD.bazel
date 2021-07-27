@@ -35,6 +35,7 @@ helm_pkg(
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
     ],
+    values_schema_yaml = "//deploy/charts/cert-manager:values.schema.json",
     values_yaml = "//deploy/charts/cert-manager:values.yaml",
     visibility = ["//visibility:private"],
 )
@@ -63,6 +64,7 @@ helm_tmpl(
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
     ],
+    values_schema_yaml = "//deploy/charts/cert-manager:values.schema.json",
     values_yaml = "//deploy/charts/cert-manager:values.yaml",
     visibility = ["//visibility:private"],
 ) for crd in crds]

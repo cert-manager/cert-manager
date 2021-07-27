@@ -1,0 +1,810 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$ref": "#/definitions/Values",
+  "definitions": {
+    "Cainjector": {
+      "required": [
+        "enabled",
+        "replicaCount",
+        "podLabels",
+        "strategy",
+        "nodeSelector",
+        "affinity",
+        "tolerations",
+        "image",
+        "resources",
+        "extraArgs",
+        "extraEnv",
+        "serviceAccount",
+        "securityContext",
+        "containerSecurityContext"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "replicaCount": {
+          "type": "integer",
+          "description": "Number of replicas"
+        },
+        "deploymentAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the deployment"
+        },
+        "podAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the pods"
+        },
+        "podLabels": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the pods"
+        },
+        "strategy": {
+          "$ref": "#/definitions/DeploymentStrategy"
+        },
+        "nodeSelector": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Node labels for pod assignment"
+        },
+        "affinity": {
+          "additionalProperties": true,
+          "description": "Node affinity for pod assignment"
+        },
+        "tolerations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Node tolerations for pod assignment"
+        },
+        "image": {
+          "$ref": "#/definitions/Image"
+        },
+        "resources": {
+          "additionalProperties": true,
+          "description": "CPU/memory resource requests/limits for the pods"
+        },
+        "extraArgs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Optional additional arguments for controller"
+        },
+        "extraEnv": {
+          "items": {
+            "$ref": "#/definitions/EnvVar"
+          },
+          "type": "array",
+          "description": "Optional additional environment variables for controller"
+        },
+        "serviceAccount": {
+          "$ref": "#/definitions/ServiceAccount",
+          "description": "Service account configuration for controller"
+        },
+        "securityContext": {
+          "additionalProperties": true,
+          "description": "Pod Security Context\nref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+        },
+        "containerSecurityContext": {
+          "additionalProperties": true,
+          "description": "Container Security Context to be set on the controller component container\nref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "DeploymentStrategy": {
+      "properties": {
+        "type": {
+          "enum": [
+            "Recreate",
+            "RollingUpdate"
+          ],
+          "type": "string",
+          "description": "Type of deployment. Can be \"Recreate\" or \"RollingUpdate\". Default is RollingUpdate."
+        },
+        "rollingUpdate": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/RollingUpdateDeployment",
+          "description": "Rolling update config params. Present only if DeploymentStrategyType = RollingUpdate."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "EnvVar": {
+      "required": [
+        "name",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Global": {
+      "required": [
+        "imagePullSecrets",
+        "leaderElection",
+        "logLevel",
+        "podSecurityPolicy",
+        "priorityClassName",
+        "rbac"
+      ],
+      "properties": {
+        "imagePullSecrets": {
+          "items": {
+            "additionalProperties": true
+          },
+          "type": "array"
+        },
+        "leaderElection": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/LeaderElection"
+        },
+        "logLevel": {
+          "type": "integer"
+        },
+        "podSecurityPolicy": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/PodSecurityPolicy"
+        },
+        "priorityClassName": {
+          "type": "string"
+        },
+        "rbac": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Rbac"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Image": {
+      "required": [
+        "repository"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Image repository"
+        },
+        "registry": {
+          "type": "string",
+          "description": "You can manage a registry with\nExample:\n registry: quay.io\n repository: jetstack/cert-manager-controller"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Override the image tag to deploy by setting this variable.\nIf no value is set, the chart's appVersion will be used."
+        },
+        "digest": {
+          "type": "string",
+          "description": "Setting a digest will override any tag"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "description": "Image pull policy"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "LeaderElection": {
+      "required": [
+        "namespace"
+      ],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "Override the namespace used to store the ConfigMap for leader election"
+        },
+        "leaseDuration": {
+          "type": "string",
+          "description": "The duration that non-leader candidates will wait after observing a\nleadership renewal until attempting to acquire leadership of a led but\nunrenewed leader slot. This is effectively the maximum duration that a\nleader can be stopped before it is replaced by another candidate."
+        },
+        "renewDeadline": {
+          "type": "string",
+          "description": "The interval between attempts by the acting master to renew a leadership\nslot before it stops leading. This must be less than or equal to the\nlease duration."
+        },
+        "retryPeriod": {
+          "type": "string",
+          "description": "The duration the clients should wait between attempting acquisition and\nrenewal of a leadership."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "PodSecurityPolicy": {
+      "required": [
+        "enabled",
+        "useAppArmor"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "If `true`, create and use PodSecurityPolicy"
+        },
+        "useAppArmor": {
+          "type": "boolean",
+          "description": "If `true`, use Apparmor seccomp profile in PSP"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Probe": {
+      "required": [
+        "failureThreshold",
+        "initialDelaySeconds",
+        "periodSeconds",
+        "successThreshold",
+        "timeoutSeconds"
+      ],
+      "properties": {
+        "failureThreshold": {
+          "type": "integer",
+          "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded."
+        },
+        "initialDelaySeconds": {
+          "type": "integer",
+          "description": "Number of seconds after the container has started before liveness probes are initiated.\nref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "description": "How often (in seconds) to perform the probe."
+        },
+        "successThreshold": {
+          "type": "integer",
+          "description": "Minimum consecutive successes for the probe to be considered successful after having failed."
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "description": "Number of seconds after which the probe times out.\nref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Prometheus": {
+      "required": [
+        "enabled",
+        "servicemonitor"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "If `true`, enable Prometheus monitoring"
+        },
+        "servicemonitor": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Servicemonitor"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Rbac": {
+      "required": [
+        "create"
+      ],
+      "properties": {
+        "create": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "RollingUpdateDeployment": {
+      "properties": {
+        "maxUnavailable": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "description": "The maximum number of pods that can be unavailable during the update.\nValue can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).\nAbsolute number is calculated from percentage by rounding down.\nThis can not be 0 if MaxSurge is 0.\nDefaults to 25%.\nExample: when this is set to 30%, the old ReplicaSet can be scaled down to 70% of desired pods\nimmediately when the rolling update starts. Once new pods are ready, old ReplicaSet\ncan be scaled down further, followed by scaling up the new ReplicaSet, ensuring\nthat the total number of pods available at all times during the update is at\nleast 70% of desired pods."
+        },
+        "maxSurge": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "description": "The maximum number of pods that can be scheduled above the desired number of\npods.\nValue can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).\nThis can not be 0 if MaxUnavailable is 0.\nAbsolute number is calculated from percentage by rounding up.\nDefaults to 25%.\nExample: when this is set to 30%, the new ReplicaSet can be scaled up immediately when\nthe rolling update starts, such that the total number of old and new pods do not exceed\n130% of desired pods. Once old pods have been killed,\nnew ReplicaSet can be scaled up further, ensuring that total number of pods running\nat any time during the update is at most 130% of desired pods."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "ServiceAccount": {
+      "required": [
+        "create",
+        "automountServiceAccountToken"
+      ],
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "If `true`, create a new service account for the cert-manager controller"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the service account for the cert-manager controller to be used.\nIf not set and `serviceAccount.create` is `true`, a name is generated using\nthe fullname template"
+        },
+        "annotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the service account for the cert-manager controller"
+        },
+        "automountServiceAccountToken": {
+          "type": "boolean",
+          "description": "Automount API credentials for the cert-manager service account"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Servicemonitor": {
+      "required": [
+        "enabled",
+        "prometheusInstance",
+        "targetPort",
+        "path",
+        "interval",
+        "scrapeTimeout",
+        "labels"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable Prometheus Operator ServiceMonitor monitoring"
+        },
+        "prometheusInstance": {
+          "type": "string",
+          "description": "Prometheus Instance definition"
+        },
+        "targetPort": {
+          "type": "integer",
+          "description": "Prometheus scrape port"
+        },
+        "path": {
+          "type": "string",
+          "description": "Prometheus scrape path"
+        },
+        "interval": {
+          "type": "string",
+          "description": "Prometheus scrape interval"
+        },
+        "scrapeTimeout": {
+          "type": "string",
+          "description": "Prometheus scrape timeout"
+        },
+        "labels": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Add custom labels to ServiceMonitor"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Values": {
+      "required": [
+        "installCRDs",
+        "replicaCount",
+        "podLabels",
+        "strategy",
+        "nodeSelector",
+        "affinity",
+        "tolerations",
+        "image",
+        "resources",
+        "extraArgs",
+        "extraEnv",
+        "serviceAccount",
+        "securityContext",
+        "containerSecurityContext",
+        "global",
+        "cainjector",
+        "prometheus",
+        "webhook",
+        "clusterResourceNamespace",
+        "featureGates",
+        "ingressShim",
+        "volumeMounts",
+        "volumes"
+      ],
+      "properties": {
+        "installCRDs": {
+          "type": "boolean",
+          "description": "If true, CRD resources will be installed as part of the Helm chart.\nIf enabled, when uninstalling CRD resources will be deleted causing all\ninstalled custom resources to be DELETED."
+        },
+        "replicaCount": {
+          "type": "integer",
+          "description": "Number of replicas"
+        },
+        "deploymentAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the deployment"
+        },
+        "podAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the pods"
+        },
+        "podLabels": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the pods"
+        },
+        "strategy": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/DeploymentStrategy"
+        },
+        "nodeSelector": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Node labels for pod assignment"
+        },
+        "affinity": {
+          "additionalProperties": true,
+          "description": "Node affinity for pod assignment"
+        },
+        "tolerations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Node tolerations for pod assignment"
+        },
+        "image": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Image"
+        },
+        "resources": {
+          "additionalProperties": true,
+          "description": "CPU/memory resource requests/limits for the pods"
+        },
+        "extraArgs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Optional additional arguments for controller"
+        },
+        "extraEnv": {
+          "items": {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "$ref": "#/definitions/EnvVar"
+          },
+          "type": "array",
+          "description": "Optional additional environment variables for controller"
+        },
+        "serviceAccount": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/ServiceAccount",
+          "description": "Service account configuration for controller"
+        },
+        "securityContext": {
+          "additionalProperties": true,
+          "description": "Pod Security Context\nref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+        },
+        "containerSecurityContext": {
+          "additionalProperties": true,
+          "description": "Container Security Context to be set on the controller component container\nref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+        },
+        "global": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Global"
+        },
+        "cainjector": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Cainjector"
+        },
+        "prometheus": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Prometheus"
+        },
+        "webhook": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Webhook"
+        },
+        "clusterResourceNamespace": {
+          "type": "string",
+          "description": "Override the namespace used to store DNS provider credentials etc. for ClusterIssuer\nresources. By default, the same namespace as cert-manager is deployed within is\nused. This namespace will not be automatically created by the Helm chart."
+        },
+        "featureGates": {
+          "type": "string",
+          "description": "Comma separated list of feature gates that should be enabled on the"
+        },
+        "http_proxy": {
+          "type": "string",
+          "description": "Value of the `HTTP_PROXY` environment variable in the cert-manager pod"
+        },
+        "https_proxy": {
+          "type": "string",
+          "description": "Value of the `HTTPS_PROXY` environment variable in the cert-manager pod"
+        },
+        "no_proxy": {
+          "type": "string",
+          "description": "Value of the `NO_PROXY` environment variable in the cert-manager pod"
+        },
+        "ingressShim": {
+          "additionalProperties": true
+        },
+        "podDnsConfig": {
+          "additionalProperties": true,
+          "description": "Optional cert-manager pod [DNS configurations](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-config)"
+        },
+        "podDnsPolicy": {
+          "type": "string",
+          "description": "Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy)\nUseful if you have a public and private DNS zone for\nthe same domain on Route 53. What follows is an example of ensuring\ncert-manager can access an ingress or DNS TXT records at all times.\n**NOTE:** This requires Kubernetes 1.10 or `CustomPodDNS` feature\ngate enabled for the cluster to work."
+        },
+        "serviceLabels": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Labels to add to the cert-manager controller service"
+        },
+        "volumeMounts": {
+          "items": {
+            "additionalProperties": true
+          },
+          "type": "array",
+          "description": "Volume mounts to add to cert-manager"
+        },
+        "volumes": {
+          "items": {
+            "additionalProperties": true
+          },
+          "type": "array",
+          "description": "Volumes to add to cert-manager"
+        },
+        "creator": {
+          "enum": [
+            "static",
+            "helm"
+          ],
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Webhook": {
+      "required": [
+        "replicaCount",
+        "podLabels",
+        "strategy",
+        "nodeSelector",
+        "affinity",
+        "tolerations",
+        "image",
+        "resources",
+        "extraArgs",
+        "extraEnv",
+        "serviceAccount",
+        "securityContext",
+        "containerSecurityContext",
+        "livenessProbe",
+        "readinessProbe",
+        "securePort",
+        "hostNetwork",
+        "serviceType",
+        "timeoutSeconds",
+        "url"
+      ],
+      "properties": {
+        "replicaCount": {
+          "type": "integer",
+          "description": "Number of replicas"
+        },
+        "deploymentAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the deployment"
+        },
+        "podAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the pods"
+        },
+        "podLabels": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the pods"
+        },
+        "strategy": {
+          "$ref": "#/definitions/DeploymentStrategy"
+        },
+        "nodeSelector": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Node labels for pod assignment"
+        },
+        "affinity": {
+          "additionalProperties": true,
+          "description": "Node affinity for pod assignment"
+        },
+        "tolerations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Node tolerations for pod assignment"
+        },
+        "image": {
+          "$ref": "#/definitions/Image"
+        },
+        "resources": {
+          "additionalProperties": true,
+          "description": "CPU/memory resource requests/limits for the pods"
+        },
+        "extraArgs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Optional additional arguments for controller"
+        },
+        "extraEnv": {
+          "items": {
+            "$ref": "#/definitions/EnvVar"
+          },
+          "type": "array",
+          "description": "Optional additional environment variables for controller"
+        },
+        "serviceAccount": {
+          "$ref": "#/definitions/ServiceAccount",
+          "description": "Service account configuration for controller"
+        },
+        "securityContext": {
+          "additionalProperties": true,
+          "description": "Pod Security Context\nref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+        },
+        "containerSecurityContext": {
+          "additionalProperties": true,
+          "description": "Container Security Context to be set on the controller component container\nref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+        },
+        "livenessProbe": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Probe"
+        },
+        "readinessProbe": {
+          "$ref": "#/definitions/Probe"
+        },
+        "securePort": {
+          "type": "integer",
+          "description": "The port that the webhook should listen on for requests.\nIn GKE private clusters, by default kubernetes apiservers are allowed to\ntalk to the cluster nodes only on 443 and 10250. so configuring\nsecurePort: 10250, will work out of the box without needing to add firewall\nrules or requiring NET_BIND_SERVICE capabilities to bind port numbers \u003c1000"
+        },
+        "hostNetwork": {
+          "type": "boolean",
+          "description": "Specifies if the webhook should be started in hostNetwork mode.\n\nRequired for use in some managed kubernetes clusters (such as AWS EKS) with custom\nCNI (such as calico), because control-plane managed by AWS cannot communicate\nwith pods' IP CIDR and admission webhooks are not working\n\nSince the default port for the webhook conflicts with kubelet on the host\nnetwork, `webhook.securePort` should be changed to an available port if\nrunning in hostNetwork mode."
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "The type of the `Service`.\nSpecifies how the service should be handled. Useful if you want to expose the\nwebhook to outside of the cluster. In some cases, the control plane cannot\nreach internal services."
+        },
+        "loadBalancerIP": {
+          "type": "string",
+          "description": "The specific load balancer IP to use (when `serviceType` is `LoadBalancer`)."
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "description": "Seconds the API server should wait the webhook to respond before treating the call as a failure."
+        },
+        "url": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/WebhookUrl",
+          "description": "Overrides the mutating webhook and validating webhook so they reach the webhook\nservice using the `url` field instead of a service."
+        },
+        "mutatingWebhookConfigurationAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the webhook MutatingWebhookConfiguration"
+        },
+        "validatingWebhookConfigurationAnnotations": {
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          },
+          "type": "object",
+          "description": "Annotations to add to the webhook ValidatingWebhookConfiguration"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "WebhookUrl": {
+      "properties": {
+        "host": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    }
+  }
+}

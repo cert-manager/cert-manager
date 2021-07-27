@@ -23,6 +23,7 @@ helm_pkg(
     tpl_files = [
         "//deploy/charts/cert-manager/templates:_helpers.tpl",
     ],
+    values_schema_yaml = ":values.schema.json",
     values_yaml = ":values.yaml",
 )
 
@@ -68,6 +69,7 @@ filegroup(
             "Chart.yaml",
             "README.md",
             "values.yaml",
+            "values.schema.json",
         ],
     ),
 )

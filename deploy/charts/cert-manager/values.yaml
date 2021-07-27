@@ -238,6 +238,8 @@ webhook:
   # Optional additional arguments for webhook
   extraArgs: []
 
+  extraEnv: []
+
   resources: {}
     # requests:
     #   cpu: 10m
@@ -356,6 +358,8 @@ cainjector:
 
   # Optional additional arguments for cainjector
   extraArgs: []
+
+  extraEnv: []
 
   resources: {}
     # requests:

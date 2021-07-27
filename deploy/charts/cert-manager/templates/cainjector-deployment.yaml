@@ -79,6 +79,9 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+            {{- if .Values.extraEnv }}
+{{ toYaml .Values.extraEnv | indent 10 }}
+            {{- end }}
           {{- if .Values.cainjector.containerSecurityContext }}
           securityContext:
             {{- toYaml .Values.cainjector.containerSecurityContext | nindent 12 }}

@@ -19,6 +19,7 @@ def helm_pkg(
     chart_name,
     chart_yaml,
     values_yaml,
+    values_schema_yaml,
     readme_file,
     tpl_files,
     srcs = [],
@@ -48,6 +49,7 @@ def helm_pkg(
         srcs = [
             chart_yaml,
             values_yaml,
+            values_schema_yaml,
             readme_file,
         ],
         mode = "0644",

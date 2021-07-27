@@ -129,9 +129,9 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-        {{- if .Values.extraEnv }}
+            {{- if .Values.extraEnv }}
 {{ toYaml .Values.extraEnv | indent 10 }}
-        {{- end }}
+            {{- end }}
           {{- if .Values.http_proxy }}
           - name: HTTP_PROXY
             value: {{ .Values.http_proxy }}

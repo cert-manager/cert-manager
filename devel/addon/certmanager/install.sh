@@ -61,12 +61,12 @@ helm upgrade \
     --install \
     --wait \
     --namespace "${NAMESPACE}" \
-    --set image.tag="${APP_VERSION}" \
-    --set cainjector.image.tag="${APP_VERSION}" \
-    --set webhook.image.tag="${APP_VERSION}" \
+    --set-string image.tag="${APP_VERSION}" \
+    --set-string cainjector.image.tag="${APP_VERSION}" \
+    --set-string webhook.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
-    --set featureGates="${FEATURE_GATES:-}" \
-    --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true,--controllers=*\,gateway-shim}" \
+    --set-string featureGates="${FEATURE_GATES:-}" \
+    --set-string "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true,--controllers=*\,gateway-shim}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 
