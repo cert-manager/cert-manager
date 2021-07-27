@@ -28,6 +28,18 @@ import (
 	listersv1beta1 "k8s.io/client-go/listers/networking/v1beta1"
 )
 
+// ConvertedGVKAnnotation is the annotation key set by cert-manager on Ingress
+// resources converted from networking.k8s.io/v1beta1 to networking.k8s.io/v1
+//
+// On Kubernetes 1.16, 1.17, and 1.18, the `networking.k8s.io/v1` API did not exist yet.
+// For these Kubernetes versions, cert-manager converts `networking.k8s.io/v1beta1`
+// into `networking.k8s.io/v1`, which is the one version used across cert-manager.
+//
+// But this conversion means that we lose the "original" apiVersion, which is needed
+// by the ingress-shim sync function to set the correct `ownerReference` on the
+// Certificate it creates.
+//
+// This annotation is only set on Ingresses on Kubernetes 1.16, 1.17, and 1.18.
 const ConvertedGVKAnnotation = `internal.cert-manager.io/converted-gvk`
 
 type v1beta1Lister struct {
