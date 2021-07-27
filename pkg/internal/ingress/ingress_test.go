@@ -22,8 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/controller"
-	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
 	"github.com/stretchr/testify/assert"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -33,6 +31,9 @@ import (
 	"k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
+
+	"github.com/jetstack/cert-manager/pkg/controller"
+	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
 )
 
 func TestFunctionalityAgainstV1(t *testing.T) {
