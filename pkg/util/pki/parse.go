@@ -256,10 +256,17 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 		// of the chain is not self-signed (i.e. is not a root CA), then also append
 		// that certificate to the chain.
 
+		// Root certificates are omitted from the chain as per
+		// https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
+		// > [T]he self-signed certificate that specifies the root certificate authority
+		// > MAY be omitted from the chain, under the assumption that the remote end must
+		// > already possess it in order to validate it in any case.
+
 		if c.issuer == nil {
-			if !isSelfSignedCertificate(c.cert) {
+			if len(certs) > 0 && !isSelfSignedCertificate(c.cert) {
 				certs = append(certs, c.cert)
 			}
+
 			ca = c.cert
 			break
 		}
@@ -276,8 +283,13 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 	}
 
 	// If no certificates parsed, then CA is the only certificate and should be
-	// the chain
+	// the chain. If the CA is also self-signed, then by definition it's also the
+	// issuer and so can be placed in CAPEM too.
 	if len(certs) == 0 {
+		if isSelfSignedCertificate(ca) {
+			return PEMBundle{ChainPEM: caPEM, CAPEM: caPEM}, nil
+		}
+
 		return PEMBundle{ChainPEM: caPEM}, nil
 	}
 

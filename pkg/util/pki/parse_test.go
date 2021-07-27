@@ -258,14 +258,14 @@ func TestParseSingleCertificateChain(t *testing.T) {
 		expPEMBundle PEMBundle
 		expErr       bool
 	}{
-		"if single certificate passed, return single certificate": {
-			inputBundle:  root.pem,
-			expPEMBundle: PEMBundle{ChainPEM: root.pem},
-			expErr:       false,
-		},
 		"if two certificate chain passed in order, should return single ca and certificate": {
 			inputBundle:  joinPEM(intA1.pem, root.pem),
 			expPEMBundle: PEMBundle{ChainPEM: intA1.pem, CAPEM: root.pem},
+			expErr:       false,
+		},
+		"if two certificate chain passed with leaf and intermediate, should return both certs in chain with intermediate as CA": {
+			inputBundle:  joinPEM(leaf.pem, intA2.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem), CAPEM: intA2.pem},
 			expErr:       false,
 		},
 		"if two certificate chain passed out of order, should return single ca and certificate": {
@@ -327,6 +327,21 @@ func TestParseSingleCertificateChain(t *testing.T) {
 		"if certificate chain does not have a root ca, should append all intermediates to ChainPEM and use the root-most cert as CAPEM": {
 			inputBundle:  joinPEM(intA1.pem, intA2.pem, leaf.pem),
 			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem, intA2.pem, intA1.pem), CAPEM: intA1.pem},
+			expErr:       false,
+		},
+		"if only a single leaf certificate was parsed, ChainPEM should contain a single leaf certificate and CAPEM should remain empty": {
+			inputBundle:  joinPEM(leaf.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(leaf.pem), CAPEM: nil},
+			expErr:       false,
+		},
+		"if only a single intermediate certificate was parsed, ChainPEM should contain a single intermediate certificate and CAPEM should remain empty": {
+			inputBundle:  joinPEM(intA1.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(intA1.pem), CAPEM: nil},
+			expErr:       false,
+		},
+		"if only a single root certificate was parsed, ChainPEM should contain a single root certificate and CAPEM should also contain that root": {
+			inputBundle:  joinPEM(root.pem),
+			expPEMBundle: PEMBundle{ChainPEM: joinPEM(root.pem), CAPEM: root.pem},
 			expErr:       false,
 		},
 	}
