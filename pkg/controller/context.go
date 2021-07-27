@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/client-go/discovery"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -54,6 +55,8 @@ type Context struct {
 	CMClient clientset.Interface
 	// GWClient is a GatewayAPI clientset.
 	GWClient gwclient.Interface
+	// DiscoveryClient is a discovery interface. Usually set to Client.Discovery unless a fake client is in use.
+	DiscoveryClient discovery.DiscoveryInterface
 
 	// Recorder to record events to
 	Recorder record.EventRecorder

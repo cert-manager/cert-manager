@@ -14,6 +14,7 @@ filegroup(
         "//pkg/internal/apis/acme:all-srcs",
         "//pkg/internal/apis/certmanager:all-srcs",
         "//pkg/internal/apis/meta:all-srcs",
+        "//pkg/internal/ingress:all-srcs",
         "//pkg/internal/vault:all-srcs",
     ],
     tags = ["automanaged"],

@@ -35,6 +35,7 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
+	"github.com/jetstack/cert-manager/pkg/internal/ingress"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
@@ -96,7 +97,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// cache when managing pod/service/ingress resources
 	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
 	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
-	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
+
+	_, ingressInformer, err := ingress.NewListerInformer(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
@@ -105,7 +111,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		secretInformer.Informer().HasSynced,
 		podInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
-		ingressInformer.Informer().HasSynced,
+		ingressInformer.HasSynced,
 	}
 
 	// set all the references to the listers for used by the Sync function
@@ -128,10 +134,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
-	c.httpSolver = http.NewSolver(ctx)
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
-	var err error
+	c.httpSolver, err = http.NewSolver(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	c.dnsSolver, err = dns.NewSolver(ctx)
 	if err != nil {
 		return nil, nil, err

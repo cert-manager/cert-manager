@@ -30,12 +30,14 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/gateway-api/apis/v1alpha1"
 	gwapiv1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
@@ -417,7 +419,47 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
-func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1beta1.Ingress {
+func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1.Ingress {
+	return &networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: annotations,
+		},
+		Spec: networkingv1.IngressSpec{
+			TLS: []networkingv1.IngressTLS{
+				{
+					Hosts:      dnsNames,
+					SecretName: secretName,
+				},
+			},
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: dnsNames[0],
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									Path:     "/",
+									PathType: pathTypePrefix(),
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: "somesvc",
+											Port: networkingv1.ServiceBackendPort{
+												Number: 80,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func NewV1Beta1Ingress(name, secretName string, annotations map[string]string, dnsNames ...string) *networkingv1beta1.Ingress {
 	return &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -439,7 +481,7 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 								{
 									Path: "/",
 									Backend: networkingv1beta1.IngressBackend{
-										ServiceName: "dummy-service",
+										ServiceName: "somesvc",
 										ServicePort: intstr.FromInt(80),
 									},
 								},
@@ -450,6 +492,11 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 			},
 		},
 	}
+}
+
+func pathTypePrefix() *networkingv1.PathType {
+	p := networkingv1.PathTypePrefix
+	return &p
 }
 
 func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) (*gwapiv1alpha1.Gateway, *gwapiv1alpha1.HTTPRoute) {
@@ -525,4 +572,19 @@ func ptrStr(s string) *string {
 func ptrPort(port int32) *gwapiv1alpha1.PortNumber {
 	p := gwapiv1alpha1.PortNumber(port)
 	return &p
+}
+
+// HasIngresses lets you know if an API exists in the discovery API
+// calling this function always performs a request to the API server.
+func HasIngresses(d discovery.DiscoveryInterface, GroupVersion string) bool {
+	resourceList, err := d.ServerResourcesForGroupVersion(GroupVersion)
+	if err != nil {
+		return false
+	}
+	for _, r := range resourceList.APIResources {
+		if r.Kind == "Ingress" {
+			return true
+		}
+	}
+	return false
 }

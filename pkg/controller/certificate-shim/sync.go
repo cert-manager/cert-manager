@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +41,7 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	ingress "github.com/jetstack/cert-manager/pkg/internal/ingress"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
@@ -52,7 +54,8 @@ const (
 	reasonDeleteCertificate = "DeleteCertificate"
 )
 
-var ingressGVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
+var ingressV1GVK = networkingv1.SchemeGroupVersion.WithKind("Ingress")
+var ingressV1Beta1GVK = networkingv1beta1.SchemeGroupVersion.WithKind("Ingress")
 var gatewayGVK = gwapi.SchemeGroupVersion.WithKind("Gateway")
 
 // SyncFn is the reconciliation function passed to a certificate-shim's
@@ -88,7 +91,7 @@ func SyncFnFor(
 		// resource.
 		var autoAnnotations []string
 		switch ingLike.(type) {
-		case *networkingv1beta1.Ingress:
+		case *networkingv1.Ingress:
 			autoAnnotations = defaults.DefaultAutoCertificateAnnotations
 		}
 
@@ -152,7 +155,7 @@ func SyncFnFor(
 
 func validateIngressLike(ingLike metav1.Object) field.ErrorList {
 	switch o := ingLike.(type) {
-	case *networkingv1beta1.Ingress:
+	case *networkingv1.Ingress:
 		return checkForDuplicateSecretNames(field.NewPath("spec", "tls"), o.Spec.TLS)
 	case *gwapi.Gateway:
 		return nil
@@ -161,7 +164,7 @@ func validateIngressLike(ingLike metav1.Object) field.ErrorList {
 	}
 }
 
-func checkForDuplicateSecretNames(path *field.Path, tlsBlocks []networkingv1beta1.IngressTLS) field.ErrorList {
+func checkForDuplicateSecretNames(path *field.Path, tlsBlocks []networkingv1.IngressTLS) field.ErrorList {
 	var errs field.ErrorList
 	// We can't let two TLS blocks share the same secretName because we decided
 	// to create one Certificate for each TLS block. For example:
@@ -202,7 +205,7 @@ func checkForDuplicateSecretNames(path *field.Path, tlsBlocks []networkingv1beta
 	return errs
 }
 
-func validateIngressTLSBlock(path *field.Path, tlsBlock networkingv1beta1.IngressTLS) field.ErrorList {
+func validateIngressTLSBlock(path *field.Path, tlsBlock networkingv1.IngressTLS) field.ErrorList {
 	var errs field.ErrorList
 
 	if len(tlsBlock.Hosts) == 0 {
@@ -273,7 +276,7 @@ func buildCertificates(
 
 	tlsHosts := make(map[corev1.ObjectReference][]string)
 	switch ingLike := ingLike.(type) {
-	case *networkingv1beta1.Ingress:
+	case *networkingv1.Ingress:
 		for i, tls := range ingLike.Spec.TLS {
 			path := field.NewPath("spec", "tls").Index(i)
 			err := validateIngressTLSBlock(path, tls).ToAggregate()
@@ -314,8 +317,12 @@ func buildCertificates(
 
 		var controllerGVK schema.GroupVersionKind
 		switch ingLike.(type) {
-		case *networkingv1beta1.Ingress:
-			controllerGVK = ingressGVK
+		case *networkingv1.Ingress:
+			if _, found := ingLike.GetAnnotations()[ingress.ConvertedGVKAnnotation]; found {
+				controllerGVK = ingressV1Beta1GVK
+			} else {
+				controllerGVK = ingressV1GVK
+			}
 		case *gwapi.Gateway:
 			controllerGVK = gatewayGVK
 		}
@@ -340,7 +347,7 @@ func buildCertificates(
 		}
 
 		switch o := ingLike.(type) {
-		case *networkingv1beta1.Ingress:
+		case *networkingv1.Ingress:
 			ingLike = o.DeepCopy()
 		case *gwapi.Gateway:
 			ingLike = o.DeepCopy()
@@ -410,7 +417,7 @@ func isUnrequiredCertificate(crt *cmapi.Certificate, ingLike metav1.Object) bool
 	}
 
 	switch o := ingLike.(type) {
-	case *networkingv1beta1.Ingress:
+	case *networkingv1.Ingress:
 		for _, tls := range o.Spec.TLS {
 			if crt.Spec.SecretName == tls.SecretName {
 				return false

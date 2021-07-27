@@ -24,6 +24,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
@@ -641,20 +643,38 @@ func (s *Suite) Define() {
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
 		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
-			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+			var certName string
+			switch {
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 
-			name := "testcert-ingress"
-			secretName := "testcert-ingress-tls"
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
 
-			By("Creating an Ingress with the issuer name annotation set")
-			ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
-				"cert-manager.io/issuer":       issuerRef.Name,
-				"cert-manager.io/issuer-kind":  issuerRef.Kind,
-				"cert-manager.io/issuer-group": issuerRef.Group,
-			}, e2eutil.RandomSubdomain(s.DomainSuffix)), metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
+				By("Creating an Ingress with the issuer name annotation set")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+				}, e2eutil.RandomSubdomain(s.DomainSuffix)), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				certName = ingress.Spec.TLS[0].SecretName
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
 
-			certName := ingress.Spec.TLS[0].SecretName
+				By("Creating an Ingress with the issuer name annotation set")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+				}, e2eutil.RandomSubdomain(s.DomainSuffix)), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				certName = ingress.Spec.TLS[0].SecretName
+			default:
+				Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
+			}
 
 			By("Waiting for the Certificate to exist...")
 			Expect(e2eutil.WaitForCertificateToExist(
@@ -662,7 +682,7 @@ func (s *Suite) Define() {
 			)).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
+			_, err := f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -671,26 +691,51 @@ func (s *Suite) Define() {
 		}, featureset.OnlySAN)
 
 		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
-			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
-
-			name := "testcert-ingress"
-			secretName := "testcert-ingress-tls"
+			var certName string
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
 
-			By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
-			ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
-				"cert-manager.io/issuer":       issuerRef.Name,
-				"cert-manager.io/issuer-kind":  issuerRef.Kind,
-				"cert-manager.io/issuer-group": issuerRef.Group,
-				"cert-manager.io/common-name":  domain,
-				"cert-manager.io/duration":     duration.String(),
-				"cert-manager.io/renew-before": renewBefore.String(),
-			}, domain), metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			switch {
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 
-			certName := ingress.Spec.TLS[0].SecretName
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
+
+				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+					"cert-manager.io/common-name":  domain,
+					"cert-manager.io/duration":     duration.String(),
+					"cert-manager.io/renew-before": renewBefore.String(),
+				}, domain), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				certName = ingress.Spec.TLS[0].SecretName
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
+
+				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+					"cert-manager.io/common-name":  domain,
+					"cert-manager.io/duration":     duration.String(),
+					"cert-manager.io/renew-before": renewBefore.String(),
+				}, domain), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				certName = ingress.Spec.TLS[0].SecretName
+			default:
+				Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
+			}
 
 			By("Waiting for the Certificate to exist...")
 			Expect(e2eutil.WaitForCertificateToExist(
@@ -698,7 +743,7 @@ func (s *Suite) Define() {
 			)).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
+			_, err := f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the ingres-shim has translated all the supplied

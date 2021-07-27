@@ -23,13 +23,13 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	networkinglisters "k8s.io/client-go/listers/networking/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	shimhelper "github.com/jetstack/cert-manager/pkg/controller/certificate-shim"
+	"github.com/jetstack/cert-manager/pkg/internal/ingress"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -38,15 +38,19 @@ const (
 )
 
 type controller struct {
-	ingressLister networkinglisters.IngressLister
+	ingressLister ingress.InternalIngressLister
 	sync          shimhelper.SyncFn
 }
 
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	kShared := ctx.KubeSharedInformerFactory
 	cmShared := ctx.SharedInformerFactory
 
-	c.ingressLister = kShared.Networking().V1beta1().Ingresses().Lister()
+	internalIngressLister, internalIngressInformer, err := ingress.NewListerInformer(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c.ingressLister = internalIngressLister
 
 	log := logf.FromContext(ctx.RootContext, ControllerName)
 	c.sync = shimhelper.SyncFnFor(ctx.Recorder, log, ctx.CMClient, cmShared.Certmanager().V1().Certificates().Lister(), ctx.IngressShimOptions)
@@ -54,7 +58,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	queue := workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
 
 	mustSync := []cache.InformerSynced{
-		kShared.Networking().V1beta1().Ingresses().Informer().HasSynced,
+		internalIngressInformer.HasSynced,
 		cmShared.Certmanager().V1().Certificates().Informer().HasSynced,
 	}
 
@@ -64,7 +68,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// to do some cleanup, we would use a finalizer, and the cleanup logic would
 	// be triggered by the "Updated" event when the object gets marked for
 	// deletion.
-	kShared.Networking().V1beta1().Ingresses().Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{
+	internalIngressInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{
 		Queue: queue,
 	})
 

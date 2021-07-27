@@ -243,6 +243,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		Client:                    cl,
 		CMClient:                  intcl,
 		GWClient:                  gwcl,
+		DiscoveryClient:           cl.Discovery(),
 		Recorder:                  recorder,
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
