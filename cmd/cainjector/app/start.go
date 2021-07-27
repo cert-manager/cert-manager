@@ -117,15 +117,16 @@ servers and webhook servers.`,
 
 func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                  api.Scheme,
-		Namespace:               o.Namespace,
-		LeaderElection:          o.LeaderElect,
-		LeaderElectionNamespace: o.LeaderElectionNamespace,
-		LeaderElectionID:        "cert-manager-cainjector-leader-election",
-		LeaseDuration:           &o.LeaseDuration,
-		RenewDeadline:           &o.RenewDeadline,
-		RetryPeriod:             &o.RetryPeriod,
-		MetricsBindAddress:      "0",
+		Scheme:                        api.Scheme,
+		Namespace:                     o.Namespace,
+		LeaderElection:                o.LeaderElect,
+		LeaderElectionNamespace:       o.LeaderElectionNamespace,
+		LeaderElectionID:              "cert-manager-cainjector-leader-election",
+		LeaderElectionReleaseOnCancel: true,
+		LeaseDuration:                 &o.LeaseDuration,
+		RenewDeadline:                 &o.RenewDeadline,
+		RetryPeriod:                   &o.RetryPeriod,
+		MetricsBindAddress:            "0",
 	})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)

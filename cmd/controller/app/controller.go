@@ -337,15 +337,22 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 
 	// Try and become the leader and start controller manager loops
 	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-		Lock:          ml,
-		LeaseDuration: opts.LeaderElectionLeaseDuration,
-		RenewDeadline: opts.LeaderElectionRenewDeadline,
-		RetryPeriod:   opts.LeaderElectionRetryPeriod,
+		Lock:            ml,
+		LeaseDuration:   opts.LeaderElectionLeaseDuration,
+		RenewDeadline:   opts.LeaderElectionRenewDeadline,
+		RetryPeriod:     opts.LeaderElectionRetryPeriod,
+		ReleaseOnCancel: true,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: run,
 			OnStoppedLeading: func() {
-				log.V(logf.ErrorLevel).Info("leader election lost")
-				os.Exit(1)
+				select {
+				case <-ctx.Done():
+					// context was canceled, just return
+					return
+				default:
+					log.V(logf.ErrorLevel).Info("leader election lost")
+					os.Exit(1)
+				}
 			},
 		},
 	})
