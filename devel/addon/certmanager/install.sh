@@ -64,6 +64,7 @@ helm upgrade \
     --set image.tag="${APP_VERSION}" \
     --set cainjector.image.tag="${APP_VERSION}" \
     --set webhook.image.tag="${APP_VERSION}" \
+    --set startupapicheck.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
     --set featureGates="${FEATURE_GATES:-}" \
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true,--controllers=*\,gateway-shim}" \
