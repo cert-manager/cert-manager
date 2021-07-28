@@ -181,6 +181,25 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
 | `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | `{}` |
+| `startupapicheck.enabled` | Toggles whether the startupapicheck Job should be installed | `true` |
+| `startupapicheck.securityContext` | Pod Security Context to be set on the startupapicheck component Pod | `{}` |
+| `startupapicheck.timeout` | Timeout for 'kubectl check api' command | `1m` |
+| `startupapicheck.backoffLimit` | Job backoffLimit | `4` |
+| `startupapicheck.jobAnnotations` | Optional additional annotations to add to the startupapicheck Job | `{}` |
+| `startupapicheck.podAnnotations` | Optional additional annotations to add to the startupapicheck Pods | `{}` |
+| `startupapicheck.extraArgs` | Optional additional arguments for startupapicheck | `[]` |
+| `startupapicheck.resources` | CPU/memory resource requests/limits for the startupapicheck pod | `{}` |
+| `startupapicheck.nodeSelector` | Node labels for startupapicheck pod assignment | `{}` |
+| `startupapicheck.affinity` | Node affinity for startupapicheck pod assignment | `{}` |
+| `startupapicheck.tolerations` | Node tolerations for startupapicheck pod assignment | `[]` |
+| `startupapicheck.podLabels` | Optional additional labels to add to the startupapicheck Pods | `{}` |
+| `startupapicheck.image.repository` | startupapicheck image repository | `quay.io/jetstack/cert-manager-ctl` |
+| `startupapicheck.image.tag` | startupapicheck image tag | `{{RELEASE_VERSION}}` |
+| `startupapicheck.image.pullPolicy` | startupapicheck image pull policy | `IfNotPresent` |
+| `startupapicheck.serviceAccount.create` | If `true`, create a new service account for the startupapicheck component | `true` |
+| `startupapicheck.serviceAccount.name` | Service account for the startupapicheck component to be used. If not set and `startupapicheck.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
+| `startupapicheck.serviceAccount.annotations` | Annotations to add to the service account for the startupapicheck component |  |
+| `startupapicheck.serviceAccount.automountServiceAccountToken` | Automount API credentials for the startupapicheck Service Account | `true` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
