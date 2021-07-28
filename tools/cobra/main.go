@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Contains functionality to generate markdown docs for cert-manager components.
 package main
 
 import (
@@ -21,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -33,6 +35,17 @@ import (
 	ctlcmd "github.com/jetstack/cert-manager/cmd/ctl/cmd"
 	webhookcmd "github.com/jetstack/cert-manager/cmd/webhook/app"
 )
+
+// Header template to be prepended to each markdown file. This is so that the
+// files are suited for committing to cert-manager/website.
+const headerTemplate = `---
+title: %s
+linkTitle: %s
+weight: 960
+type: "docs"
+---
+
+`
 
 func main() {
 	if err := run(os.Args); err != nil {
@@ -73,7 +86,7 @@ func run(args []string) error {
 			return err
 		}
 
-		if err := doc.GenMarkdownTree(c, dir); err != nil {
+		if err := doc.GenMarkdownTreeCustom(c, dir, header, linkHandler); err != nil {
 			return err
 		}
 	}
@@ -95,4 +108,14 @@ func ensureDirectory(dir string) error {
 	}
 
 	return nil
+}
+
+func header(filename string) string {
+	name := strings.TrimSuffix(filepath.Base(filename), ".md")
+	return fmt.Sprintf(headerTemplate, name, name)
+}
+
+// We don't need custom link processing so this function is a no-op.
+func linkHandler(s string) string {
+	return s
 }
