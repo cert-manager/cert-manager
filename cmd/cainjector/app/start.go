@@ -117,15 +117,16 @@ servers and webhook servers.`,
 
 func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                  api.Scheme,
-		Namespace:               o.Namespace,
-		LeaderElection:          o.LeaderElect,
-		LeaderElectionNamespace: o.LeaderElectionNamespace,
-		LeaderElectionID:        "cert-manager-cainjector-leader-election",
-		LeaseDuration:           &o.LeaseDuration,
-		RenewDeadline:           &o.RenewDeadline,
-		RetryPeriod:             &o.RetryPeriod,
-		MetricsBindAddress:      "0",
+		Scheme:                        api.Scheme,
+		Namespace:                     o.Namespace,
+		LeaderElection:                o.LeaderElect,
+		LeaderElectionNamespace:       o.LeaderElectionNamespace,
+		LeaderElectionID:              "cert-manager-cainjector-leader-election",
+		LeaderElectionReleaseOnCancel: true,
+		LeaseDuration:                 &o.LeaseDuration,
+		RenewDeadline:                 &o.RenewDeadline,
+		RetryPeriod:                   &o.RetryPeriod,
+		MetricsBindAddress:            "0",
 	})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
@@ -144,14 +145,12 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 		return nil
 	})
 
-	// Don't launch the controllers unless we have been elected leader
-	<-mgr.Elected()
-
-	// Exit early if the Elected channel gets closed because we are shutting down.
 	select {
-	case <-gctx.Done():
+	case <-gctx.Done(): // Exit early if we are shutting down or if the manager has exited with an error
+		// Wait for error group to complete and return
 		return g.Wait()
-	default:
+	case <-mgr.Elected(): // Don't launch the controllers unless we have been elected leader
+		// Continue with setting up controller
 	}
 
 	// Retry the start up of the certificate based controller in case the
