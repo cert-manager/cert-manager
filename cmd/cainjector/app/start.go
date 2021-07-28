@@ -146,7 +146,7 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	})
 
 	select {
-	case <-gctx.Done(): // Exit early if the Elected channel gets closed because we are shutting down.
+	case <-gctx.Done(): // Exit early if we are shutting down or if the manager has exited with an error
 		// Wait for error group to complete and return
 		return g.Wait()
 	case <-mgr.Elected(): // Don't launch the controllers unless we have been elected leader

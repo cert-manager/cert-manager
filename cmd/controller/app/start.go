@@ -73,8 +73,14 @@ to renew certificates at an appropriate time before expiry.`,
 			}
 
 			logf.Log.V(logf.InfoLevel).Info("starting controller", "version", util.AppVersion, "git-commit", util.AppGitCommit)
-			return o.RunCertManagerController(stopCh)
+			if err := o.RunCertManagerController(stopCh); err != nil {
+				cmd.SilenceUsage = true // Don't display usage information when exiting because of an error
+				return err
+			}
+
+			return nil
 		},
+		SilenceErrors: true, // Errors are already logged when calling cmd.Execute()
 	}
 
 	flags := cmd.Flags()

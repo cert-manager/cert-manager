@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -76,8 +77,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 
 	ctx, kubeCfg, err := buildControllerContext(rootCtx, opts)
 	if err != nil {
-		log.Error(err, "error building controller context", "options", opts)
-		return err
+		return fmt.Errorf("error building controller context (options %v): %v", opts, err)
 	}
 
 	enabledControllers := opts.EnabledControllers()
@@ -85,8 +85,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 
 	ln, err := net.Listen("tcp", opts.MetricsListenAddress)
 	if err != nil {
-		log.Error(err, "failed to listen on prometheus address", "address", opts.MetricsListenAddress)
-		return err
+		return fmt.Errorf("failed to listen on prometheus address %s: %v", opts.MetricsListenAddress, err)
 	}
 	server := ctx.Metrics.NewServer(ln, opts.EnablePprof)
 
@@ -102,7 +101,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 		return nil
 	})
 	g.Go(func() error {
-		log.WithValues("address", ln.Addr()).V(logf.InfoLevel).Info("listening for connections on")
+		log.V(logf.InfoLevel).Info("starting metrics server", "address", ln.Addr())
 		if err := server.Serve(ln); err != http.ErrServerClosed {
 			return err
 		}
@@ -115,8 +114,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 			log.V(logf.InfoLevel).Info("starting leader election")
 			leaderElectionClient, err := kubernetes.NewForConfig(rest.AddUserAgent(kubeCfg, "leader-election"))
 			if err != nil {
-				log.Error(err, "error creating leader election client")
-				return err
+				return fmt.Errorf("error creating leader election client: %v", err)
 			}
 
 			errorCh := make(chan error, 1)
@@ -130,7 +128,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 						// context was canceled, just return
 						return
 					default:
-						log.V(logf.ErrorLevel).Info("leader election lost")
 						errorCh <- errors.New("leader election lost")
 					}
 				},
@@ -150,7 +147,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	}
 
 	select {
-	case <-rootCtx.Done(): // Exit early if the Elected channel gets closed because we are shutting down.
+	case <-rootCtx.Done(): // Exit early if we are shutting down or if the errgroup has already exited with an error
 		// Wait for error group to complete and return
 		return g.Wait()
 	case <-elected: // Don't launch the controllers unless we have been elected leader
@@ -174,16 +171,20 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 
 		iface, err := fn(ctx)
 		if err != nil {
-			log.Error(err, "error starting controller")
+			err = fmt.Errorf("error starting controller: %v", err)
 
 			cancelContext()
-			_ = g.Wait() // Don't process errors, we already have an error
+			err2 := g.Wait() // Don't process errors, we already have an error
+			if err2 != nil {
+				return utilerrors.NewAggregate([]error{err, err2})
+			}
 			return err
 		}
 
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting controller")
 
+			// TODO: make this either a constant or a command line flag
 			workers := 5
 			return iface.Run(workers, rootCtx.Done())
 		})
@@ -196,8 +197,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 
 	err = g.Wait()
 	if err != nil {
-		log.Error(err, "error starting controller")
-		return err
+		return fmt.Errorf("error starting controller: %v", err)
 	}
 	log.V(logf.InfoLevel).Info("control loops exited")
 
@@ -341,13 +341,10 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 }
 
 func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, callbacks leaderelection.LeaderCallbacks) error {
-	log := logf.FromContext(ctx, "leader-election")
-
 	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {
-		log.Error(err, "error getting hostname")
-		return err
+		return fmt.Errorf("error getting hostname: %v", err)
 	}
 
 	// Set up Multilock for leader election. This Multilock is here for the
@@ -366,9 +363,7 @@ func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, l
 		lc,
 	)
 	if err != nil {
-		// We should never get here.
-		log.Error(err, "error creating leader election lock")
-		return err
+		return fmt.Errorf("error creating leader election lock: %v", err)
 	}
 
 	// Try and become the leader and start controller manager loops
