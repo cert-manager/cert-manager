@@ -27,7 +27,7 @@ spec:
     strategy: Webhook
     # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
     webhook:
-      conversionReviewVersions: ["v1"]
+      conversionReviewVersions: ["v1", "v1beta1"]
       clientConfig:
         # {{- if .Values.webhook.url.host }}
         url: https://{{ .Values.webhook.url.host }}/convert
