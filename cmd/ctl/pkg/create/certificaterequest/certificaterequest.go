@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -36,7 +37,6 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/util"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -291,7 +291,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 		if o.CertFileName != "" {
 			actualCertFileName = o.CertFileName
 		}
-		err = util.FetchCertificateFromCR(req, actualCertFileName)
+		err = fetchCertificateFromCR(req, actualCertFileName)
 		if err != nil {
 			return fmt.Errorf("error when writing certificate to file: %w", err)
 		}
@@ -347,4 +347,25 @@ func generateCSR(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	})
 
 	return csrPEM, nil
+}
+
+// fetchCertificateFromCR fetches the x509 certificate from a CR and stores the
+// certificate in file specified by certFilename. Assumes CR is ready,
+// otherwise returns error.
+func fetchCertificateFromCR(req *cmapi.CertificateRequest, certFileName string) error {
+	// If CR not ready yet, error
+	if !apiutil.CertificateRequestHasCondition(req, cmapi.CertificateRequestCondition{
+		Type:   cmapi.CertificateRequestConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}) || len(req.Status.Certificate) == 0 {
+		return errors.New("CertificateRequest is not ready yet, unable to fetch certificate")
+	}
+
+	// Store certificate to file
+	err := os.WriteFile(certFileName, req.Status.Certificate, 0600)
+	if err != nil {
+		return fmt.Errorf("error when writing certificate to file: %w", err)
+	}
+
+	return nil
 }
