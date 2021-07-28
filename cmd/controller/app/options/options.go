@@ -111,6 +111,9 @@ type ControllerOptions struct {
 	// CertificateRequest -> Order. Slice of string literals that are
 	// treated as prefixes for annotation keys.
 	CopiedAnnotationPrefixes []string
+
+	//Return full Certchain including root cert for k8s CSRs
+	FullCertChain bool
 }
 
 const (
@@ -122,7 +125,7 @@ const (
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
 
-	defaultLeaderElect                 = true
+	defaultFullCertChain               = false
 	defaultLeaderElectionNamespace     = "kube-system"
 	defaultLeaderElectionLeaseDuration = 60 * time.Second
 	defaultLeaderElectionRenewDeadline = 40 * time.Second
@@ -258,9 +261,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.Namespace, "namespace", defaultNamespace, ""+
 		"If set, this limits the scope of cert-manager to a single namespace and ClusterIssuers are disabled. "+
 		"If not specified, all namespaces will be watched")
-	fs.BoolVar(&s.LeaderElect, "leader-elect", true, ""+
-		"If true, cert-manager will perform leader election between instances to ensure no more "+
-		"than one instance of cert-manager operates at a time")
+	fs.BoolVar(&s.FullCertChain, "full-cert-chain", false, ""+
+		"If true, cert-manager will return the full cert chain which includes the root cert for k8s certificateSigningRequest")
 	fs.StringVar(&s.LeaderElectionNamespace, "leader-election-namespace", defaultLeaderElectionNamespace, ""+
 		"Namespace used to perform leader election. Only used if leader election is enabled")
 	fs.DurationVar(&s.LeaderElectionLeaseDuration, "leader-election-lease-duration", defaultLeaderElectionLeaseDuration, ""+

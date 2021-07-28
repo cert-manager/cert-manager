@@ -62,6 +62,7 @@ type CA struct {
 	// Used for testing to get reproducible resulting certificates
 	templateGenerator templateGenerator
 	signingFn         signingFn
+	fullCertChain bool
 }
 
 func init() {
@@ -81,6 +82,7 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 		recorder:          ctx.Recorder,
 		templateGenerator: pki.GenerateTemplateFromCertificateSigningRequest,
 		signingFn:         pki.SignCSRTemplate,
+		fullCertChain:     ctx.FullCertChain,
 	}
 }
 
@@ -135,8 +137,12 @@ func (c *CA) Sign(ctx context.Context, csr *certificatesv1.CertificateSigningReq
 		_, err := c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 		return err
 	}
-
-	csr.Status.Certificate = bundle.ChainPEM
+	cert := bundle.ChainPEM
+	caPem := bundle.CAPEM
+	if c.fullCertChain && len(caPem) > 0 {
+		cert = append(cert, caPem...)
+	}
+	csr.Status.Certificate = cert
 	csr, err = c.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
 		message := "Error updating certificate"

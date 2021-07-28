@@ -280,6 +280,9 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
 		},
+		CertificateSigningRequestOptions: controller.CertificateSigningRequestOptions{
+			FullCertChain: opts.FullCertChain,
+		},
 	}, kubeCfg, nil
 }
 

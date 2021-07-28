@@ -88,6 +88,7 @@ type Context struct {
 	IngressShimOptions
 	CertificateOptions
 	SchedulerOptions
+	CertificateSigningRequestOptions
 }
 
 type IssuerOptions struct {
@@ -161,4 +162,9 @@ type SchedulerOptions struct {
 	// MaxConcurrentChallenges determines the maximum number of challenges that can be
 	// scheduled as 'processing' at once.
 	MaxConcurrentChallenges int
+}
+
+type CertificateSigningRequestOptions struct {
+	// return the full cert chain which includes the root cert for k8s certificateSigningRequest
+	FullCertChain bool
 }
