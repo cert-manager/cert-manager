@@ -36,7 +36,9 @@ data:
     			 604800 )	; Negative Cache TTL
     @	IN	NS	localhost.
     *.ingress-nginx	IN  A {SERVICE_IP_PREFIX}.15
-    ingress-nginx	IN	A	{SERVICE_IP_PREFIX}.15
+    ingress-nginx	IN	A {SERVICE_IP_PREFIX}.15
+    *.haproxy IN  A {SERVICE_IP_PREFIX}.14
+    haproxy IN  A {SERVICE_IP_PREFIX}.14
 
   db.dns01.example.com: |
     ;
