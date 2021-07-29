@@ -219,8 +219,9 @@ func getValidatingWebhookConfig(url string, caPEM []byte) client.Object {
 						},
 					},
 				},
-				FailurePolicy: &failurePolicy,
-				SideEffects:   &sideEffects,
+				FailurePolicy:           &failurePolicy,
+				SideEffects:             &sideEffects,
+				AdmissionReviewVersions: []string{"v1"},
 			},
 		},
 	}
@@ -256,8 +257,9 @@ func getMutatingWebhookConfig(url string, caPEM []byte) client.Object {
 						},
 					},
 				},
-				FailurePolicy: &failurePolicy,
-				SideEffects:   &sideEffects,
+				FailurePolicy:           &failurePolicy,
+				SideEffects:             &sideEffects,
+				AdmissionReviewVersions: []string{"v1"},
 			},
 		},
 	}
