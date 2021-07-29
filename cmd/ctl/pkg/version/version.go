@@ -34,8 +34,8 @@ import (
 
 // Version is a struct for version information
 type Version struct {
-	ClientVersion *util.Version       `json:"clientVersion,omitempty"`
-	ServerVersion *util.ServerVersion `json:"serverVersion,omitempty"`
+	ClientVersion *util.Version           `json:"clientVersion,omitempty"`
+	ServerVersion *versionchecker.Version `json:"serverVersion,omitempty"`
 }
 
 // Options is a struct to support version command
@@ -114,7 +114,7 @@ func (o *Options) Complete(factory cmdutil.Factory) error {
 // Run executes version command
 func (o *Options) Run(ctx context.Context) error {
 	var (
-		serverVersion *util.ServerVersion
+		serverVersion *versionchecker.Version
 		serverErr     error
 		versionInfo   Version
 	)
@@ -123,14 +123,8 @@ func (o *Options) Run(ctx context.Context) error {
 	versionInfo.ClientVersion = &clientVersion
 
 	if !o.ClientOnly {
-		var version string
-		version, serverErr = o.VersionChecker.Version(ctx)
-		if serverErr == nil {
-			serverVersion = &util.ServerVersion{
-				GitVersion: version,
-			}
-			versionInfo.ServerVersion = serverVersion
-		}
+		serverVersion, serverErr = o.VersionChecker.Version(ctx)
+		versionInfo.ServerVersion = serverVersion
 	}
 
 	switch o.Output {
@@ -138,12 +132,12 @@ func (o *Options) Run(ctx context.Context) error {
 		if o.Short {
 			fmt.Fprintf(o.Out, "Client Version: %s\n", clientVersion.GitVersion)
 			if serverVersion != nil {
-				fmt.Fprintf(o.Out, "Server Version: %s\n", serverVersion.GitVersion)
+				fmt.Fprintf(o.Out, "Server Version: %s\n", serverVersion.Detected)
 			}
 		} else {
 			fmt.Fprintf(o.Out, "Client Version: %s\n", fmt.Sprintf("%#v", clientVersion))
 			if serverVersion != nil {
-				fmt.Fprintf(o.Out, "Server Version: %s\n", fmt.Sprintf("%#v", *serverVersion))
+				fmt.Fprintf(o.Out, "Server Version: %s\n", fmt.Sprintf("%#v", serverVersion))
 			}
 		}
 	case "yaml":

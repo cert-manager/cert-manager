@@ -25,14 +25,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (o *versionChecker) extractVersionFromCrd(ctx context.Context, crdName string) (string, error) {
+func (o *versionChecker) extractVersionFromCrd(ctx context.Context, crdName string) error {
 	crdKey := client.ObjectKey{Name: crdName}
 
 	objv1 := &apiextensionsv1.CustomResourceDefinition{}
 	err := o.client.Get(ctx, crdKey, objv1)
 	if err == nil {
-		if version, err := extractVersionFromLabels(objv1.Labels); shouldReturn(err) {
-			return version, err
+		if label := extractVersionFromLabels(objv1.Labels); label != "" {
+			o.versionSources["crdLabelVersion"] = label
 		}
 
 		return o.extractVersionFromCrdv1(ctx, objv1)
@@ -40,14 +40,14 @@ func (o *versionChecker) extractVersionFromCrd(ctx context.Context, crdName stri
 
 	// If error differs from not found, don't continue and return error
 	if !apierrors.IsNotFound(err) {
-		return "", err
+		return err
 	}
 
 	objv1beta1 := &apiextensionsv1beta1.CustomResourceDefinition{}
 	err = o.client.Get(ctx, crdKey, objv1beta1)
 	if err == nil {
-		if version, err := extractVersionFromLabels(objv1beta1.Labels); shouldReturn(err) {
-			return version, err
+		if label := extractVersionFromLabels(objv1beta1.Labels); label != "" {
+			o.versionSources["crdLabelVersion"] = label
 		}
 
 		return o.extractVersionFromCrdv1beta1(ctx, objv1beta1)
@@ -55,18 +55,18 @@ func (o *versionChecker) extractVersionFromCrd(ctx context.Context, crdName stri
 
 	// If error differs from not found, don't continue and return error
 	if !apierrors.IsNotFound(err) {
-		return "", err
+		return err
 	}
 
-	return "", ErrCertManagerCRDsNotFound
+	return ErrCertManagerCRDsNotFound
 }
 
-func (o *versionChecker) extractVersionFromCrdv1(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (string, error) {
+func (o *versionChecker) extractVersionFromCrdv1(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) error {
 	if (crd.Spec.Conversion == nil) ||
 		(crd.Spec.Conversion.Webhook == nil) ||
 		(crd.Spec.Conversion.Webhook.ClientConfig == nil) ||
 		(crd.Spec.Conversion.Webhook.ClientConfig.Service == nil) {
-		return "", ErrVersionNotDetected
+		return nil
 	}
 
 	return o.extractVersionFromService(
@@ -76,11 +76,11 @@ func (o *versionChecker) extractVersionFromCrdv1(ctx context.Context, crd *apiex
 	)
 }
 
-func (o *versionChecker) extractVersionFromCrdv1beta1(ctx context.Context, crd *apiextensionsv1beta1.CustomResourceDefinition) (string, error) {
+func (o *versionChecker) extractVersionFromCrdv1beta1(ctx context.Context, crd *apiextensionsv1beta1.CustomResourceDefinition) error {
 	if (crd.Spec.Conversion == nil) ||
 		(crd.Spec.Conversion.WebhookClientConfig == nil) ||
 		(crd.Spec.Conversion.WebhookClientConfig.Service == nil) {
-		return "", ErrVersionNotDetected
+		return nil
 	}
 
 	return o.extractVersionFromService(

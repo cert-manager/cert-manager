@@ -42,9 +42,18 @@ var certManagerOldLabelSelector = map[string]string{
 }
 
 var (
-	ErrCertManagerCRDsNotFound = errors.New("the cert-manager CRDs are not yet installed on the Kubernetes API server")
-	ErrVersionNotDetected      = errors.New("could not detect the cert-manager version")
+	ErrCertManagerCRDsNotFound  = errors.New("the cert-manager CRDs are not yet installed on the Kubernetes API server")
+	ErrVersionNotDetected       = errors.New("could not detect the cert-manager version")
+	ErrMultipleVersionsDetected = errors.New("detect multiple different cert-manager versions")
 )
+
+type Version struct {
+	// If all found versions are the same,
+	// this field will contain that version
+	Detected string `json:"detected,omitempty"`
+
+	Sources map[string]string `json:"sources"`
+}
 
 func shouldReturn(err error) bool {
 	return (err == nil) || (!errors.Is(err, ErrVersionNotDetected))
@@ -52,11 +61,13 @@ func shouldReturn(err error) bool {
 
 // Interface is used to check what cert-manager version is installed
 type Interface interface {
-	Version(context.Context) (string, error)
+	Version(context.Context) (*Version, error)
 }
 
 type versionChecker struct {
 	client client.Client
+
+	versionSources map[string]string
 }
 
 // New returns a cert-manager version checker
@@ -84,21 +95,43 @@ func New(restcfg *rest.Config, scheme *runtime.Scheme) (Interface, error) {
 		return nil, err
 	}
 	return &versionChecker{
-		client: cl,
+		client:         cl,
+		versionSources: map[string]string{},
 	}, nil
 }
 
-func (o *versionChecker) Version(ctx context.Context) (string, error) {
-	version, err := o.extractVersionFromCrd(ctx, certificatesCertManagerCrdName)
-	if (err == nil) || (!errors.Is(err, ErrVersionNotDetected) && !errors.Is(err, ErrCertManagerCRDsNotFound)) {
-		return version, err
+func (o *versionChecker) Version(ctx context.Context) (*Version, error) {
+	err := o.extractVersionFromCrd(ctx, certificatesCertManagerCrdName)
+	if err != nil && errors.Is(err, ErrCertManagerCRDsNotFound) {
+		// Retry using the oldCrdName and overwrite ErrCertManagerCRDsNotFound error
+		err = o.extractVersionFromCrd(ctx, certificatesCertManagerOldCrdName)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	if errors.Is(err, ErrCertManagerCRDsNotFound) {
-		if version, err = o.extractVersionFromCrd(ctx, certificatesCertManagerOldCrdName); shouldReturn(err) {
-			return version, err
+	return o.determineVersion()
+}
+
+func (o *versionChecker) determineVersion() (*Version, error) {
+	if len(o.versionSources) == 0 {
+		return nil, ErrVersionNotDetected
+	}
+
+	var detectedVersion string
+	for _, version := range o.versionSources {
+		if detectedVersion != "" && version != detectedVersion {
+			// We have found a conflicting version
+			return &Version{
+				Sources: o.versionSources,
+			}, ErrMultipleVersionsDetected
 		}
+
+		detectedVersion = version
 	}
 
-	return "", err
+	return &Version{
+		Detected: detectedVersion,
+		Sources:  o.versionSources,
+	}, nil
 }

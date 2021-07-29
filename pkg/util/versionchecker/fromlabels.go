@@ -22,24 +22,24 @@ import (
 
 var helmChartVersion = regexp.MustCompile(`-(v(?:\d+)\.(?:\d+)\.(?:\d+)(?:.*))$`)
 
-func extractVersionFromLabels(crdLabels map[string]string) (string, error) {
+func extractVersionFromLabels(crdLabels map[string]string) string {
 	if version, ok := crdLabels["app.kubernetes.io/version"]; ok {
-		return version, nil
+		return version
 	}
 
 	if chartName, ok := crdLabels["helm.sh/chart"]; ok {
 		version := helmChartVersion.FindStringSubmatch(chartName)
 		if len(version) == 2 {
-			return version[1], nil
+			return version[1]
 		}
 	}
 
 	if chartName, ok := crdLabels["chart"]; ok {
 		version := helmChartVersion.FindStringSubmatch(chartName)
 		if len(version) == 2 {
-			return version[1], nil
+			return version[1]
 		}
 	}
 
-	return "", ErrVersionNotDetected
+	return ""
 }

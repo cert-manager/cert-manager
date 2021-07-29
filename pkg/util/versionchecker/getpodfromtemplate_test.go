@@ -31,9 +31,9 @@ import (
 
 // Based on https://github.com/kubernetes/kubernetes/blob/ca643a4d1f7bfe34773c74f79527be4afd95bf39/pkg/controller/controller_utils.go#L542
 
-var ValidatePodName = validation.NameIsDNSSubdomain
+var validatePodName = validation.NameIsDNSSubdomain
 
-func GetPodFromTemplate(template *v1.PodTemplateSpec, parentObject runtime.Object, controllerRef *metav1.OwnerReference) (*v1.Pod, error) {
+func getPodFromTemplate(template *v1.PodTemplateSpec, parentObject runtime.Object, controllerRef *metav1.OwnerReference) (*v1.Pod, error) {
 	desiredLabels := getPodsLabelSet(template)
 	desiredFinalizers := getPodsFinalizers(template)
 	desiredAnnotations := getPodsAnnotationSet(template)
@@ -84,7 +84,7 @@ func getPodsAnnotationSet(template *v1.PodTemplateSpec) labels.Set {
 func getPodsPrefix(controllerName string) string {
 	// use the dash (if the name isn't too long) to make the pod name a bit prettier
 	prefix := fmt.Sprintf("%s-", controllerName)
-	if len(ValidatePodName(prefix, true)) != 0 {
+	if len(validatePodName(prefix, true)) != 0 {
 		prefix = controllerName
 	}
 	return prefix

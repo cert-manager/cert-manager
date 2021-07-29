@@ -30,10 +30,6 @@ type Version struct {
 	Platform     string `json:"platform"`
 }
 
-type ServerVersion struct {
-	GitVersion string `json:"gitVersion"`
-}
-
 // This variable block holds information used to build up the version string
 var (
 	AppGitState  = ""

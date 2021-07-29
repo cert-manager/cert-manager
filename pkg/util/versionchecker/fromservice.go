@@ -31,16 +31,16 @@ func (o *versionChecker) extractVersionFromService(
 	ctx context.Context,
 	namespace string,
 	serviceName string,
-) (string, error) {
+) error {
 	service := &corev1.Service{}
 	serviceKey := client.ObjectKey{Namespace: namespace, Name: serviceName}
 	err := o.client.Get(ctx, serviceKey, service)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	if version, err := extractVersionFromLabels(service.Labels); shouldReturn(err) {
-		return version, err
+	if label := extractVersionFromLabels(service.Labels); label != "" {
+		o.versionSources["webhookServiceLabelVersion"] = label
 	}
 
 	listOptions := client.MatchingLabelsSelector{
@@ -49,21 +49,22 @@ func (o *versionChecker) extractVersionFromService(
 	pods := &corev1.PodList{}
 	err = o.client.List(ctx, pods, listOptions)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	for _, pod := range pods.Items {
-		if version, err := extractVersionFromLabels(pod.Labels); shouldReturn(err) {
-			return version, err
+		if label := extractVersionFromLabels(pod.Labels); label != "" {
+			o.versionSources["webhookPodLabelVersion"] = label
 		}
 
 		for _, container := range pod.Spec.Containers {
 			version := imageVersion.FindStringSubmatch(container.Image)
 			if len(version) == 2 {
-				return version[1], nil
+				o.versionSources["webhookPodImageVersion"] = version[1]
+				return nil
 			}
 		}
 	}
 
-	return "", ErrVersionNotDetected
+	return nil
 }

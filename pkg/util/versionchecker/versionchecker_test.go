@@ -125,7 +125,7 @@ func transformObjects(objects []runtime.RawExtension) ([]runtime.Object, error) 
 				return nil, err
 			}
 
-			pod, err := GetPodFromTemplate(&deployment.Spec.Template, resource.Object, nil)
+			pod, err := getPodFromTemplate(&deployment.Spec.Template, resource.Object, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -173,7 +173,8 @@ func setupFakeVersionChecker(manifest io.Reader) (*versionChecker, error) {
 		Build()
 
 	return &versionChecker{
-		client: cl,
+		client:         cl,
+		versionSources: map[string]string{},
 	}, nil
 }
 
@@ -204,7 +205,7 @@ func TestVersionChecker(t *testing.T) {
 				t.Error(err)
 			}
 
-			if version != versionGuess {
+			if version != versionGuess.Detected {
 				t.Fatalf("wrong -> expected: %s vs detected: %s", version, versionGuess)
 			}
 		})
