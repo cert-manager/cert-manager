@@ -242,15 +242,17 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate `json:"ingressTemplate,omitempty"`
 }
 
+// The ACMEChallengeSolverHTTP01Gateway solver will create HTTPRoute objects for a Gateway class
+// routing to an ACME challenge solver pod.
 type ACMEChallengeSolverHTTP01Gateway struct {
 	// Optional service type for Kubernetes solver service
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
-	// The Gateway class to use when creating HTTPRoute resources to solve ACME
+	// The labels to set on HTTPRoute resources to solve ACME
 	// challenges that use this challenge solver.
 	// +optional
-	Class *string `json:"class,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
 	// used for HTTP01 challenges

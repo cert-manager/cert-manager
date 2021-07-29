@@ -264,7 +264,11 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Chall
 // ingress, or delete the ingress if an existing ingress name is not specified
 // on the certificate.
 func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) error {
-	log := logf.FromContext(ctx, "cleanupPods")
+	log := logf.FromContext(ctx, "cleanupIngresses")
+
+	if ch.Spec.Solver.HTTP01.Ingress == nil {
+		return nil
+	}
 
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {

@@ -307,9 +307,12 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
 		GWShared:                  gwSharedInformerFactory,
-		Namespace:                 opts.Namespace,
-		Clock:                     clock.RealClock{},
-		Metrics:                   metrics.New(log, clock.RealClock{}),
+		// TODO (@jakexks) / code reviewer: should this be automatically enabled or disabled based on discovering the gateway
+		// api or a flag?
+		GatewaySolverEnabled: true,
+		Namespace:            opts.Namespace,
+		Clock:                clock.RealClock{},
+		Metrics:              metrics.New(log, clock.RealClock{}),
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,

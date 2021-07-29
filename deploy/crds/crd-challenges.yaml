@@ -383,9 +383,11 @@ spec:
                           description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create or modify HTTPRoutes for a particular gateway class.
                           type: object
                           properties:
-                            class:
-                              description: The Gateway class to use when creating HTTPRoute resources to solve ACME challenges that use this challenge solver.
-                              type: string
+                            labels:
+                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              type: object
+                              additionalProperties:
+                                type: string
                             podTemplate:
                               description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
                               type: object
@@ -1852,12 +1854,14 @@ spec:
                       type: object
                       properties:
                         gateway:
-                          description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create or modify HTTPRoutes for a particular gateway class.
+                          description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create or modify HTTPRoutes.
                           type: object
                           properties:
-                            class:
-                              description: The Gateway class to use when creating HTTPRoute resources to solve ACME challenges that use this challenge solver.
-                              type: string
+                            labels:
+                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              type: object
+                              additionalProperties:
+                                type: string
                             podTemplate:
                               description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
                               type: object
@@ -3328,9 +3332,11 @@ spec:
                           description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create or modify HTTPRoutes for a particular gateway class.
                           type: object
                           properties:
-                            class:
-                              description: The Gateway class to use when creating HTTPRoute resources to solve ACME challenges that use this challenge solver.
-                              type: string
+                            labels:
+                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              type: object
+                              additionalProperties:
+                                type: string
                             podTemplate:
                               description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
                               type: object
@@ -4801,9 +4807,11 @@ spec:
                           description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create or modify HTTPRoutes for a particular gateway class.
                           type: object
                           properties:
-                            class:
-                              description: The Gateway class to use when creating HTTPRoute resources to solve ACME challenges that use this challenge solver.
-                              type: string
+                            labels:
+                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              type: object
+                              additionalProperties:
+                                type: string
                             podTemplate:
                               description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
                               type: object

@@ -223,11 +223,10 @@ type ACMEChallengeSolverHTTP01Gateway struct {
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
-	// The ingress class to use when creating Ingress resources to solve ACME
+	// The labels to set on HTTPRoute resources to solve ACME
 	// challenges that use this challenge solver.
-	// Only one of 'class' or 'name' may be specified.
 	// +optional
-	Class *string `json:"class,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
 	// used for HTTP01 challenges

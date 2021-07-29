@@ -657,7 +657,7 @@ func Convert_acme_ACMEChallengeSolverHTTP01_To_v1alpha3_ACMEChallengeSolverHTTP0
 
 func autoConvert_v1alpha3_ACMEChallengeSolverHTTP01Gateway_To_acme_ACMEChallengeSolverHTTP01Gateway(in *v1alpha3.ACMEChallengeSolverHTTP01Gateway, out *acme.ACMEChallengeSolverHTTP01Gateway, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
-	out.Class = (*string)(unsafe.Pointer(in.Class))
+	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	out.PodTemplate = (*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
 	return nil
 }
@@ -669,7 +669,7 @@ func Convert_v1alpha3_ACMEChallengeSolverHTTP01Gateway_To_acme_ACMEChallengeSolv
 
 func autoConvert_acme_ACMEChallengeSolverHTTP01Gateway_To_v1alpha3_ACMEChallengeSolverHTTP01Gateway(in *acme.ACMEChallengeSolverHTTP01Gateway, out *v1alpha3.ACMEChallengeSolverHTTP01Gateway, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
-	out.Class = (*string)(unsafe.Pointer(in.Class))
+	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	out.PodTemplate = (*v1alpha3.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
 	return nil
 }
