@@ -120,7 +120,40 @@ func TestConversion(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: v1alpha3.CertificateRequestSpec{
-					CSRPEM: testCSR,
+					CSRPEM:   testCSR,
+					Username: "admin",
+					Groups:   []string{"system:masters", "system:authenticated"},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+		},
+		"should convert CertificateRequest from v1alpha2 to v1": {
+			input: &v1alpha2.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1alpha2.CertificateRequestSpec{
+					CSRPEM:   testCSR,
+					Username: "some-user",
+					Groups:   []string{"some-group"},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+			targetGVK: v1.SchemeGroupVersion.WithKind("CertificateRequest"),
+			output: &v1.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1.CertificateRequestSpec{
+					Request:  testCSR,
+					Username: "admin",
+					Groups:   []string{"system:masters", "system:authenticated"},
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
