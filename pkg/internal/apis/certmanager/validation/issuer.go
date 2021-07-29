@@ -199,8 +199,8 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMEChallengeSolverHTTP01Gateway, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	if gateway.Class == nil || len(*gateway.Class) == 0 {
-		el = append(el, field.Required(fldPath, "gateway class must be set"))
+	if len(gateway.Labels) == 0 {
+		el = append(el, field.Required(fldPath.Child("labels"), `labels must be set`))
 	}
 	switch gateway.ServiceType {
 	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:

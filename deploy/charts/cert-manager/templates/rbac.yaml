@@ -223,6 +223,9 @@ rules:
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "list", "watch", "create", "delete", "update"]
+  - apiGroups: [ "networking.x-k8s.io" ]
+    resources: [ "httproutes" ]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
   # We require the ability to specify a custom hostname when we are creating
   # new ingress resources.
   # See: https://github.com/openshift/origin/blob/21f191775636f9acadb44fa42beeb4f75b255532/pkg/route/apiserver/admission/ingress_admission.go#L84-L148
@@ -270,10 +273,10 @@ rules:
     resources: ["ingresses/finalizers"]
     verbs: ["update"]
   - apiGroups: ["networking.x-k8s.io"]
-    resources: ["gateways"]
+    resources: ["gateways", "httproutes"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["networking.x-k8s.io"]
-    resources: ["gateways/finalizers"]
+    resources: ["gateways/finalizers", "httproutes/finalisers"]
     verbs: ["update"]
   - apiGroups: [""]
     resources: ["events"]

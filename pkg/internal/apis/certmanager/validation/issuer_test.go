@@ -252,7 +252,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{
-								Class: strPtr("valid-gateway-class"),
+								Labels: map[string]string{
+									"key": "value",
+								},
 							},
 						},
 					},
@@ -274,8 +276,8 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Required(
-					fldPath.Child("solvers").Index(0).Child("http01", "gateway"),
-					"gateway class must be set",
+					fldPath.Child("solvers").Index(0).Child("http01", "gateway").Child("labels"),
+					"labels must be set",
 				),
 			},
 		},
@@ -289,7 +291,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{
-								Class: strPtr("valid-gateway-class"),
+								Labels: map[string]string{
+									"a": "b",
+								},
 							},
 						},
 					},
