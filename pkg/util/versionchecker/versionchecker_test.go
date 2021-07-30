@@ -27,8 +27,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	rbacv1beta1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,11 +36,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-//go:embed test_manifests.tar
+//go:embed testdata/test_manifests.tar
 var testFiles embed.FS
 
 func loadManifests() (io.Reader, error, func() (string, error), func()) {
-	data, err := testFiles.Open("test_manifests.tar")
+	data, err := testFiles.Open("testdata/test_manifests.tar")
 	if err != nil {
 		return nil, err, nil, nil
 	}
@@ -87,34 +85,6 @@ func transformObjects(objects []runtime.RawExtension) ([]runtime.Object, error) 
 		var err error
 		gvk := resource.Object.GetObjectKind().GroupVersionKind()
 
-		// Cast ClusterRole from unstructured to rbacv1 ClusterRole
-		if gvk.Group == "rbac.authorization.k8s.io" && gvk.Version == "v1" && gvk.Kind == "ClusterRole" {
-			unstr := resource.Object.(*unstructured.Unstructured)
-
-			var clusterRole rbacv1.ClusterRole
-			err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstr.Object, &clusterRole)
-			if err != nil {
-				return nil, err
-			}
-
-			transformedObjects = append(transformedObjects, &clusterRole)
-			continue
-		}
-
-		// Cast ClusterRole from unstructured to rbacv1beta1 ClusterRole
-		if gvk.Group == "rbac.authorization.k8s.io" && gvk.Version == "v1beta1" && gvk.Kind == "ClusterRole" {
-			unstr := resource.Object.(*unstructured.Unstructured)
-
-			var clusterRole rbacv1beta1.ClusterRole
-			err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstr.Object, &clusterRole)
-			if err != nil {
-				return nil, err
-			}
-
-			transformedObjects = append(transformedObjects, &clusterRole)
-			continue
-		}
-
 		// Create a pod for a Deployment resource
 		if gvk.Group == "apps" && gvk.Version == "v1" && gvk.Kind == "Deployment" {
 			unstr := resource.Object.(*unstructured.Unstructured)
@@ -152,12 +122,6 @@ func setupFakeVersionChecker(manifest io.Reader) (*versionChecker, error) {
 		return nil, err
 	}
 	if err := apiextensionsv1beta1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := rbacv1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := rbacv1beta1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 

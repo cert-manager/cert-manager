@@ -18,10 +18,9 @@ package versionchecker
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	rbacv1beta1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
@@ -81,12 +80,6 @@ func New(restcfg *rest.Config, scheme *runtime.Scheme) (Interface, error) {
 	if err := apiextensionsv1beta1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	if err := rbacv1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := rbacv1beta1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
 
 	cl, err := client.New(restcfg, client.Options{
 		Scheme: scheme,
@@ -100,19 +93,45 @@ func New(restcfg *rest.Config, scheme *runtime.Scheme) (Interface, error) {
 	}, nil
 }
 
+// Determine the installed cert-manager version. First, we start by looking for
+// the "certificates.cert-manager.io" CRD and try to extract the version from that
+// resource's labels. Then, if it uses a webhook, that webhook service resource's
+// labels are checked for a label. Lastly the pods linked to the webhook its labels
+// are checked and the image tag is used to determine the version.
+// If no "certificates.cert-manager.io" CRD is found, the older
+// "certificates.certmanager.k8s.io" CRD is tried too.
 func (o *versionChecker) Version(ctx context.Context) (*Version, error) {
+	// Use the "certificates.cert-manager.io" CRD as a starting point
 	err := o.extractVersionFromCrd(ctx, certificatesCertManagerCrdName)
+
 	if err != nil && errors.Is(err, ErrCertManagerCRDsNotFound) {
-		// Retry using the oldCrdName and overwrite ErrCertManagerCRDsNotFound error
+		// Retry using the old CRD name "certificates.certmanager.k8s.io" as
+		// a starting point and overwrite ErrCertManagerCRDsNotFound error
 		err = o.extractVersionFromCrd(ctx, certificatesCertManagerOldCrdName)
 	}
-	if err != nil {
-		return nil, err
+
+	// From the found versions, now determine if we have found any/
+	// if they are all the same version
+	version, detectionError := o.determineVersion()
+
+	if err != nil && detectionError != nil {
+		// There was an error while determining the version (which is probably
+		// caused by a bad setup/ permission or networking issue) and there also
+		// was an error while trying to reduce the found versions to 1 version
+		// Display both.
+		err = fmt.Errorf("%v: %v", detectionError, err)
+	} else if detectionError != nil {
+		// An error occured while trying to reduce the found versions to 1 version
+		err = detectionError
 	}
 
-	return o.determineVersion()
+	return version, err
 }
 
+// Try to determine the version of the cert-manager install based on all found
+// versions. The function tries to reduce the found versions to 1 correct version.
+// An error is returned if no sources were found or if multiple different versions
+// were found.
 func (o *versionChecker) determineVersion() (*Version, error) {
 	if len(o.versionSources) == 0 {
 		return nil, ErrVersionNotDetected

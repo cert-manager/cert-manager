@@ -1,43 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
-# Clone empty version of cert-manager repo and list all tags
-genrule(
-    name = "git_tags",
-    outs = [":git_tags.txt"],
-    cmd = "git ls-remote -t --refs https://github.com/jetstack/cert-manager.git | awk '{print $$2;}' | sed 's/refs\\/tags\\///' | sed -n '/v1.0.0-alpha.0/,$$p' > $@",
-)
-
-genrule(
-    name = "test_manifests",
-    srcs = [
-        ":git_tags.txt",
-        "//deploy/manifests:cert-manager.yaml",
-        "//:version",
-    ],
-    outs = ["test_manifests.tar"],
-    cmd = """
-CURRENT_VERSION=$$(cat $(location //:version))
-cp $(location //deploy/manifests:cert-manager.yaml) "$$CURRENT_VERSION.yaml"
-for tag in $$(cat $(location :git_tags.txt))
-do
-    # The "v1.2.0-alpha.1" manifest contains duplicate crds, skip for tests
-    if [[ $$tag == "v1.2.0-alpha.1" ]]; then
-        continue
-    fi
-
-    {
-        HTTP_CODE=$$(curl --compressed -sLo "$$tag.yaml" --write-out "%{http_code}" https://github.com/jetstack/cert-manager/releases/download/$$tag/cert-manager.yaml)
-        if [[ $${HTTP_CODE} -lt 200 || $${HTTP_CODE} -gt 299 ]]; then
-            (mv "$$tag.yaml" "$$tag.notfound")
-        fi
-    } &
-done
-wait
-tar -cvf $@ *.yaml
-    """,
-    visibility = ["//visibility:public"],
-)
-
 go_library(
     name = "go_default_library",
     srcs = [
@@ -51,7 +13,6 @@ go_library(
     deps = [
         "@com_github_pkg_errors//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
-        "@io_k8s_api//rbac/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
@@ -69,12 +30,11 @@ go_test(
         "versionchecker_test.go",
     ],
     embed = [":go_default_library"],
-    embedsrcs = ["test_manifests.tar"],
+    embedsrcs = ["//pkg/util/versionchecker/testdata:test_manifests.tar"],  # keep
     deps = [
         "//pkg/util:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
-        "@io_k8s_api//rbac/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/meta:go_default_library",
@@ -98,7 +58,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//pkg/util/versionchecker/testdata:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

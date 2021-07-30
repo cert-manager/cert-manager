@@ -62,6 +62,30 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 	}
 }
 
+const versionLong = `Print the cert-manager kubectl plugin version and the deployed cert-manager version.
+
+The kubectl plugin version is embedded in the binary and directly displayed. Determining
+the the deployed cert-manager version is done by querying the cert-manger resources.
+First, the tool looks at the labels of the cert-manager CRD resources. Then, it searches
+for the labels of the resources related the the cert-manager webhook linked in the CRDs.
+It also tries to derive the version from the docker image tag of that webhook service.
+After gathering all this version information, the tool checks if all versions are the same
+and returns that version. If no version information is found or the found versions differ,
+an error will be displayed.
+
+The '--client' flag can be used to disable the logic that tries to determine the installed
+cert-manager version.
+
+Some example uses:
+	$ kubectl cert-manager version
+or
+	$ kubectl cert-manager version --client
+or
+	$ kubectl cert-manager version --short
+or
+	$ kubectl cert-manager version -o yaml
+`
+
 // NewCmdVersion returns a cobra command for fetching versions
 func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
 	o := NewOptions(ioStreams)
@@ -69,7 +93,7 @@ func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the cert-manager kubectl plugin version and the deployed cert-manager version",
-		Long:  "Print the cert-manager kubectl plugin version and the deployed cert-manager version",
+		Long:  versionLong,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate())
 			cmdutil.CheckErr(o.Complete(factory))
@@ -101,12 +125,12 @@ func (o *Options) Complete(factory cmdutil.Factory) error {
 
 	restConfig, err := factory.ToRESTConfig()
 	if err != nil {
-		return fmt.Errorf("Error: cannot create the REST config: %v", err)
+		return fmt.Errorf("cannot create the REST config: %v", err)
 	}
 
 	o.VersionChecker, err = versionchecker.New(restConfig, scheme.Scheme)
 	if err != nil {
-		return fmt.Errorf("Error: %v", err)
+		return err
 	}
 	return nil
 }
