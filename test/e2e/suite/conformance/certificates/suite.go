@@ -68,6 +68,8 @@ type Suite struct {
 
 	// completed is used internally to track whether Complete() has been called
 	completed bool
+
+	Skip bool
 }
 
 // complete will validate configuration and set default values.
@@ -93,6 +95,10 @@ func (s *Suite) complete(f *framework.Framework) {
 
 // it is called by the tests to in Define() to setup and run the test
 func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
+	if s.Skip {
+		fmt.Fprintln(GinkgoWriter, "skipping cause skip set to true")
+		return
+	}
 	if !s.checkFeatures(requiredFeatures...) {
 		fmt.Fprintln(GinkgoWriter, "skipping case due to unsupported features")
 		return
