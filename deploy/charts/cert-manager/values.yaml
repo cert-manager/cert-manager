@@ -416,7 +416,8 @@ startupapicheck:
   # Optional additional annotations to add to the startupapicheck Job
   jobAnnotations:
     helm.sh/hook: post-install
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "1"
+    helm.sh/hook-delete-policy: hook-succeeded
 
   # Optional additional annotations to add to the startupapicheck Pods
   # podAnnotations: {}
@@ -456,7 +457,8 @@ startupapicheck:
   rbac:
     annotations:
       helm.sh/hook: post-install
-      helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+      helm.sh/hook-weight: "-5"
+      helm.sh/hook-delete-policy: hook-succeeded
 
   serviceAccount:
     # Specifies whether a service account should be created
@@ -469,7 +471,8 @@ startupapicheck:
     # Optional additional annotations to add to the Job's ServiceAccount
     annotations:
       helm.sh/hook: post-install
-      helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+      helm.sh/hook-weight: "-5"
+      helm.sh/hook-delete-policy: hook-succeeded
 
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
