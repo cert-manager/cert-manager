@@ -25,12 +25,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
-
-	metavalidation "k8s.io/apimachinery/pkg/api/validation"
-	v1validation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -225,15 +221,6 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	}
 
 	if crt.Spec.SecretTemplate != nil {
-		if err := v1validation.ValidateLabels(
-			crt.Spec.SecretTemplate.Labels, field.NewPath("spec", "SecretTemplate", "labels")); len(err) > 0 {
-			return fmt.Errorf("secretTemplate has invalid labels: %v", err)
-		}
-		if err := metavalidation.ValidateAnnotations(
-			crt.Spec.SecretTemplate.Annotations, field.NewPath("spec", "SecretTemplate", "annotations")); len(err) > 0 {
-			return fmt.Errorf("secretTemplate has invalid annotations: %v", err)
-		}
-
 		for k, v := range crt.Spec.SecretTemplate.Labels {
 			secret.Labels[k] = v
 		}
