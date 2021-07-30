@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -106,7 +106,7 @@ func (s *Solver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan s
 	return nil
 }
 
-func (s *Solver) loadConfig(cfgJSON extapi.JSON) (*cmacme.ACMEIssuerDNS01ProviderRFC2136, error) {
+func (s *Solver) loadConfig(cfgJSON apiextensionsv1.JSON) (*cmacme.ACMEIssuerDNS01ProviderRFC2136, error) {
 	cfg := cmacme.ACMEIssuerDNS01ProviderRFC2136{}
 	if err := json.Unmarshal(cfgJSON.Raw, &cfg); err != nil {
 		return nil, fmt.Errorf("error decoding solver config: %v", err)

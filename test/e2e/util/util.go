@@ -32,7 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
-	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -274,7 +274,7 @@ func WaitForCertificateToExist(client clientset.CertificateInterface, name strin
 
 // WaitForCRDToNotExist waits for the CRD with the given name to no
 // longer exist.
-func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, name string) error {
+func WaitForCRDToNotExist(client apiextensionsv1.CustomResourceDefinitionInterface, name string) error {
 	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			log.Logf("Waiting for CRD %v to not exist", name)

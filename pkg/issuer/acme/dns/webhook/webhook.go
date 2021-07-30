@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -160,7 +160,7 @@ func (r *Webhook) buildPayload(ch *v1alpha1.ChallengeRequest, action v1alpha1.Ch
 	return cl, pl, cfg.SolverName, nil
 }
 
-func loadConfig(cfgJSON apiext.JSON) (*cmacme.ACMEIssuerDNS01ProviderWebhook, error) {
+func loadConfig(cfgJSON apiextensionsv1.JSON) (*cmacme.ACMEIssuerDNS01ProviderWebhook, error) {
 	cfg := cmacme.ACMEIssuerDNS01ProviderWebhook{}
 	if err := json.Unmarshal(cfgJSON.Raw, &cfg); err != nil {
 		return nil, fmt.Errorf("error decoding solver config: %v", err)

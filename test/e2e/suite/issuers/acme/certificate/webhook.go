@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -66,7 +66,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 								Webhook: &cmacme.ACMEIssuerDNS01ProviderWebhook{
 									GroupName:  f.Config.Addons.DNS01Webhook.GroupName,
 									SolverName: f.Config.Addons.DNS01Webhook.SolverName,
-									Config: &v1beta1.JSON{
+									Config: &apiextensionsv1.JSON{
 										Raw: []byte(`{}`),
 									},
 								},

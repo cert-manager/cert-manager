@@ -25,7 +25,7 @@ go_library(
     deps = [
         "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
         "//pkg/acme/webhook/cmd:go_default_library",
-        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
         "@io_k8s_client_go//rest:go_default_library",
     ],
 )

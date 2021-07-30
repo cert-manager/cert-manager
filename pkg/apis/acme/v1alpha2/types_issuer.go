@@ -18,7 +18,7 @@ package v1alpha2
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
@@ -541,7 +541,7 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.
 	// +optional
-	Config *apiext.JSON `json:"config,omitempty"`
+	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 }
 
 type ACMEIssuerStatus struct {

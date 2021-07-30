@@ -21,8 +21,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -66,7 +66,7 @@ func (in *ChallengeRequest) DeepCopyInto(out *ChallengeRequest) {
 	*out = *in
 	if in.Config != nil {
 		in, out := &in.Config, &out.Config
-		*out = new(v1beta1.JSON)
+		*out = new(v1.JSON)
 		(*in).DeepCopyInto(*out)
 	}
 	return
@@ -87,7 +87,7 @@ func (in *ChallengeResponse) DeepCopyInto(out *ChallengeResponse) {
 	*out = *in
 	if in.Result != nil {
 		in, out := &in.Result, &out.Result
-		*out = new(v1.Status)
+		*out = new(metav1.Status)
 		(*in).DeepCopyInto(*out)
 	}
 	return

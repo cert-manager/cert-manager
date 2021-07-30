@@ -43,10 +43,11 @@ func TestConvert(t *testing.T) {
 			err:  "unsupported conversion review type: *v1.CustomResourceDefinition",
 		},
 		{
-			name: "v1beta1 conversion review",
+			name: "unsupported conversion review version",
 			in: &apiextensionsv1beta1.ConversionReview{
 				Request: &apiextensionsv1beta1.ConversionRequest{},
 			},
+			err: "unsupported conversion review type: *v1beta1.ConversionReview",
 		},
 		{
 			name: "v1 conversion review",
@@ -57,11 +58,6 @@ func TestConvert(t *testing.T) {
 		{
 			name: "v1 conversion review with nil Request",
 			in:   &apiextensionsv1.ConversionReview{},
-			err:  "review.request was nil",
-		},
-		{
-			name: "v1beta1 conversion review with nil Request",
-			in:   &apiextensionsv1beta1.ConversionReview{},
 			err:  "review.request was nil",
 		},
 	}
