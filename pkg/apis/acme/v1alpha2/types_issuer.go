@@ -197,6 +197,7 @@ type CertificateDNSNameSelector struct {
 // Typically this is accomplished through creating 'routes' of some description
 // that configure ingress controllers to direct traffic to 'solver pods', which
 // are responsible for responding to the ACME server's HTTP requests.
+// Only one of Ingress / Gateway can be specified.
 type ACMEChallengeSolverHTTP01 struct {
 	// The ingress based HTTP01 challenge solver will solve challenges by
 	// creating or modifying Ingress resources in order to route requests for
@@ -212,7 +213,8 @@ type ACMEChallengeSolverHTTP01 struct {
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
-	// Optional service type for Kubernetes solver service
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP (default).
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
@@ -231,7 +233,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	Name string `json:"name,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges
+	// used for HTTP01 challenges.
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 
@@ -242,17 +244,17 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 }
 
 type ACMEChallengeSolverHTTP01Gateway struct {
-	// Optional service type for Kubernetes solver service
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP (default).
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
 	// The labels to set on HTTPRoute resources to solve ACME
 	// challenges that use this challenge solver.
-	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges
+	// used for HTTP01 challenges.
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }

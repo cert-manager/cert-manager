@@ -212,7 +212,8 @@ type ACMEChallengeSolverHTTP01 struct {
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
-	// Optional service type for Kubernetes solver service
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP (default).
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
@@ -236,23 +237,23 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 
 	// Optional ingress template used to configure the ACME challenge solver
-	// ingress used for HTTP01 challenges
+	// ingress used for HTTP01 challenges.
 	// +optional
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate `json:"ingressTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Gateway struct {
-	// Optional service type for Kubernetes solver service
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP (default).
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
 	// The labels to set on HTTPRoute resources to solve ACME
 	// challenges that use this challenge solver.
-	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges
+	// used for HTTP01 challenges.
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }

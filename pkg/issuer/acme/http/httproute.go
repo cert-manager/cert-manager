@@ -59,7 +59,7 @@ func (s *Solver) ensureGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challeng
 		return nil, err
 	}
 
-	return nil, fmt.Errorf("not implemented")
+	return httpRoute, nil
 }
 
 func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) (*gwapi.HTTPRoute, error) {

@@ -423,7 +423,7 @@ spec:
                                     additionalProperties:
                                       type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -940,7 +940,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
@@ -971,7 +971,7 @@ spec:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -1488,7 +1488,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -2109,7 +2109,7 @@ spec:
                                     additionalProperties:
                                       type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -2626,7 +2626,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP.
                                     type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
@@ -2657,7 +2657,7 @@ spec:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -3174,7 +3174,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -3797,7 +3797,7 @@ spec:
                                     additionalProperties:
                                       type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -4314,7 +4314,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
@@ -4324,7 +4324,7 @@ spec:
                                     description: The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of 'class' or 'name' may be specified.
                                     type: string
                                   ingressTemplate:
-                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges
+                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -4862,7 +4862,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -5485,7 +5485,7 @@ spec:
                                     additionalProperties:
                                       type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -6002,7 +6002,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
@@ -6012,7 +6012,7 @@ spec:
                                     description: The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of 'class' or 'name' may be specified.
                                     type: string
                                   ingressTemplate:
-                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges
+                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -6033,7 +6033,7 @@ spec:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -6550,7 +6550,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
