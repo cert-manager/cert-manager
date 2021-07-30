@@ -147,8 +147,14 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 
 	ingAnnotations := make(map[string]string)
 
-	// TODO: Figure out how to remove this without breaking users who depend on it.
-	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
+	if ch.Spec.Solver.HTTP01 == nil ||
+		ch.Spec.Solver.HTTP01.Ingress == nil ||
+		ch.Spec.Solver.HTTP01.Ingress.IngressTemplate == nil ||
+		ch.Spec.Solver.HTTP01.Ingress.IngressTemplate.OverrideNginxIngressWhitelistAnnotation == "" {
+		ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
+	} else {
+		ingAnnotations[ch.Spec.Solver.HTTP01.Ingress.IngressTemplate.OverrideNginxIngressWhitelistAnnotation] = "0.0.0.0/0,::/0"
+	}
 
 	if ingClass != nil {
 		ingAnnotations[cmapi.IngressClassAnnotationKey] = *ingClass
