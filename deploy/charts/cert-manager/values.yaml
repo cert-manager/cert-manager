@@ -397,6 +397,8 @@ cainjector:
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
 
+# This startupapicheck is a Helm post-install hook that waits for the webhook
+# endpoints to become available.
 startupapicheck:
   enabled: true
 
@@ -412,7 +414,9 @@ startupapicheck:
   backoffLimit: 4
 
   # Optional additional annotations to add to the startupapicheck Job
-  # jobAnnotations: {}
+  jobAnnotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 
   # Optional additional annotations to add to the startupapicheck Pods
   # podAnnotations: {}
@@ -449,13 +453,23 @@ startupapicheck:
 
     pullPolicy: IfNotPresent
 
+  rbac:
+    annotations:
+      helm.sh/hook: post-install
+      helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
+
     # The name of the service account to use.
     # If not set and create is true, a name is generated using the fullname template
     # name: ""
+
     # Optional additional annotations to add to the Job's ServiceAccount
-    # annotations: {}
+    annotations:
+      helm.sh/hook: post-install
+      helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true

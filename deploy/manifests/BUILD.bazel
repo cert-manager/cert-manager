@@ -19,6 +19,7 @@ helm_tmpl(
         # Set creator to "static", so the Helm chart does
         # not add Helm-specific labels to the resources.
         "creator": "static",
+        "startupapicheck.enabled": "false",
     },
 )
 

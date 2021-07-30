@@ -59,7 +59,6 @@ bazel build //deploy/charts/cert-manager
 helm upgrade \
     --install \
     --wait \
-    --wait-for-jobs \
     --namespace "${NAMESPACE}" \
     --set image.tag="${APP_VERSION}" \
     --set cainjector.image.tag="${APP_VERSION}" \

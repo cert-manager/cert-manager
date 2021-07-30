@@ -12,6 +12,10 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "startupapicheck"
     {{- include "labels" . | nindent 4 }}
+  {{- if .Values.startupapicheck.rbac.annotations }}
+  annotations:
+{{ toYaml .Values.startupapicheck.rbac.annotations | indent 4 }}
+  {{- end }}
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates"]
@@ -29,6 +33,10 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "startupapicheck"
     {{- include "labels" . | nindent 4 }}
+  {{- if .Values.startupapicheck.rbac.annotations }}
+  annotations:
+{{ toYaml .Values.startupapicheck.rbac.annotations | indent 4 }}
+  {{- end }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
