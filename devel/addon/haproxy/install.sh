@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The cert-manager Authors.
+# Copyright 2021 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Install HAProxy as a gateway-API e2e test
+# Install HAProxy as a gateway-API e2e test.
 
 set -o nounset
 set -o errexit
@@ -70,22 +70,4 @@ spec:
           acme: solver
       namespaces:
         from: All
-EOYAML
-
-# Example of a cross namespace HTTPRoute
-cat <<EOYAML | kubectl apply -f -
-apiVersion: networking.x-k8s.io/v1alpha1
-kind: HTTPRoute
-metadata:
-  labels:
-    acme: solver
-  name: test
-  namespace: default
-spec:
-  hostnames:
-  - blah.haproxy.http01.example.com
-  rules:
-  - forwardTo:
-    - serviceName: echoserver
-      port: 8080
 EOYAML

@@ -36,6 +36,10 @@ type Addons struct {
 	// being used during ACME HTTP01 tests.
 	IngressController IngressController
 
+	// Gateway contains configuration for the Gateway API controller
+	// being used during HTTP-01 tests.
+	Gateway Gateway
+
 	// Venafi describes global configuration variables for the Venafi tests.
 	// This includes credentials for the Venafi TPP server to use during runs.
 	Venafi Venafi
@@ -52,19 +56,21 @@ func (a *Addons) AddFlags(fs *flag.FlagSet) {
 	a.Helm.AddFlags(fs)
 	a.ACMEServer.AddFlags(fs)
 	a.IngressController.AddFlags(fs)
+	a.Gateway.AddFlags(fs)
 	a.Venafi.AddFlags(fs)
 	a.CertManager.AddFlags(fs)
 	a.DNS01Webhook.AddFlags(fs)
 }
 
-func (c *Addons) Validate() []error {
+func (a *Addons) Validate() []error {
 	var errs []error
-	errs = append(errs, c.Tiller.Validate()...)
-	errs = append(errs, c.Helm.Validate()...)
-	errs = append(errs, c.ACMEServer.Validate()...)
-	errs = append(errs, c.IngressController.Validate()...)
-	errs = append(errs, c.Venafi.Validate()...)
-	errs = append(errs, c.CertManager.Validate()...)
-	errs = append(errs, c.DNS01Webhook.Validate()...)
+	errs = append(errs, a.Tiller.Validate()...)
+	errs = append(errs, a.Helm.Validate()...)
+	errs = append(errs, a.ACMEServer.Validate()...)
+	errs = append(errs, a.IngressController.Validate()...)
+	errs = append(errs, a.Gateway.Validate()...)
+	errs = append(errs, a.Venafi.Validate()...)
+	errs = append(errs, a.CertManager.Validate()...)
+	errs = append(errs, a.DNS01Webhook.Validate()...)
 	return errs
 }

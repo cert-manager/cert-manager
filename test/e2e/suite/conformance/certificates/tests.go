@@ -66,8 +66,11 @@ func (s *Suite) Define() {
 			}
 			s.complete(f)
 
-			if s.UseIngressIPAddress {
+			switch s.HTTP01TestType {
+			case "Ingress":
 				sharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
+			case "Gateway":
+				sharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
 			}
 		})
 
@@ -649,6 +652,10 @@ func (s *Suite) Define() {
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
 		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+			if s.HTTP01TestType != "Ingress" {
+				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
+				return
+			}
 			var certName string
 			switch {
 			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
@@ -697,6 +704,10 @@ func (s *Suite) Define() {
 		}, featureset.OnlySAN)
 
 		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
+			if s.HTTP01TestType != "Ingress" {
+				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
+				return
+			}
 			var certName string
 			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
