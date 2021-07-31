@@ -27,12 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/reference"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -52,13 +52,8 @@ kubectl cert-manager status certificate my-crt --namespace my-namespace
 
 // Options is a struct to support status certificate command
 type Options struct {
-	CMClient   cmclient.Interface
-	RESTConfig *restclient.Config
-	// The Namespace that the Certificate to be queried about resides in.
-	// This flag registration is handled by cmdutil.Factory
-	Namespace string
-
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 // Data is a struct containing the information to build a CertificateStatus
@@ -89,8 +84,9 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdStatusCert returns a cobra command for status certificate
-func NewCmdStatusCert(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdStatusCert(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
+
 	cmd := &cobra.Command{
 		Use:     "certificate",
 		Short:   "Get details about the current status of a cert-manager Certificate resource",
@@ -98,10 +94,12 @@ func NewCmdStatusCert(ctx context.Context, ioStreams genericclioptions.IOStreams
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
+
+	o.Factory = factory.New(cmd)
+
 	return cmd
 }
 
@@ -113,28 +111,6 @@ func (o *Options) Validate(args []string) error {
 	if len(args) > 1 {
 		return errors.New("only one argument can be passed in: the name of the Certificate")
 	}
-	return nil
-}
-
-// Complete takes the factory and infers any remaining options.
-func (o *Options) Complete(f cmdutil.Factory) error {
-	var err error
-
-	o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return err
-	}
-
-	o.RESTConfig, err = f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	o.CMClient, err = cmclient.NewForConfig(o.RESTConfig)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

@@ -31,15 +31,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
-	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -74,13 +73,6 @@ var (
 
 // Options is a struct to support create certificaterequest command
 type Options struct {
-	CMClient   cmclient.Interface
-	RESTConfig *restclient.Config
-	// Namespace resulting from the merged result of all overrides
-	// since namespace can be specified in file, as flag and in kube config
-	CmdNamespace string
-	// boolean indicating if there was an Override in determining CmdNamespace
-	EnforceNamespace bool
 	// Name of file that the generated private key will be stored in
 	// If not specified, the private key will be written to <NameOfCR>.key
 	KeyFilename string
@@ -99,6 +91,7 @@ type Options struct {
 	Timeout time.Duration
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 // NewOptions returns initialized Options
@@ -109,8 +102,9 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdCreateCR returns a cobra command for create CertificateRequest
-func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
+
 	cmd := &cobra.Command{
 		Use:     "certificaterequest",
 		Aliases: []string{"cr"},
@@ -119,7 +113,6 @@ func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
@@ -133,6 +126,8 @@ func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 		"If set to true, command will wait for CertificateRequest to be signed to store x509 certificate in a file")
 	cmd.Flags().DurationVar(&o.Timeout, "timeout", 5*time.Minute,
 		"Time before timeout when waiting for CertificateRequest to be signed, must include unit, e.g. 10m or 1h")
+
+	o.Factory = factory.New(cmd)
 
 	return cmd
 }
@@ -161,28 +156,6 @@ func (o *Options) Validate(args []string) error {
 	return nil
 }
 
-// Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(f cmdutil.Factory) error {
-	var err error
-
-	o.CmdNamespace, o.EnforceNamespace, err = f.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return err
-	}
-
-	o.RESTConfig, err = f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	o.CMClient, err = cmclient.NewForConfig(o.RESTConfig)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Run executes create certificaterequest command
 func (o *Options) Run(ctx context.Context, args []string) error {
 	builder := new(resource.Builder)
@@ -191,7 +164,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	r := builder.
 		WithScheme(scheme, schema.GroupVersion{Group: cmapi.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
-		NamespaceParam(o.CmdNamespace).DefaultNamespace().
+		NamespaceParam(o.Namespace).DefaultNamespace().
 		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: []string{o.InputFilename}}).Flatten().Do()
 
 	if err := r.Err(); err != nil {
@@ -259,7 +232,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 
 	ns := crt.Namespace
 	if ns == "" {
-		ns = o.CmdNamespace
+		ns = o.Namespace
 	}
 	req, err = o.CMClient.CertmanagerV1().CertificateRequests(ns).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {

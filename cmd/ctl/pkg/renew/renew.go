@@ -26,11 +26,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -54,17 +54,12 @@ kubectl cert-manager renew --all-namespaces -l app=my-service`))
 
 // Options is a struct to support renew command
 type Options struct {
-	CMClient   cmclient.Interface
-	RESTConfig *restclient.Config
-
-	// The Namespace that the Certificate to be renewed resided in.
-	// This flag registration is handled by cmdutil.Factory
-	Namespace     string
 	LabelSelector string
 	All           bool
 	AllNamespaces bool
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 // NewOptions returns initialized Options
@@ -75,7 +70,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdRenew returns a cobra command for renewing Certificates
-func NewCmdRenew(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdRenew(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
 		Use:     "renew",
@@ -83,7 +78,6 @@ func NewCmdRenew(ctx context.Context, ioStreams genericclioptions.IOStreams, fac
 		Long:    long,
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Validate(cmd, args))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
@@ -92,6 +86,8 @@ func NewCmdRenew(ctx context.Context, ioStreams genericclioptions.IOStreams, fac
 	cmd.Flags().StringVarP(&o.LabelSelector, "selector", "l", o.LabelSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If present, mark Certificates across namespaces for manual renewal. Namespace in current context is ignored even if specified with --namespace.")
 	cmd.Flags().BoolVar(&o.All, "all", o.All, "Renew all Certificates in the given Namespace, or all namespaces with --all-namespaces enabled.")
+
+	o.Factory = factory.New(cmd)
 
 	return cmd
 }

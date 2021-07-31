@@ -20,6 +20,8 @@ import (
 	"context"
 	"os"
 	"testing"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 )
 
 func TestValidate(t *testing.T) {
@@ -211,11 +213,13 @@ spec:
 
 			// Options to run create CR command
 			opts := &Options{
-				CmdNamespace:     test.inputNamespace,
-				EnforceNamespace: test.inputNamespace != "",
-				InputFilename:    "testfile.yaml",
-				KeyFilename:      test.keyFilename,
-				CertFileName:     test.certFilename,
+				InputFilename: "testfile.yaml",
+				KeyFilename:   test.keyFilename,
+				CertFileName:  test.certFilename,
+				Factory: &factory.Factory{
+					Namespace:        test.inputNamespace,
+					EnforceNamespace: test.inputNamespace != "",
+				},
 			}
 
 			// Validating args and flags

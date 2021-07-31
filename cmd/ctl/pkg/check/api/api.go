@@ -27,11 +27,11 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	k8scmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/scheme"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	cmcmdutil "github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/pkg/util/cmapichecker"
 )
@@ -48,13 +48,11 @@ type Options struct {
 	// Time between checks when waiting
 	Interval time.Duration
 
-	// Namespace that is used to dry-run create the certificate resource in
-	Namespace string
-
 	// Print details regarding encountered errors
 	Verbose bool
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 var checkApiDesc = templates.LongDesc(i18n.T(`
@@ -72,23 +70,13 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(factory k8scmdutil.Factory) error {
+func (o *Options) Complete() error {
 	var err error
-
-	o.Namespace, _, err = factory.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return fmt.Errorf("Error: cannot get the namespace: %v", err)
-	}
-
-	restConfig, err := factory.ToRESTConfig()
-	if err != nil {
-		return fmt.Errorf("Error: cannot create the REST config: %v", err)
-	}
 
 	// We pass the scheme that is used in the RESTConfig's NegotiatedSerializer,
 	// this makes sure that the cmapi is also added to NegotiatedSerializer's scheme
 	// see: https://github.com/jetstack/cert-manager/pull/4205#discussion_r668660271
-	o.APIChecker, err = cmapichecker.New(restConfig, scheme.Scheme, o.Namespace)
+	o.APIChecker, err = cmapichecker.New(o.RESTConfig, scheme.Scheme, o.Namespace)
 	if err != nil {
 		return fmt.Errorf("Error: %v", err)
 	}
@@ -97,7 +85,7 @@ func (o *Options) Complete(factory k8scmdutil.Factory) error {
 }
 
 // NewCmdCheckApi returns a cobra command for checking creating cert-manager resources against the K8S API server
-func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, factory k8scmdutil.Factory) *cobra.Command {
+func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
@@ -105,7 +93,7 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 		Short: "Check if the cert-manager API is ready",
 		Long:  checkApiDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := o.Complete(factory); err != nil {
+			if err := o.Complete(); err != nil {
 				return err
 			}
 			o.Run(ctx)
@@ -117,6 +105,8 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 	cmd.Flags().DurationVar(&o.Wait, "wait", 0, "Wait until the cert-manager API is ready (default 0s)")
 	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
 	cmd.Flags().BoolVarP(&o.Verbose, "verbose", "v", false, "Print detailed error messages")
+
+	o.Factory = factory.New(cmd)
 
 	return cmd
 }
