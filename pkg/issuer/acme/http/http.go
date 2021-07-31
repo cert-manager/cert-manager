@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/miekg/dns"
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -70,7 +71,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
+type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsServers []string) error
 
 // NewSolver returns a new ACME HTTP01 solver for the given *controller.Context.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
@@ -172,7 +173,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 
 	log.V(logf.DebugLevel).Info("running self check multiple times to ensure challenge has propagated", "required_passes", s.requiredPasses)
 	for i := 0; i < s.requiredPasses; i++ {
-		err := s.testReachability(ctx, url, ch.Spec.Key)
+		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers)
 		if err != nil {
 			return err
 		}
@@ -211,7 +212,7 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url *url.URL, key string) error {
+func testReachability(ctx context.Context, url *url.URL, key string, dnsServers []string) error {
 	log := logf.FromContext(ctx)
 	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 
@@ -269,6 +270,19 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 		},
 	}
 
+	if len(dnsServers) != 0 {
+		transport.DialContext = func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+			dialer := &net.Dialer{
+				Timeout: 3 * time.Second,
+			}
+			addr, err = resolve(ctx, addr, dnsServers)
+			if err != nil {
+				log.V(logf.DebugLevel).Info("failed to resolve host", "error", err)
+				return nil, fmt.Errorf("failed to resolve host: %v", err)
+			}
+			return dialer.Dial(network, addr)
+		}
+	}
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   time.Second * 10,
@@ -307,4 +321,67 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	log.V(logf.DebugLevel).Info("reachability test succeeded")
 
 	return nil
+}
+
+func resolve(ctx context.Context, addr string, dnsServers []string) (string, error) {
+	log := logf.FromContext(ctx)
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", err
+	}
+	for _, server := range dnsServers {
+		ip, ok, err := lookupHost(ctx, host, server)
+		if err != nil {
+			log.V(logf.DebugLevel).Info("failed to lookup host on server", "error", err, "server", server)
+			continue
+		}
+		if !ok {
+			continue
+		}
+		return ip + ":" + port, nil
+	}
+	return "", fmt.Errorf("[%s] no such host: %s", strings.Join(dnsServers, ", "), host)
+}
+
+func lookupHost(ctx context.Context, host, server string) (string, bool, error) {
+	msg := new(dns.Msg)
+	msg.Id = dns.Id()
+	msg.RecursionDesired = true
+	msg.Question = []dns.Question{
+		{Name: dns.Fqdn(host), Qtype: dns.TypeA, Qclass: dns.ClassINET},
+		{Name: dns.Fqdn(host), Qtype: dns.TypeCNAME, Qclass: dns.ClassINET},
+		{Name: dns.Fqdn(host), Qtype: dns.TypeAAAA, Qclass: dns.ClassINET},
+	}
+
+	r, err := dns.ExchangeContext(ctx, msg, server)
+	if err != nil {
+		return "", false, err
+	}
+
+	// first try A records
+	for _, record := range r.Answer {
+		if t, ok := record.(*dns.A); ok {
+			return t.A.String(), true, nil
+		}
+	}
+	for _, record := range r.Answer {
+		if t, ok := record.(*dns.CNAME); ok {
+			// lookup for CNAME target IP
+			ip, ok, err := lookupHost(ctx, t.Target, server)
+			if err != nil {
+				return "", false, err
+			}
+			if !ok {
+				continue
+			}
+			return ip, true, nil
+		}
+	}
+	// finally try AAAA records
+	for _, record := range r.Answer {
+		if t, ok := record.(*dns.AAAA); ok {
+			return t.AAAA.String(), true, nil
+		}
+	}
+	return "", false, nil
 }
