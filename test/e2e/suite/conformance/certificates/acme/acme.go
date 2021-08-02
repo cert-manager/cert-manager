@@ -19,6 +19,7 @@ package acme
 import (
 	"context"
 	"encoding/base64"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -70,12 +71,24 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.IssueCAFeature,
 	)
 
+	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
+	// public ACME servers
+	var unsupportedPublicACMEServerFeatures = featureset.NewFeatureSet(
+		featureset.IPAddressFeature,
+		featureset.Ed25519FeatureSet,
+		featureset.LongDomainFeatureSet,
+	)
+
 	provisionerHTTP01 := &acmeIssuerProvisioner{
 		eab: eab,
 	}
 
 	provisionerDNS01 := &acmeIssuerProvisioner{
 		eab: eab,
+	}
+
+	provisionerPACMEHTTP01 := &acmeIssuerProvisioner{
+		eab: nil,
 	}
 
 	(&certificates.Suite{
@@ -108,6 +121,14 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerDNS01.createDNS01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "Public ACME Server HTTP01 Issuer",
+		UseIngressIPAddress: true,
+		CreateIssuerFunc:    provisionerPACMEHTTP01.createPublicACMEServerStagingHTTP01Issuer,
+		DeleteIssuerFunc:    provisionerPACMEHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01Features.Copy().Add(unsupportedPublicACMEServerFeatures.List()...),
 	}).Define()
 }
 
@@ -147,6 +168,33 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a Public ACME Server Staging HTTP01 Issuer")
+
+	var PublicACMEServerStagingURL string
+	if strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
+		PublicACMEServerStagingURL = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	} else {
+		PublicACMEServerStagingURL = f.Config.Addons.ACMEServer.URL
+	}
+
+	issuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "pacme-issuer-http01-",
+		},
+		Spec: a.createHTTP01IssuerSpec(PublicACMEServerStagingURL),
+	}
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to create Public ACME Server Staging HTTP01 issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
