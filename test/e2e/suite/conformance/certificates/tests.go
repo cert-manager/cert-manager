@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -52,10 +53,15 @@ func (s *Suite) Define() {
 		// Wrap this in a BeforeEach else flags will not have been parsed and
 		// f.Config will not be populated at the time that this code is run.
 		BeforeEach(func() {
+			// Special case Public ACME Servers against being run in the standard
+			// e2e tests.
+			if strings.Contains(s.Name, "Public ACME Server") && strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
+				Skip("Not running public ACME tests against local cluster.")
+				return
+			}
 			if s.completed {
 				return
 			}
-
 			s.complete(f)
 
 			if s.UseIngressIPAddress {

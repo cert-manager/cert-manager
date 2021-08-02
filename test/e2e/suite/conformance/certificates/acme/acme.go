@@ -129,7 +129,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerPACMEHTTP01.createPublicACMEServerStagingHTTP01Issuer,
 		DeleteIssuerFunc:    provisionerPACMEHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features.Copy().Add(unsupportedPublicACMEServerFeatures.List()...),
-		Skip:                true,
 	}).Define()
 }
 
