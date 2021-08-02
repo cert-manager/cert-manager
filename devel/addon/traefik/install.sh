@@ -32,14 +32,43 @@ IMAGE_TAG="2.4.9"
 
 require_image "traefik:${IMAGE_TAG}" "//devel/addon/traefik:bundle"
 
-helm upgrade --install --create-namespace \
-  --namespace traefik \
-  --version 10.1.1 \
-  --set additionalArguments='{--experimental.kubernetesgateway=true,--providers.kubernetesgateway=true}' \
-  --set image.tag=${IMAGE_TAG} \
-  --set "service.type=ClusterIP" \
-  --set "service.spec.clusterIP=10.0.0.13" \
-  traefik traefik/traefik
+helm upgrade --install --version 10.1.1 --create-namespace --namespace traefik traefik traefik/traefik --values=/dev/stdin <<EOF
+image:
+  tag: ${IMAGE_TAG}
+service:
+  type: ClusterIP
+  spec:
+    clusterIP: 10.0.0.13
+
+additionalArguments:
+  - --experimental.kubernetesgateway=true
+  - --providers.kubernetesgateway=true
+  - --providers.kubernetesgateway.namespaces=
+  - --entrypoints.web.address=:80
+  - --entrypoints.websecure.address=:443
+
+logs:
+  general:
+    level: DEBUG
+
+ports:
+  web:
+    port: 80
+  websecure:
+    port: 443
+
+# We want to listen on port 80 since that's what ACME requires. By default, the
+# chart uses 8000 to be able to runAsNonRoot.
+# https://stackoverflow.com/questions/66138370
+securityContext:
+  capabilities:
+    drop: [ALL]
+    add: [NET_BIND_SERVICE]
+  readOnlyRootFilesystem: true
+  runAsGroup: 0
+  runAsNonRoot: false
+  runAsUser: 0
+EOF
 
 kubectl apply -f- <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
@@ -114,7 +143,7 @@ spec:
       kind: HTTPRoute
       selector:
         matchLabels:
-          acme: solver
+          acme: solver-traefik
       namespaces:
         from: All
 EOYAML
