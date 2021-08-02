@@ -58,16 +58,9 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.IssueCAFeature,
 	)
 
-	var unsupportedHTTP01GatewayFeatures = featureset.NewFeatureSet(
-		featureset.DurationFeature,
-		featureset.WildcardsFeature,
-		featureset.URISANsFeature,
-		featureset.CommonNameFeature,
-		featureset.KeyUsagesFeature,
-		featureset.EmailSANsFeature,
-		featureset.SaveCAToSecret,
-		featureset.IssueCAFeature,
-		// Gateway API does not allow raw IP addresses
+	var unsupportedHTTP01GatewayFeatures = unsupportedHTTP01Features.Copy().Add(
+		// Gateway API does not allow raw IP addresses to be specified
+		// in HTTPRoutes, so challenges for an IP address will never work.
 		featureset.IPAddressFeature,
 	)
 
@@ -86,9 +79,14 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 
 	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
 	// public ACME servers
-	var unsupportedPublicACMEServerFeatures = featureset.NewFeatureSet(
+	var unsupportedPublicACMEServerFeatures = unsupportedHTTP01Features.Copy().Add(
+		// Let's Encrypt doesn't yet support IP Address certificates.
 		featureset.IPAddressFeature,
+		// Ed25519 is not yet approved by the CA Browser forum.
 		featureset.Ed25519FeatureSet,
+		// Let's Encrypt copies one of the Subject alternative names to
+		// the common name field. This field has a maximum total length of
+		// 64 bytes. Skip the long domain test in this case.
 		featureset.LongDomainFeatureSet,
 	)
 
@@ -153,11 +151,11 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "Public ACME Server HTTP01 Issuer",
+		Name:                "Public ACME Server HTTP01 Issuer (Ingress)",
 		HTTP01TestType:      "Ingress",
 		CreateIssuerFunc:    provisionerPACMEHTTP01.createPublicACMEServerStagingHTTP01Issuer,
 		DeleteIssuerFunc:    provisionerPACMEHTTP01.delete,
-		UnsupportedFeatures: unsupportedHTTP01Features.Copy().Add(unsupportedPublicACMEServerFeatures.List()...),
+		UnsupportedFeatures: unsupportedPublicACMEServerFeatures,
 	}).Define()
 }
 
