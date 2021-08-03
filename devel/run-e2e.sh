@@ -38,6 +38,17 @@ mkdir -p "${REPO_ROOT}/_artifacts"
 # Build the e2e test binary
 bazel build //test/e2e:e2e.test
 
+# Gateway e2e tests are not supported on k8s <1.19
+# K8S_VERSION is exported in lib.sh
+
+case "$K8S_VERSION" in
+  "1.16" | "1.17" | "1.18")
+    SKIP="--ginkgo.skip='Gateway'"
+    ;;
+  *)
+    SKIP=""
+esac
+
 # Run e2e tests
 ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	$(bazel info bazel-genfiles)/test/e2e/e2e.test \
@@ -46,4 +57,5 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
 	--acme-ingress-ip="$INGRESS_IP" \
+	"${SKIP}" \
 	"$@"
