@@ -250,8 +250,9 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
-	// The labels to set on HTTPRoute resources to solve ACME
-	// challenges that use this challenge solver.
+	// The labels that cert-manager will use when creating the temporary
+	// HTTPRoute needed for solving the HTTP-01 challenge. These labels
+	// must match the label selector of at least one Gateway.
 	Labels map[string]string `json:"labels,omitempty"`
 }
 

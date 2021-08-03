@@ -225,16 +225,16 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
-	// The labels to set on HTTPRoute resources to solve ACME
-	// challenges that use this challenge solver.
-	// +optional
+	// The labels that cert-manager will use when creating the temporary
+	// HTTPRoute needed for solving the HTTP-01 challenge. These labels
+	// must match the label selector of at least one Gateway.
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
 	// Only the 'labels' and 'annotations' fields may be set.
-	// If labels or annotations overlap with in-built values, the values here
+	// If labels or §annotations overlap with in-built values, the values here
 	// will override the in-built values.
 	ACMEChallengeSolverHTTP01IngressPodObjectMeta
 

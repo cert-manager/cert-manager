@@ -384,7 +384,7 @@ spec:
                           type: object
                           properties:
                             labels:
-                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
                               type: object
                               additionalProperties:
                                 type: string
@@ -1341,7 +1341,7 @@ spec:
                           type: object
                           properties:
                             labels:
-                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
                               type: object
                               additionalProperties:
                                 type: string
@@ -2299,7 +2299,7 @@ spec:
                           type: object
                           properties:
                             labels:
-                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
                               type: object
                               additionalProperties:
                                 type: string
@@ -3257,7 +3257,7 @@ spec:
                           type: object
                           properties:
                             labels:
-                              description: The labels to set on HTTPRoute resources to solve ACME challenges that use this challenge solver.
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
                               type: object
                               additionalProperties:
                                 type: string
