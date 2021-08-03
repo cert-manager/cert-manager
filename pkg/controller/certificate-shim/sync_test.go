@@ -2610,6 +2610,7 @@ func buildIngressOwnerReferences(name, namespace string) []metav1.OwnerReference
 	}
 }
 
+// The Gateway name and UID are set to the same.
 func buildGatewayOwnerReferences(name, namespace string) []metav1.OwnerReference {
 	return []metav1.OwnerReference{
 		*metav1.NewControllerRef(buildIngress(name, namespace, nil), gatewayGVK),
@@ -2719,4 +2720,148 @@ func Test_validateGatewayListenerBlock(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_findCertificatesToBeRemoved(t *testing.T) {
+	tests := []struct {
+		name            string
+		givenCerts      []*cmapi.Certificate
+		ingLike         metav1.Object
+		wantToBeRemoved []string
+	}{
+		{
+			name: "should not remove Certificate when not owned by the Ingress",
+			givenCerts: []*cmapi.Certificate{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "cert-1",
+					Namespace:       "default",
+					OwnerReferences: buildGatewayOwnerReferences("ingress-1", "default"),
+				}, Spec: cmapi.CertificateSpec{
+					SecretName: "secret-name",
+				}},
+			},
+			ingLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{Name: "ingress-2", Namespace: "default", UID: "ingress-2"},
+				Spec:       networkingv1.IngressSpec{TLS: []networkingv1.IngressTLS{{SecretName: "secret-name"}}},
+			},
+			wantToBeRemoved: nil,
+		},
+		{
+			name: "should not remove Certificate when Ingress references the secretName of the Certificate",
+			givenCerts: []*cmapi.Certificate{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "cert-1",
+					Namespace:       "default",
+					OwnerReferences: buildGatewayOwnerReferences("ingress-1", "default"),
+				}, Spec: cmapi.CertificateSpec{
+					SecretName: "secret-name",
+				}},
+			},
+			ingLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{Name: "ingress-1", Namespace: "default", UID: "ingress-1"},
+				Spec:       networkingv1.IngressSpec{TLS: []networkingv1.IngressTLS{{SecretName: "secret-name"}}},
+			},
+			wantToBeRemoved: nil,
+		},
+		{
+			name: "should remove Certificate when Ingress does not reference the secretName of the Certificate",
+			givenCerts: []*cmapi.Certificate{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "cert-1",
+					Namespace:       "default",
+					OwnerReferences: buildGatewayOwnerReferences("ingress-1", "default"),
+				}, Spec: cmapi.CertificateSpec{
+					SecretName: "secret-name",
+				}},
+			},
+			ingLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{Name: "ingress-1", Namespace: "default", UID: "ingress-1"},
+			},
+			wantToBeRemoved: []string{"cert-1"},
+		},
+		{
+			name: "should not remove Certificate when not owned by the Gateway",
+			givenCerts: []*cmapi.Certificate{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "cert-1",
+					Namespace:       "default",
+					OwnerReferences: buildGatewayOwnerReferences("gw-1", "default"),
+				}, Spec: cmapi.CertificateSpec{
+					SecretName: "secret-name",
+				}},
+			},
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{Name: "gw-2", Namespace: "default", UID: "gw-2"},
+				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{{
+					TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name"}},
+				}}},
+			},
+			wantToBeRemoved: nil,
+		},
+		{
+			name: "should remove Certificate when Gateway does not reference the secretName of the Certificate in one of its listers",
+			givenCerts: []*cmapi.Certificate{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "cert-1",
+					Namespace:       "default",
+					OwnerReferences: buildGatewayOwnerReferences("gw-1", "default"),
+				}, Spec: cmapi.CertificateSpec{
+					SecretName: "secret-name",
+				}},
+			},
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
+				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
+					{TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "not-secret-name"}}},
+				}},
+			},
+			wantToBeRemoved: []string{"cert-1"},
+		},
+		{
+			name: "should not remove Certificate when the Gateway references the secretName of the Certificate in one of its listers",
+			givenCerts: []*cmapi.Certificate{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "cert-1",
+					Namespace:       "default",
+					OwnerReferences: buildGatewayOwnerReferences("gw-1", "default"),
+				}, Spec: cmapi.CertificateSpec{
+					SecretName: "secret-name",
+				}},
+			},
+			ingLike: &gwapi.Gateway{
+				ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
+				Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
+					{TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name"}}},
+				}},
+			},
+			wantToBeRemoved: nil,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotCerts := findCertificatesToBeRemoved(test.givenCerts, test.ingLike)
+			assert.Equal(t, test.wantToBeRemoved, gotCerts)
+		})
+	}
+}
+
+func Test_secretNameUsedIn_nilPointerGateway(t *testing.T) {
+	got := secretNameUsedIn("secret-name", &gwapi.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
+		Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
+			{TLS: nil},
+			{TLS: &gwapi.GatewayTLSConfig{CertificateRef: nil}},
+			{TLS: &gwapi.GatewayTLSConfig{CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name"}}},
+		}},
+	})
+	assert.Equal(t, true, got)
+
+	got = secretNameUsedIn("secret-name", &gwapi.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "gw-1", Namespace: "default", UID: "gw-1"},
+		Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
+			{TLS: nil},
+			{TLS: &gwapi.GatewayTLSConfig{CertificateRef: nil}},
+		}},
+	})
+	assert.Equal(t, false, got)
 }

@@ -136,17 +136,18 @@ func SyncFnFor(
 			rec.Eventf(ingLikeObj, corev1.EventTypeNormal, reasonUpdateCertificate, "Successfully updated Certificate %q", crt.Name)
 		}
 
-		unrequiredCrts, err := findUnrequiredCertificates(cmLister, ingLike)
+		certs, err := cmLister.Certificates(ingLike.GetNamespace()).List(labels.Everything())
 		if err != nil {
 			return err
 		}
+		unrequiredCertNames := findCertificatesToBeRemoved(certs, ingLike)
 
-		for _, crt := range unrequiredCrts {
-			err = cmClient.CertmanagerV1().Certificates(crt.Namespace).Delete(ctx, crt.Name, metav1.DeleteOptions{})
+		for _, certName := range unrequiredCertNames {
+			err = cmClient.CertmanagerV1().Certificates(ingLike.GetNamespace()).Delete(ctx, certName, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
-			rec.Eventf(ingLikeObj, corev1.EventTypeNormal, reasonDeleteCertificate, "Successfully deleted unrequired Certificate %q", crt.Name)
+			rec.Eventf(ingLikeObj, corev1.EventTypeNormal, reasonDeleteCertificate, "Successfully deleted unrequired Certificate %q", certName)
 		}
 
 		return nil
@@ -395,42 +396,39 @@ func buildCertificates(
 	return newCrts, updateCrts, nil
 }
 
-func findUnrequiredCertificates(list cmlisters.CertificateLister, ingLike metav1.Object) ([]*cmapi.Certificate, error) {
-	crts, err := list.Certificates(ingLike.GetNamespace()).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	var unrequired []*cmapi.Certificate
-	for _, crt := range crts {
-		if isUnrequiredCertificate(crt, ingLike) {
-			unrequired = append(unrequired, crt)
+func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {
+	var toBeRemoved []string
+	for _, crt := range certs {
+		if !metav1.IsControlledBy(crt, ingLike) {
+			continue
+		}
+		if !secretNameUsedIn(crt.Spec.SecretName, ingLike) {
+			toBeRemoved = append(toBeRemoved, crt.Name)
 		}
 	}
-
-	return unrequired, nil
+	return toBeRemoved
 }
 
-func isUnrequiredCertificate(crt *cmapi.Certificate, ingLike metav1.Object) bool {
-	if !metav1.IsControlledBy(crt, ingLike) {
-		return false
-	}
-
+func secretNameUsedIn(secretName string, ingLike metav1.Object) bool {
 	switch o := ingLike.(type) {
 	case *networkingv1.Ingress:
 		for _, tls := range o.Spec.TLS {
-			if crt.Spec.SecretName == tls.SecretName {
-				return false
+			if secretName == tls.SecretName {
+				return true
 			}
 		}
 	case *gwapi.Gateway:
 		for _, l := range o.Spec.Listeners {
-			if crt.Spec.SecretName == l.TLS.CertificateRef.Name {
-				return false
+			if l.TLS == nil || l.TLS.CertificateRef == nil {
+				continue
+			}
+			if secretName == l.TLS.CertificateRef.Name {
+				return true
 			}
 		}
 	}
-	return true
+
+	return false
 }
 
 // certNeedsUpdate checks and returns true if two Certificates differ.
