@@ -82,9 +82,11 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	if crt.Duration != nil || crt.RenewBefore != nil {
 		el = append(el, ValidateDuration(crt, fldPath)...)
 	}
+
 	if len(crt.Usages) > 0 {
 		el = append(el, validateUsages(crt, fldPath)...)
 	}
+
 	if crt.RevisionHistoryLimit != nil && *crt.RevisionHistoryLimit < 1 {
 		el = append(el, field.Invalid(fldPath.Child("revisionHistoryLimit"), *crt.RevisionHistoryLimit, "must not be less than 1"))
 	}
@@ -95,6 +97,16 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		}
 		if len(crt.SecretTemplate.Annotations) > 0 {
 			el = append(el, validateSecretTemplateAnnotations(crt, fldPath)...)
+		}
+	}
+
+	if crt.MaxPathLen != nil {
+		if !crt.IsCA {
+			el = append(el, field.Required(fldPath.Child("isCA"), "must set isCA to true when maxPathLen is set"))
+		}
+
+		if *crt.MaxPathLen < 0 {
+			el = append(el, field.Invalid(fldPath.Child("maxPathLen"), *crt.MaxPathLen, "maxPathLen must be either null, zero or a positive integer"))
 		}
 	}
 

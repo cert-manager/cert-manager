@@ -360,7 +360,23 @@ func ExpectValidBasicConstraints(certificate *cmapi.Certificate, secret *corev1.
 		return fmt.Errorf("Expected CA basicConstraint to be %v, but got %v", certificate.Spec.IsCA, cert.IsCA)
 	}
 
-	// TODO: also validate pathLen
+	if certificate.Spec.MaxPathLen != nil {
+		expectedPathLen := int(*certificate.Spec.MaxPathLen)
+		expectPathLenZero := (expectedPathLen == 0)
+
+		if cert.MaxPathLen != expectedPathLen {
+			return fmt.Errorf("Expected pathLen basicConstraints to be %v, but got %v", expectedPathLen, cert.MaxPathLen)
+		}
+
+		if cert.MaxPathLenZero != expectPathLenZero {
+			return fmt.Errorf("Expected MaxPathLenZero on certificate to be %v, but got %v", expectPathLenZero, cert.MaxPathLenZero)
+		}
+	}
+
+	// It would an improvement to check here that cert.BasicConstraintsValid is true, but this is only set by
+	// x509.ParseCertificate when there _is_ a basicConstraints extension on the cert.
+	// Some issuers don't add the extension, so we can't check this generally without first parsing the cert's extensions manually
+	// to see if there was a basicConstraints extension added.
 
 	return nil
 }

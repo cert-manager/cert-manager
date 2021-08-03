@@ -559,6 +559,7 @@ func TestProcessItem(t *testing.T) {
 			},
 		},
 	}
+
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Create and initialise a new unit test builder

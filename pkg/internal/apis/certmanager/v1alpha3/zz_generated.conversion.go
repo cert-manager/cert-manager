@@ -685,6 +685,7 @@ func autoConvert_v1alpha3_CertificateRequestSpec_To_certmanager_CertificateReque
 	}
 	// WARNING: in.CSRPEM requires manual conversion: does not exist in peer-type
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -700,6 +701,7 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1alpha3_CertificateReque
 	}
 	// WARNING: in.Request requires manual conversion: does not exist in peer-type
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]v1alpha3.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -788,6 +790,7 @@ func autoConvert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	// WARNING: in.KeySize requires manual conversion: does not exist in peer-type
 	// WARNING: in.KeyAlgorithm requires manual conversion: does not exist in peer-type
@@ -838,6 +841,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha3_CertificateSpec(in *cer
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]v1alpha3.KeyUsage)(unsafe.Pointer(&in.Usages))
 	if in.PrivateKey != nil {
 		in, out := &in.PrivateKey, &out.PrivateKey

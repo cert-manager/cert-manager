@@ -29,6 +29,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -382,6 +384,217 @@ func TestRemoveDuplicates(t *testing.T) {
 			t.Errorf("returned %q for %q but expected %q", actualOutput, test.input, test.output)
 			continue
 		}
+	}
+}
+
+func TestGenerateTemplatePathLen(t *testing.T) {
+	tests := map[string]struct {
+		certificate      *cmapi.Certificate
+		expectPathLenSet bool
+		expectedPathLen  int
+		expectError      bool
+	}{
+		"should not set MaxPathLen or MaxPathLenZero if unset on input": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateSpec{
+					CommonName: "test-bundle-1",
+					IsCA:       true,
+				},
+			},
+			expectPathLenSet: false,
+		},
+		"should set MaxPathLen and MaxPathLenZero if input is zero": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateSpec{
+					CommonName: "test-bundle-1",
+					MaxPathLen: pointer.Int32(0),
+					IsCA:       true,
+				},
+			},
+			expectPathLenSet: true,
+			expectedPathLen:  0,
+		},
+		"should set MaxPathLen but not MaxPathLenZero if input pathLen is greater than zero": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateSpec{
+					CommonName: "test-bundle-1",
+					MaxPathLen: pointer.Int32(2),
+					IsCA:       true,
+				},
+			},
+			expectPathLenSet: true,
+			expectedPathLen:  2,
+		},
+		"should error if MaxPathLen set but IsCA is false": {
+			certificate: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateSpec{
+					CommonName: "test-bundle-1",
+					MaxPathLen: pointer.Int32(1),
+					IsCA:       false,
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			template, err := GenerateTemplate(test.certificate)
+			if (err != nil) != test.expectError {
+				t.Errorf("unexpected error from GenerateTemplate: %v", err)
+				return
+			}
+
+			if test.expectError {
+				return
+			}
+
+			if test.expectPathLenSet {
+				if template.MaxPathLen != test.expectedPathLen {
+					t.Errorf("wanted MaxPathLen to be '%d' but got '%d'", test.expectedPathLen, template.MaxPathLen)
+				}
+
+				if test.expectedPathLen == 0 && !template.MaxPathLenZero {
+					t.Error("expected pathLen of 0 but MaxPathLenZero is false")
+				} else if test.expectedPathLen != 0 && template.MaxPathLenZero {
+					t.Error("expected nonzero pathLen but MaxPathLenZero is true")
+				}
+			} else {
+				if template.MaxPathLen != 0 {
+					t.Errorf("expected MaxPathLen to be 0 but got: %d", template.MaxPathLen)
+				}
+
+				if template.MaxPathLenZero != false {
+					t.Error("expected MaxPathLenZero to be false but it was true")
+				}
+			}
+		})
+	}
+}
+
+// this is hardcoded because CSRs don't have a "duration" in the same way that
+// certificates do; by hardcoding we save a few cycles since we don't have to generate
+// a CSR and sign it
+var rawCSR = []byte(`-----BEGIN CERTIFICATE REQUEST-----
+MIH5MIGfAgEAMB8xHTAbBgNVBAMTFHRydXN0ZWQtaW50ZXJtZWRpYXRlMFkwEwYH
+KoZIzj0CAQYIKoZIzj0DAQcDQgAEa2wTLilxkRs5aF8EGvuTwlB1CdR13BTWzJg6
+vCmfbgg8dnG5CEaZ7Vt8vpNlAtJoP3LIB4mNScvzUKg9hoV1mKAeMBwGCSqGSIb3
+DQEJDjEPMA0wCwYDVR0PBAQDAgKkMAoGCCqGSM49BAMCA0kAMEYCIQCSdU3Qbpkl
+j3XqpAN2nbFTeAP8Qf2xHHZSlCKCqicT6wIhAPuTEMUe5GTuT00biauZjOaKXyRl
+jYssuLvyQHK2xoH2
+-----END CERTIFICATE REQUEST-----
+`)
+
+func TestGenerateTemplateFromCertificateRequestPathLen(t *testing.T) {
+	tests := map[string]struct {
+		certificateRequest *cmapi.CertificateRequest
+		expectPathLenSet   bool
+		expectedPathLen    int
+		expectError        bool
+	}{
+		"should not set MaxPathLen or MaxPathLenZero if unset on input": {
+			certificateRequest: &cmapi.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateRequestSpec{
+					Request: rawCSR,
+					IsCA:    true,
+				},
+			},
+			expectPathLenSet: false,
+		},
+		"should set MaxPathLen and MaxPathLenZero if input is zero": {
+			certificateRequest: &cmapi.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateRequestSpec{
+					Request:    rawCSR,
+					IsCA:       true,
+					MaxPathLen: pointer.Int32(0),
+				},
+			},
+			expectPathLenSet: true,
+			expectedPathLen:  0,
+		},
+		"should set MaxPathLen but not MaxPathLenZero if input pathLen is greater than zero": {
+			certificateRequest: &cmapi.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateRequestSpec{
+					Request:    rawCSR,
+					IsCA:       true,
+					MaxPathLen: pointer.Int32(2),
+				},
+			},
+			expectPathLenSet: true,
+			expectedPathLen:  2,
+		},
+		"should error if pathLen is set but isCA is not": {
+			certificateRequest: &cmapi.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: cmapi.CertificateRequestSpec{
+					Request:    rawCSR,
+					IsCA:       false,
+					MaxPathLen: pointer.Int32(2),
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			template, err := GenerateTemplateFromCertificateRequest(test.certificateRequest)
+			if (err != nil) != test.expectError {
+				t.Errorf("unexpected error result from GenerateTemplateFromCertificateRequest: expected=%v\ngot=%v", test.expectError, err)
+				return
+			}
+
+			if test.expectError {
+				return
+			}
+
+			if test.expectPathLenSet {
+				if template.MaxPathLen != test.expectedPathLen {
+					t.Errorf("wanted MaxPathLen to be '%d' but got '%d'", test.expectedPathLen, template.MaxPathLen)
+				}
+
+				if test.expectedPathLen == 0 && !template.MaxPathLenZero {
+					t.Error("expected pathLen of 0 but MaxPathLenZero is false")
+				} else if test.expectedPathLen != 0 && template.MaxPathLenZero {
+					t.Error("expected nonzero pathLen but MaxPathLenZero is true")
+				}
+
+				if !template.IsCA {
+					t.Error("expected IsCA always to be true when pathLen is set")
+				}
+			} else {
+				if template.MaxPathLen != 0 {
+					t.Errorf("expected MaxPathLen to be 0 but got: %d", template.MaxPathLen)
+				}
+
+				if template.MaxPathLenZero != false {
+					t.Error("expected MaxPathLenZero to be false but it was true")
+				}
+			}
+		})
 	}
 }
 

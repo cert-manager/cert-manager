@@ -300,12 +300,36 @@ func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
 		return nil, err
 	}
 
+	if crt.Spec.MaxPathLen != nil && !crt.Spec.IsCA {
+		return nil, fmt.Errorf("cannot set MaxPathLen on a certificate which doesn't have IsCA set")
+	}
+
+	// because zero is a valid value for maxPathLen, we must set maxPathLenZero if maxPathLen == 0
+	// - if MaxPathLen is not set on crt then we don't set either value, which omits pathLen
+	//   from the resulting certificate
+	// - if MaxPathLen is set on crt, then we set MaxPathLen to the same value.
+	// - if MaxPathLen is set and is zero, we also set MaxPathLenZero to true, so we include
+	//   a pathLen of zero in the resulting certificate
+	// for more details, see:
+	// - `go doc x509 Certificate.MaxPathLen`
+	// - `go doc x509 Certificate.MaxPathLenZero`
+
+	maxPathLen := int32(0)
+	maxPathLenZero := false
+
+	if crt.Spec.MaxPathLen != nil {
+		maxPathLen = *crt.Spec.MaxPathLen
+		maxPathLenZero = (maxPathLen == 0)
+	}
+
 	return &x509.Certificate{
 		Version:               3,
-		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    pubKeyAlgo,
+		BasicConstraintsValid: true,
 		IsCA:                  crt.Spec.IsCA,
+		MaxPathLen:            int(maxPathLen),
+		MaxPathLenZero:        maxPathLenZero,
 		Subject: pkix.Name{
 			Country:            subject.Countries,
 			Organization:       organization,
@@ -329,26 +353,39 @@ func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
 	}, nil
 }
 
-// GenerateTemplate will create a x509.Certificate for the given
-// CertificateRequest resource
+// GenerateTemplate will create a x509.Certificate for the given CertificateRequest resource
 func GenerateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 	keyUsage, extKeyUsage, err := BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
 	if err != nil {
 		return nil, err
 	}
-	return GenerateTemplateFromCSRPEMWithUsages(cr.Spec.Request, certDuration, cr.Spec.IsCA, keyUsage, extKeyUsage)
+
+	return GenerateTemplateFromCSRPEMWithUsagesWithPathLen(cr.Spec.Request, certDuration, cr.Spec.IsCA, cr.Spec.MaxPathLen, keyUsage, extKeyUsage)
 }
 
 func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
 	var (
-		ku  x509.KeyUsage
-		eku []x509.ExtKeyUsage
+		ku      x509.KeyUsage
+		eku     []x509.ExtKeyUsage
+		pathLen *int32
 	)
-	return GenerateTemplateFromCSRPEMWithUsages(csrPEM, duration, isCA, ku, eku)
+
+	return GenerateTemplateFromCSRPEMWithUsagesWithPathLen(csrPEM, duration, isCA, pathLen, ku, eku)
 }
 
 func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration, isCA bool, keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) (*x509.Certificate, error) {
+	var pathLen *int32
+
+	return GenerateTemplateFromCSRPEMWithUsagesWithPathLen(csrPEM, duration, isCA, pathLen, keyUsage, extKeyUsage)
+}
+
+func GenerateTemplateFromCSRPEMWithUsagesWithPathLen(csrPEM []byte, duration time.Duration, isCA bool, pathLen *int32, keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) (*x509.Certificate, error) {
+	// pathLen only makes sense if isCA is also true
+	if pathLen != nil && !isCA {
+		return nil, errors.New("pathLen was set on a cert with isCA not set")
+	}
+
 	block, _ := pem.Decode(csrPEM)
 	if block == nil {
 		return nil, errors.New("failed to decode csr")
@@ -368,6 +405,24 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
+	// because zero is a valid value for maxPathLen, we must set maxPathLenZero if maxPathLen == 0
+	// - if pathLen is nil then we don't set either value, which omits pathLen
+	//   from the resulting certificate
+	// - if pathLen is not nil, then we set MaxPathLen to the same value.
+	// - if pathLen is not nil and is zero we also set MaxPathLenZero to true, ensuring
+	//   we include a pathLen of zero in the resulting certificate
+	// for more details, see:
+	// - `go doc x509 Certificate.MaxPathLen`
+	// - `go doc x509 Certificate.MaxPathLenZero`
+
+	maxPathLen := int32(0)
+	maxPathLenZero := false
+
+	if pathLen != nil {
+		maxPathLen = *pathLen
+		maxPathLenZero = (maxPathLen == 0)
+	}
+
 	return &x509.Certificate{
 		Version:               csr.Version,
 		BasicConstraintsValid: true,
@@ -375,6 +430,8 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 		PublicKeyAlgorithm:    csr.PublicKeyAlgorithm,
 		PublicKey:             csr.PublicKey,
 		IsCA:                  isCA,
+		MaxPathLen:            int(maxPathLen),
+		MaxPathLenZero:        maxPathLenZero,
 		Subject:               csr.Subject,
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(duration),

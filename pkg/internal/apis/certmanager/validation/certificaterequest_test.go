@@ -26,6 +26,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
@@ -634,6 +635,54 @@ func TestValidateCertificateRequest(t *testing.T) {
 			a:     someAdmissionRequest,
 			wantE: []*field.Error{},
 		},
+		"csr with positive valid maxPathLen and isCA true should be accepted": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					MaxPathLen: pointer.Int32(2),
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
+		"csr with maxPathLen set to 0 and isCA true should be accepted": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					MaxPathLen: pointer.Int32(0),
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{},
+		},
+		"csr with maxPathLen but isCA false should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       false,
+					MaxPathLen: pointer.Int32(1),
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{field.Required(fldPath.Child("isCA"), "must set isCA to true when maxPathLen is set")},
+		},
+		"csr with negative maxPathLen should error": {
+			cr: &cminternal.CertificateRequest{
+				Spec: cminternal.CertificateRequestSpec{
+					Request:    mustGenerateCSR(t, gen.Certificate("test", gen.SetCertificateDNSNames("example.com"))),
+					IssuerRef:  validIssuerRef,
+					IsCA:       true,
+					MaxPathLen: pointer.Int32(-2),
+				},
+			},
+			a:     someAdmissionRequest,
+			wantE: []*field.Error{field.Invalid(fldPath.Child("maxPathLen"), int32(-2), "maxPathLen must be either null, zero or a positive integer")},
+		},
 		"Error on csr not having all usages": {
 			cr: &cminternal.CertificateRequest{
 				Spec: cminternal.CertificateRequestSpec{
@@ -950,6 +999,7 @@ func TestValidateCertificateRequest(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotE, gotW := ValidateCertificateRequest(test.a, test.cr)
+
 			for i := range gotE {
 				if gotE[i].Field == "spec.request" {
 					if gotE[i].Type == field.ErrorTypeRequired {

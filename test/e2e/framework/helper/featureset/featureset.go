@@ -157,4 +157,8 @@ const (
 	// LongDomainFeatureSet denotes whether the target issuer is able to sign
 	// a certificate that defines a long domain
 	LongDomainFeatureSet Feature = "LongDomain"
+
+	// MaxPathLenFeature denotes whether the issuer is able to set the pathLen
+	// basicConstraint on signed certificates.
+	MaxPathLenFeature Feature = "MaxPathLen"
 )

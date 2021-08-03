@@ -96,6 +96,7 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 		el = append(el, field.Required(fldPath.Child("request"), "must be specified"))
 	} else {
 		csr, err := pki.DecodeX509CertificateRequestBytes(crSpec.Request)
+
 		if err != nil {
 			el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("failed to decode csr: %s", err)))
 		} else {
@@ -104,6 +105,7 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 				if crSpec.IsCA {
 					crSpec.Usages = ensureCertSignIsSet(crSpec.Usages)
 				}
+
 				csrUsages, err := getCSRKeyUsage(crSpec, fldPath, csr, el)
 				if len(err) > 0 {
 					el = append(el, err...)
@@ -111,6 +113,16 @@ func ValidateCertificateRequestSpec(crSpec *cmapi.CertificateRequestSpec, fldPat
 					el = append(el, field.Invalid(fldPath.Child("request"), crSpec.Request, fmt.Sprintf("csr key usages do not match specified usages, these should match if both are set: %s", pretty.Diff(patchDuplicateKeyUsage(csrUsages), patchDuplicateKeyUsage(crSpec.Usages)))))
 				}
 			}
+		}
+	}
+
+	if crSpec.MaxPathLen != nil {
+		if !crSpec.IsCA {
+			el = append(el, field.Required(fldPath.Child("isCA"), "must set isCA to true when maxPathLen is set"))
+		}
+
+		if *crSpec.MaxPathLen < 0 {
+			el = append(el, field.Invalid(fldPath.Child("maxPathLen"), *crSpec.MaxPathLen, "maxPathLen must be either null, zero or a positive integer"))
 		}
 	}
 

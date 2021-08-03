@@ -26,6 +26,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
@@ -565,6 +566,58 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("revisionHistoryLimit"), int32(0), "must not be less than 1"),
 			},
 		},
+		"maxPathLen positive and isCA set to true": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					MaxPathLen: pointer.Int32(2),
+					IsCA:       true,
+				},
+			},
+			a:    someAdmissionRequest,
+			errs: []*field.Error{},
+		},
+		"maxPathLen zero and isCA set to true": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					MaxPathLen: pointer.Int32(0),
+					IsCA:       true,
+				},
+			},
+			a:    someAdmissionRequest,
+			errs: []*field.Error{},
+		},
+		"maxPathLen set but not isCA": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					MaxPathLen: pointer.Int32(2),
+					IsCA:       false,
+				},
+			},
+			a:    someAdmissionRequest,
+			errs: []*field.Error{field.Required(fldPath.Child("isCA"), "must set isCA to true when maxPathLen is set")},
+		},
+		"negative maxPathLen should be an error": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					MaxPathLen: pointer.Int32(-2),
+					IsCA:       true,
+				},
+			},
+			a:    someAdmissionRequest,
+			errs: []*field.Error{field.Invalid(fldPath.Child("maxPathLen"), int32(-2), "maxPathLen must be either null, zero or a positive integer")},
+		},
 		"v1alpha2 certificate created": {
 			cfg: &internalcmapi.Certificate{
 				Spec: internalcmapi.CertificateSpec{
@@ -731,22 +784,26 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 	}
+
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
 			if len(errs) != len(s.errs) {
-				t.Errorf("Expected errors %v but got %v", s.errs, errs)
+				t.Errorf("Expected errors '%v' but got '%v'", s.errs, errs)
 				return
 			}
+
 			if len(warnings) != len(s.warnings) {
-				t.Errorf("Expected warnings %v but got %v", s.warnings, warnings)
+				t.Errorf("Expected warnings '%v' but got '%v'", s.warnings, warnings)
 			}
+
 			for i, e := range errs {
 				expectedErr := s.errs[i]
 				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected error %v but got %v", expectedErr, e)
+					t.Errorf("Expected error '%v' but got '%v'", expectedErr, e)
 				}
 			}
+
 			for i, w := range warnings {
 				expectedWarning := s.warnings[i]
 				if w != expectedWarning {

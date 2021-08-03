@@ -693,6 +693,7 @@ func autoConvert_v1beta1_CertificateRequestSpec_To_certmanager_CertificateReques
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -713,6 +714,7 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1beta1_CertificateReques
 	}
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]v1beta1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.Username = in.Username
 	out.UID = in.UID
@@ -798,6 +800,7 @@ func autoConvert_v1beta1_CertificateSpec_To_certmanager_CertificateSpec(in *v1be
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*certmanager.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))
@@ -834,6 +837,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1beta1_CertificateSpec(in *cert
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.MaxPathLen = (*int32)(unsafe.Pointer(in.MaxPathLen))
 	out.Usages = *(*[]v1beta1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.PrivateKey = (*v1beta1.CertificatePrivateKey)(unsafe.Pointer(in.PrivateKey))
 	out.EncodeUsagesInRequest = (*bool)(unsafe.Pointer(in.EncodeUsagesInRequest))

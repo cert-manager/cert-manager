@@ -192,6 +192,11 @@ spec:
                             name:
                               description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
+                maxPathLen:
+                  description: MaxPathLen requests that the pathLen in the certificate's basicConstraints be set by an issuer, which controls the maximum number of CA certificates which can appear in the chain issued by this certificate. Not all issuers support MaxPathLen, and it will be left unset if unsupported. If a certificate's MaxPathLen is 0, then it cannot issue CA certificates; if MaxPathLen is n > 0, this certificate may issue a CA certificate, which in turn may issue a CA certificate only if n-1 is greater than zero. Most intermediate certificates will usually want to have a pathLen set to the smallest value possible. If omitted, no MaxPathLen will be requested for the issued certificate. Changing MaxPathLen won't trigger re-issuance of a certificate. Use `kubectl cert-manager renew` for that.
+                  type: integer
+                  format: int32
+                  minimum: 0
                 organization:
                   description: Organization is a list of organizations to be used on the Certificate.
                   type: array
@@ -509,6 +514,11 @@ spec:
                             name:
                               description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
+                maxPathLen:
+                  description: MaxPathLen requests that the pathLen in the certificate's basicConstraints be set by an issuer, which controls the maximum number of CA certificates which can appear in the chain issued by this certificate. Not all issuers support MaxPathLen, and it will be left unset if unsupported. If a certificate's MaxPathLen is 0, then it cannot issue CA certificates; if MaxPathLen is n > 0, this certificate may issue a CA certificate, which in turn may issue a CA certificate only if n-1 is greater than zero. Most intermediate certificates will usually want to have a pathLen set to the smallest value possible. If omitted, no MaxPathLen will be requested for the issued certificate. Changing MaxPathLen won't trigger re-issuance of a certificate. Use `kubectl cert-manager renew` for that.
+                  type: integer
+                  format: int32
+                  minimum: 0
                 privateKey:
                   description: Options to control private keys used for the Certificate.
                   type: object
@@ -813,6 +823,11 @@ spec:
                             name:
                               description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
+                maxPathLen:
+                  description: MaxPathLen requests that the pathLen in the certificate's basicConstraints be set by an issuer, which controls the maximum number of CA certificates which can appear in the chain issued by this certificate. Not all issuers support MaxPathLen, and it will be left unset if unsupported. If a certificate's MaxPathLen is 0, then it cannot issue CA certificates; if MaxPathLen is n > 0, this certificate may issue a CA certificate, which in turn may issue a CA certificate only if n-1 is greater than zero. Most intermediate certificates will usually want to have a pathLen set to the smallest value possible. If omitted, no MaxPathLen will be requested for the issued certificate. Changing MaxPathLen won't trigger re-issuance of a certificate. Use `kubectl cert-manager renew` for that.
+                  type: integer
+                  format: int32
+                  minimum: 0
                 privateKey:
                   description: Options to control private keys used for the Certificate.
                   type: object
@@ -1132,6 +1147,11 @@ spec:
                             name:
                               description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
+                maxPathLen:
+                  description: MaxPathLen requests that the pathLen in the certificate's basicConstraints be set by an issuer, which controls the maximum number of CA certificates which can appear in the chain issued by this certificate. Not all issuers support MaxPathLen, and it will be left unset if unsupported. If a certificate's MaxPathLen is 0, then it cannot issue CA certificates; if MaxPathLen is n > 0, this certificate may issue a CA certificate, which in turn may issue a CA certificate only if n-1 is greater than zero. Most intermediate certificates will usually want to have a pathLen set to the smallest value possible. If omitted, no MaxPathLen will be requested for the issued certificate. Changing MaxPathLen won't trigger re-issuance of a certificate. Use `kubectl cert-manager renew` for that.
+                  type: integer
+                  format: int32
+                  minimum: 0
                 privateKey:
                   description: Options to control private keys used for the Certificate.
                   type: object

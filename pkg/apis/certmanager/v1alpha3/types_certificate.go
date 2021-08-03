@@ -158,6 +158,19 @@ type CertificateSpec struct {
 	// +optional
 	IsCA bool `json:"isCA,omitempty"`
 
+	// MaxPathLen requests that the pathLen in the certificate's basicConstraints be set by an issuer,
+	// which controls the maximum number of CA certificates which can appear in the chain issued by
+	// this certificate. Not all issuers support MaxPathLen, and it will be left unset if unsupported.
+	// If a certificate's MaxPathLen is 0, then it cannot issue CA certificates; if MaxPathLen is n > 0,
+	// this certificate may issue a CA certificate, which in turn may issue a CA certificate only if
+	// n-1 is greater than zero.
+	// Most intermediate certificates will usually want to have a pathLen set to the smallest value possible.
+	// If omitted, no MaxPathLen will be requested for the issued certificate.
+	// Changing MaxPathLen won't trigger re-issuance of a certificate. Use `kubectl cert-manager renew` for that.
+	// +kubebuilder:validation:Minimum=0
+	// +optional
+	MaxPathLen *int32 `json:"maxPathLen,omitempty"`
+
 	// Usages is the set of x509 usages that are requested for the certificate.
 	// Defaults to `digital signature` and `key encipherment` if not specified.
 	// +optional
