@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,6 +38,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -2864,4 +2866,91 @@ func Test_secretNameUsedIn_nilPointerGateway(t *testing.T) {
 		}},
 	})
 	assert.Equal(t, false, got)
+}
+
+func Test_extractTLSHostsBySecretRef(t *testing.T) {
+	tests := []struct {
+		name       string
+		ingLike    metav1.Object
+		wantMap    map[corev1.ObjectReference][]string
+		wantKeys   []corev1.ObjectReference
+		wantEvents []string
+	}{
+		{
+			name: "gateway: two secret names, same hostname",
+			ingLike: &gwapi.Gateway{Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
+				{
+					Hostname: ptrHostname("foo.com"),
+					TLS: &gwapi.GatewayTLSConfig{
+						Mode:           ptrMode(gwapi.TLSModeTerminate),
+						CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name-1", Group: "core", Kind: "Secret"},
+					},
+				},
+				{
+					Hostname: ptrHostname("foo.com"),
+					TLS: &gwapi.GatewayTLSConfig{
+						Mode:           ptrMode(gwapi.TLSModeTerminate),
+						CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name-2", Group: "core", Kind: "Secret"},
+					},
+				},
+			}}},
+			wantMap: map[corev1.ObjectReference][]string{
+				{Name: "secret-name-1"}: {"foo.com"},
+				{Name: "secret-name-2"}: {"foo.com"},
+			},
+			wantKeys: []corev1.ObjectReference{{Name: "secret-name-1"}, {Name: "secret-name-2"}},
+		},
+		{
+			name: "gateway: single secret names, two hostnames",
+			ingLike: &gwapi.Gateway{Spec: gwapi.GatewaySpec{Listeners: []gwapi.Listener{
+				{
+					Hostname: ptrHostname("foo.com"),
+					TLS: &gwapi.GatewayTLSConfig{
+						Mode:           ptrMode(gwapi.TLSModeTerminate),
+						CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name", Group: "core", Kind: "Secret"},
+					},
+				},
+				{
+					Hostname: ptrHostname("bar.com"),
+					TLS: &gwapi.GatewayTLSConfig{
+						Mode:           ptrMode(gwapi.TLSModeTerminate),
+						CertificateRef: &gwapi.LocalObjectReference{Name: "secret-name", Group: "core", Kind: "Secret"},
+					},
+				},
+			}}},
+			wantMap: map[corev1.ObjectReference][]string{
+				{Name: "secret-name"}: {"foo.com", "bar.com"},
+			},
+			wantKeys: []corev1.ObjectReference{{Name: "secret-name"}},
+		},
+		{
+			name: "ingress: should copy the ingress hostnames",
+			ingLike: &networkingv1.Ingress{
+				Spec: networkingv1.IngressSpec{TLS: []networkingv1.IngressTLS{
+					{
+						Hosts:      []string{"foo.com", "bar.com"},
+						SecretName: "secret-name-1",
+					},
+					{
+						Hosts:      []string{"foo.com", "bar.com"},
+						SecretName: "secret-name-2",
+					},
+				}},
+			},
+			wantMap: map[corev1.ObjectReference][]string{
+				{Name: "secret-name-1"}: {"foo.com", "bar.com"},
+				{Name: "secret-name-2"}: {"foo.com", "bar.com"},
+			},
+			wantKeys: []corev1.ObjectReference{{Name: "secret-name-1"}, {Name: "secret-name-2"}},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rec := &controllertest.FakeRecorder{}
+			gotMap, gotKeys := extractTLSHostsBySecretRef(rec, test.ingLike)
+			assert.Equal(t, test.wantMap, gotMap)
+			assert.Equal(t, test.wantKeys, gotKeys)
+			assert.Equal(t, test.wantEvents, rec.Events)
+		})
+	}
 }

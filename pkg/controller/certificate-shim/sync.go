@@ -275,42 +275,11 @@ func buildCertificates(
 	var newCrts []*cmapi.Certificate
 	var updateCrts []*cmapi.Certificate
 
-	tlsHosts := make(map[corev1.ObjectReference][]string)
-	switch ingLike := ingLike.(type) {
-	case *networkingv1.Ingress:
-		for i, tls := range ingLike.Spec.TLS {
-			path := field.NewPath("spec", "tls").Index(i)
-			err := validateIngressTLSBlock(path, tls).ToAggregate()
-			if err != nil {
-				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a TLS block: "+err.Error())
-				continue
-			}
-			tlsHosts[corev1.ObjectReference{
-				Namespace: ingLike.Namespace,
-				Name:      tls.SecretName,
-			}] = tls.Hosts
-		}
-	case *gwapi.Gateway:
-		for i, l := range ingLike.Spec.Listeners {
-			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l).ToAggregate()
-			if err != nil {
-				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
-				continue
-			}
+	tlsHostsBySecretRef, secretRefs := extractTLSHostsBySecretRef(rec, ingLike)
 
-			secretRef := corev1.ObjectReference{
-				Namespace: ingLike.Namespace,
-				Name:      l.TLS.CertificateRef.Name,
-			}
-			// Gateway API hostname explicitly disallows IP addresses, so this
-			// should be OK.
-			tlsHosts[secretRef] = append(tlsHosts[secretRef], fmt.Sprintf("%s", *l.Hostname))
-		}
-	default:
-		return nil, nil, fmt.Errorf("buildCertificates: expected ingress or gateway, got %T", ingLike)
-	}
+	for _, secretRef := range secretRefs {
+		tlsHosts := tlsHostsBySecretRef[secretRef]
 
-	for secretRef, hosts := range tlsHosts {
 		existingCrt, err := cmLister.Certificates(secretRef.Namespace).Get(secretRef.Name)
 		if !apierrors.IsNotFound(err) && err != nil {
 			return nil, nil, err
@@ -336,7 +305,7 @@ func buildCertificates(
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ingLike, controllerGVK)},
 			},
 			Spec: cmapi.CertificateSpec{
-				DNSNames:   hosts,
+				DNSNames:   tlsHosts,
 				SecretName: secretRef.Name,
 				IssuerRef: cmmeta.ObjectReference{
 					Name:  issuerName,
@@ -394,6 +363,60 @@ func buildCertificates(
 		}
 	}
 	return newCrts, updateCrts, nil
+}
+
+func extractTLSHostsBySecretRef(rec record.EventRecorder, ingLike metav1.Object) (map[corev1.ObjectReference][]string, []corev1.ObjectReference) {
+	tlsHostsBySecretRef := make(map[corev1.ObjectReference][]string)
+
+	// If we were to just return the above map, we'd introduce flakiness in our
+	// tests due to the non-deterministic way Go iterates on maps. To iterate
+	// deterministically on the above map, we thus keep track of its keys in a
+	// slice.
+	var secretRefs []corev1.ObjectReference
+
+	switch ingLike := ingLike.(type) {
+	case *networkingv1.Ingress:
+		for i, tls := range ingLike.Spec.TLS {
+			path := field.NewPath("spec", "tls").Index(i)
+			err := validateIngressTLSBlock(path, tls).ToAggregate()
+			if err != nil {
+				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a TLS block: "+err.Error())
+				continue
+			}
+
+			secretRef := corev1.ObjectReference{
+				Namespace: ingLike.Namespace,
+				Name:      tls.SecretName,
+			}
+			if _, already := tlsHostsBySecretRef[secretRef]; !already {
+				secretRefs = append(secretRefs, secretRef)
+			}
+			tlsHostsBySecretRef[secretRef] = tls.Hosts
+		}
+	case *gwapi.Gateway:
+		for i, l := range ingLike.Spec.Listeners {
+			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l).ToAggregate()
+			if err != nil {
+				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
+				continue
+			}
+
+			secretRef := corev1.ObjectReference{
+				Namespace: ingLike.Namespace,
+				Name:      l.TLS.CertificateRef.Name,
+			}
+			if _, already := tlsHostsBySecretRef[secretRef]; !already {
+				secretRefs = append(secretRefs, secretRef)
+			}
+			// Gateway API hostname explicitly disallows IP addresses, so this
+			// should be OK.
+			tlsHostsBySecretRef[secretRef] = append(tlsHostsBySecretRef[secretRef], fmt.Sprintf("%s", *l.Hostname))
+		}
+	default:
+		panic(fmt.Errorf("programmer mistake: buildCertificates can't handle %T, expected Ingress or Gateway", ingLike))
+	}
+
+	return tlsHostsBySecretRef, secretRefs
 }
 
 func findCertificatesToBeRemoved(certs []*cmapi.Certificate, ingLike metav1.Object) []string {
