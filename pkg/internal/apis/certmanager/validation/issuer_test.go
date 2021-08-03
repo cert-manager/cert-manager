@@ -251,7 +251,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Solvers: []cmacme.ACMEChallengeSolver{
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								Labels: map[string]string{
 									"key": "value",
 								},
@@ -269,7 +269,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Solvers: []cmacme.ACMEChallengeSolver{
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{},
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{},
 						},
 					},
 				},
@@ -290,7 +290,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
-							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								Labels: map[string]string{
 									"a": "b",
 								},
