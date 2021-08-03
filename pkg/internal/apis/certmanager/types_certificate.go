@@ -124,7 +124,9 @@ type CertificateSpec struct {
 	SecretName string
 
 	// SecretTemplate defines annotations and labels to be propagated
-	// to the Kubernetes Secret when it is created or updated.
+	// to the Kubernetes Secret when it is created or updated. Once created,
+	// labels and annotations are not yet removed from the Secret when they are
+	// removed from the template. See https://github.com/jetstack/cert-manager/issues/4292
 	// +optional
 	SecretTemplate *CertificateSecretTemplate `json:"secretTemplate,omitempty"`
 
