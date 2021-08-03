@@ -56,8 +56,7 @@ const (
 	defaultCertManagerNamespace = "cert-manager"
 )
 
-const installDesc = `
-This command installs cert-manager. It uses the Helm libraries to do so.
+const installDesc = `This command installs cert-manager. It uses the Helm libraries to do so.
 
 The latest published cert-manager chart in the "https://charts.jetstack.io" repo is used.
 Most of the features supported by 'helm install' are also supported by this command.

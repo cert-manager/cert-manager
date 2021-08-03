@@ -40,6 +40,7 @@ filegroup(
         "//pkg/util/pki:all-srcs",
         "//pkg/util/predicate:all-srcs",
         "//pkg/util/profiling:all-srcs",
+        "//pkg/util/versionchecker:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
