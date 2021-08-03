@@ -19,6 +19,7 @@ package validation
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -47,6 +48,7 @@ var (
 			Version: "test",
 		},
 	}
+	maxSecretTemplateAnnotationsBytesLimit = 256 * (1 << 10) // 256 kB
 )
 
 func strPtr(s string) *string {
@@ -624,6 +626,108 @@ func TestValidateCertificate(t *testing.T) {
 					"Certificate",
 					cmapi.SchemeGroupVersion.String(),
 					"Certificate"),
+			},
+		},
+		"valid with empty secretTemplate": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					SecretTemplate: &internalcmapi.CertificateSecretTemplate{
+						Annotations: map[string]string{},
+						Labels:      map[string]string{},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"valid with 'CertificateSecretTemplate' labels and annotations": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					SecretTemplate: &internalcmapi.CertificateSecretTemplate{
+						Annotations: map[string]string{
+							"my-annotation.com/foo": "app=bar",
+						},
+						Labels: map[string]string{
+							"my-label.com/foo": "evn-production",
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "valid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+		},
+		"invalid with disallowed 'CertificateSecretTemplate' annotations": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					SecretTemplate: &internalcmapi.CertificateSecretTemplate{
+						Annotations: map[string]string{
+							"app.com/valid":                    "valid",
+							"cert-manager.io/alt-names":        "example.com",
+							"cert-manager.io/certificate-name": "selfsigned-cert",
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "invalid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("secretTemplate", "annotations"), "cert-manager.io/alt-names", "cert-manager.io/* annotations are not allowed"),
+				field.Invalid(fldPath.Child("secretTemplate", "annotations"), "cert-manager.io/certificate-name", "cert-manager.io/* annotations are not allowed"),
+			},
+		},
+		"invalid due to too long 'CertificateSecretTemplate' annotations": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					SecretTemplate: &internalcmapi.CertificateSecretTemplate{
+						Annotations: map[string]string{
+							"app.com/invalid": strings.Repeat("0", maxSecretTemplateAnnotationsBytesLimit),
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "invalid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.TooLong(fldPath.Child("secretTemplate", "annotations"), "", maxSecretTemplateAnnotationsBytesLimit),
+			},
+		},
+		"invalid due to not allowed 'CertificateSecretTemplate' labels": {
+			cfg: &internalcmapi.Certificate{
+				Spec: internalcmapi.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					SecretTemplate: &internalcmapi.CertificateSecretTemplate{
+						Labels: map[string]string{
+							"app.com/invalid-chars": "invalid=chars",
+						},
+					},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "invalid",
+					},
+				},
+			},
+			a: someAdmissionRequest,
+			errs: []*field.Error{
+				field.Invalid(
+					fldPath.Child("secretTemplate", "labels"),
+					"invalid=chars", "a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an "+
+						"alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
 			},
 		},
 	}
