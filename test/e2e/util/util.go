@@ -158,7 +158,7 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
 			if !apiutil.CertificateHasCondition(certificate, condition) {
-				log.Logf("Expected Certificate %v condition %v=%v but it has: %v", name, condition.Type, condition.Status, condition.ObservedGeneration, certificate.Status.Conditions)
+				log.Logf("Expected Certificate %v condition %v=%v but it has: %v", name, condition.Type, condition.Status, certificate.Status.Conditions)
 				return false, nil
 			}
 			return true, nil
@@ -179,7 +179,7 @@ func WaitForMissingCertificateCondition(client clientset.CertificateInterface, n
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
 			if apiutil.CertificateHasCondition(certificate, condition) {
-				log.Logf("Expected Certificate %v condition %v=%v to be missing but it has: %v", name, condition.Type, condition.Status, condition.ObservedGeneration, certificate.Status.Conditions)
+				log.Logf("Expected Certificate %v condition %v=%v to be missing but it has: %v", name, condition.Type, condition.Status, certificate.Status.Conditions)
 				return false, nil
 			}
 			return true, nil
