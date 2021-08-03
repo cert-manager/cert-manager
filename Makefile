@@ -27,8 +27,15 @@ PLATFORM := @io_bazel_rules_go//go/toolchain:linux_amd64
 
 # Set an alternative base image https://github.com/jetstack/cert-manager/blob/master/build/BUILD.bazel#L42
 BASE_IMAGE := static
-# Set to '' to not disable CGO. Disabled by default.
-CGO_DISABLED := --@io_bazel_rules_go//go/config:pure
+BAZEL_IMAGES_FLAGS := --define image_type=$(BASE_IMAGE)
+# Ensure non cgo by default
+# https://github.com/bazelbuild/rules_go/blob/master/go/modes.rst#building-pure-go-binaries
+CGO_ENABLED := 0
+ifeq ($(CGO_ENABLED),0)
+	BAZEL_IMAGES_FLAGS += --@io_bazel_rules_go//go/config:pure
+endif
+
+# Where the hack scripts live
 HACK_DIR ?= hack
 
 # Get a list of all binaries to be built
@@ -125,8 +132,7 @@ images:
 	bazel run \
 		--stamp \
 		--platforms=$(PLATFORM) \
-		--define image_type=$(BASE_IMAGE) \
-		$(CGO_DISABLED) \
+		$(BAZEL_IMAGES_FLAGS) \
 		//build:server-images
 
 .PHONY: images_push
@@ -136,8 +142,7 @@ images_push:
 	bazel run \
 		--stamp \
 		--platforms=$(PLATFORM) \
-		--define image_type=$(BASE_IMAGE) \
-		$(CGO_DISABLED) \
+		$(BAZEL_IMAGES_FLAGS) \
 		//:images.push
 
 # Release targets
