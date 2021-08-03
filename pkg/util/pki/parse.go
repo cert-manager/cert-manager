@@ -166,7 +166,8 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 
 // ParseSingleCertificateChain returns the PEM-encoded chain of certificates as
 // well as the PEM-encoded CA certificate. The certificate chain contains the
-// leaf certificate first.
+// leaf certificate first if one exists, and the chain doesn't contain any
+// self-signed root certificates.
 //
 // The CA may not be a true root, but the highest intermediate certificate.
 // The returned CA may be empty if a single certificate was passed.
@@ -177,6 +178,36 @@ func ParseSingleCertificateChainPEM(pembundle []byte) (PEMBundle, error) {
 // An error is returned if the passed bundle is not a valid flat tree chain,
 // the bundle is malformed, or the chain is broken.
 func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
+	node, err := orderCertificateChain(certs)
+	if err != nil {
+		return PEMBundle{}, err
+	}
+
+	return node.toBundleAndCA()
+}
+
+// OrderCertificateChain returns the given chain of certificates in order; that is,
+// with the deepest certificate in the chain first, followed by its issuer, and so on
+// until the top of the chain is reached.
+//
+// For most TLS use cases, this will mean a leaf certificate first, followed by
+// one or more intermediate certificates and finally a root certificate.
+//
+// This function removes duplicate certificate entries as well as comments and
+// unnecessary white space.
+//
+// An error is returned if the passed bundle is not a valid flat tree chain,
+// the bundle is malformed, or the chain is broken.
+func OrderCertificateChain(certs []*x509.Certificate) ([]*x509.Certificate, error) {
+	node, err := orderCertificateChain(certs)
+	if err != nil {
+		return nil, err
+	}
+
+	return node.toCertSlice(), nil
+}
+
+func orderCertificateChain(certs []*x509.Certificate) (*chainNode, error) {
 	// De-duplicate certificates. This moves "complicated" logic away from
 	// consumers and into a shared function, who would otherwise have to do this
 	// anyway.
@@ -235,62 +266,70 @@ func ParseSingleCertificateChain(certs []*x509.Certificate) (PEMBundle, error) {
 		// If no chains were merged in this pass, the chain can never be built as a
 		// single list. Error.
 		if lastChainsLength == len(chains) {
-			return PEMBundle{}, errors.NewInvalidData("certificate chain is malformed or broken")
+			return nil, errors.NewInvalidData("certificate chain is malformed or broken")
 		}
 	}
 
-	// There is only a single chain left at index 0. Return chain as PEM.
-	return chains[0].toBundleAndCA()
+	// There is only a single chain left at index 0. Return it.
+	return chains[0], nil
+}
+
+// toCertSlice converts a chainNode to a slice of *x509.Certificates by "walking" up the chain.
+// Will include root certificates, even though they usually shouldn't be added to chains.
+func (c *chainNode) toCertSlice() []*x509.Certificate {
+	var certs []*x509.Certificate
+
+	for {
+		// Add this node's certificate to the list at the end. Ready to check
+		// next node up.
+		certs = append(certs, c.cert)
+
+		// If the issuer is nil, we have hit the root of the chain, or at least
+		// as far up the chain as we can go.
+		if c.issuer == nil {
+			break
+		}
+
+		c = c.issuer
+	}
+
+	return certs
 }
 
 // toBundleAndCA will return the PEM bundle of this chain.
 func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
-	var (
-		certs []*x509.Certificate
-		ca    *x509.Certificate
-	)
+	certs := c.toCertSlice()
 
-	for {
-		// If the issuer is nil, we have hit the root of the chain. Assign the CA
-		// to this certificate and stop traversing. If the certificate at the root
-		// of the chain is not self-signed (i.e. is not a root CA), then also append
-		// that certificate to the chain.
+	// the last certificate will always go into CAPEM unless the chain is just
+	// a single non-CA certificate
+	lastCert := certs[len(certs)-1]
+	isSelfSignedCA := isSelfSignedCertificate(lastCert)
 
+	lastCertPEM, err := EncodeX509(lastCert)
+	if err != nil {
+		return PEMBundle{}, err
+	}
+
+	if len(certs) == 1 {
+		// if there's only a one cert, then that cert goes into ChainPEM
+
+		// we also add it to CAPEM if it's a root (self-signed) certificate
+		if isSelfSignedCA {
+			return PEMBundle{ChainPEM: lastCertPEM, CAPEM: lastCertPEM}, nil
+		}
+
+		return PEMBundle{ChainPEM: lastCertPEM}, nil
+	}
+
+	if isSelfSignedCA {
 		// Root certificates are omitted from the chain as per
 		// https://datatracker.ietf.org/doc/html/rfc5246#section-7.4.2
 		// > [T]he self-signed certificate that specifies the root certificate authority
 		// > MAY be omitted from the chain, under the assumption that the remote end must
 		// > already possess it in order to validate it in any case.
 
-		if c.issuer == nil {
-			if len(certs) > 0 && !isSelfSignedCertificate(c.cert) {
-				certs = append(certs, c.cert)
-			}
-
-			ca = c.cert
-			break
-		}
-
-		// Add this node's certificate to the list at the end. Ready to check
-		// next node up.
-		certs = append(certs, c.cert)
-		c = c.issuer
-	}
-
-	caPEM, err := EncodeX509(ca)
-	if err != nil {
-		return PEMBundle{}, err
-	}
-
-	// If no certificates parsed, then CA is the only certificate and should be
-	// the chain. If the CA is also self-signed, then by definition it's also the
-	// issuer and so can be placed in CAPEM too.
-	if len(certs) == 0 {
-		if isSelfSignedCertificate(ca) {
-			return PEMBundle{ChainPEM: caPEM, CAPEM: caPEM}, nil
-		}
-
-		return PEMBundle{ChainPEM: caPEM}, nil
+		// Note that this isn't safe with intermediate certificates.
+		certs = certs[:len(certs)-1]
 	}
 
 	// Encode full certificate chain
@@ -300,7 +339,7 @@ func (c *chainNode) toBundleAndCA() (PEMBundle, error) {
 	}
 
 	// Return chain and ca
-	return PEMBundle{CAPEM: caPEM, ChainPEM: chainPEM}, nil
+	return PEMBundle{CAPEM: lastCertPEM, ChainPEM: chainPEM}, nil
 }
 
 // tryMergeChain glues two chains A and B together by adding one on top of

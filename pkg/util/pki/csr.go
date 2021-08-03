@@ -472,6 +472,39 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	return pemBytes.Bytes(), cert, err
 }
 
+func hasProhibitingPathLen(caCert *x509.Certificate, chainNumber int) bool {
+	if !caCert.BasicConstraintsValid {
+		// if there's no basicConstraint extension, then there's no pathLen
+		// and therefore no restriction caused by this cert
+		// (this likely wouldn't work in public TLS)
+		return false
+	}
+
+	if caCert.MaxPathLen == -1 || (caCert.MaxPathLen == 0 && !caCert.MaxPathLenZero) {
+		// MaxPathLen = 0 means no pathLen was set if MaxPathLenZero is false
+		// and so there's no restriction caused by this cert
+		// alternatively, MaxPathLen == -1 also means it was unset and so there's no
+		// restriction
+		return false
+	}
+
+	// if we're here, there's a valid pathLen set on the cert
+	caPathLen := caCert.MaxPathLen
+
+	// the cert that issued the leaf has chainNumber = 0, and so
+	//   needs a pathLen >= 1 to have an effectivePathLen over 0
+	// the cert that issued that issuer has chainNumber = 1, and so
+	//   needs a pathLen >= 2 to have an effectivePathLen over 0
+	// etc.
+
+	effectivePathLen := caPathLen - chainNumber
+
+	// if the effectivePathLen is less than or equal to zero, then issuing a
+	// CA certificate would violate the pathLen constraint for caCert
+
+	return effectivePathLen <= 0
+}
+
 // SignCSRTemplate signs a certificate template, which is usually based upon a CSR. This
 // function expects all fields to be present in the certificate template,
 // including its public key.
@@ -482,7 +515,34 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template 
 		return PEMBundle{}, errors.New("no CA certificates given to sign CSR template")
 	}
 
+	caCerts, err := OrderCertificateChain(caCerts)
+	if err != nil {
+		return PEMBundle{}, err
+	}
+
 	issuingCACert := caCerts[0]
+
+	validPrivateKey, err := PublicKeyMatchesCertificate(caKey.Public(), issuingCACert)
+	if err != nil {
+		return PEMBundle{}, fmt.Errorf("failed to validate that signer key matches issuer: %w", err)
+	}
+
+	if !validPrivateKey {
+		return PEMBundle{}, fmt.Errorf("signing private key doesn't match for issuer %q, cannot continue", issuingCACert.Subject.String())
+	}
+
+	if template.IsCA {
+		// if we're issuing a CA cert, do our best to check that it won't violate a
+		// pathLen basicConstraint. We can't guarantee anything since caCerts doesn't
+		// need to contain the actual full chain to a root; there could be a pathLen
+		// in an issuing cert up the chain which we don't (and can't) know about.
+
+		for i, caCert := range caCerts {
+			if hasProhibitingPathLen(caCert, i) {
+				return PEMBundle{}, fmt.Errorf("refusing to issue new CA certificate which would violate a pathLen of %d on a chain cert %d place(s) above this one", caCert.MaxPathLen, i+1)
+			}
+		}
+	}
 
 	_, cert, err := SignCertificate(template, issuingCACert, template.PublicKey, caKey)
 	if err != nil {

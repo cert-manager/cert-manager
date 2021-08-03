@@ -784,13 +784,21 @@ func TestSignCSRTemplate(t *testing.T) {
 	// for that, we construct a chain of four certificates:
 	// a root CA, two intermediate CA, and a leaf certificate.
 
-	mustCreatePair := func(issuerCert *x509.Certificate, issuerPK crypto.Signer, name string, isCA bool) ([]byte, *x509.Certificate, *x509.Certificate, crypto.Signer) {
+	mustCreatePair := func(issuerCert *x509.Certificate, issuerPK crypto.Signer, name string, isCA bool, pathLen *int32) ([]byte, *x509.Certificate, *x509.Certificate, crypto.Signer) {
 		pk, err := GenerateECPrivateKey(256)
 		require.NoError(t, err)
+
+		maxPathLen := int32(0)
+		maxPathLenZero := false
+
+		if pathLen != nil {
+			maxPathLen = *pathLen
+			maxPathLenZero = (maxPathLen == 0)
+		}
+
 		tmpl := &x509.Certificate{
-			Version:               3,
-			BasicConstraintsValid: true,
-			SerialNumber:          big.NewInt(0),
+			Version:      3,
+			SerialNumber: big.NewInt(0),
 			Subject: pkix.Name{
 				CommonName: name,
 			},
@@ -799,7 +807,12 @@ func TestSignCSRTemplate(t *testing.T) {
 			NotAfter:           time.Now().Add(time.Minute),
 			KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 			PublicKey:          pk.Public(),
-			IsCA:               isCA,
+
+			BasicConstraintsValid: true,
+
+			IsCA:           isCA,
+			MaxPathLen:     int(maxPathLen),
+			MaxPathLenZero: maxPathLenZero,
 		}
 
 		if isCA {
@@ -818,10 +831,24 @@ func TestSignCSRTemplate(t *testing.T) {
 		return pem, cert, tmpl, pk
 	}
 
-	rootPEM, rootCert, rootTmpl, rootPK := mustCreatePair(nil, nil, "root", true)
-	int1PEM, int1Cert, int1Tmpl, int1PK := mustCreatePair(rootCert, rootPK, "int1", true)
-	int2PEM, int2Cert, int2Tmpl, int2PK := mustCreatePair(int1Cert, int1PK, "int2", true)
-	leafPEM, _, leafTmpl, _ := mustCreatePair(int2Cert, int2PK, "leaf", false)
+	rootPEM, rootCert, rootTmpl, rootPK := mustCreatePair(nil, nil, "root", true, nil)
+	int1PEM, int1Cert, int1Tmpl, int1PK := mustCreatePair(rootCert, rootPK, "int1", true, nil)
+	int2PEM, int2Cert, int2Tmpl, int2PK := mustCreatePair(int1Cert, int1PK, "int2", true, nil)
+	leafPEM, _, leafTmpl, _ := mustCreatePair(int2Cert, int2PK, "leaf", false, nil)
+
+	// pl = pathlen
+
+	plRootPEM, plRootCert, _, plRootPK := mustCreatePair(nil, nil, "pl-root", true, pointer.Int32(2))
+	plInt1PEM, plInt1Cert, _, plInt1PK := mustCreatePair(plRootCert, plRootPK, "pl-int1", true, pointer.Int32(1))
+	plInt2PEM, plInt2Cert, plInt2Tmpl, plInt2PK := mustCreatePair(plInt1Cert, plInt1PK, "pl-int2", true, pointer.Int32(0))
+
+	_, _, plInt3Tmpl, _ := mustCreatePair(plInt2Cert, plInt2PK, "pl-int3-invalid", true, nil)
+	plLeafPEM, _, plLeafTmpl, _ := mustCreatePair(plInt2Cert, plInt2PK, "pl-leaf", false, nil)
+
+	// this cert is similar to pl-int2 but has no pathLen set - it should still effectively have
+	// pathLen zero though if plInt1PEM is in the chain
+	plNoPathLenInterPEM, plNoPathLenInterCert, _, plNoPathLenInterPK := mustCreatePair(plInt1Cert, plInt1PK, "pl-nopathlen-inter", true, nil)
+	plInt4PEM, _, plInt4Tmpl, _ := mustCreatePair(plNoPathLenInterCert, plNoPathLenInterPK, "pl-int4-invalid", true, nil)
 
 	tests := map[string]struct {
 		caCerts           []*x509.Certificate
@@ -855,6 +882,14 @@ func TestSignCSRTemplate(t *testing.T) {
 			expectedCaCertPem: rootPEM,
 			wantErr:           false,
 		},
+		"Sign leaf template with jumbled caCerts": {
+			caCerts:           []*x509.Certificate{rootCert, int2Cert, int1Cert},
+			caKey:             int2PK,
+			template:          leafTmpl,
+			expectedCertPem:   append(append(leafPEM, int1PEM...), int2PEM...),
+			expectedCaCertPem: rootPEM,
+			wantErr:           false,
+		},
 		"Sign leaf template no root": {
 			caCerts:           []*x509.Certificate{int2Cert, int1Cert},
 			caKey:             int2PK,
@@ -863,9 +898,53 @@ func TestSignCSRTemplate(t *testing.T) {
 			expectedCaCertPem: int1PEM,
 			wantErr:           false,
 		},
+		"Sign intermediates with valid pathlens": {
+			caCerts:           []*x509.Certificate{plInt1Cert, plRootCert},
+			caKey:             plInt1PK,
+			template:          plInt2Tmpl,
+			expectedCertPem:   append(plInt2PEM, plInt1PEM...),
+			expectedCaCertPem: plRootPEM,
+			wantErr:           false,
+		},
+		"Leaf doesn't violate any pathLen": {
+			caCerts:           []*x509.Certificate{plInt2Cert, plInt1Cert, plRootCert},
+			caKey:             plInt2PK,
+			template:          plLeafTmpl,
+			expectedCertPem:   append(append(plLeafPEM, plInt2PEM...), plInt1PEM...),
+			expectedCaCertPem: plRootPEM,
+			wantErr:           false,
+		},
+		"Error on pathlen violation for intermediate with no pathlen but whose prohibiting issuer is in chain": {
+			caCerts:  []*x509.Certificate{plNoPathLenInterCert, plInt1Cert, plRootCert},
+			caKey:    plNoPathLenInterPK,
+			template: plInt4Tmpl,
+			wantErr:  true,
+		},
+		"No error on pathlen violation when intermediate has no pathlen but whose prohibiting issuer is NOT in chain": {
+			// this is the case where SignCSRTemplate doesn't have enough information to be able to correctly
+			// reject the cert
+			caCerts:           []*x509.Certificate{plNoPathLenInterCert},
+			caKey:             plNoPathLenInterPK,
+			template:          plInt4Tmpl,
+			expectedCertPem:   plInt4PEM,
+			expectedCaCertPem: plNoPathLenInterPEM,
+			wantErr:           false,
+		},
+		"Error on pathlen violation": {
+			caCerts:  []*x509.Certificate{plInt2Cert, plInt1Cert, plRootCert},
+			caKey:    plInt2PK,
+			template: plInt3Tmpl,
+			wantErr:  true,
+		},
 		"Error on no CA": {
 			caKey:    rootPK,
 			template: rootTmpl,
+			wantErr:  true,
+		},
+		"Error on key mismatch": {
+			caCerts:  []*x509.Certificate{rootCert},
+			caKey:    plRootPK,
+			template: int1Tmpl,
 			wantErr:  true,
 		},
 	}
