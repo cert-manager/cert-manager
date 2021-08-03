@@ -54,11 +54,9 @@ type Suite struct {
 	// nginx-ingress addon.
 	DomainSuffix string
 
-	// UseIngressIPAddress indicates that the IPAddress used
-	// for generating certificates should be the IngressIP.
-	// The ACME tests need this, so the challenges against the
-	// IPAddress will complete successfully.
-	UseIngressIPAddress bool
+	// HTTP01TestType is set to "Ingress" or "Gateway" to determine which IPs
+	// and Domains will be used to run the ACME HTTP-01 test suites.
+	HTTP01TestType string
 
 	// UnsupportedFeatures is a list of features that are not supported by this
 	// invocation of the test suite.
@@ -81,7 +79,12 @@ func (s *Suite) complete(f *framework.Framework) {
 	}
 
 	if s.DomainSuffix == "" {
-		s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		switch s.HTTP01TestType {
+		case "Ingress":
+			s.DomainSuffix = f.Config.Addons.IngressController.Domain
+		case "Gateway":
+			s.DomainSuffix = f.Config.Addons.Gateway.Domain
+		}
 	}
 
 	if s.UnsupportedFeatures == nil {

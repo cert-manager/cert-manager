@@ -21,14 +21,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
-
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
@@ -40,6 +32,13 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 )
 
 type controller struct {
@@ -112,6 +111,11 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		podInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
 		ingressInformer.HasSynced,
+	}
+
+	if ctx.GatewaySolverEnabled {
+		gwAPIHTTPRouteInformer := ctx.GWShared.Networking().V1alpha1().HTTPRoutes()
+		mustSync = append(mustSync, gwAPIHTTPRouteInformer.Informer().HasSynced)
 	}
 
 	// set all the references to the listers for used by the Sync function

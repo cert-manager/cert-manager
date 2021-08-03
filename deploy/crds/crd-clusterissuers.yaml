@@ -413,6 +413,18 @@ spec:
                             description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                             type: object
                             properties:
+                              gatewayHTTPRoute:
+                                description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                                type: object
+                                properties:
+                                  labels:
+                                    description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                                    type: object
+                                    additionalProperties:
+                                      type: string
+                                  serviceType:
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
+                                    type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                                 type: object
@@ -442,7 +454,7 @@ spec:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -959,7 +971,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -1570,6 +1582,18 @@ spec:
                             description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                             type: object
                             properties:
+                              gatewayHTTPRoute:
+                                description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                                type: object
+                                properties:
+                                  labels:
+                                    description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                                    type: object
+                                    additionalProperties:
+                                      type: string
+                                  serviceType:
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP.
+                                    type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                                 type: object
@@ -1599,7 +1623,7 @@ spec:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -2116,7 +2140,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -2468,7 +2492,7 @@ spec:
                             description: Configures cert-manager to attempt to complete authorizations by performing the DNS01 challenge flow.
                             type: object
                             properties:
-                              acmeDNS:
+                              acmedns:
                                 description: Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage DNS01 challenge records.
                                 type: object
                                 required:
@@ -2536,7 +2560,7 @@ spec:
                                         type: string
                                   serviceConsumerDomain:
                                     type: string
-                              azureDNS:
+                              azuredns:
                                 description: Use the Microsoft Azure DNS API to manage DNS01 challenge records.
                                 type: object
                                 required:
@@ -2574,7 +2598,7 @@ spec:
                                   tenantID:
                                     description: when specifying ClientID and ClientSecret then this field is also needed
                                     type: string
-                              cloudDNS:
+                              clouddns:
                                 description: Use the Google Cloud DNS API to manage DNS01 challenge records.
                                 type: object
                                 required:
@@ -2729,6 +2753,18 @@ spec:
                             description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                             type: object
                             properties:
+                              gatewayHTTPRoute:
+                                description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                                type: object
+                                properties:
+                                  labels:
+                                    description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                                    type: object
+                                    additionalProperties:
+                                      type: string
+                                  serviceType:
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
+                                    type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                                 type: object
@@ -2737,7 +2773,7 @@ spec:
                                     description: The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of 'class' or 'name' may be specified.
                                     type: string
                                   ingressTemplate:
-                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges
+                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -3275,7 +3311,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -3620,7 +3656,7 @@ spec:
                       description: 'Solvers is a list of challenge solvers that will be used to solve ACME challenges for the matching domains. Solver configurations must be provided in order to obtain certificates from an ACME server. For more information, see: https://cert-manager.io/docs/configuration/acme/'
                       type: array
                       items:
-                        description: Configures an issuer to solve challenges using the specified options. Only one of HTTP01 or DNS01 may be provided.
+                        description: An ACMEChallengeSolver describes how to solve ACME challenges for the issuer it is part of. A selector may be provided to use different solving strategies for different DNS names. Only one of HTTP01 or DNS01 must be provided.
                         type: object
                         properties:
                           dns01:
@@ -3888,6 +3924,18 @@ spec:
                             description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                             type: object
                             properties:
+                              gatewayHTTPRoute:
+                                description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                                type: object
+                                properties:
+                                  labels:
+                                    description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                                    type: object
+                                    additionalProperties:
+                                      type: string
+                                  serviceType:
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
+                                    type: string
                               ingress:
                                 description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                                 type: object
@@ -3896,7 +3944,7 @@ spec:
                                     description: The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of 'class' or 'name' may be specified.
                                     type: string
                                   ingressTemplate:
-                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges
+                                    description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -3917,7 +3965,7 @@ spec:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
                                   podTemplate:
-                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                                    description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                                     type: object
                                     properties:
                                       metadata:
@@ -4434,7 +4482,7 @@ spec:
                                                   description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                                   type: string
                                   serviceType:
-                                    description: Optional service type for Kubernetes solver service
+                                    description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP (default).
                                     type: string
                           selector:
                             description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.

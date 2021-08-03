@@ -155,6 +155,6 @@ const (
 	IssueCAFeature Feature = "IssueCA"
 
 	// LongDomainFeatureSet denotes whether the target issuer is able to sign
-	// a certificate that defines a long domain
+	// a certificate that defines a domain containing a label of 63 characters.
 	LongDomainFeatureSet Feature = "LongDomain"
 )

@@ -230,19 +230,30 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
+	// check if the gateway API CRDs are available
+	var gatewayAvailable bool
+	d := cl.Discovery()
+	resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
+	switch {
+	case apierrors.IsNotFound(err):
+		gatewayAvailable = false
+		log.Info("the Gateway API CRDs do not seem to be present, gateway-api functionality disabled")
+	case err != nil:
+		return nil, nil, fmt.Errorf("while checking if the Gateway API CRD is installed: %s", err.Error())
+	case len(resources.APIResources) == 0:
+		gatewayAvailable = false
+		log.Info("the Gateway API CRDs do not seem to be present, gateway-api functionality disabled")
+	default:
+		gatewayAvailable = true
+	}
+
 	// cert-manager will try watching the Gateway resources with an exponential
 	// back-off, which allows the user to install the CRDs after cert-manager
 	// itself. Let's let the user know that the CRDs have not been found yet.
 	if opts.EnabledControllers().Has(shimgw.ControllerName) {
-		d := cl.Discovery()
-		resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
-		switch {
-		case apierrors.IsNotFound(err):
-			log.Info("the Gateway API CRDs do not seem to be present, cert-manager will keep retrying watching for them")
-		case err != nil:
-			return nil, nil, fmt.Errorf("while checking if the Gateway API CRD is installed: %s", err.Error())
-		case len(resources.APIResources) == 0:
-			log.Info("the Gateway API CRDs do not seem to be present, cert-manager will keep retrying watching for them")
+		if !gatewayAvailable {
+			log.Info("the Gateway API CRDs do not seem to be present, but the gateway-shim controller was " +
+				"manually enabled. please install the CRDs.")
 		}
 	}
 
@@ -307,6 +318,7 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
 		GWShared:                  gwSharedInformerFactory,
+		GatewaySolverEnabled:      gatewayAvailable,
 		Namespace:                 opts.Namespace,
 		Clock:                     clock.RealClock{},
 		Metrics:                   metrics.New(log, clock.RealClock{}),

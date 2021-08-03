@@ -167,8 +167,15 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 		numDefined++
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(http01.Ingress, fldPath.Child("ingress"))...)
 	}
+	if http01.GatewayHTTPRoute != nil {
+		numDefined++
+		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(http01.GatewayHTTPRoute, fldPath.Child("gateway"))...)
+	}
 	if numDefined == 0 {
 		el = append(el, field.Required(fldPath, "no HTTP01 solver type configured"))
+	}
+	if numDefined > 1 {
+		el = append(el, field.Required(fldPath, "only 1 HTTP01 solver type may be configured"))
 	}
 
 	return el
@@ -186,6 +193,20 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 		el = append(el, field.Invalid(fldPath.Child("serviceType"), ingress.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
 	}
 
+	return el
+}
+
+func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	if len(gateway.Labels) == 0 {
+		el = append(el, field.Required(fldPath.Child("labels"), `labels must be set`))
+	}
+	switch gateway.ServiceType {
+	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
+	default:
+		el = append(el, field.Invalid(fldPath.Child("serviceType"), gateway.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
+	}
 	return el
 }
 

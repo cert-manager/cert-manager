@@ -7,6 +7,7 @@ go_library(
         "addons.go",
         "certmanager.go",
         "config.go",
+        "gateway.go",
         "ginkgo.go",
         "helm.go",
         "ingress_controller.go",

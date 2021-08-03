@@ -27,10 +27,11 @@ import (
 	"strings"
 	"time"
 
-	k8snet "k8s.io/utils/net"
-
+	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+	k8snet "k8s.io/utils/net"
+	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -61,6 +62,7 @@ type Solver struct {
 	serviceLister        corev1listers.ServiceLister
 	ingressLister        ingress.InternalIngressLister
 	ingressCreateUpdater ingress.InternalIngressCreateUpdater
+	httpRouteLister      gwapilisters.HTTPRouteLister
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -84,6 +86,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
 		ingressLister:        ingressLister,
 		ingressCreateUpdater: ingressCreateUpdater,
+		httpRouteLister:      ctx.GWShared.Networking().V1alpha1().HTTPRoutes().Lister(),
 		testReachability:     testReachability,
 		requiredPasses:       5,
 	}, nil
@@ -101,6 +104,16 @@ func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolve
 	return ch.Spec.Solver.HTTP01.Ingress, nil
 }
 
+func getServiceType(ch *cmacme.Challenge) (corev1.ServiceType, error) {
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.Ingress != nil {
+		return ch.Spec.Solver.HTTP01.Ingress.ServiceType, nil
+	}
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+		return ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ServiceType, nil
+	}
+	return "", fmt.Errorf("neither HTTP01 Ingress nor Gateway solvers were found")
+}
+
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
@@ -112,8 +125,26 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
-	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
+	var ingressErr, gatewayErr error
+	if ch.Spec.Solver.HTTP01 != nil {
+		if ch.Spec.Solver.HTTP01.Ingress != nil {
+			_, ingressErr = s.ensureIngress(ctx, ch, svc.Name)
+			return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
+		}
+		if ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+			_, gatewayErr = s.ensureGatewayHTTPRoute(ctx, ch, svc.Name)
+			return utilerrors.NewAggregate([]error{podErr, svcErr, gatewayErr})
+		}
+	}
+	return utilerrors.NewAggregate(
+		[]error{
+			podErr,
+			svcErr,
+			ingressErr,
+			gatewayErr,
+			fmt.Errorf("couldn't Present challenge %s/%s: no Ingress nor Gateway HTTP01 solvers were specified", ch.Namespace, ch.Name),
+		},
+	)
 }
 
 func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {

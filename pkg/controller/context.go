@@ -70,7 +70,8 @@ type Context struct {
 
 	// The Gateway API is an external CRD, which means its shared informers are
 	// not available in controllerpkg.Context.
-	GWShared gwinformers.SharedInformerFactory
+	GWShared             gwinformers.SharedInformerFactory
+	GatewaySolverEnabled bool
 
 	// Namespace is the namespace to operate within.
 	// If unset, operates on all namespaces
