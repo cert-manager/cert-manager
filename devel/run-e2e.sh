@@ -41,9 +41,11 @@ bazel build //test/e2e:e2e.test
 # Gateway e2e tests are not supported on k8s <1.19
 # K8S_VERSION is exported in lib.sh
 
+echo "Using K8S_VERSION ${K8S_VERSION}"
 case "$K8S_VERSION" in
   "1.16" | "1.17" | "1.18")
-    SKIP="--ginkgo.skip='Gateway'"
+    SKIP="--ginkgo.skip=Gateway"
+    echo "skipping Gateway e2e tests as K8S_VERSION is <1.19"
     ;;
   *)
     SKIP=""
