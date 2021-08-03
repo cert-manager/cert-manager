@@ -214,6 +214,20 @@ spec:
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
+                secretTemplate:
+                  description: SecretTemplate defines annotations and labels to be propagated to the Kubernetes Secret when it is created or updated. Once created, labels and annotations are not yet removed from the Secret when they are removed from the template. See https://github.com/jetstack/cert-manager/issues/4292
+                  type: object
+                  properties:
+                    annotations:
+                      description: Annotations is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
+                    labels:
+                      description: Labels is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
                 subject:
                   description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
                   type: object
@@ -512,6 +526,20 @@ spec:
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
+                secretTemplate:
+                  description: SecretTemplate defines annotations and labels to be propagated to the Kubernetes Secret when it is created or updated. Once created, labels and annotations are not yet removed from the Secret when they are removed from the template. See https://github.com/jetstack/cert-manager/issues/4292
+                  type: object
+                  properties:
+                    annotations:
+                      description: Annotations is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
+                    labels:
+                      description: Labels is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
                 subject:
                   description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
                   type: object
@@ -817,6 +845,20 @@ spec:
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
+                secretTemplate:
+                  description: SecretTemplate defines annotations and labels to be propagated to the Kubernetes Secret when it is created or updated. Once created, labels and annotations are not yet removed from the Secret when they are removed from the template. See https://github.com/jetstack/cert-manager/issues/4292
+                  type: object
+                  properties:
+                    annotations:
+                      description: Annotations is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
+                    labels:
+                      description: Labels is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
                 subject:
                   description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
                   type: object
@@ -1123,6 +1165,20 @@ spec:
                 secretName:
                   description: SecretName is the name of the secret resource that will be automatically created and managed by this Certificate resource. It will be populated with a private key and certificate, signed by the denoted issuer.
                   type: string
+                secretTemplate:
+                  description: SecretTemplate defines annotations and labels to be propagated to the Kubernetes Secret when it is created or updated. Once created, labels and annotations are not yet removed from the Secret when they are removed from the template. See https://github.com/jetstack/cert-manager/issues/4292
+                  type: object
+                  properties:
+                    annotations:
+                      description: Annotations is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
+                    labels:
+                      description: Labels is a key value map to be copied to the target Kubernetes Secret.
+                      type: object
+                      additionalProperties:
+                        type: string
                 subject:
                   description: Full X509 name specification (https://golang.org/pkg/crypto/x509/pkix/#Name).
                   type: object
