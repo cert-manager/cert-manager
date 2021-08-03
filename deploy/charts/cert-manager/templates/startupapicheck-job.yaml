@@ -1,0 +1,75 @@
+{{- if .Values.startupapicheck.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "startupapicheck.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app: {{ include "startupapicheck.name" . }}
+    app.kubernetes.io/name: {{ include "startupapicheck.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "startupapicheck"
+    {{- include "labels" . | nindent 4 }}
+  {{- if .Values.startupapicheck.jobAnnotations }}
+  annotations:
+{{ toYaml .Values.startupapicheck.jobAnnotations | indent 4 }}
+  {{- end }}
+spec:
+  backoffLimit: {{ .Values.startupapicheck.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "startupapicheck.name" . }}
+        app.kubernetes.io/name: {{ include "startupapicheck.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: "startupapicheck"
+        {{- include "labels" . | nindent 8 }}
+{{- if .Values.startupapicheck.podLabels }}
+{{ toYaml .Values.startupapicheck.podLabels | indent 8 }}
+{{- end }}
+      {{- if .Values.startupapicheck.podAnnotations }}
+      annotations:
+{{ toYaml .Values.startupapicheck.podAnnotations | indent 8 }}
+      {{- end }}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ template "startupapicheck.serviceAccountName" . }}
+      {{- if .Values.global.priorityClassName }}
+      priorityClassName: {{ .Values.global.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.startupapicheck.securityContext}}
+      securityContext:
+{{ toYaml .Values.startupapicheck.securityContext | indent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.startupapicheck.image }}
+          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{.digest}}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.startupapicheck.image.pullPolicy }}
+          args:
+          - check
+          - api
+          - --wait={{ .Values.startupapicheck.timeout }}
+          {{- if .Values.startupapicheck.extraArgs }}
+{{ toYaml .Values.startupapicheck.extraArgs | indent 10 }}
+          {{- end }}
+          {{- if .Values.startupapicheck.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.startupapicheck.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.startupapicheck.resources | indent 12 }}
+    {{- with .Values.startupapicheck.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.startupapicheck.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.startupapicheck.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- end -}}

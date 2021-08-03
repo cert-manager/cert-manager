@@ -148,6 +148,7 @@ load_image "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-ctl:${APP_VERSION}" &
 wait
 
 # Overwrite image tags in the static manifests and deploy.

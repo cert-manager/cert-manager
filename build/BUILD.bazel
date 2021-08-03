@@ -18,6 +18,9 @@ DOCKERIZED_BINARIES = {
     "webhook": {
         "target": "//cmd/webhook:webhook",
     },
+    "ctl": {
+        "target": "//cmd/ctl:ctl",
+    },
 }
 
 # Allows passing --define image_type custom flag to Bazel command. Used to allow
