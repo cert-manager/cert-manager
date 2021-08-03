@@ -50,6 +50,9 @@ func TestIssuingController(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
@@ -58,7 +61,7 @@ func TestIssuingController(t *testing.T) {
 
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
 	c := controllerpkg.NewController(
-		context.Background(),
+		ctx,
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -68,9 +71,6 @@ func TestIssuingController(t *testing.T) {
 	)
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
 
 	var (
 		crtName                  = "testcrt"
@@ -82,7 +82,7 @@ func TestIssuingController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,6 +254,9 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 	controllerOptions := controllerpkg.CertificateOptions{
@@ -262,7 +265,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
 	c := controllerpkg.NewController(
-		context.Background(),
+		ctx,
 		"issuing_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -272,9 +275,6 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	)
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
 
 	var (
 		crtName                  = "testcrt"
@@ -286,7 +286,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -50,7 +50,7 @@ func TestTriggerController(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
 	fakeClock := &fakeclock.FakeClock{}
@@ -61,14 +61,14 @@ func TestTriggerController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	shouldReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shouldReissue)
 	c := controllerpkg.NewController(
-		context.Background(),
+		ctx,
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -116,7 +116,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
 	fakeClock := &fakeclock.FakeClock{}
@@ -138,7 +138,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 
 	// Create namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// Start the trigger controller
 	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue)
 	c := controllerpkg.NewController(
-		logf.NewContext(context.Background(), logf.Log, "trigger_controller_RenewNearExpiry"),
+		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
