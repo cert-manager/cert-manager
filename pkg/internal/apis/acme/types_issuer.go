@@ -189,8 +189,10 @@ type ACMEChallengeSolverHTTP01 struct {
 
 	// The Gateway API is a sig-network community API that models service networking
 	// in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will
-	// create or modify HTTPRoutes for a particular gateway class.
-	Gateway *ACMEChallengeSolverHTTP01Gateway `json:"gateway,omitempty"`
+	// create HTTPRoutes with the specified labels in the same namespace as the challenge.
+	// This solver is experimental, and fields / behaviour may change in the future.
+	// +optional
+	GatewayHTTPRoute *ACMEChallengeSolverHTTP01GatewayHTTPRoute `json:"gatewayHTTPRoute,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
@@ -218,7 +220,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate
 }
 
-type ACMEChallengeSolverHTTP01Gateway struct {
+type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// Optional service type for Kubernetes solver service
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
@@ -227,11 +229,6 @@ type ACMEChallengeSolverHTTP01Gateway struct {
 	// challenges that use this challenge solver.
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
-
-	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges
-	// +optional
-	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {

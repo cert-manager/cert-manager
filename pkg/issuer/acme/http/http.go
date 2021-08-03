@@ -108,8 +108,8 @@ func getServiceType(ch *cmacme.Challenge) (corev1.ServiceType, error) {
 	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.Ingress != nil {
 		return ch.Spec.Solver.HTTP01.Ingress.ServiceType, nil
 	}
-	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.Gateway != nil {
-		return ch.Spec.Solver.HTTP01.Gateway.ServiceType, nil
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+		return ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ServiceType, nil
 	}
 	return "", fmt.Errorf("neither HTTP01 Ingress nor Gateway solvers were found")
 }
@@ -131,7 +131,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 			_, ingressErr = s.ensureIngress(ctx, ch, svc.Name)
 			return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 		}
-		if ch.Spec.Solver.HTTP01.Gateway != nil {
+		if ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
 			_, gatewayErr = s.ensureGatewayHTTPRoute(ctx, ch, svc.Name)
 			return utilerrors.NewAggregate([]error{podErr, svcErr, gatewayErr})
 		}

@@ -355,7 +355,7 @@ func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, 
 				Solvers: []cmacme.ACMEChallengeSolver{
 					{
 						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
-							Gateway: &cmacme.ACMEChallengeSolverHTTP01Gateway{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
 								Labels: labels,
 							},
 						},

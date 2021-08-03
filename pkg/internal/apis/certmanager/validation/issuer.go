@@ -167,9 +167,9 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeS
 		numDefined++
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(http01.Ingress, fldPath.Child("ingress"))...)
 	}
-	if http01.Gateway != nil {
+	if http01.GatewayHTTPRoute != nil {
 		numDefined++
-		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(http01.Gateway, fldPath.Child("gateway"))...)
+		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(http01.GatewayHTTPRoute, fldPath.Child("gateway"))...)
 	}
 	if numDefined == 0 {
 		el = append(el, field.Required(fldPath, "no HTTP01 solver type configured"))
@@ -196,7 +196,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMECh
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMEChallengeSolverHTTP01Gateway, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01GatewayConfig(gateway *cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	if len(gateway.Labels) == 0 {

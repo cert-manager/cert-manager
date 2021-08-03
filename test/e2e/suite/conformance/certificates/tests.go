@@ -653,6 +653,7 @@ func (s *Suite) Define() {
 
 		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
 			if s.HTTP01TestType != "Ingress" {
+				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
 				return
 			}
@@ -705,6 +706,7 @@ func (s *Suite) Define() {
 
 		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
 			if s.HTTP01TestType != "Ingress" {
+				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
 				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
 				return
 			}

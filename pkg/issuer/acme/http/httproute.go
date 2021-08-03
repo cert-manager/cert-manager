@@ -88,8 +88,8 @@ func (s *Solver) getGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge) 
 
 func (s *Solver) createGatewayHTTPRoute(ctx context.Context, ch *cmacme.Challenge, svcName string) (*gwapi.HTTPRoute, error) {
 	labels := podLabels(ch)
-	if ch.Spec.Solver.HTTP01.Gateway.Labels != nil {
-		for k, v := range ch.Spec.Solver.HTTP01.Gateway.Labels {
+	if ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels != nil {
+		for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
 			labels[k] = v
 		}
 	}
@@ -114,8 +114,8 @@ func (s *Solver) checkAndUpdateGatewayHTTPRoute(ctx context.Context, ch *cmacme.
 	expectedSpec := generateHTTPRouteSpec(ch, svcName)
 	actualSpec := httpRoute.Spec
 	expectedLabels := podLabels(ch)
-	if ch.Spec.Solver.HTTP01.Gateway.Labels != nil {
-		for k, v := range ch.Spec.Solver.HTTP01.Gateway.Labels {
+	if ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels != nil {
+		for k, v := range ch.Spec.Solver.HTTP01.GatewayHTTPRoute.Labels {
 			expectedLabels[k] = v
 		}
 	}
