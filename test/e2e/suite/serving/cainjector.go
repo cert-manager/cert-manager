@@ -91,7 +91,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				_, err := f.Helper().WaitForCertificateReady(f.Namespace.Name, "serving-certs", time.Second*30)
+				_, err := f.Helper().WaitForCertificateReadyUpdate(cert, time.Second*30)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 				By("grabbing the corresponding secret")
