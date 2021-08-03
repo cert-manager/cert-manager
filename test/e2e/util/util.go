@@ -148,6 +148,7 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 
 // WaitForCertificateCondition waits for the status of the named Certificate to contain
 // a condition whose type and status matches the supplied one.
+// Deprecated: this function is not used anymore
 func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
 	var certificate *v1.Certificate = nil
 	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
@@ -167,29 +168,9 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 	return certificate, wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
 }
 
-// WaitForMissingCertificateCondition waits for the status of the named Certificate to NOT contain
-// a condition whose type and status matches the supplied one.
-func WaitForMissingCertificateCondition(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
-	var certificate *v1.Certificate = nil
-	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
-		func() (bool, error) {
-			log.Logf("Waiting for Certificate %v condition %v=%v to be missing", name, condition.Type, condition.Status)
-			certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if nil != err {
-				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
-			}
-			if apiutil.CertificateHasCondition(certificate, condition) {
-				log.Logf("Expected Certificate %v condition %v=%v to be missing but it has: %v", name, condition.Type, condition.Status, certificate.Status.Conditions)
-				return false, nil
-			}
-			return true, nil
-		},
-	)
-	return certificate, wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
-}
-
 // WaitForCertificateConditionWithObservedGeneration waits for the status of the named Certificate to contain
 // a condition whose type and status matches the supplied one.
+// Deprecated: this function is not used anymore
 func WaitForCertificateConditionWithObservedGeneration(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
 	var certificate *v1.Certificate = nil
 	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
@@ -211,6 +192,7 @@ func WaitForCertificateConditionWithObservedGeneration(client clientset.Certific
 
 // WaitForCertificateEvent waits for an event on the named Certificate to contain
 // an event reason matches the supplied one.
+// Deprecated: this function is not used anymore
 func WaitForCertificateEvent(client kubernetes.Interface, cert *v1.Certificate, reason string, timeout time.Duration) error {
 	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
@@ -225,6 +207,7 @@ func WaitForCertificateEvent(client kubernetes.Interface, cert *v1.Certificate, 
 	)
 }
 
+// Deprecated: this function is not used anymore
 func hasEvent(events *corev1.EventList, reason string) bool {
 	for _, evt := range events.Items {
 		if evt.Reason == reason {
@@ -235,6 +218,7 @@ func hasEvent(events *corev1.EventList, reason string) bool {
 }
 
 // try to retrieve last condition to help diagnose tests.
+// Deprecated: this function is not used anymore
 func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterface, pollErr error, name string, conditionType v1.CertificateConditionType) error {
 	if pollErr == nil {
 		return nil
