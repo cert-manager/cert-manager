@@ -56,6 +56,9 @@ func TestMetricsController(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	defer cancel()
+
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
 
@@ -74,17 +77,17 @@ func TestMetricsController(t *testing.T) {
 	}()
 
 	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		if err := server.Shutdown(ctx); err != nil {
+		if err := server.Shutdown(shutdownCtx); err != nil {
 			t.Fatal(err)
 		}
 	}()
 
 	ctrl, queue, mustSync := controllermetrics.NewController(factory, cmFactory, metricsHandler)
 	c := controllerpkg.NewController(
-		context.Background(),
+		ctx,
 		"metrics_test",
 		metricsHandler,
 		ctrl.ProcessItem,
@@ -94,9 +97,6 @@ func TestMetricsController(t *testing.T) {
 	)
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
 
 	var (
 		crtName         = "testcrt"
@@ -108,7 +108,7 @@ func TestMetricsController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err = kubernetesCl.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	_, err = kubernetesCl.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

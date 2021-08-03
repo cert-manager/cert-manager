@@ -46,7 +46,7 @@ import (
 type StopFunc func()
 
 func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
-	env, stopFn := apiserver.RunBareControlPlane(t)
+	env, stopControlPlane := apiserver.RunBareControlPlane(t)
 	config := env.Config
 
 	if err := env.Stop(); err != nil {
@@ -54,6 +54,18 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	}
 
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{"--api-server-host=" + config.Host})
+	stopFn := func() {
+		defer stopWebhook()
+		stopControlPlane()
+	}
+
+	initialised := false
+	defer func() {
+		if !initialised {
+			stopFn()
+		}
+	}()
+
 	crdsDir := apitesting.CRDDirectory(t)
 	crds := readCustomResourcesAtPath(t, crdsDir)
 	for _, crd := range crds {
@@ -85,10 +97,8 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Fatal(err)
 	}
 
-	return config, func() {
-		defer stopWebhook()
-		stopFn()
-	}
+	initialised = true
+	return config, stopFn
 }
 
 var (
