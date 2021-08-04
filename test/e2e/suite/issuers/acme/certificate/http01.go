@@ -48,8 +48,6 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-const foreverTestTimeout = time.Second * 60
-
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01")
 
@@ -259,7 +257,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		}
 
 		By("Waiting for Certificate to exist")
-		cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateSecretName, foreverTestTimeout)
+		cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateSecretName, time.Second*60)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
@@ -464,7 +462,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Certificate to exist")
-		cert, err = f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateSecretName, foreverTestTimeout)
+		cert, err = f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateName, time.Second*60)
 		Expect(err).NotTo(HaveOccurred())
 
 		// The pod should get remade and the certificate should be made valid.

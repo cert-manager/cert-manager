@@ -28,8 +28,6 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -885,26 +883,16 @@ func (s *Suite) Define() {
 			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Getting the latest version of the Certificate")
-			cert, err := f.Helper().CMClient.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.TODO(), "testcert", metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred())
-
 			By("Updating the Certificate after having added an additional dnsName")
+			testCertificate = testCertificate.DeepCopy() // DeepCopy before updating
 			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
-			err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				err := f.CRClient.Get(context.Background(), types.NamespacedName{Namespace: f.Namespace.Name, Name: "testcert"}, cert)
-				if err != nil {
-					return err
-				}
+			testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
 
-				cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
-
-				return f.CRClient.Update(context.TODO(), cert)
-			})
+			err = f.CRClient.Update(context.TODO(), testCertificate)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate Ready condition to be updated")
-			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")

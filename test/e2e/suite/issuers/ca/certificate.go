@@ -77,7 +77,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -152,7 +152,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, v.inputDuration, v.inputRenewBefore), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				By("Waiting for the Certificate to be issued...")
-				_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+				cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Validating the issued Certificate...")
@@ -178,7 +178,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			cert, err := certClient.Create(context.TODO(), util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -201,7 +201,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			cert, err := certClient.Create(context.TODO(), gen.Certificate(certificateName, gen.SetCertificateNamespace(f.Namespace.Name), gen.SetCertificateCommonName("test.domain.com"), gen.SetCertificateSecretName(certificateSecretName), gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName, Kind: v1.IssuerKind}), gen.SetCertificateKeyUsages(v1.UsageServerAuth, v1.UsageClientAuth)), metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
