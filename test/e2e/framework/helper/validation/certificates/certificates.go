@@ -360,7 +360,23 @@ func ExpectValidBasicConstraints(certificate *cmapi.Certificate, secret *corev1.
 		return fmt.Errorf("Expected CA basicConstraint to be %v, but got %v", certificate.Spec.IsCA, cert.IsCA)
 	}
 
-	// TODO: also validate pathLen
-
 	return nil
+}
+
+// ExpectMaxPathLen asserts that the PathLen of the signed certificate matches
+// that of the given value.
+func ExpectValidMaxPathLen(pathLen int, pathLenIsZero bool) func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	return func(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+		cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+		if err != nil {
+			return err
+		}
+
+		if cert.MaxPathLen != pathLen || cert.MaxPathLenZero != pathLenIsZero {
+			return fmt.Errorf("unexpected maxPathLen and MaxPathLenZero values, exp=%d,%t got=%d,%t",
+				pathLen, pathLenIsZero, cert.MaxPathLen, cert.MaxPathLenZero)
+		}
+
+		return nil
+	}
 }

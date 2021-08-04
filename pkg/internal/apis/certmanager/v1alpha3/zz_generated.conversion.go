@@ -1255,6 +1255,7 @@ func Convert_certmanager_PKCS12Keystore_To_v1alpha3_PKCS12Keystore(in *certmanag
 
 func autoConvert_v1alpha3_SelfSignedIssuer_To_certmanager_SelfSignedIssuer(in *v1alpha3.SelfSignedIssuer, out *certmanager.SelfSignedIssuer, s conversion.Scope) error {
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
+	out.PathLen = (*int)(unsafe.Pointer(in.PathLen))
 	return nil
 }
 
@@ -1265,6 +1266,7 @@ func Convert_v1alpha3_SelfSignedIssuer_To_certmanager_SelfSignedIssuer(in *v1alp
 
 func autoConvert_certmanager_SelfSignedIssuer_To_v1alpha3_SelfSignedIssuer(in *certmanager.SelfSignedIssuer, out *v1alpha3.SelfSignedIssuer, s conversion.Scope) error {
 	out.CRLDistributionPoints = *(*[]string)(unsafe.Pointer(&in.CRLDistributionPoints))
+	out.PathLen = (*int)(unsafe.Pointer(in.PathLen))
 	return nil
 }
 

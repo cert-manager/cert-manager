@@ -130,6 +130,19 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, iss
 		return nil, nil
 	}
 
+	if pathLen := issuerObj.GetSpec().SelfSigned.PathLen; pathLen != nil && !cr.Spec.IsCA {
+		message := "Error signing certificate"
+		err := fmt.Errorf("issuer requires the isCA field to be present to sign certificates as it has configured pathLen, pathLen=%d isCA=%t",
+			*pathLen, cr.Spec.IsCA)
+		s.reporter.Failed(cr, err, "ErrorSigning", message)
+		log.Error(err, message)
+		return nil, nil
+	}
+
+	maxPathLen, maxPathLenZero := pki.PathLenFromValue(issuerObj.GetSpec().SelfSigned.PathLen)
+	template.MaxPathLen = maxPathLen
+	template.MaxPathLenZero = maxPathLenZero
+
 	template.CRLDistributionPoints = issuerObj.GetSpec().SelfSigned.CRLDistributionPoints
 
 	if template.Subject.String() == "" {

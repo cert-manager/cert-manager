@@ -146,6 +146,10 @@ func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSi
 
 	template.CRLDistributionPoints = issuerObj.GetSpec().SelfSigned.CRLDistributionPoints
 
+	maxPathLen, maxPathLenZero := pki.PathLenFromValue(issuerObj.GetSpec().SelfSigned.PathLen)
+	template.MaxPathLen = maxPathLen
+	template.MaxPathLenZero = maxPathLenZero
+
 	// extract the public component of the key
 	publickey, err := pki.PublicKeyForPrivateKey(privatekey)
 	if err != nil {

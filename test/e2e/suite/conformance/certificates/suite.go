@@ -24,6 +24,7 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificates"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any
@@ -64,6 +65,19 @@ type Suite struct {
 	// certain features due to restrictions in their implementation.
 	UnsupportedFeatures featureset.FeatureSet
 
+	// RequiredFeatures is a list of features that, if not empty, denote tests
+	// where _all_ of these features must be present for that test to execute.
+	// Useful for Issuers that require certain fields to be present for that
+	// Issuer to accept and sign the Certificate.
+	RequiredFeatures featureset.FeatureSet
+
+	// ExtraValidations are extra validations that should be performed for _all_
+	// executed test cases in this suite. Useful for Issuers that require extra
+	// validation to be performed against features that are not expressed by the
+	// Certificate API. Has no effect on existing validations performed by each
+	// test case.
+	ExtraValidations []certificates.ValidationFunc
+
 	// completed is used internally to track whether Complete() has been called
 	completed bool
 }
@@ -96,10 +110,16 @@ func (s *Suite) complete(f *framework.Framework) {
 
 // it is called by the tests to in Define() to setup and run the test
 func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectReference), requiredFeatures ...featureset.Feature) {
-	if !s.checkFeatures(requiredFeatures...) {
+	if !s.checkUnsupportedFeatures(requiredFeatures...) {
 		fmt.Fprintln(GinkgoWriter, "skipping case due to unsupported features")
 		return
 	}
+
+	if !s.checkRequiredFeatures(featureset.NewFeatureSet(requiredFeatures...)) {
+		fmt.Fprintln(GinkgoWriter, "skipping case due to missing required features")
+		return
+	}
+
 	It(name, func() {
 		By("Creating an issuer resource")
 		issuerRef := s.CreateIssuerFunc(f)
@@ -113,11 +133,11 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectRef
 	})
 }
 
-// checkFeatures is a helper function that is used to ensure that the features
-// required for a given test case are supported by the suite.
-// It will return 'true' if all features are supported and the test should run,
-// or return 'false' if any required feature is not supported.
-func (s *Suite) checkFeatures(fs ...featureset.Feature) bool {
+// checkUnsupportedFeatures is a helper function that is used to ensure that
+// the features required for a given test case are supported by the suite.  It
+// will return 'true' if all features are supported and the test should run, or
+// return 'false' if any required feature is not supported.
+func (s *Suite) checkUnsupportedFeatures(fs ...featureset.Feature) bool {
 	unsupported := make(featureset.FeatureSet)
 	for _, f := range fs {
 		if s.UnsupportedFeatures.Contains(f) {
@@ -129,4 +149,21 @@ func (s *Suite) checkFeatures(fs ...featureset.Feature) bool {
 		return true
 	}
 	return false
+}
+
+// checkRequiredFeatures is a helper function that is used to ensure that the
+// features required for a given suite are present of a given test. Will return
+// 'true' if all RequiredFeatures features are present and the test should
+// run. Returns 'false' if there are any features which are missing for this
+// test. Always returns 'true' if RequiredFeatures is empty.
+func (s *Suite) checkRequiredFeatures(fs featureset.FeatureSet) bool {
+	if len(s.RequiredFeatures) == 0 {
+		return true
+	}
+	for _, required := range s.RequiredFeatures.List() {
+		if !fs.Contains(required) {
+			return false
+		}
+	}
+	return true
 }

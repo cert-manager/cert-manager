@@ -782,6 +782,11 @@ func (in *SelfSignedIssuer) DeepCopyInto(out *SelfSignedIssuer) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.PathLen != nil {
+		in, out := &in.PathLen, &out.PathLen
+		*out = new(int)
+		**out = **in
+	}
 	return
 }
 

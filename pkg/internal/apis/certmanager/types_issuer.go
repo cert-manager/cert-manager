@@ -162,6 +162,17 @@ type SelfSignedIssuer struct {
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set certificate will be issued without CDP. Values are strings.
 	CRLDistributionPoints []string
+
+	// PathLen will set the pathLen in the requester's certificate
+	// basicConstraints, which controls the maximum number of CA certificates
+	// that can appear in the chain issued by this certificate. If a
+	// certificate's PathLen is 0, then it cannot issue CA certificates; if
+	// PathLen is n > 0, this certificate may issue a CA certificate, which in
+	// turn may issue a CA certificate only if n-1 is greater than zero. Most
+	// intermediate certificates will usually want to have a pathLen set to the
+	// smallest value possible. If omitted, no PathLen will be requested for the
+	// issued certificate.
+	PathLen *int
 }
 
 // Configures an issuer to sign certificates using a HashiCorp Vault

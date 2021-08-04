@@ -26,25 +26,31 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/pointer"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	listersfake "github.com/jetstack/cert-manager/test/unit/listers"
+	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 var (
@@ -599,6 +605,37 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
+		"should mark a CertificateRequest as failed if maxPathLen is set on the Issuer, but not isCA": {
+			certificateRequest: emptyCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{ecKeySecret},
+				CertManagerObjects: []runtime.Object{emptyCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
+					gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+						PathLen: pointer.Int(5),
+					}),
+				)},
+				ExpectedEvents: []string{
+					"Warning ErrorSigning Error signing certificate: issuer requires the isCA field to be present to sign certificates as it has configured pathLen, pathLen=5 isCA=false",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(emptyCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Error signing certificate: issuer requires the isCA field to be present to sign certificates as it has configured pathLen, pathLen=5 isCA=false",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -648,4 +685,218 @@ func runTest(t *testing.T, test testT) {
 	}
 
 	test.builder.CheckAndFinish(err)
+}
+
+func TestSelfSigned_Sign(t *testing.T) {
+	sk, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+	skPEM, err := pki.EncodeECPrivateKey(sk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testCSR := generateCSR(t, sk, x509.ECDSAWithSHA256, "test-common-name")
+
+	tests := map[string]struct {
+		givenSelfSignedSecret *corev1.Secret
+		givenSelfSignedIssuer cmapi.GenericIssuer
+		givenCR               *cmapi.CertificateRequest
+		assertSignedCert      func(t *testing.T, got *x509.Certificate)
+		wantErr               string
+	}{
+		"when the CertificateRequest has the duration field set, it should appear as notAfter on the signed certificate": {
+			givenSelfSignedSecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"),
+				gen.SetSecretData(map[string][]byte{
+					"tls.key": skPEM,
+				}),
+			),
+			givenSelfSignedIssuer: gen.Issuer("issuer-1",
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestAnnotations(map[string]string{
+					cmapi.CertificateRequestPrivateKeyAnnotationKey: "secret-1",
+				}),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+				gen.SetCertificateRequestDuration(&metav1.Duration{
+					Duration: 30 * time.Minute,
+				}),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				// Although there is less than 1µs between the time.Now
+				// call made by the certificate template func (in the "pki"
+				// package) and the time.Now below, rounding or truncating
+				// will always end up with a flaky test. This is due to the
+				// rounding made to the notAfter value when serializing the
+				// certificate to ASN.1 [1].
+				//
+				//  [1]: https://tools.ietf.org/html/rfc5280#section-4.1.2.5.1
+				//
+				// So instead of using a truncation or rounding in order to
+				// check the time, we use a delta of 1 second. One entire
+				// second is totally overkill since, as detailed above, the
+				// delay is probably less than a microsecond. But that will
+				// do for now!
+				//
+				// Note that we do have a plan to fix this. We want to be
+				// injecting a time (instead of time.Now) to the template
+				// functions. This work is being tracked in this issue:
+				// https://github.com/jetstack/cert-manager/issues/3738
+				expectNotAfter := time.Now().UTC().Add(30 * time.Minute)
+				deltaSec := math.Abs(expectNotAfter.Sub(got.NotAfter).Seconds())
+				assert.LessOrEqualf(t, deltaSec, 1., "expected a time delta lower than 1 second. Time expected='%s', got='%s'", expectNotAfter.String(), got.NotAfter.String())
+				assert.Equal(t, false, got.IsCA)
+				assert.Equal(t, -1, got.MaxPathLen)
+				assert.Equal(t, false, got.MaxPathLenZero)
+			},
+		},
+		"when the CertificateRequest has the isCA field set, it should appear on the signed ca": {
+			givenSelfSignedSecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"),
+				gen.SetSecretData(map[string][]byte{
+					"tls.key": skPEM,
+				}),
+			),
+			givenSelfSignedIssuer: gen.Issuer("issuer-1",
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestAnnotations(map[string]string{
+					cmapi.CertificateRequestPrivateKeyAnnotationKey: "secret-1",
+				}),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+				gen.SetCertificateRequestIsCA(true),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, true, got.IsCA)
+				assert.Equal(t, -1, got.MaxPathLen)
+				assert.Equal(t, false, got.MaxPathLenZero)
+			},
+		},
+		"when the Issuer has crlDistributionPoints set, it should appear on the signed certificate": {
+			givenSelfSignedSecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"),
+				gen.SetSecretData(map[string][]byte{
+					"tls.key": skPEM,
+				}),
+			),
+			givenSelfSignedIssuer: gen.Issuer("issuer-1",
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+					CRLDistributionPoints: []string{"http://www.example.com/crl/test.crl"},
+				}),
+			),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestAnnotations(map[string]string{
+					cmapi.CertificateRequestPrivateKeyAnnotationKey: "secret-1",
+				}),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, []string{"http://www.example.com/crl/test.crl"}, got.CRLDistributionPoints)
+				assert.Equal(t, false, got.IsCA)
+				assert.Equal(t, -1, got.MaxPathLen)
+				assert.Equal(t, false, got.MaxPathLenZero)
+			},
+		},
+		"when the Issuer has pathLen set to 5, it should appear on the signed certificate": {
+			givenSelfSignedSecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"),
+				gen.SetSecretData(map[string][]byte{
+					"tls.key": skPEM,
+				}),
+			),
+			givenSelfSignedIssuer: gen.Issuer("issuer-1",
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+					PathLen: pointer.Int(5),
+				}),
+			),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestAnnotations(map[string]string{
+					cmapi.CertificateRequestPrivateKeyAnnotationKey: "secret-1",
+				}),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+				gen.SetCertificateRequestIsCA(true),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, true, got.IsCA)
+				assert.Equal(t, 5, got.MaxPathLen)
+				assert.Equal(t, false, got.MaxPathLenZero)
+			},
+		},
+		"when the Issuer has pathLen set to 0, it should appear on the signed certificate": {
+			givenSelfSignedSecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"),
+				gen.SetSecretData(map[string][]byte{
+					"tls.key": skPEM,
+				}),
+			),
+			givenSelfSignedIssuer: gen.Issuer("issuer-1",
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+					PathLen: pointer.Int(0),
+				}),
+			),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestAnnotations(map[string]string{
+					cmapi.CertificateRequestPrivateKeyAnnotationKey: "secret-1",
+				}),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+				gen.SetCertificateRequestIsCA(true),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, true, got.IsCA)
+				assert.Equal(t, 0, got.MaxPathLen)
+				assert.Equal(t, true, got.MaxPathLenZero)
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			rec := &testpkg.FakeRecorder{}
+
+			iss := &SelfSigned{
+				reporter: util.NewReporter(fixedClock, rec),
+				recorder: rec,
+				secretsLister: testlisters.FakeSecretListerFrom(testlisters.NewFakeSecretLister(),
+					testlisters.SetFakeSecretNamespaceListerGet(test.givenSelfSignedSecret, nil),
+				),
+				signingFn: pki.SignCertificate,
+			}
+
+			gotIssueResp, gotErr := iss.Sign(context.Background(), test.givenCR, test.givenSelfSignedIssuer)
+			if test.wantErr != "" {
+				require.EqualError(t, gotErr, test.wantErr)
+			} else {
+				require.NoError(t, gotErr)
+
+				require.NotNil(t, gotIssueResp)
+				gotCert, err := pki.DecodeX509CertificateBytes(gotIssueResp.Certificate)
+				require.NoError(t, err)
+
+				test.assertSignedCert(t, gotCert)
+			}
+		})
+	}
 }

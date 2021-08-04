@@ -97,7 +97,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
@@ -123,7 +124,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.IssueCAFeature)
 
@@ -151,7 +153,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.ECDSAFeature, featureset.OnlySAN)
 
@@ -179,7 +182,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN, featureset.Ed25519FeatureSet)
 
@@ -208,7 +212,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -240,7 +245,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.ECDSAFeature, featureset.CommonNameFeature)
 
@@ -272,7 +278,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.Ed25519FeatureSet, featureset.CommonNameFeature)
 
@@ -297,7 +304,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.IPAddressFeature)
 
@@ -323,7 +331,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN, featureset.IPAddressFeature)
 
@@ -353,7 +362,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature, featureset.IPAddressFeature)
 
@@ -378,7 +388,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.EmailSANsFeature, featureset.OnlySAN)
 
@@ -408,7 +419,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.URISANsFeature, featureset.CommonNameFeature)
 
@@ -437,7 +449,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -464,7 +477,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -492,7 +506,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 
 			// We set a weird time here as the duration with should never be used as
@@ -524,7 +539,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.WildcardsFeature, featureset.OnlySAN)
 
@@ -551,7 +567,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.URISANsFeature, featureset.OnlySAN)
 
@@ -583,12 +600,12 @@ func (s *Suite) Define() {
 
 			By("Validating the issued Certificate...")
 
-			validations := []certificates.ValidationFunc{
+			validations := append(s.ExtraValidations,
 				certificates.ExpectKeyUsageExtKeyUsageClientAuth,
 				certificates.ExpectKeyUsageExtKeyUsageServerAuth,
 				certificates.ExpectKeyUsageUsageDigitalSignature,
 				certificates.ExpectKeyUsageUsageDataEncipherment,
-			}
+			)
 			validations = append(validations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 
 			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
@@ -616,7 +633,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Deleting existing certificate data in Secret")
@@ -700,7 +718,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
@@ -783,7 +802,8 @@ func (s *Suite) Define() {
 			// Verify that the issuer has preserved all the Certificate values
 			// in the signed certificate
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -846,7 +866,7 @@ func (s *Suite) Define() {
 					IssuerRef:  issuerRef,
 				},
 			}
-			validations := validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 
 			By("Creating a Certificate")
 			err := f.CRClient.Create(ctx, testCertificate)
@@ -873,7 +893,7 @@ func (s *Suite) Define() {
 					IssuerRef:  issuerRef,
 				},
 			}
-			validations := validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 
 			By("Creating a Certificate")
 			err := f.CRClient.Create(ctx, testCertificate)
@@ -937,7 +957,8 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			validations := append(s.ExtraValidations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.WildcardsFeature, featureset.OnlySAN)
 	})
