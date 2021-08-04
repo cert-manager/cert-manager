@@ -70,6 +70,7 @@ spec:
         {{- end }}
           ports:
           - name: https
+            protocol: TCP
             containerPort: {{ .Values.webhook.securePort }}
           livenessProbe:
             httpGet:
