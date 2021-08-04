@@ -20,10 +20,10 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"os"
 	"sort"
 	"time"
 
+	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -35,9 +35,29 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
-func (h *Helper) waitPollImmediateCertificate(client clientset.CertificateInterface, name string, check func(*v1.Certificate) bool, interval time.Duration, timeout time.Duration) (*cmapi.Certificate, error) {
+// WaitForCertificateToExist waits for the named certificate to exist and returns the certificate
+func (h *Helper) WaitForCertificateToExist(namespace string, name string, timeout time.Duration) (*cmapi.Certificate, error) {
+	client := h.CMClient.CertmanagerV1().Certificates(namespace)
 	var certificate *v1.Certificate = nil
-	pollErr := wait.PollImmediate(interval, timeout, func() (bool, error) {
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout, func() (bool, error) {
+		log.Logf("Waiting for Certificate %v to exist", name)
+		var err error
+		certificate, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+		}
+
+		return true, nil
+	})
+	return certificate, pollErr
+}
+
+func (h *Helper) waitForCertificateCondition(client clientset.CertificateInterface, name string, check func(*v1.Certificate) bool, timeout time.Duration) (*cmapi.Certificate, error) {
+	var certificate *v1.Certificate = nil
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout, func() (bool, error) {
 		var err error
 		certificate, err = client.Get(context.TODO(), name, metav1.GetOptions{})
 		if nil != err {
@@ -49,21 +69,21 @@ func (h *Helper) waitPollImmediateCertificate(client clientset.CertificateInterf
 	})
 
 	if pollErr != nil && certificate != nil {
-		fmt.Fprintf(os.Stderr, "Failed waiting for certificate %v: %v\n", name, pollErr.Error())
+		log.Logf("Failed waiting for certificate %v: %v\n", name, pollErr.Error())
 
 		if len(certificate.Status.Conditions) > 0 {
-			fmt.Fprintf(os.Stderr, "Perceived certificate conditions:\n")
+			log.Logf("Observed certificate conditions:\n")
 			for _, cond := range certificate.Status.Conditions {
-				fmt.Fprintf(os.Stderr, "- Last Status: '%s' Reason: '%s', Message: '%s'\n", cond.Status, cond.Reason, cond.Message)
+				log.Logf("- Last Status: '%s' Reason: '%s', Message: '%s'\n", cond.Status, cond.Reason, cond.Message)
 			}
 		}
 
-		fmt.Fprintf(os.Stderr, "Certificate description:\n")
+		log.Logf("Certificate description:\n")
 		h.Kubectl(certificate.Namespace).DescribeResource("certificate", name)
-		fmt.Fprintf(os.Stderr, "Order and challenge descriptions:\n")
+		log.Logf("Order and challenge descriptions:\n")
 		h.Kubectl(certificate.Namespace).Describe("order", "challenge")
 
-		fmt.Fprintf(os.Stderr, "Certificaterequest description:\n")
+		log.Logf("CertificateRequest description:\n")
 		crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
 		if err != nil {
 			log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
@@ -74,35 +94,9 @@ func (h *Helper) waitPollImmediateCertificate(client clientset.CertificateInterf
 	return certificate, pollErr
 }
 
-// WaitForCertificateReady waits for the certificate resource to enter a Ready state and to leave the Issuing state.
-func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
-	ready_true_condition := cmapi.CertificateCondition{
-		Type:   cmapi.CertificateConditionReady,
-		Status: cmmeta.ConditionTrue,
-	}
-	issuing_condition := cmapi.CertificateCondition{
-		Type: cmapi.CertificateConditionIssuing,
-	}
-
-	return h.waitPollImmediateCertificate(h.CMClient.CertmanagerV1().Certificates(ns), name, func(certificate *v1.Certificate) bool {
-		if !apiutil.CertificateHasCondition(certificate, ready_true_condition) {
-			log.Logf("Expected Certificate %v condition %v=%v but it has: %v", certificate.Name, ready_true_condition.Type, ready_true_condition.Status, certificate.Status.Conditions)
-			return false
-		}
-
-		if apiutil.CertificateHasCondition(certificate, issuing_condition) {
-			log.Logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_condition.Type, certificate.Status.Conditions)
-			return false
-		}
-
-		return true
-	}, 500*time.Millisecond, timeout)
-}
-
-// WaitForCertificateReadyUpdate waits for the certificate resource to enter a
-// Ready state and to leave the Issuing state. If the provided cert was in a
-// Ready state already, the function waits for a state transition to have happened.
-func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
+// WaitForCertificateReadyAndDoneIssuing waits for the certificate resource to be in a Ready=True state and not be in an Issuing state.
+// The Ready=True condition will be checked against the provided certificate to make sure that it is up-to-date (condition gen. >= cert gen.).
+func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
 	ready_true_condition := cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionTrue,
@@ -111,7 +105,7 @@ func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout 
 	issuing_condition := cmapi.CertificateCondition{
 		Type: cmapi.CertificateConditionIssuing,
 	}
-	return h.waitPollImmediateCertificate(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
+	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
 		if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, ready_true_condition) {
 			log.Logf(
 				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
@@ -130,13 +124,12 @@ func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout 
 		}
 
 		return true
-	}, 500*time.Millisecond, timeout)
+	}, timeout)
 }
 
-// WaitForCertificateReadyUpdate waits for the certificate resource to enter a
-// Ready=False state and to leave the Issuing state. If the provided cert was
-// in a Ready=False state already, the function waits for a state transition to have happened.
-func (h *Helper) WaitForCertificateNotReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
+// WaitForCertificateNotReadyAndDoneIssuing waits for the certificate resource to be in a Ready=False state and not be in an Issuing state.
+// The Ready=False condition will be checked against the provided certificate to make sure that it is up-to-date (condition gen. >= cert gen.).
+func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
 	ready_false_condition := cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionFalse,
@@ -145,7 +138,7 @@ func (h *Helper) WaitForCertificateNotReadyUpdate(cert *cmapi.Certificate, timeo
 	issuing_condition := cmapi.CertificateCondition{
 		Type: cmapi.CertificateConditionIssuing,
 	}
-	return h.waitPollImmediateCertificate(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
+	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
 		if !apiutil.CertificateHasCondition(certificate, ready_false_condition) {
 			log.Logf(
 				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
@@ -164,7 +157,7 @@ func (h *Helper) WaitForCertificateNotReadyUpdate(cert *cmapi.Certificate, timeo
 		}
 
 		return true
-	}, 500*time.Millisecond, timeout)
+	}, timeout)
 }
 
 func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsage {
