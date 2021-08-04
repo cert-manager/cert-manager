@@ -90,11 +90,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
@@ -116,11 +116,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.IssueCAFeature)
 
@@ -144,11 +144,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.ECDSAFeature, featureset.OnlySAN)
 
@@ -172,11 +172,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN, featureset.Ed25519FeatureSet)
 
@@ -201,11 +201,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -233,11 +233,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.ECDSAFeature, featureset.CommonNameFeature)
 
@@ -265,11 +265,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.Ed25519FeatureSet, featureset.CommonNameFeature)
 
@@ -290,11 +290,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.IPAddressFeature)
 
@@ -316,11 +316,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN, featureset.IPAddressFeature)
 
@@ -346,11 +346,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature, featureset.IPAddressFeature)
 
@@ -371,11 +371,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.EmailSANsFeature, featureset.OnlySAN)
 
@@ -401,11 +401,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.URISANsFeature, featureset.CommonNameFeature)
 
@@ -430,11 +430,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -457,11 +457,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -485,11 +485,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 
 			// We set a weird time here as the duration with should never be used as
@@ -517,11 +517,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.WildcardsFeature, featureset.OnlySAN)
 
@@ -544,11 +544,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.URISANsFeature, featureset.OnlySAN)
 
@@ -575,7 +575,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -588,7 +588,7 @@ func (s *Suite) Define() {
 			}
 			validations = append(validations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.KeyUsagesFeature, featureset.OnlySAN)
 
@@ -609,11 +609,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Deleting existing certificate data in Secret")
@@ -683,16 +683,15 @@ func (s *Suite) Define() {
 			}
 
 			By("Waiting for the Certificate to exist...")
-			Expect(e2eutil.WaitForCertificateToExist(
-				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
-			)).NotTo(HaveOccurred())
+			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err := f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(cert, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
@@ -744,19 +743,18 @@ func (s *Suite) Define() {
 			}
 
 			By("Waiting for the Certificate to exist...")
-			Expect(e2eutil.WaitForCertificateToExist(
-				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
-			)).NotTo(HaveOccurred())
+			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err := f.Helper().WaitForCertificateReady(f.Namespace.Name, certName, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the ingres-shim has translated all the supplied
 			// annotations into equivalent Certificate field values
 			By("Validating the created Certificate")
 			err = f.Helper().ValidateCertificate(
-				f.Namespace.Name, certName,
+				cert,
 				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
 					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
 					Expect(certificate.Spec.CommonName).To(Equal(domain))
@@ -770,7 +768,7 @@ func (s *Suite) Define() {
 			// Verify that the issuer has preserved all the Certificate values
 			// in the signed certificate
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(cert, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -802,16 +800,16 @@ func (s *Suite) Define() {
 			certName := gw.Spec.Listeners[0].TLS.CertificateRef.Name
 
 			By("Waiting for the Certificate to exist...")
-			Expect(e2eutil.WaitForCertificateToExist(
-				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
-			)).NotTo(HaveOccurred())
+			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the ingres-shim has translated all the supplied
 			// annotations into equivalent Certificate field values
 			By("Validating the created Certificate")
-			cert, err := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name).Get(context.TODO(), certName, metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred())
-
 			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
 			Expect(cert.Spec.CommonName).To(Equal(domain))
 			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
@@ -840,11 +838,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN, featureset.LongDomainFeatureSet)
 
@@ -867,11 +865,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be ready")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Getting the latest version of the Certificate")
@@ -893,11 +891,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate Ready condition to be updated")
-			_, err = f.Helper().WaitForCertificateReadyUpdate(cert, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Sanity-check the issued Certificate")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
@@ -920,11 +918,11 @@ func (s *Suite) Define() {
 
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
 			By("Waiting for the Certificate to be issued...")
-			_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, "testcert", time.Minute*10)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*10)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.WildcardsFeature, featureset.OnlySAN)
 	})
