@@ -65,12 +65,6 @@ type Suite struct {
 	// certain features due to restrictions in their implementation.
 	UnsupportedFeatures featureset.FeatureSet
 
-	// RequiredFeatures is a list of features that, if not empty, denote tests
-	// where _all_ of these features must be present for that test to execute.
-	// Useful for Issuers that require certain fields to be present for that
-	// Issuer to accept and sign the Certificate.
-	RequiredFeatures featureset.FeatureSet
-
 	// ExtraValidations are extra validations that should be performed for _all_
 	// executed test cases in this suite. Useful for Issuers that require extra
 	// validation to be performed against features that are not expressed by the
@@ -115,11 +109,6 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(cmmeta.ObjectRef
 		return
 	}
 
-	if !s.checkRequiredFeatures(featureset.NewFeatureSet(requiredFeatures...)) {
-		fmt.Fprintln(GinkgoWriter, "skipping case due to missing required features")
-		return
-	}
-
 	It(name, func() {
 		By("Creating an issuer resource")
 		issuerRef := s.CreateIssuerFunc(f)
@@ -149,21 +138,4 @@ func (s *Suite) checkUnsupportedFeatures(fs ...featureset.Feature) bool {
 		return true
 	}
 	return false
-}
-
-// checkRequiredFeatures is a helper function that is used to ensure that the
-// features required for a given suite are present of a given test. Will return
-// 'true' if all RequiredFeatures features are present and the test should
-// run. Returns 'false' if there are any features which are missing for this
-// test. Always returns 'true' if RequiredFeatures is empty.
-func (s *Suite) checkRequiredFeatures(fs featureset.FeatureSet) bool {
-	if len(s.RequiredFeatures) == 0 {
-		return true
-	}
-	for _, required := range s.RequiredFeatures.List() {
-		if !fs.Contains(required) {
-			return false
-		}
-	}
-	return true
 }

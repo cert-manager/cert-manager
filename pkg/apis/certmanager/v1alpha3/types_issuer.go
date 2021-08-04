@@ -180,6 +180,14 @@ type SelfSignedIssuer struct {
 	// +optional
 	CRLDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 
+	// IsCA denotes what this Issuer will set the IsCA basic constraint on signed
+	// certificates. If this value is set to true or false, it will sign the
+	// certificate with the IsCA basic constraint to that value, regardless of
+	// what was requested. If this value to set to nil, it will honour what was
+	// requested.
+	// +optional
+	IsCA *bool `json:"isCA,omitempty"`
+
 	// PathLen will set the pathLen in the requester's certificate
 	// basicConstraints, which controls the maximum number of CA certificates
 	// that can appear in the chain issued by this certificate. If a
@@ -189,6 +197,7 @@ type SelfSignedIssuer struct {
 	// intermediate certificates will usually want to have a pathLen set to the
 	// smallest value possible. If omitted, no PathLen will be requested for the
 	// issued certificate.
+	// Requires the IsCA field set to true.
 	// +kubebuilder:validation:Minimum=0
 	// +optional
 	PathLen *int `json:"pathLen,omitempty"`

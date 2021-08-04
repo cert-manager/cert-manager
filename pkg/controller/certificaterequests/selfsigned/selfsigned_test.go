@@ -605,37 +605,6 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"should mark a CertificateRequest as failed if maxPathLen is set on the Issuer, but not isCA": {
-			certificateRequest: emptyCR.DeepCopy(),
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{ecKeySecret},
-				CertManagerObjects: []runtime.Object{emptyCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
-					gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
-						PathLen: pointer.Int(5),
-					}),
-				)},
-				ExpectedEvents: []string{
-					"Warning ErrorSigning Error signing certificate: issuer requires the isCA field to be present to sign certificates as it has configured pathLen, pathLen=5 isCA=false",
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						"status",
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(emptyCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmmeta.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Error signing certificate: issuer requires the isCA field to be present to sign certificates as it has configured pathLen, pathLen=5 isCA=false",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
-						),
-					)),
-				},
-			},
-		},
 	}
 
 	for name, test := range tests {
@@ -821,6 +790,7 @@ func TestSelfSigned_Sign(t *testing.T) {
 			),
 			givenSelfSignedIssuer: gen.Issuer("issuer-1",
 				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+					IsCA:    pointer.Bool(true),
 					PathLen: pointer.Int(5),
 				}),
 			),
@@ -850,6 +820,7 @@ func TestSelfSigned_Sign(t *testing.T) {
 			),
 			givenSelfSignedIssuer: gen.Issuer("issuer-1",
 				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+					IsCA:    pointer.Bool(true),
 					PathLen: pointer.Int(0),
 				}),
 			),
@@ -869,6 +840,64 @@ func TestSelfSigned_Sign(t *testing.T) {
 				assert.Equal(t, true, got.IsCA)
 				assert.Equal(t, 0, got.MaxPathLen)
 				assert.Equal(t, true, got.MaxPathLenZero)
+			},
+		},
+		"when the Issuer isCA set to false but the request has isCA true, signed certificate should have isCA false": {
+			givenSelfSignedSecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"),
+				gen.SetSecretData(map[string][]byte{
+					"tls.key": skPEM,
+				}),
+			),
+			givenSelfSignedIssuer: gen.Issuer("issuer-1",
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+					IsCA: pointer.Bool(false),
+				}),
+			),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestAnnotations(map[string]string{
+					cmapi.CertificateRequestPrivateKeyAnnotationKey: "secret-1",
+				}),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+				gen.SetCertificateRequestIsCA(true),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, false, got.IsCA)
+				assert.Equal(t, -1, got.MaxPathLen)
+				assert.Equal(t, false, got.MaxPathLenZero)
+			},
+		},
+		"when the Issuer isCA set to true but the request has isCA false, signed certificate should have isCA true": {
+			givenSelfSignedSecret: gen.SecretFrom(gen.Secret("secret-1"), gen.SetSecretNamespace("default"),
+				gen.SetSecretData(map[string][]byte{
+					"tls.key": skPEM,
+				}),
+			),
+			givenSelfSignedIssuer: gen.Issuer("issuer-1",
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+					IsCA: pointer.Bool(true),
+				}),
+			),
+			givenCR: gen.CertificateRequest("cr-1",
+				gen.SetCertificateRequestCSR(testCSR),
+				gen.SetCertificateRequestAnnotations(map[string]string{
+					cmapi.CertificateRequestPrivateKeyAnnotationKey: "secret-1",
+				}),
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
+					Name:  "issuer-1",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+				gen.SetCertificateRequestIsCA(false),
+			),
+			assertSignedCert: func(t *testing.T, got *x509.Certificate) {
+				assert.Equal(t, true, got.IsCA)
+				assert.Equal(t, -1, got.MaxPathLen)
+				assert.Equal(t, false, got.MaxPathLenZero)
 			},
 		},
 	}

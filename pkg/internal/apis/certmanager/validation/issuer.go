@@ -224,6 +224,12 @@ func ValidateCAIssuerConfig(iss *certmanager.CAIssuer, fldPath *field.Path) fiel
 }
 
 func ValidateSelfSignedIssuerConfig(iss *certmanager.SelfSignedIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	if iss.PathLen != nil && (iss.IsCA == nil || !*iss.IsCA) {
+		el = append(el, field.Invalid(fldPath.Child("pathLen"), *iss.PathLen, `isCA field must be set to "true" if pathLen is defined`))
+	}
+
 	return nil
 }
 

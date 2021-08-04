@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -59,21 +60,23 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		Name: fmt.Sprintf("SelfSigned PathLen=%d Issuer", pathLen),
 		CreateIssuerFunc: createSelfSignedIssuer(
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+				IsCA:    pointer.Bool(true),
 				PathLen: &pathLen,
 			}),
 		),
-		ExtraValidations: []valcert.ValidationFunc{valcert.ExpectValidMaxPathLen(pathLen, pathLen == 0)},
+		ExtraValidations: []valcert.ValidationFunc{valcert.ExpectValidMaxPathLen(pathLen, pathLen == 0), valcert.ExpectCARootCertificate},
 	}).Define()
 
 	(&certificates.Suite{
 		Name: fmt.Sprintf("SelfSigned PathLen=%d ClusterIssuer", pathLen),
 		CreateIssuerFunc: createSelfSignedClusterIssuer(
 			gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{
+				IsCA:    pointer.Bool(true),
 				PathLen: &pathLen,
 			}),
 		),
 		DeleteIssuerFunc: deleteSelfSignedClusterIssuer,
-		ExtraValidations: []valcert.ValidationFunc{valcert.ExpectValidMaxPathLen(pathLen, pathLen == 0)},
+		ExtraValidations: []valcert.ValidationFunc{valcert.ExpectValidMaxPathLen(pathLen, pathLen == 0), valcert.ExpectCARootCertificate},
 	}).Define()
 })
 
