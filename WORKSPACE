@@ -55,19 +55,19 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 http_archive(
     name = "io_k8s_repo_infra",
-    sha256 = "f705b85b239f53fda5253d36087d09b0162ea65f3baa74b83bd249133032d29b",
-    strip_prefix = "repo-infra-0.1.5",
+    sha256 = "c4f81de0234a1ca292dc3986fed4332102299bbd0b73697b733218057112d790",
+    strip_prefix = "repo-infra-0.1.9",
     urls = [
-        "https://github.com/kubernetes/repo-infra/archive/v0.1.5.tar.gz",
+        "https://github.com/kubernetes/repo-infra/archive/v0.1.9.tar.gz",
     ],
 )
 
 ## Load rules_docker and dependencies, for working with docker images
 http_archive(
     name = "io_bazel_rules_docker",
-    sha256 = "4521794f0fba2e20f3bf15846ab5e01d5332e587e9ce81629c7f96c793bb7036",
-    strip_prefix = "rules_docker-0.14.4",
-    urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.14.4/rules_docker-v0.14.4.tar.gz"],
+    sha256 = "59d5b42ac315e7eadffa944e86e90c2990110a1c8075f1cd145f487e999d22b3",
+    strip_prefix = "rules_docker-0.17.0",
+    urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.17.0/rules_docker-v0.17.0.tar.gz"],
 )
 
 load(
@@ -77,15 +77,10 @@ load(
 
 container_repositories()
 
-load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
-
-container_deps()
-
-load("@io_bazel_rules_docker//repositories:pip_repositories.bzl", "pip_deps")
-
-pip_deps()
-
-load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
+load(
+    "@io_bazel_rules_docker//go:image.bzl",
+    _go_image_repos = "repositories",
+)
 
 _go_image_repos()
 
