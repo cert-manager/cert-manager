@@ -33,7 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificatesigningrequests"
 )
 
-var _ = framework.ConformanceDescribe("CertificateSigningRequests", func() {
+var _ = framework.ConformanceDescribe("[Feature:Issuers:Venafi:TPP] CertificateSigningRequests", func() {
 	// unsupportedFeatures is a list of features that are not supported by the
 	// Venafi TPP issuer.
 	var unsupportedFeatures = featureset.NewFeatureSet(
