@@ -23,6 +23,7 @@ go_library(
         "//pkg/controller/certificates/trigger:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/issuers:go_default_library",
+        "//pkg/feature:go_default_library",
         "//pkg/issuer/acme:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//pkg/issuer/ca:go_default_library",
