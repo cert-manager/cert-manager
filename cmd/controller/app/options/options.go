@@ -424,5 +424,10 @@ func (o *ControllerOptions) EnabledControllers() sets.String {
 		enabled = enabled.Insert(experimentalCertificateSigningRequestControllers...)
 	}
 
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
+		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
+		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
+	}
+
 	return enabled
 }

@@ -23,7 +23,7 @@ NAMESPACE="${NAMESPACE:-cert-manager}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 # Default feature gates to enable
-FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true}"
+FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true}"
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
@@ -66,7 +66,7 @@ helm upgrade \
     --set startupapicheck.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
     --set featureGates="${FEATURE_GATES:-}" \
-    --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true,--controllers=*\,gateway-shim}" \
+    --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 
