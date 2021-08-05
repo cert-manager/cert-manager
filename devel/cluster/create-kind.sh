@@ -48,7 +48,7 @@ elif [[ "$K8S_VERSION" =~ 1\.20 ]] ; then
 elif [[ "$K8S_VERSION" =~ 1\.21 ]] ; then
   KIND_IMAGE_SHA="sha256:fae9a58f17f18f06aeac9772ca8b5ac680ebbed985e266f711d936e91d113bad"
 elif [[ "$K8S_VERSION" =~ 1\.22 ]] ; then
-  KIND_IMAGE_SHA="sha256:fa600aa4b8234235e141fab085126e2a72c3d8f05eed44d38bf343091c51d192"
+  KIND_IMAGE_SHA="sha256:2e335fce9c7b1d9be39042e46dc604264143c349f56cd7f566b03d0ccb7bd5e2"
   # Override KIND_IMAGE_REPO set in devel/lib/lib.sh till there is a 1.22 image in kindest/node.
   KIND_IMAGE_REPO="eu.gcr.io/jetstack-build-infra-images/kind"
 else
