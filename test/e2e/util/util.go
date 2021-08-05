@@ -29,7 +29,6 @@ import (
 	"net/url"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
@@ -38,14 +37,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/gateway-api/apis/v1alpha1"
 	gwapiv1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -144,132 +141,6 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 	}
 
 	return pollErr
-}
-
-// WaitForCertificateCondition waits for the status of the named Certificate to contain
-// a condition whose type and status matches the supplied one.
-func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
-	var certificate *v1.Certificate = nil
-	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
-		func() (bool, error) {
-			log.Logf("Waiting for Certificate %v condition %v=%v", name, condition.Type, condition.Status)
-			certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if nil != err {
-				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
-			}
-			if !apiutil.CertificateHasCondition(certificate, condition) {
-				log.Logf("Expected Certificate %v condition %v=%v but it has: %v", name, condition.Type, condition.Status, certificate.Status.Conditions)
-				return false, nil
-			}
-			return true, nil
-		},
-	)
-	return certificate, wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
-}
-
-// WaitForMissingCertificateCondition waits for the status of the named Certificate to NOT contain
-// a condition whose type and status matches the supplied one.
-func WaitForMissingCertificateCondition(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
-	var certificate *v1.Certificate = nil
-	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
-		func() (bool, error) {
-			log.Logf("Waiting for Certificate %v condition %v=%v to be missing", name, condition.Type, condition.Status)
-			certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if nil != err {
-				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
-			}
-			if apiutil.CertificateHasCondition(certificate, condition) {
-				log.Logf("Expected Certificate %v condition %v=%v to be missing but it has: %v", name, condition.Type, condition.Status, certificate.Status.Conditions)
-				return false, nil
-			}
-			return true, nil
-		},
-	)
-	return certificate, wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
-}
-
-// WaitForCertificateConditionWithObservedGeneration waits for the status of the named Certificate to contain
-// a condition whose type and status matches the supplied one.
-func WaitForCertificateConditionWithObservedGeneration(client clientset.CertificateInterface, name string, condition v1.CertificateCondition, timeout time.Duration) (*v1.Certificate, error) {
-	var certificate *v1.Certificate = nil
-	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
-		func() (bool, error) {
-			log.Logf("Waiting for Certificate %v condition %v=%v", name, condition.Type, condition.Status)
-			certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if nil != err {
-				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
-			}
-			if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, condition) {
-				log.Logf("Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v", name, condition.Type, condition.Status, condition.ObservedGeneration, certificate.Status.Conditions)
-				return false, nil
-			}
-			return true, nil
-		},
-	)
-	return certificate, wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
-}
-
-// WaitForCertificateEvent waits for an event on the named Certificate to contain
-// an event reason matches the supplied one.
-func WaitForCertificateEvent(client kubernetes.Interface, cert *v1.Certificate, reason string, timeout time.Duration) error {
-	return wait.PollImmediate(500*time.Millisecond, timeout,
-		func() (bool, error) {
-			log.Logf("Waiting for Certificate event %v reason %#v", cert.Name, reason)
-			evts, err := client.CoreV1().Events(cert.Namespace).Search(intscheme.Scheme, cert)
-			if err != nil {
-				return false, fmt.Errorf("error getting Certificate %v: %v", cert.Name, err)
-			}
-
-			return hasEvent(evts, reason), nil
-		},
-	)
-}
-
-func hasEvent(events *corev1.EventList, reason string) bool {
-	for _, evt := range events.Items {
-		if evt.Reason == reason {
-			return true
-		}
-	}
-	return false
-}
-
-// try to retrieve last condition to help diagnose tests.
-func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterface, pollErr error, name string, conditionType v1.CertificateConditionType) error {
-	if pollErr == nil {
-		return nil
-	}
-
-	certificate, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-	if err != nil {
-		return pollErr
-	}
-
-	for _, cond := range certificate.Status.Conditions {
-		if cond.Type == conditionType {
-			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
-		}
-	}
-
-	return pollErr
-}
-
-// WaitForCertificateToExist waits for the named certificate to exist
-func WaitForCertificateToExist(client clientset.CertificateInterface, name string, timeout time.Duration) error {
-	return wait.PollImmediate(500*time.Millisecond, timeout,
-		func() (bool, error) {
-			log.Logf("Waiting for Certificate %v to exist", name)
-			_, err := client.Get(context.TODO(), name, metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return false, nil
-			}
-			if err != nil {
-				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
-			}
-
-			return true, nil
-		},
-	)
 }
 
 // WaitForCRDToNotExist waits for the CRD with the given name to no
