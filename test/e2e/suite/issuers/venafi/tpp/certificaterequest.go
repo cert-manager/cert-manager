@@ -33,7 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
-var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func() {
+var _ = TPPDescribe("[Feature:Issuers:Venafi:TPP] CertificateRequest with a properly configured Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-certificaterequest")
 	h := f.Helper()
 
