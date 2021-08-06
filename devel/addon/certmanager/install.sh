@@ -17,6 +17,7 @@
 set -o nounset
 set -o errexit
 set -o pipefail
+set -x
 
 # Namespace to deploy into
 NAMESPACE="${NAMESPACE:-cert-manager}"
@@ -59,6 +60,7 @@ bazel build //deploy/charts/cert-manager
 helm upgrade \
     --install \
     --wait \
+    --debug \
     --namespace "${NAMESPACE}" \
     --set image.tag="${APP_VERSION}" \
     --set cainjector.image.tag="${APP_VERSION}" \
