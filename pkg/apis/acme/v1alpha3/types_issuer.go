@@ -314,6 +314,9 @@ type ACMEChallengeSolverHTTP01IngressTemplate struct {
 	// will override the in-built values.
 	// +optional
 	ACMEChallengeSolverHTTP01IngressObjectMeta `json:"metadata"`
+
+	// OverrideNginxIngressWhitelistAnnotation add description here
+	OverrideNginxIngressWhitelistAnnotation string `json:"overrideNginxIngressWhitelistAnnotation,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressObjectMeta struct {

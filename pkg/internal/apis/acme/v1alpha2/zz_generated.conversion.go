@@ -811,6 +811,7 @@ func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEC
 	if err := Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(&in.ACMEChallengeSolverHTTP01IngressObjectMeta, &out.ACMEChallengeSolverHTTP01IngressObjectMeta, s); err != nil {
 		return err
 	}
+	out.OverrideNginxIngressWhitelistAnnotation = in.OverrideNginxIngressWhitelistAnnotation
 	return nil
 }
 
@@ -823,6 +824,7 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1alpha2_ACMEC
 	if err := Convert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1alpha2_ACMEChallengeSolverHTTP01IngressObjectMeta(&in.ACMEChallengeSolverHTTP01IngressObjectMeta, &out.ACMEChallengeSolverHTTP01IngressObjectMeta, s); err != nil {
 		return err
 	}
+	out.OverrideNginxIngressWhitelistAnnotation = in.OverrideNginxIngressWhitelistAnnotation
 	return nil
 }
 

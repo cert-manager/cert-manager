@@ -280,6 +280,9 @@ type ACMEChallengeSolverHTTP01IngressTemplate struct {
 	// If labels or annotations overlap with in-built values, the values here
 	// will override the in-built values.
 	ACMEChallengeSolverHTTP01IngressObjectMeta
+
+	// OverrideNginxIngressWhitelistAnnotation add description here
+	OverrideNginxIngressWhitelistAnnotation string `json:"overrideNginxIngressWhitelistAnnotation,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressObjectMeta struct {

@@ -450,6 +450,9 @@ spec:
                                             type: object
                                             additionalProperties:
                                               type: string
+                                      overrideNginxIngressWhitelistAnnotation:
+                                        description: OverrideNginxIngressWhitelistAnnotation add description here
+                                        type: string
                                   name:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
@@ -1619,6 +1622,9 @@ spec:
                                             type: object
                                             additionalProperties:
                                               type: string
+                                      overrideNginxIngressWhitelistAnnotation:
+                                        description: OverrideNginxIngressWhitelistAnnotation add description here
+                                        type: string
                                   name:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
@@ -2790,6 +2796,9 @@ spec:
                                             type: object
                                             additionalProperties:
                                               type: string
+                                      overrideNginxIngressWhitelistAnnotation:
+                                        description: OverrideNginxIngressWhitelistAnnotation add description here
+                                        type: string
                                   name:
                                     description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                                     type: string
