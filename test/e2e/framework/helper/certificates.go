@@ -71,15 +71,9 @@ func (h *Helper) waitForCertificateCondition(client clientset.CertificateInterfa
 	if pollErr != nil && certificate != nil {
 		log.Logf("Failed waiting for certificate %v: %v\n", name, pollErr.Error())
 
-		if len(certificate.Status.Conditions) > 0 {
-			log.Logf("Observed certificate conditions:\n")
-			for _, cond := range certificate.Status.Conditions {
-				log.Logf("- Last Status: '%s' Reason: '%s', Message: '%s'\n", cond.Status, cond.Reason, cond.Message)
-			}
-		}
+		log.Logf("Certificate:\n")
+		h.describeCMObject(certificate)
 
-		log.Logf("Certificate description:\n")
-		h.Kubectl(certificate.Namespace).DescribeResource("certificate", name)
 		log.Logf("Order and challenge descriptions:\n")
 		h.Kubectl(certificate.Namespace).Describe("order", "challenge")
 
@@ -124,6 +118,11 @@ func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, 
 			return false
 		}
 
+		if certificate.Status.NextPrivateKeySecretName != nil {
+			log.Logf("Expected Certificate %v 'next-private-key-secret-name' attribute to be empty but has: %v", certificate.Name, *certificate.Status.NextPrivateKeySecretName)
+			return false
+		}
+
 		return true
 	}, timeout)
 }
@@ -155,6 +154,11 @@ func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificat
 
 		if apiutil.CertificateHasCondition(certificate, issuing_true_condition) {
 			log.Logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_true_condition.Type, certificate.Status.Conditions)
+			return false
+		}
+
+		if certificate.Status.NextPrivateKeySecretName != nil {
+			log.Logf("Expected Certificate %v 'next-private-key-secret-name' attribute to be empty but has: %v", certificate.Name, *certificate.Status.NextPrivateKeySecretName)
 			return false
 		}
 

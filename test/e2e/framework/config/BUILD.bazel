@@ -13,7 +13,6 @@ go_library(
         "ingress_controller.go",
         "samplewebhook.go",
         "suite.go",
-        "tiller.go",
         "venafi.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/framework/config",
