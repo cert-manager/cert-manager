@@ -44,7 +44,7 @@ bazel build //test/e2e:e2e.test
 echo "Using K8S_VERSION ${K8S_VERSION}"
 case "$K8S_VERSION" in
   "1.16" | "1.17" | "1.18")
-    SKIP="--ginkgo.skip=Gateway"
+    SKIP="Gateway"
     echo "skipping Gateway e2e tests as K8S_VERSION is <1.19"
     ;;
   *)
@@ -59,5 +59,5 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
 	--acme-ingress-ip="$INGRESS_IP" \
-	"${SKIP}" \
+	"--ginkgo.skip=${SKIP}" \
 	"$@"
