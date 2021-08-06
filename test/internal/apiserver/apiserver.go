@@ -44,7 +44,7 @@ func RunBareControlPlane(t *testing.T) (*envtest.Environment, StopFunc) {
 
 	return env, func() {
 		if err := env.Stop(); err != nil {
-			t.Logf("failed to shut down control plane, not failing test: %v", err)
+			t.Fatalf("failed to shut down control plane: %v", err)
 		}
 	}
 }

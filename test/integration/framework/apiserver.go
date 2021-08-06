@@ -54,17 +54,6 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	}
 
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{"--api-server-host=" + config.Host})
-	stopFn := func() {
-		defer stopWebhook()
-		stopControlPlane()
-	}
-
-	initialised := false
-	defer func() {
-		if !initialised {
-			stopFn()
-		}
-	}()
 
 	crdsDir := apitesting.CRDDirectory(t)
 	crds := readCustomResourcesAtPath(t, crdsDir)
@@ -97,8 +86,10 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 		t.Fatal(err)
 	}
 
-	initialised = true
-	return config, stopFn
+	return config, func() {
+		defer stopWebhook()
+		stopControlPlane()
+	}
 }
 
 var (
