@@ -18,6 +18,8 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
+trap export_logs EXIT
+
 # This script will build an entirely new testing environment using kind.
 # This is intended to be run in a CI environment and *not* for development.
 # It is not optimised for quick, iterative development.
@@ -38,5 +40,3 @@ echo "Ensuring all e2e test dependencies are installed..."
 echo "Running e2e test suite..."
 FLAKE_ATTEMPTS=2 "${SCRIPT_ROOT}/run-e2e.sh" \
   "$@"
-
-export_logs
