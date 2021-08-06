@@ -52,12 +52,13 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	shimgw "github.com/jetstack/cert-manager/pkg/controller/certificate-shim/gateways"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
+	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 const controllerAgentName = "cert-manager"
@@ -193,7 +194,10 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	log.V(logf.DebugLevel).Info("starting shared informer factories")
 	ctx.SharedInformerFactory.Start(rootCtx.Done())
 	ctx.KubeSharedInformerFactory.Start(rootCtx.Done())
-	ctx.GWShared.Start(rootCtx.Done())
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
+		ctx.GWShared.Start(rootCtx.Done())
+	}
 
 	err = g.Wait()
 	if err != nil {
@@ -230,30 +234,24 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
-	// check if the gateway API CRDs are available
 	var gatewayAvailable bool
-	d := cl.Discovery()
-	resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
-	switch {
-	case apierrors.IsNotFound(err):
-		gatewayAvailable = false
-		log.Info("the Gateway API CRDs do not seem to be present, gateway-api functionality disabled")
-	case err != nil:
-		return nil, nil, fmt.Errorf("while checking if the Gateway API CRD is installed: %s", err.Error())
-	case len(resources.APIResources) == 0:
-		gatewayAvailable = false
-		log.Info("the Gateway API CRDs do not seem to be present, gateway-api functionality disabled")
-	default:
-		gatewayAvailable = true
-	}
-
-	// cert-manager will try watching the Gateway resources with an exponential
-	// back-off, which allows the user to install the CRDs after cert-manager
-	// itself. Let's let the user know that the CRDs have not been found yet.
-	if opts.EnabledControllers().Has(shimgw.ControllerName) {
-		if !gatewayAvailable {
-			log.Info("the Gateway API CRDs do not seem to be present, but the gateway-shim controller was " +
-				"manually enabled. please install the CRDs.")
+	// Check if the Gateway API feature gate was enabled
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
+		// check if the gateway API CRDs are available. If they are not found return an error
+		// which will cause cert-manager to crashloopbackoff
+		d := cl.Discovery()
+		resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
+		var GatewayAPINotAvailable = "the Gateway API CRDs do not seem to be present, but " + feature.ExperimentalGatewayAPISupport +
+			" is set to true. Please install the gateway-api CRDs."
+		switch {
+		case apierrors.IsNotFound(err):
+			return nil, nil, fmt.Errorf("%s (%w)", GatewayAPINotAvailable, err)
+		case err != nil:
+			return nil, nil, fmt.Errorf("while checking if the Gateway API CRD is installed: %w", err)
+		case len(resources.APIResources) == 0:
+			return nil, nil, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPINotAvailable, len(resources.APIResources), gwapi.GroupVersion.String())
+		default:
+			gatewayAvailable = true
 		}
 	}
 

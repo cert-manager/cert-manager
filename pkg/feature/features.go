@@ -34,16 +34,23 @@ const (
 	// ExperimentalCertificateSigningRequestControllers enables all CertificateSigningRequest
 	// controllers that sign Kubernetes CertificateSigningRequest resources
 	ExperimentalCertificateSigningRequestControllers featuregate.Feature = "ExperimentalCertificateSigningRequestControllers"
+
+	// alpha: v1.5.0
+	//
+	// ExperimentalGatewayAPISupport enables the gateway-shim controller and adds support for
+	// the Gateway API to the HTTP-01 challenge solver.
+	ExperimentalGatewayAPISupport featuregate.Feature = "ExperimentalGatewayAPISupport"
 )
 
 func init() {
-	runtime.Must(utilfeature.DefaultMutableFeatureGate.Add(defaultKubernetesFeatureGates))
+	runtime.Must(utilfeature.DefaultMutableFeatureGate.Add(defaultCertManagerFeatureGates))
 }
 
-// defaultKubernetesFeatureGates consists of all known Kubernetes-specific feature keys.
+// defaultCertManagerFeatureGates consists of all known cert-manager feature keys.
 // To add a new feature, define a key for it above and add it here. The features will be
-// available throughout Kubernetes binaries.
-var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+// available on the cert-manager controller binary.
+var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
+	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
 }
