@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -63,9 +64,15 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 		Log:             logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
+	defer func() {
+		close(stopCh)
+		<-doneCh
+	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		if err := auth.Run(stopCh); err != nil {
+		defer close(doneCh)
+		if err := auth.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("Unexpected error running authority: %v", err)
 		}
 	}()
@@ -102,9 +109,15 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 		Log:             logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
+	defer func() {
+		close(stopCh)
+		<-doneCh
+	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		if err := auth.Run(stopCh); err != nil {
+		defer close(doneCh)
+		if err := auth.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("Unexpected error running authority: %v", err)
 		}
 	}()
