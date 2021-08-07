@@ -48,8 +48,6 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-const foreverTestTimeout = time.Second * 60
-
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01")
 
@@ -148,7 +146,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		)
 		cert.Namespace = f.Namespace.Name
 
-		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Making sure the Order failed with a 400 since google.com is invalid")
@@ -174,7 +172,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be not ready")
-		_, err = f.Helper().WaitForCertificateNotReadyUpdate(cert, 30*time.Second)
+		cert, err = f.Helper().WaitForCertificateNotReadyAndDoneIssuing(cert, 30*time.Second)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -196,15 +194,15 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to have the Ready=True condition")
-		_, err = f.Helper().WaitForCertificateReadyUpdate(cert, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Sanity checking the issued Certificate")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		err = f.Helper().ValidateCertificate(cert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Checking that the secret contains this dns name")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, func(cert *v1.Certificate, secret *corev1.Secret) error {
+		err = f.Helper().ValidateCertificate(cert, func(cert *v1.Certificate, secret *corev1.Secret) error {
 			dnsnames, err := findDNSNames(secret)
 			if err != nil {
 				return err
@@ -258,17 +256,16 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
 		}
 
-		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 		By("Waiting for Certificate to exist")
-		err := util.WaitForCertificateToExist(certClient, certificateSecretName, foreverTestTimeout)
+		cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateSecretName, time.Second*60)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		err = f.Helper().ValidateCertificate(cert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -298,15 +295,15 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		const secretname = "dummy-tls-secret"
 
 		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1.IssuerKind, nil, nil, acmeIngressDomain)
-		_, err = certClient.Create(context.TODO(), selfcert, metav1.CreateOptions{})
+		selfcert, err = certClient.Create(context.TODO(), selfcert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, dummycert, time.Minute*5)
+		selfcert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(selfcert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, dummycert, validations...)
+		err = f.Helper().ValidateCertificate(selfcert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
@@ -411,15 +408,15 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			"testing.cert-manager.io/fixed-ingress": "true",
 		}
 
-		_, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err = certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		err = f.Helper().ValidateCertificate(cert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -433,7 +430,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
 		cert.Namespace = f.Namespace.Name
-		_, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("killing the solver pod")
@@ -464,16 +461,20 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		err = podClient.Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
+		By("Waiting for Certificate to exist")
+		cert, err = f.Helper().WaitForCertificateToExist(f.Namespace.Name, certificateName, time.Second*60)
+		Expect(err).NotTo(HaveOccurred())
+
 		// The pod should get remade and the certificate should be made valid.
 		// Killing the pod could potentially make the validation invalid if pebble
 		// were to ask us for the challenge after the pod was killed, but because
 		// we kill it so early, we should always be in the self-check phase
 		By("Waiting for the Certificate to be issued...")
-		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName, validations...)
+		err = f.Helper().ValidateCertificate(cert, validations...)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

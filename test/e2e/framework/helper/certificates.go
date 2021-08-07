@@ -23,80 +23,143 @@ import (
 	"sort"
 	"time"
 
+	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
-	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 )
 
-func (h *Helper) handleResult(ns, name string, cert *cmapi.Certificate, state string, err error) (*cmapi.Certificate, error) {
-	if err != nil {
-		log.Logf("Error waiting for Certificate to become %s: %v", state, err)
-		h.Kubectl(ns).DescribeResource("certificate", name)
-		h.Kubectl(ns).Describe("order", "challenge")
-		h.describeCertificateRequestFromCertificate(ns, cert)
+// WaitForCertificateToExist waits for the named certificate to exist and returns the certificate
+func (h *Helper) WaitForCertificateToExist(namespace string, name string, timeout time.Duration) (*cmapi.Certificate, error) {
+	client := h.CMClient.CertmanagerV1().Certificates(namespace)
+	var certificate *v1.Certificate
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout, func() (bool, error) {
+		log.Logf("Waiting for Certificate %v to exist", name)
+		var err error
+		certificate, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+		}
+
+		return true, nil
+	})
+	return certificate, pollErr
+}
+
+func (h *Helper) waitForCertificateCondition(client clientset.CertificateInterface, name string, check func(*v1.Certificate) bool, timeout time.Duration) (*cmapi.Certificate, error) {
+	var certificate *v1.Certificate
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout, func() (bool, error) {
+		var err error
+		certificate, err = client.Get(context.TODO(), name, metav1.GetOptions{})
+		if nil != err {
+			certificate = nil
+			return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+		}
+
+		return check(certificate), nil
+	})
+
+	if pollErr != nil && certificate != nil {
+		log.Logf("Failed waiting for certificate %v: %v\n", name, pollErr.Error())
+
+		if len(certificate.Status.Conditions) > 0 {
+			log.Logf("Observed certificate conditions:\n")
+			for _, cond := range certificate.Status.Conditions {
+				log.Logf("- Last Status: '%s' Reason: '%s', Message: '%s'\n", cond.Status, cond.Reason, cond.Message)
+			}
+		}
+
+		log.Logf("Certificate description:\n")
+		h.Kubectl(certificate.Namespace).DescribeResource("certificate", name)
+		log.Logf("Order and challenge descriptions:\n")
+		h.Kubectl(certificate.Namespace).Describe("order", "challenge")
+
+		log.Logf("CertificateRequest description:\n")
+		crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
+		if err != nil {
+			log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
+		} else {
+			h.Kubectl(certificate.Namespace).DescribeResource("certificaterequest", crName)
+		}
 	}
-	return cert, err
+	return certificate, pollErr
 }
 
-// waitForCertificateNotIssuing waits for the certificate resource to leave the Issuing state.
-func (h *Helper) waitForCertificateNotIssuing(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
-	result, err := e2eutil.WaitForMissingCertificateCondition(h.CMClient.CertmanagerV1().Certificates(ns), name, cmapi.CertificateCondition{
-		Type:   cmapi.CertificateConditionIssuing,
-		Status: cmmeta.ConditionTrue,
-	}, timeout)
-	return h.handleResult(ns, name, result, "Not Issuing", err)
-}
-
-// WaitForCertificateReady waits for the certificate resource to enter a Ready state and to leave the Issuing state.
-func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*cmapi.Certificate, error) {
-	result, err := e2eutil.WaitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(ns), name, cmapi.CertificateCondition{
-		Type:   cmapi.CertificateConditionReady,
-		Status: cmmeta.ConditionTrue,
-	}, timeout)
-	if err != nil {
-		return h.handleResult(ns, name, result, "Ready", err)
-	}
-	// Making sure that the Certificate is stable (see #4239) by also waiting for the Issuing state to disappear.
-	// A certificate that has state Ready=True and Issuing not set, is stable and will not change without outside changes.
-	return h.waitForCertificateNotIssuing(ns, name, timeout)
-}
-
-// WaitForCertificateReadyUpdate waits for the certificate resource to enter a
-// Ready state and to leave the Issuing state. If the provided cert was in a
-// Ready state already, the function waits for a state transition to have happened.
-func (h *Helper) WaitForCertificateReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
-	result, err := e2eutil.WaitForCertificateConditionWithObservedGeneration(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
+// WaitForCertificateReadyAndDoneIssuing waits for the certificate resource to be in a Ready=True state and not be in an Issuing state.
+// The Ready=True condition will be checked against the provided certificate to make sure that it is up-to-date (condition gen. >= cert gen.).
+func (h *Helper) WaitForCertificateReadyAndDoneIssuing(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
+	ready_true_condition := cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionTrue,
 		ObservedGeneration: cert.Generation,
-	}, timeout)
-	if err != nil {
-		return h.handleResult(cert.Namespace, cert.Name, result, "Ready", err)
 	}
-	// Making sure that the Certificate is stable (see #4239) by also waiting for the Issuing state to disappear.
-	// A certificate that has state Ready=True and Issuing not set, is stable and will not change without outside changes.
-	return h.waitForCertificateNotIssuing(cert.Namespace, cert.Name, timeout)
+	issuing_true_condition := cmapi.CertificateCondition{
+		Type:   cmapi.CertificateConditionIssuing,
+		Status: cmmeta.ConditionTrue,
+	}
+	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
+		if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, ready_true_condition) {
+			log.Logf(
+				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
+				certificate.Name,
+				ready_true_condition.Type,
+				ready_true_condition.Status,
+				ready_true_condition.ObservedGeneration,
+				certificate.Status.Conditions,
+			)
+			return false
+		}
+
+		if apiutil.CertificateHasCondition(certificate, issuing_true_condition) {
+			log.Logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_true_condition.Type, certificate.Status.Conditions)
+			return false
+		}
+
+		return true
+	}, timeout)
 }
 
-// WaitForCertificateReadyUpdate waits for the certificate resource to enter a
-// Ready=False state and to leave the Issuing state. If the provided cert was
-// in a Ready=False state already, the function waits for a state transition to have happened.
-func (h *Helper) WaitForCertificateNotReadyUpdate(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
-	result, err := e2eutil.WaitForCertificateConditionWithObservedGeneration(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, cmapi.CertificateCondition{
+// WaitForCertificateNotReadyAndDoneIssuing waits for the certificate resource to be in a Ready=False state and not be in an Issuing state.
+// The Ready=False condition will be checked against the provided certificate to make sure that it is up-to-date (condition gen. >= cert gen.).
+func (h *Helper) WaitForCertificateNotReadyAndDoneIssuing(cert *cmapi.Certificate, timeout time.Duration) (*cmapi.Certificate, error) {
+	ready_false_condition := cmapi.CertificateCondition{
 		Type:               cmapi.CertificateConditionReady,
 		Status:             cmmeta.ConditionFalse,
 		ObservedGeneration: cert.Generation,
-	}, timeout)
-	if err != nil {
-		return h.handleResult(cert.Namespace, cert.Name, result, "Not Ready", err)
 	}
-	// Making sure that the Certificate is stable (see #4239) by also waiting for the Issuing state to disappear.
-	// A certificate that has state Ready=False and Issuing not set, is stable and will not change without outside changes.
-	return h.waitForCertificateNotIssuing(cert.Namespace, cert.Name, timeout)
+	issuing_true_condition := cmapi.CertificateCondition{
+		Type:   cmapi.CertificateConditionIssuing,
+		Status: cmmeta.ConditionTrue,
+	}
+	return h.waitForCertificateCondition(h.CMClient.CertmanagerV1().Certificates(cert.Namespace), cert.Name, func(certificate *v1.Certificate) bool {
+		if !apiutil.CertificateHasConditionWithObservedGeneration(certificate, ready_false_condition) {
+			log.Logf(
+				"Expected Certificate %v condition %v=%v (generation >= %v) but it has: %v",
+				certificate.Name,
+				ready_false_condition.Type,
+				ready_false_condition.Status,
+				ready_false_condition.ObservedGeneration,
+				certificate.Status.Conditions,
+			)
+			return false
+		}
+
+		if apiutil.CertificateHasCondition(certificate, issuing_true_condition) {
+			log.Logf("Expected Certificate %v condition %v to be missing but it has: %v", certificate.Name, issuing_true_condition.Type, certificate.Status.Conditions)
+			return false
+		}
+
+		return true
+	}, timeout)
 }
 
 func (h *Helper) deduplicateExtKeyUsages(us []x509.ExtKeyUsage) []x509.ExtKeyUsage {
@@ -183,17 +246,4 @@ func (h *Helper) keyUsagesMatch(aKU x509.KeyUsage, aEKU []x509.ExtKeyUsage,
 	}
 
 	return true
-}
-
-func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *cmapi.Certificate) {
-	if certificate == nil {
-		return
-	}
-
-	crName, err := apiutil.ComputeName(certificate.Name, certificate.Spec)
-	if err != nil {
-		log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
-		return
-	}
-	h.Kubectl(ns).DescribeResource("certificaterequest", crName)
 }

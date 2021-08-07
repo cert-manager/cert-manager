@@ -75,19 +75,19 @@ var _ = TPPDescribe("[Feature:Issuers:Venafi:TPP] Certificate with a properly co
 	It("should obtain a signed certificate for a single domain", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
-		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil)
-		crt.Spec.CommonName = cmutil.RandStringRunes(10) + ".venafi-e2e.example"
+		cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil)
+		cert.Spec.CommonName = cmutil.RandStringRunes(10) + ".venafi-e2e.example"
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(context.TODO(), crt, metav1.CreateOptions{})
+		cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for the Certificate to be issued...")
-		_, err = f.Helper().WaitForCertificateReady(f.Namespace.Name, certificateName, time.Minute*5)
+		cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Validating the issued Certificate...")
-		err = f.Helper().ValidateCertificate(f.Namespace.Name, certificateName)
+		err = f.Helper().ValidateCertificate(cert)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
