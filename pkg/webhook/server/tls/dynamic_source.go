@@ -21,6 +21,7 @@ import (
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -94,6 +95,11 @@ func (f *DynamicSource) Run(stopCh <-chan struct{}) error {
 	}, stopCh); err != nil {
 		// In case of an error, the stopCh is closed; wait for authorityErrChan to be closed too
 		<-authorityErrChan
+
+		// If there was an ErrWaitTimeout error, this must be caused by closing stopCh
+		if errors.Is(err, wait.ErrWaitTimeout) {
+			return context.Canceled
+		}
 
 		return err
 	}
@@ -182,6 +188,11 @@ func (f *DynamicSource) Run(stopCh <-chan struct{}) error {
 		<-authorityErrChan
 		<-rotationChan
 		<-renewalChan
+
+		// If there was an ErrWaitTimeout error, this must be caused by closing stopCh
+		if errors.Is(err, wait.ErrWaitTimeout) {
+			return context.Canceled
+		}
 
 		return err
 	}
