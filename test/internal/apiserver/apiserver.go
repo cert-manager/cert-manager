@@ -35,7 +35,7 @@ func RunBareControlPlane(t *testing.T) (*envtest.Environment, StopFunc) {
 	// Here we start the API server so its address can be given to the webhook on
 	// start. We then restart the API with the CRDs in the webhook.
 	env := &envtest.Environment{
-		AttachControlPlaneOutput: true,
+		AttachControlPlaneOutput: false,
 	}
 
 	if _, err := env.Start(); err != nil {
@@ -44,7 +44,7 @@ func RunBareControlPlane(t *testing.T) (*envtest.Environment, StopFunc) {
 
 	return env, func() {
 		if err := env.Stop(); err != nil {
-			t.Logf("failed to shut down control plane, not failing test: %v", err)
+			t.Fatalf("failed to shut down control plane: %v", err)
 		}
 	}
 }

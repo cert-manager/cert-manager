@@ -47,13 +47,16 @@ func TestRevisionManagerController(t *testing.T) {
 	config, stopFn := framework.RunControlPlane(t)
 	defer stopFn()
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
 	// Build, instantiate and run the revision manager controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
 
 	ctrl, queue, mustSync := revisionmanager.NewController(logf.Log, cmCl, cmFactory)
 
 	c := controllerpkg.NewController(
-		context.Background(),
+		ctx,
 		"revisionmanager_controller_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -64,9 +67,6 @@ func TestRevisionManagerController(t *testing.T) {
 	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
 	defer stopController()
 
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
-
 	var (
 		crtName    = "testcrt"
 		namespace  = "testns"
@@ -75,7 +75,7 @@ func TestRevisionManagerController(t *testing.T) {
 
 	// Create Namespace
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	_, err := kubeClient.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestRevisionManagerController(t *testing.T) {
 
 	// Wait for 3 CertificateRequests to be deleted, and that they have the correct revisions
 	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
-		requests, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(context.TODO(), metav1.ListOptions{})
+		requests, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
