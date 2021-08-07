@@ -84,6 +84,8 @@ func (s *Suite) complete(f *framework.Framework) {
 			s.DomainSuffix = f.Config.Addons.IngressController.Domain
 		case "Gateway":
 			s.DomainSuffix = f.Config.Addons.Gateway.Domain
+		default:
+			s.DomainSuffix = "example.com"
 		}
 	}
 

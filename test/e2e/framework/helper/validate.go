@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificates"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificatesigningrequests"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 // ValidateCertificate retrieves the issued certificate and runs all validation functions
@@ -42,6 +43,12 @@ func (h *Helper) ValidateCertificate(certificate *cmapi.Certificate, validations
 	for _, fn := range validations {
 		err := fn(certificate, secret)
 		if err != nil {
+			log.Logf("Certificate:\n")
+			h.describeCMObject(certificate)
+
+			log.Logf("Secret:\n")
+			h.describeKubeObject(secret)
+
 			return err
 		}
 	}

@@ -91,12 +91,14 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	opts.HealthzPort = 0
 
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 	srv, err := app.NewServerWithOptions(log, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	go func() {
+		defer close(doneCh)
 		if err := srv.Run(stopCh); err != nil {
 			t.Fatalf("error running webhook server: %v", err)
 		}
@@ -120,6 +122,7 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 	}
 	return serverOpts, func() {
 		close(stopCh)
+		<-doneCh // Wait for shutdown
 		if err := os.RemoveAll(tempDir); err != nil {
 			t.Fatal(err)
 		}

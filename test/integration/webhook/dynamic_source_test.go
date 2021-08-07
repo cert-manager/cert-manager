@@ -19,6 +19,7 @@ package webhook
 import (
 	"context"
 	"crypto/x509"
+	"errors"
 	"math/big"
 	"testing"
 	"time"
@@ -63,9 +64,15 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 		Log: log,
 	}
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
+	defer func() {
+		close(stopCh)
+		<-doneCh
+	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		if err := source.Run(stopCh); err != nil {
+		defer close(doneCh)
+		if err := source.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("Unexpected error running source: %v", err)
 		}
 	}()
@@ -120,9 +127,15 @@ func TestDynamicSource_CARotation(t *testing.T) {
 		Log: log,
 	}
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
+	defer func() {
+		close(stopCh)
+		<-doneCh
+	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		if err := source.Run(stopCh); err != nil {
+		defer close(doneCh)
+		if err := source.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("Unexpected error running source: %v", err)
 		}
 	}()
