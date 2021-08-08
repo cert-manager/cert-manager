@@ -8,7 +8,7 @@ to renew certificates at an appropriate time before expiry.
 
 ## Prerequisites
 
-- Kubernetes 1.11+
+- Kubernetes 1.16+
 
 ## Installing the Chart
 
