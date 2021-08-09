@@ -232,6 +232,12 @@ type VaultAuth struct {
 	// +optional
 	AppRole *VaultAppRole `json:"appRole,omitempty"`
 
+	// ClientCertificate authenticates with Vault by presenting a client
+	// certificate during the request's TLS handshake.
+	// Works only when using HTTPS protocol.
+	// +optional
+	ClientCertificate *VaultClientCertificateAuth `json:"clientCertificate,omitempty"`
+
 	// Kubernetes authenticates with Vault by passing the ServiceAccount
 	// token stored in the named Secret resource to the Vault server.
 	// +optional
@@ -254,6 +260,26 @@ type VaultAppRole struct {
 	// The `key` field must be specified and denotes which entry within the Secret
 	// resource is used as the app role secret.
 	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
+}
+
+// VaultKubernetesAuth is used to authenticate against Vault using a client
+// certificate stored in a Secret.
+type VaultClientCertificateAuth struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/cert" will be used.
+	// +optional
+	Path string `json:"mountPath,omitempty"`
+
+	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
+	// tls.crt and tls.key) used to authenticate to Vault using TLS client
+	// authentication.
+	// +optional
+	SecretName string `json:"secretName"`
+
+	// A required field containing the Vault Role to assume.
+	Role string `json:"role"`
 }
 
 // Authenticate against Vault using a Kubernetes ServiceAccount token stored in

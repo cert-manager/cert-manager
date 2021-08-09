@@ -18,6 +18,7 @@ package vault
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -58,6 +59,7 @@ type Client interface {
 	NewRequest(method, requestPath string) *vault.Request
 	RawRequest(r *vault.Request) (*vault.Response, error)
 	SetToken(v string)
+	CloneConfig() *vault.Config
 }
 
 // For mocking purposes.
@@ -208,6 +210,17 @@ func (v *Vault) setToken(client Client) error {
 		return nil
 	}
 
+	clientCert := v.issuer.GetSpec().Vault.Auth.ClientCertificate
+	if clientCert != nil {
+		token, err := v.requestTokenWithClientCertificate(client, clientCert)
+		if err != nil {
+			return err
+		}
+		client.SetToken(token)
+
+		return nil
+	}
+
 	kubernetesAuth := v.issuer.GetSpec().Vault.Auth.Kubernetes
 	if kubernetesAuth != nil {
 		token, err := v.requestTokenWithKubernetesAuth(client, kubernetesAuth)
@@ -218,7 +231,7 @@ func (v *Vault) setToken(client Client) error {
 		return nil
 	}
 
-	return fmt.Errorf("error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
+	return fmt.Errorf("error initializing Vault client: tokenSecretRef, appRoleSecretRef, clientCertificate, or Kubernetes auth role not set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -370,6 +383,79 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 
 	if token == "" {
 		return "", errors.New("no token returned")
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithClientCertificate(client Client, clientCertificateAuth *v1.VaultClientCertificateAuth) (string, error) {
+	// If secretName is set, load client certificate from Secret, otherwise assume that a
+	// fitting client certificate is loaded in the client already.
+	if len(clientCertificateAuth.SecretName) != 0 {
+		secret, err := v.secretsLister.Secrets(v.namespace).Get(clientCertificateAuth.SecretName)
+		if err != nil {
+			return "", err
+		}
+
+		cert, ok := secret.Data["tls.crt"]
+		if !ok {
+			return "", fmt.Errorf("no data for tls.crt in secret '%s/%s'", v.namespace, clientCertificateAuth.SecretName)
+		}
+		key, ok := secret.Data["tls.key"]
+		if !ok {
+			return "", fmt.Errorf("no data for tls.key in secret '%s/%s'", v.namespace, clientCertificateAuth.SecretName)
+		}
+
+		clientCertificate, err := tls.X509KeyPair(cert, key)
+		if err != nil {
+			return "", fmt.Errorf("error reading client certificate: %s", err.Error())
+		}
+
+		// Setting up a short lived client with a configured client certificate.
+		// It is only meant to be used for requesting a Vault token. We clone
+		// http.Client's Transport seperately as it has to be adjusted and does
+		// not seem to be cloned by CloneConfig.
+		cfg := client.CloneConfig()
+		tmpTransport := cfg.HttpClient.Transport.(*http.Transport).Clone()
+		tmpTransport.TLSClientConfig.Certificates = append(tmpTransport.TLSClientConfig.Certificates, clientCertificate)
+		cfg.HttpClient.Transport = tmpTransport
+		client, err = vault.NewClient(cfg)
+		if err != nil {
+			return "", fmt.Errorf("error initializing intermediary Vault client: %s", err.Error())
+		}
+	}
+
+	parameters := map[string]string{
+		"role": clientCertificateAuth.Role,
+	}
+
+	mountPath := clientCertificateAuth.Path
+	if mountPath == "" {
+		mountPath = v1.DefaultVaultClientCertificateAuthMountPath
+	}
+
+	url := filepath.Join(mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err := request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
 	}
 
 	return token, nil
