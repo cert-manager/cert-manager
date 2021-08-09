@@ -232,6 +232,9 @@ webhook:
   # Optional additional annotations to add to the webhook Pods
   # podAnnotations: {}
 
+  # Optional additional annotations to add to the webhook Service
+  # serviceAnnotations: {}
+
   # Optional additional annotations to add to the webhook MutatingWebhookConfiguration
   # mutatingWebhookConfigurationAnnotations: {}
 
