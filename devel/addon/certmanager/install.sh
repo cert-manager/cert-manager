@@ -54,8 +54,15 @@ kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 # Build the Helm chart package .tgz
 bazel build //deploy/charts/cert-manager
 
+helm template \
+    --set components={crd} \
+    --namespace "${NAMESPACE}" \
+    "$RELEASE_NAME" \
+    "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz" \
+    | kubectl apply -f -
+
 # Upgrade or install cert-manager
-# --wait & --wait-for-jobs flags should wait for resources and Jobs to complete
+# --wait flags should wait for resources and Jobs to complete
 helm upgrade \
     --install \
     --wait \
@@ -64,7 +71,6 @@ helm upgrade \
     --set cainjector.image.tag="${APP_VERSION}" \
     --set webhook.image.tag="${APP_VERSION}" \
     --set startupapicheck.image.tag="${APP_VERSION}" \
-    --set installCRDs=true \
     --set featureGates="${FEATURE_GATES//,/\\,}" `# escape commas in --set by replacing , with \, (see https://github.com/helm/helm/issues/2952)` \
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
