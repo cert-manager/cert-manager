@@ -1,3 +1,4 @@
+{{- if has "certmanager" .Values.components }}
 {{- if .Values.prometheus.enabled }}
 apiVersion: v1
 kind: Service
@@ -24,4 +25,5 @@ spec:
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "controller"
+{{- end }}
 {{- end }}

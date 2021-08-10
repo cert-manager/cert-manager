@@ -1,4 +1,4 @@
-{{- if .Values.startupapicheck.enabled -}}
+{{- if and (has "webhook" .Values.components) .Values.startupapicheck.enabled -}}
 apiVersion: batch/v1
 kind: Job
 metadata:

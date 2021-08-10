@@ -6,7 +6,7 @@ modify_file(
     name = "crds",
     src = "//deploy/crds:templates",
     out = "crds.yaml",
-    prefix = """{{- if .Values.installCRDs }}""",
+    prefix = """{{- if or (has "crd" .Values.components) .Values.installCRDs }}""",
     suffix = """{{- end }}""",
     visibility = ["//visibility:private"],
 )

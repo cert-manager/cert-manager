@@ -1,5 +1,5 @@
-{{- if .Values.cainjector.enabled -}}
-{{- if .Values.global.podSecurityPolicy.enabled }}
+{{- if has "cainjector" .Values.components }}
+{{- if and .Values.cainjector.enabled .Values.global.podSecurityPolicy.enabled }}
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:

@@ -1,5 +1,5 @@
-{{- if .Values.cainjector.enabled -}}
-{{- if .Values.global.podSecurityPolicy.enabled }}
+{{- if has "cainjector" .Values.components }}
+{{- if and .Values.cainjector.enabled .Values.global.podSecurityPolicy.enabled }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
