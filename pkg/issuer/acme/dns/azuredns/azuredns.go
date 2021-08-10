@@ -39,7 +39,7 @@ type DNSProvider struct {
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool) (*DNSProvider, error) {
+func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentityClientID string, managedIdentityResourceID string) (*DNSProvider, error) {
 	env := azure.PublicCloud
 	if environment != "" {
 		var err error
@@ -49,7 +49,11 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		}
 	}
 
-	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient)
+	if managedIdentityClientID != "" && managedIdentityResourceID != "" {
+		return nil, fmt.Errorf("managedIdentityClientID and managedIdentityResourceID can not be set at the same time")
+	}
+
+	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient, managedIdentityClientID, managedIdentityResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +74,7 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}, nil
 }
 
-func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool) (*adal.ServicePrincipalToken, error) {
+func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool, managedIdentityClientID string, managedIdentityResourceID string) (*adal.ServicePrincipalToken, error) {
 	if clientID != "" {
 		logf.Log.V(logf.InfoLevel).Info("azuredns authenticating with clientID and secret key")
 		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
@@ -87,12 +91,12 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 	if !ambient {
 		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
 	}
-	msiEndpoint, err := adal.GetMSIVMEndpoint()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
-	}
 
-	spt, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, env.ServiceManagementEndpoint)
+	opt := adal.ManagedIdentityOptions{
+		ClientID:           managedIdentityClientID,
+		IdentityResourceID: managedIdentityResourceID,
+	}
+	spt, err := adal.NewServicePrincipalTokenFromManagedIdentity(env.ServiceManagementEndpoint, &opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 	}
