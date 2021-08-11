@@ -47,6 +47,7 @@ type InstallOptions struct {
 
 	ChartName string
 	DryRun    bool
+	Wait      bool
 
 	genericclioptions.IOStreams
 }
@@ -120,7 +121,7 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		SilenceErrors: true,
 	}
 
-	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.client.Wait)
+	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.Wait)
 	addInstallFlags(cmd.Flags(), options.client)
 	addValueOptionsFlags(cmd.Flags(), options.valueOpts)
 	addChartPathOptionsFlags(cmd.Flags(), &options.client.ChartPathOptions)
@@ -229,12 +230,11 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	// Install chart
 	o.client.DryRun = false     // Apply DryRun cli flags
 	o.client.ClientOnly = false // Perform install against cluster
-	// 'Atomic=True' means that if part of the install fails, all resource installs are reverted;
-	// Helm supports 3 diffent combinations of the (Atomic, Wait) boolean couple:
-	// (False, False), (False, True) or (True, True)
-	// For simplicity, we want do not support Waiting without the Atomic option (False, True),
-	// this allows this cli to use a single --wait=(True|False) flag
-	o.client.Atomic = o.client.Wait
+
+	o.client.Wait = o.Wait          // Wait for resources to be ready
+	o.client.Atomic = o.Wait        // If part of the install fails (& we are waiting), all resource installs are reverted;
+	o.client.DisableHooks = !o.Wait // Disable hooks if wait is disabled
+
 	chartValues[installCRDsFlagName] = false // Do not render CRDs, as this might cause problems when uninstalling using helm
 
 	return o.client.Run(chart, chartValues)
