@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/api/networking/v1"
+	v1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -617,9 +617,9 @@ func TestOverrideNginxIngressWhitelistAnnotation(t *testing.T) {
 				s.Builder.Sync()
 			},
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				expectedIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
+				expectedIngress := s.testResources[createdIngressKey].(*v1.Ingress)
 
-				resp, ok := args[0].(*v1beta1.Ingress)
+				resp, ok := args[0].(*v1.Ingress)
 				if !ok {
 					t.Errorf("expected ingress to be returned, but got %v", args[0])
 					t.Fail()
