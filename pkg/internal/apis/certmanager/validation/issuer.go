@@ -335,6 +335,18 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				if len(p.AzureDNS.TenantID) == 0 {
 					el = append(el, field.Required(fldPath.Child("azureDNS", "tenantID"), ""))
 				}
+				if len(p.AzureDNS.ManagedIdentityClientID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentityClientID"), "managed identity can not be used at the same time as clientID, tenantID or clientSecret"))
+				}
+				if len(p.AzureDNS.ManagedIdentityResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentityResourceID"), "managed identity can not be used at the same time as clientID, tenantID or clientSecret"))
+				}
+			} else {
+				// using managed identity
+				if len(p.AzureDNS.ManagedIdentityClientID) > 0 && len(p.AzureDNS.ManagedIdentityResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS"), "managedIdentityClientID and managedIdentityResourceID connot both be specified"))
+				}
+
 			}
 			// SubscriptionID must always be defined
 			if len(p.AzureDNS.SubscriptionID) == 0 {

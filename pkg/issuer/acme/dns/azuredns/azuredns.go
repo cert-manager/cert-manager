@@ -49,10 +49,6 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		}
 	}
 
-	if managedIdentityClientID != "" && managedIdentityResourceID != "" {
-		return nil, fmt.Errorf("managedIdentityClientID and managedIdentityResourceID can not be set at the same time")
-	}
-
 	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient, managedIdentityClientID, managedIdentityResourceID)
 	if err != nil {
 		return nil, err

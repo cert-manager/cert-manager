@@ -500,11 +500,11 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// +optional
 	Environment AzureDNSEnvironment `json:"environment,omitempty"`
 
-	// clientID of the MSI that should be used (only relevant when using MSI, can not be used at the same time with ManagedIdentityResourceID)
+	// clientID of the MSI that should be used (only relevant when using MSI, can not be used at the same time as ManagedIdentityResourceID)
 	// +optional
 	ManagedIdentityClientID string `json:"managedIdentityClientID,omitempty"`
 
-	// resourceID of the MSI that should be used (only relevant when using MSI, can not be used at the same time with ManagedIdentityClientID)
+	// resourceID of the MSI that should be used (only relevant when using MSI, can not be used at the same time as ManagedIdentityClientID)
 	// +optional
 	ManagedIdentityResourceID string `json:"managedIdentityResourceID,omitempty"`
 }
