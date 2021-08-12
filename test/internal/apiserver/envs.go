@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
+
+	"github.com/jetstack/cert-manager/test/internal/util"
 )
 
 // setEnvTestEnv configures environment variables for controller-runtime's
@@ -44,7 +45,7 @@ Either re-run this test or set the %s environment variable.`, bin, key))
 }
 
 func getPath(name string, path ...string) (string, error) {
-	bazelPath := filepath.Join(append([]string{os.Getenv("RUNFILES_DIR"), "com_github_jetstack_cert_manager"}, path...)...)
+	bazelPath := util.GetTestPath(path...)
 	p, err := exec.LookPath(bazelPath)
 	if err == nil {
 		return p, nil
