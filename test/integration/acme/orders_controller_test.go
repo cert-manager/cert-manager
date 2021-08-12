@@ -41,8 +41,10 @@ import (
 )
 
 func TestAcmeOrdersController(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	defer cancel()
 
-	config, stopFn := framework.RunControlPlane(t)
+	config, stopFn := framework.RunControlPlane(t, ctx)
 	defer stopFn()
 
 	// Create clients and informer factories for Kubernetes API and
@@ -128,7 +130,7 @@ func TestAcmeOrdersController(t *testing.T) {
 		false,
 	)
 	c := controllerpkg.NewController(
-		context.Background(),
+		ctx,
 		"orders_test",
 		metrics.New(logf.Log, clock.RealClock{}),
 		ctrl.ProcessItem,
@@ -145,9 +147,6 @@ func TestAcmeOrdersController(t *testing.T) {
 		c,
 	)
 	defer stopController()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
-	defer cancel()
 
 	// Create a Namespace.
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testName}}
@@ -177,7 +176,7 @@ func TestAcmeOrdersController(t *testing.T) {
 		gen.SetIssuerNamespace(testName),
 		gen.SetIssuerACME(acmeIssuer))
 
-	iss, err = cmCl.CertmanagerV1().Issuers(testName).Create(ctx, iss, metav1.CreateOptions{})
+	_, err = cmCl.CertmanagerV1().Issuers(testName).Create(ctx, iss, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +199,7 @@ func TestAcmeOrdersController(t *testing.T) {
 
 	// Wait for the Challenge to be created.
 	var chal *cmacme.Challenge
-	err = wait.Poll(time.Millisecond*100, time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		chals, err := cmCl.AcmeV1().Challenges(testName).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -220,7 +219,7 @@ func TestAcmeOrdersController(t *testing.T) {
 			return false, fmt.Errorf("found an unexpected Challenge resource: %v", chal.Name)
 		}
 		return true, nil
-	})
+	}, ctx.Done())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -249,7 +248,9 @@ func TestAcmeOrdersController(t *testing.T) {
 	// Reason field on Order's status. Change this test once we are setting
 	// Reasons on intermittent Order states.
 	var pendingOrder *cmacme.Order
-	err = wait.Poll(time.Millisecond*200, acmeorders.RequeuePeriod, func() (bool, error) {
+	timeoutCtx, timeoutCancel := context.WithTimeout(ctx, acmeorders.RequeuePeriod)
+	defer timeoutCancel()
+	err = wait.PollImmediateUntil(time.Millisecond*200, func() (bool, error) {
 		pendingOrder, err = cmCl.AcmeV1().Orders(testName).Get(ctx, testName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -258,11 +259,15 @@ func TestAcmeOrdersController(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	})
+	}, timeoutCtx.Done())
 	switch {
 	case err == nil:
 		t.Fatalf("Expected Order to have pending status instead got: %v", pendingOrder.Status.State)
 	case err == wait.ErrWaitTimeout:
+		if ctx.Err() != nil {
+			t.Error(ctx.Err())
+		}
+
 		// 'happy case' - Order remained pending
 	default:
 		t.Fatal(err)
@@ -272,7 +277,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	acmeOrder.Status = acmeapi.StatusReady
 
 	// Wait for the status of the Order to become Valid.
-	err = wait.Poll(time.Millisecond*100, acmeorders.RequeuePeriod*3, func() (bool, error) {
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (bool, error) {
 		o, err := cmCl.AcmeV1().Orders(testName).Get(ctx, testName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -282,7 +287,7 @@ func TestAcmeOrdersController(t *testing.T) {
 			return false, nil
 		}
 		return true, nil
-	})
+	}, ctx.Done())
 	if err != nil {
 		t.Fatal(err)
 	}

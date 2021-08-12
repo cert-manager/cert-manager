@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -58,7 +59,9 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, inform
 
 func StartInformersAndController(t *testing.T, factory informers.SharedInformerFactory, cmFactory cminformers.SharedInformerFactory, c controllerpkg.Interface) StopFunc {
 	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 	go func() {
+		defer close(doneCh)
 		factory.Start(stopCh)
 		cmFactory.Start(stopCh)
 		if err := c.Run(1, stopCh); err != nil {
@@ -67,29 +70,28 @@ func StartInformersAndController(t *testing.T, factory informers.SharedInformerF
 	}()
 	return func() {
 		close(stopCh)
+		<-doneCh
 	}
 }
 
-func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, config *rest.Config, gvk schema.GroupVersionKind) {
+func WaitForOpenAPIResourcesToBeLoaded(t *testing.T, ctx context.Context, config *rest.Config, gvk schema.GroupVersionKind) {
 	dc, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = wait.PollImmediate(time.Second, 2*time.Minute,
-		func() (bool, error) {
-			og := openapi.NewOpenAPIGetter(dc)
-			oapiResource, err := openapi.NewOpenAPIParser(og).Parse()
-			if err != nil {
-				return false, err
-			}
+	err = wait.PollImmediateUntil(time.Second, func() (bool, error) {
+		og := openapi.NewOpenAPIGetter(dc)
+		oapiResource, err := openapi.NewOpenAPIParser(og).Parse()
+		if err != nil {
+			return false, err
+		}
 
-			if oapiResource.LookupResource(gvk) != nil {
-				return true, nil
-			}
-			return false, nil
-		},
-	)
+		if oapiResource.LookupResource(gvk) != nil {
+			return true, nil
+		}
+		return false, nil
+	}, ctx.Done())
 
 	if err != nil {
 		t.Fatal("Our GVK isn't loaded into the OpenAPI resources API after waiting for 2 minutes", err)

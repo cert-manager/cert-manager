@@ -37,11 +37,11 @@ import (
 // TestCtlRenew tests the renewal logic of the ctl CLI command against the
 // cert-manager Issuing controller.
 func TestCtlRenew(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	// Build clients
 	kubeClient, _, cmCl, _ := framework.NewClients(t, config)

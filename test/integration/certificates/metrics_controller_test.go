@@ -53,11 +53,11 @@ certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 // metrics are exposed when a Certificate is created, updated, and removed when
 // it is deleted.
 func TestMetricsController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
 	kubernetesCl, factory, cmClient, cmFactory := framework.NewClients(t, config)
@@ -70,19 +70,21 @@ func TestMetricsController(t *testing.T) {
 	}
 	server := metricsHandler.NewServer(ln, false)
 
+	doneCh := make(chan struct{})
 	go func() {
+		defer close(doneCh)
 		if err := server.Serve(ln); err != http.ErrServerClosed {
 			t.Fatal(err)
 		}
 	}()
-
 	defer func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			t.Fatal(err)
 		}
+		<-doneCh
 	}()
 
 	ctrl, queue, mustSync := controllermetrics.NewController(factory, cmFactory, metricsHandler)
@@ -133,14 +135,14 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	waitForMetrics := func(expectedOutput string) {
-		err := wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
+		err := wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 			if err := testMetrics(expectedOutput); err != nil {
 				lastErr = err
 				return false, nil
 			}
 
 			return true, nil
-		})
+		}, ctx.Done())
 		if err != nil {
 			t.Fatalf("%s: failed to wait for expected metrics to be exposed: %s", err, lastErr)
 		}

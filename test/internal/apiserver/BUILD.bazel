@@ -6,6 +6,11 @@ go_library(
         "apiserver.go",
         "envs.go",
     ],
+    data = [
+        "//hack/bin:com_coreos_etcd",
+        "//hack/bin:io_kubernetes_kube-apiserver",
+        "//hack/bin:kubectl",
+    ],
     importpath = "github.com/jetstack/cert-manager/test/internal/apiserver",
     visibility = ["//test:__subpackages__"],
     deps = [

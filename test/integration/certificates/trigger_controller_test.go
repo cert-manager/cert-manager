@@ -47,11 +47,11 @@ import (
 // issuance is triggered when a new Certificate resource is created and
 // no Secret exists.
 func TestTriggerController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Build, instantiate and run the trigger controller.
@@ -92,7 +92,7 @@ func TestTriggerController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		c, err := cmCl.CertmanagerV1().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
@@ -106,18 +106,18 @@ func TestTriggerController(t *testing.T) {
 			return false, nil
 		}
 		return true, nil
-	})
+	}, ctx.Done())
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestTriggerController_RenewNearExpiry(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	fakeClock := &fakeclock.FakeClock{}
 	// Only use the 'current certificate nearing expiry' policy chain during the
@@ -221,7 +221,7 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = wait.Poll(time.Millisecond*200, time.Second*2, func() (done bool, err error) {
+	err = wait.PollImmediateUntil(time.Millisecond*200, func() (done bool, err error) {
 		c, err := cmCl.CertmanagerV1().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -233,14 +233,17 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	})
+	}, ctx.Done())
 	if err != nil {
 		t.Error("Failed waiting for Certificate to have Issuing condition")
 	}
 }
 
 func ensureCertificateDoesNotHaveIssuingCondition(ctx context.Context, t *testing.T, cmCl cmclient.Interface, namespace, name string) {
-	err := wait.Poll(time.Millisecond*200, time.Second*2, func() (done bool, err error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*2)
+	defer cancel()
+
+	err := wait.PollImmediateUntil(time.Millisecond*200, func() (done bool, err error) {
 		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -253,11 +256,15 @@ func ensureCertificateDoesNotHaveIssuingCondition(ctx context.Context, t *testin
 			return true, nil
 		}
 		return false, nil
-	})
+	}, timeoutCtx.Done())
 	switch {
 	case err == nil:
 		t.Fatal("expected Certificate to not have the Issuing condition")
 	case err == wait.ErrWaitTimeout:
+		if ctx.Err() != nil {
+			t.Error(ctx.Err())
+		}
+
 		// this is the expected 'happy case'
 	default:
 		t.Fatal(err)
