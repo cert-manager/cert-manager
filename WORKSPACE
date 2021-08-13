@@ -5,9 +5,9 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "65e020a42bdab44a66664d34421995829e9e79c60e5adaa08282fd14ca552f57",
-    strip_prefix = "protobuf-3.15.6",
-    urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.15.6.tar.gz"],
+    sha256 = "c6003e1d2e7fefa78a3039f19f383b4f3a61e81be8c19356f85b6461998ad3db",
+    strip_prefix = "protobuf-3.17.3",
+    urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.17.3.tar.gz"],
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
@@ -55,10 +55,10 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 http_archive(
     name = "io_k8s_repo_infra",
-    sha256 = "c4f81de0234a1ca292dc3986fed4332102299bbd0b73697b733218057112d790",
-    strip_prefix = "repo-infra-0.1.9",
+    sha256 = "c1da51ca6d34b1ec767125c7a7ca5d7d890c9e5772210ae43fd2aba88a6dda41",
+    strip_prefix = "repo-infra-0.1.10",
     urls = [
-        "https://github.com/kubernetes/repo-infra/archive/v0.1.9.tar.gz",
+        "https://github.com/kubernetes/repo-infra/archive/v0.1.10.tar.gz",
     ],
 )
 
