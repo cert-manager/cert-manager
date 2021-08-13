@@ -335,16 +335,13 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				if len(p.AzureDNS.TenantID) == 0 {
 					el = append(el, field.Required(fldPath.Child("azureDNS", "tenantID"), ""))
 				}
-				if len(p.AzureDNS.ManagedIdentityClientID) > 0 {
-					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentityClientID"), "managed identity can not be used at the same time as clientID, tenantID or clientSecret"))
-				}
-				if len(p.AzureDNS.ManagedIdentityResourceID) > 0 {
-					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentityResourceID"), "managed identity can not be used at the same time as clientID, tenantID or clientSecret"))
+				if p.AzureDNS.ManagedIdentity != nil {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"))
 				}
 			} else {
 				// using managed identity
-				if len(p.AzureDNS.ManagedIdentityClientID) > 0 && len(p.AzureDNS.ManagedIdentityResourceID) > 0 {
-					el = append(el, field.Forbidden(fldPath.Child("azureDNS"), "managedIdentityClientID and managedIdentityResourceID connot both be specified"))
+				if len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
+					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID connot both be specified"))
 				}
 
 			}

@@ -496,13 +496,19 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// +optional
 	Environment AzureDNSEnvironment `json:"environment,omitempty"`
 
-	// clientID of the MSI that should be used (only relevant when using MSI, can not be used at the same time as ManagedIdentityResourceID)
+	// managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
 	// +optional
-	ManagedIdentityClientID string `json:"managedIdentityClientID,omitempty"`
+	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
+}
 
-	// resourceID of the MSI that should be used (only relevant when using MSI, can not be used at the same time as ManagedIdentityClientID)
+type AzureManagedIdentity struct {
+	// client ID of the managed identity, can not be used at the same time as resourceID
 	// +optional
-	ManagedIdentityResourceID string `json:"managedIdentityResourceID,omitempty"`
+	ClientID string `json:"clientID,omitempty"`
+
+	// resource ID of the managed identity, can not be used at the same time as clientID
+	// +optional
+	ResourceID string `json:"resourceID,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud

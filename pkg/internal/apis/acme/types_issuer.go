@@ -428,9 +428,13 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	Environment AzureDNSEnvironment
 
-	ManagedIdentityClientID string
+	ManagedIdentity *AzureManagedIdentity
+}
 
-	ManagedIdentityResourceID string
+type AzureManagedIdentity struct {
+	ClientID string
+
+	ResourceID string
 }
 
 type AzureDNSEnvironment string
