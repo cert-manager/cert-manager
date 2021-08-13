@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
@@ -39,7 +40,7 @@ type DNSProvider struct {
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentityClientID string, managedIdentityResourceID string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*DNSProvider, error) {
 	env := azure.PublicCloud
 	if environment != "" {
 		var err error
@@ -49,7 +50,7 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		}
 	}
 
-	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient, managedIdentityClientID, managedIdentityResourceID)
+	spt, err := getAuthorization(env, clientID, clientSecret, subscriptionID, tenantID, ambient, managedIdentity)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +71,7 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 	}, nil
 }
 
-func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool, managedIdentityClientID string, managedIdentityResourceID string) (*adal.ServicePrincipalToken, error) {
+func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptionID, tenantID string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*adal.ServicePrincipalToken, error) {
 	if clientID != "" {
 		logf.Log.V(logf.InfoLevel).Info("azuredns authenticating with clientID and secret key")
 		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
@@ -88,10 +89,13 @@ func getAuthorization(env azure.Environment, clientID, clientSecret, subscriptio
 		return nil, fmt.Errorf("ClientID is not set but neither `--cluster-issuer-ambient-credentials` nor `--issuer-ambient-credentials` are set. These are necessary to enable Azure Managed Identities")
 	}
 
-	opt := adal.ManagedIdentityOptions{
-		ClientID:           managedIdentityClientID,
-		IdentityResourceID: managedIdentityResourceID,
+	opt := adal.ManagedIdentityOptions{}
+
+	if managedIdentity != nil {
+		opt.ClientID = managedIdentity.ClientID
+		opt.IdentityResourceID = managedIdentity.ResourceID
 	}
+
 	spt, err := adal.NewServicePrincipalTokenFromManagedIdentity(env.ServiceManagementEndpoint, &opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)

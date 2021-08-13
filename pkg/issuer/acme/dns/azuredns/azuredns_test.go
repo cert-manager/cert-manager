@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +46,7 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, "", "")
+	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
 	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -59,7 +60,7 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 5)
 
-	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, "", "")
+	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -69,10 +70,10 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 func TestInvalidAzureDns(t *testing.T) {
 	validEnv := []string{"", "AzurePublicCloud", "AzureChinaCloud", "AzureGermanCloud", "AzureUSGovernmentCloud"}
 	for _, env := range validEnv {
-		_, err := NewDNSProviderCredentials(env, "cid", "secret", "", "", "", "", util.RecursiveNameservers, false, "", "")
+		_, err := NewDNSProviderCredentials(env, "cid", "secret", "", "", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 		assert.NoError(t, err)
 	}
 
-	_, err := NewDNSProviderCredentials("invalid env", "cid", "secret", "", "", "", "", util.RecursiveNameservers, false, "", "")
+	_, err := NewDNSProviderCredentials("invalid env", "cid", "secret", "", "", "", "", util.RecursiveNameservers, false, &v1.AzureManagedIdentity{})
 	assert.Error(t, err)
 }
