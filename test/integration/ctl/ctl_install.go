@@ -75,7 +75,7 @@ func TestCtlInstall(t *testing.T) {
 			testApiServer, cleanup := install_framework.NewTestInstallApiServer(t)
 			defer cleanup()
 
-			ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 			defer cancel()
 
 			if test.prerun {

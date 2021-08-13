@@ -44,11 +44,11 @@ import (
 // controller will delete old CertificateRequests occording to the
 // spec.revisionHistoryLimit value
 func TestRevisionManagerController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	// Build, instantiate and run the revision manager controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
@@ -149,7 +149,7 @@ func TestRevisionManagerController(t *testing.T) {
 	var crs []cmapi.CertificateRequest
 
 	// Wait for 3 CertificateRequests to be deleted, and that they have the correct revisions
-	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		requests, err := cmCl.CertmanagerV1().CertificateRequests(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
@@ -163,7 +163,7 @@ func TestRevisionManagerController(t *testing.T) {
 		crs = requests.Items
 
 		return true, nil
-	})
+	}, ctx.Done())
 	if err != nil {
 		t.Fatal(err)
 	}

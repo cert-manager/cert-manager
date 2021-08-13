@@ -24,6 +24,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -235,7 +236,10 @@ func TestConversion(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			config, stop := framework.RunControlPlane(t)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+			defer cancel()
+
+			config, stop := framework.RunControlPlane(t, ctx)
 			defer stop()
 
 			cl, err := client.New(config, client.Options{Scheme: api.Scheme})
@@ -243,7 +247,7 @@ func TestConversion(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := cl.Create(context.Background(), test.input); err != nil {
+			if err := cl.Create(ctx, test.input); err != nil {
 				t.Fatal(err)
 			}
 			meta := test.input.(metav1.ObjectMetaAccessor)
@@ -253,7 +257,7 @@ func TestConversion(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := cl.Get(context.Background(), client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, convertedObj.(client.Object)); err != nil {
+			if err := cl.Get(ctx, client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, convertedObj.(client.Object)); err != nil {
 				t.Fatalf("failed to fetch object in expected API version: %v", err)
 			}
 

@@ -47,11 +47,11 @@ import (
 // certificate, ca, and private key is stored into the target Secret to
 // complete Issuing the Certificate.
 func TestIssuingController(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
@@ -178,7 +178,7 @@ func TestIssuingController(t *testing.T) {
 	req.Status.CA = certPem
 	req.Status.Certificate = certPem
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestIssuingController(t *testing.T) {
 
 	// Wait for the Certificate to have the 'Issuing' condition removed, and for
 	// the signed certificate, ca, and private key stored in the Secret.
-	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
@@ -243,7 +243,7 @@ func TestIssuingController(t *testing.T) {
 		}
 
 		return true, nil
-	})
+	}, ctx.Done())
 
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
@@ -251,11 +251,11 @@ func TestIssuingController(t *testing.T) {
 }
 
 func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	// Build, instantiate and run the issuing controller.
 	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
@@ -389,7 +389,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 	req.Status.CA = certPem
 	req.Status.Certificate = certPem
 	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
-	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,7 +405,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 
 	// Wait for the Certificate to have the 'Issuing' condition removed, and for
 	// the signed certificate, ca, and private key stored in the Secret.
-	err = wait.Poll(time.Millisecond*100, time.Second*5, func() (done bool, err error) {
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
@@ -454,7 +454,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		}
 
 		return true, nil
-	})
+	}, ctx.Done())
 	if err != nil {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
 	}

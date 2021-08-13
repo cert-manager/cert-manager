@@ -10,7 +10,9 @@ go_library(
         "//cmd/webhook/app/options:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/pki:go_default_library",
+        "//pkg/webhook/server:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
     ],
 )
 

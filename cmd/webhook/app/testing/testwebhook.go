@@ -17,10 +17,12 @@ limitations under the License.
 package testing
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -31,11 +33,13 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/pkg/webhook/server"
 )
 
 var log = logf.Log.WithName("webhook-server-test")
@@ -54,7 +58,7 @@ type ServerOptions struct {
 	CAPEM []byte
 }
 
-func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
+func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (ServerOptions, StopFunc) {
 	// Allow user to override options using flags
 	var opts options.WebhookOptions
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
@@ -106,14 +110,17 @@ func StartWebhookServer(t *testing.T, args []string) (ServerOptions, StopFunc) {
 
 	// Determine the random port number that was chosen
 	var listenPort int
-	for i := 0; i < 10; i++ {
+	if err = wait.PollImmediateUntil(100*time.Millisecond, func() (bool, error) {
 		listenPort, err = srv.Port()
 		if err != nil {
-			t.Logf("Waiting for ListenPort to be allocated (got error: %v)", err)
-			time.Sleep(time.Second)
-			continue
+			if errors.Is(err, server.ErrNotListening) {
+				return false, nil
+			}
+			return false, err
 		}
-		break
+		return true, nil
+	}, ctx.Done()); err != nil {
+		t.Fatalf("Failed waiting for ListenPort to be allocated (got error: %v)", err)
 	}
 
 	serverOpts := ServerOptions{

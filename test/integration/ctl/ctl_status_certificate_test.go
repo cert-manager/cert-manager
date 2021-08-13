@@ -73,11 +73,11 @@ func generateCSR(t *testing.T) []byte {
 func TestCtlStatusCert(t *testing.T) {
 	testCSR := generateCSR(t)
 
-	config, stopFn := framework.RunControlPlane(t)
-	defer stopFn()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
 
 	// Build clients
 	kubernetesCl, _, cmCl, _ := framework.NewClients(t, config)
@@ -607,7 +607,7 @@ func createOrderOwnedByCR(cmCl versioned.Interface, ctx context.Context,
 	}
 
 	order.OwnerReferences = append(order.OwnerReferences, *metav1.NewControllerRef(req, cmapi.SchemeGroupVersion.WithKind("CertificateRequest")))
-	order, err = cmCl.AcmeV1().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
+	_, err = cmCl.AcmeV1().Orders(req.Namespace).Update(ctx, order, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("Update Err: %v", err)
 	}
@@ -625,7 +625,7 @@ func createChallengesOwnedByOrder(cmCl versioned.Interface, ctx context.Context,
 		}
 
 		challenge.OwnerReferences = append(challenge.OwnerReferences, *metav1.NewControllerRef(order, cmacme.SchemeGroupVersion.WithKind("Order")))
-		challenge, err = cmCl.AcmeV1().Challenges(order.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
+		_, err = cmCl.AcmeV1().Challenges(order.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("Update Err: %v", err)
 		}

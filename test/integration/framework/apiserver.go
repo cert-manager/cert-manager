@@ -41,19 +41,16 @@ import (
 	"github.com/jetstack/cert-manager/pkg/api"
 	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 	"github.com/jetstack/cert-manager/test/internal/apiserver"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 type StopFunc func()
 
-func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
+func RunControlPlane(t *testing.T, ctx context.Context) (*rest.Config, StopFunc) {
 	env, stopControlPlane := apiserver.RunBareControlPlane(t)
 	config := env.Config
 
-	if err := env.Stop(); err != nil {
-		t.Fatal(err)
-	}
-
-	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, []string{"--api-server-host=" + config.Host})
+	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, ctx, []string{"--api-server-host=" + config.Host})
 
 	crdsDir := apitesting.CRDDirectory(t)
 	crds := readCustomResourcesAtPath(t, crdsDir)
@@ -62,11 +59,10 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	}
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
 
-	env.CRDs = crdsToRuntimeObjects(crds)
-
-	config, err := env.Start()
-	if err != nil {
-		t.Fatalf("failed to start control plane: %v", err)
+	if _, err := envtest.InstallCRDs(config, envtest.CRDInstallOptions{
+		CRDs: crdsToRuntimeObjects(crds),
+	}); err != nil {
+		t.Fatal(err)
 	}
 
 	cl, err := client.New(config, client.Options{Scheme: api.Scheme})
@@ -75,13 +71,13 @@ func RunControlPlane(t *testing.T) (*rest.Config, StopFunc) {
 	}
 
 	// installing the validating webhooks, not using WebhookInstallOptions as it patches the CA to be it's own
-	err = cl.Create(context.Background(), getValidatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
+	err = cl.Create(ctx, getValidatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// installing the mutating webhooks, not using WebhookInstallOptions as it patches the CA to be it's own
-	err = cl.Create(context.Background(), getMutatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
+	err = cl.Create(ctx, getMutatingWebhookConfig(webhookOpts.URL, webhookOpts.CAPEM))
 	if err != nil {
 		t.Fatal(err)
 	}

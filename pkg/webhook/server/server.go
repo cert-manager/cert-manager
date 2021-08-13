@@ -51,6 +51,8 @@ var (
 	// ConversionReview resources submitted to the webhook server.
 	// It is not used for performing validation, mutation or conversion.
 	defaultScheme = runtime.NewScheme()
+
+	ErrNotListening = errors.New("Server is not listening yet")
 )
 
 func init() {
@@ -227,7 +229,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 // Port returns the port number that the webhook listener is listening on
 func (s *Server) Port() (int, error) {
 	if s.listener == nil {
-		return 0, errors.New("Run() must be called before Port()")
+		return 0, ErrNotListening
 	}
 	tcpAddr, ok := s.listener.Addr().(*net.TCPAddr)
 	if !ok {
