@@ -21,6 +21,9 @@ import (
 	"path/filepath"
 )
 
+// GetTestPath returns the path for bazel golang test dependencies
+// These dependencies are set in the go_test data attribute in the BUILD.bazel file
+// see: https://github.com/bazelbuild/rules_go/blob/master/go/core.rst#go_test -> data attribute
 func GetTestPath(path ...string) string {
 	return filepath.Join(append([]string{os.Getenv("RUNFILES_DIR"), "com_github_jetstack_cert_manager"}, path...)...)
 }

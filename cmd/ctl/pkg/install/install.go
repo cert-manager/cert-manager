@@ -231,9 +231,16 @@ func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, erro
 	o.client.DryRun = false     // Apply DryRun cli flags
 	o.client.ClientOnly = false // Perform install against cluster
 
-	o.client.Wait = o.Wait          // Wait for resources to be ready
-	o.client.Atomic = o.Wait        // If part of the install fails (& we are waiting), all resource installs are reverted;
-	o.client.DisableHooks = !o.Wait // Disable hooks if wait is disabled
+	o.client.Wait = o.Wait // Wait for resources to be ready
+	// If part of the install fails and the Atomic option is set to True,
+	// all resource installs are reverted. Atomic cannot be enabled without
+	// waiting (if Atomic=True is set, the value for Wait is overwritten with True),
+	// so only enable Atomic if we are waiting.
+	o.client.Atomic = o.Wait
+	// The cert-manager chart currently has only a startupapicheck hook,
+	// if waiting is disabled, this hook should be disabled too; otherwise
+	// the hook will still wait for the installation to succeed.
+	o.client.DisableHooks = !o.Wait
 
 	chartValues[installCRDsFlagName] = false // Do not render CRDs, as this might cause problems when uninstalling using helm
 
