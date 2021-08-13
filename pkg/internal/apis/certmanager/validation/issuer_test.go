@@ -868,6 +868,77 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
+		"invalid azuredns clientID used with managedIdentity": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientID: "some-client-id",
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ClientID: "test",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
+				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns tenantID used with managedIdentity": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					TenantID: "some-tenant-id",
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ClientID: "test",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
+				field.Required(fldPath.Child("azureDNS", "clientSecretSecretRef"), ""),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns clientSecret used with managedIdentity": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientSecret: &cmmeta.SecretKeySelector{
+						Key: "some-key",
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "some-secret-name",
+						},
+					},
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ClientID: "test",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azureDNS", "clientID"), ""),
+				field.Required(fldPath.Child("azureDNS", "tenantID"), ""),
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managed identity can not be used at the same time as clientID, clientSecretSecretRef or tenantID"),
+				field.Required(fldPath.Child("azureDNS", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns managedIdentity with both cliendID and resourceID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					SubscriptionID:    "test",
+					ResourceGroupName: "test",
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ClientID:   "test",
+						ResourceID: "test",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"),
+			},
+		},
 		"missing akamai config": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{},

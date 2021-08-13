@@ -340,7 +340,7 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 				}
 			} else {
 				// using managed identity
-				if len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
+				if p.AzureDNS.ManagedIdentity != nil && len(p.AzureDNS.ManagedIdentity.ClientID) > 0 && len(p.AzureDNS.ManagedIdentity.ResourceID) > 0 {
 					el = append(el, field.Forbidden(fldPath.Child("azureDNS", "managedIdentity"), "managedIdentityClientID and managedIdentityResourceID cannot both be specified"))
 				}
 
