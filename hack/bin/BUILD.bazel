@@ -60,8 +60,8 @@ genrule(
 genrule(
     name = "fetch_kubectl",
     srcs = select({
-        ":darwin": ["@kubectl_1_21_darwin//file"],
-        ":k8": ["@kubectl_1_21_linux//file"],
+        ":darwin": ["@kubectl_1_22_darwin//file"],
+        ":k8": ["@kubectl_1_22_linux//file"],
     }),
     outs = ["kubectl"],
     cmd = "cp $(SRCS) $@",
