@@ -23,13 +23,12 @@ import (
 	"fmt"
 	"testing"
 
-	jks "github.com/pavel-v-chernykh/keystore-go"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
+	jks "github.com/pavel-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"software.sslmate.com/src/go-pkcs12"
-
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func mustGeneratePrivateKey(t *testing.T, encoding cmapi.PrivateKeyEncoding) []byte {
@@ -158,16 +157,19 @@ func TestEncodeJKSKeystore(t *testing.T) {
 					return
 				}
 				buf := bytes.NewBuffer(out)
-				ks, err := jks.Decode(buf, []byte("password"))
+				ks := jks.New()
+				err = ks.Load(buf, []byte("password"))
 				if err != nil {
 					t.Errorf("error decoding keystore: %v", err)
 					return
 				}
-				if ks["certificate"] == nil {
+
+				if !ks.IsPrivateKeyEntry("certificate") {
 					t.Errorf("no certificate data found in keystore")
 				}
-				if ks["ca"] != nil {
-					t.Errorf("unexpected ca data found in keystore")
+
+				if ks.IsTrustedCertificateEntry("ca") {
+					t.Errorf("unexpected ca data found in truststore")
 				}
 			},
 		},
@@ -180,16 +182,18 @@ func TestEncodeJKSKeystore(t *testing.T) {
 					t.Errorf("expected no error but got: %v", err)
 				}
 				buf := bytes.NewBuffer(out)
-				ks, err := jks.Decode(buf, []byte("password"))
+				ks := jks.New()
+				err = ks.Load(buf, []byte("password"))
 				if err != nil {
 					t.Errorf("error decoding keystore: %v", err)
 					return
 				}
-				if ks["certificate"] == nil {
+				if !ks.IsPrivateKeyEntry("certificate") {
 					t.Errorf("no certificate data found in keystore")
 				}
-				if ks["ca"] != nil {
-					t.Errorf("unexpected ca data found in keystore")
+
+				if ks.IsTrustedCertificateEntry("ca") {
+					t.Errorf("unexpected ca data found in truststore")
 				}
 			},
 		},
@@ -203,16 +207,17 @@ func TestEncodeJKSKeystore(t *testing.T) {
 					t.Errorf("expected no error but got: %v", err)
 				}
 				buf := bytes.NewBuffer(out)
-				ks, err := jks.Decode(buf, []byte("password"))
+				ks := jks.New()
+				err = ks.Load(buf, []byte("password"))
 				if err != nil {
 					t.Errorf("error decoding keystore: %v", err)
 					return
 				}
-				if ks["certificate"] == nil {
+				if !ks.IsPrivateKeyEntry("certificate") {
 					t.Errorf("no certificate data found in keystore")
 				}
-				if ks["ca"] == nil {
-					t.Errorf("no ca data found in keystore")
+				if !ks.IsTrustedCertificateEntry("ca") {
+					t.Errorf("no ca data found in truststore")
 				}
 			},
 		},
