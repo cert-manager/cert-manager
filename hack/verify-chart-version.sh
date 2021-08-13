@@ -25,13 +25,16 @@ chart_dir="deploy/charts/cert-manager"
 echo "Linting chart: ${chart_dir}"
 
 bazel build //deploy/charts/cert-manager
-tmpdir="$(mktemp -d -p "${REPO_ROOT}")"
+case $(uname) in
+    Darwin) tmpdir="$(mktemp -d)";;
+    *)      tmpdir="$(mktemp -d -p "${REPO_ROOT}")";;
+esac
 trap "rm -rf ${tmpdir}" EXIT
 
 tar -C "${tmpdir}" -xvf bazel-bin/deploy/charts/cert-manager/cert-manager.tgz
 
-if ! docker run -v ${tmpdir}:/workspace --workdir /workspace \
-    quay.io/helmpack/chart-testing:v3.0.0-beta.2 \
+if ! docker run -v "${tmpdir}":/workspace --workdir /workspace \
+    quay.io/helmpack/chart-testing:v3.4.0 \
     ct lint \
         --check-version-increment=false \
         --validate-maintainers=false \
