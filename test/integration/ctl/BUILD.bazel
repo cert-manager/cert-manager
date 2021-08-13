@@ -8,7 +8,9 @@ go_test(
         "ctl_renew_test.go",
         "ctl_status_certificate_test.go",
     ],
-    data = glob(["testdata/**"]),
+    data = glob(["testdata/**"]) + [
+        "//deploy/charts/cert-manager:cert-manager.tgz",
+    ],
     embed = [":go_default_library"],
     deps = [
         "//cmd/ctl/pkg/convert:go_default_library",
@@ -59,6 +61,7 @@ go_library(
     deps = [
         "//cmd/ctl/cmd:go_default_library",
         "//test/integration/ctl/install_framework:go_default_library",
+        "//test/internal/util:go_default_library",
         "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
     ],
 )
