@@ -20,6 +20,12 @@ spec:
     bin: kubectl-cert_manager
   - selector:
       matchLabels:
+        os: darwin
+        arch: arm64
+    {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-darwin-arm64.tar.gz" .TagName }}
+    bin: kubectl-cert_manager
+  - selector:
+      matchLabels:
         os: linux
         arch: amd64
     {{addURIAndSha "https://github.com/jetstack/cert-manager/releases/download/{{ .TagName }}/kubectl-cert_manager-linux-amd64.tar.gz" .TagName }}

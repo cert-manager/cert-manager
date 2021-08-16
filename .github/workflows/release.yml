@@ -1,12 +1,15 @@
 name: release
 on:
-  release:
-    types: ["released"]
+  push:
+    tags:
+      # this will trigger on "v2.0.0" but not on "v2.0.0-beta.0" or "v2.0.0-alpha.1"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 jobs:
   krewrelease:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@master
-      - name: Update new version in krew-index
-        uses: rajatjindal/krew-release-bot@v0.0.40
+      - name: Update with new version in krew-index
+        # v0.0.40, referenced by hash
+        uses: rajatjindal/krew-release-bot@56925b62bacc2c652114d66a8256faaf0bf89fa9
