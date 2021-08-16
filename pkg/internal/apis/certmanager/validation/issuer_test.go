@@ -924,6 +924,39 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("azureDNS", "resourceGroupName"), ""),
 			},
 		},
+		"valid azuredns with managedIdentity": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					SubscriptionID:    "test",
+					ResourceGroupName: "test",
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"valid azuredns with managedIdentity with clientID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					SubscriptionID:    "test",
+					ResourceGroupName: "test",
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ClientID: "test",
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"valid azuredns with managedIdentity with resourceID": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					SubscriptionID:    "test",
+					ResourceGroupName: "test",
+					ManagedIdentity: &cmacme.AzureManagedIdentity{
+						ResourceID: "test",
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
 		"invalid azuredns managedIdentity with both cliendID and resourceID": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
