@@ -18,7 +18,6 @@ package validation
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
 	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -734,25 +734,8 @@ func TestValidateCertificate(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateCertificate(s.a, s.cfg)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected errors %v but got %v", s.errs, errs)
-				return
-			}
-			if len(warnings) != len(s.warnings) {
-				t.Errorf("Expected warnings %v but got %v", s.warnings, warnings)
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected error %v but got %v", expectedErr, e)
-				}
-			}
-			for i, w := range warnings {
-				expectedWarning := s.warnings[i]
-				if w != expectedWarning {
-					t.Errorf("Expected warning %q but got %q", expectedWarning, w)
-				}
-			}
+			assert.ElementsMatch(t, errs, s.errs)
+			assert.ElementsMatch(t, warnings, s.warnings)
 		})
 	}
 }
@@ -864,16 +847,7 @@ func TestValidateDuration(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateDuration(&s.cfg.Spec, fldPath)
-			if len(errs) != len(s.errs) {
-				t.Errorf("Expected %v but got %v", s.errs, errs)
-				return
-			}
-			for i, e := range errs {
-				expectedErr := s.errs[i]
-				if !reflect.DeepEqual(e, expectedErr) {
-					t.Errorf("Expected %v but got %v", expectedErr, e)
-				}
-			}
+			assert.ElementsMatch(t, errs, s.errs)
 		})
 	}
 }
