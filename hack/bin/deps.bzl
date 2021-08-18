@@ -25,6 +25,7 @@ def install():
     install_oc3()
     install_kind()
     install_ytt()
+    install_yq()
 
     # Install golang.org/x/build as kubernetes/repo-infra requires it for the
     # build-tar bazel target.
@@ -251,4 +252,20 @@ def install_ytt():
         executable = 1,
         sha256 = "49741ac5540fc64da8566f3d1c9538f4f0fec22c62b8ba83e5e3d8efb91ee170",
         urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.34.0/ytt-linux-amd64"],
+    )
+
+# yq is jq for yaml
+def install_yq():
+    http_file(
+        name = "yq_darwin",
+        executable = 1,
+        sha256 = "5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f6741ff7f46",
+        urls = ["https://github.com/mikefarah/yq/releases/download/v4.11.2/yq_darwin_amd64"],
+    )
+
+    http_file(
+        name = "yq_linux",
+        executable = 1,
+        sha256 = "6b891fd5bb13820b2f6c1027b613220a690ce0ef4fc2b6c76ec5f643d5535e61",
+        urls = ["https://github.com/mikefarah/yq/releases/download/v4.11.2/yq_linux_amd64"],
     )
