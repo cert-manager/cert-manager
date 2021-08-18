@@ -87,6 +87,7 @@ func (v *VenafiCloud) Provision() error {
 	v.details.issuerTemplate = cmapi.VenafiIssuer{
 		Zone: v.config.Addons.Venafi.Cloud.Zone,
 		Cloud: &cmapi.VenafiCloud{
+			URL: "https://api.venafi.cloud",
 			APITokenSecretRef: cmmeta.SecretKeySelector{
 				LocalObjectReference: cmmeta.LocalObjectReference{
 					Name: s.Name,
