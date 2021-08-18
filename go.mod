@@ -1,6 +1,6 @@
 module github.com/jetstack/cert-manager
 
-go 1.16
+go 1.17
 
 // This fork allows us to add alternative certificate chains for ACME see
 // https://github.com/cert-manager/crypto#cert-manager-fork-of-golangxcrypto .
