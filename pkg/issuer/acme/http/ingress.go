@@ -358,7 +358,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 func ingressPath(token, serviceName string) networkingv1.HTTPIngressPath {
 	return networkingv1.HTTPIngressPath{
 		Path:     solverPathFn(token),
-		PathType: func() *networkingv1.PathType { s := networkingv1.PathTypeExact; return &s }(),
+		PathType: func() *networkingv1.PathType { s := networkingv1.PathTypeImplementationSpecific; return &s }(),
 		Backend: networkingv1.IngressBackend{
 			Service: &networkingv1.IngressServiceBackend{
 				Name: serviceName,
