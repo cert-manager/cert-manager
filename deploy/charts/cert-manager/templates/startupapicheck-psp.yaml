@@ -17,14 +17,15 @@ metadata:
     apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
     apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
     {{- end }}
+    {{- if .Values.startupapicheck.rbac.annotations }}
+    {{ toYaml .Values.startupapicheck.rbac.annotations | nindent 4 }}
+    {{- end }}
 spec:
   privileged: false
   allowPrivilegeEscalation: false
   allowedCapabilities: []  # default set of capabilities are implicitly allowed
   volumes:
   - 'projected'
-  - 'secret'
-  - 'downwardAPI'
   hostNetwork: false
   hostIPC: false
   hostPID: false
