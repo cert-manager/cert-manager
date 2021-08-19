@@ -12,6 +12,8 @@ GOFMT = "@go_sdk//:bin/gofmt"
 
 JQ = "//hack/bin:jq"
 
+YQ = "//hack/bin:yq"
+
 CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
 
 # General repo verification targets
@@ -252,11 +254,13 @@ sh_test(
         "$(location :update-crds)",
         "$(location %s)" % GO,
         "$(location %s)" % CONTROLLER_GEN,
+        "$(location %s)" % YQ,
     ],
     data = [
         ":update-crds",
         GO,
         CONTROLLER_GEN,
+        YQ,
         "@//:all-srcs",
     ],
 )
