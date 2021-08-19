@@ -74,7 +74,7 @@ yq=$(realpath "$4")
 echo "Verifying that CRDs don't contain .status fields..."
 for file in ${crdPath}/*.yaml; do
   name=$($yq e '.metadata.name' $file)
-  echo "Verifying that the CRD for $name does not contain status field.."
+  echo "Verifying that the CRD for $name does not contain a status field"
   # Exit 1 if status is non-null
   $yq e --exit-status=1 '.status==null' $file
 done
