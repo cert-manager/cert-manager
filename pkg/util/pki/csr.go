@@ -211,7 +211,10 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 	}
 
 	return &x509.CertificateRequest{
-		Version:            3,
+		// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
+		// This value isn't used by Go at the time of writing.
+		// https://datatracker.ietf.org/doc/html/rfc2986#section-4
+		Version:            0,
 		SignatureAlgorithm: sigAlgo,
 		PublicKeyAlgorithm: pubKeyAlgo,
 		Subject: pkix.Name{
@@ -301,7 +304,11 @@ func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
 	}
 
 	return &x509.Certificate{
-		Version:               3,
+		// Version must be 2 according to RFC5280.
+		// A version value of 2 confusingly means version 3.
+		// This value isn't used by Go at the time of writing.
+		// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
+		Version:               2,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    pubKeyAlgo,
@@ -369,7 +376,11 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 	}
 
 	return &x509.Certificate{
-		Version:               csr.Version,
+		// Version must be 2 according to RFC5280.
+		// A version value of 2 confusingly means version 3.
+		// This value isn't used by Go at the time of writing.
+		// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
+		Version:               2,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    csr.PublicKeyAlgorithm,
