@@ -1,6 +1,6 @@
 name: release
 on:
-  push:
+  create:
     tags:
       # this will trigger on "v2.0.0" but not on "v2.0.0-beta.0" or "v2.0.0-alpha.1"
       - "v[0-9]+.[0-9]+.[0-9]+"
