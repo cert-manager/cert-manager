@@ -302,7 +302,7 @@ func TestRenewalTime(t *testing.T) {
 		renewBeforeOverride *metav1.Duration
 		expectedRenewalTime *metav1.Time
 	}
-	now := time.Now()
+	now := time.Now().Truncate(time.Second)
 	tests := map[string]scenario{
 		"short lived cert, spec.renewBefore is not set": {
 			notBefore:           now,
