@@ -2948,15 +2948,6 @@ def go_repositories():
     )
 
     go_repository(
-        name = "com_github_pavel_v_chernykh_keystore_go",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/pavel-v-chernykh/keystore-go",
-        sum = "h1:Jd6xfriVlJ6hWPvYOE0Ni0QWcNTLRehfGPFxr3eSL80=",
-        version = "v2.1.0+incompatible",
-    )
-
-    go_repository(
         name = "com_github_pavel_v_chernykh_keystore_go_v4",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
