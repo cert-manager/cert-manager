@@ -14537,7 +14537,7 @@ THE SOFTWARE.
 
 
 ================================================================================
-= vendor/github.com/pavel-v-chernykh/keystore-go licensed under: =
+= vendor/github.com/pavel-v-chernykh/keystore-go/v4 licensed under: =
 
 The MIT License (MIT)
 
@@ -14561,7 +14561,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-= vendor/github.com/pavel-v-chernykh/keystore-go/LICENSE 1ef2fe9f6c2064290158c50854f690dc
+= vendor/github.com/pavel-v-chernykh/keystore-go/v4/LICENSE 1ef2fe9f6c2064290158c50854f690dc
 ================================================================================
 
 
