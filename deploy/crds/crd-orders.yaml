@@ -673,3 +673,9 @@ spec:
                   type: string
       served: true
       storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

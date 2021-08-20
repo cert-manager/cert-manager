@@ -25,7 +25,6 @@ def install():
     install_oc3()
     install_kind()
     install_ytt()
-    install_yq()
 
     # Install golang.org/x/build as kubernetes/repo-infra requires it for the
     # build-tar bazel target.
@@ -90,8 +89,8 @@ def install_misc():
 def install_integration_test_dependencies():
     http_archive(
         name = "kubebuilder-tools_linux_amd64",
-        sha256 = "25daf3c5d7e8b63ea933e11cd6ca157868d71a12885aba97d1e7e1a15510713e",
-        urls = ["https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.22.0-linux-amd64.tar.gz"],
+        sha256 = "5bee54dcae3bab7689505b438432de9ebfe880ea684aa54c6b81d6bc0d8df86a",
+        urls = ["https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.21.2-linux-amd64.tar.gz"],
         build_file_content = """
 filegroup(
     name = "kube-apiserver",
@@ -112,8 +111,8 @@ filegroup(
     
     http_archive(
         name = "kubebuilder-tools_darwin_amd64",
-        sha256 = "bb27efb1d2ee43749475293408fc80b923324ab876e5da54e58594bbe2969c42",
-        urls = ["https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.22.0-darwin-amd64.tar.gz"],
+        sha256 = "add3f62be843b0c0f4be17d9159ebea738da18e2f0edce62d945b3ffdd683800",
+        urls = ["https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.21.2-darwin-amd64.tar.gz"],
         build_file_content = """
 filegroup(
     name = "kube-apiserver",
@@ -156,8 +155,8 @@ def install_helm():
     ## the version numbers in these rules.
     http_archive(
         name = "helm_darwin",
-        sha256 = "84a1ff17dd03340652d96e8be5172a921c97825fd278a2113c8233a4e8db5236",
-        urls = ["https://get.helm.sh/helm-v3.6.3-darwin-amd64.tar.gz"],
+        sha256 = "81a94d2877326012b99ac0737517501e5ed69bb4987884e7f2d0887ad27895a9",
+        urls = ["https://get.helm.sh/helm-v3.6.2-darwin-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -172,8 +171,8 @@ filegroup(
 
     http_archive(
         name = "helm_linux",
-        sha256 = "07c100849925623dc1913209cd1a30f0a9b80a5b4d6ff2153c609d11b043e262",
-        urls = ["https://get.helm.sh/helm-v3.6.3-linux-amd64.tar.gz"],
+        sha256 = "f3a4be96b8a3b61b14eec1a35072e1d6e695352e7a08751775abf77861a0bf54",
+        urls = ["https://get.helm.sh/helm-v3.6.2-linux-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -189,17 +188,17 @@ filegroup(
 # Define rules for different kubectl versions
 def install_kubectl():
     http_file(
-        name = "kubectl_1_22_darwin",
+        name = "kubectl_1_21_darwin",
         executable = 1,
-        sha256 = "2b5214a01a9595e4f2b8f30c556136c5b93351f6677d07858ee1acf92cc14249",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/darwin/amd64/kubectl"],
+        sha256 = "4a6c072223d5944b98601fc9f4cfdc5652ff0919ca91210b7eed5c83f2422fa1",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.21.2/bin/darwin/amd64/kubectl"],
     )
 
     http_file(
-        name = "kubectl_1_22_linux",
+        name = "kubectl_1_21_linux",
         executable = 1,
-        sha256 = "703e70d49b82271535bc66bc7bd469a58c11d47f188889bd37101c9772f14fa1",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/linux/amd64/kubectl"],
+        sha256 = "55b982527d76934c2f119e70bf0d69831d3af4985f72bb87cd4924b1c7d528da",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.21.2/bin/linux/amd64/kubectl"],
     )
 
 
@@ -252,20 +251,4 @@ def install_ytt():
         executable = 1,
         sha256 = "49741ac5540fc64da8566f3d1c9538f4f0fec22c62b8ba83e5e3d8efb91ee170",
         urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.34.0/ytt-linux-amd64"],
-    )
-
-# yq is jq for yaml
-def install_yq():
-    http_file(
-        name = "yq_darwin",
-        executable = 1,
-        sha256 = "5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f6741ff7f46",
-        urls = ["https://github.com/mikefarah/yq/releases/download/v4.11.2/yq_darwin_amd64"],
-    )
-
-    http_file(
-        name = "yq_linux",
-        executable = 1,
-        sha256 = "6b891fd5bb13820b2f6c1027b613220a690ce0ef4fc2b6c76ec5f643d5535e61",
-        urls = ["https://github.com/mikefarah/yq/releases/download/v4.11.2/yq_linux_amd64"],
     )

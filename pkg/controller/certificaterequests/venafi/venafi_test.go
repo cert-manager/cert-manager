@@ -90,7 +90,7 @@ func TestSign(t *testing.T) {
 	}
 
 	rootTmpl := &x509.Certificate{
-		Version:               2,
+		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,

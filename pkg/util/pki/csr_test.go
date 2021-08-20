@@ -422,8 +422,7 @@ func TestGenerateCSR(t *testing.T) {
 		{
 			name: "Generate CSR from certificate with only DNS",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{DNSNames: []string{"example.org"}}},
-			want: &x509.CertificateRequest{
-				Version:            0,
+			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
 				DNSNames:           []string{"example.org"},
@@ -433,8 +432,7 @@ func TestGenerateCSR(t *testing.T) {
 		{
 			name: "Generate CSR from certificate with only CN",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org"}},
-			want: &x509.CertificateRequest{
-				Version:            0,
+			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
 				Subject:            pkix.Name{CommonName: "example.org"},
@@ -444,8 +442,7 @@ func TestGenerateCSR(t *testing.T) {
 		{
 			name: "Generate CSR from certificate with extended key usages",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageIPsecEndSystem}}},
-			want: &x509.CertificateRequest{
-				Version:            0,
+			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
 				Subject:            pkix.Name{CommonName: "example.org"},
@@ -455,8 +452,7 @@ func TestGenerateCSR(t *testing.T) {
 		{
 			name: "Generate CSR from certificate with double signing key usages",
 			crt:  &cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.org", Usages: []cmapi.KeyUsage{cmapi.UsageDigitalSignature, cmapi.UsageKeyEncipherment, cmapi.UsageSigning}}},
-			want: &x509.CertificateRequest{
-				Version:            0,
+			want: &x509.CertificateRequest{Version: 3,
 				SignatureAlgorithm: x509.SHA256WithRSA,
 				PublicKeyAlgorithm: x509.RSA,
 				Subject:            pkix.Name{CommonName: "example.org"},
@@ -579,7 +575,7 @@ func TestSignCSRTemplate(t *testing.T) {
 		pk, err := GenerateECPrivateKey(256)
 		require.NoError(t, err)
 		tmpl := &x509.Certificate{
-			Version:               2,
+			Version:               3,
 			BasicConstraintsValid: true,
 			SerialNumber:          big.NewInt(0),
 			Subject: pkix.Name{

@@ -129,9 +129,7 @@ func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	if serviceType != "" {
-		service.Spec.Type = serviceType
-	}
+	service.Spec.Type = serviceType
 
 	return service, nil
 }

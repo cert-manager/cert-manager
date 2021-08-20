@@ -196,9 +196,7 @@ type ACMEChallengeSolverHTTP01 struct {
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
-	// Optional service type for Kubernetes solver service. Supported values
-	// are NodePort or ClusterIP. If unset, defaults to NodePort.
-	// +optional
+	// Optional service type for Kubernetes solver service
 	ServiceType corev1.ServiceType
 
 	// The ingress class to use when creating Ingress resources to solve ACME
@@ -223,8 +221,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 }
 
 type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
-	// Optional service type for Kubernetes solver service. Supported values
-	// are NodePort or ClusterIP. If unset, defaults to NodePort.
+	// Optional service type for Kubernetes solver service
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 

@@ -4,7 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "context.go",
-        "defaults.go",
         "exit.go",
         "signal.go",
         "signal_posix.go",

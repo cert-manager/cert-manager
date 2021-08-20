@@ -224,7 +224,6 @@ func (f *DynamicSource) regenerateCertificate(nextRenew chan<- time.Time) error 
 
 	// create the certificate template to be signed
 	template := &x509.Certificate{
-		Version:            2,
 		PublicKeyAlgorithm: x509.ECDSA,
 		PublicKey:          pk.Public(),
 		DNSNames:           f.DNSNames,

@@ -339,7 +339,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 	cert := &x509.Certificate{
-		Version:               2,
+		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,

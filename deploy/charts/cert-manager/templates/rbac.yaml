@@ -276,7 +276,7 @@ rules:
     resources: ["gateways", "httproutes"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["networking.x-k8s.io"]
-    resources: ["gateways/finalizers", "httproutes/finalizers"]
+    resources: ["gateways/finalizers", "httproutes/finalisers"]
     verbs: ["update"]
   - apiGroups: [""]
     resources: ["events"]
