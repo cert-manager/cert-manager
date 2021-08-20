@@ -289,6 +289,6 @@ func RenewalTime(notBefore, notAfter time.Time, renewBeforeOverride *metav1.Dura
 
 	// 2. Calculate when a cert should be renewed
 
-	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore))
+	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore).Truncate(time.Second))
 	return &rt
 }
