@@ -174,7 +174,7 @@ func generatePrivateKeyAndCertificate(t *testing.T, serial string) ([]byte, []by
 		t.Fatal(err)
 	}
 	cert := &x509.Certificate{
-		Version:               3,
+		Version:               2,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.RSA,
