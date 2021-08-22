@@ -18,7 +18,6 @@ load("@bazel_gazelle//:deps.bzl", "go_repository")
 def install():
     install_misc()
     install_integration_test_dependencies()
-    install_bazel_tools()
     install_staticcheck()
     install_helm()
     install_kubectl()
@@ -130,23 +129,6 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 """,
-    )
-
-# Install additional tools for Bazel management
-def install_bazel_tools():
-    ## Install buildozer, for mass-editing BUILD files
-    http_file(
-        name = "buildozer_darwin",
-        executable = 1,
-        sha256 = "972944bbd15a20d1527695ba805ca7e7f98c3381c8f521359791e0016f079713",
-        urls = ["https://github.com/bazelbuild/buildtools/releases/download/4.0.1/buildozer-darwin-amd64"],
-    )
-
-    http_file(
-        name = "buildozer_linux",
-        executable = 1,
-        sha256 = "082aea1df38fe30ce41d955a2cbf309cae8ec386507e0c10cc16f0d9a93e151f",
-        urls = ["https://github.com/bazelbuild/buildtools/releases/download/4.0.1/buildozer-linux-amd64"],
     )
 
 # Install Helm targets
