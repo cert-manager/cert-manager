@@ -50,7 +50,7 @@ update_deps_licenses=(
   "$go"
 )
 
-shift 6
+shift 5
 
 cd "$BUILD_WORKSPACE_DIRECTORY"
 trap 'echo "FAILED" >&2' ERR

@@ -16,7 +16,6 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file", "http_archive"
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 def install():
-    install_misc()
     install_integration_test_dependencies()
     install_staticcheck()
     install_helm()

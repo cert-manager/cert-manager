@@ -52,7 +52,7 @@ fi
 go=$(realpath "$1")
 export PATH=$(dirname "$go"):$PATH
 
-shift 2
+shift 1
 REPO_ROOT="$BUILD_WORKSPACE_DIRECTORY"
 LICENSE_ROOT="$REPO_ROOT"
 
