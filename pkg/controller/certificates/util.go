@@ -289,6 +289,16 @@ func RenewalTime(notBefore, notAfter time.Time, renewBeforeOverride *metav1.Dura
 
 	// 2. Calculate when a cert should be renewed
 
-	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore))
+	// Truncate the renewal time to nearest second. This is important
+	// because the renewal time also gets stored on Certificate's status
+	// where it is truncated to the nearest second. We use the renewal time
+	// from Certificate's status to determine when the Certificate will be
+	// added to the queue to be renewed, but then re-calculate whether it
+	// needs to be renewed _now_ using this function- so returning a
+	// non-truncated value here would potentially cause Certificates to be
+	// re-queued for renewal earlier than the calculated renewal time thus
+	// causing Certificates to not be automatically renewed. See
+	// https://github.com/jetstack/cert-manager/pull/4399.
+	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore).Truncate(time.Second))
 	return &rt
 }
