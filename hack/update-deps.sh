@@ -40,16 +40,14 @@ go=$(realpath "$1")
 export PATH=$(dirname "$go"):$PATH
 gazelle=$(realpath "$2")
 kazel=$(realpath "$3")
-jq=$(realpath "$4")
 update_bazel=(
-  $(realpath "$5")
+  $(realpath "$4")
   "$gazelle"
   "$kazel"
 )
 update_deps_licenses=(
-  $(realpath "$6")
+  $(realpath "$5")
   "$go"
-  "$jq"
 )
 
 shift 6

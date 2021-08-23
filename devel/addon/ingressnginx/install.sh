@@ -36,10 +36,10 @@ fi
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 IMAGE_TAG=""
 
-# Require helm, kubectl and jq available on PATH
+# Require helm, kubectl and yq available on PATH
 check_tool kubectl
 check_tool helm
-bazel build //hack/bin:jq
+bazel build //hack/bin:yq
 bindir="$(bazel info bazel-bin)"
 export PATH="${bindir}/hack/bin/:$PATH"
 
@@ -52,7 +52,7 @@ export PATH="${bindir}/hack/bin/:$PATH"
 
 # This allows running ./devel/setup-e2e-deps.sh locally against Kubernetes v1.22
 # without passing the K8S_VERSION env var.
-k8s_version=$(kubectl version -ojson | jq  -r '.serverVersion | "\(.major).\(.minor)"')
+k8s_version=$(kubectl version -oyaml | yq e '.serverVersion | .major +"."+ .minor' -)
 if [[ $k8s_version =~ 1\.22 ]]; then
   IMAGE_TAG="v1.0.0-alpha.2"
 else

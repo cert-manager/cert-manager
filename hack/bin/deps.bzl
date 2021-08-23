@@ -68,21 +68,6 @@ filegroup(
 """,
     )
 
-def install_misc():
-    http_file(
-        name = "jq_linux",
-        executable = 1,
-        sha256 = "af986793a515d500ab2d35f8d2aecd656e764504b789b66d7e1a0b727a124c44",
-        urls = ["https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"],
-    )
-
-    http_file(
-        name = "jq_osx",
-        executable = 1,
-        sha256 = "5c0a0a3ea600f302ee458b30317425dd9632d1ad8882259fcaf4e9b868b2b1ef",
-        urls = ["https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64"],
-    )
-
 # Install dependencies used by the controller-runtime integration test framework
 # Use these links to check for new versions:
 # https://console.developers.google.com/storage/kubebuilder-tools/
