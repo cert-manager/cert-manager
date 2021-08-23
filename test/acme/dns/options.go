@@ -19,7 +19,7 @@ package dns
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -59,7 +59,7 @@ func applyDefaults(f *fixture) {
 	}
 	if f.jsonConfig == nil {
 		if f.kubectlManifestsPath != "" {
-			d, err := ioutil.ReadFile(f.kubectlManifestsPath + "/config.json")
+			d, err := os.ReadFile(f.kubectlManifestsPath + "/config.json")
 			if err == nil {
 				f.jsonConfig = &apiextensionsv1.JSON{
 					Raw: d,

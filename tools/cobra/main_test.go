@@ -17,14 +17,13 @@ limitations under the License.
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestRun(t *testing.T) {
-	rootDir, err := ioutil.TempDir(os.TempDir(), "cert-manager-cobra")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "cert-manager-cobra")
 	if err != nil {
 		t.Fatal(err)
 	}

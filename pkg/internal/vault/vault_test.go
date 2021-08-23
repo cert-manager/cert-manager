@@ -27,7 +27,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -254,7 +254,7 @@ func TestSign(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: ioutil.NopCloser(bytes.NewReader(bundleData))},
+					Body: io.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testLeafCertificate + testIntermediateCa,
@@ -268,7 +268,7 @@ func TestSign(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: ioutil.NopCloser(bytes.NewReader(rootBundleData))},
+					Body: io.NopCloser(bytes.NewReader(rootBundleData))},
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testLeafCertificate + testIntermediateCa,
@@ -282,7 +282,7 @@ func TestSign(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: ioutil.NopCloser(bytes.NewReader(bundleData))},
+					Body: io.NopCloser(bytes.NewReader(bundleData))},
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testLeafCertificate + testIntermediateCa,
@@ -504,7 +504,7 @@ func TestSetToken(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: ioutil.NopCloser(
+					Body: io.NopCloser(
 						strings.NewReader(
 							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-roleapp-token"}}`),
 					),
@@ -611,7 +611,7 @@ func TestSetToken(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: ioutil.NopCloser(
+					Body: io.NopCloser(
 						strings.NewReader(
 							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
 					),
@@ -1007,7 +1007,7 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			client: vaultfake.NewFakeClient().WithRawRequest(
 				&vault.Response{
 					Response: &http.Response{
-						Body: ioutil.NopCloser(
+						Body: io.NopCloser(
 							strings.NewReader(
 								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{}}`),
 						),
@@ -1024,7 +1024,7 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			client: vaultfake.NewFakeClient().WithRawRequest(
 				&vault.Response{
 					Response: &http.Response{
-						Body: ioutil.NopCloser(
+						Body: io.NopCloser(
 							strings.NewReader(
 								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
 						),
@@ -1041,7 +1041,7 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			client: vaultfake.NewFakeClient().WithRawRequest(
 				&vault.Response{
 					Response: &http.Response{
-						Body: ioutil.NopCloser(
+						Body: io.NopCloser(
 							strings.NewReader(
 								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"},"auth":{"client_token":"my-client-token"}}`),
 						),

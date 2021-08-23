@@ -21,7 +21,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -247,7 +246,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	if o.KeyFilename != "" {
 		keyFileName = o.KeyFilename
 	}
-	if err := ioutil.WriteFile(keyFileName, keyData, 0600); err != nil {
+	if err := os.WriteFile(keyFileName, keyData, 0600); err != nil {
 		return fmt.Errorf("error when writing private key to file: %w", err)
 	}
 	fmt.Fprintf(o.ErrOut, "Private key written to file %s\n", keyFileName)

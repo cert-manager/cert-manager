@@ -20,7 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -287,7 +287,7 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	}
 
 	defer response.Body.Close()
-	presentedKey, err := ioutil.ReadAll(response.Body)
+	presentedKey, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to decode response body", "error", err)
 		return fmt.Errorf("failed to read response body: %v", err)

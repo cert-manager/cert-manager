@@ -24,7 +24,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -78,7 +78,7 @@ func checkOCSPValidCert(leafCert, issuerCert *x509.Certificate) (bool, error) {
 			return false, fmt.Errorf("error making HTTP request: %w", err)
 		}
 		defer httpResponse.Body.Close()
-		output, err := ioutil.ReadAll(httpResponse.Body)
+		output, err := io.ReadAll(httpResponse.Body)
 		if err != nil {
 			return false, fmt.Errorf("error reading HTTP body: %w", err)
 		}
@@ -102,7 +102,7 @@ func checkCRLValidCert(cert *x509.Certificate, url string) (bool, error) {
 		return false, fmt.Errorf("error getting HTTP response: %w", err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return false, fmt.Errorf("error reading HTTP body: %w", err)
 	}
