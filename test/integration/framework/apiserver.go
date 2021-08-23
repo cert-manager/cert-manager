@@ -19,7 +19,6 @@ package framework
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -150,7 +149,7 @@ func readCustomResourcesAtPath(t *testing.T, path string) []*v1.CustomResourceDe
 }
 
 func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]*v1.CustomResourceDefinition, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

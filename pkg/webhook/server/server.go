@@ -21,7 +21,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -280,7 +280,7 @@ func (s *Server) handle(inner handleFunc) func(w http.ResponseWriter, req *http.
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 
-		data, err := ioutil.ReadAll(req.Body)
+		data, err := io.ReadAll(req.Body)
 		if err != nil {
 			s.Log.Error(err, "failed to read request body")
 			w.WriteHeader(http.StatusBadRequest)

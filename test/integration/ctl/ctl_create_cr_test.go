@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -145,7 +144,7 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 			}
 
 			// Check the file where the private key is stored
-			keyData, err := ioutil.ReadFile(test.expKeyFilename)
+			keyData, err := os.ReadFile(test.expKeyFilename)
 			if err != nil {
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
@@ -342,7 +341,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			}
 
 			// Check the file where the private key is stored
-			keyData, err := ioutil.ReadFile(test.expKeyFilename)
+			keyData, err := os.ReadFile(test.expKeyFilename)
 			if err != nil {
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
@@ -370,7 +369,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			// If the expected error message is the one below, we skip checking
 			// because no certificate will have been written to file
 			if test.fetchCert && test.expErrMsg != "error when waiting for CertificateRequest to be signed: timed out waiting for the condition" {
-				certData, err := ioutil.ReadFile(test.expCertFilename)
+				certData, err := os.ReadFile(test.expCertFilename)
 				if err != nil {
 					t.Errorf("error when reading file storing private key: %v", err)
 				}
@@ -401,7 +400,7 @@ func setupPathForTest(t *testing.T) func() {
 	}
 
 	// Create tmp directory and cd into it to store private key files
-	tmpDir, err := ioutil.TempDir("", "tmp-ctl-test-*")
+	tmpDir, err := os.MkdirTemp("", "tmp-ctl-test-*")
 	if err != nil {
 		t.Fatal(err)
 	}

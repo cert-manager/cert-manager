@@ -20,7 +20,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -35,7 +34,7 @@ import (
 )
 
 func TestFileSource_ReadsFile(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test-filesource-readsfile-")
+	dir, err := os.MkdirTemp("", "test-filesource-readsfile-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +84,7 @@ func TestFileSource_ReadsFile(t *testing.T) {
 }
 
 func TestFileSource_UpdatesFile(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test-filesource-updatesfile-")
+	dir, err := os.MkdirTemp("", "test-filesource-updatesfile-")
 	if err != nil {
 		t.Fatal(err)
 	}
