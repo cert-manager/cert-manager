@@ -35,7 +35,6 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install/helm"
 )
 
@@ -50,7 +49,6 @@ type InstallOptions struct {
 	Wait      bool
 
 	genericclioptions.IOStreams
-	*factory.Factory
 }
 
 const (
@@ -114,6 +112,9 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 		SilenceErrors: true,
 	}
 
+	settings.AddFlags(cmd.Flags())
+	cmd.Flag("namespace").DefValue = defaultCertManagerNamespace
+
 	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.Wait)
 
 	addInstallFlags(cmd.Flags(), options.client)
@@ -125,10 +126,6 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	cmd.Flags().StringVar(&options.ChartName, "chart-name", "cert-manager", "Name of the chart to install")
 	cmd.Flags().MarkHidden("chart-name")
 	cmd.Flags().BoolVar(&options.DryRun, "dry-run", false, "Simulate install and output manifest")
-
-	options.Factory = factory.New(cmd)
-	// Set default namespace cli flag value
-	cmd.Flag("namespace").DefValue = defaultCertManagerNamespace
 
 	return cmd
 }
