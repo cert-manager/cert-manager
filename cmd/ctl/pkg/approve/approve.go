@@ -71,10 +71,11 @@ func NewCmdApprove(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	o := newOptions(ioStreams)
 
 	cmd := &cobra.Command{
-		Use:     "approve",
-		Short:   "Approve a CertificateRequest",
-		Long:    `Mark a CertificateRequest as Approved, so it may be signed by a configured Issuer.`,
-		Example: example,
+		Use:               "approve",
+		Short:             "Approve a CertificateRequest",
+		Long:              `Mark a CertificateRequest as Approved, so it may be signed by a configured Issuer.`,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificateRequests(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Run(ctx, args))
@@ -86,7 +87,7 @@ func NewCmdApprove(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	cmd.Flags().StringVar(&o.Message, "message", `manually approved by "kubectl cert-manager"`,
 		"The message to give as to why this CertificateRequest was approved.")
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }
