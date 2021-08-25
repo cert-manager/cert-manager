@@ -106,11 +106,12 @@ func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams) 
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
-		Use:     "certificaterequest",
-		Aliases: []string{"cr"},
-		Short:   "Create a cert-manager CertificateRequest resource, using a Certificate resource as a template",
-		Long:    long,
-		Example: example,
+		Use:               "certificaterequest",
+		Aliases:           []string{"cr"},
+		Short:             "Create a cert-manager CertificateRequest resource, using a Certificate resource as a template",
+		Long:              long,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificateRequests(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Run(ctx, args))
@@ -127,7 +128,7 @@ func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams) 
 	cmd.Flags().DurationVar(&o.Timeout, "timeout", 5*time.Minute,
 		"Time before timeout when waiting for CertificateRequest to be signed, must include unit, e.g. 10m or 1h")
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }

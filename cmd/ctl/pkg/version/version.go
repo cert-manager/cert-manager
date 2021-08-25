@@ -106,7 +106,7 @@ func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	cmd.Flags().BoolVar(&o.Short, "short", o.Short, "If true, print just the version number.")
 	cmd.Flags().StringVarP(&o.Output, "output", "o", o.Output, "One of 'yaml' or 'json'.")
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }

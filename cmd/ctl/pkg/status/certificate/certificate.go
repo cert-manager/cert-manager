@@ -88,17 +88,18 @@ func NewCmdStatusCert(ctx context.Context, ioStreams genericclioptions.IOStreams
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
-		Use:     "certificate",
-		Short:   "Get details about the current status of a cert-manager Certificate resource",
-		Long:    long,
-		Example: example,
+		Use:               "certificate",
+		Short:             "Get details about the current status of a cert-manager Certificate resource",
+		Long:              long,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificates(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }

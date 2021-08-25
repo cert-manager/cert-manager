@@ -73,10 +73,11 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 func NewCmdRenew(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
-		Use:     "renew",
-		Short:   "Mark a Certificate for manual renewal",
-		Long:    long,
-		Example: example,
+		Use:               "renew",
+		Short:             "Mark a Certificate for manual renewal",
+		Long:              long,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificates(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(cmd, args))
 			cmdutil.CheckErr(o.Run(ctx, args))
@@ -87,7 +88,7 @@ func NewCmdRenew(ctx context.Context, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().BoolVarP(&o.AllNamespaces, "all-namespaces", "A", o.AllNamespaces, "If present, mark Certificates across namespaces for manual renewal. Namespace in current context is ignored even if specified with --namespace.")
 	cmd.Flags().BoolVar(&o.All, "all", o.All, "Renew all Certificates in the given Namespace, or all namespaces with --all-namespaces enabled.")
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }

@@ -108,17 +108,18 @@ func NewCmdInspectSecret(ctx context.Context, ioStreams genericclioptions.IOStre
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
-		Use:     "secret",
-		Short:   "Get details about a kubernetes.io/tls typed secret",
-		Long:    long,
-		Example: example,
+		Use:               "secret",
+		Short:             "Get details about a kubernetes.io/tls typed secret",
+		Long:              long,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListSecrets(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }

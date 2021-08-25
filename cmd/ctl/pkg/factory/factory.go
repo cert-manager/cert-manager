@@ -17,6 +17,8 @@ limitations under the License.
 package factory
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
@@ -63,10 +65,11 @@ type Factory struct {
 // populated when the command is executed using the cobra PreRun. If a PreRun
 // is already defined, it will be executed _after_ Factory has been populated,
 // making it available.
-func New(cmd *cobra.Command) *Factory {
+func New(ctx context.Context, cmd *cobra.Command) *Factory {
 	f := new(Factory)
 
 	kubeConfigFlags.AddFlags(cmd.Flags())
+	cmd.RegisterFlagCompletionFunc("namespace", validArgsListNamespaces(ctx, f))
 
 	// Setup a PreRun to populate the Factory. Catch the existing PreRun command
 	// if one was defined, and execute it second.
