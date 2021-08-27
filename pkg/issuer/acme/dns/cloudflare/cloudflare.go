@@ -126,7 +126,7 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 		}
 		nextName = string([]rune(nextName)[from:to])
 	}
-	return DNSZone{}, fmt.Errorf("Found no Zones for domain %s (neither in the sub-domain noir in the SLD) please make sure your domain-entries in the config are correct and the API is correctly setup with Zone.read rights.", fqdn)
+	return DNSZone{}, fmt.Errorf("Found no Zones for domain %s (neither in the sub-domain nor in the SLD) please make sure your domain-entries in the config are correct and the API is correctly setup with Zone.read rights.", fqdn)
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
