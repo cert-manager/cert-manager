@@ -18,17 +18,12 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-readonly REPO_ROOT=$(git rev-parse --show-toplevel)
-
 chart_dir="deploy/charts/cert-manager"
 
 echo "Linting chart: ${chart_dir}"
 
 bazel build //deploy/charts/cert-manager
-case $(uname) in
-    Darwin) tmpdir="$(mktemp -d)";;
-    *)      tmpdir="$(mktemp -d -p "${REPO_ROOT}")";;
-esac
+tmpdir="$(mktemp -d)"
 trap "rm -rf ${tmpdir}" EXIT
 
 tar -C "${tmpdir}" -xvf bazel-bin/deploy/charts/cert-manager/cert-manager.tgz

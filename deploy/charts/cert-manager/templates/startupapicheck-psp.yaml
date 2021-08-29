@@ -26,6 +26,7 @@ spec:
   allowedCapabilities: []  # default set of capabilities are implicitly allowed
   volumes:
   - 'projected'
+  - 'secret'
   hostNetwork: false
   hostIPC: false
   hostPID: false
