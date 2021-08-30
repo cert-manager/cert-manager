@@ -37,6 +37,11 @@ const expiryMetadata = `
 	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 `
 
+const renewBeforeMetadata = `
+	# HELP certmanager_certificate_renew_before_seconds The number of seconds before expiration time the certificate should renew.
+	# TYPE certmanager_certificate_renew_before_seconds gauge
+`
+
 const readyMetadata = `
   # HELP certmanager_certificate_ready_status The ready status of the certificate.
   # TYPE certmanager_certificate_ready_status gauge
@@ -44,8 +49,8 @@ const readyMetadata = `
 
 func TestCertificateMetrics(t *testing.T) {
 	type testT struct {
-		crt                           *cmapi.Certificate
-		expectedExpiry, expectedReady string
+		crt                                                *cmapi.Certificate
+		expectedExpiry, expectedReady, expectedRenewBefore string
 	}
 	tests := map[string]testT{
 		"certificate with expiry and ready status": {
@@ -123,6 +128,30 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 1
 `,
 		},
+		"certificate with expiry and ready status and renew before": {
+			crt: gen.Certificate("test-certificate",
+				gen.SetCertificateNamespace("test-ns"),
+				gen.SetCertificateNotAfter(metav1.Time{
+					Time: time.Unix(2208988804, 0),
+				}),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+					Type:   cmapi.CertificateConditionReady,
+					Status: cmmeta.ConditionTrue,
+				}),
+				gen.SetCertificateRenewBefore(time.Duration(1e9)),
+			),
+			expectedExpiry: `
+	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns"} 2.208988804e+09
+`,
+			expectedReady: `
+        certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
+        certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 1
+        certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 0
+`,
+			expectedRenewBefore: `
+		certmanager_certificate_renew_before_seconds{name="test-certificate",namespace="test-ns"} 1
+`,
+		},
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
@@ -132,6 +161,13 @@ func TestCertificateMetrics(t *testing.T) {
 			if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
 				strings.NewReader(expiryMetadata+test.expectedExpiry),
 				"certmanager_certificate_expiration_timestamp_seconds",
+			); err != nil {
+				t.Errorf("unexpected collecting result:\n%s", err)
+			}
+
+			if err := testutil.CollectAndCompare(m.certificateRenewBeforeSeconds,
+				strings.NewReader(renewBeforeMetadata+test.expectedRenewBefore),
+				"certmanager_certificate_renew_before_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
@@ -158,6 +194,7 @@ func TestCertificateCache(t *testing.T) {
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionUnknown,
 		}),
+		gen.SetCertificateRenewBefore(1e11),
 	)
 	crt2 := gen.Certificate("crt2",
 		gen.SetCertificateUID("uid-2"),
@@ -168,6 +205,7 @@ func TestCertificateCache(t *testing.T) {
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionTrue,
 		}),
+		gen.SetCertificateRenewBefore(2e11),
 	)
 	crt3 := gen.Certificate("crt3",
 		gen.SetCertificateUID("uid-3"),
@@ -178,6 +216,7 @@ func TestCertificateCache(t *testing.T) {
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionFalse,
 		}),
+		gen.SetCertificateRenewBefore(3e11),
 	)
 
 	// Observe all three Certificate metrics
@@ -209,6 +248,17 @@ func TestCertificateCache(t *testing.T) {
         certmanager_certificate_expiration_timestamp_seconds{name="crt3",namespace="default-unit-test-ns"} 300
 `),
 		"certmanager_certificate_expiration_timestamp_seconds",
+	); err != nil {
+		t.Errorf("unexpected collecting result:\n%s", err)
+	}
+
+	if err := testutil.CollectAndCompare(m.certificateRenewBeforeSeconds,
+		strings.NewReader(renewBeforeMetadata+`
+        certmanager_certificate_renew_before_seconds{name="crt1",namespace="default-unit-test-ns"} 100
+        certmanager_certificate_renew_before_seconds{name="crt2",namespace="default-unit-test-ns"} 200
+        certmanager_certificate_renew_before_seconds{name="crt3",namespace="default-unit-test-ns"} 300
+`),
+		"certmanager_certificate_renew_before_seconds",
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
