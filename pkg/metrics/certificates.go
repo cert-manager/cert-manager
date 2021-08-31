@@ -35,7 +35,7 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-// UpdateCertificate will update that Certificate metric with expiry and Ready
+// UpdateCertificate will update that Certificate metric with expiry, renewBefore and Ready
 // condition.
 func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate) {
 	key, err := cache.MetaNamespaceKeyFunc(crt)
