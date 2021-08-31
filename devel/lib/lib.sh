@@ -35,6 +35,9 @@ export SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
 export DNS_SERVER="${SERVICE_IP_PREFIX}.16"
 export INGRESS_IP="${SERVICE_IP_PREFIX}.15"
 
+# Timestamp format printed during e2e tests - see strftime(3)
+export TS_TIMESTAMP_FORMAT="[%Y-%m-%d %H:%M:%.S]"
+
 # setup_tools will build and set up the environment to use bazel-provided
 # versions of the tools required for development
 setup_tools() {

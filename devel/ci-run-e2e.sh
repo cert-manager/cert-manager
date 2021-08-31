@@ -28,15 +28,18 @@ SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
+# Install the "moreutils" package from your package manager to get ts
+check_tool ts
+
 # Configure PATH to use bazel provided e2e tools
-setup_tools
+setup_tools 2>&1 | ts "$TS_TIMESTAMP_FORMAT"
 
 # Ensure a running Kubernetes cluster
-"${SCRIPT_ROOT}/ci-cluster.sh"
+"${SCRIPT_ROOT}/ci-cluster.sh" 2>&1 | ts "$TS_TIMESTAMP_FORMAT"
 
 echo "Ensuring all e2e test dependencies are installed..."
-"${SCRIPT_ROOT}/setup-e2e-deps.sh"
+"${SCRIPT_ROOT}/setup-e2e-deps.sh" 2>&1 | ts "$TS_TIMESTAMP_FORMAT"
 
 echo "Running e2e test suite..."
 FLAKE_ATTEMPTS=2 "${SCRIPT_ROOT}/run-e2e.sh" \
-  "$@"
+  "$@" 2>&1 | ts "$TS_TIMESTAMP_FORMAT"
