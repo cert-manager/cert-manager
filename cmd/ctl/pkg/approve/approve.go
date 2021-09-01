@@ -24,15 +24,14 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
 var (
@@ -50,14 +49,6 @@ kubectl cert-manager approve my-cr --reason "ManualApproval" --reason "Approved 
 
 // Options is a struct to support create certificaterequest command
 type Options struct {
-	CMClient   cmclient.Interface
-	RESTConfig *restclient.Config
-	// Namespace resulting from the merged result of all overrides
-	// since namespace can be specified in file, as flag and in kube config
-	CmdNamespace string
-	// boolean indicating if there was an Override in determining CmdNamespace
-	EnforceNamespace bool
-
 	// Reason is the string that will be set on the Reason field of the Approved
 	// condition.
 	Reason string
@@ -66,17 +57,19 @@ type Options struct {
 	Message string
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
-// NewOptions returns initialized Options
-func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
+// newOptions returns initialized Options
+func newOptions(ioStreams genericclioptions.IOStreams) *Options {
 	return &Options{
 		IOStreams: ioStreams,
 	}
 }
 
-func NewCmdApprove(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
-	o := NewOptions(ioStreams)
+func NewCmdApprove(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
+	o := newOptions(ioStreams)
+
 	cmd := &cobra.Command{
 		Use:     "approve",
 		Short:   "Approve a CertificateRequest",
@@ -84,7 +77,6 @@ func NewCmdApprove(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		Example: example,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
@@ -93,6 +85,8 @@ func NewCmdApprove(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		"The reason to give as to what approved this CertificateRequest.")
 	cmd.Flags().StringVar(&o.Message, "message", `manually approved by "kubectl cert-manager"`,
 		"The message to give as to why this CertificateRequest was approved.")
+
+	o.Factory = factory.New(cmd)
 
 	return cmd
 }
@@ -117,31 +111,9 @@ func (o *Options) Validate(args []string) error {
 	return nil
 }
 
-// Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(f cmdutil.Factory) error {
-	var err error
-
-	o.CmdNamespace, o.EnforceNamespace, err = f.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return err
-	}
-
-	o.RESTConfig, err = f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	o.CMClient, err = cmclient.NewForConfig(o.RESTConfig)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Run executes approve command
 func (o *Options) Run(ctx context.Context, args []string) error {
-	cr, err := o.CMClient.CertmanagerV1().CertificateRequests(o.CmdNamespace).Get(ctx, args[0], metav1.GetOptions{})
+	cr, err := o.CMClient.CertmanagerV1().CertificateRequests(o.Namespace).Get(ctx, args[0], metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -157,7 +129,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionApproved,
 		cmmeta.ConditionTrue, o.Reason, o.Message)
 
-	_, err = o.CMClient.CertmanagerV1().CertificateRequests(o.CmdNamespace).UpdateStatus(ctx, cr, metav1.UpdateOptions{})
+	_, err = o.CMClient.CertmanagerV1().CertificateRequests(o.Namespace).UpdateStatus(ctx, cr, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

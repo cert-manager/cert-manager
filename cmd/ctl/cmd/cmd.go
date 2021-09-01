@@ -25,10 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	// Load all auth plugins
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
-	"k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/approve"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/check"
@@ -51,12 +48,6 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	}
 	cmds.SetUsageTemplate(usageTemplate)
 
-	kubeConfigFlags := genericclioptions.NewConfigFlags(true)
-	kubeConfigFlags.AddFlags(cmds.PersistentFlags())
-	matchVersionKubeConfigFlags := util.NewMatchVersionFlags(kubeConfigFlags)
-	matchVersionKubeConfigFlags.AddFlags(cmds.PersistentFlags())
-	factory := util.NewFactory(matchVersionKubeConfigFlags)
-
 	cmds.Flags().AddGoFlagSet(flag.CommandLine)
 	flag.CommandLine.Parse([]string{})
 	fakefs := flag.NewFlagSet("fake", flag.ExitOnError)
@@ -67,18 +58,18 @@ kubectl cert-manager is a CLI tool manage and configure cert-manager resources f
 	}
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
-	cmds.AddCommand(version.NewCmdVersion(ctx, ioStreams, factory))
+	cmds.AddCommand(version.NewCmdVersion(ctx, ioStreams))
 	cmds.AddCommand(convert.NewCmdConvert(ctx, ioStreams))
-	cmds.AddCommand(create.NewCmdCreate(ctx, ioStreams, factory))
-	cmds.AddCommand(renew.NewCmdRenew(ctx, ioStreams, factory))
-	cmds.AddCommand(status.NewCmdStatus(ctx, ioStreams, factory))
-	cmds.AddCommand(inspect.NewCmdInspect(ctx, ioStreams, factory))
-	cmds.AddCommand(approve.NewCmdApprove(ctx, ioStreams, factory))
-	cmds.AddCommand(deny.NewCmdDeny(ctx, ioStreams, factory))
-	cmds.AddCommand(check.NewCmdCheck(ctx, ioStreams, factory))
+	cmds.AddCommand(create.NewCmdCreate(ctx, ioStreams))
+	cmds.AddCommand(renew.NewCmdRenew(ctx, ioStreams))
+	cmds.AddCommand(status.NewCmdStatus(ctx, ioStreams))
+	cmds.AddCommand(inspect.NewCmdInspect(ctx, ioStreams))
+	cmds.AddCommand(approve.NewCmdApprove(ctx, ioStreams))
+	cmds.AddCommand(deny.NewCmdDeny(ctx, ioStreams))
+	cmds.AddCommand(check.NewCmdCheck(ctx, ioStreams))
 
 	// Experimental features
-	cmds.AddCommand(experimental.NewCmdExperimental(ctx, ioStreams, factory))
+	cmds.AddCommand(experimental.NewCmdExperimental(ctx, ioStreams))
 
 	return cmds
 }
