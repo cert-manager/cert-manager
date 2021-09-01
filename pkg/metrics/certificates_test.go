@@ -37,9 +37,9 @@ const expiryMetadata = `
 	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 `
 
-const renewBeforeMetadata = `
-	# HELP certmanager_certificate_renew_before_seconds The number of seconds before expiration time the certificate should renew.
-	# TYPE certmanager_certificate_renew_before_seconds gauge
+const renewalTimeMetadata = `
+	# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+	# TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 `
 
 const readyMetadata = `
@@ -50,7 +50,7 @@ const readyMetadata = `
 func TestCertificateMetrics(t *testing.T) {
 	type testT struct {
 		crt                                                *cmapi.Certificate
-		expectedExpiry, expectedReady, expectedRenewBefore string
+		expectedExpiry, expectedReady, expectedRenewalTime string
 	}
 	tests := map[string]testT{
 		"certificate with expiry and ready status": {
@@ -72,6 +72,9 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 1
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 0
 `,
+			expectedRenewalTime: `
+		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns"} 0
+`,
 		},
 
 		"certificate with no expiry and no status should give an expiry of 0 and Unknown status": {
@@ -85,6 +88,9 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="False",name="test-certificate",namespace="test-ns"} 0
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 0
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 1
+`,
+			expectedRenewalTime: `
+		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns"} 0
 `,
 		},
 
@@ -107,6 +113,9 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 0
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 0
 `,
+			expectedRenewalTime: `
+		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns"} 0
+`,
 		},
 		"certificate with expiry and status Unknown should give an expiry and Unknown status": {
 			crt: gen.Certificate("test-certificate",
@@ -127,6 +136,9 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 0
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 1
 `,
+			expectedRenewalTime: `
+		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns"} 0
+`,
 		},
 		"certificate with expiry and ready status and renew before": {
 			crt: gen.Certificate("test-certificate",
@@ -138,7 +150,9 @@ func TestCertificateMetrics(t *testing.T) {
 					Type:   cmapi.CertificateConditionReady,
 					Status: cmmeta.ConditionTrue,
 				}),
-				gen.SetCertificateRenewBefore(time.Duration(1e9)),
+				gen.SetCertificateRenewalTIme(metav1.Time{
+					Time: time.Unix(2208988804, 0),
+				}),
 			),
 			expectedExpiry: `
 	certmanager_certificate_expiration_timestamp_seconds{name="test-certificate",namespace="test-ns"} 2.208988804e+09
@@ -148,8 +162,8 @@ func TestCertificateMetrics(t *testing.T) {
         certmanager_certificate_ready_status{condition="True",name="test-certificate",namespace="test-ns"} 1
         certmanager_certificate_ready_status{condition="Unknown",name="test-certificate",namespace="test-ns"} 0
 `,
-			expectedRenewBefore: `
-		certmanager_certificate_renew_before_seconds{name="test-certificate",namespace="test-ns"} 1
+			expectedRenewalTime: `
+		certmanager_certificate_renewal_timestamp_seconds{name="test-certificate",namespace="test-ns"} 2.208988804e+09
 `,
 		},
 	}
@@ -165,9 +179,9 @@ func TestCertificateMetrics(t *testing.T) {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
 
-			if err := testutil.CollectAndCompare(m.certificateRenewBeforeSeconds,
-				strings.NewReader(renewBeforeMetadata+test.expectedRenewBefore),
-				"certmanager_certificate_renew_before_seconds",
+			if err := testutil.CollectAndCompare(m.certificateRenewalTimeSeconds,
+				strings.NewReader(renewalTimeMetadata+test.expectedRenewalTime),
+				"certmanager_certificate_renewal_timestamp_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
@@ -252,13 +266,13 @@ func TestCertificateCache(t *testing.T) {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
-	if err := testutil.CollectAndCompare(m.certificateRenewBeforeSeconds,
-		strings.NewReader(renewBeforeMetadata+`
-        certmanager_certificate_renew_before_seconds{name="crt1",namespace="default-unit-test-ns"} 100
-        certmanager_certificate_renew_before_seconds{name="crt2",namespace="default-unit-test-ns"} 200
-        certmanager_certificate_renew_before_seconds{name="crt3",namespace="default-unit-test-ns"} 300
+	if err := testutil.CollectAndCompare(m.certificateRenewalTimeSeconds,
+		strings.NewReader(renewalTimeMetadata+`
+        certmanager_certificate_renewal_timestamp_seconds{name="crt1",namespace="default-unit-test-ns"} 100
+        certmanager_certificate_renewal_timestamp_seconds{name="crt2",namespace="default-unit-test-ns"} 200
+        certmanager_certificate_renewal_timestamp_seconds{name="crt3",namespace="default-unit-test-ns"} 300
 `),
-		"certmanager_certificate_renew_before_seconds",
+		"certmanager_certificate_renewal_timestamp_seconds",
 	); err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}

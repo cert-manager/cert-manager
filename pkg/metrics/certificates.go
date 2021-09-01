@@ -17,7 +17,7 @@ limitations under the License.
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
 // certificate_expiration_timestamp_seconds{name, namespace}
-// certificate_renew_before_seconds{name, namespace}
+// certificate_renewal_timestamp_seconds{name, namespace}
 // certificate_ready_status{name, namespace, condition}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
@@ -47,7 +47,7 @@ func (m *Metrics) UpdateCertificate(ctx context.Context, crt *cmapi.Certificate)
 
 	m.updateCertificateStatus(key, crt)
 	m.updateCertificateExpiry(ctx, key, crt)
-	m.updateCertificateRenewBefore(crt)
+	m.updateCertificateRenewalTime(crt)
 }
 
 // updateCertificateExpiry updates the expiry time of a certificate
@@ -63,15 +63,18 @@ func (m *Metrics) updateCertificateExpiry(ctx context.Context, key string, crt *
 		"namespace": crt.Namespace}).Set(expiryTime)
 }
 
-// updateCertificateRenewBefore updates the renew before duration of a certificate
-func (m *Metrics) updateCertificateRenewBefore(crt *cmapi.Certificate) {
-	renewBefore := crt.Spec.RenewBefore
+// updateCertificateRenewalTime updates the renew before duration of a certificate
+func (m *Metrics) updateCertificateRenewalTime(crt *cmapi.Certificate) {
+	renewalTime := 0.0
 
-	if renewBefore != nil {
-		m.certificateRenewBeforeSeconds.With(prometheus.Labels{
-			"name":      crt.Name,
-			"namespace": crt.Namespace}).Set(renewBefore.Seconds())
+	if crt.Status.RenewalTime != nil {
+		renewalTime = float64(crt.Status.RenewalTime.Unix())
 	}
+
+	m.certificateRenewalTimeSeconds.With(prometheus.Labels{
+		"name":      crt.Name,
+		"namespace": crt.Namespace}).Set(renewalTime)
+
 }
 
 // updateCertificateStatus will update the metric for that Certificate
@@ -113,7 +116,7 @@ func (m *Metrics) RemoveCertificate(key string) {
 	}
 
 	m.certificateExpiryTimeSeconds.DeleteLabelValues(name, namespace)
-	m.certificateRenewBeforeSeconds.DeleteLabelValues(name, namespace)
+	m.certificateRenewalTimeSeconds.DeleteLabelValues(name, namespace)
 	for _, condition := range readyConditionStatuses {
 		m.certificateReadyStatus.DeleteLabelValues(name, namespace, string(condition))
 	}

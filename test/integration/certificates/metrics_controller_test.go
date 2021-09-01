@@ -158,7 +158,6 @@ func TestMetricsController(t *testing.T) {
 		gen.SetCertificateCommonName(crtName),
 		gen.SetCertificateNamespace(namespace),
 		gen.SetCertificateUID("uid-1"),
-		gen.SetCertificateRenewBefore(time.Duration(3e11)),
 	)
 
 	crt, err = cmClient.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
@@ -175,9 +174,9 @@ certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="t
 certmanager_certificate_ready_status{condition="False",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespace="testns"} 1
-# HELP certmanager_certificate_renew_before_seconds The number of seconds before expiration time the certificate should renew.
-# TYPE certmanager_certificate_renew_before_seconds gauge
-certmanager_certificate_renew_before_seconds{name="testcrt",namespace="testns"} 300
+# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+# TYPE certmanager_certificate_renewal_timestamp_seconds gauge
+certmanager_certificate_renewal_timestamp_seconds{name="testcrt",namespace="testns"} 0
 ` + clockMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
@@ -194,6 +193,9 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 1
 			Status: cmmeta.ConditionTrue,
 		},
 	}
+	crt.Status.RenewalTime = &metav1.Time{
+		Time: time.Unix(100, 0),
+	}
 	_, err = cmClient.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -208,9 +210,9 @@ certmanager_certificate_expiration_timestamp_seconds{name="testcrt",namespace="t
 certmanager_certificate_ready_status{condition="False",name="testcrt",namespace="testns"} 0
 certmanager_certificate_ready_status{condition="True",name="testcrt",namespace="testns"} 1
 certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespace="testns"} 0
-# HELP certmanager_certificate_renew_before_seconds The number of seconds before expiration time the certificate should renew.
-# TYPE certmanager_certificate_renew_before_seconds gauge
-certmanager_certificate_renew_before_seconds{name="testcrt",namespace="testns"} 300
+# HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
+# TYPE certmanager_certificate_renewal_timestamp_seconds gauge
+certmanager_certificate_renewal_timestamp_seconds{name="testcrt",namespace="testns"} 100
 ` + clockMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
