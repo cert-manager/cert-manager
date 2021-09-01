@@ -172,7 +172,7 @@ func SetCertificateNotBefore(p metav1.Time) CertificateModifier {
 	}
 }
 
-func SetCertificateRenewalTIme(p metav1.Time) CertificateModifier {
+func SetCertificateRenewalTime(p metav1.Time) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Status.RenewalTime = &p
 	}

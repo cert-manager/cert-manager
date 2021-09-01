@@ -150,7 +150,7 @@ func TestCertificateMetrics(t *testing.T) {
 					Type:   cmapi.CertificateConditionReady,
 					Status: cmmeta.ConditionTrue,
 				}),
-				gen.SetCertificateRenewalTIme(metav1.Time{
+				gen.SetCertificateRenewalTime(metav1.Time{
 					Time: time.Unix(2208988804, 0),
 				}),
 			),
@@ -208,8 +208,9 @@ func TestCertificateCache(t *testing.T) {
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionUnknown,
 		}),
-		gen.SetCertificateRenewBefore(1e11),
-	)
+		gen.SetCertificateRenewalTime(metav1.Time{
+			Time: time.Unix(100, 0),
+		}))
 	crt2 := gen.Certificate("crt2",
 		gen.SetCertificateUID("uid-2"),
 		gen.SetCertificateNotAfter(metav1.Time{
@@ -219,7 +220,9 @@ func TestCertificateCache(t *testing.T) {
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionTrue,
 		}),
-		gen.SetCertificateRenewBefore(2e11),
+		gen.SetCertificateRenewalTime(metav1.Time{
+			Time: time.Unix(200, 0),
+		}),
 	)
 	crt3 := gen.Certificate("crt3",
 		gen.SetCertificateUID("uid-3"),
@@ -230,7 +233,9 @@ func TestCertificateCache(t *testing.T) {
 			Type:   cmapi.CertificateConditionReady,
 			Status: cmmeta.ConditionFalse,
 		}),
-		gen.SetCertificateRenewBefore(3e11),
+		gen.SetCertificateRenewalTime(metav1.Time{
+			Time: time.Unix(300, 0),
+		}),
 	)
 
 	// Observe all three Certificate metrics
