@@ -28,10 +28,9 @@ import (
 	"crypto/x509"
 	"time"
 
-	jks "github.com/pavel-v-chernykh/keystore-go"
-	"software.sslmate.com/src/go-pkcs12"
-
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	jks "github.com/pavel-v-chernykh/keystore-go/v4"
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 const (
@@ -111,35 +110,29 @@ func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []b
 		}
 	}
 
-	ks := jks.KeyStore{
-		"certificate": &jks.PrivateKeyEntry{
-			Entry: jks.Entry{
-				CreationDate: time.Now(),
-			},
-			PrivKey:   keyDER,
-			CertChain: certs,
-		},
-	}
-	// add the CA certificate, if set
+	ks := jks.New()
+	ks.SetPrivateKeyEntry("certificate", jks.PrivateKeyEntry{
+		CreationTime:     time.Now(),
+		PrivateKey:       keyDER,
+		CertificateChain: certs,
+	}, password)
+
 	if len(caPem) > 0 {
 		ca, err := pki.DecodeX509CertificateBytes(caPem)
 		if err != nil {
 			return nil, err
 		}
-
-		ks["ca"] = &jks.TrustedCertificateEntry{
-			Entry: jks.Entry{
-				CreationDate: time.Now(),
-			},
+		ks.SetTrustedCertificateEntry("ca", jks.TrustedCertificateEntry{
+			CreationTime: time.Now(),
 			Certificate: jks.Certificate{
 				Type:    "X509",
 				Content: ca.Raw,
-			},
-		}
+			}},
+		)
 	}
 
 	buf := &bytes.Buffer{}
-	if err := jks.Encode(buf, ks, password); err != nil {
+	if err := ks.Store(buf, password); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -151,20 +144,17 @@ func encodeJKSTruststore(password []byte, caPem []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	ks := jks.KeyStore{
-		"ca": &jks.TrustedCertificateEntry{
-			Entry: jks.Entry{
-				CreationDate: time.Now(),
-			},
-			Certificate: jks.Certificate{
-				Type:    "X509",
-				Content: ca.Raw,
-			},
-		},
-	}
+	ks := jks.New()
+	ks.SetTrustedCertificateEntry("ca", jks.TrustedCertificateEntry{
+		CreationTime: time.Now(),
+		Certificate: jks.Certificate{
+			Type:    "X509",
+			Content: ca.Raw,
+		}},
+	)
 
 	buf := &bytes.Buffer{}
-	if err := jks.Encode(buf, ks, password); err != nil {
+	if err := ks.Store(buf, password); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
