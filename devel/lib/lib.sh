@@ -39,7 +39,7 @@ export INGRESS_IP="${SERVICE_IP_PREFIX}.15"
 # versions of the tools required for development
 setup_tools() {
   check_bazel
-  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //hack/bin:jq //devel/bin:ginkgo
+  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //devel/bin:ginkgo
   if [[ "$IS_OPENSHIFT" == "true" ]] ; then
     bazel build //hack/bin:oc3
   fi
@@ -47,7 +47,6 @@ setup_tools() {
   export HELM="${bindir}/hack/bin/helm"
   export KIND="${bindir}/hack/bin/kind"
   export OC3="${bindir}/hack/bin/oc3"
-  export JQ="${bindir}/hack/bin/jq"
   export KUBECTL="${bindir}/hack/bin/kubectl"
   export KUSTOMIZE="${bindir}/hack/bin/kustomize"
   export GINKGO="${bindir}/devel/bin/ginkgo"

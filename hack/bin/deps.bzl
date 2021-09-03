@@ -16,9 +16,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file", "http_archive"
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 def install():
-    install_misc()
     install_integration_test_dependencies()
-    install_bazel_tools()
     install_staticcheck()
     install_helm()
     install_kubectl()
@@ -69,21 +67,6 @@ filegroup(
 """,
     )
 
-def install_misc():
-    http_file(
-        name = "jq_linux",
-        executable = 1,
-        sha256 = "af986793a515d500ab2d35f8d2aecd656e764504b789b66d7e1a0b727a124c44",
-        urls = ["https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"],
-    )
-
-    http_file(
-        name = "jq_osx",
-        executable = 1,
-        sha256 = "5c0a0a3ea600f302ee458b30317425dd9632d1ad8882259fcaf4e9b868b2b1ef",
-        urls = ["https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64"],
-    )
-
 # Install dependencies used by the controller-runtime integration test framework
 # Use these links to check for new versions:
 # https://console.developers.google.com/storage/kubebuilder-tools/
@@ -132,27 +115,10 @@ filegroup(
 """,
     )
 
-# Install additional tools for Bazel management
-def install_bazel_tools():
-    ## Install buildozer, for mass-editing BUILD files
-    http_file(
-        name = "buildozer_darwin",
-        executable = 1,
-        sha256 = "972944bbd15a20d1527695ba805ca7e7f98c3381c8f521359791e0016f079713",
-        urls = ["https://github.com/bazelbuild/buildtools/releases/download/4.0.1/buildozer-darwin-amd64"],
-    )
-
-    http_file(
-        name = "buildozer_linux",
-        executable = 1,
-        sha256 = "082aea1df38fe30ce41d955a2cbf309cae8ec386507e0c10cc16f0d9a93e151f",
-        urls = ["https://github.com/bazelbuild/buildtools/releases/download/4.0.1/buildozer-linux-amd64"],
-    )
-
 # Install Helm targets
 def install_helm():
-    ## Fetch helm & tiller for use in template generation and testing
-    ## You can bump the version of Helm & Tiller used during e2e tests by tweaking
+    ## Fetch helm for use in template generation and testing
+    ## You can bump the version of Helm used during e2e tests by tweaking
     ## the version numbers in these rules.
     http_archive(
         name = "helm_darwin",
@@ -164,6 +130,22 @@ filegroup(
     name = "file",
     srcs = [
         "darwin-amd64/helm",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+    )
+
+    http_archive(
+        name = "helm_darwin_arm",
+        sha256 = "a50b499dbd0bbec90761d50974bf1e67cc6d503ea20d03b4a1275884065b7e9e",
+        urls = ["https://get.helm.sh/helm-v3.6.3-darwin-arm64.tar.gz"],
+        build_file_content =
+            """
+filegroup(
+    name = "file",
+    srcs = [
+        "darwin-arm64/helm",
     ],
     visibility = ["//visibility:public"],
 )
@@ -191,15 +173,22 @@ def install_kubectl():
     http_file(
         name = "kubectl_1_22_darwin",
         executable = 1,
-        sha256 = "2b5214a01a9595e4f2b8f30c556136c5b93351f6677d07858ee1acf92cc14249",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/darwin/amd64/kubectl"],
+        sha256 = "00bb3947ac6ff15690f90ee1a732d0a9a44360fc7743dbfee4cba5a8f6a31413",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.22.1/bin/darwin/amd64/kubectl"],
+    )
+
+    http_file(
+        name = "kubectl_1_22_darwin_arm",
+        executable = 1,
+        sha256 = "c81a314ab7f0827a5376f8ffd6d47f913df046275d44c562915a822229819d77",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.22.1/bin/darwin/arm64/kubectl"],
     )
 
     http_file(
         name = "kubectl_1_22_linux",
         executable = 1,
-        sha256 = "703e70d49b82271535bc66bc7bd469a58c11d47f188889bd37101c9772f14fa1",
-        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/linux/amd64/kubectl"],
+        sha256 = "78178a8337fc6c76780f60541fca7199f0f1a2e9c41806bded280a4a5ef665c9",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.22.1/bin/linux/amd64/kubectl"],
     )
 
 
@@ -231,6 +220,13 @@ def install_kind():
     )
 
     http_file(
+        name = "kind_darwin_arm",
+        executable = 1,
+        sha256 = "4f019c578600c087908ac59dd0c4ce1791574f153a70608adb372d5abc58cd47",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.11.1/kind-darwin-arm64"],
+    )
+
+    http_file(
         name = "kind_linux",
         executable = 1,
         sha256 = "949f81b3c30ca03a3d4effdecda04f100fa3edc07a28b19400f72ede7c5f0491",
@@ -243,15 +239,22 @@ def install_ytt():
     http_file(
         name = "ytt_darwin",
         executable = 1,
-        sha256 = "a874395924e670f2c89160efeffc35b94a9bcf4e515e49935cb1ceb22be7f08a",
-        urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.34.0/ytt-darwin-amd64"],
+        sha256 = "9662e3f8e30333726a03f7a5ae6231fbfb2cebb6c1aa3f545b253d7c695487e6",
+        urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.36.0/ytt-darwin-amd64"],
+    )
+
+    http_file(
+        name = "ytt_darwin_arm",
+        executable = 1,
+        sha256 = "c970b2c13d4059f0bee3bf3ceaa09bd0674a62c24550453d90b284d885a06b7b",
+        urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.36.0/ytt-darwin-arm64"],
     )
 
     http_file(
         name = "ytt_linux",
         executable = 1,
-        sha256 = "49741ac5540fc64da8566f3d1c9538f4f0fec22c62b8ba83e5e3d8efb91ee170",
-        urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.34.0/ytt-linux-amd64"],
+        sha256 = "d81ecf6c47209f6ac527e503a6fd85e999c3c2f8369e972794047bddc7e5fbe2",
+        urls = ["https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.36.0/ytt-linux-amd64"],
     )
 
 # yq is jq for yaml
@@ -261,6 +264,13 @@ def install_yq():
         executable = 1,
         sha256 = "5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f6741ff7f46",
         urls = ["https://github.com/mikefarah/yq/releases/download/v4.11.2/yq_darwin_amd64"],
+    )
+
+    http_file(
+        name = "yq_darwin_arm",
+        executable = 1,
+        sha256 = "665ae1af7c73866cba74dd878c12ac49c091b66e46c9ed57d168b43955f5dd69",
+        urls = ["https://github.com/mikefarah/yq/releases/download/v4.12.0/yq_darwin_arm64"],
     )
 
     http_file(

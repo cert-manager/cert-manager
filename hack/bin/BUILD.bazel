@@ -3,20 +3,10 @@ package(default_visibility = ["//visibility:public"])
 load("@io_k8s_repo_infra//defs:run_in_workspace.bzl", "workspace_binary")
 
 genrule(
-    name = "fetch_jq",
-    srcs = select({
-        ":darwin": ["@jq_osx//file"],
-        ":k8": ["@jq_linux//file"],
-    }),
-    outs = ["jq"],
-    cmd = "cp $(SRCS) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
     name = "fetch_helm",
     srcs = select({
         ":darwin": ["@helm_darwin//:file"],
+        ":darwin_arm": ["@helm_darwin_arm//:file"],
         ":k8": ["@helm_linux//:file"],
     }),
     outs = ["helm"],
@@ -61,6 +51,7 @@ genrule(
     name = "fetch_kubectl",
     srcs = select({
         ":darwin": ["@kubectl_1_22_darwin//file"],
+        ":darwin_arm": ["@kubectl_1_22_darwin_arm//file"],
         ":k8": ["@kubectl_1_22_linux//file"],
     }),
     outs = ["kubectl"],
@@ -77,17 +68,6 @@ genrule(
     outs = ["oc3"],
     cmd = "cp $(SRCS) $@",
     tags = ["manual"],
-    visibility = ["//visibility:public"],
-)
-
-genrule(
-    name = "fetch_buildozer",
-    srcs = select({
-        ":darwin": ["@buildozer_darwin//file"],
-        ":k8": ["@buildozer_linux//file"],
-    }),
-    outs = ["buildozer"],
-    cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )
 
@@ -129,6 +109,7 @@ genrule(
     name = "fetch_kind",
     srcs = select({
         ":darwin": ["@kind_darwin//file"],
+        ":darwin_arm": ["@kind_darwin_arm//file"],
         ":k8": ["@kind_linux//file"],
     }),
     outs = ["kind"],
@@ -148,6 +129,7 @@ genrule(
     name = "fetch_ytt",
     srcs = select({
         ":darwin": ["@ytt_darwin//file"],
+        ":darwin_arm": ["@ytt_darwin_arm//file"],
         ":k8": ["@ytt_linux//file"],
     }),
     outs = ["ytt"],
@@ -158,6 +140,7 @@ genrule(
     name = "fetch_yq",
     srcs = select({
         ":darwin": ["@yq_darwin//file"],
+        ":darwin_arm": ["@yq_darwin_arm//file"],
         ":k8": ["@yq_linux//file"],
     }),
     outs = ["yq"],
@@ -173,6 +156,12 @@ config_setting(
 config_setting(
     name = "darwin",
     values = {"host_cpu": "darwin"},
+    visibility = ["//visibility:private"],
+)
+
+config_setting(
+    name = "darwin_arm",
+    values = {"host_cpu": "darwin_arm64"},
     visibility = ["//visibility:private"],
 )
 

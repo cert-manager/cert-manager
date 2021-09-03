@@ -29,9 +29,9 @@ kube::version::last_published_release
 LATEST_RELEASE="${KUBE_LAST_RELEASE}"
 CURRENT_VERSION="${KUBE_GIT_VERSION}"
 
-# Ensure helm, kind, kubectl, ytt, jq are available
+# Ensure helm, kind, kubectl, ytt are available
 echo "Building the required tools.."
-bazel build //hack/bin:helm //hack/bin:kind //hack/bin:ytt //hack/bin:jq //hack/bin:kubectl //hack/bin:kubectl-cert_manager
+bazel build //hack/bin:helm //hack/bin:kind //hack/bin:ytt //hack/bin:kubectl //hack/bin:kubectl-cert_manager
 bindir="$(bazel info bazel-bin)"
 export PATH="${bindir}/hack/bin/:$PATH"
 

@@ -47,12 +47,6 @@ tmpfiles=$TEST_TMPDIR/files
   "$@"
 )
 
-(
-  # Remove the platform/binary for gazelle and kazel
-  jq=$(dirname "$3")
-  rm -rf {.,"$tmpfiles"}/{"$jq"}
-)
-
 # Avoid diff -N so we handle empty files correctly
 diff=$(diff -upr \
   -x ".git" \
