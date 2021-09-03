@@ -458,6 +458,7 @@ startupapicheck:
     pullPolicy: IfNotPresent
 
   rbac:
+    # annotations for the startup API Check job RBAC and PSP resources
     annotations:
       helm.sh/hook: post-install
       helm.sh/hook-weight: "-5"
