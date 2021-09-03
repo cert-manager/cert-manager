@@ -18,6 +18,7 @@ package acmechallenges
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	acmeapi "golang.org/x/crypto/acme"
@@ -300,9 +301,21 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 		return fmt.Errorf("challenge URL is blank - challenge has not been created yet")
 	}
 
-	acmeChallenge, err := cl.GetChallenge(ctx, ch.Spec.URL)
+	acmeAuthorization, err := cl.GetAuthorization(ctx, ch.Spec.AuthorizationURL)
 	if err != nil {
 		return err
+	}
+
+	var acmeChallenge *acmeapi.Challenge
+	for _, challenge := range acmeAuthorization.Challenges {
+		if challenge.URI == ch.Spec.URL {
+			acmeChallenge = challenge
+			break
+		}
+	}
+
+	if acmeChallenge == nil {
+		return errors.New("challenge was not present in authorization")
 	}
 
 	// TODO: should we validate the State returned by the ACME server here?
