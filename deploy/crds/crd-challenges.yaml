@@ -209,6 +209,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -216,10 +217,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
@@ -1166,6 +1180,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -1173,10 +1188,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
@@ -2124,6 +2152,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -2131,10 +2160,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
@@ -3082,6 +3124,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -3089,10 +3132,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed

@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/acme/v1:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//pkg/logs:go_default_library",
         "@com_github_azure_azure_sdk_for_go//services/dns/mgmt/2017-10-01/dns:go_default_library",
@@ -22,6 +23,7 @@ go_test(
     srcs = ["azuredns_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/apis/acme/v1:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],

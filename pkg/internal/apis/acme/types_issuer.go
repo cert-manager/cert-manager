@@ -430,6 +430,14 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	HostedZoneName string
 
 	Environment AzureDNSEnvironment
+
+	ManagedIdentity *AzureManagedIdentity
+}
+
+type AzureManagedIdentity struct {
+	ClientID string
+
+	ResourceID string
 }
 
 type AzureDNSEnvironment string
