@@ -17,7 +17,6 @@ limitations under the License.
 package e2e
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -74,7 +73,7 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 				continue
 			}
 
-			err = ioutil.WriteFile(outPath, []byte(v), 0644)
+			err = os.WriteFile(outPath, []byte(v), 0644)
 			if err != nil {
 				log.Logf("Failed to write log file: %v", err)
 				continue

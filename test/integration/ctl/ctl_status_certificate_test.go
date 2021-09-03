@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/reference"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	statuscertcmd "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
@@ -530,10 +531,12 @@ CertificateRequest:
 			// Options to run status command
 			streams, _, outBuf, _ := genericclioptions.NewTestIOStreams()
 			opts := &statuscertcmd.Options{
-				CMClient:   cmCl,
-				RESTConfig: config,
-				IOStreams:  streams,
-				Namespace:  test.inputNamespace,
+				Factory: &factory.Factory{
+					CMClient:   cmCl,
+					RESTConfig: config,
+					Namespace:  test.inputNamespace,
+				},
+				IOStreams: streams,
 			}
 
 			err = opts.Run(ctx, test.inputArgs)

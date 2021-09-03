@@ -34,7 +34,6 @@ import (
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install/helm"
 )
@@ -76,7 +75,7 @@ To override values in the cert-manager chart, use either the '--values' flag and
 pass in a file or use the '--set' flag and pass configuration from the command line.
 `
 
-func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	settings := cli.New()
 	cfg := new(action.Configuration)
 
@@ -89,19 +88,11 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		IOStreams: ioStreams,
 	}
 
-	// Set default namespace cli flag value
-	defaults := map[string]string{
-		"namespace": defaultCertManagerNamespace,
-	}
-
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install cert-manager",
 		Long:  installDesc,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := helm.CopyCliFlags(cmd.Root().PersistentFlags(), defaults, settings); err != nil {
-				return err
-			}
 			options.client.Namespace = settings.Namespace()
 
 			rel, err := options.runInstall(ctx)
@@ -121,7 +112,11 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		SilenceErrors: true,
 	}
 
+	settings.AddFlags(cmd.Flags())
+	cmd.Flag("namespace").DefValue = defaultCertManagerNamespace
+
 	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.Wait)
+
 	addInstallFlags(cmd.Flags(), options.client)
 	addValueOptionsFlags(cmd.Flags(), options.valueOpts)
 	addChartPathOptionsFlags(cmd.Flags(), &options.client.ChartPathOptions)

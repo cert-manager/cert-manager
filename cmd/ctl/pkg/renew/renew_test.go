@@ -76,7 +76,7 @@ func TestValidate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmd := NewCmdRenew(context.TODO(), genericclioptions.IOStreams{}, nil)
+			cmd := NewCmdRenew(context.TODO(), genericclioptions.IOStreams{})
 
 			// This is normally registered in the main func. We add here to test
 			// against flags normally inherited.

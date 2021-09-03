@@ -26,6 +26,28 @@ SCRIPT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" > /dev/null && pwd )"
 export REPO_ROOT="${SCRIPT_ROOT}/.."
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
+GINKGO_SKIP=${GINKGO_SKIP:-}
+GINKGO_FOCUS=${GINKGO_FOCUS:-}
+
+# Skip Gateway tests for Kubernetes below v1.19
+if [[ "$K8S_VERSION" =~ 1\.16 ]] || [[ "$K8S_VERSION" =~ 1\.17 ]] || [[ "$K8S_VERSION" =~ 1\.18 ]]; then
+	echo "Kubernetes version ${K8S_VERSION}, skipping Gateway tests..."
+	if [[ -z "$GINKGO_SKIP" ]]; then
+		GINKGO_SKIP="Gateway"
+	else
+	# duplicates are ok
+	GINKGO_SKIP="${GINKGO_SKIP}|Gateway"
+	fi
+fi
+
+# GINKGO_FOCUS can be set to a regex matching ginkgo specs to run.
+# Example- 'export GINKGO_FOCUS='Gateway' (runs only test cases with 'Gateway' in name).
+if [[ -n "$GINKGO_FOCUS" ]]; then GINKGO_FOCUS="--ginkgo.focus=${GINKGO_FOCUS}"; fi
+
+# GINKGO_SKIP can be set to a regex matching ginkgo specs to skip. Example-
+# 'export GINKGO_SKIP="Venafi Cloud"' (skips all suites with 'Venafi Cloud' in the name).
+if  [[ -n "$GINKGO_SKIP" ]]; then GINKGO_SKIP="--ginkgo.skip=${GINKGO_SKIP}"; fi
+
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
@@ -38,19 +60,6 @@ mkdir -p "${REPO_ROOT}/_artifacts"
 # Build the e2e test binary
 bazel build //test/e2e:e2e.test
 
-# Gateway e2e tests are not supported on k8s <1.19
-# K8S_VERSION is exported in lib.sh
-
-echo "Using K8S_VERSION ${K8S_VERSION}"
-case "$K8S_VERSION" in
-  "1.16" | "1.17" | "1.18")
-    SKIP="Gateway"
-    echo "skipping Gateway e2e tests as K8S_VERSION is <1.19"
-    ;;
-  *)
-    SKIP=""
-esac
-
 # Run e2e tests
 ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	$(bazel info bazel-genfiles)/test/e2e/e2e.test \
@@ -59,5 +68,6 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
 	--acme-ingress-ip="$INGRESS_IP" \
-	"--ginkgo.skip=${SKIP}" \
+	${GINKGO_SKIP:+"$GINKGO_SKIP"} \
+	${GINKGO_FOCUS:+"$GINKGO_FOCUS"} \
 	"$@"

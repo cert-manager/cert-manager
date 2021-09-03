@@ -24,7 +24,6 @@ import (
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
@@ -67,7 +66,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (Serve
 	fs.Parse(args)
 
 	var caPEM []byte
-	tempDir, err := ioutil.TempDir("", "webhook-tls-")
+	tempDir, err := os.MkdirTemp("", "webhook-tls-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,10 +78,10 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (Serve
 		}
 
 		caPEM = ca
-		if err := ioutil.WriteFile(filepath.Join(tempDir, "tls.crt"), certificatePEM, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tempDir, "tls.crt"), certificatePEM, 0644); err != nil {
 			t.Fatal(err)
 		}
-		if err := ioutil.WriteFile(filepath.Join(tempDir, "tls.key"), privateKeyPEM, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tempDir, "tls.key"), privateKeyPEM, 0644); err != nil {
 			t.Fatal(err)
 		}
 

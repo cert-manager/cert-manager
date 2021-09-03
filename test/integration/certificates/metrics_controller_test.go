@@ -19,7 +19,7 @@ package certificates
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -121,7 +121,7 @@ func TestMetricsController(t *testing.T) {
 			return err
 		}
 
-		output, err := ioutil.ReadAll(resp.Body)
+		output, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}

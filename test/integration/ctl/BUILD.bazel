@@ -15,6 +15,7 @@ go_test(
     deps = [
         "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create/certificaterequest:go_default_library",
+        "//cmd/ctl/pkg/factory:go_default_library",
         "//cmd/ctl/pkg/renew:go_default_library",
         "//cmd/ctl/pkg/status/certificate:go_default_library",
         "//pkg/api/util:go_default_library",

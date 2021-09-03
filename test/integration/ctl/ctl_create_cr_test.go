@@ -20,19 +20,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificaterequest"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -106,14 +105,17 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 
 			// Options to run create CR command
 			opts := &certificaterequest.Options{
-				CMClient:         cmCl,
-				RESTConfig:       config,
-				IOStreams:        streams,
-				CmdNamespace:     test.inputNamespace,
-				EnforceNamespace: test.inputNamespace != "",
-				InputFilename:    test.inputFile,
-				CertFileName:     test.certFilename,
+				InputFilename: test.inputFile,
+				CertFileName:  test.certFilename,
+				Factory: &factory.Factory{
+					CMClient:         cmCl,
+					RESTConfig:       config,
+					Namespace:        test.inputNamespace,
+					EnforceNamespace: test.inputNamespace != "",
+				},
+				IOStreams: streams,
 			}
+
 			err := opts.Run(ctx, test.inputArgs)
 			if err != nil {
 				t.Fatal("failed to set up test to fail after writing private key to file and during creating CR")
@@ -145,7 +147,7 @@ func TestCtlCreateCRBeforeCRIsCreated(t *testing.T) {
 			}
 
 			// Check the file where the private key is stored
-			keyData, err := ioutil.ReadFile(test.expKeyFilename)
+			keyData, err := os.ReadFile(test.expKeyFilename)
 			if err != nil {
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
@@ -273,16 +275,18 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 
 			// Options to run create CR command
 			opts := &certificaterequest.Options{
-				CMClient:         cmCl,
-				RESTConfig:       config,
-				IOStreams:        streams,
-				CmdNamespace:     test.inputNamespace,
-				EnforceNamespace: test.inputNamespace != "",
-				InputFilename:    test.inputFile,
-				KeyFilename:      test.keyFilename,
-				CertFileName:     test.certFilename,
-				FetchCert:        test.fetchCert,
-				Timeout:          test.timeout,
+				Factory: &factory.Factory{
+					CMClient:         cmCl,
+					RESTConfig:       config,
+					Namespace:        test.inputNamespace,
+					EnforceNamespace: test.inputNamespace != "",
+				},
+				IOStreams:     streams,
+				InputFilename: test.inputFile,
+				KeyFilename:   test.keyFilename,
+				CertFileName:  test.certFilename,
+				FetchCert:     test.fetchCert,
+				Timeout:       test.timeout,
 			}
 
 			// Validating args and flags
@@ -342,7 +346,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			}
 
 			// Check the file where the private key is stored
-			keyData, err := ioutil.ReadFile(test.expKeyFilename)
+			keyData, err := os.ReadFile(test.expKeyFilename)
 			if err != nil {
 				t.Errorf("error when reading file storing private key: %v", err)
 			}
@@ -370,7 +374,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			// If the expected error message is the one below, we skip checking
 			// because no certificate will have been written to file
 			if test.fetchCert && test.expErrMsg != "error when waiting for CertificateRequest to be signed: timed out waiting for the condition" {
-				certData, err := ioutil.ReadFile(test.expCertFilename)
+				certData, err := os.ReadFile(test.expCertFilename)
 				if err != nil {
 					t.Errorf("error when reading file storing private key: %v", err)
 				}
@@ -401,7 +405,7 @@ func setupPathForTest(t *testing.T) func() {
 	}
 
 	// Create tmp directory and cd into it to store private key files
-	tmpDir, err := ioutil.TempDir("", "tmp-ctl-test-*")
+	tmpDir, err := os.MkdirTemp("", "tmp-ctl-test-*")
 	if err != nil {
 		t.Fatal(err)
 	}

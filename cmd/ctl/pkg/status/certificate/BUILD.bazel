@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/status/certificate",
     visibility = ["//visibility:public"],
     deps = [
+        "//cmd/ctl/pkg/factory:go_default_library",
         "//cmd/ctl/pkg/status/util:go_default_library",
         "//pkg/apis/acme/v1beta1:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
@@ -21,7 +22,6 @@ go_library(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
-        "@io_k8s_client_go//rest:go_default_library",
         "@io_k8s_client_go//tools/reference:go_default_library",
         "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
         "@io_k8s_kubectl//pkg/describe:go_default_library",

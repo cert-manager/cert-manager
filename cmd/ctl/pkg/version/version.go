@@ -28,6 +28,7 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/yaml"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/versionchecker"
 )
@@ -53,6 +54,7 @@ type Options struct {
 	VersionChecker versionchecker.Interface
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 // NewOptions returns initialized Options
@@ -87,7 +89,7 @@ or
 `
 
 // NewCmdVersion returns a cobra command for fetching versions
-func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
@@ -96,7 +98,6 @@ func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 		Long:  versionLong,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate())
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(ctx))
 		},
 	}
@@ -104,6 +105,9 @@ func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams, f
 	cmd.Flags().BoolVar(&o.ClientOnly, "client", o.ClientOnly, "If true, shows client version only (no server required).")
 	cmd.Flags().BoolVar(&o.Short, "short", o.Short, "If true, print just the version number.")
 	cmd.Flags().StringVarP(&o.Output, "output", "o", o.Output, "One of 'yaml' or 'json'.")
+
+	o.Factory = factory.New(cmd)
+
 	return cmd
 }
 
