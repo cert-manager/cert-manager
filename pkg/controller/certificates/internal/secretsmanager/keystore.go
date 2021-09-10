@@ -118,6 +118,7 @@ func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []b
 		CertificateChain: certs,
 	}, password)
 
+	// add the CA certificate, if set
 	if len(caPem) > 0 {
 		ca, err := pki.DecodeX509CertificateBytes(caPem)
 		if err != nil {
