@@ -23,12 +23,13 @@ import (
 	"fmt"
 	"testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 	jks "github.com/pavel-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"software.sslmate.com/src/go-pkcs12"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func mustGeneratePrivateKey(t *testing.T, encoding cmapi.PrivateKeyEncoding) []byte {
