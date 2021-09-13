@@ -54,6 +54,9 @@ const (
 	// Annotation key used to denote whether a Secret is named on a Certificate
 	// as a 'next private key' Secret resource.
 	IsNextPrivateKeySecretLabelKey = "cert-manager.io/next-private-key"
+
+  // Annotation key for certificate key algorithm.
+  KeyAlgorithmAnnotationKey = "cert-manager.io/key-algorithm"
 )
 
 const (

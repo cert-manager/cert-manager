@@ -33,6 +33,7 @@ var (
 	errInvalidIngressAnnotation = errors.New("invalid ingress annotation")
 )
 
+
 // translateAnnotations updates the Certificate spec using the ingress-like
 // annotations. For example, the following Ingress:
 //
@@ -43,6 +44,7 @@ var (
 //       cert-manager.io/duration: 2160h
 //       cert-manager.io/renew-before: 1440h
 //       cert-manager.io/usages: "digital signature,key encipherment"
+//       cert-manager.io/key-algorithm: Ed25519
 //
 // is mapped to the following Certificate:
 //
@@ -54,6 +56,7 @@ var (
 //     usages:
 //       - digital signature
 //       - key encipherment
+//     keyAlgorithm: Ed25519
 func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]string) error {
 	if crt == nil {
 		return errNilCertificate
@@ -92,5 +95,9 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 		}
 		crt.Spec.Usages = newUsages
 	}
+
+  if keyAlg, found := ingLikeAnnotations[cmapi.KeyAlgorithmAnnotationKey]; found {
+    crt.Spec.KeyAlgorithm = keyAlg
+  }
 	return nil
 }
