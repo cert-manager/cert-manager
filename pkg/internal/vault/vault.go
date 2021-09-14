@@ -381,13 +381,25 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	healthURL := path.Join("/v1", "sys", "health")
 	healthRequest := v.client.NewRequest("GET", healthURL)
 	healthResp, err := v.client.RawRequest(healthRequest)
+
+	if healthResp != nil {
+		defer healthResp.Body.Close()
+	}
+
 	// 429 = if unsealed and standby
 	// 472 = if disaster recovery mode replication secondary and active
 	// 473 = if performance standby
-	if err != nil && healthResp.StatusCode != 429 && healthResp.StatusCode != 472 && healthResp.StatusCode != 473 {
-		return err
+	if err != nil {
+		switch {
+		case healthResp == nil:
+			return err
+		case healthResp.StatusCode == 429, healthResp.StatusCode == 472, healthResp.StatusCode == 473:
+			return nil
+		default:
+			return fmt.Errorf("error calling Vault %s: %w", healthURL, err)
+		}
 	}
-	defer healthResp.Body.Close()
+
 	return nil
 }
 
