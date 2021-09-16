@@ -301,6 +301,22 @@ func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 		return fmt.Errorf("challenge URL is blank - challenge has not been created yet")
 	}
 
+	// Here we GetAuthorization and prune out the Challenge we are concerned with
+	// to gather the current state of the Challenge. In older versions of
+	// cert-manager we called the Challenge endpoint directly using a POST-as-GET
+	// request (GetChallenge). This caused issues with some ACME server
+	// implementations whereby they either interpreted this call as an Accept
+	// which would invalidate the Order as Challenge resources were not ready yet
+	// to complete the Challenge, or otherwise bork their state machines.
+	// While the ACME RFC[1] is left ambiguous as to whether this call is indeed
+	// supported, it is the general consensus by the cert-manager team that it
+	// should be. In any case, in an effort to support as many current and future
+	// ACME server implementations as possible, we have decided to use a
+	// POST-as-GET to the Authorization endpoint instead which unequivocally is
+	// part of the RFC explicitly.
+	// This issue was brought to the RFC mailing list[2].
+	// [1] - https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
+	// [2] - https://mailarchive.ietf.org/arch/msg/acme/NknXHBXl3aRG0nBmgsFH-SP90A4/
 	acmeAuthorization, err := cl.GetAuthorization(ctx, ch.Spec.AuthorizationURL)
 	if err != nil {
 		return err
