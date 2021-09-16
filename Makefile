@@ -59,6 +59,7 @@ help:
 	### Build targets
 	#
 	# clean              - removes the entire output base tree, stops the Bazel server and removes test artifacts
+	# build              - build a binary of the cert-manager kubectl plugin and build docker images for all components
 	# controller         - build a binary of the 'controller'
 	# cainjector         - build a binary of the 'cainjector'
 	# webhook            - build a binary of the 'webhook'
@@ -68,10 +69,9 @@ help:
 	# images_push        - pushes docker images to the target registry
 	# crds               - runs the update-crds script to ensure that generated CRDs are up to date
 	# cluster            - creates a Kubernetes cluster for testing in CI (KIND by default)
+	# release_tars       - build the release tar files.
 	#
-	# Image targets can be run with optional args DOCKER_REGISTRY and APP_VERSION:
-	#
-	# All image targets can be run with optional args DOCKER_REGISTRY, APP_VERSION, PLATFORM
+	# All image targets can be run with optional args DOCKER_REGISTRY, APP_VERSION, PLATFORM:
 	#
 	# make images DOCKER_REGISTRY=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature PLATFORM=@io_bazel_rules_go//go/toolchain:linux_arm64
 	#
