@@ -42,8 +42,9 @@ func (c *DNSProviderMock) makeRequest(method, uri string, body io.Reader) (json.
 func init() {
 	cflareEmail = os.Getenv("CLOUDFLARE_EMAIL")
 	cflareAPIKey = os.Getenv("CLOUDFLARE_API_KEY")
+	cflareAPIToken = os.Getenv("CLOUDFLARE_API_TOKEN")
 	cflareDomain = os.Getenv("CLOUDFLARE_DOMAIN")
-	if len(cflareEmail) > 0 && len(cflareAPIKey) > 0 && len(cflareDomain) > 0 {
+	if len(cflareEmail) > 0 && (len(cflareAPIKey) > 0 || len(cflareAPIToken) > 0) && len(cflareDomain) > 0 {
 		cflareLiveTest = true
 	}
 }
