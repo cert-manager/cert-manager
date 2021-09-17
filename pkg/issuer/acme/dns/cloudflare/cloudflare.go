@@ -102,6 +102,7 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 	}
 	mappedFQDN := strings.Split(fqdn, ".")
 	nextName := util.UnFqdn(fqdn) //remove the trailing dot
+	var lastErr error
 	for i := 0; i < len(mappedFQDN)-1; i++ {
 		var from, to = len(mappedFQDN[i]) + 1, len(nextName)
 		if from > to {
@@ -111,8 +112,10 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 			nextName = string([]rune(nextName)[from:to])
 			continue
 		}
+		lastErr = nil
 		result, err := c.makeRequest("GET", "/zones?name="+nextName, nil)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 		var zones []DNSZone
@@ -125,6 +128,9 @@ func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
 			return zones[0], nil //we're returning the first zone found, might need to test that further
 		}
 		nextName = string([]rune(nextName)[from:to])
+	}
+	if lastErr != nil {
+		return DNSZone{}, fmt.Errorf("while attempting to find Zones for domain %s\n%s", fqdn, lastErr)
 	}
 	return DNSZone{}, fmt.Errorf("Found no Zones for domain %s (neither in the sub-domain nor in the SLD) please make sure your domain-entries in the config are correct and the API key is correctly setup with Zone.read rights.", fqdn)
 }

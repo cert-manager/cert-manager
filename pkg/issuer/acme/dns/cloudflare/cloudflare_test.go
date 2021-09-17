@@ -10,6 +10,7 @@ package cloudflare
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -109,7 +110,25 @@ func TestFindNearestZoneForFQDN(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, zone, DNSZone{ID: "1a23cc4567b8def91a01c23a456e78cd", Name: "sub.domain.com"})
+}
 
+func TestFindNearestZoneForFQDNInvalidToken(t *testing.T) {
+	dnsProvider := new(DNSProviderMock)
+
+	noResult := []byte(`[]`)
+
+	dnsProvider.On("makeRequest", "GET", "/zones?name=_acme-challenge.test.sub.domain.com", mock.Anything).Maybe().Return(noResult, nil)
+	dnsProvider.On("makeRequest", "GET", "/zones?name=test.sub.domain.com", mock.Anything).Maybe().Return(noResult, nil)
+	dnsProvider.On("makeRequest", "GET", "/zones?name=sub.domain.com", mock.Anything).Maybe().Return(noResult, nil)
+	dnsProvider.On("makeRequest", "GET", "/zones?name=domain.com", mock.Anything).Return(noResult,
+		fmt.Errorf(`while attempting to find Zones for domain _acme-challenge.test.sub.domain.com
+while querying the Cloudflare API for GET "/zones?name=_acme-challenge.test.sub.domain.com"
+	 Error: 9109: Invalid access token`))
+
+	_, err := FindNearestZoneForFQDN(dnsProvider, "_acme-challenge.test.sub.domain.com.")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Invalid access token")
 }
 
 func TestCloudFlarePresent(t *testing.T) {
