@@ -163,7 +163,7 @@ func TestConvert_networking_Ingress_To_v1beta1_Ingress(t *testing.T) {
 		"ingress without annotations ends up with annotations": func(t *testing.T) {
 			in := &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "name",
+					Name:      "name",
 					Namespace: "namespaces",
 				},
 				Spec: networkingv1.IngressSpec{
@@ -175,7 +175,7 @@ func TestConvert_networking_Ingress_To_v1beta1_Ingress(t *testing.T) {
 			assert.NoError(t, err, "conversion should not fail")
 			expected := &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "name",
+					Name:      "name",
 					Namespace: "namespaces",
 					Annotations: map[string]string{
 						"kubernetes.io/ingress.class": "some-class",
@@ -191,7 +191,7 @@ func TestConvert_networking_Ingress_To_v1beta1_Ingress(t *testing.T) {
 }
 
 func TestConvert_v1beta1_Ingress_To_networking_Ingress(t *testing.T) {
-	tests := map[string]func(t *testing.T) {
+	tests := map[string]func(t *testing.T){
 		"convert networkingv1beta1 Ingresss to networkingv1 Ingress": func(t *testing.T) {
 			in := v1beta1TestIngress.DeepCopy()
 			out := new(networkingv1.Ingress)
