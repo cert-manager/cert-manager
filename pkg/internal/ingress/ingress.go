@@ -14,7 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package ingress lets us use an internal type for supporting multiple kinds of ingresses
+// Package ingress lets us use an internal type for supporting multiple kinds of ingresses.
+//
+// This package's sole reason for existence is for compatibility with Kubernetes API servers
+// below v1.18. However, our client-go library is already beyond the supported version skew
+// (https://kubernetes.io/releases/version-skew-policy/) so it is not guaranteed to continue
+// working in the future, and will definitely be removed once cert-manager no longer supports
+// Kubernetes 1.17.
 package ingress
 
 import (
