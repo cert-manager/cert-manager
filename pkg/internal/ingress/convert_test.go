@@ -139,19 +139,87 @@ var v1beta1TestIngress = &networkingv1beta1.Ingress{
 }
 
 func TestConvert_networking_Ingress_To_v1beta1_Ingress(t *testing.T) {
-	in := v1TestIngress.DeepCopy()
-	out := &networkingv1beta1.Ingress{}
-	err := Convert_networking_Ingress_To_v1beta1_Ingress(in, out, nil)
-	assert.NoError(t, err, "converting networking v1 to networking v1beta1 Ingress should not fail")
-	expected := v1beta1TestIngress.DeepCopy()
-	assert.Equal(t, expected, out, "Conversion from networking v1 to networking v1beta1 Ingress was not as expected")
+	tests := map[string]func(t *testing.T){
+		"convert networkingv1 Ingresss to networkingv1beta1 Ingress": func(t *testing.T) {
+			in := v1TestIngress.DeepCopy()
+			out := new(networkingv1beta1.Ingress)
+			err := Convert_networking_Ingress_To_v1beta1_Ingress(in, out, nil)
+			assert.NoError(t, err, "conversion should not fail")
+			expected := v1beta1TestIngress.DeepCopy()
+			assert.Equal(t, expected, out, "conversion was not as expected")
+		},
+		"mutation side effects": func(t *testing.T) {
+			in := v1TestIngress.DeepCopy()
+			out := &networkingv1beta1.Ingress{}
+			err := Convert_networking_Ingress_To_v1beta1_Ingress(in, out, nil)
+			assert.NoError(t, err, "conversion should not fail")
+			expected := v1beta1TestIngress.DeepCopy()
+			assert.Equal(t, expected, out, "conversion was not as expected")
+			// as the convert functions use unsafe.Pointer to make out point to the same
+			// underlying data as in, in should end up mutated. This test ensures if
+			// a future maintainer touches this code they understand the side effects
+			assert.Equal(t, in.Annotations, out.Annotations, "conversion did not have expected side effects: annotations differ")
+		},
+		"ingress without annotations ends up with annotations": func(t *testing.T) {
+			in := &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "name",
+					Namespace: "namespaces",
+				},
+				Spec: networkingv1.IngressSpec{
+					IngressClassName: pointer.String("some-class"),
+				},
+			}
+			out := new(networkingv1beta1.Ingress)
+			err := Convert_networking_Ingress_To_v1beta1_Ingress(in, out, nil)
+			assert.NoError(t, err, "conversion should not fail")
+			expected := &networkingv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "name",
+					Namespace: "namespaces",
+					Annotations: map[string]string{
+						"kubernetes.io/ingress.class": "some-class",
+					},
+				},
+			}
+			assert.Equal(t, expected, out, "conversion was not as expected")
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, test)
+	}
 }
 
 func TestConvert_v1beta1_Ingress_To_networking_Ingress(t *testing.T) {
-	in := v1beta1TestIngress.DeepCopy()
-	out := &networkingv1.Ingress{}
-	err := Convert_v1beta1_Ingress_To_networking_Ingress(in, out, nil)
-	assert.NoError(t, err, "converting networking v1beta1 to networking v1 Ingress should not fail")
-	expected := v1TestIngress.DeepCopy()
-	assert.Equal(t, expected, out, "Conversion from networking v1beta1 to networking v1 Ingress was not as expected")
+	tests := map[string]func(t *testing.T) {
+		"convert networkingv1beta1 Ingresss to networkingv1 Ingress": func(t *testing.T) {
+			in := v1beta1TestIngress.DeepCopy()
+			out := new(networkingv1.Ingress)
+			err := Convert_v1beta1_Ingress_To_networking_Ingress(in, out, nil)
+			assert.NoError(t, err, "conversion should not fail")
+			expected := v1TestIngress.DeepCopy()
+			assert.Equal(t, expected, out, "conversion was not as expected")
+		},
+		"conversion with no ingress class annotation works": func(t *testing.T) {
+			in := v1beta1TestIngress.DeepCopy()
+			out := new(networkingv1.Ingress)
+			delete(in.Annotations, "kubernetes.io/ingress.class")
+			err := Convert_v1beta1_Ingress_To_networking_Ingress(in, out, nil)
+			assert.NoError(t, err, "conversion should not fail")
+			assert.Nil(t, out.Spec.IngressClassName, "ingress class should not be set on output")
+		},
+		"mutation side effects": func(t *testing.T) {
+			// as the convert functions use unsafe.Pointer to make out point to the same
+			// underlying data as in, in should end up mutated. This test ensures if
+			// a future maintainer touches this code they understand the side effects
+			in := v1beta1TestIngress.DeepCopy()
+			out := new(networkingv1.Ingress)
+			err := Convert_v1beta1_Ingress_To_networking_Ingress(in, out, nil)
+			assert.NoError(t, err, "conversion should not fail")
+			assert.Equal(t, in.Annotations, out.Annotations, "conversion did not have expected side effects: annotations differ")
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, test)
+	}
 }
