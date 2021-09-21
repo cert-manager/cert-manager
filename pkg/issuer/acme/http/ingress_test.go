@@ -530,7 +530,6 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 					cmacme.SolverIdentificationLabelKey: "true",
 				}
 				expectedIngress.Annotations = map[string]string{
-					"kubernetes.io/ingress.class":                         "nginx",
 					"nginx.ingress.kubernetes.io/whitelist-source-range":  "0.0.0.0/0,::/0",
 					"nginx.org/mergeable-ingress-type":                    "minion",
 					"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
