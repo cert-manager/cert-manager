@@ -281,7 +281,15 @@ type ACMEChallengeSolverHTTP01IngressTemplate struct {
 	// will override the in-built values.
 	ACMEChallengeSolverHTTP01IngressObjectMeta
 
-	// OverrideNginxIngressWhitelistAnnotation add description here
+	// OverrideNginxIngressWhitelistAnnotation allows for overriding the annotation
+	// that should be used for whitelist-source-range. By default,
+	// "nginx.ingress.kubernetes.io/whitelist-source-range" is used, but since
+	// nginx allows for the annotation namespace to be customized, the default
+	// annotation would in that case be rejected by the nginx validating webhook.
+	// By setting OverrideNginxIngressWhitelistAnnotation to match your nginx
+	// annotation namespace this issue will be resolved. When setting
+	// OverrideNginxIngressWhitelistAnnotation, you have to set the full annotation
+	// key, i.e: "ingress.kubernetes.io/whitelist-source-range".
 	OverrideNginxIngressWhitelistAnnotation string `json:"overrideNginxIngressWhitelistAnnotation,omitempty"`
 }
 
