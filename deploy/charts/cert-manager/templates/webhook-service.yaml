@@ -12,6 +12,10 @@ metadata:
 {{- if .Values.webhook.serviceLabels }}
 {{ toYaml .Values.webhook.serviceLabels | indent 4 }}
 {{- end }}
+{{- if .Values.webhook.serviceAnnotations }}
+  annotations:
+    {{ toYaml .Values.webhook.serviceAnnotations | indent 4 }}
+{{- end }}
 spec:
   type: {{ .Values.webhook.serviceType }}
   {{- if .Values.webhook.loadBalancerIP }}
