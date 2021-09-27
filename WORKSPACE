@@ -1,6 +1,12 @@
 # gazelle:repository_macro hack/build/repos.bzl%go_repositories
 workspace(name = "com_github_jetstack_cert_manager")
 
+load("//:workspace.bzl", "check_min_bazel_version")
+
+# rules_go v0.28.0 requires Bazel v4.0.0 as minimum
+# https://github.com/bazelbuild/rules_go/releases/tag/v0.28.0
+check_min_bazel_version("4.0.0")
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
