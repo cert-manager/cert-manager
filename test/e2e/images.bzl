@@ -53,6 +53,22 @@ def install():
         digest = "sha256:8c0abb209aaef63631d1c85add422ca51848ccee2f87aea06558d37bda1c8e91",
     )
 
+    container_pull(
+        name = "io_kyverno",
+        registry = "ghcr.io",
+        repository = "kyverno/kyverno",
+        tag = "v1.3.6",
+        digest = "sha256:7d7972e7d9ed2a6da27b06ccb1c3c5d3544838d6cedb67a050ba7d655461ef52",
+    )
+
+    container_pull(
+        name = "io_kyverno_pre",
+        registry = "ghcr.io",
+        repository = "kyverno/kyvernopre",
+        tag = "v1.3.6",
+        digest = "sha256:e76fb71c59449bca1028724a88005652409b56efb90bbcdce56b0d083bda6568",
+    )
+
     ## Fetch traefik for use during e2e tests.
     container_pull(
         name = "io_traefik_traefik",
