@@ -83,8 +83,8 @@ func TestCRInfoString(t *testing.T) {
 		"CR with no condition output correct": {
 			cr: &cmapi.CertificateRequest{Status: cmapi.CertificateRequestStatus{Conditions: []cmapi.CertificateRequestCondition{}}},
 			expOutput: `CertificateRequest:
-  Name: 
-  Namespace: 
+  Name:
+  Namespace:
   Conditions:
     No Conditions set
   Events:  <none>
@@ -97,8 +97,8 @@ func TestCRInfoString(t *testing.T) {
 						{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Message: "example"},
 					}}},
 			expOutput: `CertificateRequest:
-  Name: 
-  Namespace: 
+  Name:
+  Namespace:
   Conditions:
     Ready: True, Reason: , Message: example
   Events:  <none>
@@ -109,7 +109,7 @@ func TestCRInfoString(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			actualOutput := (&CertificateStatus{}).withCR(test.cr, nil, test.err).CRStatus.String()
-			if strings.TrimSpace(actualOutput) != strings.TrimSpace(test.expOutput) {
+			if strings.ReplaceAll(actualOutput, " \n", "\n") != strings.ReplaceAll(test.expOutput, " \n", "\n") {
 				t.Errorf("Unexpected output; expected: \n%s\nactual: \n%s", test.expOutput, actualOutput)
 			}
 		})
@@ -235,7 +235,7 @@ MA6koCR/K23HZfML8vT6lcHvQJp9XXaHRIe9NX/M/2f6VpfO7JjKWLou5k5a
 					gen.SetCertificateNamespace(ns),
 					gen.SetCertificateNotAfter(metav1.Time{Time: timestamp}),
 					gen.SetCertificateNotBefore(metav1.Time{Time: timestamp}),
-					gen.SetCertificateRenewalTIme(metav1.Time{Time: timestamp}),
+					gen.SetCertificateRenewalTime(metav1.Time{Time: timestamp}),
 					gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionReady,
 						Status: cmmeta.ConditionTrue, Message: "Certificate is up to date and has not expired"}),
 					gen.SetCertificateDNSNames("example.com"),
