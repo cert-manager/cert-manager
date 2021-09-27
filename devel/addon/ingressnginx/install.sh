@@ -36,6 +36,7 @@ fi
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 IMAGE_TAG=""
 HELM_CHART=""
+INGRESS_WITHOUT_CLASS=""
 
 # Require helm, kubectl and yq available on PATH
 check_tool kubectl
@@ -57,9 +58,11 @@ k8s_version=$(kubectl version -oyaml | yq e '.serverVersion | .major +"."+ .mino
 if [[ $k8s_version =~ 1\.22 ]]; then
   IMAGE_TAG="v1.0.2"
   HELM_CHART="4.0.3"
+  INGRESS_WITHOUT_CLASS="true"
 else
   IMAGE_TAG="v0.48.1"
   HELM_CHART="3.34.0"
+  INGRESS_WITHOUT_CLASS="false"
 fi
 require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle_${IMAGE_TAG}"
 
@@ -84,5 +87,6 @@ helm upgrade \
     --set controller.config.no-tls-redirect-locations="" \
     --set admissionWebhooks.enabled=false \
     --set controller.admissionWebhooks.enabled=false \
+    --set controller.watchIngressWithoutClass="${INGRESS_WITHOUT_CLASS}" \
     "$RELEASE_NAME" \
     ingress-nginx/ingress-nginx
