@@ -49,8 +49,8 @@ def install():
         name = "io_kubernetes_ingress-nginx_new",
         registry = "k8s.gcr.io",
         repository = "ingress-nginx/controller",
-        tag = "v1.0.0-alpha.2",
-        digest = "sha256:90f417ffd979f6493ea302f6757763365263d2f8112447139dffa97d927f5dfb",
+        tag = "v1.0.2",
+        digest = "sha256:8c0abb209aaef63631d1c85add422ca51848ccee2f87aea06558d37bda1c8e91",
     )
 
     ## Fetch traefik for use during e2e tests.

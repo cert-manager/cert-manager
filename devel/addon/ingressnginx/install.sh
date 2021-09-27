@@ -35,6 +35,7 @@ fi
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-ingress-nginx}"
 IMAGE_TAG=""
+HELM_CHART=""
 
 # Require helm, kubectl and yq available on PATH
 check_tool kubectl
@@ -54,9 +55,11 @@ export PATH="${bindir}/hack/bin/:$PATH"
 # without passing the K8S_VERSION env var.
 k8s_version=$(kubectl version -oyaml | yq e '.serverVersion | .major +"."+ .minor' -)
 if [[ $k8s_version =~ 1\.22 ]]; then
-  IMAGE_TAG="v1.0.0-alpha.2"
+  IMAGE_TAG="v1.0.2"
+  HELM_CHART="4.0.3"
 else
   IMAGE_TAG="v0.48.1"
+  HELM_CHART="3.34.0"
 fi
 require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle_${IMAGE_TAG}"
 
@@ -71,7 +74,7 @@ helm repo update
 helm upgrade \
     --install \
     --wait \
-    --version 3.34.0 \
+    --version "${HELM_CHART}" \
     --namespace "${NAMESPACE}" \
     --set controller.image.digest="" \
     --set controller.image.tag="${IMAGE_TAG}" \
