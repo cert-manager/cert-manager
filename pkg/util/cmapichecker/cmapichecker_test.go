@@ -73,6 +73,8 @@ const (
 	// because legacy CRD versions will no longer be "served"
 	// and in 1.7 the conversion webhook may be removed at which point these can
 	// be removed too.
+	// TODO: Add tests for errors when connecting to the /validate
+	// ValidatingWebhook endpoint.
 	errConversionWebhookServiceFailure     = `conversion webhook for cert-manager.io/v1alpha2, Kind=Certificate failed: Post "https://cert-manager-webhook.cert-manager.svc:443/convert?timeout=30s": service "cert-manager-webhook" not found`
 	errConversionWebhookDeploymentFailure  = `conversion webhook for cert-manager.io/v1alpha2, Kind=Certificate failed: Post "https://cert-manager-webhook.cert-manager.svc:443/convert?timeout=30s": dial tcp 10.96.38.90:443: connect: connection refused`
 	errConversionWebhookCertificateFailure = `conversion webhook for cert-manager.io/v1alpha2, Kind=Certificate failed: Post "https://cert-manager-webhook.cert-manager.svc:443/convert?timeout=30s": x509: certificate signed by unknown authority`
