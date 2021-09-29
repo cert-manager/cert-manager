@@ -67,6 +67,12 @@ const (
 	errMutatingWebhookDeploymentFailure  = `Internal error occurred: failed calling webhook "webhook.cert-manager.io": Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": dial tcp 10.96.38.90:443: connect: connection refused`
 	errMutatingWebhookCertificateFailure = `Internal error occurred: failed calling webhook "webhook.cert-manager.io": Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" while trying to verify candidate authority certificate "cert-manager-webhook-ca"`
 
+	// These /convert error examples test that we can correctly parse errors
+	// while connecting to the conversion webhook,
+	// but as of cert-manager 1.6 the conversion webhook will no-longer be used
+	// because legacy CRD versions will no longer be "served"
+	// and in 1.7 the conversion webhook may be removed at which point these can
+	// be removed too.
 	errConversionWebhookServiceFailure     = `conversion webhook for cert-manager.io/v1alpha2, Kind=Certificate failed: Post "https://cert-manager-webhook.cert-manager.svc:443/convert?timeout=30s": service "cert-manager-webhook" not found`
 	errConversionWebhookDeploymentFailure  = `conversion webhook for cert-manager.io/v1alpha2, Kind=Certificate failed: Post "https://cert-manager-webhook.cert-manager.svc:443/convert?timeout=30s": dial tcp 10.96.38.90:443: connect: connection refused`
 	errConversionWebhookCertificateFailure = `conversion webhook for cert-manager.io/v1alpha2, Kind=Certificate failed: Post "https://cert-manager-webhook.cert-manager.svc:443/convert?timeout=30s": x509: certificate signed by unknown authority`
