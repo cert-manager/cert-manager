@@ -57,6 +57,7 @@ func RunControlPlane(t *testing.T, ctx context.Context) (*rest.Config, StopFunc)
 		t.Logf("Found CRD with name %q", crd.Name)
 	}
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
+	patchCRDServed(crds)
 
 	if _, err := envtest.InstallCRDs(config, envtest.CRDInstallOptions{
 		CRDs: crdsToRuntimeObjects(crds),
@@ -98,6 +99,9 @@ func init() {
 
 func patchCRDConversion(crds []*v1.CustomResourceDefinition, url string, caPEM []byte) {
 	for _, crd := range crds {
+		for i := range crd.Spec.Versions {
+			crd.Spec.Versions[i].Served = true
+		}
 		if crd.Spec.Conversion == nil {
 			continue
 		}
@@ -261,4 +265,17 @@ func getMutatingWebhookConfig(url string, caPEM []byte) client.Object {
 	}
 
 	return &webhook
+}
+
+// patchCRDServed ensures that even the API versions which are not served are
+// available in the integration tests.
+// This workaround allows the conversion tests and the ctl convert tests to run.
+// TODO: Remove this workaround in cert-manager 1.7 when all the legacy API
+// versions will finally be removed.
+func patchCRDServed(crds []*v1.CustomResourceDefinition) {
+	for _, crd := range crds {
+		for i := range crd.Spec.Versions {
+			crd.Spec.Versions[i].Served = true
+		}
+	}
 }
