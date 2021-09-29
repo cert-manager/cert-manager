@@ -1010,7 +1010,7 @@ spec:
                     - invalid
                     - expired
                     - errored
-      served: true
+      served: false
       storage: false
       subresources:
         status: {}
@@ -1981,7 +1981,7 @@ spec:
                     - invalid
                     - expired
                     - errored
-      served: true
+      served: false
       storage: false
       subresources:
         status: {}
@@ -2953,7 +2953,7 @@ spec:
                     - invalid
                     - expired
                     - errored
-      served: true
+      served: false
       storage: false
       subresources:
         status: {}

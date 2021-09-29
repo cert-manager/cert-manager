@@ -1223,7 +1223,7 @@ spec:
                       type:
                         description: Type of the condition, known values are (`Ready`).
                         type: string
-      served: true
+      served: false
       storage: false
     - name: v1alpha3
       subresources:
@@ -2406,7 +2406,7 @@ spec:
                       type:
                         description: Type of the condition, known values are (`Ready`).
                         type: string
-      served: true
+      served: false
       storage: false
     - name: v1beta1
       subresources:
@@ -3591,7 +3591,7 @@ spec:
                       type:
                         description: Type of the condition, known values are (`Ready`).
                         type: string
-      served: true
+      served: false
       storage: false
     - name: v1
       subresources:
