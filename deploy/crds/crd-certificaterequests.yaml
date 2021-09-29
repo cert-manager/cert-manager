@@ -212,7 +212,7 @@ spec:
                   description: FailureTime stores the time that this CertificateRequest failed. This is used to influence garbage collection and back-off.
                   type: string
                   format: date-time
-      served: true
+      served: false
       storage: false
     - name: v1alpha3
       subresources:
@@ -381,7 +381,7 @@ spec:
                   description: FailureTime stores the time that this CertificateRequest failed. This is used to influence garbage collection and back-off.
                   type: string
                   format: date-time
-      served: true
+      served: false
       storage: false
     - name: v1beta1
       subresources:
@@ -552,7 +552,7 @@ spec:
                   description: FailureTime stores the time that this CertificateRequest failed. This is used to influence garbage collection and back-off.
                   type: string
                   format: date-time
-      served: true
+      served: false
       storage: false
     - name: v1
       subresources:
