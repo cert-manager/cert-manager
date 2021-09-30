@@ -33,6 +33,8 @@ def _parse_bazel_version(bazel_version):
 # Check that a minimum version of bazel is being used.
 def check_min_bazel_version(bazel_version):
     if "bazel_version" in dir(native) and native.bazel_version:
+        # native is a built-in Bazel module https://docs.bazel.build/versions/main/skylark/lib/native.html#modules.native
+        # native.bazel_version is only available in WORKSPACE, so this def can only ever be used in WORKSPACE
         current_bazel_version = _parse_bazel_version(native.bazel_version)
         minimum_bazel_version = _parse_bazel_version(bazel_version)
         if minimum_bazel_version > current_bazel_version:

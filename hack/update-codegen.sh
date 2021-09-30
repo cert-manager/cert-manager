@@ -27,9 +27,20 @@ else
   exit 0
 fi
 
-# This has been copied from https://github.com/bazelbuild/bazel/blob/master/tools/bash/runfiles/runfiles.bash
-# It exports rlocation function that can be used to access other bash scripts in this codebase.
-# set -e pipefail needs to happen after sourcing runfiles.bash, see https://github.com/bazelbuild/bazel/blob/master/tools/bash/runfiles/runfiles.bash#L21
+# Source runfiles.bash to to be able to use the rlocation function that is
+# defined in the above linked script. This function finds runtime location of
+# scripts thus allowing us to source other bash scripts when this script is run
+# by Bazel.
+# https://github.com/bazelbuild/bazel/blob/master/tools/bash/runfiles/runfiles.bash .
+
+# The runfiles.bash is added as a dep of the update-codegen target that is
+# used to run this script. Bazel places deps of sh_binary targets in runfiles
+# https://docs.bazel.build/versions/main/be/shell.html#sh_binary_args and the
+# following lines attempt to source this script from one of the known runfile
+# location for runfiles for this target.
+
+# set -e pipefail needs to happen after sourcing runfiles.bash, see
+# https://github.com/bazelbuild/bazel/blob/master/tools/bash/runfiles/runfiles.bash#L21
 
 # --- begin runfiles.bash initialization v2 ---
 # Copy-pasted from the Bazel Bash runfiles library v2.

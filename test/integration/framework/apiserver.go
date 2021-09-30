@@ -28,7 +28,6 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -57,7 +56,7 @@ func RunControlPlane(t *testing.T, ctx context.Context) (*rest.Config, StopFunc)
 	for _, crd := range crds {
 		t.Logf("Found CRD with name %q", crd.Name)
 	}
-	crds = patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
+	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
 
 	if _, err := envtest.InstallCRDs(config, envtest.CRDInstallOptions{
 		CRDs: crds,
@@ -97,26 +96,21 @@ func init() {
 	apiextensionsinstall.Install(internalScheme)
 }
 
-func patchCRDConversion(crds []apiextensionsv1.CustomResourceDefinition, url string, caPEM []byte) []apiextensionsv1.CustomResourceDefinition {
-	out := []apiextensionsv1.CustomResourceDefinition{}
+func patchCRDConversion(crds []apiextensionsv1.CustomResourceDefinition, url string, caPEM []byte) {
 	for _, crd := range crds {
 		for i := range crd.Spec.Versions {
 			crd.Spec.Versions[i].Served = true
 		}
 		if crd.Spec.Conversion == nil {
-			out = append(out, crd)
 			continue
 		}
 		if crd.Spec.Conversion.Webhook == nil {
-			out = append(out, crd)
 			continue
 		}
 		if crd.Spec.Conversion.Webhook.ClientConfig == nil {
-			out = append(out, crd)
 			continue
 		}
 		if crd.Spec.Conversion.Webhook.ClientConfig.Service == nil {
-			out = append(out, crd)
 			continue
 		}
 		path := ""
@@ -127,9 +121,7 @@ func patchCRDConversion(crds []apiextensionsv1.CustomResourceDefinition, url str
 		crd.Spec.Conversion.Webhook.ClientConfig.URL = &url
 		crd.Spec.Conversion.Webhook.ClientConfig.CABundle = caPEM
 		crd.Spec.Conversion.Webhook.ClientConfig.Service = nil
-		out = append(out, crd)
 	}
-	return out
 }
 
 func readCustomResourcesAtPath(t *testing.T, path string) []apiextensionsv1.CustomResourceDefinition {
@@ -262,17 +254,4 @@ func getMutatingWebhookConfig(url string, caPEM []byte) client.Object {
 	}
 
 	return &webhook
-}
-
-// patchCRDServed ensures that even the API versions which are not served are
-// available in the integration tests.
-// This workaround allows the conversion tests and the ctl convert tests to run.
-// TODO: Remove this workaround in cert-manager 1.7 when all the legacy API
-// versions will finally be removed.
-func patchCRDServed(crds []*v1.CustomResourceDefinition) {
-	for _, crd := range crds {
-		for i := range crd.Spec.Versions {
-			crd.Spec.Versions[i].Served = true
-		}
-	}
 }

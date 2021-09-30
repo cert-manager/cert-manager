@@ -48,16 +48,21 @@ export PATH="${bindir}/hack/bin/:$PATH"
 # We need to install different versions of Ingress depending on which version of
 # Kubernetes we are running as the NGINX Ingress controller does not have a
 # release where they would support both v1 and v1beta1 versions of networking API.
-# If running the setup script locally against Kubernetes v1.22, make sure to pass K8S_VERSION
-# K8S_VERSION=1.22 ./devel/setup-e2e-deps.sh for this to work.
-# TODO: Remove this once we no longer need to test against Kubernetes below v1.19.
 
 # This allows running ./devel/setup-e2e-deps.sh locally against Kubernetes v1.22
 # without passing the K8S_VERSION env var.
 k8s_version=$(kubectl version -oyaml | yq e '.serverVersion | .major +"."+ .minor' -)
 if [[ $k8s_version =~ 1\.22 ]]; then
+  # Deploy a v1 NGINX-Ingress when on Kubernetes 1.22 (only v1+ NGINX-Ingress versions support networking.k8s.io/v1 API)
   IMAGE_TAG="v1.0.2"
   HELM_CHART="4.0.3"
+  # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
+  # defined. When configuring solver block for ACME HTTTP01 challenge on an ACME
+  # issuer, cert-manager users can currently specify either an Ingress name or a
+  # class. We also e2e test these two ways of creating Ingresses with
+  # ingress-shim. For the ingress controller to watch our Ingresses that don't
+  # have a class, we pass a --watch-ingress-without-class flag
+  # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
   INGRESS_WITHOUT_CLASS="true"
 else
   IMAGE_TAG="v0.48.1"
