@@ -11,9 +11,9 @@ container_bundle(
 
 # Ingress image that works on Kubernetes v1.19 -> (including v1.22)
 container_bundle(
-    name = "bundle_v1.0.0-alpha.2",
+    name = "bundle_v1.0.2",
     images = {
-        "k8s.gcr.io/ingress-nginx/controller:v1.0.0-alpha.2": "@io_kubernetes_ingress-nginx_new//image",
+        "k8s.gcr.io/ingress-nginx/controller:v1.0.2": "@io_kubernetes_ingress-nginx_new//image",
     },
     tags = ["manual"],
 )

@@ -27,7 +27,7 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -35,12 +35,12 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
 	"github.com/jetstack/cert-manager/pkg/api"
 	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 	"github.com/jetstack/cert-manager/test/internal/apiserver"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 type StopFunc func()
@@ -57,10 +57,9 @@ func RunControlPlane(t *testing.T, ctx context.Context) (*rest.Config, StopFunc)
 		t.Logf("Found CRD with name %q", crd.Name)
 	}
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
-	patchCRDServed(crds)
 
 	if _, err := envtest.InstallCRDs(config, envtest.CRDInstallOptions{
-		CRDs: crdsToRuntimeObjects(crds),
+		CRDs: crds,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +96,7 @@ func init() {
 	apiextensionsinstall.Install(internalScheme)
 }
 
-func patchCRDConversion(crds []*v1.CustomResourceDefinition, url string, caPEM []byte) {
+func patchCRDConversion(crds []apiextensionsv1.CustomResourceDefinition, url string, caPEM []byte) {
 	for _, crd := range crds {
 		for i := range crd.Spec.Versions {
 			crd.Spec.Versions[i].Served = true
@@ -125,14 +124,14 @@ func patchCRDConversion(crds []*v1.CustomResourceDefinition, url string, caPEM [
 	}
 }
 
-func readCustomResourcesAtPath(t *testing.T, path string) []*v1.CustomResourceDefinition {
+func readCustomResourcesAtPath(t *testing.T, path string) []apiextensionsv1.CustomResourceDefinition {
 	serializer := jsonserializer.NewSerializerWithOptions(jsonserializer.DefaultMetaFactory, internalScheme, internalScheme, jsonserializer.SerializerOptions{
 		Yaml: true,
 	})
 	converter := runtime.UnsafeObjectConvertor(internalScheme)
 	codec := versioning.NewCodec(serializer, serializer, converter, internalScheme, internalScheme, internalScheme, runtime.InternalGroupVersioner, runtime.InternalGroupVersioner, internalScheme.Name())
 
-	var crds []*v1.CustomResourceDefinition
+	var crds []apiextensionsv1.CustomResourceDefinition
 	if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -142,7 +141,7 @@ func readCustomResourcesAtPath(t *testing.T, path string) []*v1.CustomResourceDe
 		}
 		crd, err := readCRDsAtPath(codec, converter, path)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed reading CRDs at path %s: %w", path, err)
 		}
 		crds = append(crds, crd...)
 		return nil
@@ -152,13 +151,13 @@ func readCustomResourcesAtPath(t *testing.T, path string) []*v1.CustomResourceDe
 	return crds
 }
 
-func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]*v1.CustomResourceDefinition, error) {
+func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var crds []*v1.CustomResourceDefinition
+	var crds []apiextensionsv1.CustomResourceDefinition
 	for _, d := range strings.Split(string(data), "\n---\n") {
 		// skip empty YAML documents
 		if strings.TrimSpace(d) == "" {
@@ -170,8 +169,8 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 			return nil, err
 		}
 
-		out := &v1.CustomResourceDefinition{}
-		if err := converter.Convert(internalCRD, out, nil); err != nil {
+		out := apiextensionsv1.CustomResourceDefinition{}
+		if err := converter.Convert(internalCRD, &out, nil); err != nil {
 			return nil, err
 		}
 
@@ -179,16 +178,6 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 	}
 
 	return crds, nil
-}
-
-func crdsToRuntimeObjects(in []*v1.CustomResourceDefinition) []client.Object {
-	out := make([]client.Object, len(in))
-
-	for i, crd := range in {
-		out[i] = client.Object(crd)
-	}
-
-	return out
 }
 
 func getValidatingWebhookConfig(url string, caPEM []byte) client.Object {
@@ -265,17 +254,4 @@ func getMutatingWebhookConfig(url string, caPEM []byte) client.Object {
 	}
 
 	return &webhook
-}
-
-// patchCRDServed ensures that even the API versions which are not served are
-// available in the integration tests.
-// This workaround allows the conversion tests and the ctl convert tests to run.
-// TODO: Remove this workaround in cert-manager 1.7 when all the legacy API
-// versions will finally be removed.
-func patchCRDServed(crds []*v1.CustomResourceDefinition) {
-	for _, crd := range crds {
-		for i := range crd.Spec.Versions {
-			crd.Spec.Versions[i].Served = true
-		}
-	}
 }
