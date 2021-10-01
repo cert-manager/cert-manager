@@ -54,7 +54,7 @@ filegroup(
 
     http_archive(
         name = "co_honnef_go_tools_staticcheck_osx",
-        sha256 = "03b100561e3bc14db0b3b4004b102a00cb0197938d23cc40193f269f7b246d2d",
+        sha256 = "7fb41768b8e68aaad397f666d7d5eb9c31abcc4180b5cb6fa7d091cef987eb77",
         urls = ["https://github.com/dominikh/go-tools/releases/download/2021.1/staticcheck_darwin_amd64.tar.gz"],
         build_file_content = """
 filegroup(
@@ -204,6 +204,21 @@ filegroup(
      name = "file",
      srcs = [
         "openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc",
+     ],
+     visibility = ["//visibility:public"],
+)
+    """,
+    )
+    http_archive(
+        name = "oc_3_11_mac",
+        sha256 = "75d58500aec1a2cee9473dfa826c81199669dbc0f49806e31a13626b5e4cfcf0",
+        urls = ["https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-mac.zip"],
+        build_file_content =
+         """
+filegroup(
+     name = "file",
+     srcs = [
+        "oc",
      ],
      visibility = ["//visibility:public"],
 )
