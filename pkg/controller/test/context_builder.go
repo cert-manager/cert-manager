@@ -224,7 +224,7 @@ func (b *Builder) AllReactorsCalled() error {
 
 func (b *Builder) AllEventsCalled() error {
 	var errs []error
-	if !util.EqualSorted(b.ExpectedEvents, b.Events()) {
+	if !util.EqualUnsorted(b.ExpectedEvents, b.Events()) {
 		errs = append(errs, fmt.Errorf("got unexpected events, exp='%s' got='%s'",
 			b.ExpectedEvents, b.Events()))
 	}
