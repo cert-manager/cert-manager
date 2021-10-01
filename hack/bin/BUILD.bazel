@@ -18,6 +18,7 @@ genrule(
     name = "com_coreos_etcd",
     srcs = select({
         ":darwin": ["@kubebuilder-tools_darwin_amd64//:etcd"],
+        ":darwin_arm": ["@kubebuilder-tools_darwin_amd64//:etcd"],
         ":k8": ["@kubebuilder-tools_linux_amd64//:etcd"],
     }),
     outs = ["etcd"],
@@ -29,6 +30,7 @@ genrule(
     name = "co_honnef_go_tools_staticcheck",
     srcs = select({
         ":darwin": ["@co_honnef_go_tools_staticcheck_osx//:file"],
+        ":darwin_arm": ["@co_honnef_go_tools_staticcheck_osx//:file"],
         ":k8": ["@co_honnef_go_tools_staticcheck_linux//:file"],
     }),
     outs = ["staticcheck"],
@@ -40,6 +42,7 @@ genrule(
     name = "io_kubernetes_kube-apiserver",
     srcs = select({
         ":darwin": ["@kubebuilder-tools_darwin_amd64//:kube-apiserver"],
+        ":darwin_arm": ["@kubebuilder-tools_darwin_amd64//:kube-apiserver"],
         ":k8": ["@kubebuilder-tools_linux_amd64//:kube-apiserver"],
     }),
     outs = ["kube-apiserver"],
@@ -64,6 +67,8 @@ genrule(
     name = "fetch_oc3",
     srcs = select({
         ":k8": ["@oc_3_11_linux//:file"],
+        ":darwin": ["@oc_3_11_mac//:file"],
+        ":darwin_arm": ["@oc_3_11_mac//:file"],
     }),
     outs = ["oc3"],
     cmd = "cp $(SRCS) $@",

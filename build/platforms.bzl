@@ -46,7 +46,7 @@ CLIENT_PLATFORMS = {
 
 TEST_PLATFORMS = {
     "linux": ["amd64"],
-    "darwin": ["amd64"],
+    "darwin": ["amd64", "arm64"],
 }
 
 # Helper which produces the ALL_PLATFORMS dictionary, currently composed of
