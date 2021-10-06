@@ -1,2 +1,3 @@
 # Include git version info
 build --workspace_status_command hack/build/print-workspace-status.sh
+#
