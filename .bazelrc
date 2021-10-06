@@ -1,3 +1,12 @@
+# Disable client-server mode
+startup --batch
 # Include git version info
 build --workspace_status_command hack/build/print-workspace-status.sh
-#
+# Disable TTY cursor control for clearer sequential output
+build --curses=no
+# Show timestamps with each bazel message
+build --show_timestamps
+# progress messages are suppressed
+build --noshow_progress
+# Suppress output package-loading progress messages
+build --noshow_loading_progress
