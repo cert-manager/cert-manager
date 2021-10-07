@@ -531,22 +531,28 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	}
 
 	if issuer.GetSpec().ACME != nil && issuer.GetSpec().ACME.PreferredChain != "" {
-		altBundles, err := cl.FetchCertAlternatives(ctx, certURL, true)
+		altURLs, err := cl.ListCertAlternates(ctx, certURL)
 		if err != nil {
-			return fmt.Errorf("error fetching alternate certificates: %w", err)
+			return fmt.Errorf("error listing alternate certificate URLs: %w", err)
 		}
-		for _, altBundle := range altBundles {
-			for _, certPEM := range altBundle {
-				cert, err := x509.ParseCertificate(certPEM)
+		// Loop over all alternative chains
+		for _, altURL := range altURLs {
+			altChain, err := cl.FetchCert(ctx, altURL, true)
+			if err != nil {
+				return fmt.Errorf("error fetching alternate certificate chain from %s: %w", altURL, err)
+			}
+			// Loop over each cert in this alternative chain
+			for _, altCert := range altChain {
+				cert, err := x509.ParseCertificate(altCert)
 				if err != nil {
-					return fmt.Errorf("error parsing alternate certificates: %w", err)
+					return fmt.Errorf("error parsing alternate certificate chain: %w", err)
 				}
-
 				log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Found alternative ACME bundle")
 				if cert.Issuer.CommonName == issuer.GetSpec().ACME.PreferredChain {
 					// if the issuer's CN matched the preferred chain it means this bundle is
 					// signed by the requested chain
-					return c.storeCertificateOnStatus(ctx, o, altBundle)
+					log.V(logf.DebugLevel).WithValues("Issuer CN", cert.Issuer.CommonName).Info("Selecting alternative ACME bundle with a mathing Common Name from %s", altURL)
+					return c.storeCertificateOnStatus(ctx, o, altChain)
 				}
 			}
 		}

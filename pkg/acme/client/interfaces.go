@@ -33,7 +33,7 @@ type Interface interface {
 	AuthorizeOrder(ctx context.Context, id []acme.AuthzID, opt ...acme.OrderOption) (*acme.Order, error)
 	GetOrder(ctx context.Context, url string) (*acme.Order, error)
 	FetchCert(ctx context.Context, url string, bundle bool) ([][]byte, error)
-	FetchCertAlternatives(ctx context.Context, url string, bundle bool) ([][][]byte, error)
+	ListCertAlternates(ctx context.Context, url string) ([]string, error)
 	WaitOrder(ctx context.Context, url string) (*acme.Order, error)
 	CreateOrderCert(ctx context.Context, finalizeURL string, csr []byte, bundle bool) (der [][]byte, certURL string, err error)
 	Accept(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
