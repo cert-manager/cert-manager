@@ -2,12 +2,6 @@ module github.com/jetstack/cert-manager
 
 go 1.17
 
-// This fork allows us to add alternative certificate chains for ACME see
-// https://github.com/cert-manager/crypto#cert-manager-fork-of-golangxcrypto .
-// It will be replaced after
-// https://go-review.googlesource.com/c/crypto/+/277294/  gets merged.
-replace golang.org/x/crypto => github.com/cert-manager/crypto v0.0.0-20210409161129-d4c19753215a
-
 require (
 	github.com/Azure/azure-sdk-for-go v56.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.19
@@ -37,7 +31,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
 	golang.org/x/oauth2 v0.0.0-20210810183815-faf39c7919d5
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c

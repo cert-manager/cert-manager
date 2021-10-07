@@ -4512,9 +4512,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/crypto",
-        replace = "github.com/cert-manager/crypto",
-        sum = "h1:HXp46OGPFPV7He+NPxUbCgEDCBL56R7BkQRGWEkznVQ=",
-        version = "v0.0.0-20210409161129-d4c19753215a",
+        sum = "h1:7I4JAnoQBe7ZtJcBaYHi5UtiO8tQHbUSXxL+pnGRANg=",
+        version = "v0.0.0-20210921155107-089bfa567519",
     )
 
     go_repository(
