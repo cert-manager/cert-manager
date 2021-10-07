@@ -610,8 +610,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/containerd/containerd",
-        sum = "h1:yi692sMr9kyyaps9dyodk3vVOTNM9fIPvlZp4UnyT4U=",
-        version = "v1.5.6",
+        sum = "h1:rQyoYtj4KddB3bxG6SAqd4+08gePNyJjRqvOIfV3rkM=",
+        version = "v1.5.7",
     )
 
     go_repository(
@@ -3001,8 +3001,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/opencontainers/selinux",
-        sum = "h1:c4ca10UMgRcvZ6h0K4HtS15UaVSBEaE+iln2LVpAuGc=",
-        version = "v1.8.2",
+        sum = "h1:b4VPEF3O5JLZgdTDBmGepaaIbAo0GqoF6EBRq5f/g3Y=",
+        version = "v1.9.1",
     )
 
     go_repository(
@@ -4476,8 +4476,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "google.golang.org/genproto",
-        sum = "h1:+F3FcO6LTrzNq5wp1Z6JtoBvnJzX6euyN70FoyMDXy4=",
-        version = "v0.0.0-20210930144712-2e2e1008e8a3",
+        sum = "h1:Im71rbA1N3CbIag/PumYhQcNR8bLNmuOtRIyOnnLsT8=",
+        version = "v0.0.0-20211005153810-c76a74d43a8e",
     )
 
     go_repository(
