@@ -1,17 +1,17 @@
 load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 
 container_bundle(
-    name = "bundle_v1.3.6",
+    name = "bundle_v1.4.3",
     images = {
-        "ghcr.io/kyverno/kyverno:v1.3.6": "@io_kyverno//image",
+        "ghcr.io/kyverno/kyverno:v1.4.3": "@io_kyverno//image",
     },
     tags = ["manual"],
 )
 
 container_bundle(
-    name = "pre_bundle_v1.3.6",
+    name = "pre_bundle_v1.4.3",
     images = {
-        "ghcr.io/kyverno/kyvernopre:v1.3.6": "@io_kyverno_pre//image",
+        "ghcr.io/kyverno/kyvernopre:v1.4.3": "@io_kyverno_pre//image",
     },
     tags = ["manual"],
 )
