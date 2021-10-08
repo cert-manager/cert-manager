@@ -36,7 +36,7 @@ IMAGE_TAG="v1.3.6"
 PRE_IMAGE_TAG="v1.3.6"
 
 require_image "ghcr.io/kyverno/kyverno:${IMAGE_TAG}" "//devel/addon/kyverno:bundle_${IMAGE_TAG}"
-require_image "ghcr.io/kyverno/kyverno:${PRE_IMAGE_TAG}" "//devel/addon/kyverno:bundle_${PRE_IMAGE_TAG}"
+require_image "ghcr.io/kyverno/kyvernopre:${PRE_IMAGE_TAG}" "//devel/addon/kyverno:pre_bundle_${PRE_IMAGE_TAG}"
 
 
 # Install latest version of Kyverno
@@ -50,7 +50,7 @@ helm upgrade \
   --create-namespace \
   --version "${CHART_VERSION}" \
   --set image.tag="${IMAGE_TAG}" \
-  --set initImage.tag="${IMAGE_TAG}" \
+  --set initImage.tag="${PRE_IMAGE_TAG}" \
   kyverno \
   kyverno/kyverno
 # Install cert-manager specific Pod security policy
