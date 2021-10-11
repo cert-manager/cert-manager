@@ -98,6 +98,7 @@ func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 		Long:  versionLong,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate())
+			cmdutil.CheckErr(o.Complete())
 			cmdutil.CheckErr(o.Run(ctx))
 		},
 	}
@@ -122,20 +123,16 @@ func (o *Options) Validate() error {
 }
 
 // Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(factory cmdutil.Factory) error {
+func (o *Options) Complete() error {
 	if o.ClientOnly {
 		return nil
 	}
 
-	restConfig, err := factory.ToRESTConfig()
-	if err != nil {
-		return fmt.Errorf("cannot create the REST config: %v", err)
-	}
-
-	o.VersionChecker, err = versionchecker.New(restConfig, scheme.Scheme)
+	versionChecker, err := versionchecker.New(o.RESTConfig, scheme.Scheme)
 	if err != nil {
 		return err
 	}
+	o.VersionChecker = versionChecker
 	return nil
 }
 

@@ -72,3 +72,5 @@ helm upgrade \
 
 # Sanity check (fail if api is not yet available)
 kubectl cert-manager check api
+# Print the cert-manager client and server versions
+kubectl cert-manager version -o yaml
