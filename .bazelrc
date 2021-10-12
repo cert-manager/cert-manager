@@ -1,2 +1,13 @@
 # Include git version info
 build --workspace_status_command hack/build/print-workspace-status.sh
+
+#
+try-import %workspace%/.bazelrc.user
+
+# CI
+build:ci --build_metadata=ROLE=CI
+build:ci --bes_results_url=https://bazel.build.1e100.one/invocation/
+build:ci --bes_backend=grpcs://bazel-grpc.build.1e100.one
+build:ci --remote_cache=grpcs://bazel-grpc.build.1e100.one
+build:ci --remote_timeout=3600
+build:ci --remote_executor=grpcs://bazel-grpc.build.1e100.one
