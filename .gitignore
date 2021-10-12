@@ -13,3 +13,4 @@ bazel-*
 /.project
 _artifacts/
 /vendor/
+.bazelrc.user
