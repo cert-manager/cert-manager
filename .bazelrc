@@ -1,2 +1,4 @@
 # Include git version info
 build --workspace_status_command hack/build/print-workspace-status.sh
+# Show timestamps with each bazel message
+build --show_timestamps
