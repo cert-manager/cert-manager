@@ -130,7 +130,6 @@ release_filegroup(
     ]),
 )
 
-
 filegroup(
     name = "test-targets",
     srcs = select(for_platforms(
