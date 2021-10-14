@@ -36,6 +36,7 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 	k8sclock "k8s.io/utils/clock"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -84,10 +85,10 @@ var (
 	long = templates.LongDesc(i18n.T(`
 Get details about a kubernetes.io/tls typed secret`))
 
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Query information about a secret with name 'my-crt' in namespace 'my-namespace'
-kubectl cert-manager inspect secret my-crt --namespace my-namespace
-`))
+{{.BuildName}} inspect secret my-crt --namespace my-namespace
+`)))
 )
 
 // Options is a struct to support status certificate command

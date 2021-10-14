@@ -32,6 +32,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -44,10 +45,10 @@ var (
 	long = templates.LongDesc(i18n.T(`
 Get details about the current status of a cert-manager Certificate resource, including information on related resources like CertificateRequest or Order.`))
 
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Query status of Certificate with name 'my-crt' in namespace 'my-namespace'
-kubectl cert-manager status certificate my-crt --namespace my-namespace
-`))
+{{.BuildName}} status certificate my-crt --namespace my-namespace
+`)))
 )
 
 // Options is a struct to support status certificate command

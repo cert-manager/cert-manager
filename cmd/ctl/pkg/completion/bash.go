@@ -20,22 +20,24 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/cmd/util"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 )
 
 func newCmdCompletionBash(ioStreams genericclioptions.IOStreams) *cobra.Command {
 	return &cobra.Command{
 		Use:   "bash",
 		Short: "Generate cert-manager CLI scripts for a Bash shell",
-		Long: `To load completions:
+		Long: build.WithTemplate(`To load completions:
 Bash:
-  $ source <(kubectl cert-manager completion bash)
+  $ source <({{.BuildName}} completion bash)
   # To load completions for each session, execute once:
   # Linux:
-  $ cert-manager completion bash > /etc/bash_completion.d/cert-manager
+  $ {{.BuildName}} completion bash > /etc/bash_completion.d/{{.BuildName}}
 
   # macOS:
-  $ cert-manager completion bash > /usr/local/etc/bash_completion.d/cert-manager
-`,
+  $ {{.BuildName}} completion bash > /usr/local/etc/bash_completion.d/{{.BuildName}}
+`),
 		DisableFlagsInUseLine: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(cmd.Root().GenBashCompletion(ioStreams.Out))

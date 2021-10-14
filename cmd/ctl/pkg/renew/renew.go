@@ -30,6 +30,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -41,15 +42,15 @@ var (
 	long = templates.LongDesc(i18n.T(`
 Mark cert-manager Certificate resources for manual renewal.`))
 
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Renew the Certificates named 'my-app' and 'vault' in the current context namespace.
-kubectl cert-manager renew my-app vault
+{{.BuildName}} renew my-app vault
 
 # Renew all Certificates in the 'kube-system' namespace.
-kubectl cert-manager renew --namespace kube-system --all
+{{.BuildName}} renew --namespace kube-system --all
 
 # Renew all Certificates in all namespaces, provided those Certificates have the label 'app=my-service'
-kubectl cert-manager renew --all-namespaces -l app=my-service`))
+{{.BuildName}} renew --all-namespaces -l app=my-service`)))
 )
 
 // Options is a struct to support renew command

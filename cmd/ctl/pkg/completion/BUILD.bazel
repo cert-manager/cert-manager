@@ -12,6 +12,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/cmd/ctl/pkg/completion",
     visibility = ["//visibility:public"],
     deps = [
+        "//cmd/ctl/pkg/build:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
         "@io_k8s_kubectl//pkg/cmd/util:go_default_library",

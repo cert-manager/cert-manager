@@ -28,6 +28,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -35,16 +36,16 @@ import (
 )
 
 var (
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Deny a CertificateRequest with the name 'my-cr'
-kubectl cert-manager deny my-cr
+{{.BuildName}} deny my-cr
 
 # Deny a CertificateRequest in namespace default
-kubectl cert-manager deny my-cr --namespace default
+{{.BuildName}} deny my-cr --namespace default
 
 # Deny a CertificateRequest giving a custom reason and message
-kubectl cert-manager deny my-cr --reason "ManualDenial" --reason "Denied by PKI department"
-`))
+{{.BuildName}} deny my-cr --reason "ManualDenial" --reason "Denied by PKI department"
+`)))
 )
 
 // Options is a struct to support create certificaterequest command
@@ -84,7 +85,7 @@ func NewCmdDeny(ctx context.Context, ioStreams genericclioptions.IOStreams) *cob
 
 	cmd.Flags().StringVar(&o.Reason, "reason", "KubectlCertManager",
 		"The reason to give as to what denied this CertificateRequest.")
-	cmd.Flags().StringVar(&o.Message, "message", `manually denied by "kubectl cert-manager"`,
+	cmd.Flags().StringVar(&o.Message, "message", fmt.Sprintf("manually denied by %q", build.Name()),
 		"The message to give as to why this CertificateRequest was denied.")
 
 	o.Factory = factory.New(ctx, cmd)

@@ -20,21 +20,23 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/cmd/util"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 )
 
 func newCmdCompletionZSH(ioStreams genericclioptions.IOStreams) *cobra.Command {
 	return &cobra.Command{
 		Use:   "zsh",
 		Short: "Generation cert-manager CLI scripts for a ZSH shell",
-		Long: `To load completions:
+		Long: build.WithTemplate(`To load completions:
   # If shell completion is not already enabled in your environment,
   # you will need to enable it.  You can execute the following once:
   $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
   # To load completions for each session, execute once:
-  $ cert-manager completion zsh > "${fpath[1]}/_cert-manager"
+  $ {{.BuildName}} completion zsh > "${fpath[1]}/_{{.BuildName}}"
   # You will need to start a new shell for this setup to take effect.
-`,
+`),
 		DisableFlagsInUseLine: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(cmd.Root().GenZshCompletion(ioStreams.Out))
