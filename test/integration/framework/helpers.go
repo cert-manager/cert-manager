@@ -59,18 +59,21 @@ func NewClients(t *testing.T, config *rest.Config) (kubernetes.Interface, inform
 
 func StartInformersAndController(t *testing.T, factory informers.SharedInformerFactory, cmFactory cminformers.SharedInformerFactory, c controllerpkg.Interface) StopFunc {
 	stopCh := make(chan struct{})
-	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	go func() {
-		defer close(doneCh)
+		defer close(errCh)
 		factory.Start(stopCh)
 		cmFactory.Start(stopCh)
 		if err := c.Run(1, stopCh); err != nil {
-			t.Fatal(err)
+			errCh <- err
 		}
 	}()
 	return func() {
 		close(stopCh)
-		<-doneCh
+		err := <-errCh
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
