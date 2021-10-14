@@ -117,11 +117,19 @@ release_filegroup(
 )
 
 release_filegroup(
-    name = "client-artifacts",
+    name = "client-artifacts-cmctl",
     conditioned_srcs = for_platforms(for_client = [
         "//cmd/ctl:ctl",
     ]),
 )
+
+release_filegroup(
+    name = "client-artifacts-kubectl-cert_manager",
+    conditioned_srcs = for_platforms(for_client = [
+        "//cmd/ctl:kubectl-cert_manager",
+    ]),
+)
+
 
 filegroup(
     name = "test-targets",

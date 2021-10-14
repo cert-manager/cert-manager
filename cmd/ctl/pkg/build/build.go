@@ -23,7 +23,7 @@ import (
 
 // name is the build time configurable name of the build (name of the target
 // binary name).
-var name = "kubectl cert-manager"
+var name = "cmctl"
 
 // Name returns the build name.
 func Name() string {

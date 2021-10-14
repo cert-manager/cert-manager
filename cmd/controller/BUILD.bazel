@@ -17,6 +17,7 @@ go_binary(
     name = "controller",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+    x_defs = {},
 )
 
 filegroup(

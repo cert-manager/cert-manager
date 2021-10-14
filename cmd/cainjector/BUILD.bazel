@@ -18,6 +18,7 @@ go_binary(
     name = "cainjector",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+    x_defs = {},
 )
 
 filegroup(

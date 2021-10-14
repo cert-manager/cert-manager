@@ -16,6 +16,7 @@ go_binary(
     name = "acmesolver",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+    x_defs = {},
 )
 
 filegroup(

@@ -14,10 +14,26 @@ go_library(
 
 go_binary(
     name = "ctl",
+    out = "cmctl",
+    embed = [":go_default_library"],
+    pure = "on",
+    visibility = ["//visibility:public"],
+    x_defs = {
+        "github.com/jetstack/cert-manager/cmd/ctl/pkg/build.name": "cmctl",
+        "github.com/jetstack/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion": "true",
+    },
+)
+
+go_binary(
+    name = "kubectl-cert_manager",
     out = "kubectl-cert_manager",
     embed = [":go_default_library"],
     pure = "on",
     visibility = ["//visibility:public"],
+    x_defs = {
+        "github.com/jetstack/cert-manager/cmd/ctl/pkg/build.name": "kubectl cert-manager",
+        "github.com/jetstack/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion": "false",
+    },
 )
 
 filegroup(
