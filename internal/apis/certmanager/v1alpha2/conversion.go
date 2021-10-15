@@ -125,3 +125,7 @@ func Convert_certmanager_CertificateRequestSpec_To_v1alpha2_CertificateRequestSp
 	out.CSRPEM = in.Request
 	return nil
 }
+
+func Convert_certmanager_VaultKubernetesAuth_To_v1alpha2_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *VaultKubernetesAuth, s conversion.Scope) error {
+	return autoConvert_certmanager_VaultKubernetesAuth_To_v1alpha2_VaultKubernetesAuth(in, out, s)
+}

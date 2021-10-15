@@ -17,6 +17,7 @@ limitations under the License.
 package vault
 
 import (
+	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -28,6 +29,8 @@ import (
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
+	authv1 "k8s.io/api/authentication/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -39,8 +42,7 @@ var _ Interface = &Vault{}
 
 // ClientBuilder is a function type that returns a new Interface.
 // Can be used in tests to create a mock signer of Vault certificate requests.
-type ClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1.GenericIssuer) (Interface, error)
+type ClientBuilder func(namespace string, _ func(ns string) CreateToken, _ corelisters.SecretLister, _ v1.GenericIssuer) (Interface, error)
 
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
@@ -57,9 +59,13 @@ type Client interface {
 	SetToken(v string)
 }
 
+// For mocking purposes.
+type CreateToken func(ctx context.Context, saName string, req *authv1.TokenRequest, opts metav1.CreateOptions) (*authv1.TokenRequest, error)
+
 // Vault implements Interface and holds a Vault issuer, secrets lister and a
 // Vault client.
 type Vault struct {
+	createToken   CreateToken // Uses the same namespace as below.
 	secretsLister corelisters.SecretLister
 	issuer        v1.GenericIssuer
 	namespace     string
@@ -86,8 +92,9 @@ type Vault struct {
 // secrets lister.
 // Returned errors may be network failures and should be considered for
 // retrying.
-func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
+func New(namespace string, createTokenFn func(ns string) CreateToken, secretsLister corelisters.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
 	v := &Vault{
+		createToken:   createTokenFn(namespace),
 		secretsLister: secretsLister,
 		namespace:     namespace,
 		issuer:        issuer,
@@ -197,7 +204,7 @@ func (v *Vault) setToken(client Client) error {
 	if kubernetesAuth != nil {
 		token, err := v.requestTokenWithKubernetesAuth(client, kubernetesAuth)
 		if err != nil {
-			return fmt.Errorf("error reading Kubernetes service account token from %s: %s", kubernetesAuth.SecretRef.Name, err.Error())
+			return fmt.Errorf("while requesting a Vault token using the Kubernetes auth: %w", err)
 		}
 		client.SetToken(token)
 		return nil
@@ -361,22 +368,41 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 }
 
 func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1.VaultKubernetesAuth) (string, error) {
-	secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
-	if err != nil {
-		return "", err
-	}
+	var jwt string
+	switch {
+	case kubernetesAuth.SecretRef.Name != "":
+		secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
+		if err != nil {
+			return "", err
+		}
 
-	key := kubernetesAuth.SecretRef.Key
-	if key == "" {
-		key = v1.DefaultVaultTokenAuthSecretKey
-	}
+		key := kubernetesAuth.SecretRef.Key
+		if key == "" {
+			key = v1.DefaultVaultTokenAuthSecretKey
+		}
 
-	keyBytes, ok := secret.Data[key]
-	if !ok {
-		return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, v.namespace, kubernetesAuth.SecretRef.Name)
-	}
+		keyBytes, ok := secret.Data[key]
+		if !ok {
+			return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, v.namespace, kubernetesAuth.SecretRef.Name)
+		}
 
-	jwt := string(keyBytes)
+		jwt = string(keyBytes)
+
+	case kubernetesAuth.ServiceAccountRef.Name != "":
+		tokenrequest, err := v.createToken(context.Background(), kubernetesAuth.ServiceAccountRef.Name, &authv1.TokenRequest{
+			Spec: authv1.TokenRequestSpec{
+				Audiences:         []string{kubernetesAuth.ServiceAccountRef.Audience},
+				ExpirationSeconds: &kubernetesAuth.ServiceAccountRef.ExpirationSeconds,
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return "", fmt.Errorf("while requesting a token for the service account %s/%s: %s", v.issuer.GetNamespace(), kubernetesAuth.ServiceAccountRef.Name, err.Error())
+		}
+
+		jwt = tokenrequest.Status.Token
+	default:
+		return "", fmt.Errorf("programmer mistake: both serviceAccountRef.name and tokenRef.name are empty")
+	}
 
 	parameters := map[string]string{
 		"role": kubernetesAuth.Role,
@@ -390,7 +416,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	url := filepath.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
-	err = request.SetJSONBody(parameters)
+	err := request.SetJSONBody(parameters)
 	if err != nil {
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
@@ -463,4 +489,17 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	}
 
 	return nil
+}
+
+func (v *Vault) addVaultNamespaceToRequest(request *vault.Request) {
+	vaultIssuer := v.issuer.GetSpec().Vault
+	if vaultIssuer != nil && vaultIssuer.Namespace != "" {
+		if request.Headers != nil {
+			request.Headers.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+		} else {
+			vaultReqHeaders := http.Header{}
+			vaultReqHeaders.Add("X-VAULT-NAMESPACE", vaultIssuer.Namespace)
+			request.Headers = vaultReqHeaders
+		}
+	}
 }

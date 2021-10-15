@@ -265,7 +265,8 @@ type VaultKubernetesAuth struct {
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not
 	// supported.
-	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
+	// +optional
+	SecretRef cmmeta.SecretKeySelector `json:"secretRef,omitempty"`
 
 	// A required field containing the Vault Role to assume. A Role binds a
 	// Kubernetes ServiceAccount with a set of Vault policies.

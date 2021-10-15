@@ -188,7 +188,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			gen.SetIssuerVaultURL(vault.Details().Host),
 			gen.SetIssuerVaultPath(vaultPath),
 			gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
-			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+			gen.SetIssuerVaultKubernetesAuthSecret("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
 		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -209,7 +209,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			gen.SetIssuerVaultURL(vault.Details().Host),
 			gen.SetIssuerVaultPath(vaultPath),
 			gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
-			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+			gen.SetIssuerVaultKubernetesAuthSecret("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
 		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
@@ -258,7 +258,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			gen.SetIssuerVaultURL(vault.Details().Host),
 			gen.SetIssuerVaultPath(vaultPath),
 			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"),
-			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+			gen.SetIssuerVaultKubernetesAuthSecret("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
 		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -281,7 +281,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			gen.SetIssuerVaultURL(vault.Details().Host),
 			gen.SetIssuerVaultPath(vaultPath),
 			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"),
-			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+			gen.SetIssuerVaultKubernetesAuthSecret("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
 		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -335,7 +335,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			gen.SetIssuerVaultURL(vault.Details().Host),
 			gen.SetIssuerVaultPath(vaultPath),
 			gen.SetIssuerVaultCABundleSecretRef("ca-bundle", f.Namespace.Name, "ca.crt"),
-			gen.SetIssuerVaultKubernetesAuth("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+			gen.SetIssuerVaultKubernetesAuthSecret("token", vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
 		_, err = f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -366,6 +366,32 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			v1.IssuerCondition{
 				Type:   v1.IssuerConditionReady,
 				Status: cmmeta.ConditionFalse,
+			})
+		Expect(err).NotTo(HaveOccurred())
+	})
+	It("should be ready with a valid serviceAccountRef", func() {
+		// Note that we reuse the same service account as for the Kubernetes
+		// auth based on secretRef. There should be no problem doing so.
+		By("Creating the Role and RoleBinding to let cert-manager use TokenRequest for the ServiceAccount")
+		vaultaddon.CreateKubernetesRoleForServiceAccountRefAuth(f.KubeClientSet, vaultKubernetesRoleName, f.Namespace.Name, vaultSecretServiceAccount)
+		defer vaultaddon.CleanKubernetesRoleForServiceAccountRefAuth(f.KubeClientSet, vaultKubernetesRoleName, f.Namespace.Name, vaultSecretServiceAccount)
+
+		By("Creating an Issuer")
+		vaultIssuer := gen.Issuer(issuerName,
+			gen.SetIssuerNamespace(f.Namespace.Name),
+			gen.SetIssuerVaultURL(vault.Details().Host),
+			gen.SetIssuerVaultPath(vaultPath),
+			gen.SetIssuerVaultCABundle(vault.Details().VaultCA),
+			gen.SetIssuerVaultKubernetesAuthServiceAccount(vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath))
+		_, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), vaultIssuer, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1.IssuerCondition{
+				Type:   v1.IssuerConditionReady,
+				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 	})

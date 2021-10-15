@@ -243,12 +243,39 @@ type VaultKubernetesAuth struct {
 
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not
-	// supported.
+	// supported. This field should not be set if serviceAccountRef is set.
 	SecretRef cmmeta.SecretKeySelector
+
+	// A reference to a service account that will be used to request a bound
+	// token (also known as "projected token"). Compared to using "secretRef",
+	// using this field means that you don't rely on statically bound tokens. To
+	// use this field, you must configure an RBAC rule to let cert-manager
+	// request a token. See <link to a page in cert-manager.io> to learn more.
+	// +optional
+	ServiceAccountRef ServiceAccountRef `json:"serviceAccountRef,omitempty"`
 
 	// A required field containing the Vault Role to assume. A Role binds a
 	// Kubernetes ServiceAccount with a set of Vault policies.
 	Role string
+}
+
+// ServiceAccountRef is a service account used by cert-manager to request a
+// token.
+type ServiceAccountRef struct {
+	// Name of the ServiceAccount used to request a token.
+	Name string `json:"name"`
+
+	// Audience is the intended audience of the token. A recipient of a token
+	// must identify itself with an identifier specified in the audience of the
+	// token, and otherwise should reject the token. The audience defaults to the
+	// identifier of the apiserver.
+	// +optional
+	Audience string `json:"audience,omitempty"`
+
+	// ExpirationSeconds is the requested duration of validity of the service
+	// account token. Defaults to 1 hour and must be at least 10 minutes.
+	// +optional
+	ExpirationSeconds int64 `json:"expirationSeconds,omitempty"`
 }
 
 // CAIssuer configures an issuer that can issue certificates from its provided
