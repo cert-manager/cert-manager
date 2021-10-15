@@ -71,10 +71,11 @@ func NewCmdDeny(ctx context.Context, ioStreams genericclioptions.IOStreams) *cob
 	o := NewOptions(ioStreams)
 
 	cmd := &cobra.Command{
-		Use:     "deny",
-		Short:   "Deny a CertificateRequest",
-		Long:    `Mark a CertificateRequest as Denied, so it may never be signed by a configured Issuer.`,
-		Example: example,
+		Use:               "deny",
+		Short:             "Deny a CertificateRequest",
+		Long:              `Mark a CertificateRequest as Denied, so it may never be signed by a configured Issuer.`,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificateRequests(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
 			cmdutil.CheckErr(o.Run(ctx, args))
@@ -86,7 +87,7 @@ func NewCmdDeny(ctx context.Context, ioStreams genericclioptions.IOStreams) *cob
 	cmd.Flags().StringVar(&o.Message, "message", `manually denied by "kubectl cert-manager"`,
 		"The message to give as to why this CertificateRequest was denied.")
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }

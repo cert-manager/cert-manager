@@ -106,7 +106,7 @@ func NewCmdCheckApi(ctx context.Context, ioStreams genericclioptions.IOStreams) 
 	cmd.Flags().DurationVar(&o.Interval, "interval", 5*time.Second, "Time between checks when waiting, must include unit, e.g. 1m or 10m")
 	cmd.Flags().BoolVarP(&o.Verbose, "verbose", "v", false, "Print detailed error messages")
 
-	o.Factory = factory.New(cmd)
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }
