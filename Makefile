@@ -59,12 +59,12 @@ help:
 	### Build targets
 	#
 	# clean              - removes the entire output base tree, stops the Bazel server and removes test artifacts
-	# build              - build a binary of the cert-manager kubectl plugin and build docker images for all components
+	# build              - build a binary of the cert-manager CLI and build docker images for all components
 	# controller         - build a binary of the 'controller'
 	# cainjector         - build a binary of the 'cainjector'
 	# webhook            - build a binary of the 'webhook'
 	# acmesolver         - build a binary of the 'acmesolver'
-	# ctl                - build a binary of the cert-manager kubectl plugin
+	# ctl                - build a binary of the cert-manager CLI
 	# images             - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push        - pushes docker images to the target registry
 	# crds               - runs the update-crds script to ensure that generated CRDs are up to date
