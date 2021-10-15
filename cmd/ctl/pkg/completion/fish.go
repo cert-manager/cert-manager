@@ -20,18 +20,20 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/cmd/util"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 )
 
 func newCmdCompletionFish(ioStreams genericclioptions.IOStreams) *cobra.Command {
 	return &cobra.Command{
 		Use:   "fish",
 		Short: "Generate cert-manager CLI scripts for a Fish shell",
-		Long: `To load completions:
-  $ cert-manager completion fish | source
+		Long: build.WithTemplate(`To load completions:
+  $ {{.BuildName}} completion fish | source
 
   # To load completions for each session, execute once:
-  $ cert-manager completion fish > ~/.config/fish/completions/cert-manager.fish
-`,
+  $ {{.BuildName}} completion fish > ~/.config/fish/completions/{{.BuildName}}.fish
+`),
 		DisableFlagsInUseLine: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			util.CheckErr(cmd.Root().GenFishCompletion(ioStreams.Out, true))

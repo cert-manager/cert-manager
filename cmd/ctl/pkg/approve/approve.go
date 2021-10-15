@@ -28,6 +28,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -35,16 +36,16 @@ import (
 )
 
 var (
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Approve a CertificateRequest with the name 'my-cr'
-kubectl cert-manager approve my-cr
+{{.BuildName}} approve my-cr
 
 # Approve a CertificateRequest in namespace default
-kubectl cert-manager approve my-cr --namespace default
+{{.BuildName}} approve my-cr --namespace default
 
 # Approve a CertificateRequest giving a custom reason and message
-kubectl cert-manager approve my-cr --reason "ManualApproval" --reason "Approved by PKI department"
-`))
+{{.BuildName}} approve my-cr --reason "ManualApproval" --reason "Approved by PKI department"
+`)))
 )
 
 // Options is a struct to support create certificaterequest command
@@ -84,7 +85,7 @@ func NewCmdApprove(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 
 	cmd.Flags().StringVar(&o.Reason, "reason", "KubectlCertManager",
 		"The reason to give as to what approved this CertificateRequest.")
-	cmd.Flags().StringVar(&o.Message, "message", `manually approved by "kubectl cert-manager"`,
+	cmd.Flags().StringVar(&o.Message, "message", fmt.Sprintf("manually approved by %q", build.Name()),
 		"The message to give as to why this CertificateRequest was approved.")
 
 	o.Factory = factory.New(ctx, cmd)

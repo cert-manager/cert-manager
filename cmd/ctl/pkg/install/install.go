@@ -35,6 +35,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install/helm"
 )
 
@@ -56,24 +57,26 @@ const (
 	defaultCertManagerNamespace = "cert-manager"
 )
 
-const installDesc = `This command installs cert-manager. It uses the Helm libraries to do so.
+func installDesc() string {
+	return build.WithTemplate(`This command installs cert-manager. It uses the Helm libraries to do so.
 
 The latest published cert-manager chart in the "https://charts.jetstack.io" repo is used.
 Most of the features supported by 'helm install' are also supported by this command.
 In addition, his command will always correctly install the required CRD resources.
 
 Some example uses:
-	$ kubectl cert-manager x install
+	$ {{.BuildName}} x install
 or
-	$ kubectl cert-manager x install -n new-cert-manager
+	$ {{.BuildName}} x install -n new-cert-manager
 or
-	$ kubectl cert-manager x install --version v1.4.0
+	$ {{.BuildName}} x install --version v1.4.0
 or
-	$ kubectl cert-manager x install --set prometheus.enabled=false
+	$ {{.BuildName}} x install --set prometheus.enabled=false
 
 To override values in the cert-manager chart, use either the '--values' flag and
 pass in a file or use the '--set' flag and pass configuration from the command line.
-`
+`)
+}
 
 func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	settings := cli.New()
@@ -91,7 +94,7 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install cert-manager",
-		Long:  installDesc,
+		Long:  installDesc(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			options.client.Namespace = settings.Namespace()
 
@@ -130,18 +133,19 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	return cmd
 }
 
-// The overall strategy is to install the CRDs first, and not as part of a Helm release,
-// and then to install a Helm release without the CRDs.
-// This is to ensure that CRDs are not removed by a subsequent helm uninstall or by a
-// future kubectl cert-manager uninstall. We want the removal of CRDs to only be performed
-// by an administrator who understands that the consequences of removing CRDs will be the
-// garbage collection of all the related CRs in the cluster.
-// We first do a dry-run install of the chart (effectively helm template --validate=false) to
-// render the CRDs from the CRD templates in the Chart. The ClientOnly option is required,
-// otherwise Helm will return an error in case the CRDs are already installed in the cluster.
-// We then extract the CRDs from the resulting dry-run manifests and install those first.
-// Finally, we perform a helm install to install the remaining non-CRD resources and wait for
-// those to be "Ready".
+// The overall strategy is to install the CRDs first, and not as part of a Helm
+// release, and then to install a Helm release without the CRDs.  This is to
+// ensure that CRDs are not removed by a subsequent helm uninstall or by a
+// future cmctl uninstall. We want the removal of CRDs to only be performed by
+// an administrator who understands that the consequences of removing CRDs will
+// be the garbage collection of all the related CRs in the cluster.  We first
+// do a dry-run install of the chart (effectively helm template
+// --validate=false) to render the CRDs from the CRD templates in the Chart.
+// The ClientOnly option is required, otherwise Helm will return an error in
+// case the CRDs are already installed in the cluster.  We then extract the
+// CRDs from the resulting dry-run manifests and install those first.  Finally,
+// we perform a helm install to install the remaining non-CRD resources and
+// wait for those to be "Ready".
 // This creates a Helm "release" artifact in a Secret in the target namespace, which contains
 // a record of all the resources installed by Helm (except the CRDs).
 func (o *InstallOptions) runInstall(ctx context.Context) (*release.Release, error) {

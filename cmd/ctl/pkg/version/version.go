@@ -28,6 +28,7 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/yaml"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/versionchecker"
@@ -64,29 +65,31 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 	}
 }
 
-const versionLong = `Print the cert-manager kubectl plugin version and the deployed cert-manager version.
-
-The kubectl plugin version is embedded in the binary and directly displayed. Determining
-the the deployed cert-manager version is done by querying the cert-manger resources.
-First, the tool looks at the labels of the cert-manager CRD resources. Then, it searches
-for the labels of the resources related the the cert-manager webhook linked in the CRDs.
-It also tries to derive the version from the docker image tag of that webhook service.
-After gathering all this version information, the tool checks if all versions are the same
-and returns that version. If no version information is found or the found versions differ,
+func versionLong() string {
+	return build.WithTemplate(`Print the cert-manager CLI version and the deployed cert-manager version.
+The CLI version is embedded in the binary and directly displayed. Determining
+the the deployed cert-manager version is done by querying the cert-manger
+resources.  First, the tool looks at the labels of the cert-manager CRD
+resources. Then, it searches for the labels of the resources related the the
+cert-manager webhook linked in the CRDs.  It also tries to derive the version
+from the docker image tag of that webhook service.  After gathering all this
+version information, the tool checks if all versions are the same and returns
+that version. If no version information is found or the found versions differ,
 an error will be displayed.
 
 The '--client' flag can be used to disable the logic that tries to determine the installed
 cert-manager version.
 
 Some example uses:
-	$ kubectl cert-manager version
+	$ {{.BuildName}} version
 or
-	$ kubectl cert-manager version --client
+	$ {{.BuildName}} version --client
 or
-	$ kubectl cert-manager version --short
+	$ {{.BuildName}} version --short
 or
-	$ kubectl cert-manager version -o yaml
-`
+	$ {{.BuildName}} version -o yaml
+`)
+}
 
 // NewCmdVersion returns a cobra command for fetching versions
 func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
@@ -94,8 +97,8 @@ func NewCmdVersion(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print the cert-manager kubectl plugin version and the deployed cert-manager version",
-		Long:  versionLong,
+		Short: "Print the cert-manager CLI version and the deployed cert-manager version",
+		Long:  versionLong(),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate())
 			cmdutil.CheckErr(o.Complete())

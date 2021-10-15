@@ -39,6 +39,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
@@ -54,19 +55,19 @@ cert-manager versions 1.4+ with experimental controllers enabled.
 
 Create a new CertificateSigningRequest resource based on a Certificate resource, by generating a private key locally and create a 'certificate signing request' to be submitted to a cert-manager Issuer.`))
 
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Create a CertificateSigningRequest with the name 'my-csr', saving the private key in a file named 'my-cr.key'.
-kubectl cert-manager x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml
+{{.BuildName}} x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml
 
 # Create a CertificateSigningRequest and store private key in file 'new.key'.
-kubectl cert-manager x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml --output-key-file new.key
+{{.BuildName}} x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml --output-key-file new.key
 
 # Create a CertificateSigningRequest, wait for it to be signed for up to 5 minutes (default) and store the x509 certificate in file 'new.crt'.
-kubectl cert-manager x create csr my-cr -f my-certificate.yaml -c new.crt -w
+{{.BuildName}} x create csr my-cr -f my-certificate.yaml -c new.crt -w
 
 # Create a CertificateSigningRequest, wait for it to be signed for up to 20 minutes and store the x509 certificate in file 'my-cr.crt'.
-kubectl cert-manager x create csr my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
-`))
+{{.BuildName}} x create csr my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
+`)))
 )
 
 var (

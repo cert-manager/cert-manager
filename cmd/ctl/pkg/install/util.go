@@ -42,7 +42,7 @@ func addInstallFlags(f *pflag.FlagSet, client *action.Install) {
 	f.MarkHidden("generate-name")
 	f.StringVar(&client.NameTemplate, "name-template", "", "Specify template used to name the release")
 	f.MarkHidden("name-template")
-	f.StringVar(&client.Description, "description", "Cert-manager was installed using the cert-manager kubectl plugin", "Add a custom description")
+	f.StringVar(&client.Description, "description", "Cert-manager was installed using the cert-manager CLI", "Add a custom description")
 	f.MarkHidden("description")
 }
 

@@ -48,7 +48,7 @@ func TestRun(t *testing.T) {
 		},
 		"if directory given, should write docs": {
 			input:   []string{"cobra", filepath.Join(rootDir, "foo")},
-			expDirs: []string{"foo/ca-injector", "foo/cert-manager-controller", "foo/cert-manager"},
+			expDirs: []string{"foo/ca-injector", "foo/cert-manager-controller", "foo/kubectl cert-manager"},
 		},
 	}
 
