@@ -865,6 +865,7 @@ func (in *VaultIssuer) DeepCopy() *VaultIssuer {
 func (in *VaultKubernetesAuth) DeepCopyInto(out *VaultKubernetesAuth) {
 	*out = *in
 	out.SecretRef = in.SecretRef
+	out.ServiceAccountRef = in.ServiceAccountRef
 	return
 }
 

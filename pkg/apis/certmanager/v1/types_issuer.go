@@ -260,7 +260,19 @@ type VaultKubernetesAuth struct {
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not
 	// supported.
-	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
+	// +optional
+	SecretRef cmmeta.SecretKeySelector `json:"secretRef,omitempty"`
+
+	// A reference to a service account that will be used to request a bound
+	// token (also known as "projected token"). To be able to request a token,
+	// the service account token mounted in the cert-manager's Pod must be bound
+	// to a role containing the following rule:
+	//
+	//  apiGroups: [""]
+	//  resources: ["serviceaccounts/token"]
+	//  verbs: ["create"]
+	// +optional
+	ServiceAccountRef cmmeta.LocalObjectReference `json:"serviceAccountRef,omitempty"`
 
 	// A required field containing the Vault Role to assume. A Role binds a
 	// Kubernetes ServiceAccount with a set of Vault policies.

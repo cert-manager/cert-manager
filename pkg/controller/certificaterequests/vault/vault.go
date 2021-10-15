@@ -20,6 +20,7 @@ import (
 	"context"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	vaultinternal "github.com/jetstack/cert-manager/internal/vault"
@@ -41,6 +42,7 @@ const (
 // pkg/controller/certificaterequests.Issuer interface.
 type Vault struct {
 	issuerOptions controllerpkg.IssuerOptions
+	kclient       kubernetes.Interface
 	secretsLister corelisters.SecretLister
 	reporter      *crutil.Reporter
 
@@ -60,6 +62,7 @@ func init() {
 func NewVault(ctx *controllerpkg.Context) *Vault {
 	return &Vault{
 		issuerOptions:      ctx.IssuerOptions,
+		kclient:            ctx.Client,
 		secretsLister:      ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		reporter:           crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		vaultClientBuilder: vaultinternal.New,
@@ -74,7 +77,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
-	client, err := v.vaultClientBuilder(resourceNamespace, v.secretsLister, issuerObj)
+	client, err := v.vaultClientBuilder(resourceNamespace, v.kclient, v.secretsLister, issuerObj)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 

@@ -1388,6 +1388,9 @@ func autoConvert_v1beta1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(
 	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
 		return err
 	}
+	if err := apismetav1.Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(&in.ServiceAccountRef, &out.ServiceAccountRef, s); err != nil {
+		return err
+	}
 	out.Role = in.Role
 	return nil
 }
@@ -1400,6 +1403,9 @@ func Convert_v1beta1_VaultKubernetesAuth_To_certmanager_VaultKubernetesAuth(in *
 func autoConvert_certmanager_VaultKubernetesAuth_To_v1beta1_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *v1beta1.VaultKubernetesAuth, s conversion.Scope) error {
 	out.Path = in.Path
 	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
+		return err
+	}
+	if err := apismetav1.Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(&in.ServiceAccountRef, &out.ServiceAccountRef, s); err != nil {
 		return err
 	}
 	out.Role = in.Role

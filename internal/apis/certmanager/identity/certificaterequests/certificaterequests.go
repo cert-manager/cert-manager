@@ -40,7 +40,7 @@ func ValidateCreate(req *admissionv1.AdmissionRequest, obj runtime.Object) (fiel
 		el = append(el, field.Forbidden(fldPath.Child("uid"), "uid identity must be that of the requester"))
 	}
 	if cr.Spec.Username != req.UserInfo.Username {
-		el = append(el, field.Forbidden(fldPath.Child("username"), "username identity must be that of the requester"))
+		el = append(el, field.Forbidden(fldPath.Child("username"), "must be equal to the requestor '"+cr.Spec.Username+"'"))
 	}
 	if !util.EqualUnsorted(cr.Spec.Groups, req.UserInfo.Groups) {
 		el = append(el, field.Forbidden(fldPath.Child("groups"), "groups identity must be that of the requester"))
