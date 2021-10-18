@@ -27,7 +27,6 @@ export APP_VERSION="$(date +"%s")"
 kube::version::last_published_release
 
 LATEST_RELEASE="${KUBE_LAST_RELEASE}"
-CURRENT_VERSION="${KUBE_GIT_VERSION}"
 
 # Ensure helm, kind, kubectl, ytt are available
 echo "Building the required tools.."
@@ -64,7 +63,7 @@ HELM_CHART="jetstack/cert-manager"
 # VERIFY INSTALL, UPGRADE, UNINSTALL WITH HELM
 ############
 
-echo "Testing upgrade from ${LATEST_RELEASE} to ${CURRENT_VERSION} with Helm.."
+echo "Testing upgrade from ${LATEST_RELEASE} to commit ${KUBE_GIT_COMMIT} with Helm.."
 
 # This will target the host's helm repository cache
 helm repo add jetstack https://charts.jetstack.io
@@ -100,14 +99,13 @@ kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 bazel build //deploy/charts/cert-manager
 
-echo "Upgrading cert-manager Helm release to ${CURRENT_VERSION}..."
+echo "Upgrading cert-manager Helm release to commit ${KUBE_GIT_COMMIT}..."
 helm upgrade \
     --install \
     --wait \
     --namespace "${NAMESPACE}" \
     --set installCRDs=true \
     --create-namespace \
-    --version "${CURRENT_VERSION}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 
@@ -144,7 +142,7 @@ kubectl delete "namespace/${NAMESPACE}" \
 
 # 1. INSTALL THE LATEST PUBLISHED RELEASE WITH STATIC MANIFESTS
 
-echo "Testing cert-manager upgrade from ${LATEST_RELEASE} to ${CURRENT_VERSION} with static manifests.."
+echo "Testing cert-manager upgrade from ${LATEST_RELEASE} to commit ${KUBE_GIT_COMMIT} with static manifests.."
 
 echo "Install cert-manager ${LATEST_RELEASE} using static manifests.."
 kubectl apply \
@@ -167,7 +165,7 @@ kubectl wait --for=condition=Ready cert/test1 --timeout=180s
 
 # 2. VERIFY UPGRADE TO THE LATEST BUILD FROM MASTER
 
-echo "Install cert-manager ${CURRENT_VERSION} using static manifests.."
+echo "Install cert-manager commit ${KUBE_GIT_COMMIT} using static manifests.."
 
 # Build the static manifests
 bazel build //deploy/manifests
