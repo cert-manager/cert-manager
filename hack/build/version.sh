@@ -156,14 +156,9 @@ kube::version::last_published_release() {
 
     local git=(git --work-tree "${REPO_ROOT}")
 
-    # Find the newest git tag which is not alpha or beta tag
-    local latest=$("${git[@]}" describe \
-      --tags \
-      --match='v*' \
-      --abbrev=14 \
-      --exclude='*alpha*' \
-      --exclude='*beta*' \
-      "${KUBE_GIT_COMMIT}^{commit}" 2>/dev/null)
+    # Find the last git tag which is not alpha or beta tag
+    local latest=$("${git[@]}" tag --list 'v*' | grep -v 'alpha\|beta' | tail -n1)
+
 
     if [[ "${latest}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)([-].*)?([+].*)?$ ]]; then
       major=${BASH_REMATCH[1]}
