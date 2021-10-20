@@ -15,7 +15,7 @@ go_library(
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util:go_default_library",
         "//test/e2e/framework:go_default_library",
-        "//test/e2e/suite/issuers/venafi/addon:go_default_library",
+        "//test/e2e/framework/addon/venafi:go_default_library",
         "//test/e2e/util:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",

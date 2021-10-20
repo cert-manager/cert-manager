@@ -78,7 +78,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, sigAlg x509.SignatureAlg
 
 func generateSelfSignedCACert(t *testing.T, key crypto.Signer, name string) (*x509.Certificate, []byte) {
 	tmpl := &x509.Certificate{
-		Version:               3,
+		Version:               2,
 		BasicConstraintsValid: true,
 		SerialNumber:          big.NewInt(0),
 		Subject: pkix.Name{
@@ -183,11 +183,14 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]testT{
-		"a CertificateSigningRequest without an approved condition should do nothing": {
+		"a CertificateSigningRequest without an approved condition should fire event": {
 			csr: baseCSRNotApproved.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{baseCSRNotApproved.DeepCopy()},
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal WaitingApproval Waiting for the Approved condition before issuing",
+				},
 			},
 		},
 		"a CertificateSigningRequest with a denied condition should do nothing": {
@@ -515,14 +518,6 @@ func TestSign(t *testing.T) {
 						"",
 						gen.CertificateSigningRequestFrom(baseCSR,
 							gen.SetCertificateSigningRequestCertificate(certBundle.ChainPEM),
-						),
-					)),
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
-						"",
-						gen.CertificateSigningRequestFrom(baseCSR,
-							gen.SetCertificateSigningRequestCertificate(certBundle.ChainPEM),
-							gen.SetCertificateSigningRequestCA(certBundle.CAPEM),
 						),
 					)),
 				},

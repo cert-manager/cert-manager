@@ -32,16 +32,50 @@ def install():
         patch_cmds = ["sed -i -e 's/private/public/g' 'cmd/pebble/BUILD.bazel'"],
     )
 
-
     ## Fetch nginx-ingress for use during e2e tests
     ## You can change the version of nginx-ingress used for tests by changing the
-    ## 'tag' field in this rule
+    ## 'tag' and 'digest' fields in these rules.
+    ## The digest here is the digest of a platform-specific image, so it will not
+    ## match the manifest list digest in ingress-nginx release notes- you will
+    ## have to find the value by other means.
     container_pull(
-        name = "io_kubernetes_ingress-nginx",
+        name = "io_kubernetes_ingress-nginx_old",
         registry = "k8s.gcr.io",
         repository = "ingress-nginx/controller",
-        tag = "v0.41.2",
-        digest = "sha256:e11b7d264cac4cfc7566b78bb150c94168ea4612a4e9769ca549eb03469db906",
+        tag = "v0.48.1",
+        digest = "sha256:dcc2d529a9cb95408ba9896639382793fb84361ef43cee9195f264c321e6b638",
+    )
+    container_pull(
+        name = "io_kubernetes_ingress-nginx_new",
+        registry = "k8s.gcr.io",
+        repository = "ingress-nginx/controller",
+        tag = "v1.0.2",
+        digest = "sha256:8c0abb209aaef63631d1c85add422ca51848ccee2f87aea06558d37bda1c8e91",
+    )
+
+    container_pull(
+        name = "io_kyverno",
+        registry = "ghcr.io",
+        repository = "kyverno/kyverno",
+        tag = "v1.3.6",
+        digest = "sha256:7d7972e7d9ed2a6da27b06ccb1c3c5d3544838d6cedb67a050ba7d655461ef52",
+    )
+
+    container_pull(
+        name = "io_kyverno_pre",
+        registry = "ghcr.io",
+        repository = "kyverno/kyvernopre",
+        tag = "v1.3.6",
+        digest = "sha256:e76fb71c59449bca1028724a88005652409b56efb90bbcdce56b0d083bda6568",
+    )
+
+    ## Fetch traefik for use during e2e tests.
+    container_pull(
+        name = "io_traefik_traefik",
+        registry = "docker.io",
+        repository = "traefik",
+        tag = "2.4.9",
+        digest = "sha256:bfba2ddb60cea5ebe8bea579a4a18be0bf9cac323783216f83ca268ce0004252",
     )
 
     ## Fetch vault for use during e2e tests
@@ -52,7 +86,7 @@ def install():
         registry = "index.docker.io",
         repository = "library/vault",
         tag = "1.2.3",
-        digest = "sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01"
+        digest = "sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01",
     )
 
     ## Fetch bind for use during e2e tests
@@ -61,7 +95,7 @@ def install():
         registry = "index.docker.io",
         repository = "sameersbn/bind",
         tag = "9.11.3-20190706",
-        digest = "sha256:b8e84f9a9fe0c05c3a963606c3d0170622be9c5e8800431ffcaadb0c79a3ff75"
+        digest = "sha256:b8e84f9a9fe0c05c3a963606c3d0170622be9c5e8800431ffcaadb0c79a3ff75",
     )
 
     ## Fetch sample-external-issuer for use during e2e tests
@@ -70,5 +104,5 @@ def install():
         registry = "ghcr.io",
         repository = "wallrj/sample-external-issuer/controller",
         tag = "v0.0.0-30-gf333b9e",
-        digest = "sha256:609a12fca03554a186e516ef065b4152f02596fba697e3cc45f3593654c87a86"
+        digest = "sha256:609a12fca03554a186e516ef065b4152f02596fba697e3cc45f3593654c87a86",
     )

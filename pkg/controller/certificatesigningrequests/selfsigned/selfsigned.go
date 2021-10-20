@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -181,21 +180,11 @@ func (s *SelfSigned) Sign(ctx context.Context, csr *certificatesv1.CertificateSi
 		return err
 	}
 
-	// Update the status.certificate first so that the sync from updating will
-	// not cause another issuance before setting the CA.
 	csr.Status.Certificate = certPEM
 	csr, err = s.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
 	if err != nil {
 		message := "Error updating certificate"
 		s.recorder.Eventf(csr, corev1.EventTypeWarning, "ErrorUpdate", "%s: %s", message, err)
-		return err
-	}
-
-	csr.GetAnnotations()[experimentalapi.CertificateSigningRequestCAAnnotationKey] = base64.StdEncoding.EncodeToString(certPEM)
-	_, err = s.certClient.Update(ctx, csr, metav1.UpdateOptions{})
-	if err != nil {
-		message := fmt.Sprintf("Error setting %q", experimentalapi.CertificateSigningRequestCAAnnotationKey)
-		s.recorder.Eventf(csr, corev1.EventTypeWarning, "ErrorCAUpdate", "%s: %s", message, err)
 		return err
 	}
 

@@ -18,10 +18,16 @@ package certificates
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -32,8 +38,6 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificates"
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Defines simple conformance tests that can be run against any issuer type.
@@ -44,13 +48,30 @@ func (s *Suite) Define() {
 		ctx := context.Background()
 		f := framework.NewDefaultFramework("certificates")
 
-		// wrap this in a BeforeEach else flags will not have been parsed at
-		// the time that the `complete` function is called.
+		sharedIPAddress := "127.0.0.1"
+
+		// Wrap this in a BeforeEach else flags will not have been parsed and
+		// f.Config will not be populated at the time that this code is run.
 		BeforeEach(func() {
-			if !s.completed {
-				s.complete(f)
+			// Special case Public ACME Servers against being run in the standard
+			// e2e tests.
+			if strings.Contains(s.Name, "Public ACME Server") && strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
+				Skip("Not running public ACME tests against local cluster.")
+				return
+			}
+			if s.completed {
+				return
+			}
+			s.complete(f)
+
+			switch s.HTTP01TestType {
+			case "Ingress":
+				sharedIPAddress = f.Config.Addons.ACMEServer.IngressIP
+			case "Gateway":
+				sharedIPAddress = f.Config.Addons.ACMEServer.GatewayIP
 			}
 		})
+
 		By("Running test suite with the following unsupported features: " + s.UnsupportedFeatures.String())
 
 		s.it(f, "should issue a basic, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
@@ -62,7 +83,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 				},
 			}
 			By("Creating a Certificate")
@@ -70,15 +91,41 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue an ECDSA, defaulted certificate for a single distinct dnsName", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a CA certificate with the CA basicConstraint set", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					IsCA:       true,
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.IssueCAFeature)
+
+		s.it(f, "should issue an ECDSA, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -89,7 +136,7 @@ func (s *Suite) Define() {
 					PrivateKey: &cmapi.CertificatePrivateKey{
 						Algorithm: cmapi.ECDSAKeyAlgorithm,
 					},
-					DNSNames:  []string{s.newDomain()},
+					DNSNames:  []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef: issuerRef,
 				},
 			}
@@ -98,13 +145,41 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.ECDSAFeature, featureset.OnlySAN)
+
+		s.it(f, "should issue an Ed25519, defaulted certificate for a single distinct DNS Name", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					PrivateKey: &cmapi.CertificatePrivateKey{
+						Algorithm: cmapi.Ed25519KeyAlgorithm,
+					},
+					DNSNames:  []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+					IssuerRef: issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OnlySAN, featureset.Ed25519FeatureSet)
 
 		s.it(f, "should issue a basic, defaulted certificate for a single Common Name", func(issuerRef cmmeta.ObjectReference) {
 			// Some issuers use the CN to define the cert's "ID"
@@ -127,11 +202,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -159,11 +234,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.ECDSAFeature, featureset.CommonNameFeature)
 
@@ -191,13 +266,64 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.Ed25519FeatureSet, featureset.CommonNameFeature)
+
+		s.it(f, "should issue a certificate that defines an IP Address", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName:  "testcert-tls",
+					IPAddresses: []string{sharedIPAddress},
+					IssuerRef:   issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.IPAddressFeature)
+
+		s.it(f, "should issue a certificate that defines a DNS Name and IP Address", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName:  "testcert-tls",
+					IPAddresses: []string{sharedIPAddress},
+					DNSNames:    []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+					IssuerRef:   issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OnlySAN, featureset.IPAddressFeature)
 
 		s.it(f, "should issue a certificate that defines a Common Name and IP Address", func(issuerRef cmmeta.ObjectReference) {
 			// Some issuers use the CN to define the cert's "ID"
@@ -212,7 +338,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName:  "testcert-tls",
 					CommonName:  cn,
-					IPAddresses: []string{"127.0.0.1"},
+					IPAddresses: []string{sharedIPAddress},
 					IssuerRef:   issuerRef,
 				},
 			}
@@ -221,11 +347,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature, featureset.IPAddressFeature)
 
@@ -246,15 +372,15 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.EmailSANsFeature, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate that defines a CommonName and URI SAN", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a Common Name and URI SAN", func(issuerRef cmmeta.ObjectReference) {
 			// Some issuers use the CN to define the cert's "ID"
 			// if one cert manages to be in an error state in the issuer it might throw an error
 			// this makes the CN more unique
@@ -276,15 +402,15 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.URISANsFeature, featureset.CommonNameFeature)
 
-		s.it(f, "should issue a certificate that defines a 2 distinct DNS Name with one copied to the Common Name", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a 2 distinct DNS Names with one copied to the Common Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -292,12 +418,12 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					CommonName: s.newDomain(),
+					CommonName: e2eutil.RandomSubdomain(s.DomainSuffix),
 					IssuerRef:  issuerRef,
 				},
 			}
 			testCertificate.Spec.DNSNames = []string{
-				testCertificate.Spec.CommonName, s.newDomain(),
+				testCertificate.Spec.CommonName, e2eutil.RandomSubdomain(s.DomainSuffix),
 			}
 
 			By("Creating a Certificate")
@@ -305,11 +431,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -321,9 +447,9 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					CommonName: s.newDomain(),
+					CommonName: e2eutil.RandomSubdomain(s.DomainSuffix),
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 				},
 			}
 
@@ -332,11 +458,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.CommonNameFeature)
 
@@ -349,7 +475,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					Duration: &metav1.Duration{
 						Duration: time.Hour * 896,
 					},
@@ -360,11 +486,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 
 			// We set a weird time here as the duration with should never be used as
@@ -375,7 +501,7 @@ func (s *Suite) Define() {
 			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
 		}, featureset.DurationFeature, featureset.OnlySAN)
 
-		s.it(f, "should issue a certificate which has a wildcard DNS name defined", func(issuerRef cmmeta.ObjectReference) {
+		s.it(f, "should issue a certificate that defines a wildcard DNS Name", func(issuerRef cmmeta.ObjectReference) {
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -384,7 +510,7 @@ func (s *Suite) Define() {
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
 					IssuerRef:  issuerRef,
-					DNSNames:   []string{"foo." + s.newDomain()},
+					DNSNames:   []string{"*." + e2eutil.RandomSubdomain(s.DomainSuffix)},
 				},
 			}
 			By("Creating a Certificate")
@@ -392,11 +518,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.WildcardsFeature, featureset.OnlySAN)
 
@@ -419,11 +545,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.URISANsFeature, featureset.OnlySAN)
 
@@ -435,7 +561,7 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
 					Usages: []cmapi.KeyUsage{
 						cmapi.UsageSigning,
@@ -450,7 +576,7 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
@@ -463,7 +589,7 @@ func (s *Suite) Define() {
 			}
 			validations = append(validations, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validations...)
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.KeyUsagesFeature, featureset.OnlySAN)
 
@@ -475,7 +601,7 @@ func (s *Suite) Define() {
 				},
 				Spec: cmapi.CertificateSpec{
 					SecretName: "testcert-tls",
-					DNSNames:   []string{s.newDomain()},
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
 					IssuerRef:  issuerRef,
 				},
 			}
@@ -484,11 +610,11 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, "testcert", time.Minute*5)
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, "testcert", validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Deleting existing certificate data in Secret")
@@ -523,72 +649,123 @@ func (s *Suite) Define() {
 			}
 		}, featureset.ReusePrivateKeyFeature, featureset.OnlySAN)
 
-		s.it(f, "should issue a basic certificate for a single distinct dnsName defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
-			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+		s.it(f, "should issue a certificate for a single distinct DNS Name defined by an ingress with annotations", func(issuerRef cmmeta.ObjectReference) {
+			if s.HTTP01TestType != "Ingress" {
+				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
+				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
+				return
+			}
+			var certName string
+			switch {
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 
-			name := "testcert-ingress"
-			secretName := "testcert-ingress-tls"
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
 
-			By("Creating an Ingress with the issuer name annotation set")
-			ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
-				"cert-manager.io/issuer":       issuerRef.Name,
-				"cert-manager.io/issuer-kind":  issuerRef.Kind,
-				"cert-manager.io/issuer-group": issuerRef.Group,
-			}, s.newDomain()), metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
+				By("Creating an Ingress with the issuer name annotation set")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+				}, e2eutil.RandomSubdomain(s.DomainSuffix)), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				certName = ingress.Spec.TLS[0].SecretName
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
 
-			certName := ingress.Spec.TLS[0].SecretName
+				By("Creating an Ingress with the issuer name annotation set")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+				}, e2eutil.RandomSubdomain(s.DomainSuffix)), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				certName = ingress.Spec.TLS[0].SecretName
+			default:
+				Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
+			}
 
 			By("Waiting for the Certificate to exist...")
-			Expect(e2eutil.WaitForCertificateToExist(
-				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
-			)).NotTo(HaveOccurred())
+			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certName, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(cert, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		}, featureset.OnlySAN)
 
-		s.it(f, "should issue a basic certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
-			ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
-
-			name := "testcert-ingress"
-			secretName := "testcert-ingress-tls"
-			domain := s.newDomain()
+		s.it(f, "should issue a certificate defined by an ingress with certificate field annotations", func(issuerRef cmmeta.ObjectReference) {
+			if s.HTTP01TestType != "Ingress" {
+				// TODO @jakexks: remove this skip once either haproxy or traefik fully support gateway API
+				Skip("Skipping ingress-specific as non ingress HTTP-01 solver is in use")
+				return
+			}
+			var certName string
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
 			duration := time.Hour * 999
 			renewBefore := time.Hour * 111
 
-			By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
-			ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
-				"cert-manager.io/issuer":       issuerRef.Name,
-				"cert-manager.io/issuer-kind":  issuerRef.Kind,
-				"cert-manager.io/issuer-group": issuerRef.Group,
-				"cert-manager.io/common-name":  domain,
-				"cert-manager.io/duration":     duration.String(),
-				"cert-manager.io/renew-before": renewBefore.String(),
-			}, domain), metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			switch {
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1().Ingresses(f.Namespace.Name)
 
-			certName := ingress.Spec.TLS[0].SecretName
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
+
+				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewIngress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+					"cert-manager.io/common-name":  domain,
+					"cert-manager.io/duration":     duration.String(),
+					"cert-manager.io/renew-before": renewBefore.String(),
+				}, domain), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				certName = ingress.Spec.TLS[0].SecretName
+			case e2eutil.HasIngresses(f.KubeClientSet.Discovery(), networkingv1beta1.SchemeGroupVersion.String()):
+				ingClient := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace.Name)
+
+				name := "testcert-ingress"
+				secretName := "testcert-ingress-tls"
+
+				By("Creating an Ingress with annotations for issuerRef and other Certificate fields")
+				ingress, err := ingClient.Create(context.TODO(), e2eutil.NewV1Beta1Ingress(name, secretName, map[string]string{
+					"cert-manager.io/issuer":       issuerRef.Name,
+					"cert-manager.io/issuer-kind":  issuerRef.Kind,
+					"cert-manager.io/issuer-group": issuerRef.Group,
+					"cert-manager.io/common-name":  domain,
+					"cert-manager.io/duration":     duration.String(),
+					"cert-manager.io/renew-before": renewBefore.String(),
+				}, domain), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				certName = ingress.Spec.TLS[0].SecretName
+			default:
+				Fail("Neither " + networkingv1.SchemeGroupVersion.String() + " nor " + networkingv1beta1.SchemeGroupVersion.String() + " were discovered in the API server")
+			}
 
 			By("Waiting for the Certificate to exist...")
-			Expect(e2eutil.WaitForCertificateToExist(
-				f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), certName, time.Minute,
-			)).NotTo(HaveOccurred())
+			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssued(f.Namespace.Name, certName, time.Minute*5)
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the ingres-shim has translated all the supplied
 			// annotations into equivalent Certificate field values
 			By("Validating the created Certificate")
 			err = f.Helper().ValidateCertificate(
-				f.Namespace.Name, certName,
+				cert,
 				func(certificate *cmapi.Certificate, _ *corev1.Secret) error {
 					Expect(certificate.Spec.DNSNames).To(ConsistOf(domain))
 					Expect(certificate.Spec.CommonName).To(Equal(domain))
@@ -602,8 +779,152 @@ func (s *Suite) Define() {
 			// Verify that the issuer has preserved all the Certificate values
 			// in the signed certificate
 			By("Validating the issued Certificate...")
-			err = f.Helper().ValidateCertificate(f.Namespace.Name, certName, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			err = f.Helper().ValidateCertificate(cert, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		s.it(f, "Creating a Gateway with annotations for issuerRef and other Certificate fields", func(issuerRef cmmeta.ObjectReference) {
+			name := "testcert-gateway"
+			secretName := "testcert-gateway-tls"
+			domain := e2eutil.RandomSubdomain(s.DomainSuffix)
+			duration := time.Hour * 999
+			renewBefore := time.Hour * 111
+
+			By("Creating a Gateway with annotations for issuerRef and other Certificate fields")
+			gw, route := e2eutil.NewGateway(name, f.Namespace.Name, secretName, map[string]string{
+				"cert-manager.io/issuer":       issuerRef.Name,
+				"cert-manager.io/issuer-kind":  issuerRef.Kind,
+				"cert-manager.io/issuer-group": issuerRef.Group,
+				"cert-manager.io/common-name":  domain,
+				"cert-manager.io/duration":     duration.String(),
+				"cert-manager.io/renew-before": renewBefore.String(),
+			}, domain)
+
+			gw, err := f.GWClientSet.NetworkingV1alpha1().Gateways(f.Namespace.Name).Create(context.TODO(), gw, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = f.GWClientSet.NetworkingV1alpha1().HTTPRoutes(f.Namespace.Name).Create(context.TODO(), route, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// XXX(Mael): the CertificateRef seems to contain the Gateway name
+			// "testcert-gateway" instead of the secretName
+			// "testcert-gateway-tls".
+			certName := gw.Spec.Listeners[0].TLS.CertificateRef.Name
+
+			By("Waiting for the Certificate to exist...")
+			cert, err := f.Helper().WaitForCertificateToExist(f.Namespace.Name, certName, time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify that the ingres-shim has translated all the supplied
+			// annotations into equivalent Certificate field values
+			By("Validating the created Certificate")
+			Expect(cert.Spec.DNSNames).To(ConsistOf(domain))
+			Expect(cert.Spec.CommonName).To(Equal(domain))
+			Expect(cert.Spec.Duration.Duration).To(Equal(duration))
+			Expect(cert.Spec.RenewBefore.Duration).To(Equal(renewBefore))
+		})
+
+		s.it(f, "should issue a certificate that defines a long domain", func(issuerRef cmmeta.ObjectReference) {
+			// the maximum length of a single segment of the domain being requested
+			const maxLengthOfDomainSegment = 63
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					DNSNames:   []string{e2eutil.RandomSubdomainLength(s.DomainSuffix, maxLengthOfDomainSegment)},
+					IssuerRef:  issuerRef,
+				},
+			}
+			validations := validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Sanity-check the issued Certificate")
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OnlySAN, featureset.LongDomainFeatureSet)
+
+		s.it(f, "should allow updating an existing certificate with a new DNS Name", func(issuerRef cmmeta.ObjectReference) {
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					DNSNames:   []string{e2eutil.RandomSubdomain(s.DomainSuffix)},
+					IssuerRef:  issuerRef,
+				},
+			}
+			validations := validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be ready")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Sanity-check the issued Certificate")
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Updating the Certificate after having added an additional dnsName")
+			testCertificate = testCertificate.DeepCopy() // DeepCopy before updating
+			newDNSName := e2eutil.RandomSubdomain(s.DomainSuffix)
+			testCertificate.Spec.DNSNames = append(testCertificate.Spec.DNSNames, newDNSName)
+
+			err = f.CRClient.Update(context.TODO(), testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate Ready condition to be updated")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Sanity-check the issued Certificate")
+			err = f.Helper().ValidateCertificate(testCertificate, validations...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.OnlySAN)
+
+		s.it(f, "should issue a certificate that defines a wildcard DNS Name and its apex DNS Name", func(issuerRef cmmeta.ObjectReference) {
+			dnsDomain := e2eutil.RandomSubdomain(s.DomainSuffix)
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{"*." + dnsDomain, dnsDomain},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			// use a longer timeout for this, as it requires performing 2 dns validations in serial
+			By("Waiting for the Certificate to be issued...")
+			testCertificate, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(testCertificate, time.Minute*10)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(testCertificate, validation.CertificateSetForUnsupportedFeatureSet(s.UnsupportedFeatures)...)
+			Expect(err).NotTo(HaveOccurred())
+		}, featureset.WildcardsFeature, featureset.OnlySAN)
 	})
 }

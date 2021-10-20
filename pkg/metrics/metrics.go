@@ -17,6 +17,7 @@ limitations under the License.
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
 // certificate_expiration_timestamp_seconds{name, namespace}
+// certificate_renewal_timestamp_seconds{name, namespace}
 // certificate_ready_status{name, namespace, condition}
 // acme_client_request_count{"scheme", "host", "path", "method", "status"}
 // acme_client_request_duration_seconds{"scheme", "host", "path", "method", "status"}
@@ -24,12 +25,10 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"k8s.io/utils/clock"
 
 	"github.com/go-logr/logr"
@@ -43,11 +42,10 @@ import (
 
 const (
 	// Namespace is the namespace for cert-manager metric names
-	namespace                              = "certmanager"
-	prometheusMetricsServerShutdownTimeout = 5 * time.Second
-	prometheusMetricsServerReadTimeout     = 8 * time.Second
-	prometheusMetricsServerWriteTimeout    = 8 * time.Second
-	prometheusMetricsServerMaxHeaderBytes  = 1 << 20 // 1 MiB
+	namespace                             = "certmanager"
+	prometheusMetricsServerReadTimeout    = 8 * time.Second
+	prometheusMetricsServerWriteTimeout   = 8 * time.Second
+	prometheusMetricsServerMaxHeaderBytes = 1 << 20 // 1 MiB
 )
 
 // Metrics is designed to be a shared object for updating the metrics exposed
@@ -58,6 +56,7 @@ type Metrics struct {
 
 	clockTimeSeconds                 prometheus.CounterFunc
 	certificateExpiryTimeSeconds     *prometheus.GaugeVec
+	certificateRenewalTimeSeconds    *prometheus.GaugeVec
 	certificateReadyStatus           *prometheus.GaugeVec
 	acmeClientRequestDurationSeconds *prometheus.SummaryVec
 	acmeClientRequestCount           *prometheus.CounterVec
@@ -84,6 +83,15 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 				Namespace: namespace,
 				Name:      "certificate_expiration_timestamp_seconds",
 				Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
+			},
+			[]string{"name", "namespace"},
+		)
+
+		certificateRenewalTimeSeconds = prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "certificate_renewal_timestamp_seconds",
+				Help:      "The number of seconds before expiration time the certificate should renew.",
 			},
 			[]string{"name", "namespace"},
 		)
@@ -139,6 +147,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 
 		clockTimeSeconds:                 clockTimeSeconds,
 		certificateExpiryTimeSeconds:     certificateExpiryTimeSeconds,
+		certificateRenewalTimeSeconds:    certificateRenewalTimeSeconds,
 		certificateReadyStatus:           certificateReadyStatus,
 		acmeClientRequestCount:           acmeClientRequestCount,
 		acmeClientRequestDurationSeconds: acmeClientRequestDurationSeconds,
@@ -149,9 +158,10 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 }
 
 // Start will register the Prometheus metrics, and start the Prometheus server
-func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, error) {
+func (m *Metrics) NewServer(ln net.Listener, enablePprof bool) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
+	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
 	m.registry.MustRegister(m.acmeClientRequestDurationSeconds)
 	m.registry.MustRegister(m.acmeClientRequestCount)
@@ -163,11 +173,6 @@ func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, e
 		profiling.Install(mux)
 	}
 
-	ln, err := net.Listen("tcp", listenAddress)
-	if err != nil {
-		return nil, err
-	}
-
 	server := &http.Server{
 		Addr:           ln.Addr().String(),
 		ReadTimeout:    prometheusMetricsServerReadTimeout,
@@ -175,35 +180,10 @@ func (m *Metrics) Start(listenAddress string, enablePprof bool) (*http.Server, e
 		MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
 		Handler:        mux,
 	}
-
-	go func() {
-		log := m.log.WithValues("address", ln.Addr())
-		log.V(logf.InfoLevel).Info("listening for connections on")
-
-		if err := server.Serve(ln); err != nil {
-			log.Error(err, "error running prometheus metrics server")
-			return
-		}
-	}()
-
-	return server, nil
+	return server
 }
 
 // IncrementSyncCallCount will increase the sync counter for that controller.
 func (m *Metrics) IncrementSyncCallCount(controllerName string) {
 	m.controllerSyncCallCount.WithLabelValues(controllerName).Inc()
-}
-
-func (m *Metrics) Shutdown(server *http.Server) {
-	m.log.V(logf.InfoLevel).Info("stopping Prometheus metrics server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), prometheusMetricsServerShutdownTimeout)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		m.log.Error(err, "prometheus metrics server shutdown failed", err)
-		return
-	}
-
-	m.log.V(logf.InfoLevel).Info("prometheus metrics server gracefully stopped")
 }

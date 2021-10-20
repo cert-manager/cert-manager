@@ -85,8 +85,20 @@ type Suite struct {
 
 // complete will validate configuration and set default values.
 func (s *Suite) complete(f *framework.Framework) {
+	if s.Name == "" {
+		Fail("Name must be set")
+	}
+
+	if s.CreateIssuerFunc == nil {
+		Fail("CreateIssuerFunc must be set")
+	}
+
 	if s.DomainSuffix == "" {
 		s.DomainSuffix = f.Config.Addons.IngressController.Domain
+	}
+
+	if s.UnsupportedFeatures == nil {
+		s.UnsupportedFeatures = make(featureset.FeatureSet)
 	}
 
 	s.completed = true
@@ -133,23 +145,4 @@ func (s *Suite) checkFeatures(fs ...featureset.Feature) bool {
 		return true
 	}
 	return false
-}
-
-// newDomain will generate a new random subdomain of the DomainSuffix
-func (s *Suite) newDomain() string {
-	return s.newDomainDepth(1)
-}
-
-// newDomainDepth return a new domain name with the given number of subdomains
-// beneath the domain suffix.
-// If depth is zero, the domain suffix will be returned,
-// If depth is one, a random subdomain will be returned e.g. abcd.example.com,
-// If depth is two, a random sub-subdomain will be returned e.g. abcd.efgh.example.com,
-// and so on
-func (s *Suite) newDomainDepth(depth int) string {
-	subdomains := make([]string, depth)
-	for i := 0; i < depth; i++ {
-		subdomains[i] = util.RandStringRunes(4)
-	}
-	return strings.Join(append(subdomains, s.DomainSuffix), ".")
 }

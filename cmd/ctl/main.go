@@ -22,16 +22,18 @@ import (
 	"os"
 
 	ctlcmd "github.com/jetstack/cert-manager/cmd/ctl/cmd"
-	"github.com/jetstack/cert-manager/pkg/util"
-	utilcmd "github.com/jetstack/cert-manager/pkg/util/cmd"
+	"github.com/jetstack/cert-manager/cmd/util"
 )
 
 func main() {
-	stopCh := utilcmd.SetupSignalHandler()
+	stopCh, exit := util.SetupExitHandler(util.AlwaysErrCode)
+	defer exit() // This function might call os.Exit, so defer last
+
 	ctx := util.ContextWithStopCh(context.Background(), stopCh)
 	cmd := ctlcmd.NewCertManagerCtlCommand(ctx, os.Stdin, os.Stdout, os.Stderr)
 
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
+		util.SetExitCode(err)
 	}
 }

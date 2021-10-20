@@ -28,6 +28,7 @@ filegroup(
         "//test/e2e/framework/addon/base:all-srcs",
         "//test/e2e/framework/addon/chart:all-srcs",
         "//test/e2e/framework/addon/vault:all-srcs",
+        "//test/e2e/framework/addon/venafi:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

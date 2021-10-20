@@ -63,7 +63,11 @@ func (s *solverFixture) Setup(t *testing.T) {
 		s.Builder.T = t
 	}
 	s.Builder.Init()
-	s.Solver = buildFakeSolver(s.Builder)
+	var err error
+	s.Solver, err = buildFakeSolver(s.Builder)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if s.PreFn != nil {
 		s.PreFn(t, s)
 		s.Builder.Sync()
@@ -80,11 +84,14 @@ func (s *solverFixture) Finish(t *testing.T, args ...interface{}) {
 	}
 }
 
-func buildFakeSolver(b *test.Builder) *Solver {
+func buildFakeSolver(b *test.Builder) (*Solver, error) {
 	b.Init()
-	s := NewSolver(b.Context)
+	s, err := NewSolver(b.Context)
+	if err != nil {
+		return nil, err
+	}
 	b.Start()
-	return s
+	return s, nil
 }
 
 func strPtr(s string) *string {

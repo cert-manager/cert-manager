@@ -18,7 +18,7 @@ package v1alpha2
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
@@ -197,6 +197,7 @@ type CertificateDNSNameSelector struct {
 // Typically this is accomplished through creating 'routes' of some description
 // that configure ingress controllers to direct traffic to 'solver pods', which
 // are responsible for responding to the ACME server's HTTP requests.
+// Only one of Ingress / Gateway can be specified.
 type ACMEChallengeSolverHTTP01 struct {
 	// The ingress based HTTP01 challenge solver will solve challenges by
 	// creating or modifying Ingress resources in order to route requests for
@@ -204,10 +205,18 @@ type ACMEChallengeSolverHTTP01 struct {
 	// provisioned by cert-manager for each Challenge to be completed.
 	// +optional
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress,omitempty"`
+
+	// The Gateway API is a sig-network community API that models service networking
+	// in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will
+	// create HTTPRoutes with the specified labels in the same namespace as the challenge.
+	// This solver is experimental, and fields / behaviour may change in the future.
+	// +optional
+	GatewayHTTPRoute *ACMEChallengeSolverHTTP01GatewayHTTPRoute `json:"gatewayHTTPRoute,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
-	// Optional service type for Kubernetes solver service
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP. If unset, defaults to NodePort.
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
@@ -226,7 +235,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	Name string `json:"name,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges
+	// used for HTTP01 challenges.
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 
@@ -234,6 +243,18 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// ingress used for HTTP01 challenges
 	// +optional
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate `json:"ingressTemplate,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP. If unset, defaults to NodePort.
+	// +optional
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
+
+	// The labels that cert-manager will use when creating the temporary
+	// HTTPRoute needed for solving the HTTP-01 challenge. These labels
+	// must match the label selector of at least one Gateway.
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
@@ -458,19 +479,37 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// +optional
 	ClientSecret *cmmeta.SecretKeySelector `json:"clientSecretSecretRef,omitempty"`
 
+	// ID of the Azure subscription
 	SubscriptionID string `json:"subscriptionID"`
 
 	// when specifying ClientID and ClientSecret then this field is also needed
 	// +optional
 	TenantID string `json:"tenantID,omitempty"`
 
+	// resource group the DNS zone is located in
 	ResourceGroupName string `json:"resourceGroupName"`
 
+	// name of the DNS zone that should be used
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
 
+	// name of the Azure environment (default AzurePublicCloud)
 	// +optional
 	Environment AzureDNSEnvironment `json:"environment,omitempty"`
+
+	// managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+	// +optional
+	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
+}
+
+type AzureManagedIdentity struct {
+	// client ID of the managed identity, can not be used at the same time as resourceID
+	// +optional
+	ClientID string `json:"clientID,omitempty"`
+
+	// resource ID of the managed identity, can not be used at the same time as clientID
+	// +optional
+	ResourceID string `json:"resourceID,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud
@@ -541,7 +580,7 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.
 	// +optional
-	Config *apiext.JSON `json:"config,omitempty"`
+	Config *apiextensionsv1.JSON `json:"config,omitempty"`
 }
 
 type ACMEIssuerStatus struct {

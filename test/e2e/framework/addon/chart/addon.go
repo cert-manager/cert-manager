@@ -19,7 +19,7 @@ package chart
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -93,7 +93,7 @@ func (c *Chart) Setup(cfg *config.Config) error {
 		return fmt.Errorf("--helm-binary-path must be set")
 	}
 
-	c.home, err = ioutil.TempDir("", "helm-chart-install")
+	c.home, err = os.MkdirTemp("", "helm-chart-install")
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (c *Chart) getHelmVersion() (string, error) {
 		return "", err
 	}
 
-	outBytes, err := ioutil.ReadAll(out)
+	outBytes, err := io.ReadAll(out)
 	if err != nil {
 		return "", err
 	}

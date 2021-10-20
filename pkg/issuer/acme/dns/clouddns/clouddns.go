@@ -12,7 +12,6 @@ package clouddns
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -104,7 +103,7 @@ func NewDNSProviderServiceAccount(project string, saFile string, dns01Nameserver
 		return nil, fmt.Errorf("Google Cloud Service Account file missing")
 	}
 
-	dat, err := ioutil.ReadFile(saFile)
+	dat, err := os.ReadFile(saFile)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read Service Account file: %v", err)
 	}

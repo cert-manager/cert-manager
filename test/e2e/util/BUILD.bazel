@@ -2,26 +2,29 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["util.go"],
+    srcs = [
+        "domains.go",
+        "util.go",
+    ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/util",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/client/clientset/versioned/scheme:go_default_library",
         "//pkg/client/clientset/versioned/typed/certmanager/v1:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/e2e/framework/log:go_default_library",
-        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_api//networking/v1:go_default_library",
         "@io_k8s_api//networking/v1beta1:go_default_library",
-        "@io_k8s_apiextensions_apiserver//pkg/client/clientset/clientset/typed/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/client/clientset/clientset/typed/apiextensions/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/intstr:go_default_library",
         "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
-        "@io_k8s_client_go//kubernetes:go_default_library",
+        "@io_k8s_client_go//discovery:go_default_library",
+        "@io_k8s_sigs_gateway_api//apis/v1alpha1:go_default_library",
     ],
 )
 

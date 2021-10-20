@@ -23,7 +23,7 @@ NAMESPACE="${NAMESPACE:-cert-manager}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 # Default feature gates to enable
-FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true}"
+FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true}"
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
@@ -31,6 +31,7 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 # Require kubectl & helm available on PATH
 check_tool kubectl
+check_tool kubectl-cert_manager
 check_tool helm
 
 # Use the current timestamp as the APP_VERSION so a rolling update will be
@@ -44,6 +45,7 @@ load_image "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-acmesolver:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-cainjector:${APP_VERSION}" &
 load_image "quay.io/jetstack/cert-manager-webhook:${APP_VERSION}" &
+load_image "quay.io/jetstack/cert-manager-ctl:${APP_VERSION}" &
 wait
 
 # Ensure the namespace exists, and if not create it
@@ -53,6 +55,7 @@ kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
 bazel build //deploy/charts/cert-manager
 
 # Upgrade or install cert-manager
+# --wait & --wait-for-jobs flags should wait for resources and Jobs to complete
 helm upgrade \
     --install \
     --wait \
@@ -60,8 +63,14 @@ helm upgrade \
     --set image.tag="${APP_VERSION}" \
     --set cainjector.image.tag="${APP_VERSION}" \
     --set webhook.image.tag="${APP_VERSION}" \
+    --set startupapicheck.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
-    --set featureGates="${FEATURE_GATES:-}" \
+    --set featureGates="${FEATURE_GATES//,/\\,}" `# escape commas in --set by replacing , with \, (see https://github.com/helm/helm/issues/2952)` \
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
+
+# Sanity check (fail if api is not yet available)
+kubectl cert-manager check api
+# Print the cert-manager client and server versions
+kubectl cert-manager version -o yaml

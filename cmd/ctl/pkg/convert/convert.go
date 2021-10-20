@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
 	"github.com/spf13/cobra"
@@ -39,12 +40,12 @@ import (
 )
 
 var (
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 		# Convert 'cert.yaml' to latest version and print to stdout.
-		kubectl cert-manager convert -f cert.yaml
+		{{.BuildName}} convert -f cert.yaml
 
 		# Convert kustomize overlay under current directory to 'cert-manager.io/v1alpha3'
-		kubectl cert-manager convert -k . --output-version cert-manager.io/v1alpha3`))
+		{{.BuildName}} convert -k . --output-version cert-manager.io/v1alpha3`)))
 
 	longDesc = templates.LongDesc(i18n.T(`
 Convert cert-manager config files between different API versions. Both YAML

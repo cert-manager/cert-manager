@@ -39,7 +39,7 @@ func (log TestLogger) Info(msg string, keysAndValues ...interface{}) {
 	log.T.Logf("%s: %v", msg, strings.Join(withValues, " "))
 }
 
-func (_ TestLogger) Enabled() bool {
+func (TestLogger) Enabled() bool {
 	return true
 }
 

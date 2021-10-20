@@ -18,7 +18,7 @@ package fuzzer
 
 import (
 	fuzz "github.com/google/gofuzz"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -42,7 +42,7 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.Spec.IssuerRef.Kind = v1.IssuerKind
 			}
 		},
-		func(s *apiext.JSON, c fuzz.Continue) {
+		func(s *apiextensionsv1.JSON, c fuzz.Continue) {
 			// ensure the webhook's config is valid JSON
 			s.Raw = []byte("{}")
 		},

@@ -24,13 +24,6 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 
 {{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "cert-manager.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
 Create the name of the service account to use
 */}}
 {{- define "cert-manager.serviceAccountName" -}}
@@ -69,13 +62,6 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "webhook.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
 Create the name of the service account to use
 */}}
 {{- define "webhook.serviceAccountName" -}}
@@ -110,13 +96,6 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "cainjector.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
 Create the name of the service account to use
 */}}
 {{- define "cainjector.serviceAccountName" -}}
@@ -124,5 +103,57 @@ Create the name of the service account to use
     {{ default (include "cainjector.fullname" .) .Values.cainjector.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.cainjector.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+startupapicheck templates
+*/}}
+
+{{/*
+Expand the name of the chart.
+Manually fix the 'app' and 'name' labels to 'startupapicheck' to maintain
+compatibility with the v0.9 deployment selector.
+*/}}
+{{- define "startupapicheck.name" -}}
+{{- printf "startupapicheck" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "startupapicheck.fullname" -}}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 52 | trimSuffix "-" -}}
+{{- printf "%s-startupapicheck" $trimmedName | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "startupapicheck.serviceAccountName" -}}
+{{- if .Values.startupapicheck.serviceAccount.create -}}
+    {{ default (include "startupapicheck.fullname" .) .Values.startupapicheck.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.startupapicheck.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "chartName" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Labels that should be added on each resource
+*/}}
+{{- define "labels" -}}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- if eq (default "helm" .Values.creator) "helm" }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ include "chartName" . }}
 {{- end -}}
 {{- end -}}

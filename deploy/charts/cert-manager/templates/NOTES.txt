@@ -1,4 +1,4 @@
-cert-manager has been deployed successfully!
+cert-manager {{ .Chart.AppVersion }} has been deployed successfully!
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
 or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).

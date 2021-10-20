@@ -18,12 +18,13 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
@@ -37,9 +38,15 @@ func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
 			rootCtx = logf.NewContext(rootCtx, nil, "acmesolver")
 			log := logf.FromContext(rootCtx)
 
+			completedCh := make(chan struct{})
 			go func() {
+				defer close(completedCh)
 				<-stopCh
-				if err := s.Shutdown(rootCtx); err != nil {
+				// allow a timeout for graceful shutdown
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+
+				if err := s.Shutdown(ctx); err != nil {
 					log.Error(err, "error shutting down acmesolver server")
 				}
 			}()
@@ -47,6 +54,8 @@ func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
 			if err := s.Listen(log); err != nil {
 				return err
 			}
+
+			<-completedCh
 
 			return nil
 		},

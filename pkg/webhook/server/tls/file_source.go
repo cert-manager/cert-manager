@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sync"
 	"time"
 
@@ -125,12 +125,12 @@ func (f *FileCertificateSource) Healthy() bool {
 // updateCertificateFromDisk will read private key and certificate data from
 // disk and update the cached tls.Certificate if the data on disk has changed.
 func (f *FileCertificateSource) updateCertificateFromDisk() error {
-	keyData, err := ioutil.ReadFile(f.KeyPath)
+	keyData, err := os.ReadFile(f.KeyPath)
 	if err != nil {
 		return fmt.Errorf("failed to read keyPath: %w", err)
 	}
 
-	certData, err := ioutil.ReadFile(f.CertPath)
+	certData, err := os.ReadFile(f.CertPath)
 	if err != nil {
 		return fmt.Errorf("failed to read certPath: %w", err)
 	}

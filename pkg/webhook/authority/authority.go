@@ -44,6 +44,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/jetstack/cert-manager/cmd/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -93,6 +94,8 @@ type SignFunc func(template *x509.Certificate) (*x509.Certificate, error)
 var _ SignFunc = (&DynamicAuthority{}).Sign
 
 func (d *DynamicAuthority) Run(stopCh <-chan struct{}) error {
+	ctx := util.ContextWithStopCh(context.Background(), stopCh)
+
 	if d.SecretNamespace == "" {
 		return fmt.Errorf("SecretNamespace must be set")
 	}
@@ -129,8 +132,8 @@ func (d *DynamicAuthority) Run(stopCh <-chan struct{}) error {
 	d.client = cl.CoreV1().Secrets(d.SecretNamespace)
 
 	// start the informers and wait for the cache to sync
-	factory.Start(stopCh)
-	if !cache.WaitForCacheSync(stopCh, informer.HasSynced) {
+	factory.Start(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 		return fmt.Errorf("failed waiting for informer caches to sync")
 	}
 
@@ -138,15 +141,23 @@ func (d *DynamicAuthority) Run(stopCh <-chan struct{}) error {
 	// been  missed that could cause us to get into an idle state where the
 	// Secret resource does not exist and so the informers handler functions
 	// are not triggered.
-	return wait.PollImmediateUntil(time.Second*10, func() (done bool, err error) {
-		ctx := context.Background()
+	if err = wait.PollImmediateUntil(time.Second*10, func() (done bool, err error) {
 		if err := d.ensureCA(ctx); err != nil {
 			d.Log.Error(err, "error ensuring CA")
 		}
 		// never return 'done'.
 		// this poll only ends when stopCh is closed.
 		return false, nil
-	}, stopCh)
+	}, ctx.Done()); err != nil {
+		// If error cause was context, return that error instead
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // Sign will sign the given certificate template using the current version of
@@ -210,6 +221,7 @@ func (d *DynamicAuthority) WatchRotation(stopCh <-chan struct{}) <-chan struct{}
 	ch := make(chan struct{}, 1)
 	d.watches = append(d.watches, ch)
 	go func() {
+		defer close(ch)
 		<-stopCh
 		d.watchMutex.Lock()
 		defer d.watchMutex.Unlock()
@@ -327,7 +339,7 @@ func (d *DynamicAuthority) regenerateCA(ctx context.Context, s *corev1.Secret) e
 		return err
 	}
 	cert := &x509.Certificate{
-		Version:               3,
+		Version:               2,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    x509.ECDSA,

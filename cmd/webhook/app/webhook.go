@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
+	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -102,7 +103,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 		Use:   "webhook",
 		Short: fmt.Sprintf("Webhook component providing API validation, mutation and conversion functionality for cert-manager (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := util.ContextWithStopCh(context.Background(), stopCh)
+			ctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
 			ctx = logf.NewContext(ctx, nil, "webhook")
 			log := logf.FromContext(ctx)
 

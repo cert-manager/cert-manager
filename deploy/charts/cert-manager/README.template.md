@@ -8,7 +8,7 @@ to renew certificates at an appropriate time before expiry.
 
 ## Prerequisites
 
-- Kubernetes 1.11+
+- Kubernetes 1.16+
 
 ## Installing the Chart
 
@@ -29,7 +29,7 @@ To install the chart with the release name `my-release`:
 $ helm repo add jetstack https://charts.jetstack.io
 
 ## Install the cert-manager helm chart
-$ helm install --name my-release --namespace cert-manager jetstack/cert-manager
+$ helm install my-release --namespace cert-manager --version {{RELEASE_VERSION}} jetstack/cert-manager
 ```
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -123,6 +123,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `podDnsConfig` | Optional cert-manager pod [DNS configurations](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-config) |  |
 | `podLabels` | Labels to add to the cert-manager pod | `{}` |
 | `serviceLabels` | Labels to add to the cert-manager controller service | `{}` |
+| `serviceAnnotations` | Annotations to add to the cert-manager service | `{}` |
 | `http_proxy` | Value of the `HTTP_PROXY` environment variable in the cert-manager pod | |
 | `https_proxy` | Value of the `HTTPS_PROXY` environment variable in the cert-manager pod | |
 | `no_proxy` | Value of the `NO_PROXY` environment variable in the cert-manager pod | |
@@ -130,10 +131,12 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.timeoutSeconds` | Seconds the API server should wait the webhook to respond before treating the call as a failure. | `10` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.podLabels` | Labels to add to the cert-manager webhook pod | `{}` |
+| `webhook.serviceLabels` | Labels to add to the cert-manager webhook service | `{}` |
 | `webhook.deploymentAnnotations` | Annotations to add to the webhook deployment | `{}` |
 | `webhook.mutatingWebhookConfigurationAnnotations` | Annotations to add to the mutating webhook configuration | `{}` |
 | `webhook.validatingWebhookConfigurationAnnotations` | Annotations to add to the validating webhook configuration | `{}` |
 | `webhook.validatingWebhookConfigurationNamespaceSelectorMatchExpressions` | Additional matchExpressions for the namespaceSelector of the validating webhook configuration | `[]` |
+| `webhook.serviceAnnotations` | Annotations to add to the webhook service | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
 | `webhook.serviceAccount.create` | If `true`, create a new service account for the webhook component | `true` |
 | `webhook.serviceAccount.name` | Service account for the webhook component to be used. If not set and `webhook.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
@@ -182,13 +185,32 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
 | `cainjector.containerSecurityContext` | Security context to be set on cainjector component container | `{}` |
+| `startupapicheck.enabled` | Toggles whether the startupapicheck Job should be installed | `true` |
+| `startupapicheck.securityContext` | Pod Security Context to be set on the startupapicheck component Pod | `{}` |
+| `startupapicheck.timeout` | Timeout for 'kubectl check api' command | `1m` |
+| `startupapicheck.backoffLimit` | Job backoffLimit | `4` |
+| `startupapicheck.jobAnnotations` | Optional additional annotations to add to the startupapicheck Job | `{}` |
+| `startupapicheck.podAnnotations` | Optional additional annotations to add to the startupapicheck Pods | `{}` |
+| `startupapicheck.extraArgs` | Optional additional arguments for startupapicheck | `[]` |
+| `startupapicheck.resources` | CPU/memory resource requests/limits for the startupapicheck pod | `{}` |
+| `startupapicheck.nodeSelector` | Node labels for startupapicheck pod assignment | `{}` |
+| `startupapicheck.affinity` | Node affinity for startupapicheck pod assignment | `{}` |
+| `startupapicheck.tolerations` | Node tolerations for startupapicheck pod assignment | `[]` |
+| `startupapicheck.podLabels` | Optional additional labels to add to the startupapicheck Pods | `{}` |
+| `startupapicheck.image.repository` | startupapicheck image repository | `quay.io/jetstack/cert-manager-ctl` |
+| `startupapicheck.image.tag` | startupapicheck image tag | `{{RELEASE_VERSION}}` |
+| `startupapicheck.image.pullPolicy` | startupapicheck image pull policy | `IfNotPresent` |
+| `startupapicheck.serviceAccount.create` | If `true`, create a new service account for the startupapicheck component | `true` |
+| `startupapicheck.serviceAccount.name` | Service account for the startupapicheck component to be used. If not set and `startupapicheck.serviceAccount.create` is `true`, a name is generated using the fullname template |  |
+| `startupapicheck.serviceAccount.annotations` | Annotations to add to the service account for the startupapicheck component |  |
+| `startupapicheck.serviceAccount.automountServiceAccountToken` | Automount API credentials for the startupapicheck Service Account | `true` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
 Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example,
 
 ```console
-$ helm install --name my-release -f values.yaml .
+$ helm install my-release -f values.yaml .
 ```
 > **Tip**: You can use the default [values.yaml](https://github.com/jetstack/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml)
 

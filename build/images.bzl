@@ -18,22 +18,22 @@ def define_base_images():
     # Use 'static' distroless image for all builds by default.
     # To get the latest-amd64 digest for gcr.io/distroless/static, assuming
     # that $GOPATH/bin is in your $PATH, run:
-    # go get github.com/genuinetools/reg && reg digest gcr.io/distroless/static:latest-amd64
+    # go install github.com/google/go-containerregistry/cmd/crane@latest && crane digest gcr.io/distroless/static:latest-amd64
     container_pull(
         name = "static_base",
         registry = "gcr.io",
         repository = "distroless/static",
-        digest = "sha256:a7752b29b18bb106938caefd8dcce8a94199022cbd06ea42268b968f35e837a8",
+        digest = "sha256:a5635fa9dda1cf81666d8c288130bf3519bdeab1b7ed717db496a73d25d1b35c"
     )
     # Use 'dynamic' distroless image for modified cert-manager deployments that
     # are dynamically linked. (This is not the default and you probably don't
     # need this.)
     # To get the latest-amd64 digest for gcr.io/distroless/base,
     # assuming that $GOPATH/bin is in your $PATH, run:
-    # go get github.com/genuinetools/reg && reg digest gcr.io/distroless/base:latest-amd64
+    # go install github.com/google/go-containerregistry/cmd/crane@latest && crane digest gcr.io/distroless/base:latest-amd64
     container_pull(
         name = "dynamic_base",
         registry = "gcr.io",
         repository = "distroless/base",
-        digest = "sha256:75f63d4edd703030d4312dc7528a349ca34d48bec7bd754652b2d47e5a0b7873",
+        digest = "sha256:1a80a34cb3d7c4326191047976e4161741aef22c351932b55e32b72ce8827c27"
     )

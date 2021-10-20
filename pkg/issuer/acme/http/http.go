@@ -20,22 +20,23 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	k8snet "k8s.io/utils/net"
-
+	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	networkingv1beta1listers "k8s.io/client-go/listers/networking/v1beta1"
+	k8snet "k8s.io/utils/net"
+	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha1"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/internal/ingress"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
@@ -57,9 +58,11 @@ var (
 type Solver struct {
 	*controller.Context
 
-	podLister     corev1listers.PodLister
-	serviceLister corev1listers.ServiceLister
-	ingressLister networkingv1beta1listers.IngressLister
+	podLister            corev1listers.PodLister
+	serviceLister        corev1listers.ServiceLister
+	ingressLister        ingress.InternalIngressLister
+	ingressCreateUpdater ingress.InternalIngressCreateUpdater
+	httpRouteLister      gwapilisters.HTTPRouteLister
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -67,29 +70,48 @@ type Solver struct {
 
 type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 
-// NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
-// TODO: refactor this to have fewer args
-func NewSolver(ctx *controller.Context) *Solver {
-	return &Solver{
-		Context:          ctx,
-		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
-		testReachability: testReachability,
-		requiredPasses:   5,
+// NewSolver returns a new ACME HTTP01 solver for the given *controller.Context.
+func NewSolver(ctx *controller.Context) (*Solver, error) {
+	ingressLister, _, err := ingress.NewListerInformer(ctx)
+	if err != nil {
+		return nil, err
 	}
+	ingressCreateUpdater, err := ingress.NewCreateUpdater(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Solver{
+		Context:              ctx,
+		podLister:            ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:        ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:        ingressLister,
+		ingressCreateUpdater: ingressCreateUpdater,
+		httpRouteLister:      ctx.GWShared.Networking().V1alpha1().HTTPRoutes().Lister(),
+		testReachability:     testReachability,
+		requiredPasses:       5,
+	}, nil
 }
 
 func http01LogCtx(ctx context.Context) context.Context {
 	return logf.NewContext(ctx, nil, "http01")
 }
 
-func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
+func http01IngressCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
 	if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
 		return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
 			"Ensure solvers[].http01.ingress is specified on your issuer resource")
 	}
 	return ch.Spec.Solver.HTTP01.Ingress, nil
+}
+
+func getServiceType(ch *cmacme.Challenge) (corev1.ServiceType, error) {
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.Ingress != nil {
+		return ch.Spec.Solver.HTTP01.Ingress.ServiceType, nil
+	}
+	if ch.Spec.Solver.HTTP01 != nil && ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+		return ch.Spec.Solver.HTTP01.GatewayHTTPRoute.ServiceType, nil
+	}
+	return "", fmt.Errorf("neither HTTP01 Ingress nor Gateway solvers were found")
 }
 
 // Present will realise the resources required to solve the given HTTP01
@@ -103,8 +125,26 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
-	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
+	var ingressErr, gatewayErr error
+	if ch.Spec.Solver.HTTP01 != nil {
+		if ch.Spec.Solver.HTTP01.Ingress != nil {
+			_, ingressErr = s.ensureIngress(ctx, ch, svc.Name)
+			return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
+		}
+		if ch.Spec.Solver.HTTP01.GatewayHTTPRoute != nil {
+			_, gatewayErr = s.ensureGatewayHTTPRoute(ctx, ch, svc.Name)
+			return utilerrors.NewAggregate([]error{podErr, svcErr, gatewayErr})
+		}
+	}
+	return utilerrors.NewAggregate(
+		[]error{
+			podErr,
+			svcErr,
+			ingressErr,
+			gatewayErr,
+			fmt.Errorf("couldn't Present challenge %s/%s: no Ingress nor Gateway HTTP01 solvers were specified", ch.Namespace, ch.Name),
+		},
+	)
 }
 
 func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
@@ -182,23 +222,57 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	}
 	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
 
-	// ACME spec says that a verifier should try
-	// on http port 80 first, but follow any redirects may be thrown its way
-	// The redirects may be HTTPS and its certificate may be invalid (they are trying to get a
-	// certificate after all).
-	// TODO(dmo): figure out if we need to add a more specific timeout for
-	// individual checks
+	// The ACME spec says that a verifier should try on http port 80 first, but to follow any
+	// redirects which may be returned. Let's Encrypt, in practice, follows redirects for HTTP
+	// and HTTPS services on ports 80 and 443 respectively, but the spec doesn't seem to require
+	// anything other than the initial connection being on port 80.
+
+	// For further reading, the spec also discusses redirect following in section 10.2:
+	// https://datatracker.ietf.org/doc/html/rfc8555#section-10.2
+
+	// TODO: Since Let's Encrypt will only accept redirects to port 80 and port 443, and we follow
+	// any redirect here, this could lead to a failure mode where we determine that the endpoint is reachable
+	// but it'll certainly fail when tried by the actual verifier; it's an edge case, but we might be able
+	// to handle this better.
+
+	// The timeouts here are inspired by the timeouts used by Boulder - i.e., Let's Encrypt - when
+	// validating HTTP01 challenges for real.
+	// Boulder http.Transport: https://github.com/letsencrypt/boulder/blob/30a516737c9daa4c88c8c47070c25a5e7033cdcf/va/http.go#L146-L160
+	// Boulder http.Client:    https://github.com/letsencrypt/boulder/blob/30a516737c9daa4c88c8c47070c25a5e7033cdcf/va/http.go#L567-L572
+
+	// Boulder uses a much more complex timeout setup involving shaving time off the deadline to be able to differentiate
+	// between timeouts at different stages of the connection and in turn provide for better error messages. We're a little
+	// more blunt than that, and just use a static timeout of 10 seconds in http.Client.
+
+	// That said, IdleConnTimeout is not covered by `Timeout` in http.Client, so we also set it in our Transport
+
+	// See https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/#clienttimeouts for details on timeouts
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		// we're only doing 1 request, make the code around this
 		// simpler by disabling keepalives
 		DisableKeepAlives: true,
+
+		// boulder sets this to 1 because "0" means "unlimited"
+		MaxIdleConns: 1,
+
+		// IdleConnTimeout's value is taken from Boulder
+		IdleConnTimeout: time.Second,
+
 		TLSClientConfig: &tls.Config{
+			// If we're following a redirect, it's permissible for it to be HTTPS and
+			// its certificate may be invalid (they are trying to get a certificate, after all!)
+			// See: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
+			// > When redirected to an HTTPS URL, it does not validate certificates (since
+			// > this challenge is intended to bootstrap valid certificates, it may encounter
+			// > self-signed or expired certificates along the way).
 			InsecureSkipVerify: true,
 		},
 	}
-	client := http.Client{
+
+	client := &http.Client{
 		Transport: transport,
+		Timeout:   time.Second * 10,
 	}
 
 	response, err := client.Do(req)
@@ -213,7 +287,7 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	}
 
 	defer response.Body.Close()
-	presentedKey, err := ioutil.ReadAll(response.Body)
+	presentedKey, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.V(logf.DebugLevel).Info("failed to decode response body", "error", err)
 		return fmt.Errorf("failed to read response body: %v", err)

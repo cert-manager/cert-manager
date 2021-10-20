@@ -28,15 +28,31 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
 
-KYVERNO_VERSION="v1.3.6"
-
 check_tool kubectl
 check_tool helm
+
+CHART_VERSION="v1.3.6"
+IMAGE_TAG="v1.3.6"
+PRE_IMAGE_TAG="v1.3.6"
+
+require_image "ghcr.io/kyverno/kyverno:${IMAGE_TAG}" "//devel/addon/kyverno:bundle_${IMAGE_TAG}"
+require_image "ghcr.io/kyverno/kyverno:${PRE_IMAGE_TAG}" "//devel/addon/kyverno:bundle_${PRE_IMAGE_TAG}"
+
 
 # Install latest version of Kyverno
 helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
-helm upgrade --install --wait kyverno kyverno/kyverno --namespace kyverno --create-namespace --version "${KYVERNO_VERSION}"
+helm upgrade \
+  --debug \
+  --install \
+  --wait \
+  --namespace kyverno \
+  --create-namespace \
+  --version "${CHART_VERSION}" \
+  --set image.tag="${IMAGE_TAG}" \
+  --set initImage.tag="${IMAGE_TAG}" \
+  kyverno \
+  kyverno/kyverno
 # Install cert-manager specific Pod security policy
 kubectl create ns cert-manager || true
 kubectl apply -f ${SCRIPT_ROOT}/policy.yaml

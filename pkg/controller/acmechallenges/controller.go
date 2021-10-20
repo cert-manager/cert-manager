@@ -21,6 +21,17 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/jetstack/cert-manager/pkg/acme/accounts"
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
+	"github.com/jetstack/cert-manager/pkg/internal/ingress"
+	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,17 +39,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type controller struct {
@@ -96,7 +96,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// cache when managing pod/service/ingress resources
 	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
 	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
-	ingressInformer := ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses()
+
+	_, ingressInformer, err := ingress.NewListerInformer(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
@@ -105,7 +110,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		secretInformer.Informer().HasSynced,
 		podInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
-		ingressInformer.Informer().HasSynced,
+		ingressInformer.HasSynced,
+	}
+
+	if ctx.GatewaySolverEnabled {
+		gwAPIHTTPRouteInformer := ctx.GWShared.Networking().V1alpha1().HTTPRoutes()
+		mustSync = append(mustSync, gwAPIHTTPRouteInformer.Informer().HasSynced)
 	}
 
 	// set all the references to the listers for used by the Sync function
@@ -128,10 +138,12 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
-	c.httpSolver = http.NewSolver(ctx)
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
-	var err error
+	c.httpSolver, err = http.NewSolver(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	c.dnsSolver, err = dns.NewSolver(ctx)
 	if err != nil {
 		return nil, nil, err

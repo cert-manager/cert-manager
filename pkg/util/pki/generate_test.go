@@ -255,7 +255,7 @@ func signTestCert(key crypto.Signer) *x509.Certificate {
 	}
 
 	template := &x509.Certificate{
-		Version:               3,
+		Version:               2,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		SignatureAlgorithm:    x509.SHA256WithRSA,
@@ -318,7 +318,6 @@ func TestPublicKeyMatchesCertificateRequest(t *testing.T) {
 	}
 
 	template := &x509.CertificateRequest{
-		Version: 3,
 		// SignatureAlgorithm: sigAlgo,
 		Subject: pkix.Name{
 			CommonName: "cn",

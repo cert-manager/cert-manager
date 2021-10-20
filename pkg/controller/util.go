@@ -18,9 +18,11 @@ package controller
 
 import (
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -73,13 +75,20 @@ func HandleOwnedResourceNamespacedFunc(log logr.Logger, queue workqueue.RateLimi
 			}
 
 			if refGV.Group == ownerGVK.Group && ref.Kind == ownerGVK.Kind {
-				// TODO: how to handle namespace of owner references?
-				order, err := get(metaobj.GetNamespace(), ref.Name)
-				if err != nil {
-					log.Error(err, "error getting referenced owning resource")
+				obj, err := get(metaobj.GetNamespace(), ref.Name)
+				// This function is always called with a getter
+				// that gets from informers cache. Because this
+				// is also called on cache sync it may be that
+				// the owner is not yet in the cache.
+				if err != nil && errors.IsNotFound(err) {
+					log.Info("owning resource not found in cache")
 					continue
 				}
-				objKey, err := KeyFunc(order)
+				if err != nil {
+					log.Error(err, "error getting referenced owning resource from cache")
+					continue
+				}
+				objKey, err := KeyFunc(obj)
 				if err != nil {
 					log.Error(err, "error computing key for resource")
 					continue
@@ -160,4 +169,33 @@ func (b *BlockingEventHandler) OnDelete(obj interface{}) {
 		obj = tombstone.Obj
 	}
 	b.WorkFunc(obj)
+}
+
+// BuildAnnotationsCopy takes a map of annotations and a list of prefix
+// filters and builds a filtered map of annotations. It is used to filter
+// annotations to be copied from Certificate to CertificateRequest and from
+// CertificateSigningRequest to Order.
+func BuildAnnotationsToCopy(allAnnotations map[string]string, prefixes []string) map[string]string {
+	filteredAnnotations := make(map[string]string)
+	includeAll := false
+	for _, v := range prefixes {
+		if v == "*" {
+			includeAll = true
+		}
+	}
+	for _, annotation := range prefixes {
+		prefix := strings.TrimPrefix(annotation, "-")
+		for k, v := range allAnnotations {
+			if strings.HasPrefix(annotation, "-") {
+				if strings.HasPrefix(k, prefix) {
+					// If this is an annotation to not be copied.
+					delete(filteredAnnotations, k)
+				}
+			} else if includeAll || strings.HasPrefix(k, annotation) {
+				// If this is an annotation to be copied or if 'all' should be copied.
+				filteredAnnotations[k] = v
+			}
+		}
+	}
+	return filteredAnnotations
 }

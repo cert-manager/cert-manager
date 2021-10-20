@@ -86,19 +86,10 @@ func (r *registryBackedValidator) Validate(ctx context.Context, admissionSpec *a
 		}
 	}
 
-	// RequestKind field is only present from Kubernetes 1.15 onwards, so
-	// use the regular 'kind' if RequestKind is not present
 	gvk := schema.GroupVersionKind{
-		Group:   admissionSpec.Kind.Group,
-		Version: admissionSpec.Kind.Version,
-		Kind:    admissionSpec.Kind.Kind,
-	}
-	if admissionSpec.RequestKind != nil {
-		gvk = schema.GroupVersionKind{
-			Group:   admissionSpec.RequestKind.Group,
-			Version: admissionSpec.RequestKind.Version,
-			Kind:    admissionSpec.RequestKind.Kind,
-		}
+		Group:   admissionSpec.RequestKind.Group,
+		Version: admissionSpec.RequestKind.Version,
+		Kind:    admissionSpec.RequestKind.Kind,
 	}
 	errs := field.ErrorList{}
 	var warnings validation.WarningList

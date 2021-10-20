@@ -21,7 +21,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -31,16 +31,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
-	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/util"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -49,22 +48,22 @@ var (
 	long = templates.LongDesc(i18n.T(`
 Create a new CertificateRequest resource based on a Certificate resource, by generating a private key locally and create a 'certificate signing request' to be submitted to a cert-manager Issuer.`))
 
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Create a CertificateRequest with the name 'my-cr', saving the private key in a file named 'my-cr.key'.
-kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml
+{{.BuildName}} create certificaterequest my-cr --from-certificate-file my-certificate.yaml
 
 # Create a CertificateRequest in namespace default, provided no conflict with namespace defined in file.
-kubectl cert-manager create certificaterequest my-cr --namespace default --from-certificate-file my-certificate.yaml
+{{.BuildName}} create certificaterequest my-cr --namespace default --from-certificate-file my-certificate.yaml
 
 # Create a CertificateRequest and store private key in file 'new.key'.
-kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --output-key-file new.key
+{{.BuildName}} create certificaterequest my-cr --from-certificate-file my-certificate.yaml --output-key-file new.key
 
 # Create a CertificateRequest, wait for it to be signed for up to 5 minutes (default) and store the x509 certificate in file 'new.crt'.
-kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --output-cert-file new.crt
+{{.BuildName}} create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --output-cert-file new.crt
 
 # Create a CertificateRequest, wait for it to be signed for up to 20 minutes and store the x509 certificate in file 'my-cr.crt'.
-kubectl cert-manager create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
-`))
+{{.BuildName}} create certificaterequest my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
+`)))
 )
 
 var (
@@ -75,13 +74,6 @@ var (
 
 // Options is a struct to support create certificaterequest command
 type Options struct {
-	CMClient   cmclient.Interface
-	RESTConfig *restclient.Config
-	// Namespace resulting from the merged result of all overrides
-	// since namespace can be specified in file, as flag and in kube config
-	CmdNamespace string
-	// boolean indicating if there was an Override in determining CmdNamespace
-	EnforceNamespace bool
 	// Name of file that the generated private key will be stored in
 	// If not specified, the private key will be written to <NameOfCR>.key
 	KeyFilename string
@@ -100,6 +92,7 @@ type Options struct {
 	Timeout time.Duration
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 // NewOptions returns initialized Options
@@ -110,17 +103,18 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdCreateCR returns a cobra command for create CertificateRequest
-func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
+
 	cmd := &cobra.Command{
-		Use:     "certificaterequest",
-		Aliases: []string{"cr"},
-		Short:   "Create a cert-manager CertificateRequest resource, using a Certificate resource as a template",
-		Long:    long,
-		Example: example,
+		Use:               "certificaterequest",
+		Aliases:           []string{"cr"},
+		Short:             "Create a cert-manager CertificateRequest resource, using a Certificate resource as a template",
+		Long:              long,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificateRequests(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
@@ -134,6 +128,8 @@ func NewCmdCreateCR(ctx context.Context, ioStreams genericclioptions.IOStreams, 
 		"If set to true, command will wait for CertificateRequest to be signed to store x509 certificate in a file")
 	cmd.Flags().DurationVar(&o.Timeout, "timeout", 5*time.Minute,
 		"Time before timeout when waiting for CertificateRequest to be signed, must include unit, e.g. 10m or 1h")
+
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }
@@ -162,28 +158,6 @@ func (o *Options) Validate(args []string) error {
 	return nil
 }
 
-// Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(f cmdutil.Factory) error {
-	var err error
-
-	o.CmdNamespace, o.EnforceNamespace, err = f.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return err
-	}
-
-	o.RESTConfig, err = f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	o.CMClient, err = cmclient.NewForConfig(o.RESTConfig)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Run executes create certificaterequest command
 func (o *Options) Run(ctx context.Context, args []string) error {
 	builder := new(resource.Builder)
@@ -192,7 +166,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	r := builder.
 		WithScheme(scheme, schema.GroupVersion{Group: cmapi.SchemeGroupVersion.Group, Version: runtime.APIVersionInternal}).
 		LocalParam(true).ContinueOnError().
-		NamespaceParam(o.CmdNamespace).DefaultNamespace().
+		NamespaceParam(o.Namespace).DefaultNamespace().
 		FilenameParam(o.EnforceNamespace, &resource.FilenameOptions{Filenames: []string{o.InputFilename}}).Flatten().Do()
 
 	if err := r.Err(); err != nil {
@@ -247,7 +221,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	if o.KeyFilename != "" {
 		keyFileName = o.KeyFilename
 	}
-	if err := ioutil.WriteFile(keyFileName, keyData, 0600); err != nil {
+	if err := os.WriteFile(keyFileName, keyData, 0600); err != nil {
 		return fmt.Errorf("error when writing private key to file: %w", err)
 	}
 	fmt.Fprintf(o.ErrOut, "Private key written to file %s\n", keyFileName)
@@ -260,7 +234,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 
 	ns := crt.Namespace
 	if ns == "" {
-		ns = o.CmdNamespace
+		ns = o.Namespace
 	}
 	req, err = o.CMClient.CertmanagerV1().CertificateRequests(ns).Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
@@ -291,7 +265,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 		if o.CertFileName != "" {
 			actualCertFileName = o.CertFileName
 		}
-		err = util.FetchCertificateFromCR(req, actualCertFileName)
+		err = fetchCertificateFromCR(req, actualCertFileName)
 		if err != nil {
 			return fmt.Errorf("error when writing certificate to file: %w", err)
 		}
@@ -347,4 +321,25 @@ func generateCSR(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 	})
 
 	return csrPEM, nil
+}
+
+// fetchCertificateFromCR fetches the x509 certificate from a CR and stores the
+// certificate in file specified by certFilename. Assumes CR is ready,
+// otherwise returns error.
+func fetchCertificateFromCR(req *cmapi.CertificateRequest, certFileName string) error {
+	// If CR not ready yet, error
+	if !apiutil.CertificateRequestHasCondition(req, cmapi.CertificateRequestCondition{
+		Type:   cmapi.CertificateRequestConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}) || len(req.Status.Certificate) == 0 {
+		return errors.New("CertificateRequest is not ready yet, unable to fetch certificate")
+	}
+
+	// Store certificate to file
+	err := os.WriteFile(certFileName, req.Status.Certificate, 0600)
+	if err != nil {
+		return fmt.Errorf("error when writing certificate to file: %w", err)
+	}
+
+	return nil
 }

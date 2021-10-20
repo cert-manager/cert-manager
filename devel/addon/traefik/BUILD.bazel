@@ -1,0 +1,23 @@
+load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
+
+container_bundle(
+    name = "bundle",
+    images = {
+        "traefik:2.4.9": "@io_traefik_traefik//image",
+    },
+    tags = ["manual"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

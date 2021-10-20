@@ -70,9 +70,11 @@ type Vault struct {
 	client Client
 }
 
-// New returns a new Vault instance with the given namespace, issuer and secrets lister.
-func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1.GenericIssuer) (Interface, error) {
+// New returns a new Vault instance with the given namespace, issuer and
+// secrets lister.
+// Returned errors may be network failures and should be considered for
+// retrying.
+func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
 	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
@@ -381,13 +383,25 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	healthURL := path.Join("/v1", "sys", "health")
 	healthRequest := v.client.NewRequest("GET", healthURL)
 	healthResp, err := v.client.RawRequest(healthRequest)
+
+	if healthResp != nil {
+		defer healthResp.Body.Close()
+	}
+
 	// 429 = if unsealed and standby
 	// 472 = if disaster recovery mode replication secondary and active
 	// 473 = if performance standby
-	if err != nil && healthResp.StatusCode != 429 && healthResp.StatusCode != 472 && healthResp.StatusCode != 473 {
-		return err
+	if err != nil {
+		switch {
+		case healthResp == nil:
+			return err
+		case healthResp.StatusCode == 429, healthResp.StatusCode == 472, healthResp.StatusCode == 473:
+			return nil
+		default:
+			return fmt.Errorf("error calling Vault %s: %w", healthURL, err)
+		}
 	}
-	defer healthResp.Body.Close()
+
 	return nil
 }
 

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
@@ -60,7 +60,7 @@ type dnsProviderConstructors struct {
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey, apiToken string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
-	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool) (*azuredns.DNSProvider, error)
+	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string, ambient bool, managedIdentity *cmacme.AzureManagedIdentity) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
@@ -345,6 +345,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1.GenericIssuer
 			providerConfig.AzureDNS.HostedZoneName,
 			s.DNS01Nameservers,
 			canUseAmbientCredentials,
+			providerConfig.AzureDNS.ManagedIdentity,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)
@@ -416,7 +417,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1.GenericIssuer, ch *cmacme.Cha
 		ResourceNamespace:       resourceNamespace,
 		Key:                     ch.Spec.Key,
 		DNSName:                 ch.Spec.DNSName,
-		Config:                  &apiext.JSON{Raw: b},
+		Config:                  &apiextensionsv1.JSON{Raw: b},
 	}
 
 	return webhookSolver, req, nil

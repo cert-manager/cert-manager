@@ -59,7 +59,7 @@ func (s *Solver) ensureService(ctx context.Context, ch *cmacme.Challenge) (*core
 // getServicesForChallenge returns a list of services that were created to solve
 // http challenges for the given domain
 func (s *Solver) getServicesForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*corev1.Service, error) {
-	log := logf.FromContext(ctx)
+	log := logf.FromContext(ctx).WithName("getServicesForChallenge")
 
 	podLabels := podLabels(ch)
 	selector := labels.NewSelector()
@@ -125,12 +125,12 @@ func buildService(ch *cmacme.Challenge) (*corev1.Service, error) {
 	}
 
 	// checking for presence of http01 config and if set serviceType is set, override our default (NodePort)
-	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
+	serviceType, err := getServiceType(ch)
 	if err != nil {
 		return nil, err
 	}
-	if httpDomainCfg.ServiceType != "" {
-		service.Spec.Type = httpDomainCfg.ServiceType
+	if serviceType != "" {
+		service.Spec.Type = serviceType
 	}
 
 	return service, nil

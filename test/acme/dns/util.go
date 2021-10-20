@@ -60,7 +60,7 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 				return nil
 			}
 
-			_, _, err = f.kubectl.Run("apply", "--namespace", name, "-f", path)
+			_, _, err = f.environment.ControlPlane.KubeCtl().Run("apply", "--namespace", name, "-f", path)
 			if err != nil {
 				return err
 			}

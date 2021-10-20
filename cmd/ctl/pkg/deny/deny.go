@@ -24,40 +24,32 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 )
 
 var (
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Deny a CertificateRequest with the name 'my-cr'
-kubectl cert-manager deny my-cr
+{{.BuildName}} deny my-cr
 
 # Deny a CertificateRequest in namespace default
-kubectl cert-manager deny my-cr --namespace default
+{{.BuildName}} deny my-cr --namespace default
 
 # Deny a CertificateRequest giving a custom reason and message
-kubectl cert-manager deny my-cr --reason "ManualDenial" --reason "Denied by PKI department"
-`))
+{{.BuildName}} deny my-cr --reason "ManualDenial" --reason "Denied by PKI department"
+`)))
 )
 
 // Options is a struct to support create certificaterequest command
 type Options struct {
-	CMClient   cmclient.Interface
-	RESTConfig *restclient.Config
-	// Namespace resulting from the merged result of all overrides
-	// since namespace can be specified in file, as flag and in kube config
-	CmdNamespace string
-	// boolean indicating if there was an Override in determining CmdNamespace
-	EnforceNamespace bool
-
 	// Reason is the string that will be set on the Reason field of the Denied
 	// condition.
 	Reason string
@@ -66,6 +58,7 @@ type Options struct {
 	Message string
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 // NewOptions returns initialized Options
@@ -75,24 +68,27 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 	}
 }
 
-func NewCmdDeny(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdDeny(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
+
 	cmd := &cobra.Command{
-		Use:     "deny",
-		Short:   "Deny a CertificateRequest",
-		Long:    `Mark a CertificateRequest as Denied, so it may never be signed by a configured Issuer.`,
-		Example: example,
+		Use:               "deny",
+		Short:             "Deny a CertificateRequest",
+		Long:              `Mark a CertificateRequest as Denied, so it may never be signed by a configured Issuer.`,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificateRequests(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
 
 	cmd.Flags().StringVar(&o.Reason, "reason", "KubectlCertManager",
 		"The reason to give as to what denied this CertificateRequest.")
-	cmd.Flags().StringVar(&o.Message, "message", `manually denied by "kubectl cert-manager"`,
+	cmd.Flags().StringVar(&o.Message, "message", fmt.Sprintf("manually denied by %q", build.Name()),
 		"The message to give as to why this CertificateRequest was denied.")
+
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }
@@ -117,31 +113,9 @@ func (o *Options) Validate(args []string) error {
 	return nil
 }
 
-// Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(f cmdutil.Factory) error {
-	var err error
-
-	o.CmdNamespace, o.EnforceNamespace, err = f.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return err
-	}
-
-	o.RESTConfig, err = f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	o.CMClient, err = cmclient.NewForConfig(o.RESTConfig)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Run executes deny command
 func (o *Options) Run(ctx context.Context, args []string) error {
-	cr, err := o.CMClient.CertmanagerV1().CertificateRequests(o.CmdNamespace).Get(ctx, args[0], metav1.GetOptions{})
+	cr, err := o.CMClient.CertmanagerV1().CertificateRequests(o.Namespace).Get(ctx, args[0], metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -157,7 +131,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionDenied,
 		cmmeta.ConditionTrue, o.Reason, o.Message)
 
-	_, err = o.CMClient.CertmanagerV1().CertificateRequests(o.CmdNamespace).UpdateStatus(ctx, cr, metav1.UpdateOptions{})
+	_, err = o.CMClient.CertmanagerV1().CertificateRequests(o.Namespace).UpdateStatus(ctx, cr, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

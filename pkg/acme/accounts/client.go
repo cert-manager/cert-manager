@@ -26,6 +26,7 @@ import (
 	acmeapi "golang.org/x/crypto/acme"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
+	"github.com/jetstack/cert-manager/pkg/acme/client/middleware"
 	acmeutil "github.com/jetstack/cert-manager/pkg/acme/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/metrics"
@@ -39,13 +40,13 @@ var _ NewClientFunc = NewClient
 
 // NewClient is an implementation of NewClientFunc that returns a real ACME client.
 func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface {
-	return &acmeapi.Client{
+	return middleware.NewLogger(&acmeapi.Client{
 		Key:          privateKey,
 		HTTPClient:   client,
 		DirectoryURL: config.Server,
 		UserAgent:    util.CertManagerUserAgent,
 		RetryBackoff: acmeutil.RetryBackoff,
-	}
+	})
 }
 
 // BuildHTTPClient returns a instrumented HTTP client to be used by the ACME

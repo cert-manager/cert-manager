@@ -136,10 +136,13 @@ func TestProcessItem(t *testing.T) {
 		fakeLister  *testlisters.FakeSecretLister
 		expectedErr bool
 	}{
-		"a CertificateSigningRequest without an approved condition should do nothing": {
+		"a CertificateSigningRequest without an approved condition should fire an event": {
 			csr: gen.CertificateSigningRequestFrom(baseCSR),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal WaitingApproval Waiting for the Approved condition before issuing",
+				},
 			},
 		},
 		"a CertificateSigningRequest with a denied condition should do nothing": {
@@ -620,22 +623,6 @@ func TestProcessItem(t *testing.T) {
 								Status: corev1.ConditionTrue,
 							}),
 							gen.SetCertificateSigningRequestCertificate([]byte("signed-cert")),
-						),
-					)),
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						certificatesv1.SchemeGroupVersion.WithResource("certificatesigningrequests"),
-						"",
-						gen.CertificateSigningRequestFrom(baseCSR.DeepCopy(),
-							gen.AddCertificateSigningRequestAnnotations(map[string]string{
-								"experimental.cert-manager.io/private-key-secret-name": "test-secret",
-							}),
-							gen.SetCertificateSigningRequestRequest(csrBundle.csrPEM),
-							gen.SetCertificateSigningRequestStatusCondition(certificatesv1.CertificateSigningRequestCondition{
-								Type:   certificatesv1.CertificateApproved,
-								Status: corev1.ConditionTrue,
-							}),
-							gen.SetCertificateSigningRequestCertificate([]byte("signed-cert")),
-							gen.SetCertificateSigningRequestCA([]byte("signed-cert")),
 						),
 					)),
 				},

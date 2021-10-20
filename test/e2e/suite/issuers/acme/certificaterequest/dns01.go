@@ -63,7 +63,7 @@ func testRFC2136DNSProvider() bool {
 
 		BeforeEach(func() {
 			By("Creating an Issuer")
-			dnsDomain = p.Details().NewTestDomain()
+			dnsDomain = util.RandomSubdomain(p.Details().BaseDomain)
 			issuer := gen.Issuer(issuerName,
 				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,

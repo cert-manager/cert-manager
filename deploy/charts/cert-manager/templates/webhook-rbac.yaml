@@ -1,5 +1,4 @@
 {{- if .Values.global.rbac.create -}}
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -9,9 +8,8 @@ metadata:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
@@ -33,9 +31,8 @@ metadata:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -56,9 +53,8 @@ metadata:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 rules:
 - apiGroups: ["authorization.k8s.io"]
   resources: ["subjectaccessreviews"]
@@ -73,9 +69,8 @@ metadata:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -85,5 +80,4 @@ subjects:
   kind: ServiceAccount
   name: {{ template "webhook.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
-
 {{- end -}}

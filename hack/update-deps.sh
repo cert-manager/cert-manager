@@ -40,19 +40,17 @@ go=$(realpath "$1")
 export PATH=$(dirname "$go"):$PATH
 gazelle=$(realpath "$2")
 kazel=$(realpath "$3")
-jq=$(realpath "$4")
 update_bazel=(
-  $(realpath "$5")
+  $(realpath "$4")
   "$gazelle"
   "$kazel"
 )
 update_deps_licenses=(
-  $(realpath "$6")
+  $(realpath "$5")
   "$go"
-  "$jq"
 )
 
-shift 6
+shift 5
 
 cd "$BUILD_WORKSPACE_DIRECTORY"
 trap 'echo "FAILED" >&2' ERR
@@ -90,12 +88,19 @@ rm -rf vendor
 "$go" mod tidy
 unset GOROOT
 
+# Update hack/build/repos.bzl based of the go.mod file
 "$gazelle" update-repos \
   --from_file=go.mod --to_macro=hack/build/repos.bzl%go_repositories \
-  --build_file_generation=on --build_file_proto_mode=disable
+  --build_file_generation=on --build_file_proto_mode=disable -prune=true
 
-"${update_bazel[@]}" # TODO(fejta): do we still need to do this?
+# `gazelle update-repos` adds extra unneeded entries to the
+# go.sum file, run `go mod tidy` to remove them
+"$go" mod tidy
 
+# Update Bazel (changes in hack/build/repos.bzl might affect other bazel files)
+"${update_bazel[@]}"
+
+# Update LICENSES
 "${update_deps_licenses[@]}"
 
 echo "SUCCESS: updated modules"

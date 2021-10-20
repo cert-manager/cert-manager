@@ -21,6 +21,7 @@ import (
 	"encoding/pem"
 	"strings"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -167,9 +168,13 @@ func TestValidationCertificateRequests(t *testing.T) {
 			cert := test.input.(*cmapi.CertificateRequest)
 			cert.SetGroupVersionKind(certGVK)
 
-			config, stop := framework.RunControlPlane(t)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+			defer cancel()
+
+			config, stop := framework.RunControlPlane(t, ctx)
 			defer stop()
-			framework.WaitForOpenAPIResourcesToBeLoaded(t, config, certGVK)
+
+			framework.WaitForOpenAPIResourcesToBeLoaded(t, ctx, config, certGVK)
 
 			// create the object to get any errors back from the webhook
 			cl, err := client.New(config, client.Options{Scheme: api.Scheme})
@@ -177,7 +182,7 @@ func TestValidationCertificateRequests(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = cl.Create(context.Background(), cert)
+			err = cl.Create(ctx, cert)
 			if test.expectError != (err != nil) {
 				t.Errorf("unexpected error, exp=%t got=%v",
 					test.expectError, err)
