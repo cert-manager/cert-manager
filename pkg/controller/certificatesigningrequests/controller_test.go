@@ -161,13 +161,14 @@ func TestController(t *testing.T) {
 			signerImpl:  signerExpectNoCall,
 			sarReaction: sarReactionExpectNoCall,
 		},
-		"do nothing if CertificateSigningRequest is no yet approved": {
+		"fire event if CertificateSigningRequest is no yet approved": {
 			signerType: apiutil.IssuerCA,
 			existingCSR: gen.CertificateSigningRequest("csr-1",
 				gen.SetCertificateSigningRequestSignerName("issuers.cert-manager.io/hello.world"),
 			),
 			signerImpl:  signerExpectNoCall,
 			sarReaction: sarReactionExpectNoCall,
+			wantEvent:   "Normal WaitingApproval Waiting for the Approved condition before issuing",
 		},
 		"do nothing if CertificateSigningRequest already has a non empty Certificate present": {
 			signerType: apiutil.IssuerCA,

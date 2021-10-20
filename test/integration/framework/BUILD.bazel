@@ -5,13 +5,6 @@ go_library(
     srcs = [
         "apiserver.go",
         "helpers.go",
-        "paths.go",
-    ],
-    data = [
-        "//deploy/crds:crds.yaml",
-        "//hack/bin:com_coreos_etcd",
-        "//hack/bin:io_kubernetes_kube-apiserver",
-        "//hack/bin:kubectl",
     ],
     importpath = "github.com/jetstack/cert-manager/test/integration/framework",
     visibility = ["//visibility:public"],
@@ -22,7 +15,8 @@ go_library(
         "//pkg/client/clientset/versioned:go_default_library",
         "//pkg/client/informers/externalversions:go_default_library",
         "//pkg/controller:go_default_library",
-        "@io_k8s_api//admissionregistration/v1beta1:go_default_library",
+        "//test/internal/apiserver:go_default_library",
+        "@io_k8s_api//admissionregistration/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/install:go_default_library",

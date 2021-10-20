@@ -18,6 +18,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -28,12 +29,24 @@ import (
 // TODO: Unexport?
 const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
+// Mockable Interface
+type DNSProviderType interface {
+	makeRequest(method, uri string, body io.Reader) (json.RawMessage, error)
+}
+
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
 	dns01Nameservers []string
 	authEmail        string
 	authKey          string
 	authToken        string
+}
+
+// DNSZone is the Zone-Record returned from Cloudflare (we`ll ignore everything we don't need)
+// See https://api.cloudflare.com/#zone-properties
+type DNSZone struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
@@ -49,23 +62,23 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // DNSProvider instance configured for cloudflare.
 func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string) (*DNSProvider, error) {
 	if (email == "" && key != "") || (key == "" && token == "") {
-		return nil, fmt.Errorf("CloudFlare credentials missing")
+		return nil, fmt.Errorf("no Cloudflare credential has been given (can be either an API key or an API token)")
 	}
 	if key != "" && token != "" {
-		return nil, fmt.Errorf("CloudFlare key and token are both present")
+		return nil, fmt.Errorf("the Cloudflare API key and API token cannot be both present simultaneously")
 	}
-	// cloudflare uses X-Auth-Key as a header for its
-	// authentication. However, if it's an invalid value, the go
+	// Cloudflare uses the X-Auth-Key header for its authentication.
+	// However, if the value of the X-Auth-Key header is invalid, the go
 	// http library will "helpfully" print out the value to help with
-	// debugging.
-	//
-	// Check that the auth key is a valid header value before we leak it to the logs
+	// debugging. To prevent leaking the X-Auth-Key value into the logs, we
+	// first check that the X-Auth-Key header contains a valid value to
+	// prevent the Go HTTP library from displaying it.
 	if !validHeaderFieldValue(key) {
-		return nil, fmt.Errorf("Cloudflare key invalid (does the key contain a newline?)")
+		return nil, fmt.Errorf("the Cloudflare API key is invalid (does the API key contain a newline?)")
 	}
 
 	if !validHeaderFieldValue(token) {
-		return nil, fmt.Errorf("Cloudflare token invalid (does the token contain a newline?)")
+		return nil, fmt.Errorf("the Cloudflare API token is invalid (does the API token contain a newline?)")
 	}
 
 	return &DNSProvider{
@@ -74,6 +87,52 @@ func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []stri
 		authToken:        token,
 		dns01Nameservers: dns01Nameservers,
 	}, nil
+}
+
+// This will try to traverse the official Cloudflare API to find the nearest valid Zone.
+// It's a replacement for /pkg/issuer/acme/dns/util/wait.go#FindZoneByFqdn
+//  example.com.                                   ← Zone-Record found for the SLD (in most cases)
+//  └── foo.example.com.                           ← Zone-Record could be possibly here, but in this case not.
+//      └── _acme-challenge.foo.example.com.       ← Starting point, the FQDN.
+// It will try to call the API for each branch (from bottom to top) and see if there's a Zone-Record returned.
+// Calling See https://api.cloudflare.com/#zone-list-zones
+func FindNearestZoneForFQDN(c DNSProviderType, fqdn string) (DNSZone, error) {
+	if fqdn == "" {
+		return DNSZone{}, fmt.Errorf("FindNearestZoneForFQDN: FQDN-Parameter can't be empty, please specify a domain!")
+	}
+	mappedFQDN := strings.Split(fqdn, ".")
+	nextName := util.UnFqdn(fqdn) //remove the trailing dot
+	var lastErr error
+	for i := 0; i < len(mappedFQDN)-1; i++ {
+		var from, to = len(mappedFQDN[i]) + 1, len(nextName)
+		if from > to {
+			continue
+		}
+		if mappedFQDN[i] == "*" { //skip wildcard sub-domain-entries
+			nextName = string([]rune(nextName)[from:to])
+			continue
+		}
+		lastErr = nil
+		result, err := c.makeRequest("GET", "/zones?name="+nextName, nil)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		var zones []DNSZone
+		err = json.Unmarshal(result, &zones)
+		if err != nil {
+			return DNSZone{}, err
+		}
+
+		if len(zones) > 0 {
+			return zones[0], nil //we're returning the first zone found, might need to test that further
+		}
+		nextName = string([]rune(nextName)[from:to])
+	}
+	if lastErr != nil {
+		return DNSZone{}, fmt.Errorf("while attempting to find Zones for domain %s\n%s", fqdn, lastErr)
+	}
+	return DNSZone{}, fmt.Errorf("Found no Zones for domain %s (neither in the sub-domain nor in the SLD) please make sure your domain-entries in the config are correct and the API key is correctly setup with Zone.read rights.", fqdn)
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
@@ -140,33 +199,11 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 }
 
 func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
-	// HostedZone represents a CloudFlare DNS zone
-	type HostedZone struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	}
-
-	authZone, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
+	hostedZone, err := FindNearestZoneForFQDN(c, fqdn)
 	if err != nil {
 		return "", err
 	}
-
-	result, err := c.makeRequest("GET", "/zones?name="+util.UnFqdn(authZone), nil)
-	if err != nil {
-		return "", err
-	}
-
-	var hostedZone []HostedZone
-	err = json.Unmarshal(result, &hostedZone)
-	if err != nil {
-		return "", err
-	}
-
-	if len(hostedZone) != 1 {
-		return "", fmt.Errorf("Zone %s not found in CloudFlare for domain %s", authZone, fqdn)
-	}
-
-	return hostedZone[0].ID, nil
+	return hostedZone.ID, nil
 }
 
 var errNoExistingRecord = errors.New("No existing record found")
@@ -236,7 +273,7 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Error querying Cloudflare API for %s %q -> %v", method, uri, err)
+		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q: %v", method, uri, err)
 	}
 
 	defer resp.Body.Close()
@@ -256,9 +293,9 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 					errStr += fmt.Sprintf("<- %d: %s", chainErr.Code, chainErr.Message)
 				}
 			}
-			return nil, fmt.Errorf("Cloudflare API Error for %s %q \n%s", method, uri, errStr)
+			return nil, fmt.Errorf("while querying the Cloudflare API for %s %q \n%s", method, uri, errStr)
 		}
-		return nil, fmt.Errorf("Cloudflare API error for %s %q", method, uri)
+		return nil, fmt.Errorf("while querying the Cloudflare API for %s %q", method, uri)
 	}
 
 	return r.Result, nil

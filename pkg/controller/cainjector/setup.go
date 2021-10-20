@@ -19,7 +19,7 @@ package cainjector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"golang.org/x/sync/errgroup"
@@ -164,7 +164,7 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 		return data, nil
 	}
 	if len(file) > 0 {
-		fileData, err := ioutil.ReadFile(file)
+		fileData, err := os.ReadFile(file)
 		if err != nil {
 			return []byte{}, err
 		}

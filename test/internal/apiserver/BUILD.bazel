@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "apiserver.go",
+        "envs.go",
+    ],
+    data = [
+        "//hack/bin:com_coreos_etcd",
+        "//hack/bin:io_kubernetes_kube-apiserver",
+        "//hack/bin:kubectl",
+    ],
+    importpath = "github.com/jetstack/cert-manager/test/internal/apiserver",
+    visibility = ["//test:__subpackages__"],
+    deps = [
+        "//test/internal/util:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/envtest:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

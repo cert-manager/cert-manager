@@ -18,9 +18,10 @@ package certificaterequest
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 )
 
 func TestValidate(t *testing.T) {
@@ -205,18 +206,20 @@ spec:
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if err := ioutil.WriteFile("testfile.yaml", []byte(test.inputFileContent), 0644); err != nil {
+			if err := os.WriteFile("testfile.yaml", []byte(test.inputFileContent), 0644); err != nil {
 				t.Fatalf("error creating test file %#v", err)
 			}
 			defer os.Remove("testfile.yaml")
 
 			// Options to run create CR command
 			opts := &Options{
-				CmdNamespace:     test.inputNamespace,
-				EnforceNamespace: test.inputNamespace != "",
-				InputFilename:    "testfile.yaml",
-				KeyFilename:      test.keyFilename,
-				CertFileName:     test.certFilename,
+				InputFilename: "testfile.yaml",
+				KeyFilename:   test.keyFilename,
+				CertFileName:  test.certFilename,
+				Factory: &factory.Factory{
+					Namespace:        test.inputNamespace,
+					EnforceNamespace: test.inputNamespace != "",
+				},
 			}
 
 			// Validating args and flags

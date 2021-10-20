@@ -10,7 +10,7 @@ GOROOT = "@go_sdk//:files"
 
 GOFMT = "@go_sdk//:bin/gofmt"
 
-JQ = "//hack/bin:jq"
+YQ = "//hack/bin:yq"
 
 CONTROLLER_GEN = "@io_k8s_sigs_controller_tools//cmd/controller-gen"
 
@@ -71,7 +71,6 @@ sh_binary(
         "$(location %s)" % GO,
         "$(location %s)" % GAZELLE,
         "$(location %s)" % KAZEL,
-        "$(location %s)" % JQ,
         "$(location :update-bazel)",
         "$(location :update-deps-licenses)",
     ],
@@ -79,7 +78,6 @@ sh_binary(
         GAZELLE,
         GO,
         KAZEL,
-        JQ,
         ":update-bazel",
         ":update-deps-licenses",
     ],
@@ -93,7 +91,6 @@ sh_test(
         "$(location %s)" % GO,
         "$(location %s)" % GAZELLE,
         "$(location %s)" % KAZEL,
-        "$(location %s)" % JQ,
         "$(location :update-bazel)",
         "$(location :update-deps-licenses)",
     ],
@@ -102,7 +99,6 @@ sh_test(
         GAZELLE,
         GO,
         KAZEL,
-        JQ,
         ":update-bazel",
         ":update-deps-licenses",
         "@//:all-srcs",
@@ -115,11 +111,9 @@ sh_binary(
     srcs = ["update-deps-licenses.sh"],
     args = [
         "$(location %s)" % GO,
-        "$(location %s)" % JQ,
     ],
     data = [
         GO,
-        JQ,
     ],
 )
 
@@ -129,13 +123,11 @@ sh_test(
     args = [
         "$(location :update-deps-licenses)",
         "$(location %s)" % GO,
-        "$(location %s)" % JQ,
     ],
     data = [
         GAZELLE,
         GO,
         KAZEL,
-        JQ,
         ":update-deps-licenses",
         "@//:all-srcs",
     ],
@@ -171,6 +163,10 @@ sh_binary(
         "@io_k8s_code_generator//cmd/defaulter-gen",
         "@io_k8s_code_generator//cmd/informer-gen",
         "@io_k8s_code_generator//cmd/lister-gen",
+    ],
+    deps = [
+        ":utils",  # This is added to ensure that if ./utils.sh changes Bazel knows to re-run this target
+        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -252,11 +248,13 @@ sh_test(
         "$(location :update-crds)",
         "$(location %s)" % GO,
         "$(location %s)" % CONTROLLER_GEN,
+        "$(location %s)" % YQ,
     ],
     data = [
         ":update-crds",
         GO,
         CONTROLLER_GEN,
+        YQ,
         "@//:all-srcs",
     ],
 )
@@ -275,8 +273,12 @@ filegroup(
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
         "//hack/build:all-srcs",
-        "//hack/filter-crd:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+sh_library(
+    name = "utils",
+    srcs = ["utils.sh"],
 )

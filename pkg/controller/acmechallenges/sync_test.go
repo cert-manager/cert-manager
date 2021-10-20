@@ -86,6 +86,61 @@ func TestSyncHappyPath(t *testing.T) {
 	)
 
 	tests := map[string]testT{
+		"if GetAuthorization doesn't return challenge, error": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{},
+			},
+			expectErr: true,
+			acmeClient: &acmecl.FakeACME{
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{
+						Challenges: []*acmeapi.Challenge{
+							{URI: "foo", Status: acmeapi.StatusPending},
+						},
+					}, nil
+				},
+			},
+		},
+		"if GetAuthorization returns challenge ready, update ready": {
+			challenge: gen.ChallengeFrom(baseChallenge,
+				gen.SetChallengeProcessing(true),
+				gen.SetChallengeURL("testurl"),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
+					gen.SetChallengeProcessing(true),
+					gen.SetChallengeURL("testurl"),
+				), testIssuerHTTP01Enabled},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
+							"status",
+							gen.DefaultTestNamespace,
+							gen.ChallengeFrom(baseChallenge,
+								gen.SetChallengeProcessing(true),
+								gen.SetChallengeURL("testurl"),
+								gen.SetChallengeState(cmacme.Ready),
+							))),
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{
+						Challenges: []*acmeapi.Challenge{
+							{URI: "testurl", Status: acmeapi.StatusReady},
+						},
+					}, nil
+				},
+			},
+		},
 		"update status if state is unknown": {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
@@ -109,8 +164,12 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
-				FakeGetChallenge: func(ctx context.Context, url string) (*acmeapi.Challenge, error) {
-					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					return &acmeapi.Authorization{
+						Challenges: []*acmeapi.Challenge{
+							{URI: "testurl", Status: acmeapi.StatusPending},
+						},
+					}, nil
 				},
 			},
 		},

@@ -25,9 +25,12 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	cm "github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
+	shimgatewaycontroller "github.com/jetstack/cert-manager/pkg/controller/certificate-shim/gateways"
+	shimingresscontroller "github.com/jetstack/cert-manager/pkg/controller/certificate-shim/ingresses"
 	cracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/acme"
 	crapprovercontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/approver"
 	crcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
@@ -41,10 +44,12 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/revisionmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
+	csracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/acme"
 	csrcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/ca"
 	csrselfsignedcontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/selfsigned"
+	csrvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/vault"
+	csrvenaficontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/venafi"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	"github.com/jetstack/cert-manager/pkg/feature"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -102,6 +107,11 @@ type ControllerOptions struct {
 	EnablePprof bool
 
 	DNS01CheckRetryPeriod time.Duration
+
+	// Annotations copied Certificate -> CertificateRequest,
+	// CertificateRequest -> Order. Slice of string literals that are
+	// treated as prefixes for annotation keys.
+	CopiedAnnotationPrefixes []string
 }
 
 const (
@@ -112,12 +122,6 @@ const (
 
 	defaultClusterResourceNamespace = "kube-system"
 	defaultNamespace                = ""
-
-	defaultLeaderElect                 = true
-	defaultLeaderElectionNamespace     = "kube-system"
-	defaultLeaderElectionLeaseDuration = 60 * time.Second
-	defaultLeaderElectionRenewDeadline = 40 * time.Second
-	defaultLeaderElectionRetryPeriod   = 15 * time.Second
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
@@ -149,7 +153,8 @@ var (
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
-		ingressshimcontroller.ControllerName,
+		shimingresscontroller.ControllerName,
+		shimgatewaycontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
 		cracmecontroller.CRControllerName,
@@ -171,7 +176,7 @@ var (
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatesmetricscontroller.ControllerName,
-		ingressshimcontroller.ControllerName,
+		shimingresscontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
 		cracmecontroller.CRControllerName,
@@ -190,8 +195,19 @@ var (
 	}
 
 	experimentalCertificateSigningRequestControllers = []string{
+		csracmecontroller.CSRControllerName,
 		csrcacontroller.CSRControllerName,
 		csrselfsignedcontroller.CSRControllerName,
+		csrvenaficontroller.CSRControllerName,
+		csrvaultcontroller.CSRControllerName,
+	}
+	// Annotations that will be copied from Certificate to CertificateRequest and to Order.
+	// By default, copy all annotations except for the ones applied by kubectl, fluxcd, argocd.
+	defaultCopiedAnnotationPrefixes = []string{
+		"*",
+		"-kubectl.kubernetes.io/",
+		"-fluxcd.io/",
+		"-argocd.argoproj.io/",
 	}
 )
 
@@ -202,11 +218,11 @@ func NewControllerOptions() *ControllerOptions {
 		KubernetesAPIQPS:                  defaultKubernetesAPIQPS,
 		KubernetesAPIBurst:                defaultKubernetesAPIBurst,
 		Namespace:                         defaultNamespace,
-		LeaderElect:                       defaultLeaderElect,
-		LeaderElectionNamespace:           defaultLeaderElectionNamespace,
-		LeaderElectionLeaseDuration:       defaultLeaderElectionLeaseDuration,
-		LeaderElectionRenewDeadline:       defaultLeaderElectionRenewDeadline,
-		LeaderElectionRetryPeriod:         defaultLeaderElectionRetryPeriod,
+		LeaderElect:                       cmdutil.DefaultLeaderElect,
+		LeaderElectionNamespace:           cmdutil.DefaultLeaderElectionNamespace,
+		LeaderElectionLeaseDuration:       cmdutil.DefaultLeaderElectionLeaseDuration,
+		LeaderElectionRenewDeadline:       cmdutil.DefaultLeaderElectionRenewDeadline,
+		LeaderElectionRetryPeriod:         cmdutil.DefaultLeaderElectionRetryPeriod,
 		controllers:                       defaultEnabledControllers,
 		ClusterIssuerAmbientCredentials:   defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:          defaultIssuerAmbientCredentials,
@@ -237,22 +253,22 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.Namespace, "namespace", defaultNamespace, ""+
 		"If set, this limits the scope of cert-manager to a single namespace and ClusterIssuers are disabled. "+
 		"If not specified, all namespaces will be watched")
-	fs.BoolVar(&s.LeaderElect, "leader-elect", true, ""+
+	fs.BoolVar(&s.LeaderElect, "leader-elect", cmdutil.DefaultLeaderElect, ""+
 		"If true, cert-manager will perform leader election between instances to ensure no more "+
 		"than one instance of cert-manager operates at a time")
-	fs.StringVar(&s.LeaderElectionNamespace, "leader-election-namespace", defaultLeaderElectionNamespace, ""+
+	fs.StringVar(&s.LeaderElectionNamespace, "leader-election-namespace", cmdutil.DefaultLeaderElectionNamespace, ""+
 		"Namespace used to perform leader election. Only used if leader election is enabled")
-	fs.DurationVar(&s.LeaderElectionLeaseDuration, "leader-election-lease-duration", defaultLeaderElectionLeaseDuration, ""+
+	fs.DurationVar(&s.LeaderElectionLeaseDuration, "leader-election-lease-duration", cmdutil.DefaultLeaderElectionLeaseDuration, ""+
 		"The duration that non-leader candidates will wait after observing a leadership "+
 		"renewal until attempting to acquire leadership of a led but unrenewed leader "+
 		"slot. This is effectively the maximum duration that a leader can be stopped "+
 		"before it is replaced by another candidate. This is only applicable if leader "+
 		"election is enabled.")
-	fs.DurationVar(&s.LeaderElectionRenewDeadline, "leader-election-renew-deadline", defaultLeaderElectionRenewDeadline, ""+
+	fs.DurationVar(&s.LeaderElectionRenewDeadline, "leader-election-renew-deadline", cmdutil.DefaultLeaderElectionRenewDeadline, ""+
 		"The interval between attempts by the acting master to renew a leadership slot "+
 		"before it stops leading. This must be less than or equal to the lease duration. "+
 		"This is only applicable if leader election is enabled.")
-	fs.DurationVar(&s.LeaderElectionRetryPeriod, "leader-election-retry-period", defaultLeaderElectionRetryPeriod, ""+
+	fs.DurationVar(&s.LeaderElectionRetryPeriod, "leader-election-retry-period", cmdutil.DefaultLeaderElectionRetryPeriod, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
 
@@ -312,9 +328,15 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"DNS01 check requests. This should be a list containing host and port, "+
 			"for example 8.8.8.8:53,8.8.4.4:53")
 	fs.MarkDeprecated("dns01-self-check-nameservers", "Deprecated in favour of dns01-recursive-nameservers")
+
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
+	fs.StringSliceVar(&s.CopiedAnnotationPrefixes, "copied-annotation-prefixes", defaultCopiedAnnotationPrefixes, "Specify which annotations should/shouldn't be copied"+
+		"from Certificate to CertificateRequest and Order, as well as from CertificateSigningRequest to Order, by passing a list of annotation key prefixes."+
+		"A prefix starting with a dash(-) specifies an annotation that shouldn't be copied. Example: '*,-kubectl.kuberenetes.io/'- all annotations"+
+		"will be copied apart from the ones where the key is prefixed with 'kubectl.kubernetes.io/'.")
+
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 	fs.DurationVar(&s.DNS01CheckRetryPeriod, "dns01-check-retry-period", defaultDNS01CheckRetryPeriod, ""+
@@ -395,6 +417,11 @@ func (o *ControllerOptions) EnabledControllers() sets.String {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
 		logf.Log.Info("enabling all experimental certificatesigningrequest controllers")
 		enabled = enabled.Insert(experimentalCertificateSigningRequestControllers...)
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
+		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
+		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
 	}
 
 	return enabled

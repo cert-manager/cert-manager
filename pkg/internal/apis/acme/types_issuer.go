@@ -18,7 +18,7 @@ package acme
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
@@ -186,10 +186,19 @@ type ACMEChallengeSolverHTTP01 struct {
 	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
 	// provisioned by cert-manager for each Challenge to be completed.
 	Ingress *ACMEChallengeSolverHTTP01Ingress
+
+	// The Gateway API is a sig-network community API that models service networking
+	// in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will
+	// create HTTPRoutes with the specified labels in the same namespace as the challenge.
+	// This solver is experimental, and fields / behaviour may change in the future.
+	// +optional
+	GatewayHTTPRoute *ACMEChallengeSolverHTTP01GatewayHTTPRoute `json:"gatewayHTTPRoute,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
-	// Optional service type for Kubernetes solver service
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP. If unset, defaults to NodePort.
+	// +optional
 	ServiceType corev1.ServiceType
 
 	// The ingress class to use when creating Ingress resources to solve ACME
@@ -213,10 +222,22 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate
 }
 
+type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP. If unset, defaults to NodePort.
+	// +optional
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
+
+	// The labels that cert-manager will use when creating the temporary
+	// HTTPRoute needed for solving the HTTP-01 challenge. These labels
+	// must match the label selector of at least one Gateway.
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
 	// Only the 'labels' and 'annotations' fields may be set.
-	// If labels or annotations overlap with in-built values, the values here
+	// If labels or §annotations overlap with in-built values, the values here
 	// will override the in-built values.
 	ACMEChallengeSolverHTTP01IngressPodObjectMeta
 
@@ -409,6 +430,14 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	HostedZoneName string
 
 	Environment AzureDNSEnvironment
+
+	ManagedIdentity *AzureManagedIdentity
+}
+
+type AzureManagedIdentity struct {
+	ClientID string
+
+	ResourceID string
 }
 
 type AzureDNSEnvironment string
@@ -474,7 +503,7 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// should use a SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.
-	Config *apiext.JSON
+	Config *apiextensionsv1.JSON
 }
 
 type ACMEIssuerStatus struct {

@@ -35,12 +35,12 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -55,19 +55,19 @@ cert-manager versions 1.4+ with experimental controllers enabled.
 
 Create a new CertificateSigningRequest resource based on a Certificate resource, by generating a private key locally and create a 'certificate signing request' to be submitted to a cert-manager Issuer.`))
 
-	example = templates.Examples(i18n.T(`
+	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Create a CertificateSigningRequest with the name 'my-csr', saving the private key in a file named 'my-cr.key'.
-kubectl cert-manager x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml
+{{.BuildName}} x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml
 
 # Create a CertificateSigningRequest and store private key in file 'new.key'.
-kubectl cert-manager x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml --output-key-file new.key
+{{.BuildName}} x create certificatesigningrequest my-csr --from-certificate-file my-certificate.yaml --output-key-file new.key
 
 # Create a CertificateSigningRequest, wait for it to be signed for up to 5 minutes (default) and store the x509 certificate in file 'new.crt'.
-kubectl cert-manager x create csr my-cr -f my-certificate.yaml -c new.crt -w
+{{.BuildName}} x create csr my-cr -f my-certificate.yaml -c new.crt -w
 
 # Create a CertificateSigningRequest, wait for it to be signed for up to 20 minutes and store the x509 certificate in file 'my-cr.crt'.
-kubectl cert-manager x create csr my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
-`))
+{{.BuildName}} x create csr my-cr --from-certificate-file my-certificate.yaml --fetch-certificate --timeout 20m
+`)))
 )
 
 var (
@@ -78,12 +78,6 @@ var (
 
 // Options is a struct to support create certificatesigningrequest command
 type Options struct {
-	Client     kubernetes.Interface
-	RESTConfig *restclient.Config
-
-	// boolean indicating if there was an Override in determining CmdNamespace.
-	EnforceNamespace bool
-
 	// Name of file that the generated private key will be stored in If not
 	// specified, the private key will be written to '<NameOfCSR>.key'.
 	KeyFilename string
@@ -110,6 +104,7 @@ type Options struct {
 	Timeout time.Duration
 
 	genericclioptions.IOStreams
+	*factory.Factory
 }
 
 // NewOptions returns initialized Options
@@ -120,17 +115,18 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 }
 
 // NewCmdCreateCSR returns a cobra command for create CertificateSigningRequest
-func NewCmdCreateCSR(ctx context.Context, ioStreams genericclioptions.IOStreams, factory cmdutil.Factory) *cobra.Command {
+func NewCmdCreateCSR(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
+
 	cmd := &cobra.Command{
-		Use:     "certificatesigningrequest",
-		Aliases: []string{"csr"},
-		Short:   "Create a Kubernetes CertificateSigningRequest resource, using a Certificate resource as a template",
-		Long:    long,
-		Example: example,
+		Use:               "certificatesigningrequest",
+		Aliases:           []string{"csr"},
+		Short:             "Create a Kubernetes CertificateSigningRequest resource, using a Certificate resource as a template",
+		Long:              long,
+		Example:           example,
+		ValidArgsFunction: factory.ValidArgsListCertificateSigningRequests(ctx, &o.Factory),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Validate(args))
-			cmdutil.CheckErr(o.Complete(factory))
 			cmdutil.CheckErr(o.Run(ctx, args))
 		},
 	}
@@ -144,6 +140,8 @@ func NewCmdCreateCSR(ctx context.Context, ioStreams genericclioptions.IOStreams,
 		"If set to true, command will wait for CertificateSigningRequest to be signed to store x509 certificate in a file")
 	cmd.Flags().DurationVar(&o.Timeout, "timeout", 5*time.Minute,
 		"Time before timeout when waiting for CertificateSigningRequest to be signed, must include unit, e.g. 10m or 1h")
+
+	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
 }
@@ -167,23 +165,6 @@ func (o *Options) Validate(args []string) error {
 
 	if !o.FetchCert && o.CertFileName != "" {
 		return errors.New("cannot specify file to store certificate if not waiting for and fetching certificate, please set --fetch-certificate or -w flag")
-	}
-
-	return nil
-}
-
-// Complete takes the command arguments and factory and infers any remaining options.
-func (o *Options) Complete(f cmdutil.Factory) error {
-	var err error
-
-	o.RESTConfig, err = f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	o.Client, err = kubernetes.NewForConfig(o.RESTConfig)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -262,7 +243,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	}
 	fmt.Fprintf(o.Out, "Private key written to file %s\n", keyFileName)
 
-	signerName, err := buildSignerName(o.Client.Discovery(), crt)
+	signerName, err := buildSignerName(o.KubeClient.Discovery(), crt)
 	if err != nil {
 		return fmt.Errorf("failed to build signerName from Certificate: %s", err)
 	}
@@ -273,7 +254,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("error when building CertificateSigningRequest: %s", err)
 	}
 
-	req, err = o.Client.CertificatesV1().CertificateSigningRequests().Create(ctx, req, metav1.CreateOptions{})
+	req, err = o.KubeClient.CertificatesV1().CertificateSigningRequests().Create(ctx, req, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error creating CertificateSigningRequest: %s", err)
 	}
@@ -283,7 +264,7 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 		fmt.Fprintf(o.Out, "CertificateSigningRequest %s has not been signed yet. Wait until it is signed...\n", req.Name)
 
 		err = wait.Poll(time.Second, o.Timeout, func() (done bool, err error) {
-			req, err = o.Client.CertificatesV1().CertificateSigningRequests().Get(ctx, req.Name, metav1.GetOptions{})
+			req, err = o.KubeClient.CertificatesV1().CertificateSigningRequests().Get(ctx, req.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, err
 			}

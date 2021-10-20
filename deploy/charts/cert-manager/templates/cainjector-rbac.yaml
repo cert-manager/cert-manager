@@ -8,9 +8,8 @@ metadata:
     app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "cainjector"
-    helm.sh/chart: {{ include "cainjector.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates"]
@@ -42,9 +41,8 @@ metadata:
     app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "cainjector"
-    helm.sh/chart: {{ include "cainjector.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -65,9 +63,8 @@ metadata:
     app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "cainjector"
-    helm.sh/chart: {{ include "cainjector.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 rules:
   # Used for leader election by the controller
   # cert-manager-cainjector-leader-election is used by the CertificateBased injector controller
@@ -103,9 +100,8 @@ metadata:
     app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "cainjector"
-    helm.sh/chart: {{ include "cainjector.chart" . }}
+    {{- include "labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -114,7 +110,5 @@ subjects:
   - kind: ServiceAccount
     name: {{ template "cainjector.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
-
-
 {{- end -}}
 {{- end -}}

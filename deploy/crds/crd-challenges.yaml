@@ -8,8 +8,7 @@ metadata:
     app: '{{ template "cert-manager.name" . }}'
     app.kubernetes.io/name: '{{ template "cert-manager.name" . }}'
     app.kubernetes.io/instance: '{{ .Release.Name }}'
-    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
-    helm.sh/chart: '{{ template "cert-manager.chart" . }}'
+    # Generated labels {{- include "labels" . | nindent 4 }}
 spec:
   group: acme.cert-manager.io
   names:
@@ -26,6 +25,13 @@ spec:
     strategy: Webhook
     # webhookClientConfig is required when strategy is `Webhook` and it configures the webhook endpoint to be called by API server.
     webhook:
+      # We don't actually support `v1beta1` but is listed here as it is a
+      # required value for [Kubernetes v1.16](kubernetes/kubernetes#82023). The
+      # API server reads the supported versions in order, so _should always_
+      # attempt a `v1` request which is understood by the cert-manager webhook.
+      # Any `v1beta1` request will return an error and fail closed for that
+      # resource (the whole object request is rejected).
+      # When we no longer support v1.16 we can remove `v1beta1` from this list.
       conversionReviewVersions: ["v1", "v1beta1"]
       clientConfig:
         # {{- if .Values.webhook.url.host }}
@@ -203,6 +209,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -210,10 +217,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
@@ -373,6 +393,18 @@ spec:
                       description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                       type: object
                       properties:
+                        gatewayHTTPRoute:
+                          description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                          type: object
+                          properties:
+                            labels:
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                              type: object
+                              additionalProperties:
+                                type: string
+                            serviceType:
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
+                              type: string
                         ingress:
                           description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                           type: object
@@ -402,7 +434,7 @@ spec:
                               description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                               type: string
                             podTemplate:
-                              description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                              description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                               type: object
                               properties:
                                 metadata:
@@ -597,7 +629,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -678,7 +710,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -766,7 +798,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -847,7 +879,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -919,7 +951,7 @@ spec:
                                             description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                             type: string
                             serviceType:
-                              description: Optional service type for Kubernetes solver service
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
                               type: string
                     selector:
                       description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -978,7 +1010,7 @@ spec:
                     - invalid
                     - expired
                     - errored
-      served: true
+      served: false
       storage: false
       subresources:
         status: {}
@@ -1148,6 +1180,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -1155,10 +1188,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
@@ -1318,6 +1364,18 @@ spec:
                       description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                       type: object
                       properties:
+                        gatewayHTTPRoute:
+                          description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                          type: object
+                          properties:
+                            labels:
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                              type: object
+                              additionalProperties:
+                                type: string
+                            serviceType:
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
+                              type: string
                         ingress:
                           description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                           type: object
@@ -1347,7 +1405,7 @@ spec:
                               description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                               type: string
                             podTemplate:
-                              description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                              description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                               type: object
                               properties:
                                 metadata:
@@ -1542,7 +1600,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -1623,7 +1681,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -1711,7 +1769,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -1792,7 +1850,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -1864,7 +1922,7 @@ spec:
                                             description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                             type: string
                             serviceType:
-                              description: Optional service type for Kubernetes solver service
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
                               type: string
                     selector:
                       description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -1923,7 +1981,7 @@ spec:
                     - invalid
                     - expired
                     - errored
-      served: true
+      served: false
       storage: false
       subresources:
         status: {}
@@ -2094,6 +2152,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -2101,10 +2160,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
@@ -2264,6 +2336,18 @@ spec:
                       description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                       type: object
                       properties:
+                        gatewayHTTPRoute:
+                          description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                          type: object
+                          properties:
+                            labels:
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                              type: object
+                              additionalProperties:
+                                type: string
+                            serviceType:
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
+                              type: string
                         ingress:
                           description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                           type: object
@@ -2272,7 +2356,7 @@ spec:
                               description: The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of 'class' or 'name' may be specified.
                               type: string
                             ingressTemplate:
-                              description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges
+                              description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges.
                               type: object
                               properties:
                                 metadata:
@@ -2488,7 +2572,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -2569,7 +2653,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -2657,7 +2741,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -2738,7 +2822,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -2810,7 +2894,7 @@ spec:
                                             description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                             type: string
                             serviceType:
-                              description: Optional service type for Kubernetes solver service
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
                               type: string
                     selector:
                       description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -2869,7 +2953,7 @@ spec:
                     - invalid
                     - expired
                     - errored
-      served: true
+      served: false
       storage: false
       subresources:
         status: {}
@@ -3040,6 +3124,7 @@ spec:
                                   description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                                   type: string
                             environment:
+                              description: name of the Azure environment (default AzurePublicCloud)
                               type: string
                               enum:
                                 - AzurePublicCloud
@@ -3047,10 +3132,23 @@ spec:
                                 - AzureGermanCloud
                                 - AzureUSGovernmentCloud
                             hostedZoneName:
+                              description: name of the DNS zone that should be used
                               type: string
+                            managedIdentity:
+                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              type: object
+                              properties:
+                                clientID:
+                                  description: client ID of the managed identity, can not be used at the same time as resourceID
+                                  type: string
+                                resourceID:
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  type: string
                             resourceGroupName:
+                              description: resource group the DNS zone is located in
                               type: string
                             subscriptionID:
+                              description: ID of the Azure subscription
                               type: string
                             tenantID:
                               description: when specifying ClientID and ClientSecret then this field is also needed
@@ -3210,6 +3308,18 @@ spec:
                       description: Configures cert-manager to attempt to complete authorizations by performing the HTTP01 challenge flow. It is not possible to obtain certificates for wildcard domain names (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
                       type: object
                       properties:
+                        gatewayHTTPRoute:
+                          description: The Gateway API is a sig-network community API that models service networking in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will create HTTPRoutes with the specified labels in the same namespace as the challenge. This solver is experimental, and fields / behaviour may change in the future.
+                          type: object
+                          properties:
+                            labels:
+                              description: The labels that cert-manager will use when creating the temporary HTTPRoute needed for solving the HTTP-01 challenge. These labels must match the label selector of at least one Gateway.
+                              type: object
+                              additionalProperties:
+                                type: string
+                            serviceType:
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
+                              type: string
                         ingress:
                           description: The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are provisioned by cert-manager for each Challenge to be completed.
                           type: object
@@ -3218,7 +3328,7 @@ spec:
                               description: The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of 'class' or 'name' may be specified.
                               type: string
                             ingressTemplate:
-                              description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges
+                              description: Optional ingress template used to configure the ACME challenge solver ingress used for HTTP01 challenges.
                               type: object
                               properties:
                                 metadata:
@@ -3239,7 +3349,7 @@ spec:
                               description: The name of the ingress resource that should have ACME challenge solving routes inserted into it in order to solve HTTP01 challenges. This is typically used in conjunction with ingress controllers like ingress-gce, which maintains a 1:1 mapping between external IPs and ingress resources.
                               type: string
                             podTemplate:
-                              description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges
+                              description: Optional pod template used to configure the ACME challenge solver pods used for HTTP01 challenges.
                               type: object
                               properties:
                                 metadata:
@@ -3434,7 +3544,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -3515,7 +3625,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -3603,7 +3713,7 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                       namespaceSelector:
-                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                        description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -3684,7 +3794,7 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                   namespaceSelector:
-                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is alpha-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                                    description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -3756,7 +3866,7 @@ spec:
                                             description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
                                             type: string
                             serviceType:
-                              description: Optional service type for Kubernetes solver service
+                              description: Optional service type for Kubernetes solver service. Supported values are NodePort or ClusterIP. If unset, defaults to NodePort.
                               type: string
                     selector:
                       description: Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver. If not specified, the solver will be treated as the 'default' solver with the lowest priority, i.e. if any other solver has a more specific match, it will be used instead.
@@ -3819,9 +3929,3 @@ spec:
       storage: true
       subresources:
         status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

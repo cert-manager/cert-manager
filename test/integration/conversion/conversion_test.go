@@ -24,6 +24,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,7 +121,40 @@ func TestConversion(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: v1alpha3.CertificateRequestSpec{
-					CSRPEM: testCSR,
+					CSRPEM:   testCSR,
+					Username: "admin",
+					Groups:   []string{"system:masters", "system:authenticated"},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+		},
+		"should convert CertificateRequest from v1alpha2 to v1": {
+			input: &v1alpha2.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1alpha2.CertificateRequestSpec{
+					CSRPEM:   testCSR,
+					Username: "some-user",
+					Groups:   []string{"some-group"},
+					IssuerRef: cmmeta.ObjectReference{
+						Name: "issuername",
+					},
+				},
+			},
+			targetGVK: v1.SchemeGroupVersion.WithKind("CertificateRequest"),
+			output: &v1.CertificateRequest{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+				},
+				Spec: v1.CertificateRequestSpec{
+					Request:  testCSR,
+					Username: "admin",
+					Groups:   []string{"system:masters", "system:authenticated"},
 					IssuerRef: cmmeta.ObjectReference{
 						Name: "issuername",
 					},
@@ -202,7 +236,10 @@ func TestConversion(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			config, stop := framework.RunControlPlane(t)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+			defer cancel()
+
+			config, stop := framework.RunControlPlane(t, ctx)
 			defer stop()
 
 			cl, err := client.New(config, client.Options{Scheme: api.Scheme})
@@ -210,7 +247,7 @@ func TestConversion(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := cl.Create(context.Background(), test.input); err != nil {
+			if err := cl.Create(ctx, test.input); err != nil {
 				t.Fatal(err)
 			}
 			meta := test.input.(metav1.ObjectMetaAccessor)
@@ -220,7 +257,7 @@ func TestConversion(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := cl.Get(context.Background(), client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, convertedObj.(client.Object)); err != nil {
+			if err := cl.Get(ctx, client.ObjectKey{Name: meta.GetObjectMeta().GetName(), Namespace: meta.GetObjectMeta().GetNamespace()}, convertedObj.(client.Object)); err != nil {
 				t.Fatalf("failed to fetch object in expected API version: %v", err)
 			}
 
@@ -230,6 +267,7 @@ func TestConversion(t *testing.T) {
 			convertedObjMeta.GetObjectMeta().SetUID("")
 			convertedObjMeta.GetObjectMeta().SetSelfLink("")
 			convertedObjMeta.GetObjectMeta().SetResourceVersion("")
+			convertedObjMeta.GetObjectMeta().SetManagedFields([]metav1.ManagedFieldsEntry{})
 
 			if !equality.Semantic.DeepEqual(test.output, convertedObj) {
 				t.Errorf("unexpected output: %s", diff.ObjectReflectDiff(test.output, convertedObj))

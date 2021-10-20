@@ -37,6 +37,7 @@ func DefaultCertificateSet() []certificates.ValidationFunc {
 		certificates.ExpectValidNotAfterDate,
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectConditionReadyObservedGeneration,
+		certificates.ExpectValidBasicConstraints,
 	}
 }
 
@@ -49,11 +50,8 @@ func DefaultCertificateSigningRequestSet() []certificatesigningrequests.Validati
 		certificatesigningrequests.ExpectCertificateURIsToMatch,
 		certificatesigningrequests.ExpectCertificateIPsToMatch,
 		certificatesigningrequests.ExpectValidCommonName,
-		certificatesigningrequests.ExpectValidDuration,
 		certificatesigningrequests.ExpectKeyUsageUsageDigitalSignature,
 		certificatesigningrequests.ExpectEmailsToMatch,
-		certificatesigningrequests.ExpectCorrectTrustChain,
-		certificatesigningrequests.ExpectCARootCertificate,
 		certificatesigningrequests.ExpectIsCA,
 		certificatesigningrequests.ExpectConditionApproved,
 		certificatesigningrequests.ExpectConditiotNotDenied,
@@ -73,6 +71,7 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 		certificates.ExpectValidNotAfterDate,
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectConditionReadyObservedGeneration,
+		certificates.ExpectValidBasicConstraints,
 	}
 
 	if !fs.Contains(featureset.URISANsFeature) {
@@ -85,6 +84,7 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 
 	if !fs.Contains(featureset.SaveCAToSecret) {
 		out = append(out, certificates.ExpectCorrectTrustChain)
+
 		if !fs.Contains(featureset.SaveRootCAToSecret) {
 			out = append(out, certificates.ExpectCARootCertificate)
 		}
@@ -94,6 +94,11 @@ func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certific
 }
 
 func CertificateSigningRequestSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certificatesigningrequests.ValidationFunc {
-	// Add exclusions if and when needed
-	return DefaultCertificateSigningRequestSet()
+	validations := DefaultCertificateSigningRequestSet()
+
+	if !fs.Contains(featureset.DurationFeature) {
+		validations = append(validations, certificatesigningrequests.ExpectValidDuration)
+	}
+
+	return validations
 }

@@ -102,6 +102,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 		secret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}
 	}
 
+	secret = secret.DeepCopy()
 	err = s.setValues(crt, secret, data)
 	if err != nil {
 		return err
@@ -214,6 +215,24 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
+	}
+	if secret.Labels == nil {
+		secret.Labels = make(map[string]string)
+	}
+
+	// TODO: Labels and annotations are not yet removed from the Secret if removed from the template.
+	// An extra annotation will be required to keep track of which labels and annotations were created
+	// by cert-manager to allow them to be removed/updated safely.
+
+	// See https://github.com/jetstack/cert-manager/issues/4292
+
+	if crt.Spec.SecretTemplate != nil {
+		for k, v := range crt.Spec.SecretTemplate.Labels {
+			secret.Labels[k] = v
+		}
+		for k, v := range crt.Spec.SecretTemplate.Annotations {
+			secret.Annotations[k] = v
+		}
 	}
 
 	secret.Annotations[cmapi.CertificateNameKey] = crt.Name

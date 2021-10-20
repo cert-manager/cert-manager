@@ -34,6 +34,10 @@ setup_tools
 echo "Installing kyverno into cluster..."
 "${SCRIPT_ROOT}/addon/kyverno/install.sh"
 
+# cert-manager needs the gateway-api to be installed to start.
+echo "Installing gateway-api into the cluster..."
+"${SCRIPT_ROOT}/addon/gatewayapi/install.sh"
+
 echo "Installing cert-manager into the cluster..."
 "${SCRIPT_ROOT}/addon/certmanager/install.sh"
 
@@ -57,3 +61,6 @@ echo "Loading vault into the cluster..."
 
 echo "Installing sample-external-issuer into the cluster..."
 "${SCRIPT_ROOT}/addon/sample-external-issuer/install.sh"
+
+echo "Installing HAProxy into the cluster"
+"${SCRIPT_ROOT}/addon/haproxy/install.sh"

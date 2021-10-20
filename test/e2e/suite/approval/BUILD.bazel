@@ -16,6 +16,7 @@ go_library(
         "//pkg/util:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/util:go_default_library",
+        "//test/e2e/util:go_default_library",
         "//test/unit/gen:go_default_library",
         "@com_github_onsi_ginkgo//:go_default_library",
         "@com_github_onsi_gomega//:go_default_library",

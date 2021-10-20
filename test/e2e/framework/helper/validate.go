@@ -22,20 +22,19 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificates"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/validation/certificatesigningrequests"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 // ValidateCertificate retrieves the issued certificate and runs all validation functions
-func (h *Helper) ValidateCertificate(ns, name string, validations ...certificates.ValidationFunc) error {
+func (h *Helper) ValidateCertificate(certificate *cmapi.Certificate, validations ...certificates.ValidationFunc) error {
 	if len(validations) == 0 {
 		validations = validation.DefaultCertificateSet()
 	}
-	certificate, err := h.CMClient.CertmanagerV1().Certificates(ns).Get(context.TODO(), name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
+
 	secret, err := h.KubeClient.CoreV1().Secrets(certificate.Namespace).Get(context.TODO(), certificate.Spec.SecretName, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -44,6 +43,12 @@ func (h *Helper) ValidateCertificate(ns, name string, validations ...certificate
 	for _, fn := range validations {
 		err := fn(certificate, secret)
 		if err != nil {
+			log.Logf("Certificate:\n")
+			h.describeCMObject(certificate)
+
+			log.Logf("Secret:\n")
+			h.describeKubeObject(secret)
+
 			return err
 		}
 	}

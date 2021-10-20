@@ -12,9 +12,8 @@ metadata:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "controller"
-    helm.sh/chart: {{ include "cert-manager.chart" . }}
+    {{- include "labels" . | nindent 4 }}
     prometheus: {{ .Values.prometheus.servicemonitor.prometheusInstance }}
 {{- if .Values.prometheus.servicemonitor.labels }}
 {{ toYaml .Values.prometheus.servicemonitor.labels | indent 4}}

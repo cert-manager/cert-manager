@@ -24,8 +24,8 @@ export REPO_ROOT="$LIB_ROOT/../.."
 export SKIP_BUILD_ADDON_IMAGES="${SKIP_BUILD_ADDON_IMAGES:-}"
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
 export KIND_IMAGE_REPO="kindest/node"
-# Default Kubernetes version to use to 1.21
-export K8S_VERSION=${K8S_VERSION:-1.21}
+# Default Kubernetes version to use to 1.22
+export K8S_VERSION=${K8S_VERSION:-1.22}
 # Default OpenShift version to use to 3.11
 export OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-"3.11"}
 export SERVICE_IP_PREFIX="${SERVICE_IP_PREFIX:-10.0.0}"
@@ -39,7 +39,7 @@ export INGRESS_IP="${SERVICE_IP_PREFIX}.15"
 # versions of the tools required for development
 setup_tools() {
   check_bazel
-  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //hack/bin:kustomize //devel/bin:ginkgo
+  bazel build //hack/bin:helm //hack/bin:kind //hack/bin:kubectl //devel/bin:ginkgo
   if [[ "$IS_OPENSHIFT" == "true" ]] ; then
     bazel build //hack/bin:oc3
   fi
@@ -59,7 +59,7 @@ setup_tools() {
 check_tool() {
   tool="$1"
   if ! command -v "$tool" &>/dev/null; then
-    echo "Install $tool or run: export PATH=\"$REPO_ROOT/devel/bin:\$PATH\"" >&2
+    echo "Fatal error: $tool not found. Install $tool or run: export PATH=\"$REPO_ROOT/devel/bin:\$PATH\"" >&2
     exit 1
   fi
 }
@@ -109,4 +109,9 @@ load_image() {
     return
   fi
   kind load docker-image --name "$KIND_CLUSTER_NAME" "$IMAGE_NAME"
+}
+
+export_logs() {
+  echo "Exporting cluster logs to artifacts..."
+  "${SCRIPT_ROOT}/cluster/export-logs.sh"
 }

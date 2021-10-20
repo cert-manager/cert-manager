@@ -348,3 +348,19 @@ func ExpectConditionReadyObservedGeneration(certificate *cmapi.Certificate, secr
 
 	return nil
 }
+
+// ExpectValidBasicConstraints asserts that basicConstraints are set correctly on issued certificates
+func ExpectValidBasicConstraints(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	cert, err := pki.DecodeX509CertificateBytes(secret.Data[corev1.TLSCertKey])
+	if err != nil {
+		return err
+	}
+
+	if certificate.Spec.IsCA != cert.IsCA {
+		return fmt.Errorf("Expected CA basicConstraint to be %v, but got %v", certificate.Spec.IsCA, cert.IsCA)
+	}
+
+	// TODO: also validate pathLen
+
+	return nil
+}

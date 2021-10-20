@@ -24,7 +24,6 @@ import (
 	"fmt"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 var (
@@ -37,8 +36,4 @@ type Details struct {
 
 	// ProviderConfig is the issuer config needed to use these newly created credentials
 	ProviderConfig cmacme.ACMEChallengeSolverDNS01
-}
-
-func (d *Details) NewTestDomain() string {
-	return fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), d.BaseDomain)
 }

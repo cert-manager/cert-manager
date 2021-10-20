@@ -21,15 +21,18 @@ import (
 	"os"
 	"runtime"
 
-	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 
+	"github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/cmd/server"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
+	stopCh, exit := util.SetupExitHandler(util.GracefulShutdown)
+	defer exit() // This function might call os.Exit, so defer last
+
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
@@ -37,12 +40,10 @@ func RunWebhookServer(groupName string, hooks ...webhook.Solver) {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	stopCh := genericapiserver.SetupSignalHandler()
-
 	cmd := server.NewCommandStartWebhookServer(os.Stdout, os.Stderr, stopCh, groupName, hooks...)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 	if err := cmd.Execute(); err != nil {
 		logf.Log.Error(err, "error executing command")
-		os.Exit(1)
+		util.SetExitCode(err)
 	}
 }

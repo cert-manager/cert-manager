@@ -80,7 +80,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				}
 				Expect(f.CRClient.Delete(context.Background(), toCleanup)).To(Succeed())
 			})
-			generalSetup := func(injectable client.Object) (runtime.Object, certmanager.Certificate, corev1.Secret) {
+			generalSetup := func(injectable client.Object) (runtime.Object, *certmanager.Certificate) {
 				By("creating a " + subj + " pointing to a cert")
 				Expect(f.CRClient.Create(context.Background(), injectable)).To(Succeed())
 				toCleanup = injectable
@@ -91,15 +91,12 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
-					Type:   certmanager.CertificateConditionReady,
-					Status: cmmeta.ConditionTrue,
-				}, time.Second*30)
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Second*30)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 				By("grabbing the corresponding secret")
 				var secret corev1.Secret
-				Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, "10s", "2s").Should(Succeed())
+				Expect(f.CRClient.Get(context.Background(), secretName, &secret)).To(Succeed())
 
 				By("checking that all webhooks have a populated CA")
 				caData := secret.Data["ca.crt"]
@@ -116,8 +113,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					return test.getCAs(newInjectable), nil
 				}, "10s", "2s").Should(Equal(expectedCAs))
 
-				return injectable, *cert, secret
-
+				return injectable, cert
 			}
 
 			It("should inject the CA data into all CA fields", func() {
@@ -153,19 +149,20 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				if test.disabled != "" {
 					Skip(test.disabled)
 				}
-				injectable, cert, _ := generalSetup(test.makeInjectable("changed"))
-
-				By("grabbing the latest copy of the cert")
-				Expect(f.CRClient.Get(context.Background(), types.NamespacedName{Name: cert.Name, Namespace: cert.Namespace}, &cert)).To(Succeed())
+				injectable, cert := generalSetup(test.makeInjectable("changed"))
 
 				By("changing the name of the corresponding secret in the cert")
-				secretName := types.NamespacedName{Name: cert.Spec.SecretName, Namespace: f.Namespace.Name}
+				cert = cert.DeepCopy() // DeepCopy before updating
 				cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
-				Eventually(func() error { return f.CRClient.Update(context.Background(), &cert) }, "10s", "2s").Should(Succeed())
+				Expect(f.CRClient.Update(context.Background(), cert)).To(Succeed())
+
+				cert, err := f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Second*30)
+				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become updated")
 
 				By("grabbing the new secret")
 				var secret corev1.Secret
-				Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, "10s", "2s").Should(Succeed())
+				secretName := types.NamespacedName{Name: cert.Spec.SecretName, Namespace: f.Namespace.Name}
+				Expect(f.CRClient.Get(context.Background(), secretName, &secret)).To(Succeed())
 
 				By("verifying that the hooks have the new data")
 				caData := secret.Data["ca.crt"]

@@ -26,9 +26,10 @@ import (
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	_ "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	_ "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
+	_ "github.com/jetstack/cert-manager/pkg/controller/certificate-shim/gateways"
+	_ "github.com/jetstack/cert-manager/pkg/controller/certificate-shim/ingresses"
 	_ "github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
 	_ "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	_ "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	_ "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/acme"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/ca"
@@ -72,9 +73,14 @@ to renew certificates at an appropriate time before expiry.`,
 			}
 
 			logf.Log.V(logf.InfoLevel).Info("starting controller", "version", util.AppVersion, "git-commit", util.AppGitCommit)
-			o.RunCertManagerController(stopCh)
+			if err := o.RunCertManagerController(stopCh); err != nil {
+				cmd.SilenceUsage = true // Don't display usage information when exiting because of an error
+				return err
+			}
+
 			return nil
 		},
+		SilenceErrors: true, // Errors are already logged when calling cmd.Execute()
 	}
 
 	flags := cmd.Flags()
@@ -90,6 +96,6 @@ func (o CertManagerControllerOptions) Validate(args []string) error {
 	return utilerrors.NewAggregate(errors)
 }
 
-func (o CertManagerControllerOptions) RunCertManagerController(stopCh <-chan struct{}) {
-	Run(o.ControllerOptions, stopCh)
+func (o CertManagerControllerOptions) RunCertManagerController(stopCh <-chan struct{}) error {
+	return Run(o.ControllerOptions, stopCh)
 }

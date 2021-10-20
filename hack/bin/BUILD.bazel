@@ -3,20 +3,10 @@ package(default_visibility = ["//visibility:public"])
 load("@io_k8s_repo_infra//defs:run_in_workspace.bzl", "workspace_binary")
 
 genrule(
-    name = "fetch_jq",
-    srcs = select({
-        ":darwin": ["@jq_osx//file"],
-        ":k8": ["@jq_linux//file"],
-    }),
-    outs = ["jq"],
-    cmd = "cp $(SRCS) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
     name = "fetch_helm",
     srcs = select({
         ":darwin": ["@helm_darwin//:file"],
+        ":darwin_arm": ["@helm_darwin_arm//:file"],
         ":k8": ["@helm_linux//:file"],
     }),
     outs = ["helm"],
@@ -27,8 +17,9 @@ genrule(
 genrule(
     name = "com_coreos_etcd",
     srcs = select({
-        ":darwin": ["@com_coreos_etcd_darwin_amd64//:file"],
-        ":k8": ["@com_coreos_etcd_linux_amd64//:file"],
+        ":darwin": ["@kubebuilder-tools_darwin_amd64//:etcd"],
+        ":darwin_arm": ["@kubebuilder-tools_darwin_amd64//:etcd"],
+        ":k8": ["@kubebuilder-tools_linux_amd64//:etcd"],
     }),
     outs = ["etcd"],
     cmd = "cp $(SRCS) $@",
@@ -39,6 +30,7 @@ genrule(
     name = "co_honnef_go_tools_staticcheck",
     srcs = select({
         ":darwin": ["@co_honnef_go_tools_staticcheck_osx//:file"],
+        ":darwin_arm": ["@co_honnef_go_tools_staticcheck_osx//:file"],
         ":k8": ["@co_honnef_go_tools_staticcheck_linux//:file"],
     }),
     outs = ["staticcheck"],
@@ -47,21 +39,11 @@ genrule(
 )
 
 genrule(
-    name = "fetch_kustomize",
-    srcs = select({
-        ":darwin": ["@kustomize_osx//:file"],
-        ":k8": ["@kustomize_linux//:file"],
-    }),
-    outs = ["kustomize"],
-    cmd = "cp $(SRCS) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
     name = "io_kubernetes_kube-apiserver",
     srcs = select({
-        ":darwin": ["@kube-apiserver_darwin_amd64//file"],
-        ":k8": ["@kube-apiserver_linux_amd64//file"],
+        ":darwin": ["@kubebuilder-tools_darwin_amd64//:kube-apiserver"],
+        ":darwin_arm": ["@kubebuilder-tools_darwin_amd64//:kube-apiserver"],
+        ":k8": ["@kubebuilder-tools_linux_amd64//:kube-apiserver"],
     }),
     outs = ["kube-apiserver"],
     cmd = "cp $(SRCS) $@",
@@ -71,8 +53,9 @@ genrule(
 genrule(
     name = "fetch_kubectl",
     srcs = select({
-        ":darwin": ["@kubectl_1_18_darwin//file"],
-        ":k8": ["@kubectl_1_18_linux//file"],
+        ":darwin": ["@kubectl_1_22_darwin//file"],
+        ":darwin_arm": ["@kubectl_1_22_darwin_arm//file"],
+        ":k8": ["@kubectl_1_22_linux//file"],
     }),
     outs = ["kubectl"],
     cmd = "cp $(SRCS) $@",
@@ -84,21 +67,12 @@ genrule(
     name = "fetch_oc3",
     srcs = select({
         ":k8": ["@oc_3_11_linux//:file"],
+        ":darwin": ["@oc_3_11_mac//:file"],
+        ":darwin_arm": ["@oc_3_11_mac//:file"],
     }),
     outs = ["oc3"],
     cmd = "cp $(SRCS) $@",
     tags = ["manual"],
-    visibility = ["//visibility:public"],
-)
-
-genrule(
-    name = "fetch_buildozer",
-    srcs = select({
-        ":darwin": ["@buildozer_darwin//file"],
-        ":k8": ["@buildozer_linux//file"],
-    }),
-    outs = ["buildozer"],
-    cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )
 
@@ -131,10 +105,16 @@ workspace_binary(
     cmd = "@go_sdk//:bin/go",
 )
 
+workspace_binary(
+    name = "kubectl-cert_manager",
+    cmd = "//cmd/ctl:ctl",
+)
+
 genrule(
     name = "fetch_kind",
     srcs = select({
         ":darwin": ["@kind_darwin//file"],
+        ":darwin_arm": ["@kind_darwin_arm//file"],
         ":k8": ["@kind_linux//file"],
     }),
     outs = ["kind"],
@@ -150,6 +130,28 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "fetch_ytt",
+    srcs = select({
+        ":darwin": ["@ytt_darwin//file"],
+        ":darwin_arm": ["@ytt_darwin_arm//file"],
+        ":k8": ["@ytt_linux//file"],
+    }),
+    outs = ["ytt"],
+    cmd = "cp $(SRCS) $@",
+)
+
+genrule(
+    name = "fetch_yq",
+    srcs = select({
+        ":darwin": ["@yq_darwin//file"],
+        ":darwin_arm": ["@yq_darwin_arm//file"],
+        ":k8": ["@yq_linux//file"],
+    }),
+    outs = ["yq"],
+    cmd = "cp $(SRCS) $@",
+)
+
 config_setting(
     name = "k8",
     values = {"host_cpu": "k8"},
@@ -159,6 +161,12 @@ config_setting(
 config_setting(
     name = "darwin",
     values = {"host_cpu": "darwin"},
+    visibility = ["//visibility:private"],
+)
+
+config_setting(
+    name = "darwin_arm",
+    values = {"host_cpu": "darwin_arm64"},
     visibility = ["//visibility:private"],
 )
 

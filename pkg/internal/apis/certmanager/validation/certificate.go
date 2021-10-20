@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	apivalidation "k8s.io/apimachinery/pkg/api/validation"
+	metavalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -84,6 +87,15 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 	}
 	if crt.RevisionHistoryLimit != nil && *crt.RevisionHistoryLimit < 1 {
 		el = append(el, field.Invalid(fldPath.Child("revisionHistoryLimit"), *crt.RevisionHistoryLimit, "must not be less than 1"))
+	}
+
+	if crt.SecretTemplate != nil {
+		if len(crt.SecretTemplate.Labels) > 0 {
+			el = append(el, validateSecretTemplateLabels(crt, fldPath)...)
+		}
+		if len(crt.SecretTemplate.Annotations) > 0 {
+			el = append(el, validateSecretTemplateAnnotations(crt, fldPath)...)
+		}
 	}
 
 	return el
@@ -162,6 +174,24 @@ func validateUsages(a *internalcmapi.CertificateSpec, fldPath *field.Path) field
 			el = append(el, field.Invalid(fldPath.Child("usages").Index(i), u, "unknown keyusage"))
 		}
 	}
+	return el
+}
+
+func validateSecretTemplateLabels(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	return metavalidation.ValidateLabels(crt.SecretTemplate.Labels, fldPath.Child("secretTemplate", "labels"))
+}
+
+func validateSecretTemplateAnnotations(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	secretTemplateAnnotationsPath := fldPath.Child("secretTemplate", "annotations")
+	for a := range crt.SecretTemplate.Annotations {
+		if strings.HasPrefix(a, "cert-manager.io/") {
+			el = append(el, field.Invalid(secretTemplateAnnotationsPath, a, "cert-manager.io/* annotations are not allowed"))
+		}
+	}
+
+	el = append(el, apivalidation.ValidateAnnotations(crt.SecretTemplate.Annotations, secretTemplateAnnotationsPath)...)
 	return el
 }
 

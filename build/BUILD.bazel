@@ -18,6 +18,9 @@ DOCKERIZED_BINARIES = {
     "webhook": {
         "target": "//cmd/webhook:webhook",
     },
+    "ctl": {
+        "target": "//cmd/ctl:ctl",
+    },
 }
 
 # Allows passing --define image_type custom flag to Bazel command. Used to allow
@@ -33,6 +36,15 @@ config_setting(
     },
 )
 
+# The static base will always be used by default, but having this config setting
+# makes it easier to parameterize Bazel commands in the Makefile.
+config_setting(
+    name = "static_image",
+    values = {
+        "define": "image_type=static",
+    },
+)
+
 # When pushing to quay.io, we want to use an arch, since the archless name is now used for a
 # manifest list. Bazel doesn't support manifest lists (yet), so we can't do that either.
 [multi_arch_container(
@@ -41,6 +53,7 @@ config_setting(
     # Always use the static base unless dynamic explicitly requested.
     base = select({
         ":dynamic_image": "@dynamic_base//image",
+        ":static_image": "@static_base//image",
         "//conditions:default": "@static_base//image",
     }),
     binary = select(for_platforms(
@@ -104,9 +117,16 @@ release_filegroup(
 )
 
 release_filegroup(
-    name = "client-artifacts",
+    name = "client-artifacts-cmctl",
     conditioned_srcs = for_platforms(for_client = [
         "//cmd/ctl:ctl",
+    ]),
+)
+
+release_filegroup(
+    name = "client-artifacts-kubectl-cert_manager",
+    conditioned_srcs = for_platforms(for_client = [
+        "//cmd/ctl:kubectl-cert_manager",
     ]),
 )
 

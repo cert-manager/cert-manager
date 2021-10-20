@@ -50,10 +50,9 @@ else
 fi
 
 go=$(realpath "$1")
-jq=$(realpath "$2")
 export PATH=$(dirname "$go"):$PATH
 
-shift 2
+shift 1
 REPO_ROOT="$BUILD_WORKSPACE_DIRECTORY"
 LICENSE_ROOT="$REPO_ROOT"
 
@@ -163,12 +162,6 @@ export GOFLAGS=-mod=mod
 if (( BASH_VERSINFO[0] < 4 )); then
   echo
   echo "ERROR: Bash v4+ required."
-  # Extra help for OSX
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-    echo
-    echo "Ensure you are up to date on the following packages:"
-    echo "$ brew install md5sha1sum bash jq"
-  fi
   echo
   exit 9
 fi
@@ -240,7 +233,7 @@ only_contains_submodules () {
 }
 
 # Loop through every vendored package
-for PACKAGE in $("$go" list -m -json all | "$jq" -r .Path | sort -f); do
+for PACKAGE in $("$go" list -m -f '{{.Path}}' all | sort -f); do
   if [[ -e "staging/src/${PACKAGE}" ]]; then
     echo "${PACKAGE} is a staging package, skipping" >&2
     continue

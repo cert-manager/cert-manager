@@ -38,6 +38,11 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 	log := logf.WithResource(logf.FromContext(ctx), csr).WithValues("signerName", csr.Spec.SignerName)
 	dbg := log.V(logf.DebugLevel)
 
+	// Deep copy CertificateSigningRequest to prevent writing to the shared local
+	// cache making it invalid. Done early in the sync to avoid accidental
+	// invalidation by future contributions.
+	csr = csr.DeepCopy()
+
 	ref, ok := util.SignerIssuerRefFromSignerName(csr.Spec.SignerName)
 	if !ok {
 		dbg.Info("certificate signing request has malformed signer name,", "signerName", csr.Spec.SignerName)
@@ -53,7 +58,12 @@ func (c *Controller) Sync(ctx context.Context, csr *certificatesv1.CertificateSi
 		dbg.Info("certificate signing request has failed so skipping processing")
 		return nil
 	}
+	if util.CertificateSigningRequestIsDenied(csr) {
+		dbg.Info("certificate signing request has been denied so skipping processing")
+		return nil
+	}
 	if !util.CertificateSigningRequestIsApproved(csr) {
+		c.recorder.Event(csr, corev1.EventTypeNormal, "WaitingApproval", "Waiting for the Approved condition before issuing")
 		dbg.Info("certificate signing request is not approved so skipping processing")
 		return nil
 	}

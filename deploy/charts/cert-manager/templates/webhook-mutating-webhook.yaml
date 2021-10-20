@@ -6,9 +6,8 @@ metadata:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{- include "labels" . | nindent 4 }}
   annotations:
     cert-manager.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ template "webhook.fullname" . }}-ca"
   {{- if .Values.webhook.mutatingWebhookConfigurationAnnotations }}
@@ -21,13 +20,25 @@ webhooks:
           - "cert-manager.io"
           - "acme.cert-manager.io"
         apiVersions:
-          - "*"
+          - "v1"
         operations:
           - CREATE
           - UPDATE
         resources:
           - "*/*"
+    # We don't actually support `v1beta1` but is listed here as it is a
+    # required value for
+    # [Kubernetes v1.16](https://github.com/kubernetes/kubernetes/issues/82025).
+    # The API server reads the supported versions in order, so _should always_
+    # attempt a `v1` request which is understood by the cert-manager webhook.
+    # Any `v1beta1` request will return an error and fail closed for that
+    # resource (the whole object request is rejected). When we no longer
+    # support v1.16 we can remove `v1beta1` from this list.
     admissionReviewVersions: ["v1", "v1beta1"]
+    # This webhook only accepts v1 cert-manager resources.
+    # Equivalent matchPolicy ensures that non-v1 resource requests are sent to
+    # this webhook (after the resources have been converted to v1).
+    matchPolicy: Equivalent
     timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
     failurePolicy: Fail
     # Only include 'sideEffects' field in Kubernetes 1.12+

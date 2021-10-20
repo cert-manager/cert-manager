@@ -529,12 +529,28 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					testData := []byte("test")
 					return [][]byte{testData}, "http://testurl", nil
 				},
-				FakeFetchCertAlternatives: func(_ context.Context, url string, bundle bool) ([][][]byte, error) {
+				FakeListCertAlternates: func(_ context.Context, url string) ([]string, error) {
 					if url != "http://testurl" {
 						return nil, errors.New("Cert URL is incorrect")
 					}
+					return []string{"http://alturl"}, nil
 
-					return [][][]byte{{rawTestCert.Bytes}}, nil
+				},
+				FakeFetchCert: func(_ context.Context, url string, bundle bool) ([][]byte, error) {
+					if url != "http://alturl" {
+						// This bit just ensures that we
+						// call it from the correct
+						// place. This is the same URL
+						// that is returned from
+						// FakeCertAlternates that
+						// should have been called
+						// before this.
+						return nil, errors.New("Cert URL is incorrect")
+					}
+					if !bundle {
+						return nil, errors.New("Expecting to be called with bundle=true")
+					}
+					return [][]byte{rawTestCert.Bytes}, nil
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"

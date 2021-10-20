@@ -19,6 +19,7 @@ package acme
 import (
 	"context"
 	"encoding/base64"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -47,7 +48,6 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
 	var unsupportedHTTP01Features = featureset.NewFeatureSet(
-		featureset.IPAddressFeature,
 		featureset.DurationFeature,
 		featureset.WildcardsFeature,
 		featureset.URISANsFeature,
@@ -55,6 +55,13 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.KeyUsagesFeature,
 		featureset.EmailSANsFeature,
 		featureset.SaveCAToSecret,
+		featureset.IssueCAFeature,
+	)
+
+	var unsupportedHTTP01GatewayFeatures = unsupportedHTTP01Features.Copy().Add(
+		// Gateway API does not allow raw IP addresses to be specified
+		// in HTTPRoutes, so challenges for an IP address will never work.
+		featureset.IPAddressFeature,
 	)
 
 	// unsupportedDNS01Features is a list of features that are not supported by the ACME
@@ -67,6 +74,20 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		featureset.KeyUsagesFeature,
 		featureset.EmailSANsFeature,
 		featureset.SaveCAToSecret,
+		featureset.IssueCAFeature,
+	)
+
+	// UnsupportedPublicACMEServerFeatures are additional ACME features not supported by
+	// public ACME servers
+	var unsupportedPublicACMEServerFeatures = unsupportedHTTP01Features.Copy().Add(
+		// Let's Encrypt doesn't yet support IP Address certificates.
+		featureset.IPAddressFeature,
+		// Ed25519 is not yet approved by the CA Browser forum.
+		featureset.Ed25519FeatureSet,
+		// Let's Encrypt copies one of the Subject alternative names to
+		// the common name field. This field has a maximum total length of
+		// 64 bytes. Skip the long domain test in this case.
+		featureset.LongDomainFeatureSet,
 	)
 
 	provisionerHTTP01 := &acmeIssuerProvisioner{
@@ -77,11 +98,24 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		eab: eab,
 	}
 
+	provisionerPACMEHTTP01 := &acmeIssuerProvisioner{
+		eab: nil,
+	}
+
 	(&certificates.Suite{
-		Name:                "ACME HTTP01 Issuer",
-		CreateIssuerFunc:    provisionerHTTP01.createHTTP01Issuer,
+		Name:                "ACME HTTP01 Issuer (Ingress)",
+		HTTP01TestType:      "Ingress",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01IngressIssuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "ACME HTTP01 Issuer (Gateway)",
+		HTTP01TestType:      "Gateway",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01GatewayIssuer,
+		DeleteIssuerFunc:    provisionerHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01GatewayFeatures,
 	}).Define()
 
 	(&certificates.Suite{
@@ -93,10 +127,19 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "ACME HTTP01 ClusterIssuer",
-		CreateIssuerFunc:    provisionerHTTP01.createHTTP01ClusterIssuer,
+		Name:                "ACME HTTP01 ClusterIssuer (Ingress)",
+		HTTP01TestType:      "Ingress",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01IngressClusterIssuer,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
 		UnsupportedFeatures: unsupportedHTTP01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "ACME HTTP01 ClusterIssuer (Gateway)",
+		HTTP01TestType:      "Gateway",
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01GatewayClusterIssuer,
+		DeleteIssuerFunc:    provisionerHTTP01.delete,
+		UnsupportedFeatures: unsupportedHTTP01GatewayFeatures,
 	}).Define()
 
 	(&certificates.Suite{
@@ -105,6 +148,14 @@ func runACMEIssuerTests(eab *cmacme.ACMEExternalAccountBinding) {
 		CreateIssuerFunc:    provisionerDNS01.createDNS01ClusterIssuer,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedDNS01Features,
+	}).Define()
+
+	(&certificates.Suite{
+		Name:                "Public ACME Server HTTP01 Issuer (Ingress)",
+		HTTP01TestType:      "Ingress",
+		CreateIssuerFunc:    provisionerPACMEHTTP01.createPublicACMEServerStagingHTTP01Issuer,
+		DeleteIssuerFunc:    provisionerPACMEHTTP01.delete,
+		UnsupportedFeatures: unsupportedPublicACMEServerFeatures,
 	}).Define()
 }
 
@@ -131,15 +182,15 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.Object
 // - pebble
 // - a properly configured Issuer resource
 
-func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01IngressIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, "")
 
-	By("Creating an ACME HTTP01 Issuer")
+	By("Creating an ACME HTTP01 Ingress Issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-issuer-http01-",
 		},
-		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
+		Spec: a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
@@ -152,15 +203,15 @@ func (a *acmeIssuerProvisioner) createHTTP01Issuer(f *framework.Framework) cmmet
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+func (a *acmeIssuerProvisioner) createHTTP01IngressClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
 
-	By("Creating an ACME HTTP01 ClusterIssuer")
+	By("Creating an ACME HTTP01 Ingress ClusterIssuer")
 	issuer := &cmapi.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "acme-cluster-issuer-http01-",
 		},
-		Spec: a.createHTTP01IssuerSpec(f.Config.Addons.ACMEServer.URL),
+		Spec: a.createHTTP01IngressIssuerSpec(f.Config.Addons.ACMEServer.URL),
 	}
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
@@ -173,7 +224,96 @@ func (a *acmeIssuerProvisioner) createHTTP01ClusterIssuer(f *framework.Framework
 	}
 }
 
-func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec(serverURL string) cmapi.IssuerSpec {
+func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(f, "")
+
+	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
+	labels := make(map[string]string)
+	for _, l := range labelFlag {
+		kv := strings.Split(l, "=")
+		if len(kv) != 2 {
+			continue
+		}
+		labels[kv[0]] = kv[1]
+	}
+
+	By("Creating an ACME HTTP01 Gateway Issuer")
+	issuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "acme-issuer-http01-",
+		},
+		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
+	}
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createPublicACMEServerStagingHTTP01Issuer(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a Public ACME Server Staging HTTP01 Issuer")
+
+	var PublicACMEServerStagingURL string
+	if strings.Contains(f.Config.Addons.ACMEServer.URL, "pebble") {
+		PublicACMEServerStagingURL = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	} else {
+		PublicACMEServerStagingURL = f.Config.Addons.ACMEServer.URL
+	}
+
+	issuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "pacme-issuer-http01-",
+		},
+		Spec: a.createHTTP01IngressIssuerSpec(PublicACMEServerStagingURL),
+	}
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Create(context.TODO(), issuer, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to create Public ACME Server Staging HTTP01 issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createHTTP01GatewayClusterIssuer(f *framework.Framework) cmmeta.ObjectReference {
+	a.ensureEABSecret(f, f.Config.Addons.CertManager.ClusterResourceNamespace)
+
+	labelFlag := strings.Split(f.Config.Addons.Gateway.Labels, ",")
+	labels := make(map[string]string)
+	for _, l := range labelFlag {
+		kv := strings.Split(l, "=")
+		if len(kv) != 2 {
+			continue
+		}
+		labels[kv[0]] = kv[1]
+	}
+
+	By("Creating an ACME HTTP01 Gateway ClusterIssuer")
+	issuer := &cmapi.ClusterIssuer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "acme-cluster-issuer-http01-",
+		},
+		Spec: a.createHTTP01GatewayIssuerSpec(f.Config.Addons.ACMEServer.URL, labels),
+	}
+
+	issuer, err := f.CertManagerClientSet.CertmanagerV1().ClusterIssuers().Create(context.TODO(), issuer, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 cluster issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.ClusterIssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) createHTTP01IngressIssuerSpec(serverURL string) cmapi.IssuerSpec {
 	return cmapi.IssuerSpec{
 		IssuerConfig: cmapi.IssuerConfig{
 			ACME: &cmacme.ACMEIssuer{
@@ -192,6 +332,32 @@ func (a *acmeIssuerProvisioner) createHTTP01IssuerSpec(serverURL string) cmapi.I
 							// new ingress resources that do not specify a class to solve challenges,
 							// which means all Ingress controllers should act on the ingresses.
 							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (a *acmeIssuerProvisioner) createHTTP01GatewayIssuerSpec(serverURL string, labels map[string]string) cmapi.IssuerSpec {
+	return cmapi.IssuerSpec{
+		IssuerConfig: cmapi.IssuerConfig{
+			ACME: &cmacme.ACMEIssuer{
+				Server:        serverURL,
+				SkipTLSVerify: true,
+				PrivateKey: cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
+						Name: "acme-private-key-http01",
+					},
+				},
+				ExternalAccountBinding: a.eab,
+				Solvers: []cmacme.ACMEChallengeSolver{
+					{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							GatewayHTTPRoute: &cmacme.ACMEChallengeSolverHTTP01GatewayHTTPRoute{
+								Labels: labels,
+							},
 						},
 					},
 				},

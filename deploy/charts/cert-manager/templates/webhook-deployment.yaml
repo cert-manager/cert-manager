@@ -7,9 +7,8 @@ metadata:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "webhook"
-    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{- include "labels" . | nindent 4 }}
   {{- if .Values.webhook.deploymentAnnotations }}
   annotations:
 {{ toYaml .Values.webhook.deploymentAnnotations | indent 4 }}
@@ -31,9 +30,8 @@ spec:
         app: {{ include "webhook.name" . }}
         app.kubernetes.io/name: {{ include "webhook.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/managed-by: {{ .Release.Service }}
         app.kubernetes.io/component: "webhook"
-        helm.sh/chart: {{ include "webhook.chart" . }}
+        {{- include "labels" . | nindent 8 }}
 {{- if .Values.webhook.podLabels }}
 {{ toYaml .Values.webhook.podLabels | indent 8 }}
 {{- end }}
@@ -72,6 +70,7 @@ spec:
         {{- end }}
           ports:
           - name: https
+            protocol: TCP
             containerPort: {{ .Values.webhook.securePort }}
           livenessProbe:
             httpGet:

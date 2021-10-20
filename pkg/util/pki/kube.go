@@ -31,15 +31,9 @@ import (
 // GenerateTemplateFromCertificateSigningRequest will create an
 // *x509.Certificate from the given CertificateSigningRequest resource
 func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (*x509.Certificate, error) {
-	duration := cmapi.DefaultCertificateDuration
-	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
-	if ok {
-		dur, err := time.ParseDuration(requestedDuration)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse requested duration on annotation %q: %w",
-				experimentalapi.CertificateSigningRequestDurationAnnotationKey, err)
-		}
-		duration = dur
+	duration, err := DurationFromCertificateSigningRequest(csr)
+	if err != nil {
+		return nil, err
 	}
 
 	ku, eku, err := BuildKeyUsagesKube(csr.Spec.Usages)
@@ -50,6 +44,28 @@ func GenerateTemplateFromCertificateSigningRequest(csr *certificatesv1.Certifica
 	isCA := csr.Annotations[experimentalapi.CertificateSigningRequestIsCAAnnotationKey] == "true"
 
 	return GenerateTemplateFromCSRPEMWithUsages(csr.Spec.Request, duration, isCA, ku, eku)
+}
+
+// DurationFromCertificateSigningRequest returns the duration that the user may
+// have requested using the annotation
+// "experimental.cert-manager.io/request-duration".
+// Returns the cert-manager default certificate duration when the user hasn't
+// provided the annotation.
+func DurationFromCertificateSigningRequest(csr *certificatesv1.CertificateSigningRequest) (time.Duration, error) {
+	requestedDuration, ok := csr.Annotations[experimentalapi.CertificateSigningRequestDurationAnnotationKey]
+	if !ok {
+		// The user may not have set a duration annotation. Use the default
+		// duration in this case.
+		return cmapi.DefaultCertificateDuration, nil
+	}
+
+	duration, err := time.ParseDuration(requestedDuration)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse requested duration on annotation %q: %w",
+			experimentalapi.CertificateSigningRequestDurationAnnotationKey, err)
+	}
+
+	return duration, nil
 }
 
 func BuildKeyUsagesKube(usages []certificatesv1.KeyUsage) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
