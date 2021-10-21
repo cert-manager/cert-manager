@@ -1159,15 +1159,7 @@ func Convert_certmanager_IssuerSpec_To_v1beta1_IssuerSpec(in *certmanager.Issuer
 
 func autoConvert_v1beta1_IssuerStatus_To_certmanager_IssuerStatus(in *v1beta1.IssuerStatus, out *certmanager.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanager.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	if in.ACME != nil {
-		in, out := &in.ACME, &out.ACME
-		*out = new(acme.ACMEIssuerStatus)
-		if err := acmev1beta1.Convert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ACME = nil
-	}
+	out.ACME = (*acme.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
 	return nil
 }
 
@@ -1178,15 +1170,7 @@ func Convert_v1beta1_IssuerStatus_To_certmanager_IssuerStatus(in *v1beta1.Issuer
 
 func autoConvert_certmanager_IssuerStatus_To_v1beta1_IssuerStatus(in *certmanager.IssuerStatus, out *v1beta1.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]v1beta1.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	if in.ACME != nil {
-		in, out := &in.ACME, &out.ACME
-		*out = new(apisacmev1beta1.ACMEIssuerStatus)
-		if err := acmev1beta1.Convert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ACME = nil
-	}
+	out.ACME = (*apisacmev1beta1.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
 	return nil
 }
 
