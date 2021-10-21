@@ -37,7 +37,6 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	configv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/v1alpha1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/webhook/server"
@@ -60,10 +59,14 @@ type ServerOptions struct {
 }
 
 func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (ServerOptions, StopFunc) {
-	// Allow user to override options using flags
-	var opts configv1alpha1.WebhookConfiguration
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
-	options.AddFlags(fs, &opts)
+	webhookFlags := options.NewWebhookFlags()
+	webhookConfig, err := options.NewWebhookConfiguration()
+	if err != nil {
+		t.Fatalf("Failed building test webhook config: %v", err)
+	}
+	webhookFlags.AddFlags(fs)
+	options.AddConfigFlags(fs, webhookConfig)
 	// Parse the arguments passed in into the WebhookOptions struct
 	fs.Parse(args)
 
@@ -72,7 +75,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (Serve
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !opts.TLSConfig.FilesystemConfigProvided() && !opts.TLSConfig.DynamicConfigProvided() {
+	if !webhookConfig.TLSConfig.FilesystemConfigProvided() && !webhookConfig.TLSConfig.DynamicConfigProvided() {
 		// Generate a CA and serving certificate
 		ca, certificatePEM, privateKeyPEM, err := generateTLSAssets()
 		if err != nil {
@@ -87,17 +90,17 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (Serve
 			t.Fatal(err)
 		}
 
-		opts.TLSConfig.Filesystem.KeyFile = filepath.Join(tempDir, "tls.key")
-		opts.TLSConfig.Filesystem.CertFile = filepath.Join(tempDir, "tls.crt")
+		webhookConfig.TLSConfig.Filesystem.KeyFile = filepath.Join(tempDir, "tls.key")
+		webhookConfig.TLSConfig.Filesystem.CertFile = filepath.Join(tempDir, "tls.crt")
 	}
 
 	// Listen on a random port number
-	opts.SecurePort = pointer.Int(0)
-	opts.HealthzPort = pointer.Int(0)
+	webhookConfig.SecurePort = pointer.Int(0)
+	webhookConfig.HealthzPort = pointer.Int(0)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
-	srv, err := app.NewServerWithOptions(log, opts)
+	srv, err := app.NewServerWithOptions(log, *webhookFlags, *webhookConfig)
 	if err != nil {
 		t.Fatal(err)
 	}

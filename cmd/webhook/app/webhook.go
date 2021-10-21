@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -35,6 +36,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/pkg/webhook/authority"
+	"github.com/jetstack/cert-manager/pkg/webhook/configfile"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	"github.com/jetstack/cert-manager/pkg/webhook/server"
 	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
@@ -129,7 +131,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			// initial flag parse, since we disable cobra's flag parsing
 			if err := cleanFlagSet.Parse(args); err != nil {
-				log.Error(err, "Failed to parse kubelet flag")
+				log.Error(err, "Failed to parse webhook flag")
 				cmd.Usage()
 				os.Exit(1)
 			}
@@ -151,6 +153,24 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 			if help {
 				cmd.Help()
 				return
+			}
+
+			if err := options.ValidateWebhookFlags(webhookFlags); err != nil {
+				log.Error(err, "Failed to validate webhook flags")
+				os.Exit(1)
+			}
+
+			if configFile := webhookFlags.Config; len(configFile) > 0 {
+				webhookConfig, err = loadConfigFile(configFile)
+				if err != nil {
+					log.Error(err, "Failed to load webhook config file", "path", configFile)
+					os.Exit(1)
+				}
+
+				if err := webhookConfigFlagPrecedence(webhookConfig, args); err != nil {
+					log.Error(err, "Failed to merge flags with config file values")
+					os.Exit(1)
+				}
 			}
 
 			srv, err := NewServerWithOptions(log, *webhookFlags, *webhookConfig)
@@ -183,4 +203,63 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 	})
 
 	return cmd
+}
+
+// newFlagSetWithGlobals constructs a new pflag.FlagSet with global flags registered
+// on it.
+func newFlagSetWithGlobals() *pflag.FlagSet {
+	fs := pflag.NewFlagSet("", pflag.ExitOnError)
+	// set the normalize func, similar to k8s.io/component-base/cli//flags.go:InitFlags
+	fs.SetNormalizeFunc(cliflag.WordSepNormalizeFunc)
+	// explicitly add flags from libs that register global flags
+	options.AddGlobalFlags(fs)
+	return fs
+}
+
+// newFakeFlagSet constructs a pflag.FlagSet with the same flags as fs, but where
+// all values have noop Set implementations
+func newFakeFlagSet(fs *pflag.FlagSet) *pflag.FlagSet {
+	ret := pflag.NewFlagSet("", pflag.ExitOnError)
+	ret.SetNormalizeFunc(fs.GetNormalizeFunc())
+	fs.VisitAll(func(f *pflag.Flag) {
+		ret.VarP(cliflag.NoOp{}, f.Name, f.Shorthand, f.Usage)
+	})
+	return ret
+}
+
+// webhookConfigFlagPrecedence re-parses flags over the WebhookConfiguration object.
+// We must enforce flag precedence by re-parsing the command line into the new object.
+// This is necessary to preserve backwards-compatibility across binary upgrades.
+// See issue #56171 for more details.
+func webhookConfigFlagPrecedence(cfg *config.WebhookConfiguration, args []string) error {
+	// We use a throwaway webhookFlags and a fake global flagset to avoid double-parses,
+	// as some Set implementations accumulate values from multiple flag invocations.
+	fs := newFakeFlagSet(newFlagSetWithGlobals())
+	// register throwaway KubeletFlags
+	options.NewWebhookFlags().AddFlags(fs)
+	// register new WebhookConfiguration
+	options.AddConfigFlags(fs, cfg)
+	// re-parse flags
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	return nil
+}
+
+func loadConfigFile(name string) (*config.WebhookConfiguration, error) {
+	const errFmt = "failed to load webhook config file %s, error %v"
+	// compute absolute path based on current working dir
+	webhookConfigFile, err := filepath.Abs(name)
+	if err != nil {
+		return nil, fmt.Errorf(errFmt, name, err)
+	}
+	loader, err := configfile.NewFSLoader(webhookConfigFile)
+	if err != nil {
+		return nil, fmt.Errorf(errFmt, name, err)
+	}
+	cfg, err := loader.Load()
+	if err != nil {
+		return nil, fmt.Errorf(errFmt, name, err)
+	}
+	return cfg, nil
 }

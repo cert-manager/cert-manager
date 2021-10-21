@@ -32,6 +32,7 @@ filegroup(
         "//internal/apis/config/install:all-srcs",
         "//internal/apis/config/scheme:all-srcs",
         "//internal/apis/config/v1alpha1:all-srcs",
+        "//internal/apis/config/validation:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

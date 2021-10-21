@@ -28,14 +28,22 @@ import (
 )
 
 // WebhookFlags defines options that can only be configured via flags.
-type WebhookFlags struct{}
+type WebhookFlags struct {
+	// Path to a file containing a WebhookConfiguration resource
+	Config string
+}
 
 func NewWebhookFlags() *WebhookFlags {
 	return &WebhookFlags{}
 }
 
 func (f *WebhookFlags) AddFlags(fs *pflag.FlagSet) {
-	// noop
+	fs.StringVar(&f.Config, "config", "", "Path to a file containing a WebhookConfiguration object used to configure the webhook")
+}
+
+func ValidateWebhookFlags(f *WebhookFlags) error {
+	// No validation needed today
+	return nil
 }
 
 func NewWebhookConfiguration() (*config.WebhookConfiguration, error) {

@@ -27,6 +27,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/webhook/authority:all-srcs",
+        "//pkg/webhook/configfile:all-srcs",
         "//pkg/webhook/handlers:all-srcs",
         "//pkg/webhook/server:all-srcs",
     ],
