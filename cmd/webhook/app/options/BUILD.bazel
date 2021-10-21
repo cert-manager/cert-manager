@@ -2,13 +2,17 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["options.go"],
+    srcs = [
+        "globalflags.go",
+        "options.go",
+    ],
     importpath = "github.com/jetstack/cert-manager/cmd/webhook/app/options",
     visibility = ["//visibility:public"],
     deps = [
         "//internal/apis/config:go_default_library",
         "//internal/apis/config/scheme:go_default_library",
         "//pkg/apis/config/v1alpha1:go_default_library",
+        "//pkg/logs:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
         "@io_k8s_component_base//cli/flag:go_default_library",
     ],

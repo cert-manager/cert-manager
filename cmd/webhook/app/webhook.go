@@ -119,8 +119,8 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   componentWebhook,
-		Short: fmt.Sprintf("Webhook component providing API validation, mutation and conversion functionality for cert-manager (%s) (%s)", util.AppVersion, util.AppGitCommit),
+		Use:  componentWebhook,
+		Long: fmt.Sprintf("Webhook component providing API validation, mutation and conversion functionality for cert-manager (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		// The webhook has special flag parsing requirements to handle precedence of providing
 		// configuration via versioned configuration files and flag values.
 		// Setting DisableFlagParsing=true prevents Cobra from interfering with flag parsing
@@ -168,6 +168,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 
 	webhookFlags.AddFlags(cleanFlagSet)
 	options.AddConfigFlags(cleanFlagSet, webhookConfig)
+	options.AddGlobalFlags(cleanFlagSet)
 
 	cleanFlagSet.BoolP("help", "h", false, fmt.Sprintf("help for %s", cmd.Name()))
 
