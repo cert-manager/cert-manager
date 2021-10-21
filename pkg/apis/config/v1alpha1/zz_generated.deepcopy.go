@@ -29,6 +29,16 @@ import (
 func (in *WebhookConfiguration) DeepCopyInto(out *WebhookConfiguration) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
+	if in.SecurePort != nil {
+		in, out := &in.SecurePort, &out.SecurePort
+		*out = new(int)
+		**out = **in
+	}
+	if in.HealthzPort != nil {
+		in, out := &in.HealthzPort, &out.HealthzPort
+		*out = new(int)
+		**out = **in
+	}
 	in.TLSConfig.DeepCopyInto(&out.TLSConfig)
 	return
 }
