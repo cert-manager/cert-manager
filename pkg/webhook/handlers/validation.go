@@ -29,8 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/plugins"
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/plugins"
 )
 
 type registryBackedValidator struct {

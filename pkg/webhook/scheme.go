@@ -19,11 +19,11 @@ package webhook
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	acmeinstall "github.com/jetstack/cert-manager/pkg/internal/apis/acme/install"
-	cminstall "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/install"
-	metainstall "github.com/jetstack/cert-manager/pkg/internal/apis/meta/install"
+	"github.com/jetstack/cert-manager/internal/api/mutation"
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	acmeinstall "github.com/jetstack/cert-manager/internal/apis/acme/install"
+	cminstall "github.com/jetstack/cert-manager/internal/apis/certmanager/install"
+	metainstall "github.com/jetstack/cert-manager/internal/apis/meta/install"
 )
 
 // Define a Scheme that has all cert-manager API types registered, including

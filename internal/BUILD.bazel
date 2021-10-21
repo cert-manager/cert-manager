@@ -1,0 +1,22 @@
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//internal/api/mutation:all-srcs",
+        "//internal/api/validation:all-srcs",
+        "//internal/apis/acme:all-srcs",
+        "//internal/apis/certmanager:all-srcs",
+        "//internal/apis/meta:all-srcs",
+        "//internal/ingress:all-srcs",
+        "//internal/vault:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

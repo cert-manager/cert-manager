@@ -34,6 +34,8 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	internalvault "github.com/jetstack/cert-manager/internal/vault"
+	fakevault "github.com/jetstack/cert-manager/internal/vault/fake"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -41,8 +43,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
-	fakevault "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 

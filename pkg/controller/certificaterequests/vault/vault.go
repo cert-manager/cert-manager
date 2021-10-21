@@ -22,12 +22,12 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	vaultinternal "github.com/jetstack/cert-manager/internal/vault"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )

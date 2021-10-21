@@ -6,11 +6,11 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/webhook",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/internal/api/mutation:go_default_library",
-        "//pkg/internal/api/validation:go_default_library",
-        "//pkg/internal/apis/acme/install:go_default_library",
-        "//pkg/internal/apis/certmanager/install:go_default_library",
-        "//pkg/internal/apis/meta/install:go_default_library",
+        "//internal/api/mutation:go_default_library",
+        "//internal/api/validation:go_default_library",
+        "//internal/apis/acme/install:go_default_library",
+        "//internal/apis/certmanager/install:go_default_library",
+        "//internal/apis/meta/install:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
     ],
 )

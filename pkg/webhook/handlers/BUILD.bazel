@@ -11,9 +11,9 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/webhook/handlers",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/internal/api/mutation:go_default_library",
-        "//pkg/internal/api/validation:go_default_library",
-        "//pkg/internal/apis/certmanager/validation/plugins:go_default_library",
+        "//internal/api/mutation:go_default_library",
+        "//internal/api/validation:go_default_library",
+        "//internal/apis/certmanager/validation/plugins:go_default_library",
         "//pkg/logs:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
@@ -38,8 +38,8 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/internal/api/mutation:go_default_library",
-        "//pkg/internal/api/validation:go_default_library",
+        "//internal/api/mutation:go_default_library",
+        "//internal/api/validation:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",

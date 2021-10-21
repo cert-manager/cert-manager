@@ -33,10 +33,10 @@ import (
 	k8snet "k8s.io/utils/net"
 	gwapilisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha1"
 
+	"github.com/jetstack/cert-manager/internal/ingress"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/internal/ingress"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
