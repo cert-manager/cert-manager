@@ -9,7 +9,7 @@ go_library(
         "zz_generated.deepcopy.go",
     ],
     importpath = "github.com/jetstack/cert-manager/internal/apis/config",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//pkg/apis/config:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
@@ -30,6 +30,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//internal/apis/config/install:all-srcs",
+        "//internal/apis/config/scheme:all-srcs",
         "//internal/apis/config/v1alpha1:all-srcs",
     ],
     tags = ["automanaged"],

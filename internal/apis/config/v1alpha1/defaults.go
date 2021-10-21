@@ -17,9 +17,23 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/jetstack/cert-manager/pkg/apis/config/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+func SetDefaults_WebhookConfiguration(obj *v1alpha1.WebhookConfiguration) {
+	if obj.SecurePort == nil {
+		obj.SecurePort = pointer.Int(6443)
+	}
+	if obj.HealthzPort == nil {
+		obj.HealthzPort = pointer.Int(6080)
+	}
+	if obj.PprofAddress == "" {
+		obj.PprofAddress = "localhost:6060"
+	}
 }

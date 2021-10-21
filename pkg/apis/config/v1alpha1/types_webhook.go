@@ -6,4 +6,81 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 type WebhookConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
+
+	// securePort is the port number to listen on for secure TLS connections from the kube-apiserver.
+	// Defaults to 6443.
+	SecurePort *int `json:"securePort,omitempty"`
+
+	// healthzPort is the port number to listen on (using plaintext HTTP) for healthz connections.
+	// Defaults to 6080.
+	HealthzPort *int `json:"healthzPort,omitempty"`
+
+	// tlsConfig is used to configure the secure listener's TLS settings.
+	TLSConfig WebhookTLSConfig `json:"tlsConfig"`
+
+	// kubeConfig is the kubeconfig file used to connect to the Kubernetes apiserver.
+	// If not specified, the webhook will attempt to load the in-cluster-config.
+	KubeConfig string `json:"kubeConfig,omitempty"`
+
+	// apiServerHost is used to override the API server connection address.
+	// Deprecated: use `kubeConfig` instead.
+	APIServerHost string `json:"apiServerHost,omitempty"`
+
+	// enablePprof configures whether pprof is enabled.
+	EnablePprof bool `json:"enablePprof"`
+
+	// pprofAddress configures the address on which /debug/pprof endpoint will be served if enabled.
+	// Defaults to 'localhost:6060'.
+	PprofAddress string `json:"pprofAddress,omitempty"`
+}
+
+// WebhookTLSConfig configures how TLS certificates are sourced for serving.
+// Only one of 'filesystem' or 'dynamic' may be specified.
+type WebhookTLSConfig struct {
+	// cipherSuites is the list of allowed cipher suites for the server.
+	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
+	// If not specified, the default for the Go version will be used and may change over time.
+	CipherSuites []string `json:"cipherSuites,omitempty"`
+
+	// minTLSVersion is the minimum TLS version supported.
+	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
+	// If not specified, the default for the Go version will be used and may change over time.
+	MinTLSVersion string `json:"minTLSVersion,omitempty"`
+
+	// Filesystem enables using a certificate and private key found on the local filesystem.
+	// These files will be periodically polled in case they have changed, and dynamically reloaded.
+	Filesystem WebhookFilesystemServingConfig `json:"filesystem"`
+
+	// When Dynamic serving is enabled, the webhook will generate a CA used to sign webhook
+	// certificates and persist it into a Kubernetes Secret resource (for other replicas of the
+	// webhook to consume).
+	// It will then generate a certificate in-memory for itself using this CA to serve with.
+	// The CAs certificate can then be copied into the appropriate Validating, Mutating and Conversion
+	// webhook configuration objects (typically by cainjector).
+	Dynamic WebhookDynamicServingConfig `json:"dynamic"`
+}
+
+// WebhookDynamicServingConfig makes the webhook generate a CA and persist it into Secret resources.
+// This CA will be used by all instances of the webhook for signing serving certificates.
+type WebhookDynamicServingConfig struct {
+	// Namespace of the Kubernetes Secret resource containing the TLS certificate
+	// used as a CA to sign dynamic serving certificates.
+	SecretNamespace string `json:"secretNamespace,omitempty"`
+
+	// Namespace of the Kubernetes Secret resource containing the TLS certificate
+	// used as a CA to sign dynamic serving certificates.
+	SecretName string `json:"secretName,omitempty"`
+
+	// DNSNames that must be present on serving certificates signed by the CA.
+	DNSNames []string `json:"dnsNames,omitempty"`
+}
+
+// WebhookFilesystemServingConfig enables using a certificate and private key found on the local filesystem.
+// These files will be periodically polled in case they have changed, and dynamically reloaded.
+type WebhookFilesystemServingConfig struct {
+	// Path to a file containing TLS certificate & chain to serve with
+	CertFile string `json:"certFile,omitempty"`
+
+	// Path to a file containing a TLS private key to server with
+	KeyFile string `json:"keyFile,omitempty"`
 }

@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -29,5 +30,10 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&v1alpha1.WebhookConfiguration{}, func(obj interface{}) { SetObjectDefaults_WebhookConfiguration(obj.(*v1alpha1.WebhookConfiguration)) })
 	return nil
+}
+
+func SetObjectDefaults_WebhookConfiguration(in *v1alpha1.WebhookConfiguration) {
+	SetDefaults_WebhookConfiguration(in)
 }

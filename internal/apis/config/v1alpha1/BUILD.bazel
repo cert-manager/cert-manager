@@ -11,14 +11,15 @@ go_library(
         "zz_generated.defaults.go",
     ],
     importpath = "github.com/jetstack/cert-manager/internal/apis/config/v1alpha1",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/apis/config:go_default_library",
         "//pkg/apis/config:go_default_library",
         "//pkg/apis/config/v1alpha1:go_default_library",
-        "//internal/apis/config:go_default_library",
         "@io_k8s_apimachinery//pkg/conversion:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 
