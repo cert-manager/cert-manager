@@ -6,7 +6,7 @@ go_library(
         "registry.go",
         "warning.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/api/validation",
+    importpath = "github.com/jetstack/cert-manager/internal/api/validation",
     visibility = ["//pkg:__subpackages__"],
     deps = [
         "@io_k8s_api//admission/v1:go_default_library",
@@ -21,8 +21,8 @@ go_test(
     srcs = ["registry_test.go"],
     deps = [
         ":go_default_library",
+        "//internal/apis/certmanager:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
-        "//pkg/internal/apis/certmanager:go_default_library",
         "//pkg/webhook:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

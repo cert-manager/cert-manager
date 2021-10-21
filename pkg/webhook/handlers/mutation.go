@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
+	"github.com/jetstack/cert-manager/internal/api/mutation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 

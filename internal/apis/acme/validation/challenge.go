@@ -23,8 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	cmacme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
 )
 
 func ValidateChallengeUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {

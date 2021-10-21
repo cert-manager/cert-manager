@@ -32,8 +32,8 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	coretesting "k8s.io/client-go/testing"
 
-	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	internalcmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	internalcmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	internalcmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
 )

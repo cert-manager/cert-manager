@@ -30,7 +30,7 @@ import (
 
 	"github.com/miekg/dns"
 
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util"
 )
 
 var defaultPort = "53"

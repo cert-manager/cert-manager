@@ -17,7 +17,7 @@ limitations under the License.
 package validation
 
 import (
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
+	"github.com/jetstack/cert-manager/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 )
 

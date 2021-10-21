@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +k8s:conversion-gen=github.com/jetstack/cert-manager/pkg/internal/apis/certmanager
+// +k8s:conversion-gen=github.com/jetstack/cert-manager/internal/apis/certmanager
 // +k8s:conversion-gen-external-types=github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:defaulter-gen-input=../../../../apis/certmanager/v1alpha2

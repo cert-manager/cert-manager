@@ -26,10 +26,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/jetstack/cert-manager/internal/ingress"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	shimhelper "github.com/jetstack/cert-manager/pkg/controller/certificate-shim"
-	"github.com/jetstack/cert-manager/pkg/internal/ingress"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 

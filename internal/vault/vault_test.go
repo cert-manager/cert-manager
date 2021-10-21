@@ -38,9 +38,9 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	corev1 "k8s.io/api/core/v1"
 
+	vaultfake "github.com/jetstack/cert-manager/internal/vault/fake"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	vaultfake "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	"github.com/jetstack/cert-manager/test/unit/listers"

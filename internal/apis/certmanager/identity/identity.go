@@ -17,10 +17,10 @@ limitations under the License.
 package identity
 
 import (
-	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/identity/certificaterequests"
+	"github.com/jetstack/cert-manager/internal/api/mutation"
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager/identity/certificaterequests"
 )
 
 func AddToValidationRegistry(reg *validation.Registry) error {

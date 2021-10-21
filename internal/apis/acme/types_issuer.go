@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
+	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
 )
 
 // ACMEIssuer contains the specification for an ACME issuer.

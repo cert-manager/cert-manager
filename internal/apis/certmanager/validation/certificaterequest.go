@@ -28,11 +28,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/apis/acme"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )

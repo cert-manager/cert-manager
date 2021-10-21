@@ -24,8 +24,8 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	cmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
 )
 
 func TestValidateCreate(t *testing.T) {

@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
+	"github.com/jetstack/cert-manager/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
 )

@@ -25,9 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/jetstack/cert-manager/internal/api/mutation"
+	cminternal "github.com/jetstack/cert-manager/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
-	cminternal "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )

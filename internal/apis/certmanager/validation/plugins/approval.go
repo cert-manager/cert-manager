@@ -31,10 +31,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	authzclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 
+	internalcmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
 
 // approval is responsible for reviewing whether users attempting to approve or

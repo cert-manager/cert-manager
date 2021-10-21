@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["vault.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/vault",
+    importpath = "github.com/jetstack/cert-manager/internal/vault",
     visibility = ["//pkg:__subpackages__"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
@@ -19,9 +19,9 @@ go_test(
     srcs = ["vault_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//internal/vault/fake:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/internal/vault/fake:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "//test/unit/listers:go_default_library",
@@ -43,7 +43,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/internal/vault/fake:all-srcs",
+        "//internal/vault/fake:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

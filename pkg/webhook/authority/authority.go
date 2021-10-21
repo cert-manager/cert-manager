@@ -45,8 +45,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack/cert-manager/cmd/util"
+	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 

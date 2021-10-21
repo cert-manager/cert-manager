@@ -22,16 +22,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/mutation"
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	cmidentity "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/identity"
-	v1 "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1alpha3"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/v1beta1"
-	cmvalidation "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
-	cmmetav1 "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1"
+	"github.com/jetstack/cert-manager/internal/api/mutation"
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager"
+	cmidentity "github.com/jetstack/cert-manager/internal/apis/certmanager/identity"
+	v1 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha2"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha3"
+	"github.com/jetstack/cert-manager/internal/apis/certmanager/v1beta1"
+	cmvalidation "github.com/jetstack/cert-manager/internal/apis/certmanager/validation"
+	cmmetav1 "github.com/jetstack/cert-manager/internal/apis/meta/v1"
 )
 
 // Install registers the API group and adds types to a scheme

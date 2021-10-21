@@ -3,13 +3,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["identity.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/identity",
+    importpath = "github.com/jetstack/cert-manager/internal/apis/certmanager/identity",
     visibility = ["//pkg:__subpackages__"],
     deps = [
-        "//pkg/internal/api/mutation:go_default_library",
-        "//pkg/internal/api/validation:go_default_library",
-        "//pkg/internal/apis/certmanager:go_default_library",
-        "//pkg/internal/apis/certmanager/identity/certificaterequests:go_default_library",
+        "//internal/api/mutation:go_default_library",
+        "//internal/api/validation:go_default_library",
+        "//internal/apis/certmanager:go_default_library",
+        "//internal/apis/certmanager/identity/certificaterequests:go_default_library",
     ],
 )
 
@@ -24,7 +24,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/internal/apis/certmanager/identity/certificaterequests:all-srcs",
+        "//internal/apis/certmanager/identity/certificaterequests:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

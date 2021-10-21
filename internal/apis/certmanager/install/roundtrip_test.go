@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
 
-	cmfuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/fuzzer"
+	cmfuzzer "github.com/jetstack/cert-manager/internal/apis/certmanager/fuzzer"
 )
 
 func TestRoundTripTypes(t *testing.T) {

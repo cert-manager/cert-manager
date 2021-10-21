@@ -21,8 +21,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
+	"github.com/jetstack/cert-manager/internal/apis/acme"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 )
 
 // Funcs returns the fuzzer functions for the apps api group.

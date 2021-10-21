@@ -3,11 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["certificaterequests.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/identity/certificaterequests",
+    importpath = "github.com/jetstack/cert-manager/internal/apis/certmanager/identity/certificaterequests",
     visibility = ["//pkg:__subpackages__"],
     deps = [
-        "//pkg/internal/api/validation:go_default_library",
-        "//pkg/internal/apis/certmanager:go_default_library",
+        "//internal/api/validation:go_default_library",
+        "//internal/apis/certmanager:go_default_library",
         "//pkg/util:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_api//authentication/v1:go_default_library",
@@ -35,8 +35,8 @@ go_test(
     srcs = ["certificaterequests_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/internal/api/validation:go_default_library",
-        "//pkg/internal/apis/certmanager:go_default_library",
+        "//internal/api/validation:go_default_library",
+        "//internal/apis/certmanager:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_api//authentication/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",

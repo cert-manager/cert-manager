@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
+	"github.com/jetstack/cert-manager/internal/api/validation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"

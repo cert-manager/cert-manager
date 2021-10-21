@@ -28,11 +28,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/jetstack/cert-manager/internal/api/validation"
+	internalcmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/internal/api/validation"
-	internalcmapi "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
-	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
 // Validation functions for cert-manager Certificate types

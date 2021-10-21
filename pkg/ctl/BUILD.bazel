@@ -6,9 +6,9 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/ctl",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/internal/apis/acme/install:go_default_library",
-        "//pkg/internal/apis/certmanager/install:go_default_library",
-        "//pkg/internal/apis/meta/install:go_default_library",
+        "//internal/apis/acme/install:go_default_library",
+        "//internal/apis/certmanager/install:go_default_library",
+        "//internal/apis/meta/install:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/internalversion:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",

@@ -65,14 +65,14 @@ deepcopy_inputs=(
   pkg/apis/certmanager/v1alpha3 \
   pkg/apis/certmanager/v1beta1 \
   pkg/apis/certmanager/v1 \
-  pkg/internal/apis/certmanager \
+  internal/apis/certmanager \
   pkg/apis/acme/v1alpha2 \
   pkg/apis/acme/v1alpha3 \
   pkg/apis/acme/v1beta1 \
   pkg/apis/acme/v1 \
-  pkg/internal/apis/acme \
+  internal/apis/acme \
   pkg/apis/meta/v1 \
-  pkg/internal/apis/meta \
+  internal/apis/meta \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup \
@@ -95,30 +95,30 @@ client_inputs=(
 
 # Generate defaulting functions to be used by the mutating webhook
 defaulter_inputs=(
-  pkg/internal/apis/certmanager/v1alpha2 \
-  pkg/internal/apis/certmanager/v1alpha3 \
-  pkg/internal/apis/certmanager/v1beta1 \
-  pkg/internal/apis/certmanager/v1 \
-  pkg/internal/apis/acme/v1alpha2 \
-  pkg/internal/apis/acme/v1alpha3 \
-  pkg/internal/apis/acme/v1beta1 \
-  pkg/internal/apis/acme/v1 \
-  pkg/internal/apis/meta/v1 \
+  internal/apis/certmanager/v1alpha2 \
+  internal/apis/certmanager/v1alpha3 \
+  internal/apis/certmanager/v1beta1 \
+  internal/apis/certmanager/v1 \
+  internal/apis/acme/v1alpha2 \
+  internal/apis/acme/v1alpha3 \
+  internal/apis/acme/v1beta1 \
+  internal/apis/acme/v1 \
+  internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
 )
 
 # Generate conversion functions to be used by the conversion webhook
 conversion_inputs=(
-  pkg/internal/apis/certmanager/v1alpha2 \
-  pkg/internal/apis/certmanager/v1alpha3 \
-  pkg/internal/apis/certmanager/v1beta1 \
-  pkg/internal/apis/certmanager/v1 \
-  pkg/internal/apis/acme/v1alpha2 \
-  pkg/internal/apis/acme/v1alpha3 \
-  pkg/internal/apis/acme/v1beta1 \
-  pkg/internal/apis/acme/v1 \
-  pkg/internal/apis/meta/v1 \
+  internal/apis/certmanager/v1alpha2 \
+  internal/apis/certmanager/v1alpha3 \
+  internal/apis/certmanager/v1beta1 \
+  internal/apis/certmanager/v1 \
+  internal/apis/acme/v1alpha2 \
+  internal/apis/acme/v1alpha3 \
+  internal/apis/acme/v1beta1 \
+  internal/apis/acme/v1 \
+  internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
 )
@@ -256,7 +256,7 @@ gen-informers() {
 }
 
 gen-defaulters() {
-  clean pkg/internal/apis 'zz_generated.defaults.go'
+  clean internal/apis 'zz_generated.defaults.go'
   clean pkg/webhook/handlers/testdata/apis 'zz_generated.defaults.go'
   echo "Generating defaulting functions..." >&2
   prefixed_inputs=( "${defaulter_inputs[@]/#/$module_name/}" )
@@ -276,36 +276,36 @@ gen-defaulters() {
 # generated. This bug should get resolved in
 # https://github.com/kubernetes/kubernetes/issues/101567
 gen-conversions() {
-  clean pkg/internal/apis 'zz_generated.conversion.go'
+  clean internal/apis 'zz_generated.conversion.go'
   clean pkg/webhook/handlers/testdata/apis 'zz_generated.conversion.go'
   echo "Generating conversion functions..." >&2
 
   # meta api
   "$conversiongen" --go-header-file hack/boilerplate/boilerplate.generatego.txt \
-    --input-dirs github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1 \
+    --input-dirs github.com/jetstack/cert-manager/internal/apis/meta/v1 \
     -O zz_generated.conversion
   
   # Workaround (see: https://github.com/kubernetes/kubernetes/issues/101567).
-  remove_go_autogen_tags "pkg/internal/apis/meta/v1/zz_generated.conversion.go"
+  remove_go_autogen_tags "internal/apis/meta/v1/zz_generated.conversion.go"
 
   # acme and certmanager apis
   for v in v1alpha2 v1alpha3 v1beta1 v1
   do
     "$conversiongen" --go-header-file hack/boilerplate/boilerplate.generatego.txt \
-      --input-dirs "github.com/jetstack/cert-manager/pkg/internal/apis/acme/$v" \
+      --input-dirs "github.com/jetstack/cert-manager/internal/apis/acme/$v" \
       -O zz_generated.conversion \
-      --extra-dirs github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1
+      --extra-dirs github.com/jetstack/cert-manager/internal/apis/meta/v1
     
     # Workaround (see: https://github.com/kubernetes/kubernetes/issues/101567)
-    remove_go_autogen_tags "pkg/internal/apis/acme/$v/zz_generated.conversion.go"
+    remove_go_autogen_tags "internal/apis/acme/$v/zz_generated.conversion.go"
 
     "$conversiongen" --go-header-file hack/boilerplate/boilerplate.generatego.txt \
-      --input-dirs "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/$v" \
+      --input-dirs "github.com/jetstack/cert-manager/internal/apis/certmanager/$v" \
       -O zz_generated.conversion \
-      --extra-dirs "github.com/jetstack/cert-manager/pkg/internal/apis/meta/v1,github.com/jetstack/cert-manager/pkg/internal/apis/acme/$v"
+      --extra-dirs "github.com/jetstack/cert-manager/internal/apis/meta/v1,github.com/jetstack/cert-manager/internal/apis/acme/$v"
 
     # Workaround (see: https://github.com/kubernetes/kubernetes/issues/101567)
-    remove_go_autogen_tags "pkg/internal/apis/certmanager/$v/zz_generated.conversion.go"
+    remove_go_autogen_tags "internal/apis/certmanager/$v/zz_generated.conversion.go"
   done
 
   # test apis
