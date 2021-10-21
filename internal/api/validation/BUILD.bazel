@@ -7,7 +7,7 @@ go_library(
         "warning.go",
     ],
     importpath = "github.com/jetstack/cert-manager/internal/api/validation",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",

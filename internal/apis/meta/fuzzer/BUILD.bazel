@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = ["fuzzer.go"],
     importpath = "github.com/jetstack/cert-manager/internal/apis/meta/fuzzer",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = ["@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library"],
 )
 

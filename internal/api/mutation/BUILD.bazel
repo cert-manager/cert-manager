@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = ["registry.go"],
     importpath = "github.com/jetstack/cert-manager/internal/api/mutation",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",

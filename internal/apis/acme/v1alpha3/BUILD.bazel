@@ -11,7 +11,7 @@ go_library(
         "zz_generated.defaults.go",
     ],
     importpath = "github.com/jetstack/cert-manager/internal/apis/acme/v1alpha3",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/apis/acme:go_default_library",
         "//internal/apis/meta:go_default_library",

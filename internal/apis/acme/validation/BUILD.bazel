@@ -9,7 +9,7 @@ go_library(
         "register.go",
     ],
     importpath = "github.com/jetstack/cert-manager/internal/apis/acme/validation",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/validation:go_default_library",
         "//internal/apis/acme:go_default_library",

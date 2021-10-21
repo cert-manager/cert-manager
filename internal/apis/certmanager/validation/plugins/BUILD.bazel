@@ -7,7 +7,7 @@ go_library(
         "plugins.go",
     ],
     importpath = "github.com/jetstack/cert-manager/internal/apis/certmanager/validation/plugins",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/apis/certmanager:go_default_library",
         "//internal/apis/certmanager/validation/util:go_default_library",

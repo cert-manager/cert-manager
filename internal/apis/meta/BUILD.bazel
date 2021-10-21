@@ -9,7 +9,7 @@ go_library(
         "zz_generated.deepcopy.go",
     ],
     importpath = "github.com/jetstack/cert-manager/internal/apis/meta",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//pkg/apis/meta:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",

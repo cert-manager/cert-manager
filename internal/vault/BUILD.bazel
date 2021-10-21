@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = ["vault.go"],
     importpath = "github.com/jetstack/cert-manager/internal/vault",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/util/pki:go_default_library",

@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = ["identity.go"],
     importpath = "github.com/jetstack/cert-manager/internal/apis/certmanager/identity",
-    visibility = ["//pkg:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/mutation:go_default_library",
         "//internal/api/validation:go_default_library",
