@@ -82,3 +82,15 @@ func Convert_acme_OrderSpec_To_v1alpha3_OrderSpec(in *acme.OrderSpec, out *v1alp
 
 	return nil
 }
+
+// Convert_acme_ACMEIssuer_To_v1alpha3_ACMEIssuer is explicitly defined to avoid issues in conversion-gen
+// when referencing types in other API groups.
+func Convert_acme_ACMEIssuer_To_v1alpha3_ACMEIssuer(in *acme.ACMEIssuer, out *v1alpha3.ACMEIssuer, s conversion.Scope) error {
+	return autoConvert_acme_ACMEIssuer_To_v1alpha3_ACMEIssuer(in, out, s)
+}
+
+// Convert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer is explicitly defined to avoid issues in conversion-gen
+// when referencing types in other API groups.
+func Convert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer(in *v1alpha3.ACMEIssuer, out *acme.ACMEIssuer, s conversion.Scope) error {
+	return autoConvert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer(in, out, s)
+}

@@ -165,7 +165,6 @@ sh_binary(
         "@io_k8s_code_generator//cmd/lister-gen",
     ],
     deps = [
-        ":utils",  # This is added to ensure that if ./utils.sh changes Bazel knows to re-run this target
         "@bazel_tools//tools/bash/runfiles",
     ],
 )
@@ -276,9 +275,4 @@ filegroup(
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
-)
-
-sh_library(
-    name = "utils",
-    srcs = ["utils.sh"],
 )
