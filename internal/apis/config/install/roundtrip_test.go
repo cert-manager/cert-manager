@@ -21,9 +21,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
 
-	acmefuzzer "github.com/jetstack/cert-manager/internal/apis/acme/fuzzer"
+	configfuzzer "github.com/jetstack/cert-manager/internal/apis/config/fuzzer"
 )
 
 func TestRoundTripTypes(t *testing.T) {
-	roundtrip.RoundTripTestForAPIGroup(t, Install, acmefuzzer.Funcs)
+	roundtrip.RoundTripTestForAPIGroup(t, Install, configfuzzer.Funcs)
 }

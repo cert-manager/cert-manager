@@ -29,6 +29,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//internal/apis/config/fuzzer:all-srcs",
         "//internal/apis/config/install:all-srcs",
         "//internal/apis/config/scheme:all-srcs",
         "//internal/apis/config/v1alpha1:all-srcs",
