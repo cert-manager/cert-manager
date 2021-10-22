@@ -27,11 +27,28 @@ import (
 	"github.com/jetstack/cert-manager/internal/apis/config/scheme"
 )
 
+// Filesystem is an interface used to mock out calls to ReadFile
+type Filesystem interface {
+	ReadFile(filename string) ([]byte, error)
+}
+
+type realFS struct{}
+
+func (fs realFS) ReadFile(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
+}
+
+// NewRealFS builds a Filesystem that wraps around `ioutil.ReadFile`.
+func NewRealFS() Filesystem {
+	return realFS{}
+}
+
 type Loader interface {
 	Load() (*config.WebhookConfiguration, error)
 }
 
 type fsLoader struct {
+	fs       Filesystem
 	filename string
 	codec    *serializer.CodecFactory
 }
@@ -39,7 +56,7 @@ type fsLoader struct {
 var _ Loader = &fsLoader{}
 
 func (f *fsLoader) Load() (*config.WebhookConfiguration, error) {
-	data, err := ioutil.ReadFile(f.filename)
+	data, err := f.fs.ReadFile(f.filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read webhook config file %q, error: %v", f.filename, err)
 	}
@@ -58,13 +75,14 @@ func (f *fsLoader) Load() (*config.WebhookConfiguration, error) {
 	return cfg, nil
 }
 
-func NewFSLoader(name string) (Loader, error) {
+func NewFSLoader(fs Filesystem, name string) (Loader, error) {
 	_, webhookCodec, err := scheme.NewSchemeAndCodecs(serializer.EnableStrict)
 	if err != nil {
 		return nil, err
 	}
 
 	return &fsLoader{
+		fs:       fs,
 		filename: name,
 		codec:    webhookCodec,
 	}, nil

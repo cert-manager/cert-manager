@@ -253,7 +253,7 @@ func loadConfigFile(name string) (*config.WebhookConfiguration, error) {
 	if err != nil {
 		return nil, fmt.Errorf(errFmt, name, err)
 	}
-	loader, err := configfile.NewFSLoader(webhookConfigFile)
+	loader, err := configfile.NewFSLoader(configfile.NewRealFS(), webhookConfigFile)
 	if err != nil {
 		return nil, fmt.Errorf(errFmt, name, err)
 	}
