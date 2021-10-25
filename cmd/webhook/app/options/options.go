@@ -21,6 +21,15 @@ import (
 
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
+
+	cmdutil "github.com/jetstack/cert-manager/cmd/util"
+)
+
+const (
+	// Default port on which /validate, /mutate, /convert endpoints will be served
+	defaultListeningPort = 6443
+	// Default health check port
+	defaultHealthPort = 6080
 )
 
 type WebhookOptions struct {
@@ -56,12 +65,19 @@ type WebhookOptions struct {
 	// MinTLSVersion is the minimum TLS version supported.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	MinTLSVersion string
+
+	// EnablePprof determines whether pprof is enabled.
+	EnablePprof bool
+
+	// Address on which /debug/pprof endpoint will be served if enabled. Default is
+	// localhost:6060.
+	PprofAddress string
 }
 
 func (o *WebhookOptions) AddFlags(fs *pflag.FlagSet) {
 	// TODO: rename secure-port to listen-port
-	fs.IntVar(&o.ListenPort, "secure-port", 6443, "port number to listen on for secure TLS connections")
-	fs.IntVar(&o.HealthzPort, "healthz-port", 6080, "port number to listen on for insecure healthz connections")
+	fs.IntVar(&o.ListenPort, "secure-port", defaultListeningPort, "port number to listen on for secure TLS connections")
+	fs.IntVar(&o.HealthzPort, "healthz-port", defaultHealthPort, "port number to listen on for insecure healthz connections")
 	fs.StringVar(&o.TLSCertFile, "tls-cert-file", "", "path to the file containing the TLS certificate to serve with")
 	fs.StringVar(&o.TLSKeyFile, "tls-private-key-file", "", "path to the file containing the TLS private key to serve with")
 	fs.StringVar(&o.DynamicServingCASecretNamespace, "dynamic-serving-ca-secret-namespace", "", "namespace of the secret used to store the CA that signs serving certificates")
@@ -71,7 +87,10 @@ func (o *WebhookOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.APIServerHost, "api-server-host", "", ""+
 		"Optional apiserver host address to connect to. If not specified, autoconfiguration "+
 		"will be attempted.")
-
+	fs.BoolVar(&o.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, ""+
+		"Enable profiling for controller.")
+	fs.StringVar(&o.PprofAddress, "profiler-address", cmdutil.DefaultProfilerAddr,
+		"Address of the Go profiler (pprof). This should never be exposed on a public interface. If this flag is not set, the profiler is not run.")
 	tlsCipherPossibleValues := cliflag.TLSCipherPossibleValues()
 	fs.StringSliceVar(&o.TLSCipherSuites, "tls-cipher-suites", o.TLSCipherSuites,
 		"Comma-separated list of cipher suites for the server. "+
@@ -81,6 +100,7 @@ func (o *WebhookOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.MinTLSVersion, "tls-min-version", o.MinTLSVersion,
 		"Minimum TLS version supported. "+
 			"Possible values: "+strings.Join(tlsPossibleVersions, ", "))
+
 }
 
 func FileTLSSourceEnabled(o WebhookOptions) bool {

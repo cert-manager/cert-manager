@@ -26,4 +26,7 @@ const (
 	DefaultLeaderElectionLeaseDuration = 60 * time.Second
 	DefaultLeaderElectionRenewDeadline = 40 * time.Second
 	DefaultLeaderElectionRetryPeriod   = 15 * time.Second
+
+	DefaultEnableProfiling = false
+	DefaultProfilerAddr    = "localhost:6060"
 )

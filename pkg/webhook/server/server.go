@@ -84,8 +84,9 @@ type Server struct {
 	// If not specified, the healthz endpoint will not be exposed.
 	HealthzAddr string
 
-	// EnablePprof controls whether net/http/pprof handlers are registered with
-	// the HTTP listener.
+	// PprofAddr is the address the pprof endpoint should be served on if enabled.
+	PprofAddr string
+	// EnablePprof determines whether pprof is enabled.
 	EnablePprof bool
 
 	// Scheme is used to decode/encode request/response payloads.
@@ -134,12 +135,12 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 			return err
 		}
 
-		mux := http.NewServeMux()
-		mux.HandleFunc("/healthz", s.handleHealthz)
-		mux.HandleFunc("/livez", s.handleLivez)
+		healthMux := http.NewServeMux()
+		healthMux.HandleFunc("/healthz", s.handleHealthz)
+		healthMux.HandleFunc("/livez", s.handleLivez)
 		s.Log.V(logf.InfoLevel).Info("listening for insecure healthz connections", "address", s.HealthzAddr)
 		server := &http.Server{
-			Handler: mux,
+			Handler: healthMux,
 		}
 		g.Go(func() error {
 			<-gctx.Done()
@@ -154,6 +155,39 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		})
 		g.Go(func() error {
 			if err := server.Serve(healthzListener); err != http.ErrServerClosed {
+				return err
+			}
+			return nil
+		})
+	}
+
+	// if a PprofAddr is provided, start the pprof listener
+	if s.EnablePprof {
+		pprofListener, err := net.Listen("tcp", s.PprofAddr)
+		if err != nil {
+			return err
+		}
+
+		profilerMux := http.NewServeMux()
+		// Add pprof endpoints to this mux
+		profiling.Install(profilerMux)
+		s.Log.V(logf.InfoLevel).Info("running go profiler on", "address", s.PprofAddr)
+		server := &http.Server{
+			Handler: profilerMux,
+		}
+		g.Go(func() error {
+			<-gctx.Done()
+			// allow a timeout for graceful shutdown
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := server.Shutdown(ctx); err != nil {
+				return err
+			}
+			return nil
+		})
+		g.Go(func() error {
+			if err := server.Serve(pprofListener); err != http.ErrServerClosed {
 				return err
 			}
 			return nil
@@ -194,16 +228,12 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 	}
 
 	s.listener = listener
-	mux := http.NewServeMux()
-	mux.HandleFunc("/validate", s.handle(s.validate))
-	mux.HandleFunc("/mutate", s.handle(s.mutate))
-	mux.HandleFunc("/convert", s.handle(s.convert))
-	if s.EnablePprof {
-		profiling.Install(mux)
-		s.Log.V(logf.InfoLevel).Info("registered pprof handlers")
-	}
+	serverMux := http.NewServeMux()
+	serverMux.HandleFunc("/validate", s.handle(s.validate))
+	serverMux.HandleFunc("/mutate", s.handle(s.mutate))
+	serverMux.HandleFunc("/convert", s.handle(s.convert))
 	server := &http.Server{
-		Handler: mux,
+		Handler: serverMux,
 	}
 	g.Go(func() error {
 		<-gctx.Done()
