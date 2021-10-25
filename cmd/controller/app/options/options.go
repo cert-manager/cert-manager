@@ -323,11 +323,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"environments, where access to authoritative nameservers is restricted. "+
 			"Enabling this option could cause the DNS01 self check to take longer "+
 			"due to caching performed by the recursive nameservers.")
-	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-self-check-nameservers",
-		[]string{}, "A list of comma separated dns server endpoints used for "+
-			"DNS01 check requests. This should be a list containing host and port, "+
-			"for example 8.8.8.8:53,8.8.4.4:53")
-	fs.MarkDeprecated("dns01-self-check-nameservers", "Deprecated in favour of dns01-recursive-nameservers")
 
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
