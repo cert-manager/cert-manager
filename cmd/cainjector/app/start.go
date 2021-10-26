@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -34,6 +36,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/cainjector"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
 
 type InjectorControllerOptions struct {
@@ -46,6 +49,12 @@ type InjectorControllerOptions struct {
 
 	StdOut io.Writer
 	StdErr io.Writer
+
+	// EnablePprof determines whether Go profiler should be run.
+	EnablePprof bool
+	// PprofAddr is the address at which Go profiler will be run if enabled.
+	// The profiler should never be exposed on a public address.
+	PprofAddr string
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -74,6 +83,9 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&o.RetryPeriod, "leader-election-retry-period", cmdutil.DefaultLeaderElectionRetryPeriod, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
+
+	fs.BoolVar(&o.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, "Enable Go profiler (pprof) should be run.")
+	fs.StringVar(&o.PprofAddr, "profiler-address", cmdutil.DefaultProfilerAddr, "Address of the Go profiler (pprof) if enabled. This should never be exposed on a public interface.")
 }
 
 func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOptions {
@@ -133,6 +145,39 @@ func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) er
 	}
 
 	g, gctx := errgroup.WithContext(ctx)
+
+	// if a PprofAddr is provided, start the pprof listener
+	if o.EnablePprof {
+		pprofListener, err := net.Listen("tcp", o.PprofAddr)
+		if err != nil {
+			return err
+		}
+
+		profilerMux := http.NewServeMux()
+		// Add pprof endpoints to this mux
+		profiling.Install(profilerMux)
+		o.log.V(logf.InfoLevel).Info("running go profiler on", "address", o.PprofAddr)
+		server := &http.Server{
+			Handler: profilerMux,
+		}
+		g.Go(func() error {
+			<-gctx.Done()
+			// allow a timeout for graceful shutdown
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := server.Shutdown(ctx); err != nil {
+				return err
+			}
+			return nil
+		})
+		g.Go(func() error {
+			if err := server.Serve(pprofListener); err != http.ErrServerClosed {
+				return err
+			}
+			return nil
+		})
+	}
 
 	g.Go(func() (err error) {
 		defer func() {
