@@ -67,16 +67,19 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 		Log:             logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
-	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	defer func() {
 		close(stopCh)
-		<-doneCh
+		err := <-errCh
+		if err != nil {
+			t.Fatal(err)
+		}
 	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		defer close(doneCh)
+		defer close(errCh)
 		if err := auth.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
-			t.Fatalf("Unexpected error running authority: %v", err)
+			errCh <- fmt.Errorf("Unexpected error running authority: %v", err)
 		}
 	}()
 
@@ -114,16 +117,19 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 		Log:             logtesting.TestLogger{T: t},
 	}
 	stopCh := make(chan struct{})
-	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	defer func() {
 		close(stopCh)
-		<-doneCh
+		err := <-errCh
+		if err != nil {
+			t.Fatal(err)
+		}
 	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		defer close(doneCh)
+		defer close(errCh)
 		if err := auth.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
-			t.Fatalf("Unexpected error running authority: %v", err)
+			errCh <- fmt.Errorf("Unexpected error running authority: %v", err)
 		}
 	}()
 

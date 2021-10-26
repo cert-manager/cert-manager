@@ -301,14 +301,17 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 				// by the CLI command yet.
 				// Once it has been created, set the `status.certificate` and `Ready` condition so that the `--fetch-certificate`
 				// part of the command is able to proceed.
-				doneCh := make(chan struct{})
+				errCh := make(chan error)
 				pollCtx, cancelPoll := context.WithCancel(ctx)
 				defer func() {
 					cancelPoll()
-					<-doneCh
+					err := <-errCh
+					if err != nil {
+						t.Fatal(err)
+					}
 				}()
 				go func() {
-					defer close(doneCh)
+					defer close(errCh)
 					err = wait.PollImmediateUntil(time.Second, func() (done bool, err error) {
 						req, err = cmCl.CertmanagerV1().CertificateRequests(test.inputNamespace).Get(pollCtx, test.inputArgs[0], metav1.GetOptions{})
 						if err != nil {
@@ -317,7 +320,8 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 						return true, nil
 					}, pollCtx.Done())
 					if err != nil {
-						t.Fatal("timeout when waiting for CertificateRequest to be created")
+						errCh <- fmt.Errorf("timeout when waiting for CertificateRequest to be created, error: %v", err)
+						return
 					}
 
 					// CR has been created, try update status
@@ -325,7 +329,7 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 					req.Status.Certificate = test.crStatus.Certificate
 					req, err = cmCl.CertmanagerV1().CertificateRequests(test.inputNamespace).UpdateStatus(pollCtx, req, metav1.UpdateOptions{})
 					if err != nil {
-						t.Fatal(err)
+						errCh <- err
 					}
 				}()
 			}

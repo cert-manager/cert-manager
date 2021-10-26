@@ -70,11 +70,11 @@ func TestMetricsController(t *testing.T) {
 	}
 	server := metricsHandler.NewServer(ln)
 
-	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	go func() {
-		defer close(doneCh)
+		defer close(errCh)
 		if err := server.Serve(ln); err != http.ErrServerClosed {
-			t.Fatal(err)
+			errCh <- err
 		}
 	}()
 	defer func() {
@@ -84,7 +84,10 @@ func TestMetricsController(t *testing.T) {
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			t.Fatal(err)
 		}
-		<-doneCh
+		err := <-errCh
+		if err != nil {
+			t.Fatal(err)
+		}
 	}()
 
 	ctrl, queue, mustSync := controllermetrics.NewController(factory, cmFactory, metricsHandler)

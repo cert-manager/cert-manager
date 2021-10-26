@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -67,16 +68,19 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 		Log: log,
 	}
 	stopCh := make(chan struct{})
-	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	defer func() {
 		close(stopCh)
-		<-doneCh
+		err := <-errCh
+		if err != nil {
+			t.Fatal(err)
+		}
 	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		defer close(doneCh)
+		defer close(errCh)
 		if err := source.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
-			t.Fatalf("Unexpected error running source: %v", err)
+			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()
 
@@ -133,16 +137,19 @@ func TestDynamicSource_CARotation(t *testing.T) {
 		Log: log,
 	}
 	stopCh := make(chan struct{})
-	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	defer func() {
 		close(stopCh)
-		<-doneCh
+		err := <-errCh
+		if err != nil {
+			t.Fatal(err)
+		}
 	}()
 	// run the dynamic authority controller in the background
 	go func() {
-		defer close(doneCh)
+		defer close(errCh)
 		if err := source.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
-			t.Fatalf("Unexpected error running source: %v", err)
+			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()
 
