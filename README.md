@@ -4,7 +4,10 @@
 <img alt="Build Status" src="https://prow.build-infra.jetstack.net/badge.svg?jobs=ci-cert-manager-bazel">
 </a>
 <a href="https://godoc.org/github.com/jetstack/cert-manager"><img src="https://godoc.org/github.com/jetstack/cert-manager?status.svg"></a>
-<a href="https://goreportcard.com/report/github.com/jetstack/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/jetstack/cert-manager" /></a></p>
+<a href="https://goreportcard.com/report/github.com/jetstack/cert-manager"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/jetstack/cert-manager" /></a>
+<br />
+<a href="https://artifacthub.io/packages/search?repo=cert-manager"><img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cert-manager" /></a>
+</p>
 
 # cert-manager
 
