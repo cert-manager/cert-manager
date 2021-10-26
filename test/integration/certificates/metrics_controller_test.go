@@ -68,7 +68,7 @@ func TestMetricsController(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := metricsHandler.NewServer(ln, false)
+	server := metricsHandler.NewServer(ln)
 
 	doneCh := make(chan struct{})
 	go func() {

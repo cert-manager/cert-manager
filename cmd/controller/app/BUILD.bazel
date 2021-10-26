@@ -34,6 +34,7 @@ go_library(
         "//pkg/metrics:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/feature:go_default_library",
+        "//pkg/util/profiling:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",

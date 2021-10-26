@@ -85,7 +85,8 @@ func NewServerWithOptions(log logr.Logger, opts options.WebhookOptions) (*server
 	return &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", opts.ListenPort),
 		HealthzAddr:       fmt.Sprintf(":%d", opts.HealthzPort),
-		EnablePprof:       true,
+		PprofAddr:         opts.PprofAddress,
+		EnablePprof:       opts.EnablePprof,
 		CertificateSource: source,
 		CipherSuites:      opts.TLSCipherSuites,
 		MinTLSVersion:     opts.MinTLSVersion,

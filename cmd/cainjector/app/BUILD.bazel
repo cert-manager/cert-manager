@@ -11,6 +11,7 @@ go_library(
         "//pkg/controller/cainjector:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
+        "//pkg/util/profiling:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
