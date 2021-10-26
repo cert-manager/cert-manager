@@ -37,7 +37,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
 
 const (
@@ -158,7 +157,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 }
 
 // Start will register the Prometheus metrics, and start the Prometheus server
-func (m *Metrics) NewServer(ln net.Listener, enablePprof bool) *http.Server {
+func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
@@ -169,9 +168,6 @@ func (m *Metrics) NewServer(ln net.Listener, enablePprof bool) *http.Server {
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
-	if enablePprof {
-		profiling.Install(mux)
-	}
 
 	server := &http.Server{
 		Addr:           ln.Addr().String(),

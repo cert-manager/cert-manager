@@ -13,7 +13,6 @@ go_library(
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/logs:go_default_library",
-        "//pkg/util/profiling:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_prometheus_client_golang//prometheus:go_default_library",
         "@com_github_prometheus_client_golang//prometheus/promhttp:go_default_library",

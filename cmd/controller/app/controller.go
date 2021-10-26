@@ -59,6 +59,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
 
 const controllerAgentName = "cert-manager"
@@ -84,11 +85,12 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	enabledControllers := opts.EnabledControllers()
 	log.Info(fmt.Sprintf("enabled controllers: %s", enabledControllers.List()))
 
-	ln, err := net.Listen("tcp", opts.MetricsListenAddress)
+	// Start metrics server
+	metricsLn, err := net.Listen("tcp", opts.MetricsListenAddress)
 	if err != nil {
 		return fmt.Errorf("failed to listen on prometheus address %s: %v", opts.MetricsListenAddress, err)
 	}
-	server := ctx.Metrics.NewServer(ln, opts.EnablePprof)
+	metricsServer := ctx.Metrics.NewServer(metricsLn)
 
 	g.Go(func() error {
 		<-rootCtx.Done()
@@ -96,18 +98,51 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		if err := server.Shutdown(ctx); err != nil {
+		if err := metricsServer.Shutdown(ctx); err != nil {
 			return err
 		}
 		return nil
 	})
 	g.Go(func() error {
-		log.V(logf.InfoLevel).Info("starting metrics server", "address", ln.Addr())
-		if err := server.Serve(ln); err != http.ErrServerClosed {
+		log.V(logf.InfoLevel).Info("starting metrics server", "address", metricsLn.Addr())
+		if err := metricsServer.Serve(metricsLn); err != http.ErrServerClosed {
 			return err
 		}
 		return nil
 	})
+
+	// Start profiler if it is enabled
+	if opts.EnablePprof {
+		profilerLn, err := net.Listen("tcp", opts.PprofAddress)
+		if err != nil {
+			return fmt.Errorf("failed to listen on profiler address %s: %v", opts.PprofAddress, err)
+		}
+		profilerMux := http.NewServeMux()
+		// Add pprof endpoints to this mux
+		profiling.Install(profilerMux)
+		profilerServer := &http.Server{
+			Handler: profilerMux,
+		}
+
+		g.Go(func() error {
+			<-rootCtx.Done()
+			// allow a timeout for graceful shutdown
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := profilerServer.Shutdown(ctx); err != nil {
+				return err
+			}
+			return nil
+		})
+		g.Go(func() error {
+			log.V(logf.InfoLevel).Info("starting profiler", "address", profilerLn.Addr())
+			if err := profilerServer.Serve(profilerLn); err != http.ErrServerClosed {
+				return err
+			}
+			return nil
+		})
+	}
 
 	elected := make(chan struct{})
 	if opts.LeaderElect {

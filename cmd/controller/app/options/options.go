@@ -102,8 +102,10 @@ type ControllerOptions struct {
 	// The host and port address, separated by a ':', that the Prometheus server
 	// should expose metrics on.
 	MetricsListenAddress string
-	// EnablePprof controls whether net/http/pprof handlers are registered with
-	// the HTTP listener.
+	// PprofAddress is the address on which Go profiler will run. Should be
+	// in form <host>:<port>.
+	PprofAddress string
+	// EnablePprof determines whether pprof should be enabled.
 	EnablePprof bool
 
 	DNS01CheckRetryPeriod time.Duration
@@ -235,7 +237,8 @@ func NewControllerOptions() *ControllerOptions {
 		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 		MetricsListenAddress:              defaultPrometheusMetricsServerAddress,
 		DNS01CheckRetryPeriod:             defaultDNS01CheckRetryPeriod,
-		EnablePprof:                       false,
+		EnablePprof:                       cmdutil.DefaultEnableProfiling,
+		PprofAddress:                      cmdutil.DefaultProfilerAddr,
 	}
 }
 
@@ -345,8 +348,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.MetricsListenAddress, "metrics-listen-address", defaultPrometheusMetricsServerAddress, ""+
 		"The host and port that the metrics endpoint should listen on.")
-	fs.BoolVar(&s.EnablePprof, "enable-profiling", false, ""+
+	fs.BoolVar(&s.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, ""+
 		"Enable profiling for controller.")
+	fs.StringVar(&s.PprofAddress, "profiler-address", cmdutil.DefaultProfilerAddr,
+		"The host and port that Go profiler should listen on, i.e localhost:6060. Ensure that profiler is not exposed on a public address. Profiler will be served at /debug/pprof.")
 }
 
 func (o *ControllerOptions) Validate() error {
