@@ -100,7 +100,6 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `volumeMounts` | Optional volume mounts for cert-manager | `[]` |
 | `resources` | CPU/memory resource requests/limits | `{}` |
 | `securityContext` | Optional security context. The yaml block should adhere to the [SecurityContext spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#securitycontext-v1-core) | `{}` |
-| `securityContext.enabled` | Deprecated (use `securityContext`) - Enable security context | `false` |
 | `containerSecurityContext` | Security context to be set on the controller component container | `{}` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
