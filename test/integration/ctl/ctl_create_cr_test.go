@@ -1,3 +1,5 @@
+//go:build integration_test
+
 /*
 Copyright 2020 The cert-manager Authors.
 

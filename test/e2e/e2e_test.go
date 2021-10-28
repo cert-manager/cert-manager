@@ -1,3 +1,5 @@
+//go:build e2e_test
+
 /*
 Copyright 2020 The cert-manager Authors.
 

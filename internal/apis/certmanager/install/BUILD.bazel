@@ -45,6 +45,9 @@ go_test(
         "//deploy/crds:templated_files",
     ],
     embed = [":go_default_library"],
+    gotags = [
+        "integration_test",
+    ],
     deps = [
         "//internal/apis/certmanager/fuzzer:go_default_library",
         "//internal/test/paths:go_default_library",

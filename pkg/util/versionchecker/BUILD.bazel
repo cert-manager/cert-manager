@@ -31,6 +31,9 @@ go_test(
     ],
     embed = [":go_default_library"],
     embedsrcs = ["//pkg/util/versionchecker/testdata:test_manifests.tar"],  # keep
+    gotags = [
+        "integration_test",
+    ],
     deps = [
         "//pkg/util:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",

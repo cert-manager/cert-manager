@@ -6,6 +6,9 @@ go_test(
         "dynamic_authority_test.go",
         "dynamic_source_test.go",
     ],
+    gotags = [
+        "integration_test",
+    ],
     deps = [
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/webhook/authority:go_default_library",

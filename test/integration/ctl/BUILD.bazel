@@ -12,6 +12,9 @@ go_test(
         "//deploy/charts/cert-manager:cert-manager.tgz",
     ],
     embed = [":go_default_library"],
+    gotags = [
+        "integration_test",
+    ],
     deps = [
         "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create/certificaterequest:go_default_library",

@@ -31,6 +31,9 @@ go_test(
     ],
     data = glob(["testdata/**"]),
     embed = [":go_default_library"],
+    gotags = [
+        "integration_test",
+    ],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",

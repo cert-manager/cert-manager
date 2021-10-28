@@ -8,6 +8,9 @@ go_test(
         "revisionmanager_controller_test.go",
         "trigger_controller_test.go",
     ],
+    gotags = [
+        "integration_test",
+    ],
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",

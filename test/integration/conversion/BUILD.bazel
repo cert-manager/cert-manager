@@ -6,6 +6,9 @@ go_test(
     data = [
         "//pkg/webhook/handlers/testdata/apis/testgroup/crds:all-srcs",
     ],
+    gotags = [
+        "integration_test",
+    ],
     deps = [
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",
