@@ -238,6 +238,9 @@ webhook:
   # Optional additional annotations to add to the webhook ValidatingWebhookConfiguration
   # validatingWebhookConfigurationAnnotations: {}
 
+  # Optional additional namespaceSelector matchExpressions to add to the webhook ValidatingWebhookConfiguration
+  # validatingWebhookConfigurationNamespaceSelectorMatchExpressions: []
+
   # Optional additional annotations to add to the webhook service
   # serviceAnnotations: {}
 

@@ -25,6 +25,9 @@ webhooks:
         operator: "NotIn"
         values:
         - {{ .Release.Namespace }}
+      {{- if .Values.webhook.validatingWebhookConfigurationNamespaceSelectorMatchExpressions }}
+      {{- toYaml .Values.webhook.validatingWebhookConfigurationNamespaceSelectorMatchExpressions | nindent 6 }}
+      {{- end }}
     rules:
       - apiGroups:
           - "cert-manager.io"
