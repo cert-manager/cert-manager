@@ -3037,8 +3037,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/pavel-v-chernykh/keystore-go/v4",
-        sum = "h1:xKxUVGoB9VJU+lgQLPN0KURjw+XCVVSpHfQEeyxk3zo=",
-        version = "v4.1.0",
+        sum = "h1:SeA1Gyj3Uxl0vuNFYxN5RaIZ2AMPfCvW4HB2Ki0bYT8=",
+        version = "v4.2.0",
     )
 
     go_repository(
