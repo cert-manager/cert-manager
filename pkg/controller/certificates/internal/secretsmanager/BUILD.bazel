@@ -38,6 +38,7 @@ go_test(
         "//pkg/controller/test:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@com_github_google_gofuzz//:go_default_library",
         "@com_github_pavel_v_chernykh_keystore_go_v4//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
@@ -47,6 +48,8 @@ go_test(
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_client_go//testing:go_default_library",
         "@io_k8s_utils//clock/testing:go_default_library",
+        "@org_golang_x_sync//errgroup:go_default_library",
+        "@org_golang_x_sync//semaphore:go_default_library",
     ],
 )
 
