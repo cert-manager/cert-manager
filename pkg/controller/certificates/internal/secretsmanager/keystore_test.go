@@ -18,14 +18,18 @@ package secretsmanager
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/x509"
 	"fmt"
 	"testing"
 
+	fuzz "github.com/google/gofuzz"
 	jks "github.com/pavel-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 	"software.sslmate.com/src/go-pkcs12"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -387,4 +391,56 @@ func TestEncodePKCS12Truststore(t *testing.T) {
 			test.verify(t, test.caPEM, out, err)
 		})
 	}
+}
+
+func TestManyPasswordLengths(t *testing.T) {
+	rawKey := mustGeneratePrivateKey(t, cmapi.PKCS8)
+	certPEM := mustSelfSignCertificate(t, nil)
+	caPEM := mustSelfSignCertificate(t, nil)
+
+	// We will test random password lengths between 0 and 128 character lengths
+	f := fuzz.New().NilChance(0).NumElements(0, 128)
+
+	// Run these tests in parallel
+	s := semaphore.NewWeighted(32)
+	g, ctx := errgroup.WithContext(context.Background())
+	for tests := 0; tests < 10000; tests++ {
+		if ctx.Err() != nil {
+			t.Errorf("internal error while testing JKS Keystore password lengths: %s", ctx.Err())
+			return
+		}
+		if err := s.Acquire(ctx, 1); err != nil {
+			t.Errorf("internal error while testing JKS Keystore password lengths: %s", err.Error())
+			return
+		}
+		g.Go(func() error {
+			defer s.Release(1)
+			var password string
+			// fill the password with random characters
+			f.Fuzz(&password)
+			keystore, err := encodeJKSKeystore([]byte(password), rawKey, certPEM, caPEM)
+			if err != nil {
+				t.Errorf("couldn't encode JKS Keystore with password %s (length %d): %s", password, len(password), err.Error())
+				return err
+			}
+
+			buf := bytes.NewBuffer(keystore)
+			ks := jks.New()
+			err = ks.Load(buf, []byte(password))
+			if err != nil {
+				t.Errorf("error decoding keystore with password %s (length %d): %v", password, len(password), err)
+				return err
+			}
+			if !ks.IsPrivateKeyEntry("certificate") {
+				t.Errorf("no certificate data found in keystore")
+			}
+			if !ks.IsTrustedCertificateEntry("ca") {
+				t.Errorf("no ca data found in truststore")
+			}
+
+			return nil
+		})
+	}
+	err := g.Wait()
+	assert.NoError(t, err)
 }
