@@ -20,41 +20,41 @@ import (
 	"k8s.io/apimachinery/pkg/conversion"
 
 	"github.com/jetstack/cert-manager/internal/apis/meta"
-	"github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // Convert_meta_LocalObjectReference_To_v1_LocalObjectReference is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(in *meta.LocalObjectReference, out *v1.LocalObjectReference, s conversion.Scope) error {
+func Convert_meta_LocalObjectReference_To_v1_LocalObjectReference(in *meta.LocalObjectReference, out *cmmeta.LocalObjectReference, s conversion.Scope) error {
 	return autoConvert_meta_LocalObjectReference_To_v1_LocalObjectReference(in, out, s)
 }
 
 // Convert_v1_LocalObjectReference_To_meta_LocalObjectReference is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(in *v1.LocalObjectReference, out *meta.LocalObjectReference, s conversion.Scope) error {
+func Convert_v1_LocalObjectReference_To_meta_LocalObjectReference(in *cmmeta.LocalObjectReference, out *meta.LocalObjectReference, s conversion.Scope) error {
 	return autoConvert_v1_LocalObjectReference_To_meta_LocalObjectReference(in, out, s)
 }
 
 // Convert_meta_ObjectReference_To_v1_ObjectReference is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_meta_ObjectReference_To_v1_ObjectReference(in *meta.ObjectReference, out *v1.ObjectReference, s conversion.Scope) error {
+func Convert_meta_ObjectReference_To_v1_ObjectReference(in *meta.ObjectReference, out *cmmeta.ObjectReference, s conversion.Scope) error {
 	return autoConvert_meta_ObjectReference_To_v1_ObjectReference(in, out, s)
 }
 
 // Convert_v1_ObjectReference_To_meta_ObjectReference is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_v1_ObjectReference_To_meta_ObjectReference(in *v1.ObjectReference, out *meta.ObjectReference, s conversion.Scope) error {
+func Convert_v1_ObjectReference_To_meta_ObjectReference(in *cmmeta.ObjectReference, out *meta.ObjectReference, s conversion.Scope) error {
 	return autoConvert_v1_ObjectReference_To_meta_ObjectReference(in, out, s)
 }
 
 // Convert_meta_SecretKeySelector_To_v1_SecretKeySelector is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(in *meta.SecretKeySelector, out *v1.SecretKeySelector, s conversion.Scope) error {
+func Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(in *meta.SecretKeySelector, out *cmmeta.SecretKeySelector, s conversion.Scope) error {
 	return autoConvert_meta_SecretKeySelector_To_v1_SecretKeySelector(in, out, s)
 }
 
 // Convert_v1_SecretKeySelector_To_meta_SecretKeySelector is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(in *v1.SecretKeySelector, out *meta.SecretKeySelector, s conversion.Scope) error {
+func Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(in *cmmeta.SecretKeySelector, out *meta.SecretKeySelector, s conversion.Scope) error {
 	return autoConvert_v1_SecretKeySelector_To_meta_SecretKeySelector(in, out, s)
 }
