@@ -23,7 +23,7 @@ export REPO_ROOT="$LIB_ROOT/../.."
 
 export SKIP_BUILD_ADDON_IMAGES="${SKIP_BUILD_ADDON_IMAGES:-}"
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
-export KIND_IMAGE_REPO="kindest/node"
+export KIND_IMAGE_REPO="docker.io/kindest/node"
 # Default Kubernetes version to use to 1.22
 export K8S_VERSION=${K8S_VERSION:-1.22}
 # Default OpenShift version to use to 3.11
