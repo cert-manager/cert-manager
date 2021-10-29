@@ -29,7 +29,7 @@ import (
 	"k8s.io/kubectl/pkg/describe"
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
