@@ -34,7 +34,7 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/ctl"
@@ -327,7 +327,7 @@ func findMatchingCR(cmClient cmclient.Interface, ctx context.Context, crt *cmapi
 // If one found returns the Order
 // If multiple found or error occurs when listing Orders, returns error
 func findMatchingOrder(cmClient cmclient.Interface, ctx context.Context, req *cmapi.CertificateRequest) (*cmacme.Order, error) {
-	orders, err := cmClient.AcmeV1beta1().Orders(req.Namespace).List(ctx, metav1.ListOptions{})
+	orders, err := cmClient.AcmeV1().Orders(req.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func getGenericIssuer(cmClient cmclient.Interface, ctx context.Context, crt *cma
 // findMatchingChallenges tries to find Challenges that are owned by order.
 // If none found returns empty slice.
 func findMatchingChallenges(cmClient cmclient.Interface, ctx context.Context, order *cmacme.Order) ([]*cmacme.Challenge, error) {
-	challenges, err := cmClient.AcmeV1beta1().Challenges(order.Namespace).List(ctx, metav1.ListOptions{})
+	challenges, err := cmClient.AcmeV1().Challenges(order.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
