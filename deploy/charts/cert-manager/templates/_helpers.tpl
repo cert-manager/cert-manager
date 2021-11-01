@@ -58,7 +58,7 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{- define "webhook.caRef" -}}
-{{ .Release.Namespace}}/{{ template "webhook.fullname" . }}-ca
+{{ .Release.Namespace }}/{{ template "webhook.fullname" . }}-ca
 {{- end -}}
 
 {{/*

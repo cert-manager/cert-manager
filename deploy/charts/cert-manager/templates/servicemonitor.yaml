@@ -16,7 +16,7 @@ metadata:
     {{- include "labels" . | nindent 4 }}
     prometheus: {{ .Values.prometheus.servicemonitor.prometheusInstance }}
     {{- with .Values.prometheus.servicemonitor.labels }}
-    {{- toYaml . | nindent 4}}
+    {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
   jobLabel: {{ template "cert-manager.fullname" . }}
