@@ -9,9 +9,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "webhook"
     {{- include "labels" . | nindent 4 }}
-  {{- if .Values.webhook.deploymentAnnotations }}
+  {{- with .Values.webhook.deploymentAnnotations }}
   annotations:
-{{ toYaml .Values.webhook.deploymentAnnotations | indent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   replicas: {{ .Values.webhook.replicaCount }}
@@ -22,7 +22,7 @@ spec:
       app.kubernetes.io/component: "webhook"
   {{- with .Values.webhook.strategy }}
   strategy:
-    {{- . | toYaml | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
   template:
     metadata:
@@ -32,21 +32,21 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: "webhook"
         {{- include "labels" . | nindent 8 }}
-{{- if .Values.webhook.podLabels }}
-{{ toYaml .Values.webhook.podLabels | indent 8 }}
-{{- end }}
-      {{- if .Values.webhook.podAnnotations }}
+        {{- with .Values.webhook.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.webhook.podAnnotations }}
       annotations:
-{{ toYaml .Values.webhook.podAnnotations | indent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
       serviceAccountName: {{ template "webhook.serviceAccountName" . }}
-      {{- if .Values.global.priorityClassName }}
-      priorityClassName: {{ .Values.global.priorityClassName | quote }}
+      {{- with .Values.global.priorityClassName }}
+      priorityClassName: {{ . | quote }}
       {{- end }}
-      {{- if .Values.webhook.securityContext}}
+      {{- with .Values.webhook.securityContext }}
       securityContext:
-{{ toYaml .Values.webhook.securityContext | indent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if .Values.webhook.hostNetwork }}
       hostNetwork: true
@@ -65,9 +65,9 @@ spec:
           - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)
           - --dynamic-serving-ca-secret-name={{ template "webhook.fullname" . }}-ca
           - --dynamic-serving-dns-names={{ template "webhook.fullname" . }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }}.svc{{ if .Values.webhook.url.host }},{{ .Values.webhook.url.host }}{{ end }}
-        {{- if .Values.webhook.extraArgs }}
-{{ toYaml .Values.webhook.extraArgs | indent 10 }}
-        {{- end }}
+          {{- with .Values.webhook.extraArgs }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
           ports:
           - name: https
             protocol: TCP
@@ -92,26 +92,29 @@ spec:
             timeoutSeconds: {{ .Values.webhook.readinessProbe.timeoutSeconds }}
             successThreshold: {{ .Values.webhook.readinessProbe.successThreshold }}
             failureThreshold: {{ .Values.webhook.readinessProbe.failureThreshold }}
-          {{- if .Values.webhook.containerSecurityContext }}
+          {{- with .Values.webhook.containerSecurityContext }}
           securityContext:
-            {{- toYaml .Values.webhook.containerSecurityContext | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          {{- with .Values.webhook.resources }}
           resources:
-{{ toYaml .Values.webhook.resources | indent 12 }}
-    {{- with .Values.webhook.nodeSelector }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.webhook.nodeSelector }}
       nodeSelector:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.webhook.affinity }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webhook.affinity }}
       affinity:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.webhook.tolerations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webhook.tolerations }}
       tolerations:
-{{ toYaml . | indent 8 }}
-    {{- end }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

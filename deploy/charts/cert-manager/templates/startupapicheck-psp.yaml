@@ -1,4 +1,4 @@
-{{- if .Values.startupapicheck.enabled -}}
+{{- if .Values.startupapicheck.enabled }}
 {{- if .Values.global.podSecurityPolicy.enabled }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -17,8 +17,8 @@ metadata:
     apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
     apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
     {{- end }}
-    {{- if .Values.startupapicheck.rbac.annotations }}
-    {{ toYaml .Values.startupapicheck.rbac.annotations | nindent 4 }}
+    {{- with .Values.startupapicheck.rbac.annotations }}
+    {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
   privileged: false
@@ -47,5 +47,5 @@ spec:
     ranges:
     - min: 1000
       max: 1000
-{{- end -}}
-{{- end -}}
+{{- end }}
+{{- end }}

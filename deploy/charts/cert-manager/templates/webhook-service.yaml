@@ -9,17 +9,17 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "webhook"
     {{- include "labels" . | nindent 4 }}
-{{- if .Values.webhook.serviceLabels }}
-{{ toYaml .Values.webhook.serviceLabels | indent 4 }}
-{{- end }}
-{{- if .Values.webhook.serviceAnnotations }}
+    {{- with .Values.webhook.serviceLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.webhook.serviceAnnotations }}
   annotations:
-    {{ toYaml .Values.webhook.serviceAnnotations | indent 4 }}
-{{- end }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.webhook.serviceType }}
-  {{- if .Values.webhook.loadBalancerIP }}
-  loadBalancerIP: {{ .Values.webhook.loadBalancerIP }}
+  {{- with .Values.webhook.loadBalancerIP }}
+  loadBalancerIP: {{ . }}
   {{- end }}
   ports:
   - name: https
