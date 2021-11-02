@@ -39,7 +39,8 @@ var (
 )
 
 const (
-	// following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
+	// Following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
+
 	ErrorLevel        = 0
 	WarnLevel         = 1
 	InfoLevel         = 2
@@ -166,6 +167,10 @@ func V(level int) klog.Verbose {
 	return klog.V(klog.Level(level))
 }
 
+// LogWithFormat is a wrapper for logger that adds Infof method to log messages
+// with the given format and arguments.
+//
+// Used as a patch to the controller eventBroadcaster for sending non-string objects.
 type LogWithFormat struct {
 	logr.Logger
 }
@@ -174,7 +179,7 @@ func WithInfof(l logr.Logger) *LogWithFormat {
 	return &LogWithFormat{l}
 }
 
-// is a patch to the controller eventBroadcaster for sending non-string objects
+// Infof logs message with the given format and arguments.
 func (l *LogWithFormat) Infof(format string, a ...interface{}) {
 	l.Info(fmt.Sprintf(format, a...))
 }

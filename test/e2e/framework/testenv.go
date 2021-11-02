@@ -32,7 +32,7 @@ import (
 // Defines methods that help provision test environments
 
 const (
-	// How often to poll for conditions
+	// Poll defines how often to poll for conditions.
 	Poll = 2 * time.Second
 )
 

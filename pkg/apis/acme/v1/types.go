@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 const (
+	// ACMECertificateHTTP01IngressNameOverride is annotation to override ingress name.
 	// If this annotation is specified on a Certificate or Order resource when
 	// using the HTTP01 solver type, the ingress.name field of the HTTP01
 	// solver's configuration will be set to the value given here.
@@ -24,6 +25,7 @@ const (
 	// a 1:1 mapping between endpoint IP and Ingress resource.
 	ACMECertificateHTTP01IngressNameOverride = "acme.cert-manager.io/http01-override-ingress-name"
 
+	// ACMECertificateHTTP01IngressClassOverride is annotation to override ingress class.
 	// If this annotation is specified on a Certificate or Order resource when
 	// using the HTTP01 solver type, the ingress.class field of the HTTP01
 	// solver's configuration will be set to the value given here.
@@ -32,7 +34,7 @@ const (
 	// solver for each ingress class.
 	ACMECertificateHTTP01IngressClassOverride = "acme.cert-manager.io/http01-override-ingress-class"
 
-	// IngressEditInPlaceAnnotation is used to toggle the use of ingressClass instead
+	// IngressEditInPlaceAnnotationKey is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
 	IngressEditInPlaceAnnotationKey = "acme.cert-manager.io/http01-edit-in-place"
 
