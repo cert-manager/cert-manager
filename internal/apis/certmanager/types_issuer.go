@@ -107,7 +107,7 @@ type IssuerConfig struct {
 	Venafi *VenafiIssuer
 }
 
-// Configures an issuer to sign certificates using a Venafi TPP
+// VenafiIssuer configures an issuer to sign certificates using a Venafi TPP
 // or Cloud policy zone.
 type VenafiIssuer struct {
 	// Zone is the Venafi Policy Zone to use for this issuer.
@@ -155,7 +155,7 @@ type VenafiCloud struct {
 	APITokenSecretRef cmmeta.SecretKeySelector
 }
 
-// Configures an issuer to 'self sign' certificates using the
+// SelfSignedIssuer configures an issuer to 'self sign' certificates using the
 // private key used to create the CertificateRequest object.
 type SelfSignedIssuer struct {
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
@@ -164,7 +164,7 @@ type SelfSignedIssuer struct {
 	CRLDistributionPoints []string
 }
 
-// Configures an issuer to sign certificates using a HashiCorp Vault
+// VaultIssuer configures an issuer to sign certificates using a HashiCorp Vault
 // PKI backend.
 type VaultIssuer struct {
 	// Auth configures how cert-manager authenticates with the Vault server.
@@ -188,7 +188,7 @@ type VaultIssuer struct {
 	CABundle []byte
 }
 
-// Configuration used to authenticate with a Vault server.
+// VaultAuth is configuration used to authenticate with a Vault server.
 // Only one of `tokenSecretRef`, `appRole` or `kubernetes` may be specified.
 type VaultAuth struct {
 	// TokenSecretRef authenticates with Vault by presenting a token.
@@ -221,7 +221,7 @@ type VaultAppRole struct {
 	SecretRef cmmeta.SecretKeySelector
 }
 
-// Authenticate against Vault using a Kubernetes ServiceAccount token stored in
+// VaultKubernetesAuth is used to authenticate against Vault using a Kubernetes ServiceAccount token stored in
 // a Secret.
 type VaultKubernetesAuth struct {
 	// The Vault mountPath here is the mount path to use when authenticating with

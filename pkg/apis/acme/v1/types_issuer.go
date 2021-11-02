@@ -160,7 +160,7 @@ type ACMEChallengeSolver struct {
 	DNS01 *ACMEChallengeSolverDNS01 `json:"dns01,omitempty"`
 }
 
-// CertificateDomainSelector selects certificates using a label selector, and
+// CertificateDNSNameSelector selects certificates using a label selector, and
 // can optionally select individual DNS names within those certificates.
 // If both MatchLabels and DNSNames are empty, this selector will match all
 // certificates and DNS names within them.

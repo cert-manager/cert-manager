@@ -40,7 +40,7 @@ import (
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 )
 
-// Defines simple conformance tests that can be run against any issuer type.
+// Define defines simple conformance tests that can be run against any issuer type.
 // If Complete has not been called on this Suite before Define, it will be
 // automatically called.
 func (s *Suite) Define() {

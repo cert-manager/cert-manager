@@ -25,6 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/check/api"
 )
 
+// NewCmdCheck returns a cobra command for checking cert-manager components.
 func NewCmdCheck(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	cmds := NewCmdCreateBare()
 	cmds.AddCommand(api.NewCmdCheckApi(ctx, ioStreams))
@@ -32,7 +33,7 @@ func NewCmdCheck(ctx context.Context, ioStreams genericclioptions.IOStreams) *co
 	return cmds
 }
 
-// Create a bare Create Command, without any subcommands
+// NewCmdCreateBare returns bare cobra command for checking cert-manager components.
 func NewCmdCreateBare() *cobra.Command {
 	return &cobra.Command{
 		Use:   "check",
