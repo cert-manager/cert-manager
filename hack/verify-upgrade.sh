@@ -85,7 +85,7 @@ helm upgrade \
     "$HELM_CHART"
 
 # Wait for the cert-manager api to be available
-kubectl cert-manager check api --wait=1m -v
+kubectl cert-manager check api --wait=2m -v
 
 echo "Creating some cert-manager resources.."
 
@@ -110,7 +110,7 @@ helm upgrade \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"
 
 # Wait for the cert-manager api to be available
-kubectl cert-manager check api --wait=1m -v
+kubectl cert-manager check api --wait=2m -v
 
 # Test that the existing cert-manager resources can still be retrieved
 kubectl get issuer/selfsigned-issuer cert/test1
@@ -155,7 +155,7 @@ kubectl wait \
 	--namespace "${NAMESPACE}"
 
 # Wait for the cert-manager api to be available
-kubectl cert-manager check api --wait=1m -v
+kubectl cert-manager check api --wait=2m -v
 
 # Create a cert-manager issuer and cert
 kubectl apply -f "${REPO_ROOT}/test/fixtures/cert-manager-resources.yaml" --selector=test="first"
@@ -192,7 +192,7 @@ until $rollout_cmd; do
 done
 
 # Wait for the cert-manager api to be available
-kubectl cert-manager check api --wait=1m -v
+kubectl cert-manager check api --wait=2m -v
 
 # Test that the existing cert-manager resources can still be retrieved
 kubectl get issuer/selfsigned-issuer cert/test1
