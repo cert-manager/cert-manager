@@ -45,6 +45,7 @@ const (
 	messageAppRoleAuthFieldsRequired = "Vault AppRole auth requires both roleId and tokenSecretRef.name"
 )
 
+// Setup creates a new Vault client and attempts to authenticate with the Vault instance and sets the issuer's conditions to reflect the success of the setup.
 func (v *Vault) Setup(ctx context.Context) error {
 	if v.issuer.GetSpec().Vault == nil {
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageVaultConfigRequired)

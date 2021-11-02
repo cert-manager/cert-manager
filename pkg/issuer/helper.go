@@ -24,6 +24,8 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 )
 
+// Helper is an interface that defines a method that returns an issuer for the given
+// IssuerRef and namespace.
 type Helper interface {
 	GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error)
 }

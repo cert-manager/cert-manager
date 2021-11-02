@@ -26,6 +26,7 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
+// Vault is a mock implementation of the Vault interface
 type Vault struct {
 	NewFn                           func(string, corelisters.SecretLister, v1.GenericIssuer) (*Vault, error)
 	SignFn                          func([]byte, time.Duration) ([]byte, []byte, error)

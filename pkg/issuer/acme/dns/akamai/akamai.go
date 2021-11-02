@@ -17,7 +17,6 @@ limitations under the License.
 // Package akamai implements a DNS provider for solving the DNS-01
 // challenge using Akamai Edge DNS.
 // See https://developer.akamai.com/api/cloud_security/edge_dns_zone_management/v2.html
-
 package akamai
 
 import (
@@ -34,14 +33,15 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-// Interface defined to enable mocking and required functions
+// OpenEdgegridDNSService enables mocking and required functions
 type OpenEdgegridDNSService interface {
-	GetRecord(zone string, name string, record_type string) (*dns.RecordBody, error)
+	GetRecord(zone string, name string, recordType string) (*dns.RecordBody, error)
 	RecordSave(rec *dns.RecordBody, zone string) error
 	RecordUpdate(rec *dns.RecordBody, zone string) error
 	RecordDelete(rec *dns.RecordBody, zone string) error
 }
 
+//OpenDNSConfig contains akamai's config to create authorization header.
 type OpenDNSConfig struct {
 	config edgegrid.Config
 }
@@ -258,23 +258,28 @@ func makeTxtRecordName(fqdn, hostedDomain string) (string, error) {
 	return recName, nil
 }
 
-func (o OpenDNSConfig) GetRecord(zone string, name string, record_type string) (*dns.RecordBody, error) {
+// GetRecord gets a single Recordset as RecordBody. Sets Akamai OPEN Edgegrid API
+// global variable.
+func (o OpenDNSConfig) GetRecord(zone string, name string, recordType string) (*dns.RecordBody, error) {
 
 	dns.Config = o.config
 
-	return dns.GetRecord(zone, name, record_type)
+	return dns.GetRecord(zone, name, recordType)
 }
 
+// RecordSave is a function that saves the given zone in the given RecordBody.
 func (o OpenDNSConfig) RecordSave(rec *dns.RecordBody, zone string) error {
 
 	return rec.Save(zone)
 }
 
+// RecordUpdate is a function that updates the given zone in the given RecordBody.
 func (o OpenDNSConfig) RecordUpdate(rec *dns.RecordBody, zone string) error {
 
 	return rec.Update(zone)
 }
 
+// RecordDelete is a function that deletes the given zone in the given RecordBody.
 func (o OpenDNSConfig) RecordDelete(rec *dns.RecordBody, zone string) error {
 
 	return rec.Delete(zone)

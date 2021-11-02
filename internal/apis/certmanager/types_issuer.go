@@ -84,6 +84,7 @@ type IssuerSpec struct {
 	IssuerConfig
 }
 
+// IssuerConfig is a generic wrapper around custom issuer types
 type IssuerConfig struct {
 	// ACME configures this issuer to communicate with a RFC8555 (ACME) server
 	// to obtain signed x509 certificates.
@@ -240,6 +241,11 @@ type VaultKubernetesAuth struct {
 	Role string
 }
 
+// CAIssuer configures an issuer that can issue certificates from its provided
+// CA certificate. It contains the name of the private key to sign certificates,
+// holds the location for Certificate Revocation Lists (CRL) distribution
+// points and list of URLs of Online Certificate Status Protocol (OCSP)
+// responders.
 type CAIssuer struct {
 	// SecretName is the name of the secret used to sign Certificates issued
 	// by this Issuer.

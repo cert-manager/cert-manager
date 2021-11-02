@@ -64,6 +64,7 @@ type Metrics struct {
 
 var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, cmmeta.ConditionFalse, cmmeta.ConditionUnknown}
 
+// New creates a Metrics struct and populates it with prometheus metric types.
 func New(log logr.Logger, c clock.Clock) *Metrics {
 	var (
 		clockTimeSeconds = prometheus.NewCounterFunc(
@@ -176,6 +177,7 @@ func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 		MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
 		Handler:        mux,
 	}
+
 	return server
 }
 
