@@ -39,6 +39,7 @@ const (
 	messageKeyPairVerified = "Signing CA verified"
 )
 
+// Setup verifies signing CA.
 func (c *CA) Setup(ctx context.Context) error {
 	log := logf.FromContext(ctx, "setup")
 

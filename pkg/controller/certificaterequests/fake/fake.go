@@ -23,6 +23,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
+// Issuer is a mock implementation of an Issuer.
 type Issuer struct {
 	FakeSign func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error)
 }
