@@ -66,7 +66,7 @@ def install():
         registry = "ghcr.io",
         repository = "kyverno/kyvernopre",
         tag = "v1.3.6",
-        digest = "sha256:e76fb71c59449bca1028724a88005652409b56efb90bbcdce56b0d083bda6568",
+        digest = "sha256:94fc7f204917a86dcdbc18977e843701854aa9f84c215adce36c26de2adf13df",
     )
 
     ## Fetch traefik for use during e2e tests.
