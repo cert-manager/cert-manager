@@ -68,8 +68,7 @@ help:
 	# images             - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push        - pushes docker images to the target registry
 	# crds               - runs the update-crds script to ensure that generated CRDs are up to date
-	# cluster            - creates a Kubernetes cluster for testing in CI, but doesn't install addons (KIND by default)
-	# ci-cluster         - creates a Kubernetes cluster for testing in CI installing several required addons (KIND by default)
+	# cluster            - creates a Kubernetes cluster for testing in CI but doesn't install addons (KIND by default)
 	# release_tars       - build the release tar files.
 	# update_kind_images - updates the digests of the kind images used for testing + CI across various K8S versions
 	#
@@ -116,11 +115,9 @@ crds:
 
 .PHONY: cluster
 cluster:
+	# NB: don't use this on a development environment; this is specifically for CI. the docker network that this
+	# script creates can wreak havoc on in-cluster DNS by interfering with access to your local network!
 	./devel/ci-cluster.sh
-
-.PHONY: ci-cluster
-ci-cluster: cluster
-	./devel/setup-e2e-deps.sh
 
 .PHONY: update_kind_images
 update_kind_images: devel/cluster/kind_cluster_node_versions.sh
