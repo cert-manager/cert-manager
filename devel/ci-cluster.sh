@@ -48,6 +48,11 @@ NETWORK_NAME="kind"
 
 # We create this custom network as a workaround until we have a way to properly patch this.
 if ! docker network inspect $NETWORK_NAME ; then
+  RED='\033[0;31m'
+  NC='\033[0m'
+  echo -e "${RED}Creating a kind network for CI environments.${NC}"
+  echo "This can cause issues with home networks; if you have DNS or other networking issues in-cluster, run 'docker network rm $NETWORK_NAME and use ./devel/cluster/create-kind.sh rather than this script."
+  sleep 2
   docker network create --driver=bridge --subnet=192.168.0.0/16 --gateway 192.168.0.1 $NETWORK_NAME
 fi
 
