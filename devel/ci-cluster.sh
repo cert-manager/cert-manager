@@ -34,17 +34,35 @@ if [[ "$IS_OPENSHIFT" == "true" ]] ; then
   export SERVICE_IP_PREFIX="172.30.0"
 fi
 
+# NB: kind will use a network called "kind" by default and so our creating a network by that name will be used for all clusters
+# in the future, and that'll clobber anyone who has their local network on 192.168.0.0/16 (which will be true for most people at home)
+# At the time of writing there's an env var - KIND_EXPERIMENTAL_DOCKER_NETWORK - which can be used to change
+# the name of the network but it's marked as experimental and could be removed, so this note is here to warn that if you run
+# this script locally, your cluster might not be able to talk to anything on your local network.
+NETWORK_NAME="kind"
+
 # When running in our CI environment the Docker network's subnet choice will
-# cause issues with routing. This works this around till we have a way to
-# properly patch this.
-if ! docker network inspect kind ; then
-  docker network create --driver=bridge --subnet=192.168.0.0/16 --gateway 192.168.0.1 kind
+# cause issues with routing, which can manifest in errors such as this one:
+# > "dial tcp: lookup charts.jetstack.io on 10.8.240.10:53: read udp 10.8.0.2:54823->10.8.240.10:53: i/o timeout"
+# https://prow.build-infra.jetstack.net/view/gs/jetstack-logs/pr-logs/pull/cert-manager_approver-policy/36/pull-cert-manager-approver-policy-smoke/1447565895923666944#1:build-log.txt%3A222
+
+# We create this custom network as a workaround until we have a way to properly patch this.
+if ! docker network inspect $NETWORK_NAME ; then
+  RED='\033[0;31m'
+  NC='\033[0m'
+  echo -e "${RED}Creating a kind network for CI environments.${NC}"
+  echo "This can cause issues with home networks; if you have DNS or other networking issues in-cluster, run 'docker network rm $NETWORK_NAME and use ./devel/cluster/create-kind.sh rather than this script."
+  sleep 2
+  docker network create --driver=bridge --subnet=192.168.0.0/16 --gateway 192.168.0.1 $NETWORK_NAME
 fi
 
 # Wait for the network to be created so kind does not overwrite it.
-while ! docker network inspect kind ; do
+while ! docker network inspect $NETWORK_NAME ; do
   sleep 100ms
 done
+
+# we could do this to use a custom network name, but we don't since it's experimental
+# export KIND_EXPERIMENTAL_DOCKER_NETWORK=$NETWORK_NAME
 
 echo "Ensuring a cluster exists..."
 if [[ "$IS_OPENSHIFT" == "true" ]] ; then

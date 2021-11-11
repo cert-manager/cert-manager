@@ -30,15 +30,31 @@ helm repo add haproxy-ingress https://haproxy-ingress.github.io/charts
 helm repo update
 
 export NAMESPACE="haproxy-ingress"
-export VERSION="0.13.0-beta.2"
+export CONFIG_MAP="haproxy-ingress-config"
+export VERSION="0.13.4"
+
+cat <<EOYAML | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAMESPACE}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${CONFIG_MAP}
+  namespace: ${NAMESPACE}
+data:
+  max-connections: "250"
+EOYAML
 
 helm upgrade \
   --install \
   --wait \
-  --create-namespace \
   --namespace "${NAMESPACE}" \
   --version "${VERSION}" \
   --set "controller.extraArgs.watch-gateway=true" \
+  --set "controller.extraArgs.configmap=${NAMESPACE}/${CONFIG_MAP}" \
   --set "controller.service.type=ClusterIP" \
   --set "controller.service.clusterIP=10.0.0.14" \
   haproxy-ingress haproxy-ingress/haproxy-ingress
