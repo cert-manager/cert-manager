@@ -10,20 +10,20 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "controller"
     {{- include "labels" . | nindent 4 }}
-{{- if .Values.serviceLabels }}
-{{ toYaml .Values.serviceLabels | indent 4 }}
-{{- end }}
-{{- if .Values.serviceAnnotations }}
+    {{- with .Values.serviceLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.serviceAnnotations }}
   annotations:
-    {{ toYaml .Values.serviceAnnotations | indent 4 }}
-{{- end }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: ClusterIP
   ports:
-    - protocol: TCP
-      port: 9402
-      name: tcp-prometheus-servicemonitor
-      targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
+  - protocol: TCP
+    port: 9402
+    name: tcp-prometheus-servicemonitor
+    targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
   selector:
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}

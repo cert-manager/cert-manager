@@ -1,5 +1,5 @@
-{{- if .Values.startupapicheck.enabled -}}
-{{- if .Values.global.rbac.create -}}
+{{- if .Values.startupapicheck.enabled }}
+{{- if .Values.global.rbac.create }}
 # create certificate role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -12,15 +12,14 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "startupapicheck"
     {{- include "labels" . | nindent 4 }}
-  {{- if .Values.startupapicheck.rbac.annotations }}
+  {{- with .Values.startupapicheck.rbac.annotations }}
   annotations:
-{{ toYaml .Values.startupapicheck.rbac.annotations | indent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates"]
     verbs: ["create"]
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -33,9 +32,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "startupapicheck"
     {{- include "labels" . | nindent 4 }}
-  {{- if .Values.startupapicheck.rbac.annotations }}
+  {{- with .Values.startupapicheck.rbac.annotations }}
   annotations:
-{{ toYaml .Values.startupapicheck.rbac.annotations | indent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -45,5 +44,5 @@ subjects:
   - kind: ServiceAccount
     name: {{ template "startupapicheck.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
-{{- end -}}
-{{- end -}}
+{{- end }}
+{{- end }}

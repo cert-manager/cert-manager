@@ -10,9 +10,9 @@ metadata:
     {{- include "labels" . | nindent 4 }}
   annotations:
     cert-manager.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ template "webhook.fullname" . }}-ca"
-  {{- if .Values.webhook.validatingWebhookConfigurationAnnotations }}
-{{ toYaml .Values.webhook.validatingWebhookConfigurationAnnotations | indent 4 }}
-  {{- end }}
+    {{- with .Values.webhook.validatingWebhookConfigurationAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 webhooks:
   - name: webhook.cert-manager.io
     namespaceSelector:

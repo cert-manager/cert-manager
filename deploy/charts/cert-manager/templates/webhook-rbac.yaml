@@ -1,4 +1,4 @@
-{{- if .Values.global.rbac.create -}}
+{{- if .Values.global.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -80,4 +80,4 @@ subjects:
   kind: ServiceAccount
   name: {{ template "webhook.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
-{{- end -}}
+{{- end }}

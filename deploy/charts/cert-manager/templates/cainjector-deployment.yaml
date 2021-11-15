@@ -1,4 +1,4 @@
-{{- if .Values.cainjector.enabled -}}
+{{- if .Values.cainjector.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,9 +10,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: "cainjector"
     {{- include "labels" . | nindent 4 }}
-  {{- if .Values.cainjector.deploymentAnnotations }}
+  {{- with .Values.cainjector.deploymentAnnotations }}
   annotations:
-{{ toYaml .Values.cainjector.deploymentAnnotations | indent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   replicas: {{ .Values.cainjector.replicaCount }}
@@ -23,7 +23,7 @@ spec:
       app.kubernetes.io/component: "cainjector"
   {{- with .Values.cainjector.strategy }}
   strategy:
-    {{- . | toYaml | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
   template:
     metadata:
@@ -33,26 +33,26 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: "cainjector"
         {{- include "labels" . | nindent 8 }}
-{{- if .Values.cainjector.podLabels }}
-{{ toYaml .Values.cainjector.podLabels | indent 8 }}
-{{- end }}
-      {{- if .Values.cainjector.podAnnotations }}
+        {{- with .Values.cainjector.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.cainjector.podAnnotations }}
       annotations:
-{{ toYaml .Values.cainjector.podAnnotations | indent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
       serviceAccountName: {{ template "cainjector.serviceAccountName" . }}
-      {{- if .Values.global.priorityClassName }}
-      priorityClassName: {{ .Values.global.priorityClassName | quote }}
+      {{- with .Values.global.priorityClassName }}
+      priorityClassName: {{ . | quote }}
       {{- end }}
-      {{- if .Values.cainjector.securityContext}}
+      {{- with .Values.cainjector.securityContext }}
       securityContext:
-{{ toYaml .Values.cainjector.securityContext | indent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.cainjector.image }}
-          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{.digest}}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
+          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{ .digest }}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
           {{- end }}
           imagePullPolicy: {{ .Values.cainjector.image.pullPolicy }}
           args:
@@ -71,30 +71,32 @@ spec:
           - --leader-election-retry-period={{ .retryPeriod }}
           {{- end }}
           {{- end }}
-          {{- if .Values.cainjector.extraArgs }}
-{{ toYaml .Values.cainjector.extraArgs | indent 10 }}
+          {{- with .Values.cainjector.extraArgs }}
+          {{- toYaml . | nindent 10 }}
           {{- end }}
           env:
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          {{- if .Values.cainjector.containerSecurityContext }}
+          {{- with .Values.cainjector.containerSecurityContext }}
           securityContext:
-            {{- toYaml .Values.cainjector.containerSecurityContext | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.cainjector.resources }}
           resources:
-{{ toYaml .Values.cainjector.resources | indent 12 }}
-    {{- with .Values.cainjector.nodeSelector }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.cainjector.nodeSelector }}
       nodeSelector:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.cainjector.affinity }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cainjector.affinity }}
       affinity:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.cainjector.tolerations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cainjector.tolerations }}
       tolerations:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-{{- end -}}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
