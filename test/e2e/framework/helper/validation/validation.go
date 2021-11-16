@@ -24,7 +24,7 @@ import (
 
 func DefaultCertificateSet() []certificates.ValidationFunc {
 	return []certificates.ValidationFunc{
-		certificates.Expect2Or3KeysInSecret,
+		certificates.ExpectValidKeysInSecret,
 		certificates.ExpectCertificateDNSNamesToMatch,
 		certificates.ExpectCertificateOrganizationToMatch,
 		certificates.ExpectCertificateURIsToMatch,
@@ -62,7 +62,7 @@ func DefaultCertificateSigningRequestSet() []certificatesigningrequests.Validati
 func CertificateSetForUnsupportedFeatureSet(fs featureset.FeatureSet) []certificates.ValidationFunc {
 	// basics
 	out := []certificates.ValidationFunc{
-		certificates.Expect2Or3KeysInSecret,
+		certificates.ExpectValidKeysInSecret,
 		certificates.ExpectCertificateDNSNamesToMatch,
 		certificates.ExpectCertificateOrganizationToMatch,
 		certificates.ExpectValidAnnotations,

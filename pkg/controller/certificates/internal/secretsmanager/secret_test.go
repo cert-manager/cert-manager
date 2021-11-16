@@ -18,14 +18,18 @@ package secretsmanager
 
 import (
 	"context"
+	"encoding/pem"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/jetstack/cert-manager/internal/controller/feature"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -71,6 +75,16 @@ func TestSecretsManager(t *testing.T) {
 			"template": "label",
 		}),
 	)
+	// enable feature gate additional private key for this test
+	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultMutableFeatureGate, feature.AdditionalCertificateOutputFormats, true)()
+	baseCertWithAdditionalOutputFormats := gen.CertificateFrom(baseCertBundle.Certificate,
+		gen.SetCertificateAdditionalOutputFormats([]cmapi.AdditionalOutputFormat{
+			{Type: "DER"},
+			{Type: "CombinedPEM"},
+		}),
+	)
+	block, _ := pem.Decode(baseCertBundle.PrivateKeyBytes)
+	tlsDerContent := block.Bytes
 
 	tests := map[string]testT{
 		"if secret does not exists and unable to decode certificate, then error": {
@@ -392,6 +406,47 @@ func TestSecretsManager(t *testing.T) {
 								corev1.TLSCertKey:       baseCertBundle.CertBytes,
 								corev1.TLSPrivateKeyKey: []byte("test-key"),
 								cmmeta.TLSCAKey:         []byte("test-ca"),
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+			},
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret with additional key formats and enabled feature": {
+			certificate: baseCertWithAdditionalOutputFormats,
+			SecretData:  SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: baseCertBundle.PrivateKeyBytes},
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Annotations: map[string]string{
+									cmapi.CertificateNameKey:       "test",
+									cmapi.IssuerGroupAnnotationKey: "foo.io",
+									cmapi.IssuerKindAnnotationKey:  "Issuer",
+									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
+
+									cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+									cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+								},
+								Labels: map[string]string{},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:                     baseCertBundle.CertBytes,
+								corev1.TLSPrivateKeyKey:               baseCertBundle.PrivateKeyBytes,
+								cmmeta.TLSCAKey:                       []byte("test-ca"),
+								cmapi.AdditionalKeyOutputFormatDERKey: tlsDerContent,
+								cmapi.AdditionalOutputFormatPEMKey:    []byte(strings.Join([]string{string(baseCertBundle.PrivateKeyBytes), string(baseCertBundle.CertBytes)}, "\n")),
 							},
 							Type: corev1.SecretTypeTLS,
 						},

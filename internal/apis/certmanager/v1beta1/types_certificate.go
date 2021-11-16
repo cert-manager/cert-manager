@@ -183,6 +183,10 @@ type CertificateSpec struct {
 	// +kubebuilder:validation:ExclusiveMaximum=false
 	// +optional
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"` // Validated by the validating webhook.
+
+	// AdditionalOutputFormats allows for requests for additional formats in which the private key should be written to the secret
+	// +optional
+	AdditionalOutputFormats []AdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -446,4 +450,28 @@ type CertificateSecretTemplate struct {
 	// Labels is a key value map to be copied to the target Kubernetes Secret.
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// OutputFormatType specifies which additional key formats should be added to Kubernetes secrets.
+// Allowed values are `DER` or `CombinedPEM`.
+// When Type is set to `DER` an additional entry `key.der` will be created in the secret
+// containing the binary format of the key.
+// When Type is set to `CombinedPEM` an additional entry `tls-combined.pem` will be created in the secret
+// containing the PEM formatted certificate chain and key (tls.key + tls.crt concatenated)
+// +kubebuilder:validation:Enum=DER;CombinedPEM
+type OutputFormatType string
+
+const (
+	// AdditionalKeyOutputFormatDER requests that the DER binary format of the key
+	// is stored in the `key.der` key of a secret
+	AdditionalKeyOutputFormatDER OutputFormatType = "DER"
+
+	// AdditionalOutputFormatCombinedPEM requests that an entry containing both the PEM tls.crt and tls.key
+	// values concatenated is stored in the `tls-combined.pem` key of a secret
+	AdditionalOutputFormatCombinedPEM OutputFormatType = "CombinedPEM"
+)
+
+// AdditionalOutputFormat wraps an additional key output format type
+type AdditionalOutputFormat struct {
+	Type OutputFormatType `json:"type"`
 }

@@ -19,6 +19,7 @@ package secretsmanager
 import (
 	"bytes"
 	"context"
+	"encoding/pem"
 	"fmt"
 	"strings"
 
@@ -28,9 +29,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	"github.com/jetstack/cert-manager/internal/controller/feature"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -120,6 +123,45 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	return err
 }
 
+func updateSecretWithAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
+	if crt.Spec.AdditionalOutputFormats == nil {
+		delete(secret.Data, cmapi.AdditionalKeyOutputFormatDERKey)
+		delete(secret.Data, cmapi.AdditionalOutputFormatPEMKey)
+		return nil
+	}
+
+	additionalOutputFormatDER := false
+	additionalOutputFormatPEM := false
+
+	for _, f := range crt.Spec.AdditionalOutputFormats {
+		switch f.Type {
+		case cmapi.AdditionalKeyOutputFormatDER:
+			additionalOutputFormatDER = true
+		case cmapi.AdditionalOutputFormatCombinedPEM:
+			additionalOutputFormatPEM = true
+		default:
+			return fmt.Errorf("Unknown additional output format %s", f.Type)
+		}
+	}
+
+	if additionalOutputFormatDER {
+		// Store binary format of the private key
+		block, _ := pem.Decode(data.PrivateKey)
+		secret.Data[cmapi.AdditionalKeyOutputFormatDERKey] = block.Bytes
+	} else {
+		delete(secret.Data, cmapi.AdditionalKeyOutputFormatDERKey)
+	}
+
+	if additionalOutputFormatPEM {
+		// Combine tls.key and tls.crt
+		secret.Data[cmapi.AdditionalOutputFormatPEMKey] = []byte(strings.Join([]string{string(data.PrivateKey), string(data.Certificate)}, "\n"))
+	} else {
+		delete(secret.Data, cmapi.AdditionalOutputFormatPEMKey)
+	}
+
+	return nil
+}
+
 // setValues will update the Secret resource 'secret' with the data contained
 // in the given secretData.
 // It will update labels and annotations on the Secret resource appropriately.
@@ -203,8 +245,12 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 			delete(secret.Data, jksSecretKey)
 			delete(secret.Data, jksTruststoreKey)
 		}
-	}
 
+		// Add additional output formats
+		if utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
+			updateSecretWithAdditionalOutputFormats(crt, secret, data)
+		}
+	}
 	secret.Data[corev1.TLSPrivateKeyKey] = data.PrivateKey
 	secret.Data[corev1.TLSCertKey] = data.Certificate
 	if len(data.CA) > 0 {

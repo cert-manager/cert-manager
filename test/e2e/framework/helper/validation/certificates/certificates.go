@@ -37,12 +37,26 @@ import (
 // ValidationFunc describes a Certificate validation helper function
 type ValidationFunc func(certificate *cmapi.Certificate, secret *corev1.Secret) error
 
-// Expect2Or3KeysInSecret checks if the secret resource has the correct amount of fields in the secret data
-func Expect2Or3KeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error {
-	if !(len(secret.Data) == 2 || len(secret.Data) == 3) {
-		return fmt.Errorf("Expected 2 or 3 keys in certificate secret, but there was %d", len(secret.Data))
+// ExpectValidKeysInSecret checks that the secret contains valid keys
+func ExpectValidKeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error {
+	validKeys := [5]string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey, cmapi.AdditionalKeyOutputFormatDERKey, cmapi.AdditionalOutputFormatPEMKey}
+	nbValidKeys := 0
+	for k := range secret.Data {
+		found := false
+		for _, k2 := range validKeys {
+			if k == k2 {
+				found = true
+				nbValidKeys++
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("Expected secret key %s to be a valid key (%v)", k, validKeys)
+		}
 	}
-
+	if nbValidKeys < 2 {
+		return fmt.Errorf("Expected at least 2 valid keys in certificate secret, but there was %d", nbValidKeys)
+	}
 	return nil
 }
 
