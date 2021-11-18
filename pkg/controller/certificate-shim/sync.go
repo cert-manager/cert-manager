@@ -212,9 +212,6 @@ func validateIngressTLSBlock(path *field.Path, tlsBlock networkingv1.IngressTLS)
 	if len(tlsBlock.Hosts) == 0 {
 		errs = append(errs, field.Required(path.Child("hosts"), ""))
 	}
-	if tlsBlock.SecretName == "" {
-		errs = append(errs, field.Required(path.Child("secretName"), ""))
-	}
 
 	return errs
 }
@@ -285,6 +282,13 @@ func buildCertificates(
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a TLS block: "+err.Error())
 				continue
 			}
+
+			// Ignore TLS blocks without secretnames. E.g. ingress-nginx will serve
+			// a default certificate in this case. See #4235.
+			if tls.SecretName == "" {
+				continue
+			}
+
 			tlsHosts[corev1.ObjectReference{
 				Namespace: ingLike.Namespace,
 				Name:      tls.SecretName,
