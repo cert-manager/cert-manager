@@ -16,6 +16,10 @@ limitations under the License.
 
 package v1
 
+import (
+	"regexp"
+)
+
 // Common annotation keys added to resources.
 const (
 	// Annotation key for DNS subjectAltNames.
@@ -207,4 +211,30 @@ func DefaultKeyUsages() []KeyUsage {
 	// (in which case, 'serverAuth' on the CA can break a lot of clients).
 	// CAs can (and often do) opt to automatically add usages.
 	return []KeyUsage{UsageDigitalSignature, UsageKeyEncipherment}
+}
+
+const (
+	// CertificatShimExclusionsAnnotationKey is used to specify TLS entries that should be
+	// ignored by the certificate shim when generating certificates.
+	CertificateShimExclusionsAnnotationKey = "certificate-shim.cert-manager.io/exclusions"
+)
+
+// CertificateExclusion is a regexp that may used to ignore TLS entries for
+// when generating certificates.
+//
+// Examples:
+//	- cluster-wildcard
+//	- (default\-.*)|(cluster-wildcard)
+//
+// When processed, interstitial spaces will be trimmed.
+type CertificateExclusion string
+
+// Matches returns true if the CertificateExclusion matches the provided name.
+// If the underlying expression cannot compile to a regexp, return an error.
+func (s CertificateExclusion) Matches(name string) (bool, error) {
+	expr, err := regexp.Compile(string(s))
+	if err != nil {
+		return false, err
+	}
+	return expr.MatchString(name), nil
 }

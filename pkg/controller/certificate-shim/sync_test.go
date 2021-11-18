@@ -1100,6 +1100,82 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:   "skip a Certificate for an ingress with a single valid TLS entry with a matching exclusion",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels:    map[string]string{},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey:  "issuer-name",
+						cmapi.CertificateShimExclusionsAnnotationKey: "example-com-.*",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{},
+		},
+		{
+			Name:   "exclude hosts for a Certificate for an ingress exclusions",
+			Issuer: acmeClusterIssuer,
+			IngressLike: &networkingv1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels:    map[string]string{},
+					Annotations: map[string]string{
+						cmapi.IngressClusterIssuerNameAnnotationKey:  "issuer-name",
+						cmapi.CertificateShimExclusionsAnnotationKey: "example-com-.*",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: networkingv1.IngressSpec{
+					TLS: []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+						{
+							Hosts:      []string{"*.example.com"},
+							SecretName: "cluster-wildcard-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedEvents:      []string{`Normal CreateCertificate Successfully created Certificate "cluster-wildcard-tls"`},
+			ExpectedCreate: []*cmapi.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cluster-wildcard-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						Labels:          map[string]string{},
+						OwnerReferences: buildIngressOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: cmapi.CertificateSpec{
+						DNSNames:   []string{"*.example.com"},
+						CommonName: "my-cn",
+						SecretName: "cluster-wildcard-tls",
+						IssuerRef: cmmeta.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						Usages: cmapi.DefaultKeyUsages(),
+					},
+				},
+			},
+		},
 	}
 
 	testGatewayShim := []testT{

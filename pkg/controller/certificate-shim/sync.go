@@ -306,11 +306,27 @@ func buildCertificates(
 	case *networkingv1.Ingress:
 		for i, tls := range ingLike.Spec.TLS {
 			path := field.NewPath("spec", "tls").Index(i)
-			err := validateIngressTLSBlock(path, tls).ToAggregate()
+
+			skip, err := certificateExclusionMatches(ingLike, tls.SecretName)
+			if err != nil {
+				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Certificate exclusion failed to compile: "+err.Error())
+				// We fail closed - if the expression fails to compile, don't create
+				// a slew of new certificates that will need to get cleaned up.
+				// Additionally, Existing certificates will not get removed if a broken
+				// expression is added.
+				continue
+			}
+
+			if skip {
+				continue
+			}
+
+			err = validateIngressTLSBlock(path, tls).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a TLS block: "+err.Error())
 				continue
 			}
+
 			tlsHosts[corev1.ObjectReference{
 				Namespace: ingLike.Namespace,
 				Name:      tls.SecretName,
@@ -318,6 +334,21 @@ func buildCertificates(
 		}
 	case *gwapi.Gateway:
 		for i, l := range ingLike.Spec.Listeners {
+
+			if l.TLS != nil && l.TLS.CertificateRef != nil {
+				skip, err := certificateExclusionMatches(ingLike, l.TLS.CertificateRef.Name)
+
+				if err != nil {
+					rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Certificate exclusion failed to compile: "+err.Error())
+					// Fail closed - see justification in the Ingress case.
+					continue
+				}
+
+				if skip {
+					continue
+				}
+			}
+
 			err := validateGatewayListenerBlock(field.NewPath("spec", "listeners").Index(i), l).ToAggregate()
 			if err != nil {
 				rec.Eventf(ingLike, corev1.EventTypeWarning, reasonBadConfig, "Skipped a listener block: "+err.Error())
@@ -596,6 +627,19 @@ func hasShimAnnotation(ingLike metav1.Object, autoCertificateAnnotations []strin
 		}
 	}
 	return false
+}
+
+type certificateOptions struct {
+	ignore bool
+}
+
+func certificateExclusionMatches(ingLike metav1.Object, name string) (bool, error) {
+	annotations := ingLike.GetAnnotations()
+	if e, ok := annotations[cmapi.CertificateShimExclusionsAnnotationKey]; e != "" && ok {
+		ecs := cmapi.CertificateExclusion(e)
+		return ecs.Matches(name)
+	}
+	return false, nil
 }
 
 // issuerForIngressLike determines the Issuer that should be specified on a
