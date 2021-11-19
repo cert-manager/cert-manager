@@ -35,4 +35,5 @@ spec:
     path: {{ .Values.prometheus.servicemonitor.path }}
     interval: {{ .Values.prometheus.servicemonitor.interval }}
     scrapeTimeout: {{ .Values.prometheus.servicemonitor.scrapeTimeout }}
+    honorLabels: {{ .Values.prometheus.servicemonitor.honorLabels }}
 {{- end }}

@@ -117,6 +117,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.servicemonitor.interval` | Prometheus scrape interval | `60s` |
 | `prometheus.servicemonitor.labels` | Add custom labels to ServiceMonitor | |
 | `prometheus.servicemonitor.scrapeTimeout` | Prometheus scrape timeout | `30s` |
+| `prometheus.servicemonitor.honorLabels` | Whether Prometheus should honor the labels received from cert-manager | `false` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
 | `deploymentAnnotations` | Annotations to add to the cert-manager deployment | `{}` |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
