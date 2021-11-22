@@ -45,6 +45,9 @@ elif [[ "$K8S_VERSION" =~ 1\.21 ]] ; then
   KIND_IMAGE_SHA=$KIND_IMAGE_SHA_K8S_121
 elif [[ "$K8S_VERSION" =~ 1\.22 ]] ; then
   KIND_IMAGE_SHA=$KIND_IMAGE_SHA_K8S_122
+elif [[ "$K8S_VERSION" =~ 1\.23 ]]; then
+  KIND_IMAGE_SHA="sha256:8c3e98c086ece02428518a474e752a9ed0bf51da0ee93a8e6c47ca0937d7904b"
+  KIND_IMAGE_REPO="eu.gcr.io/jetstack-build-infra-images/kind"
 else
   echo "Unrecognised/unsupported Kubernetes version '${K8S_VERSION}'! Aborting..."
   exit 1
