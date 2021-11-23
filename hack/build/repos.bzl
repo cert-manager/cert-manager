@@ -391,6 +391,14 @@ def go_repositories():
         sum = "h1:ske+9nBpD9qZsTBoF41nW5L+AIuFBKMeze18XQ3eG1c=",
         version = "v3.0.0",
     )
+    go_repository(
+        name = "com_github_cenkalti_backoff_v4",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/cenkalti/backoff/v4",
+        sum = "h1:G2HAfAmvm/GcKan2oOQpBXOd2tT2G57ZnZGWa1PxPBQ=",
+        version = "v4.1.1",
+    )
 
     go_repository(
         name = "com_github_census_instrumentation_opencensus_proto",
@@ -610,8 +618,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/containerd/containerd",
-        sum = "h1:rQyoYtj4KddB3bxG6SAqd4+08gePNyJjRqvOIfV3rkM=",
-        version = "v1.5.7",
+        sum = "h1:NmkCC1/QxyZFBny8JogwLpOy2f+VEbO/f6bV2Mqtwuw=",
+        version = "v1.5.8",
     )
 
     go_repository(
@@ -670,8 +678,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/containerd/ttrpc",
-        sum = "h1:2/O3oTZN36q2xRolk0a2WWGgh7/Vf/liElg5hFYLX9U=",
-        version = "v1.0.2",
+        sum = "h1:GbtyLRxb0gOLR0TYQWt3O6B0NvT8tMdorEHqIQo/lWI=",
+        version = "v1.1.0",
     )
 
     go_repository(
@@ -2597,8 +2605,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/Microsoft/hcsshim",
-        sum = "h1:CulZ3GW8sNJExknToo+RWD+U+6ZM5kkNfuxywSDPd08=",
-        version = "v0.8.22",
+        sum = "h1:47MSwtKGXet80aIn+7h4YI6fwPmwIghAnsx2aOUrG2M=",
+        version = "v0.8.23",
     )
     go_repository(
         name = "com_github_microsoft_hcsshim_test",
@@ -2967,8 +2975,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/opencontainers/image-spec",
-        sum = "h1:JMemWkRwHx4Zj+fVxWoMCFm/8sYGGrUVojFA6h/TRcI=",
-        version = "v1.0.1",
+        sum = "h1:9yCKha/T5XdGtO0q9Q9a6T5NUCsTn/DrBg0D7ufOcFM=",
+        version = "v1.0.2",
     )
 
     go_repository(
@@ -4710,8 +4718,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "helm.sh/helm/v3",
-        sum = "h1:jRZCCdrOEfJI1LgStRAbmDJQkAwZkFy6gr4OlwrE2Ro=",
-        version = "v3.7.0",
+        sum = "h1:kED/HWx09QHHSJhYaJY6ttj/BhmzBmT1oupKslncibY=",
+        version = "v3.7.1",
     )
 
     go_repository(
