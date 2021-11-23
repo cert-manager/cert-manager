@@ -671,9 +671,10 @@ func TestValidateCertificate(t *testing.T) {
 					SecretName: "abc",
 					SecretTemplate: &internalcmapi.CertificateSecretTemplate{
 						Annotations: map[string]string{
-							"app.com/valid":                    "valid",
-							"cert-manager.io/alt-names":        "example.com",
-							"cert-manager.io/certificate-name": "selfsigned-cert",
+							"app.com/valid":                          "valid",
+							"cert-manager.io/alt-names":              "example.com",
+							"cert-manager.io/certificate-name":       "selfsigned-cert",
+							"cert-manager.io/allow-direct-injection": "true",
 						},
 					},
 					IssuerRef: cmmeta.ObjectReference{

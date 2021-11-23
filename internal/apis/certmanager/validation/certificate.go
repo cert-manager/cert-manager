@@ -186,7 +186,7 @@ func validateSecretTemplateAnnotations(crt *internalcmapi.CertificateSpec, fldPa
 
 	secretTemplateAnnotationsPath := fldPath.Child("secretTemplate", "annotations")
 	for a := range crt.SecretTemplate.Annotations {
-		if strings.HasPrefix(a, "cert-manager.io/") {
+		if strings.HasPrefix(a, "cert-manager.io/") && a != "cert-manager.io/allow-direct-injection" {
 			el = append(el, field.Invalid(secretTemplateAnnotationsPath, a, "cert-manager.io/* annotations are not allowed"))
 		}
 	}
