@@ -109,10 +109,16 @@ func TestSyncHappyPath(t *testing.T) {
 		},
 	}
 
+	erroredStatus := cmacme.OrderStatus{
+		State: cmacme.Errored,
+	}
+
 	testOrderPending := gen.OrderFrom(testOrder, gen.SetOrderStatus(pendingStatus))
 	testOrderInvalid := testOrderPending.DeepCopy()
 	testOrderInvalid.Status.State = cmacme.Invalid
 	testOrderInvalid.Status.FailureTime = &nowMetaTime
+	testOrderErrored := gen.OrderFrom(testOrder, gen.SetOrderStatus(erroredStatus))
+	testOrderErrored.Status.FailureTime = &nowMetaTime
 	testOrderValid := testOrderPending.DeepCopy()
 	testOrderValid.Status.State = cmacme.Valid
 	// pem encoded word 'test'
@@ -601,10 +607,18 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 			},
 			acmeClient: &acmecl.FakeACME{},
 		},
-		"do nothing if the order is failed": {
+		"do nothing if the order is invalid": {
 			order: testOrderInvalid,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderInvalid},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			acmeClient: &acmecl.FakeACME{},
+		},
+		"do nothing if the order is in errored state with no url or finalize url on status": {
+			order: testOrderErrored,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderErrored},
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{},
