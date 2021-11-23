@@ -84,6 +84,10 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	}
 
 	switch {
+	case acme.IsFailureState(o.Status.State):
+		log.V(logf.DebugLevel).Info("Doing nothing as Order is in a failed state")
+		// if the Order is failed there's nothing left for us to do, return nil
+		return nil
 	case o.Status.URL == "":
 		log.V(logf.DebugLevel).Info("Creating new ACME order as status.url is not set")
 		return c.createOrder(ctx, cl, o)
@@ -102,10 +106,6 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	case anyAuthorizationsMissingMetadata(o):
 		log.V(logf.DebugLevel).Info("Fetching Authorizations from ACME server as status.authorizations contains unpopulated authorizations")
 		return c.fetchMetadataForAuthorizations(ctx, o, cl)
-	case acme.IsFailureState(o.Status.State):
-		log.V(logf.DebugLevel).Info("Doing nothing as Order is in a failed state")
-		// if the Order is failed there's nothing left for us to do, return nil
-		return nil
 	case o.Status.State == cmacme.Valid && o.Status.Certificate == nil:
 		log.V(logf.DebugLevel).Info("Order is in a Valid state but the Certificate data is empty, fetching existing Certificate")
 		return c.fetchCertificateData(ctx, cl, o)
