@@ -88,6 +88,8 @@ func autoConvert_v1alpha1_WebhookConfiguration_To_config_WebhookConfiguration(in
 	}
 	out.KubeConfig = in.KubeConfig
 	out.APIServerHost = in.APIServerHost
+	out.EnablePprof = in.EnablePprof
+	out.PprofAddress = in.PprofAddress
 	return nil
 }
 
@@ -104,6 +106,8 @@ func autoConvert_config_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in
 	}
 	out.KubeConfig = in.KubeConfig
 	out.APIServerHost = in.APIServerHost
+	out.EnablePprof = in.EnablePprof
+	out.PprofAddress = in.PprofAddress
 	return nil
 }
 
