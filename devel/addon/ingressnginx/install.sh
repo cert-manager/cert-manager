@@ -52,10 +52,18 @@ export PATH="${bindir}/hack/bin/:$PATH"
 # This allows running ./devel/setup-e2e-deps.sh locally against Kubernetes v1.22
 # without passing the K8S_VERSION env var.
 k8s_version=$(kubectl version -oyaml | yq e '.serverVersion | .major +"."+ .minor' -)
-if [[ $k8s_version =~ 1\.22 ]]; then
-  # Deploy a v1 NGINX-Ingress when on Kubernetes 1.22 (only v1+ NGINX-Ingress versions support networking.k8s.io/v1 API)
-  IMAGE_TAG="v1.0.2"
-  HELM_CHART="4.0.3"
+if [[ $k8s_version =~ 1\.18 ]]; then
+  # Ingress v1+ versions only support Kubernetes v1 networking API which is only
+  # available from Kubernetes v1.19 onwards.
+  # TODO: remove this if statement once the oldest version of Kubernetes
+  # supported by cert-manager is v1.19
+  IMAGE_TAG="v0.49.3"
+  HELM_CHART="3.40.0"
+  INGRESS_WITHOUT_CLASS="false"
+  require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle_pre_networking_v1"
+else
+  IMAGE_TAG="v1.1.0"
+  HELM_CHART="4.0.10"
   # v1 NGINX-Ingress by default only watches Ingresses with Ingress class
   # defined. When configuring solver block for ACME HTTTP01 challenge on an ACME
   # issuer, cert-manager users can currently specify either an Ingress name or a
@@ -64,12 +72,8 @@ if [[ $k8s_version =~ 1\.22 ]]; then
   # have a class, we pass a --watch-ingress-without-class flag
   # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml#L64-L67
   INGRESS_WITHOUT_CLASS="true"
-else
-  IMAGE_TAG="v0.48.1"
-  HELM_CHART="3.34.0"
-  INGRESS_WITHOUT_CLASS="false"
+  require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle"
 fi
-require_image "k8s.gcr.io/ingress-nginx/controller:${IMAGE_TAG}" "//devel/addon/ingressnginx:bundle_${IMAGE_TAG}"
 
 # Ensure the ingress-nginx namespace exists
 kubectl get namespace "${NAMESPACE}" || kubectl create namespace "${NAMESPACE}"
