@@ -22,10 +22,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
 	unsafe "unsafe"
 
-	config "github.com/jetstack/cert-manager/internal/apis/config"
+	webhook "github.com/jetstack/cert-manager/internal/apis/config/webhook"
+	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -37,53 +37,133 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.WebhookConfiguration)(nil), (*config.WebhookConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_WebhookConfiguration_To_config_WebhookConfiguration(a.(*v1alpha1.WebhookConfiguration), b.(*config.WebhookConfiguration), scope)
+	if err := s.AddGeneratedConversionFunc((*v1alpha1.DynamicServingConfig)(nil), (*webhook.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_DynamicServingConfig_To_webhook_DynamicServingConfig(a.(*v1alpha1.DynamicServingConfig), b.(*webhook.DynamicServingConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*config.WebhookConfiguration)(nil), (*v1alpha1.WebhookConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_config_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(a.(*config.WebhookConfiguration), b.(*v1alpha1.WebhookConfiguration), scope)
+	if err := s.AddGeneratedConversionFunc((*webhook.DynamicServingConfig)(nil), (*v1alpha1.DynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_webhook_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(a.(*webhook.DynamicServingConfig), b.(*v1alpha1.DynamicServingConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.WebhookDynamicServingConfig)(nil), (*config.WebhookDynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_WebhookDynamicServingConfig_To_config_WebhookDynamicServingConfig(a.(*v1alpha1.WebhookDynamicServingConfig), b.(*config.WebhookDynamicServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*v1alpha1.FilesystemServingConfig)(nil), (*webhook.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_FilesystemServingConfig_To_webhook_FilesystemServingConfig(a.(*v1alpha1.FilesystemServingConfig), b.(*webhook.FilesystemServingConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*config.WebhookDynamicServingConfig)(nil), (*v1alpha1.WebhookDynamicServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_config_WebhookDynamicServingConfig_To_v1alpha1_WebhookDynamicServingConfig(a.(*config.WebhookDynamicServingConfig), b.(*v1alpha1.WebhookDynamicServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*webhook.FilesystemServingConfig)(nil), (*v1alpha1.FilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_webhook_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(a.(*webhook.FilesystemServingConfig), b.(*v1alpha1.FilesystemServingConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.WebhookFilesystemServingConfig)(nil), (*config.WebhookFilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_WebhookFilesystemServingConfig_To_config_WebhookFilesystemServingConfig(a.(*v1alpha1.WebhookFilesystemServingConfig), b.(*config.WebhookFilesystemServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*v1alpha1.TLSConfig)(nil), (*webhook.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_TLSConfig_To_webhook_TLSConfig(a.(*v1alpha1.TLSConfig), b.(*webhook.TLSConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*config.WebhookFilesystemServingConfig)(nil), (*v1alpha1.WebhookFilesystemServingConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_config_WebhookFilesystemServingConfig_To_v1alpha1_WebhookFilesystemServingConfig(a.(*config.WebhookFilesystemServingConfig), b.(*v1alpha1.WebhookFilesystemServingConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*webhook.TLSConfig)(nil), (*v1alpha1.TLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_webhook_TLSConfig_To_v1alpha1_TLSConfig(a.(*webhook.TLSConfig), b.(*v1alpha1.TLSConfig), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.WebhookTLSConfig)(nil), (*config.WebhookTLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_WebhookTLSConfig_To_config_WebhookTLSConfig(a.(*v1alpha1.WebhookTLSConfig), b.(*config.WebhookTLSConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*v1alpha1.WebhookConfiguration)(nil), (*webhook.WebhookConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(a.(*v1alpha1.WebhookConfiguration), b.(*webhook.WebhookConfiguration), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*config.WebhookTLSConfig)(nil), (*v1alpha1.WebhookTLSConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_config_WebhookTLSConfig_To_v1alpha1_WebhookTLSConfig(a.(*config.WebhookTLSConfig), b.(*v1alpha1.WebhookTLSConfig), scope)
+	if err := s.AddGeneratedConversionFunc((*webhook.WebhookConfiguration)(nil), (*v1alpha1.WebhookConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(a.(*webhook.WebhookConfiguration), b.(*v1alpha1.WebhookConfiguration), scope)
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1alpha1_WebhookConfiguration_To_config_WebhookConfiguration(in *v1alpha1.WebhookConfiguration, out *config.WebhookConfiguration, s conversion.Scope) error {
+func autoConvert_v1alpha1_DynamicServingConfig_To_webhook_DynamicServingConfig(in *v1alpha1.DynamicServingConfig, out *webhook.DynamicServingConfig, s conversion.Scope) error {
+	out.SecretNamespace = in.SecretNamespace
+	out.SecretName = in.SecretName
+	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	return nil
+}
+
+// Convert_v1alpha1_DynamicServingConfig_To_webhook_DynamicServingConfig is an autogenerated conversion function.
+func Convert_v1alpha1_DynamicServingConfig_To_webhook_DynamicServingConfig(in *v1alpha1.DynamicServingConfig, out *webhook.DynamicServingConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha1_DynamicServingConfig_To_webhook_DynamicServingConfig(in, out, s)
+}
+
+func autoConvert_webhook_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *webhook.DynamicServingConfig, out *v1alpha1.DynamicServingConfig, s conversion.Scope) error {
+	out.SecretNamespace = in.SecretNamespace
+	out.SecretName = in.SecretName
+	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
+	return nil
+}
+
+// Convert_webhook_DynamicServingConfig_To_v1alpha1_DynamicServingConfig is an autogenerated conversion function.
+func Convert_webhook_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in *webhook.DynamicServingConfig, out *v1alpha1.DynamicServingConfig, s conversion.Scope) error {
+	return autoConvert_webhook_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(in, out, s)
+}
+
+func autoConvert_v1alpha1_FilesystemServingConfig_To_webhook_FilesystemServingConfig(in *v1alpha1.FilesystemServingConfig, out *webhook.FilesystemServingConfig, s conversion.Scope) error {
+	out.CertFile = in.CertFile
+	out.KeyFile = in.KeyFile
+	return nil
+}
+
+// Convert_v1alpha1_FilesystemServingConfig_To_webhook_FilesystemServingConfig is an autogenerated conversion function.
+func Convert_v1alpha1_FilesystemServingConfig_To_webhook_FilesystemServingConfig(in *v1alpha1.FilesystemServingConfig, out *webhook.FilesystemServingConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha1_FilesystemServingConfig_To_webhook_FilesystemServingConfig(in, out, s)
+}
+
+func autoConvert_webhook_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *webhook.FilesystemServingConfig, out *v1alpha1.FilesystemServingConfig, s conversion.Scope) error {
+	out.CertFile = in.CertFile
+	out.KeyFile = in.KeyFile
+	return nil
+}
+
+// Convert_webhook_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig is an autogenerated conversion function.
+func Convert_webhook_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in *webhook.FilesystemServingConfig, out *v1alpha1.FilesystemServingConfig, s conversion.Scope) error {
+	return autoConvert_webhook_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(in, out, s)
+}
+
+func autoConvert_v1alpha1_TLSConfig_To_webhook_TLSConfig(in *v1alpha1.TLSConfig, out *webhook.TLSConfig, s conversion.Scope) error {
+	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
+	out.MinTLSVersion = in.MinTLSVersion
+	if err := Convert_v1alpha1_FilesystemServingConfig_To_webhook_FilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {
+		return err
+	}
+	if err := Convert_v1alpha1_DynamicServingConfig_To_webhook_DynamicServingConfig(&in.Dynamic, &out.Dynamic, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha1_TLSConfig_To_webhook_TLSConfig is an autogenerated conversion function.
+func Convert_v1alpha1_TLSConfig_To_webhook_TLSConfig(in *v1alpha1.TLSConfig, out *webhook.TLSConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha1_TLSConfig_To_webhook_TLSConfig(in, out, s)
+}
+
+func autoConvert_webhook_TLSConfig_To_v1alpha1_TLSConfig(in *webhook.TLSConfig, out *v1alpha1.TLSConfig, s conversion.Scope) error {
+	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
+	out.MinTLSVersion = in.MinTLSVersion
+	if err := Convert_webhook_FilesystemServingConfig_To_v1alpha1_FilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {
+		return err
+	}
+	if err := Convert_webhook_DynamicServingConfig_To_v1alpha1_DynamicServingConfig(&in.Dynamic, &out.Dynamic, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_webhook_TLSConfig_To_v1alpha1_TLSConfig is an autogenerated conversion function.
+func Convert_webhook_TLSConfig_To_v1alpha1_TLSConfig(in *webhook.TLSConfig, out *v1alpha1.TLSConfig, s conversion.Scope) error {
+	return autoConvert_webhook_TLSConfig_To_v1alpha1_TLSConfig(in, out, s)
+}
+
+func autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(in *v1alpha1.WebhookConfiguration, out *webhook.WebhookConfiguration, s conversion.Scope) error {
 	out.SecurePort = (*int)(unsafe.Pointer(in.SecurePort))
 	out.HealthzPort = (*int)(unsafe.Pointer(in.HealthzPort))
-	if err := Convert_v1alpha1_WebhookTLSConfig_To_config_WebhookTLSConfig(&in.TLSConfig, &out.TLSConfig, s); err != nil {
+	if err := Convert_v1alpha1_TLSConfig_To_webhook_TLSConfig(&in.TLSConfig, &out.TLSConfig, s); err != nil {
 		return err
 	}
 	out.KubeConfig = in.KubeConfig
@@ -93,15 +173,15 @@ func autoConvert_v1alpha1_WebhookConfiguration_To_config_WebhookConfiguration(in
 	return nil
 }
 
-// Convert_v1alpha1_WebhookConfiguration_To_config_WebhookConfiguration is an autogenerated conversion function.
-func Convert_v1alpha1_WebhookConfiguration_To_config_WebhookConfiguration(in *v1alpha1.WebhookConfiguration, out *config.WebhookConfiguration, s conversion.Scope) error {
-	return autoConvert_v1alpha1_WebhookConfiguration_To_config_WebhookConfiguration(in, out, s)
+// Convert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration is an autogenerated conversion function.
+func Convert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(in *v1alpha1.WebhookConfiguration, out *webhook.WebhookConfiguration, s conversion.Scope) error {
+	return autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(in, out, s)
 }
 
-func autoConvert_config_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in *config.WebhookConfiguration, out *v1alpha1.WebhookConfiguration, s conversion.Scope) error {
+func autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in *webhook.WebhookConfiguration, out *v1alpha1.WebhookConfiguration, s conversion.Scope) error {
 	out.SecurePort = (*int)(unsafe.Pointer(in.SecurePort))
 	out.HealthzPort = (*int)(unsafe.Pointer(in.HealthzPort))
-	if err := Convert_config_WebhookTLSConfig_To_v1alpha1_WebhookTLSConfig(&in.TLSConfig, &out.TLSConfig, s); err != nil {
+	if err := Convert_webhook_TLSConfig_To_v1alpha1_TLSConfig(&in.TLSConfig, &out.TLSConfig, s); err != nil {
 		return err
 	}
 	out.KubeConfig = in.KubeConfig
@@ -111,87 +191,7 @@ func autoConvert_config_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in
 	return nil
 }
 
-// Convert_config_WebhookConfiguration_To_v1alpha1_WebhookConfiguration is an autogenerated conversion function.
-func Convert_config_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in *config.WebhookConfiguration, out *v1alpha1.WebhookConfiguration, s conversion.Scope) error {
-	return autoConvert_config_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in, out, s)
-}
-
-func autoConvert_v1alpha1_WebhookDynamicServingConfig_To_config_WebhookDynamicServingConfig(in *v1alpha1.WebhookDynamicServingConfig, out *config.WebhookDynamicServingConfig, s conversion.Scope) error {
-	out.SecretNamespace = in.SecretNamespace
-	out.SecretName = in.SecretName
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	return nil
-}
-
-// Convert_v1alpha1_WebhookDynamicServingConfig_To_config_WebhookDynamicServingConfig is an autogenerated conversion function.
-func Convert_v1alpha1_WebhookDynamicServingConfig_To_config_WebhookDynamicServingConfig(in *v1alpha1.WebhookDynamicServingConfig, out *config.WebhookDynamicServingConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_WebhookDynamicServingConfig_To_config_WebhookDynamicServingConfig(in, out, s)
-}
-
-func autoConvert_config_WebhookDynamicServingConfig_To_v1alpha1_WebhookDynamicServingConfig(in *config.WebhookDynamicServingConfig, out *v1alpha1.WebhookDynamicServingConfig, s conversion.Scope) error {
-	out.SecretNamespace = in.SecretNamespace
-	out.SecretName = in.SecretName
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	return nil
-}
-
-// Convert_config_WebhookDynamicServingConfig_To_v1alpha1_WebhookDynamicServingConfig is an autogenerated conversion function.
-func Convert_config_WebhookDynamicServingConfig_To_v1alpha1_WebhookDynamicServingConfig(in *config.WebhookDynamicServingConfig, out *v1alpha1.WebhookDynamicServingConfig, s conversion.Scope) error {
-	return autoConvert_config_WebhookDynamicServingConfig_To_v1alpha1_WebhookDynamicServingConfig(in, out, s)
-}
-
-func autoConvert_v1alpha1_WebhookFilesystemServingConfig_To_config_WebhookFilesystemServingConfig(in *v1alpha1.WebhookFilesystemServingConfig, out *config.WebhookFilesystemServingConfig, s conversion.Scope) error {
-	out.CertFile = in.CertFile
-	out.KeyFile = in.KeyFile
-	return nil
-}
-
-// Convert_v1alpha1_WebhookFilesystemServingConfig_To_config_WebhookFilesystemServingConfig is an autogenerated conversion function.
-func Convert_v1alpha1_WebhookFilesystemServingConfig_To_config_WebhookFilesystemServingConfig(in *v1alpha1.WebhookFilesystemServingConfig, out *config.WebhookFilesystemServingConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_WebhookFilesystemServingConfig_To_config_WebhookFilesystemServingConfig(in, out, s)
-}
-
-func autoConvert_config_WebhookFilesystemServingConfig_To_v1alpha1_WebhookFilesystemServingConfig(in *config.WebhookFilesystemServingConfig, out *v1alpha1.WebhookFilesystemServingConfig, s conversion.Scope) error {
-	out.CertFile = in.CertFile
-	out.KeyFile = in.KeyFile
-	return nil
-}
-
-// Convert_config_WebhookFilesystemServingConfig_To_v1alpha1_WebhookFilesystemServingConfig is an autogenerated conversion function.
-func Convert_config_WebhookFilesystemServingConfig_To_v1alpha1_WebhookFilesystemServingConfig(in *config.WebhookFilesystemServingConfig, out *v1alpha1.WebhookFilesystemServingConfig, s conversion.Scope) error {
-	return autoConvert_config_WebhookFilesystemServingConfig_To_v1alpha1_WebhookFilesystemServingConfig(in, out, s)
-}
-
-func autoConvert_v1alpha1_WebhookTLSConfig_To_config_WebhookTLSConfig(in *v1alpha1.WebhookTLSConfig, out *config.WebhookTLSConfig, s conversion.Scope) error {
-	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
-	out.MinTLSVersion = in.MinTLSVersion
-	if err := Convert_v1alpha1_WebhookFilesystemServingConfig_To_config_WebhookFilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha1_WebhookDynamicServingConfig_To_config_WebhookDynamicServingConfig(&in.Dynamic, &out.Dynamic, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha1_WebhookTLSConfig_To_config_WebhookTLSConfig is an autogenerated conversion function.
-func Convert_v1alpha1_WebhookTLSConfig_To_config_WebhookTLSConfig(in *v1alpha1.WebhookTLSConfig, out *config.WebhookTLSConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_WebhookTLSConfig_To_config_WebhookTLSConfig(in, out, s)
-}
-
-func autoConvert_config_WebhookTLSConfig_To_v1alpha1_WebhookTLSConfig(in *config.WebhookTLSConfig, out *v1alpha1.WebhookTLSConfig, s conversion.Scope) error {
-	out.CipherSuites = *(*[]string)(unsafe.Pointer(&in.CipherSuites))
-	out.MinTLSVersion = in.MinTLSVersion
-	if err := Convert_config_WebhookFilesystemServingConfig_To_v1alpha1_WebhookFilesystemServingConfig(&in.Filesystem, &out.Filesystem, s); err != nil {
-		return err
-	}
-	if err := Convert_config_WebhookDynamicServingConfig_To_v1alpha1_WebhookDynamicServingConfig(&in.Dynamic, &out.Dynamic, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_config_WebhookTLSConfig_To_v1alpha1_WebhookTLSConfig is an autogenerated conversion function.
-func Convert_config_WebhookTLSConfig_To_v1alpha1_WebhookTLSConfig(in *config.WebhookTLSConfig, out *v1alpha1.WebhookTLSConfig, s conversion.Scope) error {
-	return autoConvert_config_WebhookTLSConfig_To_v1alpha1_WebhookTLSConfig(in, out, s)
+// Convert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration is an autogenerated conversion function.
+func Convert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in *webhook.WebhookConfiguration, out *v1alpha1.WebhookConfiguration, s conversion.Scope) error {
+	return autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(in, out, s)
 }
