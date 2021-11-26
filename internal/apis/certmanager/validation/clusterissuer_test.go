@@ -29,10 +29,6 @@ import (
 
 // TODO(wallrj): Add tests
 func TestValidateClusterIssuer(t *testing.T) {
-	baseIssuerConfig := cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			SelfSigned: &cmapi.SelfSignedIssuer{},
-		}}
 	scenarios := map[string]struct {
 		cfg       *cmapi.ClusterIssuer
 		a         *admissionv1.AdmissionRequest

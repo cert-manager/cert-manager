@@ -29,11 +29,6 @@ import (
 )
 
 func TestValidateChallengeUpdate(t *testing.T) {
-	baseChal := &cmacme.Challenge{
-		Spec: cmacme.ChallengeSpec{
-			URL: "testurl",
-		},
-	}
 	someAdmissionRequest := &admissionv1.AdmissionRequest{
 		RequestKind: &metav1.GroupVersionKind{
 			Group:   "test",

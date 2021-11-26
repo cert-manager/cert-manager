@@ -37,17 +37,12 @@ import (
 
 func ValidateIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	iss := obj.(*certmanager.Issuer)
-	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	warnings = append(warnings, validateAPIVersion(a.RequestKind)...)
-	return allErrs, warnings
+	return ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 }
 
 func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
 	iss := obj.(*certmanager.Issuer)
-	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	// Admission request should never be nil
-	warnings = append(warnings, validateAPIVersion(a.RequestKind)...)
-	return allErrs, warnings
+	return ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 }
 
 func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, validation.WarningList) {

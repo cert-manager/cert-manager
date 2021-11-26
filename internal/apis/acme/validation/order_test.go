@@ -218,12 +218,6 @@ func TestValidateOrderUpdate(t *testing.T) {
 		}
 	})
 
-	baseOrder := &cmacme.Order{
-		Spec: cmacme.OrderSpec{
-			Request: []byte("testing"),
-		},
-	}
-
 	scenarios := map[string]struct {
 		old, new *cmacme.Order
 		a        *admissionv1.AdmissionRequest

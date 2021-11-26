@@ -1298,10 +1298,6 @@ func TestValidateVenafiTPP(t *testing.T) {
 
 // TODO(wallrj): Add tests
 func TestValidateIssuer(t *testing.T) {
-	baseIssuerConfig := cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			SelfSigned: &cmapi.SelfSignedIssuer{},
-		}}
 	scenarios := map[string]struct {
 		cfg       *cmapi.Issuer
 		a         *admissionv1.AdmissionRequest
