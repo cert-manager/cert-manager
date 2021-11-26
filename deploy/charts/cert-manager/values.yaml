@@ -206,6 +206,14 @@ webhook:
   replicaCount: 1
   timeoutSeconds: 10
 
+  # Used to configure options for the webhook pod.
+  # This allows setting options that'd usually be provided via flags.
+  # An APIVersion and Kind must be specified in your values.yaml file.
+  # Flags will override options that are set here.
+  config:
+    # apiVersion: config.cert-manager.io/v1alpha1
+    # kind: WebhookConfiguration
+
   strategy: {}
     # type: RollingUpdate
     # rollingUpdate:
@@ -308,6 +316,7 @@ webhook:
   # talk to the cluster nodes only on 443 and 10250. so configuring
   # securePort: 10250, will work out of the box without needing to add firewall
   # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000
+  # DEPRECATED: use webhook.config.securePort instead.
   securePort: 10250
 
   # Specifies if the webhook should be started in hostNetwork mode.
