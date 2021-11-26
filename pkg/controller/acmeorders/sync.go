@@ -152,6 +152,15 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 		return err
 	}
 
+	if o.Status.State == cmacme.Ready {
+		log.V(logf.DebugLevel).Info("Finalizing Order as order state is 'Ready'")
+		return c.finalizeOrder(ctx, cl, o, genericIssuer)
+	}
+
+	// Note: each of the following code paths uses the ACME Order retrieved
+	// here. Be mindful when adding new code below this call to ACME server-
+	// if the new code does not need this ACME order, try to place it above
+	// this call to avoid extra calls to ACME.
 	acmeOrder, err := getACMEOrder(ctx, cl, o)
 	// Order probably has been deleted, we cannot recover here.
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
@@ -167,16 +176,12 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	}
 
 	switch {
-	case o.Status.State == cmacme.Ready:
-		log.V(logf.DebugLevel).Info("Finalizing Order as order state is 'Ready'")
-		return c.finalizeOrder(ctx, cl, o, genericIssuer)
-
 	case anyChallengesFailed(challenges):
 		// TODO (@munnerz): instead of waiting for the ACME server to mark this
 		//  Order as failed, we could just mark the Order as failed as there is
 		//  no way that we will attempt and continue the order anyway.
 		log.V(logf.DebugLevel).Info("Update Order status as at least one Challenge has failed")
-		_, err := c.updateOrderStatus(ctx, cl, o)
+		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
@@ -216,7 +221,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 
 	case !anyChallengesFailed(challenges) && allChallengesFinal(challenges):
 		log.V(logf.DebugLevel).Info("All challenges are in a final state, updating order state")
-		_, err := c.updateOrderStatus(ctx, cl, o)
+		_, err := c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
@@ -285,6 +290,11 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 	if err != nil {
 		return nil, err
 	}
+
+	return c.updateOrderStatusFromACMEOrder(ctx, cl, o, acmeOrder)
+}
+
+func (c *controller) updateOrderStatusFromACMEOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order, acmeOrder *acmeapi.Order) (*acmeapi.Order, error) {
 	// Workaround bug in golang.org/x/crypto/acme implementation whereby the
 	// order's URI field will be empty when calling GetOrder due to the
 	// 'Location' header not being set on the response from the ACME server.
