@@ -1,25 +1,3 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
-
-go_test(
-    name = "go_default_test",
-    srcs = ["conversion_test.go"],
-    deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/apis/certmanager/v1:go_default_library",
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
-        "//pkg/apis/certmanager/v1alpha3:go_default_library",
-        "//pkg/apis/certmanager/v1beta1:go_default_library",
-        "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/util/pki:go_default_library",
-        "//test/integration/framework:go_default_library",
-        "@io_k8s_apimachinery//pkg/api/equality:go_default_library",
-        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
-        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
-        "@io_k8s_utils//diff:go_default_library",
-    ],
-)
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
