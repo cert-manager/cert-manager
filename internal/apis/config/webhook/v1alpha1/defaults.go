@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/jetstack/cert-manager/pkg/apis/config/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 )
