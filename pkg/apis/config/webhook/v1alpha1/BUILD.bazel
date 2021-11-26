@@ -5,13 +5,13 @@ go_library(
     srcs = [
         "doc.go",
         "register.go",
-        "types_webhook.go",
+        "types.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/apis/config/v1alpha1",
+    importpath = "github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/config:go_default_library",
+        "//pkg/apis/config/webhook:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",

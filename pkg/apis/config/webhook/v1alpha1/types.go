@@ -32,7 +32,7 @@ type WebhookConfiguration struct {
 	HealthzPort *int `json:"healthzPort,omitempty"`
 
 	// tlsConfig is used to configure the secure listener's TLS settings.
-	TLSConfig WebhookTLSConfig `json:"tlsConfig"`
+	TLSConfig TLSConfig `json:"tlsConfig"`
 
 	// kubeConfig is the kubeconfig file used to connect to the Kubernetes apiserver.
 	// If not specified, the webhook will attempt to load the in-cluster-config.
@@ -50,9 +50,9 @@ type WebhookConfiguration struct {
 	PprofAddress string `json:"pprofAddress,omitempty"`
 }
 
-// WebhookTLSConfig configures how TLS certificates are sourced for serving.
+// TLSConfig configures how TLS certificates are sourced for serving.
 // Only one of 'filesystem' or 'dynamic' may be specified.
-type WebhookTLSConfig struct {
+type TLSConfig struct {
 	// cipherSuites is the list of allowed cipher suites for the server.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
 	// If not specified, the default for the Go version will be used and may change over time.
@@ -65,7 +65,7 @@ type WebhookTLSConfig struct {
 
 	// Filesystem enables using a certificate and private key found on the local filesystem.
 	// These files will be periodically polled in case they have changed, and dynamically reloaded.
-	Filesystem WebhookFilesystemServingConfig `json:"filesystem"`
+	Filesystem FilesystemServingConfig `json:"filesystem"`
 
 	// When Dynamic serving is enabled, the webhook will generate a CA used to sign webhook
 	// certificates and persist it into a Kubernetes Secret resource (for other replicas of the
@@ -73,12 +73,12 @@ type WebhookTLSConfig struct {
 	// It will then generate a certificate in-memory for itself using this CA to serve with.
 	// The CAs certificate can then be copied into the appropriate Validating, Mutating and Conversion
 	// webhook configuration objects (typically by cainjector).
-	Dynamic WebhookDynamicServingConfig `json:"dynamic"`
+	Dynamic DynamicServingConfig `json:"dynamic"`
 }
 
-// WebhookDynamicServingConfig makes the webhook generate a CA and persist it into Secret resources.
+// DynamicServingConfig makes the webhook generate a CA and persist it into Secret resources.
 // This CA will be used by all instances of the webhook for signing serving certificates.
-type WebhookDynamicServingConfig struct {
+type DynamicServingConfig struct {
 	// Namespace of the Kubernetes Secret resource containing the TLS certificate
 	// used as a CA to sign dynamic serving certificates.
 	SecretNamespace string `json:"secretNamespace,omitempty"`
@@ -91,9 +91,9 @@ type WebhookDynamicServingConfig struct {
 	DNSNames []string `json:"dnsNames,omitempty"`
 }
 
-// WebhookFilesystemServingConfig enables using a certificate and private key found on the local filesystem.
+// FilesystemServingConfig enables using a certificate and private key found on the local filesystem.
 // These files will be periodically polled in case they have changed, and dynamically reloaded.
-type WebhookFilesystemServingConfig struct {
+type FilesystemServingConfig struct {
 	// Path to a file containing TLS certificate & chain to serve with
 	CertFile string `json:"certFile,omitempty"`
 

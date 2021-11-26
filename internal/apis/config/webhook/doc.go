@@ -16,6 +16,6 @@ limitations under the License.
 
 // +k8s:deepcopy-gen=package,register
 
-// Package config is the internal version of the API.
-// +groupName=config.cert-manager.io
-package config
+// Package webhook is the internal version of the webhook config API.
+// +groupName=webhook.config.cert-manager.io
+package webhook

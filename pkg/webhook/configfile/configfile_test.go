@@ -30,7 +30,7 @@ func TestFSLoader_Load(t *testing.T) {
 			t.Fatalf("unexpected filename %q passed to ReadFile", filename)
 			return nil, fmt.Errorf("unexpected filename %q", filename)
 		}
-		return []byte(fmt.Sprintf(`apiVersion: config.cert-manager.io/v1alpha1
+		return []byte(fmt.Sprintf(`apiVersion: webhook.config.cert-manager.io/v1alpha1
 kind: WebhookConfiguration
 kubeConfig: %s`, kubeConfigPath)), nil
 	}), expectedFilename)

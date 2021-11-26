@@ -31,7 +31,7 @@ import (
 
 	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	"github.com/jetstack/cert-manager/internal/apis/config"
+	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/webhook"

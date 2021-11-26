@@ -21,13 +21,13 @@ import (
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/utils/pointer"
 
-	"github.com/jetstack/cert-manager/internal/apis/config"
+	"github.com/jetstack/cert-manager/internal/apis/config/webhook"
 )
 
-// Funcs returns the fuzzer functions for the apps api group.
+// Funcs returns the fuzzer functions for the webhook config api group.
 var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
-		func(s *config.WebhookConfiguration, c fuzz.Continue) {
+		func(s *webhook.WebhookConfiguration, c fuzz.Continue) {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again
 
 			if s.HealthzPort == nil {

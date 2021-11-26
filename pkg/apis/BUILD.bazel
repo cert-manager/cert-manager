@@ -20,7 +20,7 @@ filegroup(
         ":package-srcs",
         "//pkg/apis/acme:all-srcs",
         "//pkg/apis/certmanager:all-srcs",
-        "//pkg/apis/config:all-srcs",
+        "//pkg/apis/config/webhook:all-srcs",
         "//pkg/apis/experimental:all-srcs",
         "//pkg/apis/meta:all-srcs",
     ],

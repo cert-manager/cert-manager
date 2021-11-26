@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
 
-	"github.com/jetstack/cert-manager/internal/apis/config"
-	configscheme "github.com/jetstack/cert-manager/internal/apis/config/scheme"
-	configv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/v1alpha1"
+	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
+	configscheme "github.com/jetstack/cert-manager/internal/apis/config/webhook/scheme"
+	configv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
 )
 
 // WebhookFlags defines options that can only be configured via flags.

@@ -20,8 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
-	"github.com/jetstack/cert-manager/internal/apis/config"
-	configv1alpha1 "github.com/jetstack/cert-manager/internal/apis/config/v1alpha1"
+	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
+	configv1alpha1 "github.com/jetstack/cert-manager/internal/apis/config/webhook/v1alpha1"
 )
 
 // NewSchemeAndCodecs is a utility function that returns a Scheme and CodecFactory

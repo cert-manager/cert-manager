@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/jetstack/cert-manager/pkg/apis/config/webhook"
 	"github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // SchemeGroupVersion is group version used to register these objects

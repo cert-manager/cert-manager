@@ -3,11 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["install.go"],
-    importpath = "github.com/jetstack/cert-manager/internal/apis/config/install",
+    importpath = "github.com/jetstack/cert-manager/internal/apis/config/webhook/install",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/apis/config:go_default_library",
-        "//internal/apis/config/v1alpha1:go_default_library",
+        "//internal/apis/config/webhook:go_default_library",
+        "//internal/apis/config/webhook/v1alpha1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
     ],
@@ -35,7 +35,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//internal/apis/config/fuzzer:go_default_library",
+        "//internal/apis/config/webhook/fuzzer:go_default_library",
         "@io_k8s_apimachinery//pkg/api/apitesting/roundtrip:go_default_library",
     ],
 )

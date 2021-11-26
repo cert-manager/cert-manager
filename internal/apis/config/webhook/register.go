@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package webhook
 
 import (
-	"github.com/jetstack/cert-manager/pkg/apis/config/webhook"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/jetstack/cert-manager/pkg/apis/config/webhook"
 )
 
 var (

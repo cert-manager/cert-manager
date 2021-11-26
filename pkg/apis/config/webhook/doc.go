@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +groupName=config.cert-manager.io
+// +groupName=webhook.config.cert-manager.io
 
-// Package config contains types used to configure cert-manager components
-package config
+// Package webhook contains types used to configure the webhook
+package webhook
 
-const GroupName = "config.cert-manager.io"
+const GroupName = "webhook.config.cert-manager.io"

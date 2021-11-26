@@ -44,8 +44,8 @@ deepcopy_inputs=(
   pkg/apis/acme/v1beta1 \
   pkg/apis/acme/v1 \
   internal/apis/acme \
-  pkg/apis/config/v1alpha1 \
-  internal/apis/config \
+  pkg/apis/config/webhook/v1alpha1 \
+  internal/apis/config/webhook \
   pkg/apis/meta/v1 \
   internal/apis/meta \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
@@ -78,7 +78,7 @@ defaulter_inputs=(
   internal/apis/acme/v1alpha3 \
   internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
-  internal/apis/config/v1alpha1 \
+  internal/apis/config/webhook/v1alpha1 \
   internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \
@@ -94,7 +94,7 @@ conversion_inputs=(
   internal/apis/acme/v1alpha3 \
   internal/apis/acme/v1beta1 \
   internal/apis/acme/v1 \
-  internal/apis/config/v1alpha1 \
+  internal/apis/config/webhook/v1alpha1 \
   internal/apis/meta/v1 \
   pkg/webhook/handlers/testdata/apis/testgroup/v2 \
   pkg/webhook/handlers/testdata/apis/testgroup/v1 \

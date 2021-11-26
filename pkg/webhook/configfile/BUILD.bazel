@@ -6,8 +6,8 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/webhook/configfile",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/apis/config:go_default_library",
-        "//internal/apis/config/scheme:go_default_library",
+        "//internal/apis/config/webhook:go_default_library",
+        "//internal/apis/config/webhook/scheme:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
     ],
 )
