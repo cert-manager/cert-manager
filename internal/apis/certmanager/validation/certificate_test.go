@@ -30,9 +30,6 @@ import (
 	internalcmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	cmapiv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -563,69 +560,6 @@ func TestValidateCertificate(t *testing.T) {
 			a: someAdmissionRequest,
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("revisionHistoryLimit"), int32(0), "must not be less than 1"),
-			},
-		},
-		"v1alpha2 certificate created": {
-			cfg: &internalcmapi.Certificate{
-				Spec: internalcmapi.CertificateSpec{
-					CommonName: "abc",
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1alpha2",
-					Kind:    "Certificate"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1alpha2.SchemeGroupVersion.String(),
-					"Certificate",
-					cmapi.SchemeGroupVersion.String(),
-					"Certificate"),
-			},
-		},
-		"v1alpha3 certificate created": {
-			cfg: &internalcmapi.Certificate{
-				Spec: internalcmapi.CertificateSpec{
-					CommonName: "abc",
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1alpha3",
-					Kind:    "Certificate"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1alpha3.SchemeGroupVersion.String(),
-					"Certificate",
-					cmapi.SchemeGroupVersion.String(),
-					"Certificate"),
-			},
-		},
-		"v1beta1 certificate created": {
-			cfg: &internalcmapi.Certificate{
-				Spec: internalcmapi.CertificateSpec{
-					CommonName: "abc",
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1beta1",
-					Kind:    "Certificate"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1beta1.SchemeGroupVersion.String(),
-					"Certificate",
-					cmapi.SchemeGroupVersion.String(),
-					"Certificate"),
 			},
 		},
 		"valid with empty secretTemplate": {

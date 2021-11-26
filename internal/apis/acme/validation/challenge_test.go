@@ -17,7 +17,6 @@ limitations under the License.
 package validation
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -27,10 +26,6 @@ import (
 
 	"github.com/jetstack/cert-manager/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
-	cmacmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmacmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	cmacmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 )
 
 func TestValidateChallengeUpdate(t *testing.T) {
@@ -90,66 +85,6 @@ func TestValidateChallengeUpdate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"challenge updated to v1alpha2 version": {
-			old: baseChal,
-			new: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					URL: "testurl",
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha2",
-					Kind:    "Challenge"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha2.SchemeGroupVersion.String(),
-					"Challenge",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Challenge"),
-			},
-		},
-		"challenge updated to v1alpha3 version": {
-			old: baseChal,
-			new: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					URL: "testurl",
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha3",
-					Kind:    "Challenge"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha3.SchemeGroupVersion.String(),
-					"Challenge",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Challenge"),
-			},
-		},
-		"challenge updated to v1beta1 version": {
-			old: baseChal,
-			new: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					URL: "testurl",
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1beta1",
-					Kind:    "Challenge"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1beta1.SchemeGroupVersion.String(),
-					"Challenge",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Challenge"),
-			},
-		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
@@ -171,71 +106,14 @@ func TestValidateChallengeUpdate(t *testing.T) {
 	}
 }
 
+// TODO(wallrj): Add tests
 func TestValidateChallenge(t *testing.T) {
 	scenarios := map[string]struct {
 		chal     *cmacme.Challenge
 		a        *admissionv1.AdmissionRequest
 		errs     []*field.Error
 		warnings validation.WarningList
-	}{
-		"challenge updated to v1alpha2 version": {
-			chal: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					URL: "testurl",
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha2",
-					Kind:    "Challenge"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha2.SchemeGroupVersion.String(),
-					"Challenge",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Challenge"),
-			},
-		},
-		"challenge updated to v1alpha3 version": {
-			chal: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					URL: "testurl",
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha3",
-					Kind:    "Challenge"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha3.SchemeGroupVersion.String(),
-					"Challenge",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Challenge"),
-			},
-		},
-		"challenge updated to v1beta1 version": {
-			chal: &cmacme.Challenge{
-				Spec: cmacme.ChallengeSpec{
-					URL: "testurl",
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1beta1",
-					Kind:    "Challenge"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1beta1.SchemeGroupVersion.String(),
-					"Challenge",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Challenge"),
-			},
-		},
-	}
+	}{}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateChallenge(s.a, s.chal)

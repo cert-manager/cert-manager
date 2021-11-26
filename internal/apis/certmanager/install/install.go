@@ -27,9 +27,6 @@ import (
 	"github.com/jetstack/cert-manager/internal/apis/certmanager"
 	cmidentity "github.com/jetstack/cert-manager/internal/apis/certmanager/identity"
 	v1 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha3"
-	"github.com/jetstack/cert-manager/internal/apis/certmanager/v1beta1"
 	cmvalidation "github.com/jetstack/cert-manager/internal/apis/certmanager/validation"
 	cmmetav1 "github.com/jetstack/cert-manager/internal/apis/meta/v1"
 )
@@ -39,9 +36,6 @@ func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(certmanager.AddToScheme(scheme))
 	// The first version in this list will be the default version used
 	utilruntime.Must(v1.AddToScheme(scheme))
-	utilruntime.Must(v1beta1.AddToScheme(scheme))
-	utilruntime.Must(v1alpha3.AddToScheme(scheme))
-	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 
 	utilruntime.Must(cmmetav1.AddToScheme(scheme))
 }

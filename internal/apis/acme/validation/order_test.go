@@ -17,7 +17,6 @@ limitations under the License.
 package validation
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -29,10 +28,6 @@ import (
 
 	"github.com/jetstack/cert-manager/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
-	cmacmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmacmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	cmacmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 )
 
 type testValue string
@@ -243,66 +238,6 @@ func TestValidateOrderUpdate(t *testing.T) {
 			},
 			a: someAdmissionRequest,
 		},
-		"Order updated to v1alpha2 version": {
-			old: baseOrder,
-			new: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request: []byte("testing"),
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha2",
-					Kind:    "Order"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha2.SchemeGroupVersion.String(),
-					"Order",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Order"),
-			},
-		},
-		"Order updated to v1alpha3 version": {
-			old: baseOrder,
-			new: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request: []byte("testing"),
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha3",
-					Kind:    "Order"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha3.SchemeGroupVersion.String(),
-					"Order",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Order"),
-			},
-		},
-		"Order updated to v1beta1 version": {
-			old: baseOrder,
-			new: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request: []byte("testing"),
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1beta1",
-					Kind:    "Order"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1beta1.SchemeGroupVersion.String(),
-					"Order",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Order"),
-			},
-		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
@@ -324,71 +259,14 @@ func TestValidateOrderUpdate(t *testing.T) {
 	}
 }
 
+// TODO(wallrj): Add tests
 func TestValidateOrder(t *testing.T) {
 	scenarios := map[string]struct {
 		order    *cmacme.Order
 		a        *admissionv1.AdmissionRequest
 		errs     []*field.Error
 		warnings validation.WarningList
-	}{
-		"Order updated to v1alpha2 version": {
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request: []byte("testing"),
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha2",
-					Kind:    "Order"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha2.SchemeGroupVersion.String(),
-					"Order",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Order"),
-			},
-		},
-		"Order updated to v1alpha3 version": {
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request: []byte("testing"),
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1alpha3",
-					Kind:    "Order"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1alpha3.SchemeGroupVersion.String(),
-					"Order",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Order"),
-			},
-		},
-		"Order updated to v1beta1 version": {
-			order: &cmacme.Order{
-				Spec: cmacme.OrderSpec{
-					Request: []byte("testing"),
-				},
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "acme.cert-manager.io",
-					Version: "v1beta1",
-					Kind:    "Order"},
-			},
-			warnings: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmacmev1beta1.SchemeGroupVersion.String(),
-					"Order",
-					cmacmev1.SchemeGroupVersion.String(),
-					"Order"),
-			},
-		},
-	}
+	}{}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs, warnings := ValidateOrder(s.a, s.order)
