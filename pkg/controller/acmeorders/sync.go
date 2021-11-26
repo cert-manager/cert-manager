@@ -514,11 +514,11 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	// if it is already in the 'valid' state, as upon retry we will
 	// then retrieve the Certificate resource.
 	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
-	if acmeErr, ok := err.(*acmeapi.Error); ok {
+	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
 			c.setOrderState(&o.Status, string(cmacme.Errored))
-			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
+			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", errUpdate)
 			return nil
 		}
 	}
