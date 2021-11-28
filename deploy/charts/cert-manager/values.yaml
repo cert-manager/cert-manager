@@ -491,3 +491,45 @@ startupapicheck:
 
     # Automount API credentials for a Service Account.
     automountServiceAccountToken: true
+
+clusterissuer:
+  enabled: false
+  name: ""
+  # to enabled another backend type you must disable selfSigned backend
+  selfSigned: true
+
+  # acme backend configuration is available here: https://cert-manager.io/docs/configuration/acme/
+  acme: {}
+    # email: user@example.com
+    # server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # privateKeySecretRef:
+      # name: example-issuer-account-key
+    # solvers:
+    # - http01:
+    #     ingress:
+    #       class: nginx
+
+  # ca backend configuration is available here: https://cert-manager.io/docs/configuration/ca/
+  ca: {}
+    # secretName: ca-key-pair
+
+  # vault backend configuration is available here: https://cert-manager.io/docs/configuration/vault/
+  vault: {}
+    # path: pki_int/sign/example-dot-com
+    # server: https://vault.local
+    # caBundle: <base64 encoded CA Bundle PEM file>
+    # auth:
+      # appRole:
+      #   path: approle
+      #   roleId: "291b9d21-8ff5-..."
+      #   secretRef:
+      #     name: cert-manager-vault-approle
+      #     key: secretId
+
+  # venafi backend configuration is available here: https://cert-manager.io/docs/configuration/venafi/
+  venafi: {}
+    # zone: "My Application\My CIT" # Set this to <Application Name>\<Issuing Template Alias>
+    # cloud:
+    # apiTokenSecretRef:
+    #  name: vaas-secret
+    #  key: apikey

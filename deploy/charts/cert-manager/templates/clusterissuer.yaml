@@ -1,0 +1,38 @@
+{{- if .Values.clusterissuer.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.clusterissuer.name | default (printf "%s" ( include "cert-manager.fullname" .)) | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  {{- if .Values.clusterissuer.selfSigned }}
+  selfSigned: {}
+  {{- end }}
+  {{- with .Values.clusterissuer.acme }}
+  acme:
+  {{- range $key, $value := . }}
+  {{- $key | nindent 4 }}: {{ $value | quote }}
+  {{- end }}
+  {{- end -}}
+  {{- with .Values.clusterissuer.ca }}
+  ca:
+  {{- range $key, $value := . }}
+  {{- $key | nindent 4 }}: {{ $value | quote }}
+  {{- end }}
+  {{- end -}}
+  {{- with .Values.clusterissuer.vault }}
+  vault: 
+  {{- range $key, $value := . }}
+  {{- $key | nindent 4 }}: {{ $value | quote }}
+  {{- end }}
+  {{- end -}}
+  {{- with .Values.clusterissuer.venafi }}
+  venafi: 
+  {{- range $key, $value := . }}
+  {{- $key | nindent 4 }}: {{ $value | quote }}
+  {{- end }}
+  {{- end -}}
+{{- end }}
