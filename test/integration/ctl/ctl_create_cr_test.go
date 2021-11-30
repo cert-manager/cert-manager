@@ -201,16 +201,6 @@ func TestCtlCreateCRSuccessful(t *testing.T) {
 			expName:        cr1Name,
 			expKeyFilename: cr1Name + ".key",
 		},
-		"v1alpha3 Certificate given": {
-			inputFile:      path.Join(testdataPath, "create_cr_v1alpha3_cert_with_ns1.yaml"),
-			inputArgs:      []string{cr2Name},
-			inputNamespace: ns1,
-			keyFilename:    "",
-			expRunErr:      false,
-			expNamespace:   ns1,
-			expName:        cr2Name,
-			expKeyFilename: cr2Name + ".key",
-		},
 		"path to file to store private key provided": {
 			inputFile:      path.Join(testdataPath, "create_cr_cert_with_ns1.yaml"),
 			inputArgs:      []string{cr5Name},
