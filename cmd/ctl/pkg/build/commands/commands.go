@@ -26,7 +26,6 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/approve"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/check"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/completion"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/convert"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/deny"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/experimental"
@@ -48,7 +47,6 @@ type RegisterCommandFunc func(context.Context, genericclioptions.IOStreams) *cob
 func Commands() []RegisterCommandFunc {
 	cmds := []RegisterCommandFunc{
 		version.NewCmdVersion,
-		convert.NewCmdConvert,
 		create.NewCmdCreate,
 		renew.NewCmdRenew,
 		status.NewCmdStatus,
