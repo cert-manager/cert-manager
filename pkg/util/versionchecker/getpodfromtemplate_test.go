@@ -51,6 +51,9 @@ func getPodFromTemplate(template *v1.PodTemplateSpec, parentObject runtime.Objec
 			Name:         prefix + cmutil.RandStringRunes(5),
 			Finalizers:   desiredFinalizers,
 		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
 	}
 	if controllerRef != nil {
 		pod.OwnerReferences = append(pod.OwnerReferences, *controllerRef)

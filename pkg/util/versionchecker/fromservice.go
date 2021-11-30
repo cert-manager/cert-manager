@@ -53,6 +53,10 @@ func (o *versionChecker) extractVersionFromService(
 	}
 
 	for _, pod := range pods.Items {
+		if pod.Status.Phase != corev1.PodRunning {
+			continue
+		}
+
 		if label := extractVersionFromLabels(pod.Labels); label != "" {
 			o.versionSources["webhookPodLabelVersion"] = label
 		}
