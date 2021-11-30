@@ -52,7 +52,6 @@ filegroup(
         "//cmd/ctl/pkg/build:all-srcs",
         "//cmd/ctl/pkg/check:all-srcs",
         "//cmd/ctl/pkg/completion:all-srcs",
-        "//cmd/ctl/pkg/convert:all-srcs",
         "//cmd/ctl/pkg/create:all-srcs",
         "//cmd/ctl/pkg/deny:all-srcs",
         "//cmd/ctl/pkg/experimental:all-srcs",

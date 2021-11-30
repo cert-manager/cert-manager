@@ -3,7 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_test(
     name = "go_default_test",
     srcs = [
-        "ctl_convert_test.go",
         "ctl_create_cr_test.go",
         "ctl_renew_test.go",
         "ctl_status_certificate_test.go",
@@ -13,7 +12,6 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create/certificaterequest:go_default_library",
         "//cmd/ctl/pkg/factory:go_default_library",
         "//cmd/ctl/pkg/renew:go_default_library",

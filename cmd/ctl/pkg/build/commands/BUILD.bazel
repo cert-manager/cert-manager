@@ -9,7 +9,6 @@ go_library(
         "//cmd/ctl/pkg/approve:go_default_library",
         "//cmd/ctl/pkg/check:go_default_library",
         "//cmd/ctl/pkg/completion:go_default_library",
-        "//cmd/ctl/pkg/convert:go_default_library",
         "//cmd/ctl/pkg/create:go_default_library",
         "//cmd/ctl/pkg/deny:go_default_library",
         "//cmd/ctl/pkg/experimental:go_default_library",
