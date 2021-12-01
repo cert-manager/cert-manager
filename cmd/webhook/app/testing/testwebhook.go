@@ -37,12 +37,10 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/webhook/server"
 )
-
-var log = logf.Log.WithName("webhook-server-test")
 
 type StopFunc func()
 
@@ -58,7 +56,9 @@ type ServerOptions struct {
 	CAPEM []byte
 }
 
-func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (ServerOptions, StopFunc) {
+func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...app.ServerOption) (ServerOptions, StopFunc) {
+	log := logtesting.TestLogger{T: t}
+
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	webhookFlags := options.NewWebhookFlags()
 	webhookConfig, err := options.NewWebhookConfiguration()
@@ -100,7 +100,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (Serve
 
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
-	srv, err := app.NewServerWithOptions(log, *webhookFlags, *webhookConfig)
+	srv, err := app.NewServerWithOptions(log, *webhookFlags, *webhookConfig, argumentsForNewServerWithOptions...)
 	if err != nil {
 		t.Fatal(err)
 	}

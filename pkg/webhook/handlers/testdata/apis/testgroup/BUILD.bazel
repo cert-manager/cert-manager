@@ -28,6 +28,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/webhook/handlers/testdata/apis/testgroup/crds:all-srcs",
         "//pkg/webhook/handlers/testdata/apis/testgroup/fuzzer:all-srcs",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:all-srcs",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:all-srcs",

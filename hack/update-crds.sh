@@ -40,6 +40,11 @@ REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY}
 cd "${REPO_ROOT}"
 
 "$controllergen" \
+    crd \
+    paths=./pkg/webhook/handlers/testdata/apis/testgroup/v{1,2}/... \
+    output:crd:dir=./pkg/webhook/handlers/testdata/apis/testgroup/crds
+
+"$controllergen" \
   schemapatch:manifests=./deploy/crds \
   output:dir=./deploy/crds \
   paths=./pkg/apis/...
