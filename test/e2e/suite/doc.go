@@ -20,5 +20,6 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/approval"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/secrettemplate"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/serving"
 )

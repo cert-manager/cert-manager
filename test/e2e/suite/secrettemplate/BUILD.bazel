@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["secrettemplate.go"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/secrettemplate",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//test/e2e/framework:go_default_library",
+        "//test/e2e/util:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "@com_github_onsi_ginkgo//:go_default_library",
+        "@com_github_onsi_gomega//:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_client_go//applyconfigurations/core/v1:go_default_library",
+        "@io_k8s_sigs_structured_merge_diff_v4//fieldpath:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
