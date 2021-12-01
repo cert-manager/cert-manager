@@ -13,6 +13,8 @@ go_library(
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/feature:go_default_library",
+        "//pkg/util:go_default_library",
         "//pkg/util/feature:go_default_library",
         "//pkg/util/pki:go_default_library",
         "@com_github_pavel_v_chernykh_keystore_go_v4//:go_default_library",
@@ -20,8 +22,10 @@ go_library(
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_client_go//applyconfigurations/core/v1:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
     ],
 )
 

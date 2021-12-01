@@ -25,6 +25,7 @@ import (
 
 	"github.com/jetstack/cert-manager/internal/controller/feature"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,6 +38,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -747,6 +749,7 @@ func TestSecretsManager(t *testing.T) {
 			testManager := New(
 				kubeClient,
 				secretsLister,
+				test.builder.RESTConfig,
 				test.certificateOptions.EnableOwnerRef,
 			)
 
@@ -760,6 +763,193 @@ func TestSecretsManager(t *testing.T) {
 				t.Errorf("expected to get an error but did not get one")
 			}
 			test.builder.CheckAndFinish(err)
+		})
+	}
+}
+
+func Test_getCertificateSecret(t *testing.T) {
+	crt := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-certificate"},
+		Spec:       cmapi.CertificateSpec{SecretName: "test-secret"},
+	}
+
+	tests := map[string]struct {
+		secretApplyFeatureEnabled    bool
+		secretOwnerRefernecesEnabled bool
+		existingSecret               *corev1.Secret
+
+		expSecret       *corev1.Secret
+		expSecretExists bool
+	}{
+		"if secret doesn't exist, applyFeature=false ownerRefFeature=false, expect empty secret with no owner ref": {
+			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: false, existingSecret: nil,
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: false,
+		},
+		"if secret doesn't exist, applyFeature=true ownerRefFeature=false, expect empty secret with no owner ref": {
+			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: false, existingSecret: nil,
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: false,
+		},
+		"if secret doesn't exist, applyFeature=false ownerRefFeature=true, expect empty secret with owner ref": {
+			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: true, existingSecret: nil,
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}},
+				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: false,
+		},
+		"if secret doesn't exist, applyFeature=true ownerRefFeature=true, expect empty secret with owner ref": {
+			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: true, existingSecret: nil,
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}},
+				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: false,
+		},
+		"if secret exists, applyFeature=false ownerRefFeature=false, expect the exact same Secret to be returned": {
+			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: false,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: true,
+		},
+		"if secret exists, applyFeature=false ownerRefFeature=true, expect the exact same Secret to be returned but with OwnerReferences set": {
+			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: true,
+		},
+		"if secret exists, applyFeature=true ownerRefFeature=false, expect the secret to be returned but only with the cert-manager managed data keys to be set": {
+			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: false,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+				},
+				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: true,
+		},
+		"if secret exists, applyFeature=true ownerRefFeature=true, expect the secret to be returned but only with the cert-manager managed data keys to be set, and owner references": {
+			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+				},
+				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: true,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if test.secretApplyFeatureEnabled {
+				assert.NoError(t,
+					utilfeature.DefaultMutableFeatureGate.Set("ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO=true"),
+				)
+			}
+			t.Cleanup(func() {
+				assert.NoError(t,
+					utilfeature.DefaultMutableFeatureGate.Set("ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO=false"),
+				)
+			})
+
+			// Create and initialise a new unit test builder.
+			builder := &testpkg.Builder{
+				T: t,
+			}
+			if test.existingSecret != nil {
+				// Ensures secret is loaded into the builder's fake clientset.
+				builder.KubeObjects = append(builder.KubeObjects, test.existingSecret)
+			}
+
+			builder.Init()
+
+			s := SecretsManager{
+				kubeClient:                  builder.Client,
+				secretLister:                builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+				restConfig:                  builder.RESTConfig,
+				enableSecretOwnerReferences: test.secretOwnerRefernecesEnabled,
+			}
+
+			builder.Start()
+			defer builder.Stop()
+
+			gotSecret, gotSecretExists, err := s.getCertificateSecret(context.Background(), crt)
+			assert.NoError(t, err)
+
+			assert.Equal(t, test.expSecretExists, gotSecretExists, "unexpected secret existed")
+			assert.Equal(t, test.expSecret, gotSecret, "unexpected returned secret")
+		})
+	}
+}
+
+func Test_secretWithMaybeOwnerRef(t *testing.T) {
+	tests := map[string]struct {
+		secretOwnerRefernecesEnabled bool
+		expOwnerReferneces           bool
+	}{
+		"if secret ownership disabled, expect no owner reference": {
+			secretOwnerRefernecesEnabled: false,
+			expOwnerReferneces:           false,
+		},
+		"if secret ownership enabled, expect owner reference": {
+			secretOwnerRefernecesEnabled: true,
+			expOwnerReferneces:           true,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			secret := (&SecretsManager{enableSecretOwnerReferences: test.secretOwnerRefernecesEnabled}).secretWithMaybeOwnerRef(
+				&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-certificate"}},
+				&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"}},
+			)
+
+			assert.Equal(t, len(secret.OwnerReferences) > 0, test.expOwnerReferneces, "unexpected owner reference on Secret")
 		})
 	}
 }

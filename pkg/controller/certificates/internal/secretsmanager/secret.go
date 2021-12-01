@@ -26,13 +26,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/rest"
 
 	"github.com/jetstack/cert-manager/internal/controller/feature"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/feature"
+	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -45,6 +49,10 @@ var (
 type SecretsManager struct {
 	kubeClient   kubernetes.Interface
 	secretLister corelisters.SecretLister
+
+	// restConfig is used for retrieving the Kubernetes client's User Agent. The
+	// User Agent is used for setting the field manager when Applying Secrets.
+	restConfig *rest.Config
 
 	// if true, Secret resources created by the controller will have an
 	// 'owner reference' set, meaning when the Certificate is deleted, the
@@ -64,11 +72,13 @@ type SecretData struct {
 func New(
 	kubeClient kubernetes.Interface,
 	secretLister corelisters.SecretLister,
+	restConfig *rest.Config,
 	enableSecretOwnerReferences bool,
 ) *SecretsManager {
 	return &SecretsManager{
 		kubeClient:                  kubeClient,
 		secretLister:                secretLister,
+		restConfig:                  restConfig,
 		enableSecretOwnerReferences: enableSecretOwnerReferences,
 	}
 }
@@ -77,49 +87,42 @@ func New(
 // data as well as appropriate metadata.
 // If the Secret resource does not exist, it will be created.
 // Otherwise, the existing resource will be updated.
-// The first return argument will be true if the resource was updated/created
-// without error.
 // UpdateData will also update deprecated annotations if they exist.
+// If the ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO
+// feature is enabled, SecretsManager will perform an Apply rather than an
+// Update/Create on cert-manager managed fields.
 func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate, data SecretData) error {
-	// Fetch a copy of the existing Secret resource
-	secret, err := s.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
-	if !apierrors.IsNotFound(err) && err != nil {
-		// If secret doesn't exist yet, then don't error
+	secret, secretExists, err := s.getCertificateSecret(ctx, crt)
+	if err != nil {
 		return err
 	}
-	secretExists := (secret != nil)
 
-	// If the secret does not exist yet, then we need to create one
-	if !secretExists {
-		secret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      crt.Spec.SecretName,
-				Namespace: crt.Namespace,
-			},
-			Type: corev1.SecretTypeTLS,
-		}
-	}
-
-	// secret will be overwritten by 'existingSecret' if existingSecret is non-nil
-	if s.enableSecretOwnerReferences {
-		secret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}
-	}
-
-	secret = secret.DeepCopy()
 	err = s.setValues(crt, secret, data)
 	if err != nil {
 		return err
 	}
 
-	// If secret does not exist then create it
-	if !secretExists {
+	// Apply instead of Create/Update if the Apply feature is enabled.
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
+		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx,
+			applycorev1.Secret(secret.Name, secret.Namespace).
+				WithAnnotations(secret.Annotations).
+				WithLabels(secret.Labels).
+				WithData(secret.Data).
+				WithType(secret.Type),
+			metav1.ApplyOptions{FieldManager: util.PrefixFromUserAgent(s.restConfig.UserAgent)})
+	} else {
+		// Currently we are always updating. We should devise a way to not have to call an update if it is not necessary.
+		// If secret does not exist then create it.
+		if !secretExists {
+			_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+			return err
+		}
 
-		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
-		return err
+		// Currently we are always updating. We should devise a way to not have to call an update if it is not necessary.
+		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	}
 
-	// Currently we are always updating. We should devise a way to not have to call an update if it is not necessary.
-	_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	return err
 }
 
@@ -268,12 +271,6 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Labels = make(map[string]string)
 	}
 
-	// TODO: Labels and annotations are not yet removed from the Secret if removed from the template.
-	// An extra annotation will be required to keep track of which labels and annotations were created
-	// by cert-manager to allow them to be removed/updated safely.
-
-	// See https://github.com/jetstack/cert-manager/issues/4292
-
 	if crt.Spec.SecretTemplate != nil {
 		for k, v := range crt.Spec.SecretTemplate.Labels {
 			secret.Labels[k] = v
@@ -308,4 +305,74 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	}
 
 	return nil
+}
+
+// getCertificateSecret will return the Secret object corresponding to the
+// Certificate's SecretName.
+// If the secret doesn't exist, and empty Secret object with the Name and
+// Namespace is returned.
+// If ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO is
+// disabled, the returned existing secret will be returned, as is.
+// If ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO is
+// enabled, the returned secret will only contain the crt.tls
+// Returns true if the secret exists, false otherwise.
+func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Certificate) (*corev1.Secret, bool, error) {
+	// Fetch a copy of the existing Secret resource
+	existingSecret, err := s.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+
+	// If secret doesn't exist yet, return an empty secret that should be
+	// created.
+	if apierrors.IsNotFound(err) {
+		return s.secretWithMaybeOwnerRef(crt, &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      crt.Spec.SecretName,
+				Namespace: crt.Namespace,
+			},
+			Data: make(map[string][]byte),
+			Type: corev1.SecretTypeTLS,
+		}), false, nil
+	}
+
+	// Transient error.
+	if err != nil {
+		return nil, false, err
+	}
+
+	var secret *corev1.Secret
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
+		// if secret apply is enabled, only copy data keys to not take ownership of
+		// annotations or labels.
+		secret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      crt.Spec.SecretName,
+				Namespace: crt.Namespace,
+			},
+			Data: make(map[string][]byte),
+			Type: corev1.SecretTypeTLS,
+		}
+
+		// If owned keys are present on the existing secret, set on the applied
+		// secret.
+		if existingSecret.Data != nil {
+			for _, key := range []string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey} {
+				if v, ok := existingSecret.Data[key]; ok {
+					secret.Data[key] = v
+				}
+			}
+		}
+	} else {
+		secret = existingSecret.DeepCopy()
+	}
+
+	return s.secretWithMaybeOwnerRef(crt, secret), true, nil
+}
+
+// secretWithMaybeOwnerRef will return the same secret, but populates the owner
+// reference if Secret Owner Reference has been enabled.
+func (s *SecretsManager) secretWithMaybeOwnerRef(crt *cmapi.Certificate, secret *corev1.Secret) *corev1.Secret {
+	// secret will be overwritten by 'existingSecret' if existingSecret is non-nil
+	if s.enableSecretOwnerReferences {
+		secret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}
+	}
+	return secret
 }
