@@ -30,6 +30,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 	coretesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
@@ -110,6 +111,9 @@ func (b *Builder) Init() {
 		b.StringGenerator = RandStringBytes
 	}
 	b.requiredReactors = make(map[string]bool)
+	b.RESTConfig = &rest.Config{
+		UserAgent: "cert-manager/unit-test",
+	}
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)

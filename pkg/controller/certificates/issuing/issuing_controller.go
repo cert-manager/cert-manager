@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -77,6 +78,7 @@ type controller struct {
 func NewController(
 	log logr.Logger,
 	kubeClient kubernetes.Interface,
+	restConfig *rest.Config,
 	client cmclient.Interface,
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
@@ -120,6 +122,7 @@ func NewController(
 	secretsManager := secretsmanager.New(
 		kubeClient,
 		secretsInformer.Lister(),
+		restConfig,
 		certificateControllerOptions.EnableOwnerRef,
 	)
 
@@ -394,6 +397,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 
 	ctrl, queue, mustSync := NewController(log,
 		ctx.Client,
+		ctx.RESTConfig,
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
