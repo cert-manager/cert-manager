@@ -44,6 +44,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/readiness"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/revisionmanager"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/secrettemplate"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
 	csracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/acme"
 	csrcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/ca"
@@ -174,6 +175,7 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
+		secrettemplate.ControllerName,
 	}
 
 	defaultEnabledControllers = []string{
@@ -430,6 +432,11 @@ func (o *ControllerOptions) EnabledControllers() sets.String {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
+	}
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
+		logf.Log.Info("enabling the SecretTemplate controller and using Apply operations for Secret management")
+		enabled = enabled.Insert(secrettemplate.ControllerName)
 	}
 
 	return enabled
