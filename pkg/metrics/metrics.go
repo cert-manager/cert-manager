@@ -179,6 +179,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 // NewServer registers Prometheus metrics and returns a new Prometheus metrics HTTP server.
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
+	m.registry.MustRegister(m.clockTimeSecondsGauge)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)

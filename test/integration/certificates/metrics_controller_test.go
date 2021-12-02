@@ -43,10 +43,15 @@ import (
 )
 
 var (
-	fixedClock  = fakeclock.NewFakeClock(time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC))
-	clockMetric = fmt.Sprintf(`# HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
+	fixedClock = fakeclock.NewFakeClock(time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC))
+
+	clockCounterMetric = fmt.Sprintf(`# HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
 # TYPE certmanager_clock_time_seconds counter
 certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
+	clockGaugeMetric = fmt.Sprintf(`
+# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC).
+# TYPE certmanager_clock_time_seconds_gauge gauge
+certmanager_clock_time_seconds_gauge %.9e`, float64(fixedClock.Now().Unix()))
 )
 
 // TestMetricscontoller performs a basic test to ensure that Certificates
@@ -152,7 +157,7 @@ func TestMetricsController(t *testing.T) {
 	}
 
 	// Should expose no additional metrics
-	waitForMetrics(clockMetric)
+	waitForMetrics(clockCounterMetric + clockGaugeMetric)
 
 	// Create Certificate
 	crt := gen.Certificate(crtName,
@@ -180,7 +185,7 @@ certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespac
 # HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{name="testcrt",namespace="testns"} 0
-` + clockMetric + `
+` + clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 1
@@ -216,7 +221,7 @@ certmanager_certificate_ready_status{condition="Unknown",name="testcrt",namespac
 # HELP certmanager_certificate_renewal_timestamp_seconds The number of seconds before expiration time the certificate should renew.
 # TYPE certmanager_certificate_renewal_timestamp_seconds gauge
 certmanager_certificate_renewal_timestamp_seconds{name="testcrt",namespace="testns"} 100
-` + clockMetric + `
+` + clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 2
@@ -228,7 +233,7 @@ certmanager_controller_sync_call_count{controller="metrics_test"} 2
 	}
 
 	// Should expose no Certificates and only metrics sync count increase
-	waitForMetrics(clockMetric + `
+	waitForMetrics(clockCounterMetric + clockGaugeMetric + `
 # HELP certmanager_controller_sync_call_count The number of sync() calls made by a controller.
 # TYPE certmanager_controller_sync_call_count counter
 certmanager_controller_sync_call_count{controller="metrics_test"} 3
