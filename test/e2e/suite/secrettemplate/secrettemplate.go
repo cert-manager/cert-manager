@@ -19,6 +19,7 @@ package secrettemplate
 import (
 	"bytes"
 	"context"
+	"os"
 	"strings"
 	"time"
 
@@ -31,8 +32,10 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/feature"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/util"
+	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
@@ -47,6 +50,19 @@ const (
 var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 	f := framework.NewDefaultFramework("certificates-secret-template")
 
+	// Only run tests if the SecretTemplate feature is enabled. Skip otherwise.
+	it := func(name string, testfn func()) {
+		It(name, func() {
+			fgs := os.Getenv("FEATURE_GATES")
+			if !util.Contains(strings.Split(fgs, ","), string(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO)+"=true") {
+				framework.Skipf("skipping Certificats SecretTemplate controller test since FEATURE_GATE %s is not enabled",
+					feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO)
+				return
+			}
+			testfn()
+		})
+	}
+
 	BeforeEach(func() {
 		By("creating a self-signing issuer")
 		issuer := gen.Issuer(issuerName,
@@ -55,7 +71,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 		By("Waiting for Issuer to become Ready")
-		err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
+		err := e2eutil.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name),
 			issuerName, cmapi.IssuerCondition{Type: cmapi.IssuerConditionReady, Status: cmmeta.ConditionTrue})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -64,7 +80,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		Expect(f.CertManagerClientSet.CertmanagerV1().Issuers(f.Namespace.Name).Delete(context.Background(), issuerName, metav1.DeleteOptions{})).NotTo(HaveOccurred())
 	})
 
-	It("should not remove Annotations and Labels which have been added by a third party and not present in the SecretTemplate", func() {
+	it("should not remove Annotations and Labels which have been added by a third party and not present in the SecretTemplate", func() {
 		createCertificate(f, &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}})
 
 		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -104,7 +120,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		}, "5s", "1s").Should(HaveKeyWithValue("abc", "123"))
 	})
 
-	It("should add Annotations and Labels to the Secret when the Certificate's SecretTemplate is updated, then remove Annotations and Labels when removed from the SecretTemplate", func() {
+	it("should add Annotations and Labels to the Secret when the Certificate's SecretTemplate is updated, then remove Annotations and Labels when removed from the SecretTemplate", func() {
 		crt := createCertificate(f, &cmapi.CertificateSecretTemplate{
 			Annotations: map[string]string{"foo": "bar", "bar": "foo"},
 			Labels:      map[string]string{"abc": "123", "def": "456"},
@@ -170,7 +186,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		Expect(secret.Labels).ToNot(HaveKey("another"))
 	})
 
-	It("should update the values of keys that have been modified in the SecretTemplate", func() {
+	it("should update the values of keys that have been modified in the SecretTemplate", func() {
 		crt := createCertificate(f, &cmapi.CertificateSecretTemplate{
 			Annotations: map[string]string{"foo": "bar", "bar": "foo"},
 			Labels:      map[string]string{"abc": "123", "def": "456"},
@@ -205,7 +221,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		Expect(secret.Labels).To(HaveKeyWithValue("def", "555"))
 	})
 
-	It("should add cert-manager manager to existing Annotation and Labels fields which are added to SecretTemplate, should not be removed if they are removed by the third party", func() {
+	it("should add cert-manager manager to existing Annotation and Labels fields which are added to SecretTemplate, should not be removed if they are removed by the third party", func() {
 		By("Secret Annotations and Labels should not be removed if the field still hold a field manager")
 
 		crt := createCertificate(f, nil)
@@ -345,7 +361,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		Expect(secret.Labels).To(HaveKeyWithValue("foo", "bar"))
 	})
 
-	It("if data keys are added to the Secret, they should not be removed", func() {
+	it("if data keys are added to the Secret, they should not be removed", func() {
 		createCertificate(f, &cmapi.CertificateSecretTemplate{
 			Annotations: map[string]string{"abc": "123"},
 			Labels:      map[string]string{"foo": "bar"},
@@ -364,7 +380,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		}, "5s", "1s").Should(HaveKeyWithValue("random-key", []byte("hello-world")))
 	})
 
-	It("if values are modified on the Certificate's SecretTemplate, than those values should be reflected on the Secret", func() {
+	it("if values are modified on the Certificate's SecretTemplate, than those values should be reflected on the Secret", func() {
 		crt := createCertificate(f, &cmapi.CertificateSecretTemplate{
 			Annotations: map[string]string{"abc": "123"},
 			Labels:      map[string]string{"foo": "bar"},
@@ -388,7 +404,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		}, "5s", "1s").Should(HaveKeyWithValue("foo", "foo"))
 	})
 
-	It("deleting a Certificate's SecretTemplate should remove all keys it defined", func() {
+	it("deleting a Certificate's SecretTemplate should remove all keys it defined", func() {
 		crt := createCertificate(f, &cmapi.CertificateSecretTemplate{
 			Annotations: map[string]string{"abc": "123", "def": "456"},
 			Labels:      map[string]string{"foo": "bar", "label": "hello-world"},
