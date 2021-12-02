@@ -473,6 +473,9 @@ func TestSyncHappyPath(t *testing.T) {
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
 	test.builder.Init()
+	// RestConfig should be nil so to not attempt to call a real server over
+	// network.
+	test.builder.RESTConfig = nil
 	defer test.builder.Stop()
 
 	c := &controller{}
