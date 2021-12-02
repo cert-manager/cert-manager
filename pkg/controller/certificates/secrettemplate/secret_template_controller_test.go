@@ -106,6 +106,46 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			expectedAction: false,
 		},
+		"if Certificate and Secret exists, but the Certificate has a False Ready and a True Issuing condition, do nothing": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "test-secret",
+					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
+				},
+				Status: cmapi.CertificateStatus{
+					Conditions: []cmapi.CertificateCondition{
+						{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse},
+						{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue},
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+			},
+			expectedAction: false,
+		},
+		"if Certificate is Ready and Secret exists, but the Certificate has a True Issuing condition, do nothing": {
+			key: "test-namespace/test-name",
+			cert: &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+				Spec: cmapi.CertificateSpec{
+					SecretName:     "test-secret",
+					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
+				},
+				Status: cmapi.CertificateStatus{
+					Conditions: []cmapi.CertificateCondition{
+						{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse},
+						{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse},
+					},
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+			},
+			expectedAction: false,
+		},
 		"if Certificate exists with a Ready condition, but Secret does not exist, do nothing": {
 			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
@@ -251,7 +291,10 @@ func Test_ProcessItem(t *testing.T) {
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}},
+					Conditions: []cmapi.CertificateCondition{
+						{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue},
+						{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse},
+					},
 				},
 			},
 			secret: &corev1.Secret{

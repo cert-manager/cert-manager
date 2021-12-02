@@ -122,13 +122,12 @@ func NewController(
 // corresponding to a Certificate to be re-synced is pulled from the workqueue.
 // ProcessItem will re-reocncile a Certificate's Secret if it is both
 // 1. In a Ready state;
-// 2. The Secret Annotations/Labels are out-of-sync with the Certificate's
+// 2. Not in an Issuing state;
+// 3. The Secret Annotations/Labels are out-of-sync with the Certificate's
 //    SecretTemplate.
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx).WithValues("key", key)
 	dbg := log.V(logf.DebugLevel)
-
-	log.Info("syncing secret template")
 
 	ctx = logf.NewContext(ctx, log)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
@@ -151,11 +150,15 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 
 	log = logf.WithResource(log, crt)
 
-	// If the Certificate if not in a Ready condition, exit early. It is only
-	// safe to reconcile Certificates which are Ready, so to not disturb other
-	// Certificates controllers, namely the issuing controller.
+	// If the Certificate does have a Ready=true or has a Issuing=true condition,
+	// exit early. It is only safe to reconcile Certificates which are Ready and
+	// not Issuing so to not disturb other Certificate controllers, namely the
+	// issuing controller.
 	if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
 		Type:   cmapi.CertificateConditionReady,
+		Status: cmmeta.ConditionTrue,
+	}) || apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
+		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
 	}) {
 		return nil
