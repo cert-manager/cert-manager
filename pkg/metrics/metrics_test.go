@@ -22,39 +22,49 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/assert"
 
 	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 )
 
-var (
-	fixedClock = fakeclock.NewFakeClock(time.Now())
-)
+func Test_clockTimeSeconds(t *testing.T) {
+	fixedClock := fakeclock.NewFakeClock(time.Now())
+	m := New(logtesting.TestLogger{T: t}, fixedClock)
 
-func TestClockMetrics(t *testing.T) {
-	type testT struct {
+	tests := map[string]struct {
+		metricName string
+		metric     prometheus.Collector
+
 		expected string
-	}
-	tests := map[string]testT{
-		"clock time seconds as expected": {
+	}{
+		"clock_time_seconds of type counter": {
+			metricName: "certmanager_clock_time_seconds",
+			metric:     m.clockTimeSeconds,
 			expected: fmt.Sprintf(`
-  # HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
-  # TYPE certmanager_clock_time_seconds counter
-	certmanager_clock_time_seconds %f
+# HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
+# TYPE certmanager_clock_time_seconds counter
+certmanager_clock_time_seconds %f
+	`, float64(fixedClock.Now().Unix())),
+		},
+		"clock_time_seconds_gauge of type gauge": {
+			metricName: "certmanager_clock_time_seconds_gauge",
+			metric:     m.clockTimeSecondsGauge,
+			expected: fmt.Sprintf(`
+# HELP certmanager_clock_time_seconds_gauge The clock time given in seconds (from 1970/01/01 UTC).
+# TYPE certmanager_clock_time_seconds_gauge gauge
+certmanager_clock_time_seconds_gauge %f
 	`, float64(fixedClock.Now().Unix())),
 		},
 	}
-	for n, test := range tests {
-		t.Run(n, func(t *testing.T) {
-			m := New(logtesting.TestLogger{T: t}, fixedClock)
 
-			if err := testutil.CollectAndCompare(m.clockTimeSeconds,
-				strings.NewReader(test.expected),
-				"certmanager_clock_time_seconds",
-			); err != nil {
-				t.Errorf("unexpected collecting result:\n%s", err)
-			}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.NoError(t,
+				testutil.CollectAndCompare(test.metric, strings.NewReader(test.expected), test.metricName),
+			)
 		})
 	}
 }
