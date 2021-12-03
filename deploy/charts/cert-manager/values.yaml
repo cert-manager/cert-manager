@@ -214,6 +214,15 @@ webhook:
     # apiVersion: config.webhook.cert-manager.io/v1alpha1
     # kind: WebhookConfiguration
 
+    # The port that the webhook should listen on for requests.
+    # In GKE private clusters, by default kubernetes apiservers are allowed to
+    # talk to the cluster nodes only on 443 and 10250. so configuring
+    # securePort: 10250, will work out of the box without needing to add firewall
+    # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000.
+    # This should be uncommented and set as a default by the chart once we graduate
+    # the apiVersion of WebhookConfiguration past v1alpha1.
+    # securePort: 10250
+
   strategy: {}
     # type: RollingUpdate
     # rollingUpdate:

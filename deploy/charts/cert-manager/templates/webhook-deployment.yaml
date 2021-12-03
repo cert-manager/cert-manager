@@ -79,11 +79,21 @@ spec:
           ports:
           - name: https
             protocol: TCP
+            {{- if $config.securePort }}
+            containerPort: {{ $config.securePort }}
+            {{- else if .Values.webhook.securePort }}
             containerPort: {{ .Values.webhook.securePort }}
+            {{- else }}
+            containerPort: 6443
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /livez
+              {{- if $config.healthzPort }}
+              port: {{ $config.healthzPort }}
+              {{- else }}
               port: 6080
+              {{- end }}
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.livenessProbe.periodSeconds }}
@@ -93,7 +103,11 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
+              {{- if $config.healthzPort }}
+              port: {{ $config.healthzPort }}
+              {{- else }}
               port: 6080
+              {{- end }}
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.readinessProbe.periodSeconds }}
