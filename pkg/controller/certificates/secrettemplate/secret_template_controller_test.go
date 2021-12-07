@@ -319,7 +319,8 @@ func Test_ProcessItem(t *testing.T) {
 				builder.KubeObjects = append(builder.KubeObjects, test.secret)
 			}
 
-			builder.Init()
+			// Initialise with RESTConfig which is used to discover the User Agent.
+			builder.InitWithRESTConfig()
 
 			// Register informers used by the controller using the registration wrapper.
 			w := &controllerWrapper{}

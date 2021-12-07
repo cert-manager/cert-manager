@@ -111,9 +111,6 @@ func (b *Builder) Init() {
 		b.StringGenerator = RandStringBytes
 	}
 	b.requiredReactors = make(map[string]bool)
-	b.RESTConfig = &rest.Config{
-		UserAgent: "cert-manager/unit-test",
-	}
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	b.GWClient = gwfake.NewSimpleClientset(b.GWObjects...)
@@ -159,6 +156,15 @@ func (b *Builder) Init() {
 	// Fix the clock used in apiutil so that calls to set status conditions
 	// can be predictably tested
 	apiutil.Clock = b.Context.Clock
+}
+
+// InitWithRESTConfig() will call builder.Init(), then assign an initialised
+// RESTConfig with a `cert-manager/unit-test` User Agent.
+func (b *Builder) InitWithRESTConfig() {
+	b.Init()
+	b.RESTConfig = &rest.Config{
+		UserAgent: "cert-manager/unit-test",
+	}
 }
 
 func (b *Builder) FakeKubeClient() *kubefake.Clientset {
