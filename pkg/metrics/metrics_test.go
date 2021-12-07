@@ -44,7 +44,7 @@ func Test_clockTimeSeconds(t *testing.T) {
 			metricName: "certmanager_clock_time_seconds",
 			metric:     m.clockTimeSeconds,
 			expected: fmt.Sprintf(`
-# HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
+# HELP certmanager_clock_time_seconds DEPRECATED: use clock_time_seconds_gauge instead. The clock time given in seconds (from 1970/01/01 UTC).
 # TYPE certmanager_clock_time_seconds counter
 certmanager_clock_time_seconds %f
 	`, float64(fixedClock.Now().Unix())),

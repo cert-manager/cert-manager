@@ -45,7 +45,7 @@ import (
 var (
 	fixedClock = fakeclock.NewFakeClock(time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC))
 
-	clockCounterMetric = fmt.Sprintf(`# HELP certmanager_clock_time_seconds The clock time given in seconds (from 1970/01/01 UTC).
+	clockCounterMetric = fmt.Sprintf(`# HELP certmanager_clock_time_seconds DEPRECATED: use clock_time_seconds_gauge instead. The clock time given in seconds (from 1970/01/01 UTC).
 # TYPE certmanager_clock_time_seconds counter
 certmanager_clock_time_seconds %.9e`, float64(fixedClock.Now().Unix()))
 	clockGaugeMetric = fmt.Sprintf(`
