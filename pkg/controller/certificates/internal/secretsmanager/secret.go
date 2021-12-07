@@ -112,15 +112,14 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 				WithType(secret.Type),
 			metav1.ApplyOptions{FieldManager: util.PrefixFromUserAgent(s.restConfig.UserAgent)})
 	} else {
-		// Currently we are always updating. We should devise a way to not have to call an update if it is not necessary.
-		// If secret does not exist then create it.
-		if !secretExists {
+		if secretExists {
+			// Currently we are always updating. We should devise a way to not have to
+			// call an update if it is not necessary.
+			_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+		} else {
+			// If secret does not exist then create it and return.
 			_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
-			return err
 		}
-
-		// Currently we are always updating. We should devise a way to not have to call an update if it is not necessary.
-		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	}
 
 	return err
