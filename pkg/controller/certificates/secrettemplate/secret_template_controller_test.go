@@ -356,7 +356,7 @@ func Test_ProcessItem(t *testing.T) {
 	}
 }
 
-func Test_secretTemplateMatchesPublicFields(t *testing.T) {
+func Test_secretTemplateMatchesManagedFields(t *testing.T) {
 	const fieldManager = "cert-manager-unit-test"
 
 	tests := map[string]struct {

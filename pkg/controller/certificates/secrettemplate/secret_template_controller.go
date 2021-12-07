@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -174,7 +175,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// This error is transient, return error to be retired on the rate limiting
+	// This error is transient, return error to be retried on the rate limiting
 	// queue.
 	if err != nil {
 		return err
@@ -251,7 +252,8 @@ func secretTemplateMatchesSecret(crt *cmapi.Certificate, secret *corev1.Secret) 
 // managed fields, false otherwise.
 // An error is returned if the managed fields were not able to be decoded.
 func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, secret *corev1.Secret) (bool, error) {
-	var managedLabels, managedAnnotations []string
+	managedLabels, managedAnnotations := sets.NewString(), sets.NewString()
+
 	for _, managedField := range secret.ManagedFields {
 		// If the managed field isn't owned by the cert-manager controller, ignore.
 		if managedField.Manager != c.fieldManager || managedField.FieldsV1 == nil {
@@ -278,15 +280,12 @@ func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, 
 		// Gather the annotations and labels on the managed fields. Remove the '.'
 		// prefix which appears on managed field keys.
 		labels.Iterate(func(path fieldpath.Path) {
-			managedLabels = append(managedLabels, strings.TrimPrefix(path.String(), "."))
+			managedLabels.Insert(strings.TrimPrefix(path.String(), "."))
 		})
 		annotations.Iterate(func(path fieldpath.Path) {
-			managedAnnotations = append(managedAnnotations, strings.TrimPrefix(path.String(), "."))
+			managedAnnotations.Insert(strings.TrimPrefix(path.String(), "."))
 		})
 	}
-
-	managedLabels = util.DeDuplicate(managedLabels)
-	managedAnnotations = util.DeDuplicate(managedAnnotations)
 
 	// Check early for Secret Template being nil, and whether managed
 	// labels/annotations are not.
@@ -308,18 +307,19 @@ func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, 
 	// Check equal unsorted for SecretTemplate keys, and the managed fields
 	// equivalents.
 	for _, smap := range []struct {
-		specMap      map[string]string
-		managedSlice []string
+		specMap    map[string]string
+		managedSet sets.String
 	}{
-		{specMap: crt.Spec.SecretTemplate.Labels, managedSlice: managedLabels},
-		{specMap: crt.Spec.SecretTemplate.Annotations, managedSlice: managedAnnotations},
+		{specMap: crt.Spec.SecretTemplate.Labels, managedSet: managedLabels},
+		{specMap: crt.Spec.SecretTemplate.Annotations, managedSet: managedAnnotations},
 	} {
-		var specSlice []string
+
+		specSet := sets.NewString()
 		for kSpec := range smap.specMap {
-			specSlice = append(specSlice, kSpec)
+			specSet.Insert(kSpec)
 		}
 
-		if !util.EqualUnsorted(specSlice, smap.managedSlice) {
+		if !specSet.Equal(smap.managedSet) {
 			return false, nil
 		}
 	}

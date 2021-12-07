@@ -182,19 +182,3 @@ func Subset(set, subset []string) bool {
 
 	return true
 }
-
-// DeDuplicate de-duplicates entries in the string slice.
-func DeDuplicate(ss []string) []string {
-	if ss == nil {
-		return nil
-	}
-	demap := make(map[string]struct{})
-	out := []string{}
-	for _, s := range ss {
-		if _, ok := demap[s]; !ok {
-			demap[s] = struct{}{}
-			out = append(out, s)
-		}
-	}
-	return out
-}

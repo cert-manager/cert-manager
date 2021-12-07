@@ -309,7 +309,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 
 // getCertificateSecret will return the Secret object corresponding to the
 // Certificate's SecretName.
-// If the secret doesn't exist, and empty Secret object with the Name and
+// If the secret doesn't exist, an empty Secret object with the Name and
 // Namespace is returned.
 // If ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO is
 // disabled, the returned existing secret will be returned, as is.

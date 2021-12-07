@@ -20,8 +20,6 @@ import (
 	"net"
 	"net/url"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type testT struct {
@@ -164,34 +162,4 @@ func parseIPs(t *testing.T, ipStrs []string) []net.IP {
 	}
 
 	return ips
-}
-
-func Test_DeDuplicate(t *testing.T) {
-	tests := map[string]struct {
-		slice    []string
-		expSlice []string
-	}{
-		"nil slice should return nil slice": {
-			slice:    nil,
-			expSlice: nil,
-		},
-		"empty slice should return empty slice": {
-			slice:    []string{},
-			expSlice: []string{},
-		},
-		"slice with no duplicates should return the same slice": {
-			slice:    []string{"a", "b", "c"},
-			expSlice: []string{"a", "b", "c"},
-		},
-		"slice with duplicates should return the same slice with the duplicates removed": {
-			slice:    []string{"a", "b", "c", "a", "b", "c", "d", "e", "f", "a"},
-			expSlice: []string{"a", "b", "c", "d", "e", "f"},
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, test.expSlice, DeDuplicate(test.slice), "%v", test.slice)
-		})
-	}
 }
