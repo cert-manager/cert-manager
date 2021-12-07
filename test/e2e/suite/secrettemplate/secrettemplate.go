@@ -55,7 +55,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 		It(name, func() {
 			fgs := os.Getenv("FEATURE_GATES")
 			if !util.Contains(strings.Split(fgs, ","), string(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO)+"=true") {
-				framework.Skipf("skipping Certificats SecretTemplate controller test since FEATURE_GATE %s is not enabled",
+				framework.Skipf("skipping Certificates SecretTemplate controller test since FEATURE_GATE %s is not enabled",
 					feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO)
 				return
 			}
