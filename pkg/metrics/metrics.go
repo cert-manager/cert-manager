@@ -29,12 +29,10 @@ import (
 	"net/http"
 	"time"
 
-	"k8s.io/utils/clock"
-
 	"github.com/go-logr/logr"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/utils/clock"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
@@ -54,6 +52,7 @@ type Metrics struct {
 	registry *prometheus.Registry
 
 	clockTimeSeconds                 prometheus.CounterFunc
+	clockTimeSecondsGauge            prometheus.GaugeFunc
 	certificateExpiryTimeSeconds     *prometheus.GaugeVec
 	certificateRenewalTimeSeconds    *prometheus.GaugeVec
 	certificateReadyStatus           *prometheus.GaugeVec
@@ -67,10 +66,30 @@ var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, c
 // New creates a Metrics struct and populates it with prometheus metric types.
 func New(log logr.Logger, c clock.Clock) *Metrics {
 	var (
+		// Deprecated in favour of clock_time_seconds_gauge.
 		clockTimeSeconds = prometheus.NewCounterFunc(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "clock_time_seconds",
+				Help:      "DEPRECATED: use clock_time_seconds_gauge instead. The clock time given in seconds (from 1970/01/01 UTC).",
+			},
+			func() float64 {
+				return float64(c.Now().Unix())
+			},
+		)
+
+		// The clockTimeSeconds metric was first added, however this was
+		// erroneously made a "counter" metric type. Time can in fact go backwards,
+		// see:
+		// - https://github.com/jetstack/cert-manager/issues/4560
+		// - https://www.robustperception.io/are-increasing-timestamps-counters-or-gauges
+		// In order to not break users relying on the `clock_time_seconds` metric,
+		// a new `clock_time_seconds_gauge` metric of type gauge is added which
+		// implements the same thing.
+		clockTimeSecondsGauge = prometheus.NewGaugeFunc(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "clock_time_seconds_gauge",
 				Help:      "The clock time given in seconds (from 1970/01/01 UTC).",
 			},
 			func() float64 {
@@ -146,6 +165,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 		registry: prometheus.NewRegistry(),
 
 		clockTimeSeconds:                 clockTimeSeconds,
+		clockTimeSecondsGauge:            clockTimeSecondsGauge,
 		certificateExpiryTimeSeconds:     certificateExpiryTimeSeconds,
 		certificateRenewalTimeSeconds:    certificateRenewalTimeSeconds,
 		certificateReadyStatus:           certificateReadyStatus,
@@ -160,6 +180,7 @@ func New(log logr.Logger, c clock.Clock) *Metrics {
 // NewServer registers Prometheus metrics and returns a new Prometheus metrics HTTP server.
 func (m *Metrics) NewServer(ln net.Listener) *http.Server {
 	m.registry.MustRegister(m.clockTimeSeconds)
+	m.registry.MustRegister(m.clockTimeSecondsGauge)
 	m.registry.MustRegister(m.certificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.certificateRenewalTimeSeconds)
 	m.registry.MustRegister(m.certificateReadyStatus)
