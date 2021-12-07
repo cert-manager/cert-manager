@@ -66,11 +66,12 @@ var readyConditionStatuses = [...]cmmeta.ConditionStatus{cmmeta.ConditionTrue, c
 // New creates a Metrics struct and populates it with prometheus metric types.
 func New(log logr.Logger, c clock.Clock) *Metrics {
 	var (
+		// Deprecated in favour of clock_time_seconds_gauge.
 		clockTimeSeconds = prometheus.NewCounterFunc(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Name:      "clock_time_seconds",
-				Help:      "The clock time given in seconds (from 1970/01/01 UTC).",
+				Help:      "DEPRECATED: use clock_time_seconds_gauge instead. The clock time given in seconds (from 1970/01/01 UTC).",
 			},
 			func() float64 {
 				return float64(c.Now().Unix())
