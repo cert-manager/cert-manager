@@ -1,20 +1,14 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "globalflags.go",
-        "options.go",
-    ],
-    importpath = "github.com/jetstack/cert-manager/cmd/webhook/app/options",
+    srcs = ["configfile.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/webhook/configfile",
     visibility = ["//visibility:public"],
     deps = [
         "//internal/apis/config/webhook:go_default_library",
         "//internal/apis/config/webhook/scheme:go_default_library",
-        "//pkg/apis/config/webhook/v1alpha1:go_default_library",
-        "//pkg/logs:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@io_k8s_component_base//cli/flag:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
     ],
 )
 
@@ -30,4 +24,10 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["configfile_test.go"],
+    embed = [":go_default_library"],
 )

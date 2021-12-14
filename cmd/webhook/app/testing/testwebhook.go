@@ -33,6 +33,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/pointer"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
@@ -58,10 +59,14 @@ type ServerOptions struct {
 }
 
 func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (ServerOptions, StopFunc) {
-	// Allow user to override options using flags
-	var opts options.WebhookOptions
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
-	opts.AddFlags(fs)
+	webhookFlags := options.NewWebhookFlags()
+	webhookConfig, err := options.NewWebhookConfiguration()
+	if err != nil {
+		t.Fatalf("Failed building test webhook config: %v", err)
+	}
+	webhookFlags.AddFlags(fs)
+	options.AddConfigFlags(fs, webhookConfig)
 	// Parse the arguments passed in into the WebhookOptions struct
 	fs.Parse(args)
 
@@ -70,7 +75,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (Serve
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !options.FileTLSSourceEnabled(opts) && !options.DynamicTLSSourceEnabled(opts) {
+	if !webhookConfig.TLSConfig.FilesystemConfigProvided() && !webhookConfig.TLSConfig.DynamicConfigProvided() {
 		// Generate a CA and serving certificate
 		ca, certificatePEM, privateKeyPEM, err := generateTLSAssets()
 		if err != nil {
@@ -85,17 +90,17 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string) (Serve
 			t.Fatal(err)
 		}
 
-		opts.TLSKeyFile = filepath.Join(tempDir, "tls.key")
-		opts.TLSCertFile = filepath.Join(tempDir, "tls.crt")
+		webhookConfig.TLSConfig.Filesystem.KeyFile = filepath.Join(tempDir, "tls.key")
+		webhookConfig.TLSConfig.Filesystem.CertFile = filepath.Join(tempDir, "tls.crt")
 	}
 
 	// Listen on a random port number
-	opts.ListenPort = 0
-	opts.HealthzPort = 0
+	webhookConfig.SecurePort = pointer.Int(0)
+	webhookConfig.HealthzPort = pointer.Int(0)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan error)
-	srv, err := app.NewServerWithOptions(log, opts)
+	srv, err := app.NewServerWithOptions(log, *webhookFlags, *webhookConfig)
 	if err != nil {
 		t.Fatal(err)
 	}

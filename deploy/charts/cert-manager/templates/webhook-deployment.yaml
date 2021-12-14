@@ -61,21 +61,40 @@ spec:
           {{- if .Values.global.logLevel }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
+          {{- if .Values.webhook.config }}
+          - --config=/var/cert-manager/config/config.yaml
+          {{- end }}
+          {{- $config := default .Values.webhook.config "" }}
+          {{ if not $config.securePort -}}
           - --secure-port={{ .Values.webhook.securePort }}
+          {{- end }}
+          {{- $tlsConfig := default $config.tlsConfig "" }}
+          {{ if or (not $config.tlsConfig) (and (not $tlsConfig.dynamic) (not $tlsConfig.filesystem) ) -}}
           - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)
           - --dynamic-serving-ca-secret-name={{ template "webhook.fullname" . }}-ca
           - --dynamic-serving-dns-names={{ template "webhook.fullname" . }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }},{{ template "webhook.fullname" . }}.{{ .Release.Namespace }}.svc{{ if .Values.webhook.url.host }},{{ .Values.webhook.url.host }}{{ end }}
+          {{- end }}
           {{- with .Values.webhook.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
           ports:
           - name: https
             protocol: TCP
+            {{- if $config.securePort }}
+            containerPort: {{ $config.securePort }}
+            {{- else if .Values.webhook.securePort }}
             containerPort: {{ .Values.webhook.securePort }}
+            {{- else }}
+            containerPort: 6443
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /livez
+              {{- if $config.healthzPort }}
+              port: {{ $config.healthzPort }}
+              {{- else }}
               port: 6080
+              {{- end }}
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.livenessProbe.periodSeconds }}
@@ -85,7 +104,11 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
+              {{- if $config.healthzPort }}
+              port: {{ $config.healthzPort }}
+              {{- else }}
               port: 6080
+              {{- end }}
               scheme: HTTP
             initialDelaySeconds: {{ .Values.webhook.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.webhook.readinessProbe.periodSeconds }}
@@ -105,6 +128,11 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if .Values.webhook.config }}
+          volumeMounts:
+            - name: config
+              mountPath: /var/cert-manager/config
+          {{- end }}
       {{- with .Values.webhook.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -117,4 +145,9 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-
+      {{- if .Values.webhook.config }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "webhook.fullname" . }}
+      {{- end }}

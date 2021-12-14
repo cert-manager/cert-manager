@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
@@ -8,17 +8,21 @@ go_library(
     deps = [
         "//cmd/util:go_default_library",
         "//cmd/webhook/app/options:go_default_library",
+        "//internal/apis/config/webhook:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/webhook:go_default_library",
         "//pkg/webhook/authority:go_default_library",
+        "//pkg/webhook/configfile:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/server:go_default_library",
         "//pkg/webhook/server/tls:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//tools/clientcmd:go_default_library",
+        "@io_k8s_component_base//cli/flag:go_default_library",
     ],
 )
 
@@ -38,4 +42,11 @@ filegroup(
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["webhook_test.go"],
+    embed = [":go_default_library"],
+    deps = ["//cmd/webhook/app/options:go_default_library"],
 )

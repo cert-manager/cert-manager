@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["doc.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/apis",
+    importpath = "github.com/jetstack/cert-manager/pkg/apis/config/webhook",
     visibility = ["//visibility:public"],
 )
 
@@ -18,11 +18,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/apis/acme:all-srcs",
-        "//pkg/apis/certmanager:all-srcs",
-        "//pkg/apis/config/webhook:all-srcs",
-        "//pkg/apis/experimental:all-srcs",
-        "//pkg/apis/meta:all-srcs",
+        "//pkg/apis/config/webhook/v1alpha1:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
