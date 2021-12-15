@@ -19,7 +19,7 @@ filegroup(
         "//internal/ingress:all-srcs",
         "//internal/test/paths:all-srcs",
         "//internal/vault:all-srcs",
-        "//internal/webhook/feature:all-srcs",
+        "//internal/webhook:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
