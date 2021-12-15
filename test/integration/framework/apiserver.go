@@ -38,9 +38,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
 	"github.com/jetstack/cert-manager/internal/test/paths"
+	"github.com/jetstack/cert-manager/internal/webhook"
 	"github.com/jetstack/cert-manager/pkg/api"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	"github.com/jetstack/cert-manager/test/internal/apiserver"
@@ -87,7 +87,7 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(
 		t, ctx, []string{"--api-server-host=" + config.Host},
-		app.WithConversionHandler(options.webhookConversionHandler),
+		webhook.WithConversionHandler(options.webhookConversionHandler),
 	)
 
 	crds := readCustomResourcesAtPath(t, *options.crdsDir)

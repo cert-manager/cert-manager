@@ -19,7 +19,6 @@ package admission
 import (
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
@@ -27,15 +26,13 @@ import (
 // Plugins manages initialising, registering and executing admission plugins
 // for both validation and mutation.
 type Plugins struct {
-	log     logr.Logger
 	decoder runtime.Decoder
 
 	pluginFactory map[string]Factory
 }
 
-func NewPlugins(log logr.Logger, scheme *runtime.Scheme) *Plugins {
+func NewPlugins(scheme *runtime.Scheme) *Plugins {
 	return &Plugins{
-		log:           log,
 		decoder:       serializer.NewCodecFactory(scheme).UniversalDecoder(),
 		pluginFactory: make(map[string]Factory),
 	}

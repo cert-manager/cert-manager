@@ -25,14 +25,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	log "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/webhook/admission"
 	"github.com/jetstack/cert-manager/pkg/webhook/admission/initializer"
 )
 
 func TestPlugins_InitializesNamedOnly(t *testing.T) {
 	scheme := runtime.NewScheme()
-	p := admission.NewPlugins(&log.TestLogger{T: t}, scheme)
+	p := admission.NewPlugins(scheme)
 
 	testPlugin1 := &testPlugin{}
 	p.Register("TestPlugin1", func() (admission.Interface, error) {
@@ -61,7 +60,7 @@ func TestPlugins_InitializesNamedOnly(t *testing.T) {
 
 func TestPlugins_FailsIfAnyPluginFails(t *testing.T) {
 	scheme := runtime.NewScheme()
-	p := admission.NewPlugins(&log.TestLogger{T: t}, scheme)
+	p := admission.NewPlugins(scheme)
 
 	testPlugin1 := &testPlugin{}
 	p.Register("TestPlugin1", func() (admission.Interface, error) {
@@ -90,7 +89,7 @@ func TestPlugins_FailsIfAnyPluginFails(t *testing.T) {
 
 func TestPlugins_FailsNonExistingPlugin(t *testing.T) {
 	scheme := runtime.NewScheme()
-	p := admission.NewPlugins(&log.TestLogger{T: t}, scheme)
+	p := admission.NewPlugins(scheme)
 
 	testPlugin1 := &testPlugin{}
 	p.Register("TestPlugin1", func() (admission.Interface, error) {
@@ -109,7 +108,7 @@ func TestPlugins_FailsNonExistingPlugin(t *testing.T) {
 
 func TestPlugins_FailsIfPluginFailsToBuild(t *testing.T) {
 	scheme := runtime.NewScheme()
-	p := admission.NewPlugins(&log.TestLogger{T: t}, scheme)
+	p := admission.NewPlugins(scheme)
 
 	testPlugin1 := &testPlugin{}
 	p.Register("TestPlugin1", func() (admission.Interface, error) {

@@ -45,9 +45,19 @@ import (
 
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, Scheme)
 
+type ServerOption func(*server.Server)
+
+// WithConversionHandler allows you to override the handler for the `/convert`
+// endpoint in tests.
+func WithConversionHandler(handler handlers.ConversionHook) ServerOption {
+	return func(s *server.Server) {
+		s.ConversionWebhook = handler
+	}
+}
+
 // NewCertManagerWebhookServer creates a new webhook server configured with all cert-manager
 // resource types, validation, defaulting and conversion functions.
-func NewCertManagerWebhookServer(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration) (*server.Server, error) {
+func NewCertManagerWebhookServer(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration, optionFunctions ...ServerOption) (*server.Server, error) {
 	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err
@@ -59,12 +69,12 @@ func NewCertManagerWebhookServer(log logr.Logger, _ options.WebhookFlags, opts c
 	}
 
 	// Set up the admission chain
-	admissionHandler, err := buildAdmissionChain(log, cl)
+	admissionHandler, err := buildAdmissionChain(cl)
 	if err != nil {
 		return nil, err
 	}
 
-	return &server.Server{
+	s := &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", *opts.SecurePort),
 		HealthzAddr:       fmt.Sprintf(":%d", *opts.HealthzPort),
 		EnablePprof:       opts.EnablePprof,
@@ -75,13 +85,16 @@ func NewCertManagerWebhookServer(log logr.Logger, _ options.WebhookFlags, opts c
 		ValidationWebhook: admissionHandler,
 		MutationWebhook:   admissionHandler,
 		ConversionWebhook: conversionHook,
-		Log:               log,
-	}, nil
+	}
+	for _, fn := range optionFunctions {
+		fn(s)
+	}
+	return s, nil
 }
 
-func buildAdmissionChain(log logr.Logger, client kubernetes.Interface) (*admission.RequestHandler, error) {
+func buildAdmissionChain(client kubernetes.Interface) (*admission.RequestHandler, error) {
 	// Set up the admission chain
-	pluginHandler := admission.NewPlugins(log, Scheme)
+	pluginHandler := admission.NewPlugins(Scheme)
 	plugin.RegisterAllPlugins(pluginHandler)
 	authorizer, err := authorizerfactory.DelegatingAuthorizerConfig{
 		SubjectAccessReviewClient: client.AuthorizationV1(),
@@ -115,7 +128,6 @@ func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg
 		return &tls.FileCertificateSource{
 			CertPath: tlsConfig.Filesystem.CertFile,
 			KeyPath:  tlsConfig.Filesystem.KeyFile,
-			Log:      log,
 		}
 	case tlsConfig.DynamicConfigProvided():
 		log.V(logf.InfoLevel).Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", tlsConfig.Dynamic.SecretNamespace, "secret_name", tlsConfig.Dynamic.SecretName)
@@ -125,9 +137,7 @@ func buildCertificateSource(log logr.Logger, tlsConfig config.TLSConfig, restCfg
 				SecretNamespace: tlsConfig.Dynamic.SecretNamespace,
 				SecretName:      tlsConfig.Dynamic.SecretName,
 				RESTConfig:      restCfg,
-				Log:             log,
 			},
-			Log: log,
 		}
 	default:
 		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")

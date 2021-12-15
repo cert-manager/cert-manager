@@ -14,6 +14,7 @@ go_library(
         "//internal/apis/certmanager/install:go_default_library",
         "//internal/apis/config/webhook:go_default_library",
         "//internal/apis/meta/install:go_default_library",
+        "//internal/plugin:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/webhook/admission:go_default_library",
         "//pkg/webhook/admission/initializer:go_default_library",
