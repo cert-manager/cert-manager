@@ -23,9 +23,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/client/informers/externalversions/acme/v1:all-srcs",
-        "//pkg/client/informers/externalversions/acme/v1alpha2:all-srcs",
-        "//pkg/client/informers/externalversions/acme/v1alpha3:all-srcs",
-        "//pkg/client/informers/externalversions/acme/v1beta1:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
