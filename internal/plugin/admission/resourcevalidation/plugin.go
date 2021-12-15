@@ -18,34 +18,33 @@ package resourcevalidation
 
 import (
 	"context"
-	"github.com/jetstack/cert-manager/internal/api/validation"
-	acmevalidation "github.com/jetstack/cert-manager/internal/apis/acme/validation"
-	acmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	admission2 "github.com/jetstack/cert-manager/pkg/webhook/admission"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	acmevalidation "github.com/jetstack/cert-manager/internal/apis/acme/validation"
 	cmvalidation "github.com/jetstack/cert-manager/internal/apis/certmanager/validation"
+	acmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	admission "github.com/jetstack/cert-manager/pkg/webhook/admission"
 )
 
 const PluginName = "ResourceValidation"
 
 type resourceValidation struct {
-	*admission2.Handler
+	*admission.Handler
 }
 
 // Register registers a plugin
-func Register(plugins *admission2.Plugins) {
-	plugins.Register(PluginName, func() (admission2.Interface, error) {
+func Register(plugins *admission.Plugins) {
+	plugins.Register(PluginName, func() (admission.Interface, error) {
 		return NewPlugin(), nil
 	})
 }
 
-var _ admission2.ValidationInterface = &resourceValidation{}
+var _ admission.ValidationInterface = &resourceValidation{}
 
 var certificateGVR = certmanagerv1.SchemeGroupVersion.WithResource("certificates")
 var certificateRequestGVR = certmanagerv1.SchemeGroupVersion.WithResource("certificaterequests")
@@ -54,8 +53,8 @@ var clusterIssuerGVR = certmanagerv1.SchemeGroupVersion.WithResource("clusteriss
 var orderGVR = acmev1.SchemeGroupVersion.WithResource("orders")
 var challengeGVR = acmev1.SchemeGroupVersion.WithResource("challenges")
 
-type validateCreateFunc func(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList)
-type validateUpdateFunc func(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList)
+type validateCreateFunc func(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string)
+type validateUpdateFunc func(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string)
 
 type validationPair struct {
 	create validateCreateFunc
@@ -75,9 +74,9 @@ var validationMapping = map[schema.GroupVersionResource]validationPair{
 	challengeGVR:          newValidationPair(acmevalidation.ValidateChallenge, acmevalidation.ValidateChallengeUpdate),
 }
 
-func NewPlugin() admission2.Interface {
+func NewPlugin() admission.Interface {
 	return &resourceValidation{
-		Handler: admission2.NewHandler(admissionv1.Create, admissionv1.Update),
+		Handler: admission.NewHandler(admissionv1.Create, admissionv1.Update),
 	}
 }
 

@@ -36,7 +36,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//internal/apis/certmanager/fuzzer:all-srcs",
-        "//internal/apis/certmanager/identity:all-srcs",
         "//internal/apis/certmanager/install:all-srcs",
         "//internal/apis/certmanager/v1:all-srcs",
         "//internal/apis/certmanager/v1alpha2:all-srcs",

@@ -2,14 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "register.go",
-        "validation.go",
-    ],
+    srcs = ["validation.go"],
     importpath = "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/validation",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/api/validation:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
@@ -23,7 +19,6 @@ go_test(
     srcs = ["validation_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//internal/api/validation:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",

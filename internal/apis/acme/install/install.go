@@ -22,13 +22,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/jetstack/cert-manager/internal/api/validation"
 	"github.com/jetstack/cert-manager/internal/apis/acme"
 	cmapi "github.com/jetstack/cert-manager/internal/apis/acme/v1"
 	"github.com/jetstack/cert-manager/internal/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/internal/apis/acme/v1alpha3"
 	"github.com/jetstack/cert-manager/internal/apis/acme/v1beta1"
-	acmevalidation "github.com/jetstack/cert-manager/internal/apis/acme/validation"
 	cmmetav1 "github.com/jetstack/cert-manager/internal/apis/meta/v1"
 )
 
@@ -40,10 +38,4 @@ func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(v1beta1.AddToScheme(scheme))
 	utilruntime.Must(cmapi.AddToScheme(scheme))
 	utilruntime.Must(cmmetav1.AddToScheme(scheme))
-}
-
-// InstallValidation registers validation functions for the API group with a
-// validation registry
-func InstallValidation(registry *validation.Registry) {
-	utilruntime.Must(acmevalidation.AddToValidationRegistry(registry))
 }

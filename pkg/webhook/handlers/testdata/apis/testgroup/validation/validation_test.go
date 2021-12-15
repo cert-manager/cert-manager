@@ -22,7 +22,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/internal/api/validation"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
 	v1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
 )
@@ -31,7 +30,7 @@ func TestValidateTestType(t *testing.T) {
 	scenarios := map[string]struct {
 		obj      *testgroup.TestType
 		errs     []*field.Error
-		warnings validation.WarningList
+		warnings []string
 	}{
 		"does not allow testField to be TestFieldValueNotAllowed": {
 			obj: &testgroup.TestType{
@@ -70,7 +69,7 @@ func TestValidateTestTypeUpdate(t *testing.T) {
 	scenarios := map[string]struct {
 		old, new *testgroup.TestType
 		errs     []*field.Error
-		warnings validation.WarningList
+		warnings []string
 	}{
 		"allows all updates if old is nil": {
 			new: &testgroup.TestType{
@@ -111,7 +110,7 @@ const (
 // is not set.
 func testImmutableTestTypeField(t *testing.T, fldPath *field.Path, setter func(*testgroup.TestType, testValue)) {
 	t.Run("should reject updates to "+fldPath.String(), func(t *testing.T) {
-		var expectedWarnings validation.WarningList
+		var expectedWarnings []string
 		expectedErrs := []*field.Error{
 			field.Forbidden(fldPath, "field is immutable once set"),
 		}
@@ -135,7 +134,7 @@ func testImmutableTestTypeField(t *testing.T, fldPath *field.Path, setter func(*
 		}
 	})
 	t.Run("should allow updates to "+fldPath.String()+" if not already set", func(t *testing.T) {
-		var expectedWarnings validation.WarningList
+		var expectedWarnings []string
 		expectedErrs := []*field.Error{}
 		old := &testgroup.TestType{}
 		new := &testgroup.TestType{}

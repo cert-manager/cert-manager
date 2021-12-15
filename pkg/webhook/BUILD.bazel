@@ -1,20 +1,3 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-
-go_library(
-    name = "go_default_library",
-    srcs = ["scheme.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//internal/api/mutation:go_default_library",
-        "//internal/api/validation:go_default_library",
-        "//internal/apis/acme/install:go_default_library",
-        "//internal/apis/certmanager/install:go_default_library",
-        "//internal/apis/meta/install:go_default_library",
-        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
-    ],
-)
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),

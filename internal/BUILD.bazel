@@ -9,8 +9,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//internal/api/mutation:all-srcs",
-        "//internal/api/validation:all-srcs",
         "//internal/apis/acme:all-srcs",
         "//internal/apis/certmanager:all-srcs",
         "//internal/apis/config/webhook:all-srcs",

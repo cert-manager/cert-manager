@@ -23,11 +23,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
 )
 
-func ValidateOrderUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, validation.WarningList) {
+func ValidateOrderUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime.Object) (field.ErrorList, []string) {
 	old, ok := oldObj.(*cmacme.Order)
 	new := newObj.(*cmacme.Order)
 	// if oldObj is not set, the Update operation is always valid.
@@ -38,13 +37,11 @@ func ValidateOrderUpdate(a *admissionv1.AdmissionRequest, oldObj, newObj runtime
 	el := field.ErrorList{}
 	el = append(el, ValidateOrderSpecUpdate(old.Spec, new.Spec, field.NewPath("spec"))...)
 	el = append(el, ValidateOrderStatusUpdate(old.Status, new.Status, field.NewPath("status"))...)
-	warnings := validateAPIVersion(a.RequestKind)
-	return el, warnings
+	return el, nil
 }
 
-func ValidateOrder(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
-	warnings := validateAPIVersion(a.RequestKind)
-	return nil, warnings
+func ValidateOrder(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
+	return nil, nil
 }
 
 func ValidateOrderSpecUpdate(old, new cmacme.OrderSpec, fldPath *field.Path) field.ErrorList {

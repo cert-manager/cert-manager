@@ -17,25 +17,17 @@ limitations under the License.
 package validation
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
 	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
-	cmapiv1alpha2 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha2"
-	cmapiv1alpha3 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha3"
-	cmapiv1beta1 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1beta1"
 	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
-	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 )
 
 var (
@@ -117,7 +109,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 	scenarios := map[string]struct {
 		spec     *cmacme.ACMEIssuer
 		errs     []*field.Error
-		warnings validation.WarningList
+		warnings []string
 	}{
 		"valid acme issuer": {
 			spec: &validACMEIssuer,
@@ -212,7 +204,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					},
 				},
 			},
-			warnings: validation.WarningList{deprecatedACMEEABKeyAlgorithmField},
+			warnings: []string{deprecatedACMEEABKeyAlgorithmField},
 		},
 		"acme solver with missing http01 config type": {
 			spec: &cmacme.ACMEIssuer{
@@ -411,7 +403,7 @@ func TestValidateIssuerSpec(t *testing.T) {
 	scenarios := map[string]struct {
 		spec     *cmapi.IssuerSpec
 		errs     field.ErrorList
-		warnings validation.WarningList
+		warnings []string
 	}{
 		"valid ca issuer": {
 			spec: &cmapi.IssuerSpec{
@@ -1303,71 +1295,12 @@ func TestValidateVenafiTPP(t *testing.T) {
 }
 
 func TestValidateIssuer(t *testing.T) {
-	baseIssuerConfig := cmapi.IssuerSpec{
-		IssuerConfig: cmapi.IssuerConfig{
-			SelfSigned: &cmapi.SelfSignedIssuer{},
-		}}
 	scenarios := map[string]struct {
 		cfg       *cmapi.Issuer
 		a         *admissionv1.AdmissionRequest
 		expectedE []*field.Error
-		expectedW validation.WarningList
-	}{
-		"v1alpha2 Issuer created": {
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1alpha2",
-					Kind:    "Issuer"},
-			},
-			cfg: &cmapi.Issuer{
-				Spec: baseIssuerConfig,
-			},
-			expectedE: []*field.Error{},
-			expectedW: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1alpha2.SchemeGroupVersion.String(),
-					"Issuer",
-					cmapiv1.SchemeGroupVersion.String(),
-					"Issuer"),
-			},
-		},
-		"v1alpha3 Issuer created": {
-			cfg: &cmapi.Issuer{
-				Spec: baseIssuerConfig,
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1alpha3",
-					Kind:    "Issuer"},
-			},
-			expectedE: []*field.Error{},
-			expectedW: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1alpha3.SchemeGroupVersion.String(),
-					"Issuer",
-					cmapiv1.SchemeGroupVersion.String(),
-					"Issuer"),
-			},
-		},
-		"v1beta1 Issuer created": {
-			cfg: &cmapi.Issuer{
-				Spec: baseIssuerConfig,
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1beta1",
-					Kind:    "Issuer"},
-			},
-			expectedE: []*field.Error{},
-			expectedW: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1beta1.SchemeGroupVersion.String(),
-					"Issuer",
-					cmapiv1.SchemeGroupVersion.String(),
-					"Issuer"),
-			},
-		},
-	}
+		expectedW []string
+	}{}
 
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
@@ -1406,63 +1339,8 @@ func TestUpdateValidateIssuer(t *testing.T) {
 		iss       *cmapi.Issuer
 		a         *admissionv1.AdmissionRequest
 		expectedE []*field.Error
-		expectedW validation.WarningList
-	}{
-		"Issuer updated to v1alpha2 version": {
-			iss: &cmapi.Issuer{
-				Spec: baseIssuerConfig,
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1alpha2",
-					Kind:    "Issuer"},
-			},
-			expectedE: []*field.Error{},
-			expectedW: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1alpha2.SchemeGroupVersion.String(),
-					"Issuer",
-					cmapiv1.SchemeGroupVersion.String(),
-					"Issuer"),
-			},
-		},
-		"Issuer updated to v1alpha3 version": {
-			iss: &cmapi.Issuer{
-				Spec: baseIssuerConfig,
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1alpha3",
-					Kind:    "Issuer"},
-			},
-			expectedE: []*field.Error{},
-			expectedW: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1alpha3.SchemeGroupVersion.String(),
-					"Issuer",
-					cmapiv1.SchemeGroupVersion.String(),
-					"Issuer"),
-			},
-		},
-		"Issuer updated to v1beta1 version": {
-			iss: &cmapi.Issuer{
-				Spec: baseIssuerConfig,
-			},
-			a: &admissionv1.AdmissionRequest{
-				RequestKind: &metav1.GroupVersionKind{Group: "cert-manager.io",
-					Version: "v1beta1",
-					Kind:    "Issuer"},
-			},
-			expectedE: []*field.Error{},
-			expectedW: validation.WarningList{
-				fmt.Sprintf(deprecationMessageTemplate,
-					cmapiv1beta1.SchemeGroupVersion.String(),
-					"Issuer",
-					cmapiv1.SchemeGroupVersion.String(),
-					"Issuer"),
-			},
-		},
-	}
+		expectedW []string
+	}{}
 
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

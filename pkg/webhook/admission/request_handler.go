@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 )
@@ -79,10 +78,6 @@ func NewRequestHandler(scheme *runtime.Scheme, validator ValidationInterface, mu
 
 var _ handlers.ValidatingAdmissionHook = &RequestHandler{}
 var _ handlers.MutatingAdmissionHook = &RequestHandler{}
-
-func (rh *RequestHandler) InitPlugins(_ kubernetes.Interface) {
-	// Do nothing. This is left over from the old plugin system and will be removed soon.
-}
 
 // Validate will decode the Object (and OldObject, if set) in the AdmissionRequest into the
 // internal API version.
