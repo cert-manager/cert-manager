@@ -23,10 +23,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/jetstack/cert-manager/internal/api/validation"
+	cmacmev1alpha2 "github.com/jetstack/cert-manager/internal/apis/acme/v1alpha2"
+	cmacmev1alpha3 "github.com/jetstack/cert-manager/internal/apis/acme/v1alpha3"
+	cmacmev1beta1 "github.com/jetstack/cert-manager/internal/apis/acme/v1beta1"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmacmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	cmacmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 )
 
 // This file holds temporary functionality for cert-manager v1.4 API deprecation.

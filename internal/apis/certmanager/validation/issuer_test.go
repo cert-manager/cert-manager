@@ -31,11 +31,11 @@ import (
 	"github.com/jetstack/cert-manager/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
 	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	cmapiv1alpha2 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha2"
+	cmapiv1alpha3 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1alpha3"
+	cmapiv1beta1 "github.com/jetstack/cert-manager/internal/apis/certmanager/v1beta1"
 	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
 	cmapiv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmapiv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmapiv1alpha3 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	cmapiv1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 )
 
 var (

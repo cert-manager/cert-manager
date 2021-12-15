@@ -29,10 +29,10 @@ import (
 
 	"github.com/jetstack/cert-manager/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
+	cmacmev1alpha2 "github.com/jetstack/cert-manager/internal/apis/acme/v1alpha2"
+	cmacmev1alpha3 "github.com/jetstack/cert-manager/internal/apis/acme/v1alpha3"
+	cmacmev1beta1 "github.com/jetstack/cert-manager/internal/apis/acme/v1beta1"
 	cmacmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmacmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	cmacmev1alpha3 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
-	cmacmev1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 )
 
 type testValue string

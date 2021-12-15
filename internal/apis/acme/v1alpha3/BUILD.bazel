@@ -23,7 +23,6 @@ go_library(
         "//internal/apis/meta:go_default_library",
         "//internal/apis/meta/v1:go_default_library",
         "//pkg/apis/acme:go_default_library",
-        "//pkg/apis/acme/v1alpha3:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",

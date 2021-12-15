@@ -20,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/jetstack/cert-manager/pkg/apis/acme"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -32,7 +31,7 @@ func Resource(resource string) schema.GroupResource {
 }
 
 var (
-	localSchemeBuilder = &cmacme.SchemeBuilder
+	localSchemeBuilder = &SchemeBuilder
 	AddToScheme        = localSchemeBuilder.AddToScheme
 )
 

@@ -19,7 +19,7 @@ package v1alpha3
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3"
+	cmacme "github.com/jetstack/cert-manager/internal/apis/acme/v1alpha3"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
