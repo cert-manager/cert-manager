@@ -19,6 +19,7 @@ package framework
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,10 +84,30 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 	}
 
 	env, stopControlPlane := apiserver.RunBareControlPlane(t)
-	config := env.Config
+	testuser, err := env.ControlPlane.AddUser(envtest.User{Name: "test-user", Groups: []string{"cluster-admin"}}, env.Config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kubeconfig, err := testuser.KubeConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	f, err := ioutil.TempFile("", "integration-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	defer func() {
+		os.Remove(f.Name())
+	}()
+	if _, err := f.Write(kubeconfig); err != nil {
+		t.Fatal(err)
+	}
 
 	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(
-		t, ctx, []string{"--api-server-host=" + config.Host},
+		t, ctx, []string{"--kubeconfig", f.Name()},
 		webhook.WithConversionHandler(options.webhookConversionHandler),
 	)
 
@@ -96,13 +117,13 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 	}
 	patchCRDConversion(crds, webhookOpts.URL, webhookOpts.CAPEM)
 
-	if _, err := envtest.InstallCRDs(config, envtest.CRDInstallOptions{
+	if _, err := envtest.InstallCRDs(env.Config, envtest.CRDInstallOptions{
 		CRDs: crds,
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	cl, err := client.New(config, client.Options{Scheme: api.Scheme})
+	cl, err := client.New(env.Config, client.Options{Scheme: api.Scheme})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +140,7 @@ func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunCo
 		t.Fatal(err)
 	}
 
-	return config, func() {
+	return env.Config, func() {
 		defer stopWebhook()
 		stopControlPlane()
 	}
