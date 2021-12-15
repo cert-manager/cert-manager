@@ -46,7 +46,17 @@ var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBacked
 var mutationHook handlers.MutatingAdmissionHook = handlers.NewRegistryBackedMutator(logf.Log, webhook.Scheme, webhook.MutationRegistry)
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, webhook.Scheme)
 
-func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration) (*server.Server, error) {
+type ServerOption func(*server.Server)
+
+// WithConversionHandler allows you to override the handler for the `/convert`
+// endpoint in tests.
+func WithConversionHandler(handler handlers.ConversionHook) ServerOption {
+	return func(s *server.Server) {
+		s.ConversionWebhook = handler
+	}
+}
+
+func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration, optionFunctions ...ServerOption) (*server.Server, error) {
 	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err
@@ -88,7 +98,7 @@ func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.W
 		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
 	}
 
-	return &server.Server{
+	s := &server.Server{
 		ListenAddr:        fmt.Sprintf(":%d", *opts.SecurePort),
 		HealthzAddr:       fmt.Sprintf(":%d", *opts.HealthzPort),
 		EnablePprof:       opts.EnablePprof,
@@ -100,7 +110,11 @@ func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.W
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
 		Log:               log,
-	}, nil
+	}
+	for _, f := range optionFunctions {
+		f(s)
+	}
+	return s, nil
 }
 
 const componentWebhook = "webhook"

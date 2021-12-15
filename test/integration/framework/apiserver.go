@@ -34,25 +34,63 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/versioning"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
 	"github.com/jetstack/cert-manager/pkg/api"
 	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	"github.com/jetstack/cert-manager/test/internal/apiserver"
 )
 
 type StopFunc func()
 
-func RunControlPlane(t *testing.T, ctx context.Context) (*rest.Config, StopFunc) {
+// controlPlaneOptions has parameters for the control plane of the integration
+// test framework which can be overridden in tests.
+type controlPlaneOptions struct {
+	crdsDir                  *string
+	webhookConversionHandler handlers.ConversionHook
+}
+
+type RunControlPlaneOption func(*controlPlaneOptions)
+
+// WithCRDDirectory allows alternative CRDs to be loaded into the test API
+// server in tests.
+func WithCRDDirectory(directory string) RunControlPlaneOption {
+	return func(o *controlPlaneOptions) {
+		o.crdsDir = pointer.StringPtr(directory)
+	}
+}
+
+// WithWebhookConversionHandler allows the webhook handler for the `/convert`
+// endpoint to be overridden in tests.
+func WithWebhookConversionHandler(handler handlers.ConversionHook) RunControlPlaneOption {
+	return func(o *controlPlaneOptions) {
+		o.webhookConversionHandler = handler
+	}
+}
+
+func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunControlPlaneOption) (*rest.Config, StopFunc) {
+	options := &controlPlaneOptions{
+		crdsDir: pointer.StringPtr(apitesting.CRDDirectory(t)),
+	}
+
+	for _, f := range optionFunctions {
+		f(options)
+	}
+
 	env, stopControlPlane := apiserver.RunBareControlPlane(t)
 	config := env.Config
 
-	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(t, ctx, []string{"--api-server-host=" + config.Host})
+	webhookOpts, stopWebhook := webhooktesting.StartWebhookServer(
+		t, ctx, []string{"--api-server-host=" + config.Host},
+		app.WithConversionHandler(options.webhookConversionHandler),
+	)
 
-	crdsDir := apitesting.CRDDirectory(t)
-	crds := readCustomResourcesAtPath(t, crdsDir)
+	crds := readCustomResourcesAtPath(t, *options.crdsDir)
 	for _, crd := range crds {
 		t.Logf("Found CRD with name %q", crd.Name)
 	}
@@ -96,31 +134,22 @@ func init() {
 	apiextensionsinstall.Install(internalScheme)
 }
 
+// patchCRDConversion overrides the conversion configuration of the CRDs that
+// are loaded in to the integration test API server,
+// configuring the conversion to be handled by the local webhook server.
 func patchCRDConversion(crds []apiextensionsv1.CustomResourceDefinition, url string, caPEM []byte) {
-	for _, crd := range crds {
-		for i := range crd.Spec.Versions {
-			crd.Spec.Versions[i].Served = true
+	for i := range crds {
+		url := fmt.Sprintf("%s%s", url, "/convert")
+		crds[i].Spec.Conversion = &apiextensionsv1.CustomResourceConversion{
+			Strategy: apiextensionsv1.WebhookConverter,
+			Webhook: &apiextensionsv1.WebhookConversion{
+				ClientConfig: &apiextensionsv1.WebhookClientConfig{
+					URL:      &url,
+					CABundle: caPEM,
+				},
+				ConversionReviewVersions: []string{"v1"},
+			},
 		}
-		if crd.Spec.Conversion == nil {
-			continue
-		}
-		if crd.Spec.Conversion.Webhook == nil {
-			continue
-		}
-		if crd.Spec.Conversion.Webhook.ClientConfig == nil {
-			continue
-		}
-		if crd.Spec.Conversion.Webhook.ClientConfig.Service == nil {
-			continue
-		}
-		path := ""
-		if crd.Spec.Conversion.Webhook.ClientConfig.Service.Path != nil {
-			path = *crd.Spec.Conversion.Webhook.ClientConfig.Service.Path
-		}
-		url := fmt.Sprintf("%s%s", url, path)
-		crd.Spec.Conversion.Webhook.ClientConfig.URL = &url
-		crd.Spec.Conversion.Webhook.ClientConfig.CABundle = caPEM
-		crd.Spec.Conversion.Webhook.ClientConfig.Service = nil
 	}
 }
 

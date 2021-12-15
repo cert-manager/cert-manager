@@ -18,231 +18,83 @@ package conversion
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
 	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/diff"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/jetstack/cert-manager/pkg/api"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
+	testapi "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
+	testv1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
+	testv2 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v2"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
 
-func generateCSR(t *testing.T) []byte {
-	skRSA, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
-	}.ToRDNSequence())
-	template := x509.CertificateRequest{
-		RawSubject: asn1Subj,
-	}
-
-	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, skRSA)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
-
-	return csr
-}
-
 func TestConversion(t *testing.T) {
-	testCSR := generateCSR(t)
-
 	tests := map[string]struct {
 		input     client.Object
 		targetGVK schema.GroupVersionKind
 		output    client.Object
 	}{
-		"should convert Certificates from v1alpha2 to v1alpha3": {
-			input: &v1alpha2.Certificate{
+		"should convert from v1 to v2": {
+			input: &testv1.TestType{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1alpha2.CertificateSpec{
-					SecretName: "something",
-					CommonName: "test",
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
+				TestFieldPtr: pointer.StringPtr("test1"),
 			},
-			targetGVK: v1alpha3.SchemeGroupVersion.WithKind("Certificate"),
-			output: &v1alpha3.Certificate{
+			targetGVK: testv2.SchemeGroupVersion.WithKind("TestType"),
+			output: &testv2.TestType{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1alpha3.CertificateSpec{
-					SecretName: "something",
-					CommonName: "test",
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
+				TestFieldPtrAlt: pointer.StringPtr("test1"),
 			},
 		},
-		"should convert CertificateRequest from v1alpha2 to v1alpha3": {
-			input: &v1alpha2.CertificateRequest{
+		"should convert from v2 to v1": {
+			input: &testv2.TestType{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1alpha2.CertificateRequestSpec{
-					CSRPEM: testCSR,
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
+				TestFieldPtrAlt: pointer.StringPtr("test1"),
 			},
-			targetGVK: v1alpha3.SchemeGroupVersion.WithKind("CertificateRequest"),
-			output: &v1alpha3.CertificateRequest{
+			targetGVK: testv1.SchemeGroupVersion.WithKind("TestType"),
+			output: &testv1.TestType{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
 				},
-				Spec: v1alpha3.CertificateRequestSpec{
-					CSRPEM:   testCSR,
-					Username: "admin",
-					Groups:   []string{"system:masters", "system:authenticated"},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
-			},
-		},
-		"should convert CertificateRequest from v1alpha2 to v1": {
-			input: &v1alpha2.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
-				Spec: v1alpha2.CertificateRequestSpec{
-					CSRPEM:   testCSR,
-					Username: "some-user",
-					Groups:   []string{"some-group"},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
-			},
-			targetGVK: v1.SchemeGroupVersion.WithKind("CertificateRequest"),
-			output: &v1.CertificateRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
-				Spec: v1.CertificateRequestSpec{
-					Request:  testCSR,
-					Username: "admin",
-					Groups:   []string{"system:masters", "system:authenticated"},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
-			},
-		},
-		"should convert Certificate from v1alpha2 to v1beta1": {
-			input: &v1alpha2.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
-				Spec: v1alpha2.CertificateSpec{
-					SecretName:   "abc",
-					CommonName:   "test",
-					Organization: []string{"test"},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
-			},
-			targetGVK: v1beta1.SchemeGroupVersion.WithKind("Certificate"),
-			output: &v1beta1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
-				Spec: v1beta1.CertificateSpec{
-					SecretName: "abc",
-					CommonName: "test",
-					Subject: &v1beta1.X509Subject{
-						Organizations: []string{"test"},
-					},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
-			},
-		},
-		"should convert Certificate from v1beta1 to v1": {
-			input: &v1beta1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
-				Spec: v1beta1.CertificateSpec{
-					SecretName: "abc",
-					CommonName: "test",
-					Subject: &v1beta1.X509Subject{
-						Organizations: []string{"test"},
-					},
-					URISANs:   []string{"spiffe://foo.foo.example.net"},
-					EmailSANs: []string{"alice@example.com"},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
-			},
-			targetGVK: v1.SchemeGroupVersion.WithKind("Certificate"),
-			output: &v1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
-				Spec: v1.CertificateSpec{
-					SecretName: "abc",
-					CommonName: "test",
-					Subject: &v1.X509Subject{
-						Organizations: []string{"test"},
-					},
-					URIs:           []string{"spiffe://foo.foo.example.net"},
-					EmailAddresses: []string{"alice@example.com"},
-					IssuerRef: cmmeta.ObjectReference{
-						Name: "issuername",
-					},
-				},
+				TestFieldPtr: pointer.StringPtr("test1"),
 			},
 		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			log := logtesting.TestLogger{T: t}
+
+			scheme := runtime.NewScheme()
+			testapi.Install(scheme)
+
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
 			defer cancel()
 
-			config, stop := framework.RunControlPlane(t, ctx)
+			config, stop := framework.RunControlPlane(
+				t, ctx,
+				framework.WithCRDDirectory("../../../pkg/webhook/handlers/testdata/apis/testgroup/crds"),
+				framework.WithWebhookConversionHandler(handlers.NewSchemeBackedConverter(log, scheme)),
+			)
 			defer stop()
-
-			cl, err := client.New(config, client.Options{Scheme: api.Scheme})
+			cl, err := client.New(config, client.Options{Scheme: scheme})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -252,7 +104,7 @@ func TestConversion(t *testing.T) {
 			}
 			meta := test.input.(metav1.ObjectMetaAccessor)
 
-			convertedObj, err := api.Scheme.New(test.targetGVK)
+			convertedObj, err := scheme.New(test.targetGVK)
 			if err != nil {
 				t.Fatal(err)
 			}

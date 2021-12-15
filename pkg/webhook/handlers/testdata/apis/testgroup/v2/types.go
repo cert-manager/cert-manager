@@ -22,6 +22,7 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// +kubebuilder:storageversion
 // TestType in v2 is identical to v1, except TestFieldPtr has been renamed to TestFieldPtrAlt
 type TestType struct {
 	metav1.TypeMeta   `json:",inline"`
