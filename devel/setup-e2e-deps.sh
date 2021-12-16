@@ -30,6 +30,8 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 
 # Configure PATH to use bazel provided e2e tools
 setup_tools
+check_bazel
+bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //devel/addon/...
 
 echo "Beginning addon setup at $(date)"
 
@@ -46,9 +48,6 @@ echo "Installing cert-manager into the cluster..."
 wait
 
 echo "Completed initial phase of addon setup at $(date)"
-
-check_bazel
-bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //devel/addon/...
 
 echo "Installing sample-webhook into the cluster..."
 "${SCRIPT_ROOT}/addon/samplewebhook/install.sh" &
