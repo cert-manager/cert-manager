@@ -96,7 +96,7 @@ func (rh *RequestHandler) Validate(ctx context.Context, admissionSpec *admission
 	}
 
 	// decode new version of object
-	obj, _, err := rh.decoder.Decode(admissionSpec.Object.Raw, nil, nil)
+	obj, err := rh.deseralizeToInternalVersion(admissionSpec.Object.Raw)
 	if err != nil {
 		return badRequestError(status, err)
 	}
@@ -104,7 +104,7 @@ func (rh *RequestHandler) Validate(ctx context.Context, admissionSpec *admission
 	// attempt to decode old object
 	var oldObj runtime.Object
 	if len(admissionSpec.OldObject.Raw) > 0 {
-		oldObj, _, err = rh.decoder.Decode(admissionSpec.OldObject.Raw, nil, nil)
+		oldObj, err = rh.deseralizeToInternalVersion(admissionSpec.OldObject.Raw)
 		if err != nil {
 			return badRequestError(status, err)
 		}
@@ -185,17 +185,10 @@ func (rh *RequestHandler) decodeRequestObject(status *admissionv1.AdmissionRespo
 		return obj, nil
 	}
 
-	// First, use the UniversalDeserializer to decode the bytes (which does not perform
-	// conversion or defaulting).
-	encodedObj, _, err := rh.codecFactory.UniversalDeserializer().Decode(bytes, nil, nil)
+	// Decode the object to the internal version without defaulting
+	internalObj, err := rh.deseralizeToInternalVersion(bytes)
 	if err != nil {
 		return nil, badRequestError(status, err)
-	}
-
-	// Then convert into the internal version of the object
-	internalObj, err := rh.scheme.ConvertToVersion(encodedObj, runtime.InternalGroupVersioner)
-	if err != nil {
-		return nil, internalServerError(status, err)
 	}
 
 	// Now convert into the request version so we can apply the appropriate defaults
@@ -215,6 +208,20 @@ func (rh *RequestHandler) decodeRequestObject(status *admissionv1.AdmissionRespo
 	}
 
 	return obj, nil
+}
+
+// deseralizeToInternalVersion will decode an object into its internal version
+// without applying default values.
+func (rh *RequestHandler) deseralizeToInternalVersion(bytes []byte) (runtime.Object, error) {
+	// First, use the UniversalDeserializer to decode the bytes (which does not perform
+	// conversion or defaulting).
+	obj, _, err := rh.codecFactory.UniversalDeserializer().Decode(bytes, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then convert to the internal version
+	return rh.scheme.ConvertToVersion(obj, runtime.InternalGroupVersioner)
 }
 
 func badRequestError(status *admissionv1.AdmissionResponse, err error) *admissionv1.AdmissionResponse {
