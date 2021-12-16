@@ -276,7 +276,7 @@ func (c *certificateRequestApproval) ValidateInitialization() error {
 	if c.discovery == nil {
 		return fmt.Errorf("discovery client not set")
 	}
-	_, _, err := c.discovery.ServerGroupsAndResources()
+	_, err := c.discovery.ServerGroups()
 	if err != nil {
 		return err
 	}
