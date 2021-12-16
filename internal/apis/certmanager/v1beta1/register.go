@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
@@ -31,6 +32,7 @@ func Resource(resource string) schema.GroupResource {
 }
 
 var (
+	SchemeBuilder      runtime.SchemeBuilder
 	localSchemeBuilder = &SchemeBuilder
 	AddToScheme        = localSchemeBuilder.AddToScheme
 )
