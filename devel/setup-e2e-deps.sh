@@ -34,37 +34,43 @@ setup_tools
 echo "Beginning addon setup at $(date)"
 
 echo "Installing kyverno into cluster..."
-"${SCRIPT_ROOT}/addon/kyverno/install.sh"
+"${SCRIPT_ROOT}/addon/kyverno/install.sh" &
 
 # cert-manager needs the gateway-api to be installed to start.
 echo "Installing gateway-api into the cluster..."
-"${SCRIPT_ROOT}/addon/gatewayapi/install.sh"
+"${SCRIPT_ROOT}/addon/gatewayapi/install.sh" &
 
 echo "Installing cert-manager into the cluster..."
-"${SCRIPT_ROOT}/addon/certmanager/install.sh"
+"${SCRIPT_ROOT}/addon/certmanager/install.sh" &
+
+wait
+
+echo "Completed initial phase of addon setup at $(date)"
 
 check_bazel
 bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //devel/addon/...
 
 echo "Installing sample-webhook into the cluster..."
-"${SCRIPT_ROOT}/addon/samplewebhook/install.sh"
+"${SCRIPT_ROOT}/addon/samplewebhook/install.sh" &
 
 echo "Installing bind into the cluster..."
-"${SCRIPT_ROOT}/addon/bind/install.sh"
+"${SCRIPT_ROOT}/addon/bind/install.sh" &
 
 echo "Installing pebble into the cluster..."
-"${SCRIPT_ROOT}/addon/pebble/install.sh"
+"${SCRIPT_ROOT}/addon/pebble/install.sh" &
 
 echo "Installing ingress-nginx into the cluster..."
-"${SCRIPT_ROOT}/addon/ingressnginx/install.sh"
+"${SCRIPT_ROOT}/addon/ingressnginx/install.sh" &
 
 echo "Loading vault into the cluster..."
-"${SCRIPT_ROOT}/addon/vault/install.sh"
+"${SCRIPT_ROOT}/addon/vault/install.sh" &
 
 echo "Installing sample-external-issuer into the cluster..."
-"${SCRIPT_ROOT}/addon/sample-external-issuer/install.sh"
+"${SCRIPT_ROOT}/addon/sample-external-issuer/install.sh" &
 
 echo "Installing HAProxy into the cluster"
-"${SCRIPT_ROOT}/addon/haproxy/install.sh"
+"${SCRIPT_ROOT}/addon/haproxy/install.sh" &
+
+wait
 
 echo "Completed all phases of addon setup at $(date)"
