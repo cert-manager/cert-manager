@@ -218,6 +218,9 @@ func userInfoForRequest(req admissionv1.AdmissionRequest) user.Info {
 
 // isAuthorizedForSignerName checks whether an entity is authorized to 'approve' certificaterequests
 // for a given signerName.
+// We absorb errors from the authorizer because they are already retried by the underlying authorization
+// client, so we shouldn't ever see them unless the context webhook doesn't have the ability to submit
+// SARs or the context is cancelled (in which case, the AdmissionResponse won't ever be returned to the apiserver).
 func isAuthorizedForSignerName(ctx context.Context, authz authorizer.Authorizer, info user.Info, signerName string) bool {
 	verb := "approve"
 	// First check if the user has explicit permission to 'approve' for the given signerName.
