@@ -58,13 +58,7 @@ client_subpackage="pkg/client"
 client_package="${module_name}/${client_subpackage}"
 # Generate clientsets, listers and informers for user-facing API types
 client_inputs=(
-  pkg/apis/certmanager/v1alpha2 \
-  pkg/apis/certmanager/v1alpha3 \
-  pkg/apis/certmanager/v1beta1 \
   pkg/apis/certmanager/v1 \
-  pkg/apis/acme/v1alpha2 \
-  pkg/apis/acme/v1alpha3 \
-  pkg/apis/acme/v1beta1 \
   pkg/apis/acme/v1 \
 )
 
