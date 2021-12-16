@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["plugin.go"],
+    importpath = "github.com/jetstack/cert-manager/internal/plugin/admission/resourcevalidation",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/api/validation:go_default_library",
+        "//internal/apis/acme/validation:go_default_library",
+        "//internal/apis/certmanager/validation:go_default_library",
+        "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/webhook/admission:go_default_library",
+        "@io_k8s_api//admission/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
