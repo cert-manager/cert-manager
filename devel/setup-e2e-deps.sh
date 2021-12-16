@@ -31,6 +31,8 @@ source "${SCRIPT_ROOT}/lib/lib.sh"
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
+echo "Beginning addon setup at $(date)"
+
 echo "Installing kyverno into cluster..."
 "${SCRIPT_ROOT}/addon/kyverno/install.sh"
 
@@ -64,3 +66,5 @@ echo "Installing sample-external-issuer into the cluster..."
 
 echo "Installing HAProxy into the cluster"
 "${SCRIPT_ROOT}/addon/haproxy/install.sh"
+
+echo "Completed all phases of addon setup at $(date)"
