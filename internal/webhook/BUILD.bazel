@@ -26,7 +26,6 @@ go_library(
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
         "@io_k8s_apiserver//pkg/authorization/authorizerfactory:go_default_library",
-        "@io_k8s_client_go//discovery/cached/memory:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//rest:go_default_library",
         "@io_k8s_client_go//tools/clientcmd:go_default_library",

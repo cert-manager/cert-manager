@@ -18,7 +18,6 @@ package initializer
 
 import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/component-base/featuregate"
@@ -31,25 +30,17 @@ type pluginInitializer struct {
 	externalInformers informers.SharedInformerFactory
 	authorizer        authorizer.Authorizer
 	featureGates      featuregate.FeatureGate
-	discoveryCache    discovery.CachedDiscoveryInterface
 }
 
 // New creates an instance of admission plugins initializer.
 // This constructor is public with a long param list so that callers immediately know that new information can be expected
 // during compilation when they update a level.
-func New(
-	extClientset kubernetes.Interface,
-	extInformers informers.SharedInformerFactory,
-	authz authorizer.Authorizer,
-	featureGates featuregate.FeatureGate,
-	discoveryCache discovery.CachedDiscoveryInterface,
-) pluginInitializer {
+func New(extClientset kubernetes.Interface, extInformers informers.SharedInformerFactory, authz authorizer.Authorizer, featureGates featuregate.FeatureGate) pluginInitializer {
 	return pluginInitializer{
 		externalClient:    extClientset,
 		externalInformers: extInformers,
 		authorizer:        authz,
 		featureGates:      featureGates,
-		discoveryCache:    discoveryCache,
 	}
 }
 
@@ -71,10 +62,6 @@ func (i pluginInitializer) Initialize(plugin admission.Interface) {
 
 	if wants, ok := plugin.(WantsAuthorizer); ok {
 		wants.SetAuthorizer(i.authorizer)
-	}
-
-	if wants, ok := plugin.(WantsDiscoveryCache); ok {
-		wants.SetDiscoveryCache(i.discoveryCache)
 	}
 }
 

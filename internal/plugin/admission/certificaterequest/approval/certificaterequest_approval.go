@@ -38,6 +38,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util"
@@ -61,7 +62,7 @@ type certificateRequestApproval struct {
 
 var _ admission.ValidationInterface = &certificateRequestApproval{}
 var _ initializer.WantsAuthorizer = &certificateRequestApproval{}
-var _ initializer.WantsDiscoveryCache = &certificateRequestApproval{}
+var _ initializer.WantsExternalKubeClientSet = &certificateRequestApproval{}
 
 func Register(plugins *admission.Plugins) {
 	plugins.Register(PluginName, func() (admission.Interface, error) {
@@ -265,8 +266,8 @@ func (c *certificateRequestApproval) SetAuthorizer(a authorizer.Authorizer) {
 	c.authorizer = a
 }
 
-func (c *certificateRequestApproval) SetDiscoveryCache(discovery discovery.CachedDiscoveryInterface) {
-	c.discovery = discovery
+func (c *certificateRequestApproval) SetExternalKubeClientSet(client kubernetes.Interface) {
+	c.discovery = client.Discovery()
 }
 
 func (c *certificateRequestApproval) ValidateInitialization() error {

@@ -24,8 +24,6 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -38,7 +36,7 @@ import (
 // TestWantsFeature ensures that the feature gates are injected
 // when the WantsFeatures interface is implemented by a plugin.
 func TestWantsFeatures(t *testing.T) {
-	target := initializer.New(nil, nil, nil, featuregate.NewFeatureGate(), nil)
+	target := initializer.New(nil, nil, nil, featuregate.NewFeatureGate())
 	wantFeaturesAdmission := &WantsFeaturesAdmission{}
 	target.Initialize(wantFeaturesAdmission)
 	if wantFeaturesAdmission.features == nil {
@@ -49,7 +47,7 @@ func TestWantsFeatures(t *testing.T) {
 // TestWantsAuthorizer ensures that the authorizer is injected
 // when the WantsAuthorizer interface is implemented by a plugin.
 func TestWantsAuthorizer(t *testing.T) {
-	target := initializer.New(nil, nil, &TestAuthorizer{}, nil, nil)
+	target := initializer.New(nil, nil, &TestAuthorizer{}, nil)
 	wantAuthorizerAdmission := &WantAuthorizerAdmission{}
 	target.Initialize(wantAuthorizerAdmission)
 	if wantAuthorizerAdmission.auth == nil {
@@ -61,7 +59,7 @@ func TestWantsAuthorizer(t *testing.T) {
 // when the WantsExternalKubeClientSet interface is implemented by a plugin.
 func TestWantsExternalKubeClientSet(t *testing.T) {
 	cs := &fake.Clientset{}
-	target := initializer.New(cs, nil, &TestAuthorizer{}, nil, nil)
+	target := initializer.New(cs, nil, &TestAuthorizer{}, nil)
 	wantExternalKubeClientSet := &WantExternalKubeClientSet{}
 	target.Initialize(wantExternalKubeClientSet)
 	if wantExternalKubeClientSet.cs != cs {
@@ -74,23 +72,11 @@ func TestWantsExternalKubeClientSet(t *testing.T) {
 func TestWantsExternalKubeInformerFactory(t *testing.T) {
 	cs := &fake.Clientset{}
 	sf := informers.NewSharedInformerFactory(cs, time.Duration(1)*time.Second)
-	target := initializer.New(cs, sf, &TestAuthorizer{}, nil, nil)
+	target := initializer.New(cs, sf, &TestAuthorizer{}, nil)
 	wantExternalKubeInformerFactory := &WantExternalKubeInformerFactory{}
 	target.Initialize(wantExternalKubeInformerFactory)
 	if wantExternalKubeInformerFactory.sf != sf {
 		t.Errorf("expected informer factory to be initialized")
-	}
-}
-
-// TestWantsDiscoveryCache ensures that the discovery client is injected
-// when the WantsDiscoveryCache interface is implemented by a plugin.
-func TestWantsDiscoveryCache(t *testing.T) {
-	discoveryInterface := memory.NewMemCacheClient((&fake.Clientset{}).Discovery())
-	target := initializer.New(nil, nil, nil, nil, discoveryInterface)
-	wantDiscoveryCache := &WantsDiscoveryCacheAdmission{}
-	target.Initialize(wantDiscoveryCache)
-	if wantDiscoveryCache.discoveryInterface != discoveryInterface {
-		t.Errorf("expected discovery cache to be initialized")
 	}
 }
 
@@ -166,21 +152,3 @@ func (self *WantsFeaturesAdmission) ValidateInitialization() error        { retu
 
 var _ admission.Interface = &WantsFeaturesAdmission{}
 var _ initializer.WantsFeatures = &WantsFeaturesAdmission{}
-
-// TestDiscoveryCache is a test stub that fulfills the WantsDiscoveryCache interface.
-type TestDiscoveryCache struct{}
-
-// WantsDiscoveryCacheAdmission is a test stub that fulfills the WantsFeatures interface.
-type WantsDiscoveryCacheAdmission struct {
-	discoveryInterface discovery.CachedDiscoveryInterface
-}
-
-func (self *WantsDiscoveryCacheAdmission) SetDiscoveryCache(discoveryInterface discovery.CachedDiscoveryInterface) {
-	self.discoveryInterface = discoveryInterface
-}
-
-func (self *WantsDiscoveryCacheAdmission) Handles(o admissionv1.Operation) bool { return false }
-func (self *WantsDiscoveryCacheAdmission) ValidateInitialization() error        { return nil }
-
-var _ admission.Interface = &WantAuthorizerAdmission{}
-var _ initializer.WantsDiscoveryCache = &WantsDiscoveryCacheAdmission{}

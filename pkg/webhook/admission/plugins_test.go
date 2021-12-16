@@ -46,7 +46,7 @@ func TestPlugins_InitializesNamedOnly(t *testing.T) {
 	})
 
 	// only initialize TestPlugin1
-	_, err := p.NewFromPlugins([]string{"TestPlugin1"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil, nil))
+	_, err := p.NewFromPlugins([]string{"TestPlugin1"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil))
 	if err != nil {
 		t.Errorf("got unexpected error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestPlugins_FailsIfAnyPluginFails(t *testing.T) {
 	})
 
 	// only initialize TestPlugin1
-	_, err := p.NewFromPlugins([]string{"TestPlugin1", "TestPlugin2"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil, nil))
+	_, err := p.NewFromPlugins([]string{"TestPlugin1", "TestPlugin2"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil))
 	if err == nil {
 		t.Errorf("expected an error but got none")
 	}
@@ -97,7 +97,7 @@ func TestPlugins_FailsNonExistingPlugin(t *testing.T) {
 	})
 
 	// only initialize TestPlugin1
-	_, err := p.NewFromPlugins([]string{"TestPlugin1", "TestPluginDoesNotExist"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil, nil))
+	_, err := p.NewFromPlugins([]string{"TestPlugin1", "TestPluginDoesNotExist"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil))
 	if err == nil {
 		t.Errorf("expected an error but got none")
 	}
@@ -116,7 +116,7 @@ func TestPlugins_FailsIfPluginFailsToBuild(t *testing.T) {
 	})
 
 	// only initialize TestPlugin1
-	_, err := p.NewFromPlugins([]string{"TestPlugin1"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil, nil))
+	_, err := p.NewFromPlugins([]string{"TestPlugin1"}, initializer.New(fake.NewSimpleClientset(), nil, nil, nil))
 	if err == nil {
 		t.Errorf("expected an error but got none")
 	}

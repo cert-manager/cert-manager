@@ -19,7 +19,6 @@ package initializer
 import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	quota "k8s.io/apiserver/pkg/quota/v1"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/component-base/featuregate"
@@ -48,12 +47,6 @@ type WantsAuthorizer interface {
 // WantsQuotaConfiguration defines a function which sets quota configuration for admission plugins that need it.
 type WantsQuotaConfiguration interface {
 	SetQuotaConfiguration(quota.Configuration)
-	admission.InitializationValidator
-}
-
-// WantsDiscoveryCache defines a function which sets a discovery information cache for admission plugins that need it.
-type WantsDiscoveryCache interface {
-	SetDiscoveryCache(discovery.CachedDiscoveryInterface)
 	admission.InitializationValidator
 }
 
