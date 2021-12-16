@@ -35,6 +35,8 @@ const PluginName = "ResourceValidation"
 
 type resourceValidation struct {
 	*admission.Handler
+
+	validationMappings map[schema.GroupVersionResource]validationPair
 }
 
 // Register registers a plugin

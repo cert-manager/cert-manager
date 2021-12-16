@@ -1,8 +1,8 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["plugin.go"],
+    srcs = ["resourcevalidation.go"],
     importpath = "github.com/jetstack/cert-manager/internal/plugin/admission/resourcevalidation",
     visibility = ["//:__subpackages__"],
     deps = [
@@ -30,4 +30,17 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["resourcevalidation_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "@io_k8s_api//admission/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
+    ],
 )
