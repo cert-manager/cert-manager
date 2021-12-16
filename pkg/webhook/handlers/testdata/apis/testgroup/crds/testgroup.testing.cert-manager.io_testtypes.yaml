@@ -32,6 +32,10 @@ spec:
             type: string
           metadata:
             type: object
+          testDefaultingField:
+            description: TestDefaultingField is used to test defaulting. In the v1
+              API, it defaults to `set-in-v1`. In the v2 API, it defaults to `set-in-v2`.
+            type: string
           testField:
             description: TestField is used in tests. Validation doesn't allow this
               to be set to the value of TestFieldValueNotAllowed.
@@ -67,6 +71,10 @@ spec:
             type: string
           metadata:
             type: object
+          testDefaultingField:
+            description: TestDefaultingField is used to test defaulting. In the v1
+              API, it defaults to `set-in-v1`. In the v2 API, it defaults to `set-in-v2`.
+            type: string
           testField:
             description: TestField is used in tests. Validation doesn't allow this
               to be set to the value of TestFieldValueNotAllowed.
