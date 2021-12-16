@@ -47,6 +47,8 @@ import (
 // This means that all resources passed to mutating admission plugins will have default
 // values applied before converting them into the internal version.
 type RequestHandler struct {
+	scheme *runtime.Scheme
+
 	// codecFactory used to create encoders and decoders
 	codecFactory serializer.CodecFactory
 
@@ -68,6 +70,7 @@ type RequestHandler struct {
 func NewRequestHandler(scheme *runtime.Scheme, validator ValidationInterface, mutator MutationInterface) *RequestHandler {
 	cf := serializer.NewCodecFactory(scheme)
 	return &RequestHandler{
+		scheme:       scheme,
 		codecFactory: cf,
 		serializer:   apijson.NewSerializerWithOptions(apijson.DefaultMetaFactory, scheme, scheme, apijson.SerializerOptions{}),
 		decoder:      cf.UniversalDecoder(),
@@ -95,12 +98,7 @@ func (rh *RequestHandler) Validate(ctx context.Context, admissionSpec *admission
 	// decode new version of object
 	obj, _, err := rh.decoder.Decode(admissionSpec.Object.Raw, nil, nil)
 	if err != nil {
-		status.Allowed = false
-		status.Result = &metav1.Status{
-			Status: metav1.StatusFailure, Code: http.StatusBadRequest, Reason: metav1.StatusReasonBadRequest,
-			Message: err.Error(),
-		}
-		return status
+		return badRequestError(status, err)
 	}
 
 	// attempt to decode old object
@@ -108,12 +106,7 @@ func (rh *RequestHandler) Validate(ctx context.Context, admissionSpec *admission
 	if len(admissionSpec.OldObject.Raw) > 0 {
 		oldObj, _, err = rh.decoder.Decode(admissionSpec.OldObject.Raw, nil, nil)
 		if err != nil {
-			status.Allowed = false
-			status.Result = &metav1.Status{
-				Status: metav1.StatusFailure, Code: http.StatusBadRequest, Reason: metav1.StatusReasonBadRequest,
-				Message: err.Error(),
-			}
-			return status
+			return badRequestError(status, err)
 		}
 	}
 
@@ -145,35 +138,32 @@ func (rh *RequestHandler) Mutate(ctx context.Context, admissionSpec *admissionv1
 		return status
 	}
 
-	obj, _, err := rh.decoder.Decode(admissionSpec.Object.Raw, nil, nil)
-	if err != nil {
-		status.Allowed = false
-		status.Result = &metav1.Status{
-			Status: metav1.StatusFailure, Code: http.StatusBadRequest, Reason: metav1.StatusReasonBadRequest,
-			Message: err.Error(),
-		}
-		return status
+	// If the resource submitted to the webhook is in a different version to the request version,
+	// we must take special steps to ensure the correct defaults are applied to the resource (as
+	// defaults are applied by the decoder when the resource is decoded in the version of the
+	// encoded resource).
+	obj, errResponse := rh.decodeRequestObject(status, admissionSpec.Kind, *admissionSpec.RequestKind, admissionSpec.Object.Raw)
+	if errResponse != nil {
+		return errResponse
 	}
 
 	if rh.mutator.Handles(admissionSpec.Operation) {
 		if err := rh.mutator.Mutate(ctx, *admissionSpec, obj); err != nil {
-			status.Allowed = false
-			status.Result = &metav1.Status{
-				Status: metav1.StatusFailure, Code: http.StatusInternalServerError, Reason: metav1.StatusReasonInternalError,
-				Message: err.Error(),
-			}
-			return status
+			return internalServerError(status, err)
 		}
 	}
 
-	patch, err := rh.createMutatePatch(admissionSpec, obj)
+	// Convert the object into the original version that was submitted to the webhook
+	// before generating the patch.
+	outputGroupVersioner := runtime.NewMultiGroupVersioner(schema.GroupVersion{Group: admissionSpec.Kind.Group, Version: admissionSpec.Kind.Version})
+	finalObject, err := rh.scheme.ConvertToVersion(obj, outputGroupVersioner)
 	if err != nil {
-		status.Allowed = false
-		status.Result = &metav1.Status{
-			Status: metav1.StatusFailure, Code: http.StatusInternalServerError, Reason: metav1.StatusReasonInternalError,
-			Message: err.Error(),
-		}
-		return status
+		return internalServerError(status, err)
+	}
+
+	patch, err := rh.createMutatePatch(admissionSpec, finalObject)
+	if err != nil {
+		return internalServerError(status, err)
 	}
 
 	patchType := admissionv1.PatchTypeJSONPatch
@@ -183,12 +173,74 @@ func (rh *RequestHandler) Mutate(ctx context.Context, admissionSpec *admissionv1
 	return status
 }
 
+// decodeRequestObject will decode the given 'bytes' into the internal API version.
+// It will apply defaults using the 'defaultsInGVK', regardless of what API version
+// the encoded bytes are in.
+func (rh *RequestHandler) decodeRequestObject(status *admissionv1.AdmissionResponse, objectGVK, defaultInGVK metav1.GroupVersionKind, bytes []byte) (runtime.Object, *admissionv1.AdmissionResponse) {
+	if objectGVK == defaultInGVK {
+		obj, _, err := rh.decoder.Decode(bytes, nil, nil)
+		if err != nil {
+			return nil, badRequestError(status, err)
+		}
+		return obj, nil
+	}
+
+	// First, use the UniversalDeserializer to decode the bytes (which does not perform
+	// conversion or defaulting).
+	encodedObj, _, err := rh.codecFactory.UniversalDeserializer().Decode(bytes, nil, nil)
+	if err != nil {
+		return nil, badRequestError(status, err)
+	}
+
+	// Then convert into the internal version of the object
+	internalObj, err := rh.scheme.ConvertToVersion(encodedObj, runtime.InternalGroupVersioner)
+	if err != nil {
+		return nil, internalServerError(status, err)
+	}
+
+	// Now convert into the request version so we can apply the appropriate defaults
+	requestGroupVersioner := runtime.NewMultiGroupVersioner(schema.GroupVersion{Group: defaultInGVK.Group, Version: defaultInGVK.Version})
+	requestObj, err := rh.scheme.ConvertToVersion(internalObj, requestGroupVersioner)
+	if err != nil {
+		return nil, internalServerError(status, err)
+	}
+
+	// At last, apply defaults in the request API version
+	rh.scheme.Default(requestObj)
+
+	// Finally, convert the resource back to the internal version so regular admission can proceed
+	obj, err := rh.scheme.ConvertToVersion(requestObj, runtime.InternalGroupVersioner)
+	if err != nil {
+		return nil, internalServerError(status, err)
+	}
+
+	return obj, nil
+}
+
+func badRequestError(status *admissionv1.AdmissionResponse, err error) *admissionv1.AdmissionResponse {
+	status.Allowed = false
+	status.Result = &metav1.Status{
+		Status: metav1.StatusFailure, Code: http.StatusBadRequest, Reason: metav1.StatusReasonBadRequest,
+		Message: err.Error(),
+	}
+	return status
+}
+
+func internalServerError(status *admissionv1.AdmissionResponse, err error) *admissionv1.AdmissionResponse {
+	status.Allowed = false
+	status.Result = &metav1.Status{
+		Status: metav1.StatusFailure, Code: http.StatusInternalServerError, Reason: metav1.StatusReasonInternalError,
+		Message: err.Error(),
+	}
+	return status
+}
+
 // createMutatePatch will generate a JSON patch based upon the given original
 // raw object, and the mutated typed object.
 func (rh *RequestHandler) createMutatePatch(req *admissionv1.AdmissionRequest, obj runtime.Object) ([]byte, error) {
 	var buf bytes.Buffer
 
-	encoder := rh.codecFactory.EncoderForVersion(rh.serializer, schema.GroupVersion{Group: req.RequestKind.Group, Version: req.RequestKind.Version})
+	encoder := rh.codecFactory.EncoderForVersion(rh.serializer, schema.GroupVersion{Group: req.Kind.Group, Version: req.Kind.Version})
 	if err := encoder.Encode(obj, &buf); err != nil {
 		return nil, fmt.Errorf("failed to encode object after mutation: %s", err)
 	}

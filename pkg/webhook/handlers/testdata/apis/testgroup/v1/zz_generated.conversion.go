@@ -54,6 +54,7 @@ func autoConvert_v1_TestType_To_testgroup_TestType(in *TestType, out *testgroup.
 	out.TestField = in.TestField
 	out.TestFieldPtr = (*string)(unsafe.Pointer(in.TestFieldPtr))
 	out.TestFieldImmutable = in.TestFieldImmutable
+	out.TestDefaultingField = in.TestDefaultingField
 	return nil
 }
 
@@ -67,6 +68,7 @@ func autoConvert_testgroup_TestType_To_v1_TestType(in *testgroup.TestType, out *
 	out.TestField = in.TestField
 	out.TestFieldPtr = (*string)(unsafe.Pointer(in.TestFieldPtr))
 	out.TestFieldImmutable = in.TestFieldImmutable
+	out.TestDefaultingField = in.TestDefaultingField
 	return nil
 }
 

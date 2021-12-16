@@ -56,6 +56,11 @@ func TestRequestHandler_MutateAppliesDefaultValues(t *testing.T) {
 	inputRequest := admissionv1.AdmissionRequest{
 		UID:       types.UID("abc"),
 		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "testgroup.testing.cert-manager.io",
+			Version: "v1",
+			Kind:    "TestType",
+		},
 		RequestKind: &metav1.GroupVersionKind{
 			Group:   "testgroup.testing.cert-manager.io",
 			Version: "v1",
@@ -71,7 +76,8 @@ func TestRequestHandler_MutateAppliesDefaultValues(t *testing.T) {
 		"namespace": "abc",
 		"creationTimestamp": null
 	},
-	"testFieldImmutable": "abc"
+	"testFieldImmutable": "abc",
+	"testDefaultingField": "set-to-something"
 }
 `),
 		},
@@ -100,6 +106,69 @@ func TestRequestHandler_MutateAppliesDefaultValues(t *testing.T) {
 	}
 }
 
+func TestRequestHandler_MutateAppliesDefaultsInRequestVersion(t *testing.T) {
+	scheme := runtime.NewScheme()
+	install.Install(scheme)
+
+	rh := admission.NewRequestHandler(scheme, nil, testMutator{
+		handles: true,
+		mutate: func(_ context.Context, _ admissionv1.AdmissionRequest, obj runtime.Object) error {
+			// Doesn't do anything as the request handler itself will generate patches to apply
+			// defaults instead of it being applied within a particular admission plugin.
+			return nil
+		},
+	})
+	inputRequest := admissionv1.AdmissionRequest{
+		UID:       types.UID("abc"),
+		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "testgroup.testing.cert-manager.io",
+			Version: "v1",
+			Kind:    "TestType",
+		},
+		RequestKind: &metav1.GroupVersionKind{
+			Group: "testgroup.testing.cert-manager.io",
+			// Because the API version is v2, we expect the `testDefaultingField` field to be set to `set-in-v2`.
+			// In v1, the field will be set to `set-in-v1`.
+			Version: "v2",
+			Kind:    "TestType",
+		},
+		Object: runtime.RawExtension{
+			Raw: []byte(`
+{
+	"apiVersion": "testgroup.testing.cert-manager.io/v1",
+	"kind": "TestType",
+	"metadata": {
+		"name": "testing",
+		"namespace": "abc",
+		"creationTimestamp": null
+	},
+	"testField": "set-to-something-to-avoid-extra-mutations",
+	"testFieldImmutable": "set-to-something-to-avoid-extra-mutations",
+	"testFieldPtr": "set-to-something-to-avoid-extra-mutations"
+}
+`),
+		},
+	}
+	expectedResponse := admissionv1.AdmissionResponse{
+		UID:     types.UID("abc"),
+		Allowed: true,
+		Patch: responseForOperations(
+			jsonpatch.JsonPatchOperation{
+				Operation: "add",
+				Path:      "/testDefaultingField",
+				Value:     "set-in-v2",
+			},
+		),
+		PatchType: &jsonPatchType,
+	}
+
+	resp := rh.Mutate(context.TODO(), &inputRequest)
+	if !reflect.DeepEqual(&expectedResponse, resp) {
+		t.Errorf("Response was not as expected: %v", diff.ObjectGoPrintSideBySide(&expectedResponse, resp))
+	}
+}
+
 // Tests to ensure that the RequestHandler skips running mutation handlers
 // that do not return true to Handles, but still applies scheme based defaulting.
 func TestRequestHandler_MutateSkipsMutation(t *testing.T) {
@@ -112,6 +181,11 @@ func TestRequestHandler_MutateSkipsMutation(t *testing.T) {
 	inputRequest := admissionv1.AdmissionRequest{
 		UID:       types.UID("abc"),
 		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "testgroup.testing.cert-manager.io",
+			Version: "v1",
+			Kind:    "TestType",
+		},
 		RequestKind: &metav1.GroupVersionKind{
 			Group:   "testgroup.testing.cert-manager.io",
 			Version: "v1",
@@ -128,7 +202,8 @@ func TestRequestHandler_MutateSkipsMutation(t *testing.T) {
 		"creationTimestamp": null
 	},
 	"testField": "some-value",
-	"testFieldImmutable": "abc"
+	"testFieldImmutable": "abc",
+	"testDefaultingField": "set-to-something"
 }
 `),
 		},
@@ -164,6 +239,11 @@ func TestRequestHandler_ValidateReturnsErrorsAndWarnings(t *testing.T) {
 	inputRequest := admissionv1.AdmissionRequest{
 		UID:       types.UID("abc"),
 		Operation: admissionv1.Create,
+		Kind: metav1.GroupVersionKind{
+			Group:   "testgroup.testing.cert-manager.io",
+			Version: "v1",
+			Kind:    "TestType",
+		},
 		RequestKind: &metav1.GroupVersionKind{
 			Group:   "testgroup.testing.cert-manager.io",
 			Version: "v1",

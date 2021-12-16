@@ -29,4 +29,7 @@ func SetDefaults_TestType(obj *TestType) {
 	if obj.TestFieldPtr == nil {
 		obj.TestFieldPtr = pointer.StringPtr("teststr")
 	}
+	if obj.TestDefaultingField == "" {
+		obj.TestDefaultingField = "set-in-v1"
+	}
 }
