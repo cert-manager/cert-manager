@@ -19,6 +19,8 @@ package v1alpha2
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	cmacme "github.com/jetstack/cert-manager/internal/apis/acme/v1alpha2"
 )
 
 type GenericIssuer interface {
@@ -71,13 +73,13 @@ func (c *Issuer) Copy() GenericIssuer {
 }
 
 // TODO: refactor these functions away
-func (i *IssuerStatus) ACMEStatus() *ACMEIssuerStatus {
+func (i *IssuerStatus) ACMEStatus() *cmacme.ACMEIssuerStatus {
 	// this is an edge case, but this will prevent panics
 	if i == nil {
-		return &ACMEIssuerStatus{}
+		return &cmacme.ACMEIssuerStatus{}
 	}
 	if i.ACME == nil {
-		i.ACME = &ACMEIssuerStatus{}
+		i.ACME = &cmacme.ACMEIssuerStatus{}
 	}
 	return i.ACME
 }
