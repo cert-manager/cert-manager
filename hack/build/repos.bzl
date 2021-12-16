@@ -2984,8 +2984,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/opencontainers/runc",
-        sum = "h1:opHZMaswlyxz1OuGpBE53Dwe4/xF7EZTY0A2L/FpCOg=",
-        version = "v1.0.2",
+        sum = "h1:1hbqejyQWCJBvtKAfdO0b1FmaEf2z/bxnjqbARass5k=",
+        version = "v1.0.3",
     )
 
     go_repository(
