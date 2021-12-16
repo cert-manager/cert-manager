@@ -44,11 +44,9 @@ import (
 
 var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, Scheme)
 
-type ServerOption func(*server.Server)
-
 // WithConversionHandler allows you to override the handler for the `/convert`
 // endpoint in tests.
-func WithConversionHandler(handler handlers.ConversionHook) ServerOption {
+func WithConversionHandler(handler handlers.ConversionHook) func(*server.Server) {
 	return func(s *server.Server) {
 		s.ConversionWebhook = handler
 	}
@@ -56,7 +54,7 @@ func WithConversionHandler(handler handlers.ConversionHook) ServerOption {
 
 // NewCertManagerWebhookServer creates a new webhook server configured with all cert-manager
 // resource types, validation, defaulting and conversion functions.
-func NewCertManagerWebhookServer(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration, optionFunctions ...ServerOption) (*server.Server, error) {
+func NewCertManagerWebhookServer(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration, optionFunctions ...func(*server.Server)) (*server.Server, error) {
 	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.KubeConfig)
 	if err != nil {
 		return nil, err

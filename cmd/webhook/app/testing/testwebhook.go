@@ -56,7 +56,7 @@ type ServerOptions struct {
 	CAPEM []byte
 }
 
-func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...webhook.ServerOption) (ServerOptions, StopFunc) {
+func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
 	log := logtesting.NewTestLogger(t)
 
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
