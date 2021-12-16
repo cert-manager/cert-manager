@@ -20,10 +20,9 @@ import (
 	"k8s.io/apimachinery/pkg/conversion"
 
 	"github.com/jetstack/cert-manager/internal/apis/acme"
-	"github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
-func Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
+func Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
 	if err := autoConvert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in, out, s); err != nil {
 		return err
 	}
@@ -31,9 +30,9 @@ func Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.Challenge
 	out.AuthorizationURL = in.AuthzURL
 
 	switch in.Type {
-	case v1alpha2.ACMEChallengeTypeHTTP01:
+	case ACMEChallengeTypeHTTP01:
 		out.Type = acme.ACMEChallengeTypeHTTP01
-	case v1alpha2.ACMEChallengeTypeDNS01:
+	case ACMEChallengeTypeDNS01:
 		out.Type = acme.ACMEChallengeTypeDNS01
 	default:
 		// this case should never be hit due to validation
@@ -43,7 +42,7 @@ func Convert_v1alpha2_ChallengeSpec_To_acme_ChallengeSpec(in *v1alpha2.Challenge
 	return nil
 }
 
-func Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.ChallengeSpec, out *v1alpha2.ChallengeSpec, s conversion.Scope) error {
+func Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.ChallengeSpec, out *ChallengeSpec, s conversion.Scope) error {
 	if err := autoConvert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in, out, s); err != nil {
 		return err
 	}
@@ -52,18 +51,18 @@ func Convert_acme_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *acme.ChallengeSpec
 
 	switch in.Type {
 	case acme.ACMEChallengeTypeHTTP01:
-		out.Type = v1alpha2.ACMEChallengeTypeHTTP01
+		out.Type = ACMEChallengeTypeHTTP01
 	case acme.ACMEChallengeTypeDNS01:
-		out.Type = v1alpha2.ACMEChallengeTypeDNS01
+		out.Type = ACMEChallengeTypeDNS01
 	default:
 		// this case should never be hit due to validation
-		out.Type = v1alpha2.ACMEChallengeType(in.Type)
+		out.Type = ACMEChallengeType(in.Type)
 	}
 
 	return nil
 }
 
-func Convert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
+func Convert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
 	if err := autoConvert_v1alpha2_OrderSpec_To_acme_OrderSpec(in, out, s); err != nil {
 		return err
 	}
@@ -73,7 +72,7 @@ func Convert_v1alpha2_OrderSpec_To_acme_OrderSpec(in *v1alpha2.OrderSpec, out *a
 	return nil
 }
 
-func Convert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v1alpha2.OrderSpec, s conversion.Scope) error {
+func Convert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *OrderSpec, s conversion.Scope) error {
 	if err := autoConvert_acme_OrderSpec_To_v1alpha2_OrderSpec(in, out, s); err != nil {
 		return err
 	}
@@ -85,12 +84,12 @@ func Convert_acme_OrderSpec_To_v1alpha2_OrderSpec(in *acme.OrderSpec, out *v1alp
 
 // Convert_acme_ACMEIssuer_To_v1alpha2_ACMEIssuer is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_acme_ACMEIssuer_To_v1alpha2_ACMEIssuer(in *acme.ACMEIssuer, out *v1alpha2.ACMEIssuer, s conversion.Scope) error {
+func Convert_acme_ACMEIssuer_To_v1alpha2_ACMEIssuer(in *acme.ACMEIssuer, out *ACMEIssuer, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuer_To_v1alpha2_ACMEIssuer(in, out, s)
 }
 
 // Convert_v1alpha2_ACMEIssuer_To_acme_ACMEIssuer is explicitly defined to avoid issues in conversion-gen
 // when referencing types in other API groups.
-func Convert_v1alpha2_ACMEIssuer_To_acme_ACMEIssuer(in *v1alpha2.ACMEIssuer, out *acme.ACMEIssuer, s conversion.Scope) error {
+func Convert_v1alpha2_ACMEIssuer_To_acme_ACMEIssuer(in *ACMEIssuer, out *acme.ACMEIssuer, s conversion.Scope) error {
 	return autoConvert_v1alpha2_ACMEIssuer_To_acme_ACMEIssuer(in, out, s)
 }

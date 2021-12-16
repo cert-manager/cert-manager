@@ -27,7 +27,6 @@ import (
 	acme "github.com/jetstack/cert-manager/internal/apis/acme"
 	meta "github.com/jetstack/cert-manager/internal/apis/meta"
 	metav1 "github.com/jetstack/cert-manager/internal/apis/meta/v1"
-	v1beta1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1beta1"
 	apismetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	v1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -43,350 +42,350 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEAuthorization)(nil), (*acme.ACMEAuthorization)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(a.(*v1beta1.ACMEAuthorization), b.(*acme.ACMEAuthorization), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEAuthorization)(nil), (*acme.ACMEAuthorization)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(a.(*ACMEAuthorization), b.(*acme.ACMEAuthorization), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEAuthorization)(nil), (*v1beta1.ACMEAuthorization)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization(a.(*acme.ACMEAuthorization), b.(*v1beta1.ACMEAuthorization), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEAuthorization)(nil), (*ACMEAuthorization)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization(a.(*acme.ACMEAuthorization), b.(*ACMEAuthorization), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallenge)(nil), (*acme.ACMEChallenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(a.(*v1beta1.ACMEChallenge), b.(*acme.ACMEChallenge), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallenge)(nil), (*acme.ACMEChallenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(a.(*ACMEChallenge), b.(*acme.ACMEChallenge), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallenge)(nil), (*v1beta1.ACMEChallenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(a.(*acme.ACMEChallenge), b.(*v1beta1.ACMEChallenge), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallenge)(nil), (*ACMEChallenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(a.(*acme.ACMEChallenge), b.(*ACMEChallenge), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolver)(nil), (*acme.ACMEChallengeSolver)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(a.(*v1beta1.ACMEChallengeSolver), b.(*acme.ACMEChallengeSolver), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolver)(nil), (*acme.ACMEChallengeSolver)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(a.(*ACMEChallengeSolver), b.(*acme.ACMEChallengeSolver), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolver)(nil), (*v1beta1.ACMEChallengeSolver)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(a.(*acme.ACMEChallengeSolver), b.(*v1beta1.ACMEChallengeSolver), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolver)(nil), (*ACMEChallengeSolver)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(a.(*acme.ACMEChallengeSolver), b.(*ACMEChallengeSolver), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverDNS01)(nil), (*acme.ACMEChallengeSolverDNS01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(a.(*v1beta1.ACMEChallengeSolverDNS01), b.(*acme.ACMEChallengeSolverDNS01), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverDNS01)(nil), (*acme.ACMEChallengeSolverDNS01)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(a.(*ACMEChallengeSolverDNS01), b.(*acme.ACMEChallengeSolverDNS01), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverDNS01)(nil), (*v1beta1.ACMEChallengeSolverDNS01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(a.(*acme.ACMEChallengeSolverDNS01), b.(*v1beta1.ACMEChallengeSolverDNS01), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverDNS01)(nil), (*ACMEChallengeSolverDNS01)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(a.(*acme.ACMEChallengeSolverDNS01), b.(*ACMEChallengeSolverDNS01), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01)(nil), (*acme.ACMEChallengeSolverHTTP01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01(a.(*v1beta1.ACMEChallengeSolverHTTP01), b.(*acme.ACMEChallengeSolverHTTP01), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01)(nil), (*acme.ACMEChallengeSolverHTTP01)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01(a.(*ACMEChallengeSolverHTTP01), b.(*acme.ACMEChallengeSolverHTTP01), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01)(nil), (*v1beta1.ACMEChallengeSolverHTTP01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01(a.(*acme.ACMEChallengeSolverHTTP01), b.(*v1beta1.ACMEChallengeSolverHTTP01), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01)(nil), (*ACMEChallengeSolverHTTP01)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01(a.(*acme.ACMEChallengeSolverHTTP01), b.(*ACMEChallengeSolverHTTP01), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), (*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(a.(*v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute), b.(*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), (*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(a.(*ACMEChallengeSolverHTTP01GatewayHTTPRoute), b.(*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), (*v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(a.(*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute), b.(*v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), (*ACMEChallengeSolverHTTP01GatewayHTTPRoute)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(a.(*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute), b.(*ACMEChallengeSolverHTTP01GatewayHTTPRoute), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01Ingress)(nil), (*acme.ACMEChallengeSolverHTTP01Ingress)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(a.(*v1beta1.ACMEChallengeSolverHTTP01Ingress), b.(*acme.ACMEChallengeSolverHTTP01Ingress), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01Ingress)(nil), (*acme.ACMEChallengeSolverHTTP01Ingress)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(a.(*ACMEChallengeSolverHTTP01Ingress), b.(*acme.ACMEChallengeSolverHTTP01Ingress), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01Ingress)(nil), (*v1beta1.ACMEChallengeSolverHTTP01Ingress)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress(a.(*acme.ACMEChallengeSolverHTTP01Ingress), b.(*v1beta1.ACMEChallengeSolverHTTP01Ingress), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01Ingress)(nil), (*ACMEChallengeSolverHTTP01Ingress)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress(a.(*acme.ACMEChallengeSolverHTTP01Ingress), b.(*ACMEChallengeSolverHTTP01Ingress), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), (*acme.ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(a.(*v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta), b.(*acme.ACMEChallengeSolverHTTP01IngressObjectMeta), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), (*acme.ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(a.(*ACMEChallengeSolverHTTP01IngressObjectMeta), b.(*acme.ACMEChallengeSolverHTTP01IngressObjectMeta), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), (*v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(a.(*acme.ACMEChallengeSolverHTTP01IngressObjectMeta), b.(*v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), (*ACMEChallengeSolverHTTP01IngressObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(a.(*acme.ACMEChallengeSolverHTTP01IngressObjectMeta), b.(*ACMEChallengeSolverHTTP01IngressObjectMeta), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), (*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(a.(*v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta), b.(*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), (*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(a.(*ACMEChallengeSolverHTTP01IngressPodObjectMeta), b.(*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), (*v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(a.(*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta), b.(*v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), (*ACMEChallengeSolverHTTP01IngressPodObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(a.(*acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta), b.(*ACMEChallengeSolverHTTP01IngressPodObjectMeta), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), (*acme.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(a.(*v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec), b.(*acme.ACMEChallengeSolverHTTP01IngressPodSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01IngressPodSpec)(nil), (*acme.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(a.(*ACMEChallengeSolverHTTP01IngressPodSpec), b.(*acme.ACMEChallengeSolverHTTP01IngressPodSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), (*v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec(a.(*acme.ACMEChallengeSolverHTTP01IngressPodSpec), b.(*v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), (*ACMEChallengeSolverHTTP01IngressPodSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec(a.(*acme.ACMEChallengeSolverHTTP01IngressPodSpec), b.(*ACMEChallengeSolverHTTP01IngressPodSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), (*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate(a.(*v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate), b.(*acme.ACMEChallengeSolverHTTP01IngressPodTemplate), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), (*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate(a.(*ACMEChallengeSolverHTTP01IngressPodTemplate), b.(*acme.ACMEChallengeSolverHTTP01IngressPodTemplate), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), (*v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate(a.(*acme.ACMEChallengeSolverHTTP01IngressPodTemplate), b.(*v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), (*ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate(a.(*acme.ACMEChallengeSolverHTTP01IngressPodTemplate), b.(*ACMEChallengeSolverHTTP01IngressPodTemplate), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEChallengeSolverHTTP01IngressTemplate)(nil), (*acme.ACMEChallengeSolverHTTP01IngressTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate(a.(*v1beta1.ACMEChallengeSolverHTTP01IngressTemplate), b.(*acme.ACMEChallengeSolverHTTP01IngressTemplate), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEChallengeSolverHTTP01IngressTemplate)(nil), (*acme.ACMEChallengeSolverHTTP01IngressTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate(a.(*ACMEChallengeSolverHTTP01IngressTemplate), b.(*acme.ACMEChallengeSolverHTTP01IngressTemplate), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressTemplate)(nil), (*v1beta1.ACMEChallengeSolverHTTP01IngressTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate(a.(*acme.ACMEChallengeSolverHTTP01IngressTemplate), b.(*v1beta1.ACMEChallengeSolverHTTP01IngressTemplate), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEChallengeSolverHTTP01IngressTemplate)(nil), (*ACMEChallengeSolverHTTP01IngressTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate(a.(*acme.ACMEChallengeSolverHTTP01IngressTemplate), b.(*ACMEChallengeSolverHTTP01IngressTemplate), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEExternalAccountBinding)(nil), (*acme.ACMEExternalAccountBinding)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(a.(*v1beta1.ACMEExternalAccountBinding), b.(*acme.ACMEExternalAccountBinding), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEExternalAccountBinding)(nil), (*acme.ACMEExternalAccountBinding)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(a.(*ACMEExternalAccountBinding), b.(*acme.ACMEExternalAccountBinding), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEExternalAccountBinding)(nil), (*v1beta1.ACMEExternalAccountBinding)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(a.(*acme.ACMEExternalAccountBinding), b.(*v1beta1.ACMEExternalAccountBinding), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEExternalAccountBinding)(nil), (*ACMEExternalAccountBinding)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(a.(*acme.ACMEExternalAccountBinding), b.(*ACMEExternalAccountBinding), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderAcmeDNS)(nil), (*acme.ACMEIssuerDNS01ProviderAcmeDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(a.(*v1beta1.ACMEIssuerDNS01ProviderAcmeDNS), b.(*acme.ACMEIssuerDNS01ProviderAcmeDNS), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderAcmeDNS)(nil), (*acme.ACMEIssuerDNS01ProviderAcmeDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(a.(*ACMEIssuerDNS01ProviderAcmeDNS), b.(*acme.ACMEIssuerDNS01ProviderAcmeDNS), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderAcmeDNS)(nil), (*v1beta1.ACMEIssuerDNS01ProviderAcmeDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(a.(*acme.ACMEIssuerDNS01ProviderAcmeDNS), b.(*v1beta1.ACMEIssuerDNS01ProviderAcmeDNS), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderAcmeDNS)(nil), (*ACMEIssuerDNS01ProviderAcmeDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(a.(*acme.ACMEIssuerDNS01ProviderAcmeDNS), b.(*ACMEIssuerDNS01ProviderAcmeDNS), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderAkamai)(nil), (*acme.ACMEIssuerDNS01ProviderAkamai)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(a.(*v1beta1.ACMEIssuerDNS01ProviderAkamai), b.(*acme.ACMEIssuerDNS01ProviderAkamai), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderAkamai)(nil), (*acme.ACMEIssuerDNS01ProviderAkamai)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(a.(*ACMEIssuerDNS01ProviderAkamai), b.(*acme.ACMEIssuerDNS01ProviderAkamai), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderAkamai)(nil), (*v1beta1.ACMEIssuerDNS01ProviderAkamai)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(a.(*acme.ACMEIssuerDNS01ProviderAkamai), b.(*v1beta1.ACMEIssuerDNS01ProviderAkamai), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderAkamai)(nil), (*ACMEIssuerDNS01ProviderAkamai)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(a.(*acme.ACMEIssuerDNS01ProviderAkamai), b.(*ACMEIssuerDNS01ProviderAkamai), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderAzureDNS)(nil), (*acme.ACMEIssuerDNS01ProviderAzureDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(a.(*v1beta1.ACMEIssuerDNS01ProviderAzureDNS), b.(*acme.ACMEIssuerDNS01ProviderAzureDNS), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderAzureDNS)(nil), (*acme.ACMEIssuerDNS01ProviderAzureDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(a.(*ACMEIssuerDNS01ProviderAzureDNS), b.(*acme.ACMEIssuerDNS01ProviderAzureDNS), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderAzureDNS)(nil), (*v1beta1.ACMEIssuerDNS01ProviderAzureDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(a.(*acme.ACMEIssuerDNS01ProviderAzureDNS), b.(*v1beta1.ACMEIssuerDNS01ProviderAzureDNS), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderAzureDNS)(nil), (*ACMEIssuerDNS01ProviderAzureDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(a.(*acme.ACMEIssuerDNS01ProviderAzureDNS), b.(*ACMEIssuerDNS01ProviderAzureDNS), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderCloudDNS)(nil), (*acme.ACMEIssuerDNS01ProviderCloudDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(a.(*v1beta1.ACMEIssuerDNS01ProviderCloudDNS), b.(*acme.ACMEIssuerDNS01ProviderCloudDNS), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderCloudDNS)(nil), (*acme.ACMEIssuerDNS01ProviderCloudDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(a.(*ACMEIssuerDNS01ProviderCloudDNS), b.(*acme.ACMEIssuerDNS01ProviderCloudDNS), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderCloudDNS)(nil), (*v1beta1.ACMEIssuerDNS01ProviderCloudDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(a.(*acme.ACMEIssuerDNS01ProviderCloudDNS), b.(*v1beta1.ACMEIssuerDNS01ProviderCloudDNS), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderCloudDNS)(nil), (*ACMEIssuerDNS01ProviderCloudDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(a.(*acme.ACMEIssuerDNS01ProviderCloudDNS), b.(*ACMEIssuerDNS01ProviderCloudDNS), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderCloudflare)(nil), (*acme.ACMEIssuerDNS01ProviderCloudflare)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(a.(*v1beta1.ACMEIssuerDNS01ProviderCloudflare), b.(*acme.ACMEIssuerDNS01ProviderCloudflare), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderCloudflare)(nil), (*acme.ACMEIssuerDNS01ProviderCloudflare)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(a.(*ACMEIssuerDNS01ProviderCloudflare), b.(*acme.ACMEIssuerDNS01ProviderCloudflare), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderCloudflare)(nil), (*v1beta1.ACMEIssuerDNS01ProviderCloudflare)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(a.(*acme.ACMEIssuerDNS01ProviderCloudflare), b.(*v1beta1.ACMEIssuerDNS01ProviderCloudflare), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderCloudflare)(nil), (*ACMEIssuerDNS01ProviderCloudflare)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(a.(*acme.ACMEIssuerDNS01ProviderCloudflare), b.(*ACMEIssuerDNS01ProviderCloudflare), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderDigitalOcean)(nil), (*acme.ACMEIssuerDNS01ProviderDigitalOcean)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(a.(*v1beta1.ACMEIssuerDNS01ProviderDigitalOcean), b.(*acme.ACMEIssuerDNS01ProviderDigitalOcean), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderDigitalOcean)(nil), (*acme.ACMEIssuerDNS01ProviderDigitalOcean)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(a.(*ACMEIssuerDNS01ProviderDigitalOcean), b.(*acme.ACMEIssuerDNS01ProviderDigitalOcean), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderDigitalOcean)(nil), (*v1beta1.ACMEIssuerDNS01ProviderDigitalOcean)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(a.(*acme.ACMEIssuerDNS01ProviderDigitalOcean), b.(*v1beta1.ACMEIssuerDNS01ProviderDigitalOcean), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderDigitalOcean)(nil), (*ACMEIssuerDNS01ProviderDigitalOcean)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(a.(*acme.ACMEIssuerDNS01ProviderDigitalOcean), b.(*ACMEIssuerDNS01ProviderDigitalOcean), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderRFC2136)(nil), (*acme.ACMEIssuerDNS01ProviderRFC2136)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(a.(*v1beta1.ACMEIssuerDNS01ProviderRFC2136), b.(*acme.ACMEIssuerDNS01ProviderRFC2136), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderRFC2136)(nil), (*acme.ACMEIssuerDNS01ProviderRFC2136)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(a.(*ACMEIssuerDNS01ProviderRFC2136), b.(*acme.ACMEIssuerDNS01ProviderRFC2136), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderRFC2136)(nil), (*v1beta1.ACMEIssuerDNS01ProviderRFC2136)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(a.(*acme.ACMEIssuerDNS01ProviderRFC2136), b.(*v1beta1.ACMEIssuerDNS01ProviderRFC2136), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderRFC2136)(nil), (*ACMEIssuerDNS01ProviderRFC2136)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(a.(*acme.ACMEIssuerDNS01ProviderRFC2136), b.(*ACMEIssuerDNS01ProviderRFC2136), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderRoute53)(nil), (*acme.ACMEIssuerDNS01ProviderRoute53)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(a.(*v1beta1.ACMEIssuerDNS01ProviderRoute53), b.(*acme.ACMEIssuerDNS01ProviderRoute53), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderRoute53)(nil), (*acme.ACMEIssuerDNS01ProviderRoute53)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(a.(*ACMEIssuerDNS01ProviderRoute53), b.(*acme.ACMEIssuerDNS01ProviderRoute53), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderRoute53)(nil), (*v1beta1.ACMEIssuerDNS01ProviderRoute53)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(a.(*acme.ACMEIssuerDNS01ProviderRoute53), b.(*v1beta1.ACMEIssuerDNS01ProviderRoute53), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderRoute53)(nil), (*ACMEIssuerDNS01ProviderRoute53)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(a.(*acme.ACMEIssuerDNS01ProviderRoute53), b.(*ACMEIssuerDNS01ProviderRoute53), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerDNS01ProviderWebhook)(nil), (*acme.ACMEIssuerDNS01ProviderWebhook)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(a.(*v1beta1.ACMEIssuerDNS01ProviderWebhook), b.(*acme.ACMEIssuerDNS01ProviderWebhook), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerDNS01ProviderWebhook)(nil), (*acme.ACMEIssuerDNS01ProviderWebhook)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(a.(*ACMEIssuerDNS01ProviderWebhook), b.(*acme.ACMEIssuerDNS01ProviderWebhook), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderWebhook)(nil), (*v1beta1.ACMEIssuerDNS01ProviderWebhook)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(a.(*acme.ACMEIssuerDNS01ProviderWebhook), b.(*v1beta1.ACMEIssuerDNS01ProviderWebhook), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerDNS01ProviderWebhook)(nil), (*ACMEIssuerDNS01ProviderWebhook)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(a.(*acme.ACMEIssuerDNS01ProviderWebhook), b.(*ACMEIssuerDNS01ProviderWebhook), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ACMEIssuerStatus)(nil), (*acme.ACMEIssuerStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(a.(*v1beta1.ACMEIssuerStatus), b.(*acme.ACMEIssuerStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*ACMEIssuerStatus)(nil), (*acme.ACMEIssuerStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(a.(*ACMEIssuerStatus), b.(*acme.ACMEIssuerStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerStatus)(nil), (*v1beta1.ACMEIssuerStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(a.(*acme.ACMEIssuerStatus), b.(*v1beta1.ACMEIssuerStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ACMEIssuerStatus)(nil), (*ACMEIssuerStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(a.(*acme.ACMEIssuerStatus), b.(*ACMEIssuerStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.AzureManagedIdentity)(nil), (*acme.AzureManagedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity(a.(*v1beta1.AzureManagedIdentity), b.(*acme.AzureManagedIdentity), scope)
+	if err := s.AddGeneratedConversionFunc((*AzureManagedIdentity)(nil), (*acme.AzureManagedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity(a.(*AzureManagedIdentity), b.(*acme.AzureManagedIdentity), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.AzureManagedIdentity)(nil), (*v1beta1.AzureManagedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity(a.(*acme.AzureManagedIdentity), b.(*v1beta1.AzureManagedIdentity), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.AzureManagedIdentity)(nil), (*AzureManagedIdentity)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity(a.(*acme.AzureManagedIdentity), b.(*AzureManagedIdentity), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.CertificateDNSNameSelector)(nil), (*acme.CertificateDNSNameSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector(a.(*v1beta1.CertificateDNSNameSelector), b.(*acme.CertificateDNSNameSelector), scope)
+	if err := s.AddGeneratedConversionFunc((*CertificateDNSNameSelector)(nil), (*acme.CertificateDNSNameSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector(a.(*CertificateDNSNameSelector), b.(*acme.CertificateDNSNameSelector), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.CertificateDNSNameSelector)(nil), (*v1beta1.CertificateDNSNameSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector(a.(*acme.CertificateDNSNameSelector), b.(*v1beta1.CertificateDNSNameSelector), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.CertificateDNSNameSelector)(nil), (*CertificateDNSNameSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector(a.(*acme.CertificateDNSNameSelector), b.(*CertificateDNSNameSelector), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.Challenge)(nil), (*acme.Challenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_Challenge_To_acme_Challenge(a.(*v1beta1.Challenge), b.(*acme.Challenge), scope)
+	if err := s.AddGeneratedConversionFunc((*Challenge)(nil), (*acme.Challenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_Challenge_To_acme_Challenge(a.(*Challenge), b.(*acme.Challenge), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.Challenge)(nil), (*v1beta1.Challenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_Challenge_To_v1beta1_Challenge(a.(*acme.Challenge), b.(*v1beta1.Challenge), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.Challenge)(nil), (*Challenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_Challenge_To_v1beta1_Challenge(a.(*acme.Challenge), b.(*Challenge), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ChallengeList)(nil), (*acme.ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ChallengeList_To_acme_ChallengeList(a.(*v1beta1.ChallengeList), b.(*acme.ChallengeList), scope)
+	if err := s.AddGeneratedConversionFunc((*ChallengeList)(nil), (*acme.ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ChallengeList_To_acme_ChallengeList(a.(*ChallengeList), b.(*acme.ChallengeList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ChallengeList)(nil), (*v1beta1.ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ChallengeList_To_v1beta1_ChallengeList(a.(*acme.ChallengeList), b.(*v1beta1.ChallengeList), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeList)(nil), (*ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeList_To_v1beta1_ChallengeList(a.(*acme.ChallengeList), b.(*ChallengeList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ChallengeSpec)(nil), (*acme.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(a.(*v1beta1.ChallengeSpec), b.(*acme.ChallengeSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*ChallengeSpec)(nil), (*acme.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(a.(*ChallengeSpec), b.(*acme.ChallengeSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ChallengeSpec)(nil), (*v1beta1.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(a.(*acme.ChallengeSpec), b.(*v1beta1.ChallengeSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeSpec)(nil), (*ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(a.(*acme.ChallengeSpec), b.(*ChallengeSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.ChallengeStatus)(nil), (*acme.ChallengeStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(a.(*v1beta1.ChallengeStatus), b.(*acme.ChallengeStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*ChallengeStatus)(nil), (*acme.ChallengeStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(a.(*ChallengeStatus), b.(*acme.ChallengeStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.ChallengeStatus)(nil), (*v1beta1.ChallengeStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus(a.(*acme.ChallengeStatus), b.(*v1beta1.ChallengeStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.ChallengeStatus)(nil), (*ChallengeStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus(a.(*acme.ChallengeStatus), b.(*ChallengeStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.Order)(nil), (*acme.Order)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_Order_To_acme_Order(a.(*v1beta1.Order), b.(*acme.Order), scope)
+	if err := s.AddGeneratedConversionFunc((*Order)(nil), (*acme.Order)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_Order_To_acme_Order(a.(*Order), b.(*acme.Order), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.Order)(nil), (*v1beta1.Order)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_Order_To_v1beta1_Order(a.(*acme.Order), b.(*v1beta1.Order), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.Order)(nil), (*Order)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_Order_To_v1beta1_Order(a.(*acme.Order), b.(*Order), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.OrderList)(nil), (*acme.OrderList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_OrderList_To_acme_OrderList(a.(*v1beta1.OrderList), b.(*acme.OrderList), scope)
+	if err := s.AddGeneratedConversionFunc((*OrderList)(nil), (*acme.OrderList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_OrderList_To_acme_OrderList(a.(*OrderList), b.(*acme.OrderList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.OrderList)(nil), (*v1beta1.OrderList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_OrderList_To_v1beta1_OrderList(a.(*acme.OrderList), b.(*v1beta1.OrderList), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.OrderList)(nil), (*OrderList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_OrderList_To_v1beta1_OrderList(a.(*acme.OrderList), b.(*OrderList), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.OrderSpec)(nil), (*acme.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_OrderSpec_To_acme_OrderSpec(a.(*v1beta1.OrderSpec), b.(*acme.OrderSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*OrderSpec)(nil), (*acme.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_OrderSpec_To_acme_OrderSpec(a.(*OrderSpec), b.(*acme.OrderSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.OrderSpec)(nil), (*v1beta1.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_OrderSpec_To_v1beta1_OrderSpec(a.(*acme.OrderSpec), b.(*v1beta1.OrderSpec), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.OrderSpec)(nil), (*OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_OrderSpec_To_v1beta1_OrderSpec(a.(*acme.OrderSpec), b.(*OrderSpec), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1beta1.OrderStatus)(nil), (*acme.OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_OrderStatus_To_acme_OrderStatus(a.(*v1beta1.OrderStatus), b.(*acme.OrderStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*OrderStatus)(nil), (*acme.OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_OrderStatus_To_acme_OrderStatus(a.(*OrderStatus), b.(*acme.OrderStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*acme.OrderStatus)(nil), (*v1beta1.OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_OrderStatus_To_v1beta1_OrderStatus(a.(*acme.OrderStatus), b.(*v1beta1.OrderStatus), scope)
+	if err := s.AddGeneratedConversionFunc((*acme.OrderStatus)(nil), (*OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_OrderStatus_To_v1beta1_OrderStatus(a.(*acme.OrderStatus), b.(*OrderStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*acme.ACMEIssuer)(nil), (*v1beta1.ACMEIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(a.(*acme.ACMEIssuer), b.(*v1beta1.ACMEIssuer), scope)
+	if err := s.AddConversionFunc((*acme.ACMEIssuer)(nil), (*ACMEIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(a.(*acme.ACMEIssuer), b.(*ACMEIssuer), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1beta1.ACMEIssuer)(nil), (*acme.ACMEIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_ACMEIssuer_To_acme_ACMEIssuer(a.(*v1beta1.ACMEIssuer), b.(*acme.ACMEIssuer), scope)
+	if err := s.AddConversionFunc((*ACMEIssuer)(nil), (*acme.ACMEIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_ACMEIssuer_To_acme_ACMEIssuer(a.(*ACMEIssuer), b.(*acme.ACMEIssuer), scope)
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func autoConvert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(in *v1beta1.ACMEAuthorization, out *acme.ACMEAuthorization, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(in *ACMEAuthorization, out *acme.ACMEAuthorization, s conversion.Scope) error {
 	out.URL = in.URL
 	out.Identifier = in.Identifier
 	out.Wildcard = (*bool)(unsafe.Pointer(in.Wildcard))
@@ -396,25 +395,25 @@ func autoConvert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(in *v1beta1
 }
 
 // Convert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization is an autogenerated conversion function.
-func Convert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(in *v1beta1.ACMEAuthorization, out *acme.ACMEAuthorization, s conversion.Scope) error {
+func Convert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(in *ACMEAuthorization, out *acme.ACMEAuthorization, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEAuthorization_To_acme_ACMEAuthorization(in, out, s)
 }
 
-func autoConvert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization(in *acme.ACMEAuthorization, out *v1beta1.ACMEAuthorization, s conversion.Scope) error {
+func autoConvert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization(in *acme.ACMEAuthorization, out *ACMEAuthorization, s conversion.Scope) error {
 	out.URL = in.URL
 	out.Identifier = in.Identifier
 	out.Wildcard = (*bool)(unsafe.Pointer(in.Wildcard))
-	out.InitialState = v1beta1.State(in.InitialState)
-	out.Challenges = *(*[]v1beta1.ACMEChallenge)(unsafe.Pointer(&in.Challenges))
+	out.InitialState = State(in.InitialState)
+	out.Challenges = *(*[]ACMEChallenge)(unsafe.Pointer(&in.Challenges))
 	return nil
 }
 
 // Convert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization is an autogenerated conversion function.
-func Convert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization(in *acme.ACMEAuthorization, out *v1beta1.ACMEAuthorization, s conversion.Scope) error {
+func Convert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization(in *acme.ACMEAuthorization, out *ACMEAuthorization, s conversion.Scope) error {
 	return autoConvert_acme_ACMEAuthorization_To_v1beta1_ACMEAuthorization(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(in *v1beta1.ACMEChallenge, out *acme.ACMEChallenge, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(in *ACMEChallenge, out *acme.ACMEChallenge, s conversion.Scope) error {
 	out.URL = in.URL
 	out.Token = in.Token
 	out.Type = in.Type
@@ -422,11 +421,11 @@ func autoConvert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(in *v1beta1.ACMECha
 }
 
 // Convert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(in *v1beta1.ACMEChallenge, out *acme.ACMEChallenge, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(in *ACMEChallenge, out *acme.ACMEChallenge, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallenge_To_acme_ACMEChallenge(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(in *acme.ACMEChallenge, out *v1beta1.ACMEChallenge, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(in *acme.ACMEChallenge, out *ACMEChallenge, s conversion.Scope) error {
 	out.URL = in.URL
 	out.Token = in.Token
 	out.Type = in.Type
@@ -434,11 +433,11 @@ func autoConvert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(in *acme.ACMEChalle
 }
 
 // Convert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge is an autogenerated conversion function.
-func Convert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(in *acme.ACMEChallenge, out *v1beta1.ACMEChallenge, s conversion.Scope) error {
+func Convert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(in *acme.ACMEChallenge, out *ACMEChallenge, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallenge_To_v1beta1_ACMEChallenge(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1beta1.ACMEChallengeSolver, out *acme.ACMEChallengeSolver, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *ACMEChallengeSolver, out *acme.ACMEChallengeSolver, s conversion.Scope) error {
 	out.Selector = (*acme.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
 	out.HTTP01 = (*acme.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
 	if in.DNS01 != nil {
@@ -454,16 +453,16 @@ func autoConvert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1b
 }
 
 // Convert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *v1beta1.ACMEChallengeSolver, out *acme.ACMEChallengeSolver, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in *ACMEChallengeSolver, out *acme.ACMEChallengeSolver, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolver_To_acme_ACMEChallengeSolver(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(in *acme.ACMEChallengeSolver, out *v1beta1.ACMEChallengeSolver, s conversion.Scope) error {
-	out.Selector = (*v1beta1.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
-	out.HTTP01 = (*v1beta1.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
+func autoConvert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(in *acme.ACMEChallengeSolver, out *ACMEChallengeSolver, s conversion.Scope) error {
+	out.Selector = (*CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
+	out.HTTP01 = (*ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
 	if in.DNS01 != nil {
 		in, out := &in.DNS01, &out.DNS01
-		*out = new(v1beta1.ACMEChallengeSolverDNS01)
+		*out = new(ACMEChallengeSolverDNS01)
 		if err := Convert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(*in, *out, s); err != nil {
 			return err
 		}
@@ -474,11 +473,11 @@ func autoConvert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(in *acm
 }
 
 // Convert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(in *acme.ACMEChallengeSolver, out *v1beta1.ACMEChallengeSolver, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(in *acme.ACMEChallengeSolver, out *ACMEChallengeSolver, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *v1beta1.ACMEChallengeSolverDNS01, out *acme.ACMEChallengeSolverDNS01, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *ACMEChallengeSolverDNS01, out *acme.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	out.CNAMEStrategy = acme.CNAMEStrategy(in.CNAMEStrategy)
 	if in.Akamai != nil {
 		in, out := &in.Akamai, &out.Akamai
@@ -557,15 +556,15 @@ func autoConvert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS
 }
 
 // Convert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01 is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *v1beta1.ACMEChallengeSolverDNS01, out *acme.ACMEChallengeSolverDNS01, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in *ACMEChallengeSolverDNS01, out *acme.ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverDNS01_To_acme_ACMEChallengeSolverDNS01(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(in *acme.ACMEChallengeSolverDNS01, out *v1beta1.ACMEChallengeSolverDNS01, s conversion.Scope) error {
-	out.CNAMEStrategy = v1beta1.CNAMEStrategy(in.CNAMEStrategy)
+func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(in *acme.ACMEChallengeSolverDNS01, out *ACMEChallengeSolverDNS01, s conversion.Scope) error {
+	out.CNAMEStrategy = CNAMEStrategy(in.CNAMEStrategy)
 	if in.Akamai != nil {
 		in, out := &in.Akamai, &out.Akamai
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderAkamai)
+		*out = new(ACMEIssuerDNS01ProviderAkamai)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(*in, *out, s); err != nil {
 			return err
 		}
@@ -574,7 +573,7 @@ func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS
 	}
 	if in.CloudDNS != nil {
 		in, out := &in.CloudDNS, &out.CloudDNS
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderCloudDNS)
+		*out = new(ACMEIssuerDNS01ProviderCloudDNS)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(*in, *out, s); err != nil {
 			return err
 		}
@@ -583,7 +582,7 @@ func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS
 	}
 	if in.Cloudflare != nil {
 		in, out := &in.Cloudflare, &out.Cloudflare
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderCloudflare)
+		*out = new(ACMEIssuerDNS01ProviderCloudflare)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(*in, *out, s); err != nil {
 			return err
 		}
@@ -592,7 +591,7 @@ func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS
 	}
 	if in.Route53 != nil {
 		in, out := &in.Route53, &out.Route53
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderRoute53)
+		*out = new(ACMEIssuerDNS01ProviderRoute53)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(*in, *out, s); err != nil {
 			return err
 		}
@@ -601,7 +600,7 @@ func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS
 	}
 	if in.AzureDNS != nil {
 		in, out := &in.AzureDNS, &out.AzureDNS
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderAzureDNS)
+		*out = new(ACMEIssuerDNS01ProviderAzureDNS)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(*in, *out, s); err != nil {
 			return err
 		}
@@ -610,7 +609,7 @@ func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS
 	}
 	if in.DigitalOcean != nil {
 		in, out := &in.DigitalOcean, &out.DigitalOcean
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderDigitalOcean)
+		*out = new(ACMEIssuerDNS01ProviderDigitalOcean)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(*in, *out, s); err != nil {
 			return err
 		}
@@ -619,7 +618,7 @@ func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS
 	}
 	if in.AcmeDNS != nil {
 		in, out := &in.AcmeDNS, &out.AcmeDNS
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderAcmeDNS)
+		*out = new(ACMEIssuerDNS01ProviderAcmeDNS)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(*in, *out, s); err != nil {
 			return err
 		}
@@ -628,67 +627,67 @@ func autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS
 	}
 	if in.RFC2136 != nil {
 		in, out := &in.RFC2136, &out.RFC2136
-		*out = new(v1beta1.ACMEIssuerDNS01ProviderRFC2136)
+		*out = new(ACMEIssuerDNS01ProviderRFC2136)
 		if err := Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
 		out.RFC2136 = nil
 	}
-	out.Webhook = (*v1beta1.ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
+	out.Webhook = (*ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
 	return nil
 }
 
 // Convert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01 is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(in *acme.ACMEChallengeSolverDNS01, out *v1beta1.ACMEChallengeSolverDNS01, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(in *acme.ACMEChallengeSolverDNS01, out *ACMEChallengeSolverDNS01, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverDNS01_To_v1beta1_ACMEChallengeSolverDNS01(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01(in *v1beta1.ACMEChallengeSolverHTTP01, out *acme.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01(in *ACMEChallengeSolverHTTP01, out *acme.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
 	out.Ingress = (*acme.ACMEChallengeSolverHTTP01Ingress)(unsafe.Pointer(in.Ingress))
 	out.GatewayHTTPRoute = (*acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(unsafe.Pointer(in.GatewayHTTPRoute))
 	return nil
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01 is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01(in *v1beta1.ACMEChallengeSolverHTTP01, out *acme.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01(in *ACMEChallengeSolverHTTP01, out *acme.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01_To_acme_ACMEChallengeSolverHTTP01(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01(in *acme.ACMEChallengeSolverHTTP01, out *v1beta1.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
-	out.Ingress = (*v1beta1.ACMEChallengeSolverHTTP01Ingress)(unsafe.Pointer(in.Ingress))
-	out.GatewayHTTPRoute = (*v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute)(unsafe.Pointer(in.GatewayHTTPRoute))
+func autoConvert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01(in *acme.ACMEChallengeSolverHTTP01, out *ACMEChallengeSolverHTTP01, s conversion.Scope) error {
+	out.Ingress = (*ACMEChallengeSolverHTTP01Ingress)(unsafe.Pointer(in.Ingress))
+	out.GatewayHTTPRoute = (*ACMEChallengeSolverHTTP01GatewayHTTPRoute)(unsafe.Pointer(in.GatewayHTTPRoute))
 	return nil
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01 is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01(in *acme.ACMEChallengeSolverHTTP01, out *v1beta1.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01(in *acme.ACMEChallengeSolverHTTP01, out *ACMEChallengeSolverHTTP01, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01_To_v1beta1_ACMEChallengeSolverHTTP01(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	return nil
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	return nil
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *v1beta1.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1beta1_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(in *v1beta1.ACMEChallengeSolverHTTP01Ingress, out *acme.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(in *ACMEChallengeSolverHTTP01Ingress, out *acme.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Class = (*string)(unsafe.Pointer(in.Class))
 	out.Name = in.Name
@@ -698,69 +697,69 @@ func autoConvert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeS
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(in *v1beta1.ACMEChallengeSolverHTTP01Ingress, out *acme.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(in *ACMEChallengeSolverHTTP01Ingress, out *acme.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01Ingress_To_acme_ACMEChallengeSolverHTTP01Ingress(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress(in *acme.ACMEChallengeSolverHTTP01Ingress, out *v1beta1.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress(in *acme.ACMEChallengeSolverHTTP01Ingress, out *ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Class = (*string)(unsafe.Pointer(in.Class))
 	out.Name = in.Name
-	out.PodTemplate = (*v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
-	out.IngressTemplate = (*v1beta1.ACMEChallengeSolverHTTP01IngressTemplate)(unsafe.Pointer(in.IngressTemplate))
+	out.PodTemplate = (*ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
+	out.IngressTemplate = (*ACMEChallengeSolverHTTP01IngressTemplate)(unsafe.Pointer(in.IngressTemplate))
 	return nil
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress(in *acme.ACMEChallengeSolverHTTP01Ingress, out *v1beta1.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress(in *acme.ACMEChallengeSolverHTTP01Ingress, out *ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01Ingress_To_v1beta1_ACMEChallengeSolverHTTP01Ingress(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(in *v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(in *ACMEChallengeSolverHTTP01IngressObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
 	out.Annotations = *(*map[string]string)(unsafe.Pointer(&in.Annotations))
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	return nil
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(in *v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(in *ACMEChallengeSolverHTTP01IngressObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, out *v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, out *ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
 	out.Annotations = *(*map[string]string)(unsafe.Pointer(&in.Annotations))
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	return nil
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, out *v1beta1.ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressObjectMeta, out *ACMEChallengeSolverHTTP01IngressObjectMeta, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
 	out.Annotations = *(*map[string]string)(unsafe.Pointer(&in.Annotations))
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	return nil
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
 	out.Annotations = *(*map[string]string)(unsafe.Pointer(&in.Annotations))
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
 	return nil
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *v1beta1.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in *acme.ACMEChallengeSolverHTTP01IngressPodObjectMeta, out *ACMEChallengeSolverHTTP01IngressPodObjectMeta, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(in *v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec, out *acme.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(in *ACMEChallengeSolverHTTP01IngressPodSpec, out *acme.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
 	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
 	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
@@ -770,11 +769,11 @@ func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMECha
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(in *v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec, out *acme.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(in *ACMEChallengeSolverHTTP01IngressPodSpec, out *acme.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec_To_acme_ACMEChallengeSolverHTTP01IngressPodSpec(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec(in *acme.ACMEChallengeSolverHTTP01IngressPodSpec, out *v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec(in *acme.ACMEChallengeSolverHTTP01IngressPodSpec, out *ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
 	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
 	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
@@ -784,11 +783,11 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMECha
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec(in *acme.ACMEChallengeSolverHTTP01IngressPodSpec, out *v1beta1.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec(in *acme.ACMEChallengeSolverHTTP01IngressPodSpec, out *ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodSpec(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate(in *v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate, out *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate(in *ACMEChallengeSolverHTTP01IngressPodTemplate, out *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
 	if err := Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta(&in.ACMEChallengeSolverHTTP01IngressPodObjectMeta, &out.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s); err != nil {
 		return err
 	}
@@ -799,11 +798,11 @@ func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACM
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate(in *v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate, out *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate(in *ACMEChallengeSolverHTTP01IngressPodTemplate, out *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate_To_acme_ACMEChallengeSolverHTTP01IngressPodTemplate(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate(in *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, out *v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate(in *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, out *ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
 	if err := Convert_acme_ACMEChallengeSolverHTTP01IngressPodObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodObjectMeta(&in.ACMEChallengeSolverHTTP01IngressPodObjectMeta, &out.ACMEChallengeSolverHTTP01IngressPodObjectMeta, s); err != nil {
 		return err
 	}
@@ -814,11 +813,11 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACM
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate(in *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, out *v1beta1.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate(in *acme.ACMEChallengeSolverHTTP01IngressPodTemplate, out *ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressPodTemplate(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate(in *v1beta1.ACMEChallengeSolverHTTP01IngressTemplate, out *acme.ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate(in *ACMEChallengeSolverHTTP01IngressTemplate, out *acme.ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
 	if err := Convert_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta_To_acme_ACMEChallengeSolverHTTP01IngressObjectMeta(&in.ACMEChallengeSolverHTTP01IngressObjectMeta, &out.ACMEChallengeSolverHTTP01IngressObjectMeta, s); err != nil {
 		return err
 	}
@@ -826,11 +825,11 @@ func autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMECh
 }
 
 // Convert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate is an autogenerated conversion function.
-func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate(in *v1beta1.ACMEChallengeSolverHTTP01IngressTemplate, out *acme.ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
+func Convert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate(in *ACMEChallengeSolverHTTP01IngressTemplate, out *acme.ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate_To_acme_ACMEChallengeSolverHTTP01IngressTemplate(in, out, s)
 }
 
-func autoConvert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate(in *acme.ACMEChallengeSolverHTTP01IngressTemplate, out *v1beta1.ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
+func autoConvert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate(in *acme.ACMEChallengeSolverHTTP01IngressTemplate, out *ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
 	if err := Convert_acme_ACMEChallengeSolverHTTP01IngressObjectMeta_To_v1beta1_ACMEChallengeSolverHTTP01IngressObjectMeta(&in.ACMEChallengeSolverHTTP01IngressObjectMeta, &out.ACMEChallengeSolverHTTP01IngressObjectMeta, s); err != nil {
 		return err
 	}
@@ -838,11 +837,11 @@ func autoConvert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMECh
 }
 
 // Convert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate is an autogenerated conversion function.
-func Convert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate(in *acme.ACMEChallengeSolverHTTP01IngressTemplate, out *v1beta1.ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
+func Convert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate(in *acme.ACMEChallengeSolverHTTP01IngressTemplate, out *ACMEChallengeSolverHTTP01IngressTemplate, s conversion.Scope) error {
 	return autoConvert_acme_ACMEChallengeSolverHTTP01IngressTemplate_To_v1beta1_ACMEChallengeSolverHTTP01IngressTemplate(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(in *v1beta1.ACMEExternalAccountBinding, out *acme.ACMEExternalAccountBinding, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(in *ACMEExternalAccountBinding, out *acme.ACMEExternalAccountBinding, s conversion.Scope) error {
 	out.KeyID = in.KeyID
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.Key, &out.Key, s); err != nil {
 		return err
@@ -852,25 +851,25 @@ func autoConvert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountB
 }
 
 // Convert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding is an autogenerated conversion function.
-func Convert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(in *v1beta1.ACMEExternalAccountBinding, out *acme.ACMEExternalAccountBinding, s conversion.Scope) error {
+func Convert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(in *ACMEExternalAccountBinding, out *acme.ACMEExternalAccountBinding, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEExternalAccountBinding_To_acme_ACMEExternalAccountBinding(in, out, s)
 }
 
-func autoConvert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(in *acme.ACMEExternalAccountBinding, out *v1beta1.ACMEExternalAccountBinding, s conversion.Scope) error {
+func autoConvert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(in *acme.ACMEExternalAccountBinding, out *ACMEExternalAccountBinding, s conversion.Scope) error {
 	out.KeyID = in.KeyID
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.Key, &out.Key, s); err != nil {
 		return err
 	}
-	out.KeyAlgorithm = v1beta1.HMACKeyAlgorithm(in.KeyAlgorithm)
+	out.KeyAlgorithm = HMACKeyAlgorithm(in.KeyAlgorithm)
 	return nil
 }
 
 // Convert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding is an autogenerated conversion function.
-func Convert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(in *acme.ACMEExternalAccountBinding, out *v1beta1.ACMEExternalAccountBinding, s conversion.Scope) error {
+func Convert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(in *acme.ACMEExternalAccountBinding, out *ACMEExternalAccountBinding, s conversion.Scope) error {
 	return autoConvert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuer_To_acme_ACMEIssuer(in *v1beta1.ACMEIssuer, out *acme.ACMEIssuer, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuer_To_acme_ACMEIssuer(in *ACMEIssuer, out *acme.ACMEIssuer, s conversion.Scope) error {
 	out.Email = in.Email
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
@@ -903,14 +902,14 @@ func autoConvert_v1beta1_ACMEIssuer_To_acme_ACMEIssuer(in *v1beta1.ACMEIssuer, o
 	return nil
 }
 
-func autoConvert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(in *acme.ACMEIssuer, out *v1beta1.ACMEIssuer, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(in *acme.ACMEIssuer, out *ACMEIssuer, s conversion.Scope) error {
 	out.Email = in.Email
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
 	out.SkipTLSVerify = in.SkipTLSVerify
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
-		*out = new(v1beta1.ACMEExternalAccountBinding)
+		*out = new(ACMEExternalAccountBinding)
 		if err := Convert_acme_ACMEExternalAccountBinding_To_v1beta1_ACMEExternalAccountBinding(*in, *out, s); err != nil {
 			return err
 		}
@@ -922,7 +921,7 @@ func autoConvert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(in *acme.ACMEIssuer, out 
 	}
 	if in.Solvers != nil {
 		in, out := &in.Solvers, &out.Solvers
-		*out = make([]v1beta1.ACMEChallengeSolver, len(*in))
+		*out = make([]ACMEChallengeSolver, len(*in))
 		for i := range *in {
 			if err := Convert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
@@ -936,7 +935,7 @@ func autoConvert_acme_ACMEIssuer_To_v1beta1_ACMEIssuer(in *acme.ACMEIssuer, out 
 	return nil
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(in *v1beta1.ACMEIssuerDNS01ProviderAcmeDNS, out *acme.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(in *ACMEIssuerDNS01ProviderAcmeDNS, out *acme.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
 	out.Host = in.Host
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.AccountSecret, &out.AccountSecret, s); err != nil {
 		return err
@@ -945,11 +944,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01P
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(in *v1beta1.ACMEIssuerDNS01ProviderAcmeDNS, out *acme.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(in *ACMEIssuerDNS01ProviderAcmeDNS, out *acme.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS_To_acme_ACMEIssuerDNS01ProviderAcmeDNS(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(in *acme.ACMEIssuerDNS01ProviderAcmeDNS, out *v1beta1.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(in *acme.ACMEIssuerDNS01ProviderAcmeDNS, out *ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
 	out.Host = in.Host
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.AccountSecret, &out.AccountSecret, s); err != nil {
 		return err
@@ -958,11 +957,11 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01P
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(in *acme.ACMEIssuerDNS01ProviderAcmeDNS, out *v1beta1.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(in *acme.ACMEIssuerDNS01ProviderAcmeDNS, out *ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderAcmeDNS_To_v1beta1_ACMEIssuerDNS01ProviderAcmeDNS(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(in *v1beta1.ACMEIssuerDNS01ProviderAkamai, out *acme.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(in *ACMEIssuerDNS01ProviderAkamai, out *acme.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
 	out.ServiceConsumerDomain = in.ServiceConsumerDomain
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.ClientToken, &out.ClientToken, s); err != nil {
 		return err
@@ -977,11 +976,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01Pr
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(in *v1beta1.ACMEIssuerDNS01ProviderAkamai, out *acme.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(in *ACMEIssuerDNS01ProviderAkamai, out *acme.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderAkamai_To_acme_ACMEIssuerDNS01ProviderAkamai(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(in *acme.ACMEIssuerDNS01ProviderAkamai, out *v1beta1.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(in *acme.ACMEIssuerDNS01ProviderAkamai, out *ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
 	out.ServiceConsumerDomain = in.ServiceConsumerDomain
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.ClientToken, &out.ClientToken, s); err != nil {
 		return err
@@ -996,11 +995,11 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01Pr
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(in *acme.ACMEIssuerDNS01ProviderAkamai, out *v1beta1.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(in *acme.ACMEIssuerDNS01ProviderAkamai, out *ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderAkamai_To_v1beta1_ACMEIssuerDNS01ProviderAkamai(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(in *v1beta1.ACMEIssuerDNS01ProviderAzureDNS, out *acme.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(in *ACMEIssuerDNS01ProviderAzureDNS, out *acme.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	out.ClientID = in.ClientID
 	if in.ClientSecret != nil {
 		in, out := &in.ClientSecret, &out.ClientSecret
@@ -1021,11 +1020,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(in *v1beta1.ACMEIssuerDNS01ProviderAzureDNS, out *acme.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(in *ACMEIssuerDNS01ProviderAzureDNS, out *acme.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderAzureDNS_To_acme_ACMEIssuerDNS01ProviderAzureDNS(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(in *acme.ACMEIssuerDNS01ProviderAzureDNS, out *v1beta1.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(in *acme.ACMEIssuerDNS01ProviderAzureDNS, out *ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	out.ClientID = in.ClientID
 	if in.ClientSecret != nil {
 		in, out := &in.ClientSecret, &out.ClientSecret
@@ -1040,17 +1039,17 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01
 	out.TenantID = in.TenantID
 	out.ResourceGroupName = in.ResourceGroupName
 	out.HostedZoneName = in.HostedZoneName
-	out.Environment = v1beta1.AzureDNSEnvironment(in.Environment)
-	out.ManagedIdentity = (*v1beta1.AzureManagedIdentity)(unsafe.Pointer(in.ManagedIdentity))
+	out.Environment = AzureDNSEnvironment(in.Environment)
+	out.ManagedIdentity = (*AzureManagedIdentity)(unsafe.Pointer(in.ManagedIdentity))
 	return nil
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(in *acme.ACMEIssuerDNS01ProviderAzureDNS, out *v1beta1.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(in *acme.ACMEIssuerDNS01ProviderAzureDNS, out *ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderAzureDNS_To_v1beta1_ACMEIssuerDNS01ProviderAzureDNS(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *v1beta1.ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	if in.ServiceAccount != nil {
 		in, out := &in.ServiceAccount, &out.ServiceAccount
 		*out = new(meta.SecretKeySelector)
@@ -1066,11 +1065,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *v1beta1.ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in *ACMEIssuerDNS01ProviderCloudDNS, out *acme.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudDNS_To_acme_ACMEIssuerDNS01ProviderCloudDNS(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *v1beta1.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	if in.ServiceAccount != nil {
 		in, out := &in.ServiceAccount, &out.ServiceAccount
 		*out = new(apismetav1.SecretKeySelector)
@@ -1086,11 +1085,11 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *v1beta1.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(in *acme.ACMEIssuerDNS01ProviderCloudDNS, out *ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1beta1_ACMEIssuerDNS01ProviderCloudDNS(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in *v1beta1.ACMEIssuerDNS01ProviderCloudflare, out *acme.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in *ACMEIssuerDNS01ProviderCloudflare, out *acme.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
 	if in.APIKey != nil {
 		in, out := &in.APIKey, &out.APIKey
@@ -1114,11 +1113,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in *v1beta1.ACMEIssuerDNS01ProviderCloudflare, out *acme.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in *ACMEIssuerDNS01ProviderCloudflare, out *acme.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *v1beta1.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
 	if in.APIKey != nil {
 		in, out := &in.APIKey, &out.APIKey
@@ -1142,11 +1141,11 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *v1beta1.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1beta1_ACMEIssuerDNS01ProviderCloudflare(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(in *v1beta1.ACMEIssuerDNS01ProviderDigitalOcean, out *acme.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(in *ACMEIssuerDNS01ProviderDigitalOcean, out *acme.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.Token, &out.Token, s); err != nil {
 		return err
 	}
@@ -1154,11 +1153,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerD
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(in *v1beta1.ACMEIssuerDNS01ProviderDigitalOcean, out *acme.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(in *ACMEIssuerDNS01ProviderDigitalOcean, out *acme.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean_To_acme_ACMEIssuerDNS01ProviderDigitalOcean(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(in *acme.ACMEIssuerDNS01ProviderDigitalOcean, out *v1beta1.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(in *acme.ACMEIssuerDNS01ProviderDigitalOcean, out *ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.Token, &out.Token, s); err != nil {
 		return err
 	}
@@ -1166,11 +1165,11 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerD
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(in *acme.ACMEIssuerDNS01ProviderDigitalOcean, out *v1beta1.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(in *acme.ACMEIssuerDNS01ProviderDigitalOcean, out *ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderDigitalOcean_To_v1beta1_ACMEIssuerDNS01ProviderDigitalOcean(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(in *v1beta1.ACMEIssuerDNS01ProviderRFC2136, out *acme.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(in *ACMEIssuerDNS01ProviderRFC2136, out *acme.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
 	out.Nameserver = in.Nameserver
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.TSIGSecret, &out.TSIGSecret, s); err != nil {
 		return err
@@ -1181,11 +1180,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01P
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136 is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(in *v1beta1.ACMEIssuerDNS01ProviderRFC2136, out *acme.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(in *ACMEIssuerDNS01ProviderRFC2136, out *acme.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderRFC2136_To_acme_ACMEIssuerDNS01ProviderRFC2136(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(in *acme.ACMEIssuerDNS01ProviderRFC2136, out *v1beta1.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(in *acme.ACMEIssuerDNS01ProviderRFC2136, out *ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
 	out.Nameserver = in.Nameserver
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.TSIGSecret, &out.TSIGSecret, s); err != nil {
 		return err
@@ -1196,11 +1195,11 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01P
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136 is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(in *acme.ACMEIssuerDNS01ProviderRFC2136, out *v1beta1.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(in *acme.ACMEIssuerDNS01ProviderRFC2136, out *ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderRFC2136_To_v1beta1_ACMEIssuerDNS01ProviderRFC2136(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in *v1beta1.ACMEIssuerDNS01ProviderRoute53, out *acme.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in *ACMEIssuerDNS01ProviderRoute53, out *acme.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
 	if err := metav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
@@ -1212,11 +1211,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01P
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53 is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in *v1beta1.ACMEIssuerDNS01ProviderRoute53, out *acme.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in *ACMEIssuerDNS01ProviderRoute53, out *acme.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderRoute53_To_acme_ACMEIssuerDNS01ProviderRoute53(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(in *acme.ACMEIssuerDNS01ProviderRoute53, out *v1beta1.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(in *acme.ACMEIssuerDNS01ProviderRoute53, out *ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	out.AccessKeyID = in.AccessKeyID
 	if err := metav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.SecretAccessKey, &out.SecretAccessKey, s); err != nil {
 		return err
@@ -1228,11 +1227,11 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01P
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53 is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(in *acme.ACMEIssuerDNS01ProviderRoute53, out *v1beta1.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(in *acme.ACMEIssuerDNS01ProviderRoute53, out *ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderRoute53_To_v1beta1_ACMEIssuerDNS01ProviderRoute53(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(in *v1beta1.ACMEIssuerDNS01ProviderWebhook, out *acme.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(in *ACMEIssuerDNS01ProviderWebhook, out *acme.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
 	out.GroupName = in.GroupName
 	out.SolverName = in.SolverName
 	out.Config = (*apiextensionsv1.JSON)(unsafe.Pointer(in.Config))
@@ -1240,11 +1239,11 @@ func autoConvert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01P
 }
 
 // Convert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(in *v1beta1.ACMEIssuerDNS01ProviderWebhook, out *acme.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(in *ACMEIssuerDNS01ProviderWebhook, out *acme.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerDNS01ProviderWebhook_To_acme_ACMEIssuerDNS01ProviderWebhook(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(in *acme.ACMEIssuerDNS01ProviderWebhook, out *v1beta1.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(in *acme.ACMEIssuerDNS01ProviderWebhook, out *ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
 	out.GroupName = in.GroupName
 	out.SolverName = in.SolverName
 	out.Config = (*apiextensionsv1.JSON)(unsafe.Pointer(in.Config))
@@ -1252,55 +1251,55 @@ func autoConvert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01P
 }
 
 // Convert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(in *acme.ACMEIssuerDNS01ProviderWebhook, out *v1beta1.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(in *acme.ACMEIssuerDNS01ProviderWebhook, out *ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerDNS01ProviderWebhook_To_v1beta1_ACMEIssuerDNS01ProviderWebhook(in, out, s)
 }
 
-func autoConvert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in *v1beta1.ACMEIssuerStatus, out *acme.ACMEIssuerStatus, s conversion.Scope) error {
+func autoConvert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in *ACMEIssuerStatus, out *acme.ACMEIssuerStatus, s conversion.Scope) error {
 	out.URI = in.URI
 	out.LastRegisteredEmail = in.LastRegisteredEmail
 	return nil
 }
 
 // Convert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus is an autogenerated conversion function.
-func Convert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in *v1beta1.ACMEIssuerStatus, out *acme.ACMEIssuerStatus, s conversion.Scope) error {
+func Convert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in *ACMEIssuerStatus, out *acme.ACMEIssuerStatus, s conversion.Scope) error {
 	return autoConvert_v1beta1_ACMEIssuerStatus_To_acme_ACMEIssuerStatus(in, out, s)
 }
 
-func autoConvert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(in *acme.ACMEIssuerStatus, out *v1beta1.ACMEIssuerStatus, s conversion.Scope) error {
+func autoConvert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(in *acme.ACMEIssuerStatus, out *ACMEIssuerStatus, s conversion.Scope) error {
 	out.URI = in.URI
 	out.LastRegisteredEmail = in.LastRegisteredEmail
 	return nil
 }
 
 // Convert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus is an autogenerated conversion function.
-func Convert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(in *acme.ACMEIssuerStatus, out *v1beta1.ACMEIssuerStatus, s conversion.Scope) error {
+func Convert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(in *acme.ACMEIssuerStatus, out *ACMEIssuerStatus, s conversion.Scope) error {
 	return autoConvert_acme_ACMEIssuerStatus_To_v1beta1_ACMEIssuerStatus(in, out, s)
 }
 
-func autoConvert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity(in *v1beta1.AzureManagedIdentity, out *acme.AzureManagedIdentity, s conversion.Scope) error {
+func autoConvert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity(in *AzureManagedIdentity, out *acme.AzureManagedIdentity, s conversion.Scope) error {
 	out.ClientID = in.ClientID
 	out.ResourceID = in.ResourceID
 	return nil
 }
 
 // Convert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity is an autogenerated conversion function.
-func Convert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity(in *v1beta1.AzureManagedIdentity, out *acme.AzureManagedIdentity, s conversion.Scope) error {
+func Convert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity(in *AzureManagedIdentity, out *acme.AzureManagedIdentity, s conversion.Scope) error {
 	return autoConvert_v1beta1_AzureManagedIdentity_To_acme_AzureManagedIdentity(in, out, s)
 }
 
-func autoConvert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity(in *acme.AzureManagedIdentity, out *v1beta1.AzureManagedIdentity, s conversion.Scope) error {
+func autoConvert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity(in *acme.AzureManagedIdentity, out *AzureManagedIdentity, s conversion.Scope) error {
 	out.ClientID = in.ClientID
 	out.ResourceID = in.ResourceID
 	return nil
 }
 
 // Convert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity is an autogenerated conversion function.
-func Convert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity(in *acme.AzureManagedIdentity, out *v1beta1.AzureManagedIdentity, s conversion.Scope) error {
+func Convert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity(in *acme.AzureManagedIdentity, out *AzureManagedIdentity, s conversion.Scope) error {
 	return autoConvert_acme_AzureManagedIdentity_To_v1beta1_AzureManagedIdentity(in, out, s)
 }
 
-func autoConvert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector(in *v1beta1.CertificateDNSNameSelector, out *acme.CertificateDNSNameSelector, s conversion.Scope) error {
+func autoConvert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector(in *CertificateDNSNameSelector, out *acme.CertificateDNSNameSelector, s conversion.Scope) error {
 	out.MatchLabels = *(*map[string]string)(unsafe.Pointer(&in.MatchLabels))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.DNSZones = *(*[]string)(unsafe.Pointer(&in.DNSZones))
@@ -1308,11 +1307,11 @@ func autoConvert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSe
 }
 
 // Convert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector is an autogenerated conversion function.
-func Convert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector(in *v1beta1.CertificateDNSNameSelector, out *acme.CertificateDNSNameSelector, s conversion.Scope) error {
+func Convert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector(in *CertificateDNSNameSelector, out *acme.CertificateDNSNameSelector, s conversion.Scope) error {
 	return autoConvert_v1beta1_CertificateDNSNameSelector_To_acme_CertificateDNSNameSelector(in, out, s)
 }
 
-func autoConvert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector(in *acme.CertificateDNSNameSelector, out *v1beta1.CertificateDNSNameSelector, s conversion.Scope) error {
+func autoConvert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector(in *acme.CertificateDNSNameSelector, out *CertificateDNSNameSelector, s conversion.Scope) error {
 	out.MatchLabels = *(*map[string]string)(unsafe.Pointer(&in.MatchLabels))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.DNSZones = *(*[]string)(unsafe.Pointer(&in.DNSZones))
@@ -1320,11 +1319,11 @@ func autoConvert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSe
 }
 
 // Convert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector is an autogenerated conversion function.
-func Convert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector(in *acme.CertificateDNSNameSelector, out *v1beta1.CertificateDNSNameSelector, s conversion.Scope) error {
+func Convert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector(in *acme.CertificateDNSNameSelector, out *CertificateDNSNameSelector, s conversion.Scope) error {
 	return autoConvert_acme_CertificateDNSNameSelector_To_v1beta1_CertificateDNSNameSelector(in, out, s)
 }
 
-func autoConvert_v1beta1_Challenge_To_acme_Challenge(in *v1beta1.Challenge, out *acme.Challenge, s conversion.Scope) error {
+func autoConvert_v1beta1_Challenge_To_acme_Challenge(in *Challenge, out *acme.Challenge, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
@@ -1336,11 +1335,11 @@ func autoConvert_v1beta1_Challenge_To_acme_Challenge(in *v1beta1.Challenge, out 
 }
 
 // Convert_v1beta1_Challenge_To_acme_Challenge is an autogenerated conversion function.
-func Convert_v1beta1_Challenge_To_acme_Challenge(in *v1beta1.Challenge, out *acme.Challenge, s conversion.Scope) error {
+func Convert_v1beta1_Challenge_To_acme_Challenge(in *Challenge, out *acme.Challenge, s conversion.Scope) error {
 	return autoConvert_v1beta1_Challenge_To_acme_Challenge(in, out, s)
 }
 
-func autoConvert_acme_Challenge_To_v1beta1_Challenge(in *acme.Challenge, out *v1beta1.Challenge, s conversion.Scope) error {
+func autoConvert_acme_Challenge_To_v1beta1_Challenge(in *acme.Challenge, out *Challenge, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
@@ -1352,11 +1351,11 @@ func autoConvert_acme_Challenge_To_v1beta1_Challenge(in *acme.Challenge, out *v1
 }
 
 // Convert_acme_Challenge_To_v1beta1_Challenge is an autogenerated conversion function.
-func Convert_acme_Challenge_To_v1beta1_Challenge(in *acme.Challenge, out *v1beta1.Challenge, s conversion.Scope) error {
+func Convert_acme_Challenge_To_v1beta1_Challenge(in *acme.Challenge, out *Challenge, s conversion.Scope) error {
 	return autoConvert_acme_Challenge_To_v1beta1_Challenge(in, out, s)
 }
 
-func autoConvert_v1beta1_ChallengeList_To_acme_ChallengeList(in *v1beta1.ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
+func autoConvert_v1beta1_ChallengeList_To_acme_ChallengeList(in *ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
@@ -1373,15 +1372,15 @@ func autoConvert_v1beta1_ChallengeList_To_acme_ChallengeList(in *v1beta1.Challen
 }
 
 // Convert_v1beta1_ChallengeList_To_acme_ChallengeList is an autogenerated conversion function.
-func Convert_v1beta1_ChallengeList_To_acme_ChallengeList(in *v1beta1.ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
+func Convert_v1beta1_ChallengeList_To_acme_ChallengeList(in *ChallengeList, out *acme.ChallengeList, s conversion.Scope) error {
 	return autoConvert_v1beta1_ChallengeList_To_acme_ChallengeList(in, out, s)
 }
 
-func autoConvert_acme_ChallengeList_To_v1beta1_ChallengeList(in *acme.ChallengeList, out *v1beta1.ChallengeList, s conversion.Scope) error {
+func autoConvert_acme_ChallengeList_To_v1beta1_ChallengeList(in *acme.ChallengeList, out *ChallengeList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]v1beta1.Challenge, len(*in))
+		*out = make([]Challenge, len(*in))
 		for i := range *in {
 			if err := Convert_acme_Challenge_To_v1beta1_Challenge(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
@@ -1394,11 +1393,11 @@ func autoConvert_acme_ChallengeList_To_v1beta1_ChallengeList(in *acme.ChallengeL
 }
 
 // Convert_acme_ChallengeList_To_v1beta1_ChallengeList is an autogenerated conversion function.
-func Convert_acme_ChallengeList_To_v1beta1_ChallengeList(in *acme.ChallengeList, out *v1beta1.ChallengeList, s conversion.Scope) error {
+func Convert_acme_ChallengeList_To_v1beta1_ChallengeList(in *acme.ChallengeList, out *ChallengeList, s conversion.Scope) error {
 	return autoConvert_acme_ChallengeList_To_v1beta1_ChallengeList(in, out, s)
 }
 
-func autoConvert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in *v1beta1.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in *ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
 	out.URL = in.URL
 	out.AuthorizationURL = in.AuthorizationURL
 	out.DNSName = in.DNSName
@@ -1416,16 +1415,16 @@ func autoConvert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in *v1beta1.Challen
 }
 
 // Convert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec is an autogenerated conversion function.
-func Convert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in *v1beta1.ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
+func Convert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in *ChallengeSpec, out *acme.ChallengeSpec, s conversion.Scope) error {
 	return autoConvert_v1beta1_ChallengeSpec_To_acme_ChallengeSpec(in, out, s)
 }
 
-func autoConvert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(in *acme.ChallengeSpec, out *v1beta1.ChallengeSpec, s conversion.Scope) error {
+func autoConvert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(in *acme.ChallengeSpec, out *ChallengeSpec, s conversion.Scope) error {
 	out.URL = in.URL
 	out.AuthorizationURL = in.AuthorizationURL
 	out.DNSName = in.DNSName
 	out.Wildcard = in.Wildcard
-	out.Type = v1beta1.ACMEChallengeType(in.Type)
+	out.Type = ACMEChallengeType(in.Type)
 	out.Token = in.Token
 	out.Key = in.Key
 	if err := Convert_acme_ACMEChallengeSolver_To_v1beta1_ACMEChallengeSolver(&in.Solver, &out.Solver, s); err != nil {
@@ -1438,11 +1437,11 @@ func autoConvert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(in *acme.ChallengeS
 }
 
 // Convert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec is an autogenerated conversion function.
-func Convert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(in *acme.ChallengeSpec, out *v1beta1.ChallengeSpec, s conversion.Scope) error {
+func Convert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(in *acme.ChallengeSpec, out *ChallengeSpec, s conversion.Scope) error {
 	return autoConvert_acme_ChallengeSpec_To_v1beta1_ChallengeSpec(in, out, s)
 }
 
-func autoConvert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(in *v1beta1.ChallengeStatus, out *acme.ChallengeStatus, s conversion.Scope) error {
+func autoConvert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(in *ChallengeStatus, out *acme.ChallengeStatus, s conversion.Scope) error {
 	out.Processing = in.Processing
 	out.Presented = in.Presented
 	out.Reason = in.Reason
@@ -1451,24 +1450,24 @@ func autoConvert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(in *v1beta1.Cha
 }
 
 // Convert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus is an autogenerated conversion function.
-func Convert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(in *v1beta1.ChallengeStatus, out *acme.ChallengeStatus, s conversion.Scope) error {
+func Convert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(in *ChallengeStatus, out *acme.ChallengeStatus, s conversion.Scope) error {
 	return autoConvert_v1beta1_ChallengeStatus_To_acme_ChallengeStatus(in, out, s)
 }
 
-func autoConvert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus(in *acme.ChallengeStatus, out *v1beta1.ChallengeStatus, s conversion.Scope) error {
+func autoConvert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus(in *acme.ChallengeStatus, out *ChallengeStatus, s conversion.Scope) error {
 	out.Processing = in.Processing
 	out.Presented = in.Presented
 	out.Reason = in.Reason
-	out.State = v1beta1.State(in.State)
+	out.State = State(in.State)
 	return nil
 }
 
 // Convert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus is an autogenerated conversion function.
-func Convert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus(in *acme.ChallengeStatus, out *v1beta1.ChallengeStatus, s conversion.Scope) error {
+func Convert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus(in *acme.ChallengeStatus, out *ChallengeStatus, s conversion.Scope) error {
 	return autoConvert_acme_ChallengeStatus_To_v1beta1_ChallengeStatus(in, out, s)
 }
 
-func autoConvert_v1beta1_Order_To_acme_Order(in *v1beta1.Order, out *acme.Order, s conversion.Scope) error {
+func autoConvert_v1beta1_Order_To_acme_Order(in *Order, out *acme.Order, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_v1beta1_OrderSpec_To_acme_OrderSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
@@ -1480,11 +1479,11 @@ func autoConvert_v1beta1_Order_To_acme_Order(in *v1beta1.Order, out *acme.Order,
 }
 
 // Convert_v1beta1_Order_To_acme_Order is an autogenerated conversion function.
-func Convert_v1beta1_Order_To_acme_Order(in *v1beta1.Order, out *acme.Order, s conversion.Scope) error {
+func Convert_v1beta1_Order_To_acme_Order(in *Order, out *acme.Order, s conversion.Scope) error {
 	return autoConvert_v1beta1_Order_To_acme_Order(in, out, s)
 }
 
-func autoConvert_acme_Order_To_v1beta1_Order(in *acme.Order, out *v1beta1.Order, s conversion.Scope) error {
+func autoConvert_acme_Order_To_v1beta1_Order(in *acme.Order, out *Order, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_acme_OrderSpec_To_v1beta1_OrderSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
@@ -1496,11 +1495,11 @@ func autoConvert_acme_Order_To_v1beta1_Order(in *acme.Order, out *v1beta1.Order,
 }
 
 // Convert_acme_Order_To_v1beta1_Order is an autogenerated conversion function.
-func Convert_acme_Order_To_v1beta1_Order(in *acme.Order, out *v1beta1.Order, s conversion.Scope) error {
+func Convert_acme_Order_To_v1beta1_Order(in *acme.Order, out *Order, s conversion.Scope) error {
 	return autoConvert_acme_Order_To_v1beta1_Order(in, out, s)
 }
 
-func autoConvert_v1beta1_OrderList_To_acme_OrderList(in *v1beta1.OrderList, out *acme.OrderList, s conversion.Scope) error {
+func autoConvert_v1beta1_OrderList_To_acme_OrderList(in *OrderList, out *acme.OrderList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
@@ -1517,15 +1516,15 @@ func autoConvert_v1beta1_OrderList_To_acme_OrderList(in *v1beta1.OrderList, out 
 }
 
 // Convert_v1beta1_OrderList_To_acme_OrderList is an autogenerated conversion function.
-func Convert_v1beta1_OrderList_To_acme_OrderList(in *v1beta1.OrderList, out *acme.OrderList, s conversion.Scope) error {
+func Convert_v1beta1_OrderList_To_acme_OrderList(in *OrderList, out *acme.OrderList, s conversion.Scope) error {
 	return autoConvert_v1beta1_OrderList_To_acme_OrderList(in, out, s)
 }
 
-func autoConvert_acme_OrderList_To_v1beta1_OrderList(in *acme.OrderList, out *v1beta1.OrderList, s conversion.Scope) error {
+func autoConvert_acme_OrderList_To_v1beta1_OrderList(in *acme.OrderList, out *OrderList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]v1beta1.Order, len(*in))
+		*out = make([]Order, len(*in))
 		for i := range *in {
 			if err := Convert_acme_Order_To_v1beta1_Order(&(*in)[i], &(*out)[i], s); err != nil {
 				return err
@@ -1538,11 +1537,11 @@ func autoConvert_acme_OrderList_To_v1beta1_OrderList(in *acme.OrderList, out *v1
 }
 
 // Convert_acme_OrderList_To_v1beta1_OrderList is an autogenerated conversion function.
-func Convert_acme_OrderList_To_v1beta1_OrderList(in *acme.OrderList, out *v1beta1.OrderList, s conversion.Scope) error {
+func Convert_acme_OrderList_To_v1beta1_OrderList(in *acme.OrderList, out *OrderList, s conversion.Scope) error {
 	return autoConvert_acme_OrderList_To_v1beta1_OrderList(in, out, s)
 }
 
-func autoConvert_v1beta1_OrderSpec_To_acme_OrderSpec(in *v1beta1.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
+func autoConvert_v1beta1_OrderSpec_To_acme_OrderSpec(in *OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	if err := metav1.Convert_v1_ObjectReference_To_meta_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
@@ -1555,11 +1554,11 @@ func autoConvert_v1beta1_OrderSpec_To_acme_OrderSpec(in *v1beta1.OrderSpec, out 
 }
 
 // Convert_v1beta1_OrderSpec_To_acme_OrderSpec is an autogenerated conversion function.
-func Convert_v1beta1_OrderSpec_To_acme_OrderSpec(in *v1beta1.OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
+func Convert_v1beta1_OrderSpec_To_acme_OrderSpec(in *OrderSpec, out *acme.OrderSpec, s conversion.Scope) error {
 	return autoConvert_v1beta1_OrderSpec_To_acme_OrderSpec(in, out, s)
 }
 
-func autoConvert_acme_OrderSpec_To_v1beta1_OrderSpec(in *acme.OrderSpec, out *v1beta1.OrderSpec, s conversion.Scope) error {
+func autoConvert_acme_OrderSpec_To_v1beta1_OrderSpec(in *acme.OrderSpec, out *OrderSpec, s conversion.Scope) error {
 	out.Request = *(*[]byte)(unsafe.Pointer(&in.Request))
 	if err := metav1.Convert_meta_ObjectReference_To_v1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
@@ -1572,11 +1571,11 @@ func autoConvert_acme_OrderSpec_To_v1beta1_OrderSpec(in *acme.OrderSpec, out *v1
 }
 
 // Convert_acme_OrderSpec_To_v1beta1_OrderSpec is an autogenerated conversion function.
-func Convert_acme_OrderSpec_To_v1beta1_OrderSpec(in *acme.OrderSpec, out *v1beta1.OrderSpec, s conversion.Scope) error {
+func Convert_acme_OrderSpec_To_v1beta1_OrderSpec(in *acme.OrderSpec, out *OrderSpec, s conversion.Scope) error {
 	return autoConvert_acme_OrderSpec_To_v1beta1_OrderSpec(in, out, s)
 }
 
-func autoConvert_v1beta1_OrderStatus_To_acme_OrderStatus(in *v1beta1.OrderStatus, out *acme.OrderStatus, s conversion.Scope) error {
+func autoConvert_v1beta1_OrderStatus_To_acme_OrderStatus(in *OrderStatus, out *acme.OrderStatus, s conversion.Scope) error {
 	out.URL = in.URL
 	out.FinalizeURL = in.FinalizeURL
 	out.Authorizations = *(*[]acme.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
@@ -1588,22 +1587,22 @@ func autoConvert_v1beta1_OrderStatus_To_acme_OrderStatus(in *v1beta1.OrderStatus
 }
 
 // Convert_v1beta1_OrderStatus_To_acme_OrderStatus is an autogenerated conversion function.
-func Convert_v1beta1_OrderStatus_To_acme_OrderStatus(in *v1beta1.OrderStatus, out *acme.OrderStatus, s conversion.Scope) error {
+func Convert_v1beta1_OrderStatus_To_acme_OrderStatus(in *OrderStatus, out *acme.OrderStatus, s conversion.Scope) error {
 	return autoConvert_v1beta1_OrderStatus_To_acme_OrderStatus(in, out, s)
 }
 
-func autoConvert_acme_OrderStatus_To_v1beta1_OrderStatus(in *acme.OrderStatus, out *v1beta1.OrderStatus, s conversion.Scope) error {
+func autoConvert_acme_OrderStatus_To_v1beta1_OrderStatus(in *acme.OrderStatus, out *OrderStatus, s conversion.Scope) error {
 	out.URL = in.URL
 	out.FinalizeURL = in.FinalizeURL
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
-	out.State = v1beta1.State(in.State)
+	out.State = State(in.State)
 	out.Reason = in.Reason
-	out.Authorizations = *(*[]v1beta1.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
+	out.Authorizations = *(*[]ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
 	out.FailureTime = (*pkgapismetav1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
 // Convert_acme_OrderStatus_To_v1beta1_OrderStatus is an autogenerated conversion function.
-func Convert_acme_OrderStatus_To_v1beta1_OrderStatus(in *acme.OrderStatus, out *v1beta1.OrderStatus, s conversion.Scope) error {
+func Convert_acme_OrderStatus_To_v1beta1_OrderStatus(in *acme.OrderStatus, out *OrderStatus, s conversion.Scope) error {
 	return autoConvert_acme_OrderStatus_To_v1beta1_OrderStatus(in, out, s)
 }

@@ -34,14 +34,14 @@ module_name="github.com/jetstack/cert-manager"
 
 # Generate deepcopy functions for all internal and external APIs
 deepcopy_inputs=(
-  pkg/apis/certmanager/v1alpha2 \
-  pkg/apis/certmanager/v1alpha3 \
-  pkg/apis/certmanager/v1beta1 \
+  internal/apis/certmanager/v1alpha2 \
+  internal/apis/certmanager/v1alpha3 \
+  internal/apis/certmanager/v1beta1 \
   pkg/apis/certmanager/v1 \
   internal/apis/certmanager \
-  pkg/apis/acme/v1alpha2 \
-  pkg/apis/acme/v1alpha3 \
-  pkg/apis/acme/v1beta1 \
+  internal/apis/acme/v1alpha2 \
+  internal/apis/acme/v1alpha3 \
+  internal/apis/acme/v1beta1 \
   pkg/apis/acme/v1 \
   internal/apis/acme \
   pkg/apis/config/webhook/v1alpha1 \
