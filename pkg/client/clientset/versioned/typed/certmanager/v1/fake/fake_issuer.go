@@ -117,7 +117,7 @@ func (c *FakeIssuers) UpdateStatus(ctx context.Context, issuer *certmanagerv1.Is
 // Delete takes name of the issuer and deletes it. Returns an error if one occurs.
 func (c *FakeIssuers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(issuersResource, c.ns, name), &certmanagerv1.Issuer{})
+		Invokes(testing.NewDeleteActionWithOptions(issuersResource, c.ns, name, opts), &certmanagerv1.Issuer{})
 
 	return err
 }

@@ -117,7 +117,7 @@ func (c *FakeChallenges) UpdateStatus(ctx context.Context, challenge *acmev1.Cha
 // Delete takes name of the challenge and deletes it. Returns an error if one occurs.
 func (c *FakeChallenges) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(challengesResource, c.ns, name), &acmev1.Challenge{})
+		Invokes(testing.NewDeleteActionWithOptions(challengesResource, c.ns, name, opts), &acmev1.Challenge{})
 
 	return err
 }
