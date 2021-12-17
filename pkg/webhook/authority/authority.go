@@ -92,6 +92,7 @@ type SignFunc func(template *x509.Certificate) (*x509.Certificate, error)
 var _ SignFunc = (&DynamicAuthority{}).Sign
 
 func (d *DynamicAuthority) Run(ctx context.Context) error {
+	d.log = logf.FromContext(ctx)
 	if d.SecretNamespace == "" {
 		return fmt.Errorf("SecretNamespace must be set")
 	}
