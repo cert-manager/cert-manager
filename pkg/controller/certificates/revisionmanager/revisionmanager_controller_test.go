@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	logtesting "github.com/go-logr/logr/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,7 +31,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	logtest "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -409,7 +409,7 @@ func TestCertificateRequestsToDelete(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			log := logtest.TestLogger{T: t}
+			log := logtesting.NewTestLogger(t)
 			output := certificateRequestsToDelete(log, test.limit, test.input)
 			if !reflect.DeepEqual(test.exp, output) {
 				t.Errorf("unexpected prune sort response, exp=%v got=%v",

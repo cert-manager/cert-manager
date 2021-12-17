@@ -25,13 +25,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
+	logtesting "github.com/go-logr/logr/testing"
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/webhook/authority"
 	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
 	"github.com/jetstack/cert-manager/test/integration/framework"
@@ -40,7 +40,7 @@ import (
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_Bootstrap(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -56,21 +56,17 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	log := logtesting.TestLogger{T: t}
 	source := tls.DynamicSource{
 		DNSNames: []string{"example.com"},
 		Authority: &authority.DynamicAuthority{
 			SecretNamespace: namespace,
 			SecretName:      "testsecret",
 			RESTConfig:      config,
-			Log:             log,
 		},
-		Log: log,
 	}
-	stopCh := make(chan struct{})
 	errCh := make(chan error)
 	defer func() {
-		close(stopCh)
+		cancel()
 		err := <-errCh
 		if err != nil {
 			t.Fatal(err)
@@ -79,7 +75,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
+		if err := source.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()
@@ -109,7 +105,7 @@ func TestDynamicSource_Bootstrap(t *testing.T) {
 // Ensure that when the source is running against an apiserver, it bootstraps
 // a CA and signs a valid certificate.
 func TestDynamicSource_CARotation(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -125,21 +121,17 @@ func TestDynamicSource_CARotation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	log := logtesting.TestLogger{T: t}
 	source := tls.DynamicSource{
 		DNSNames: []string{"example.com"},
 		Authority: &authority.DynamicAuthority{
 			SecretNamespace: namespace,
 			SecretName:      "testsecret",
 			RESTConfig:      config,
-			Log:             log,
 		},
-		Log: log,
 	}
-	stopCh := make(chan struct{})
 	errCh := make(chan error)
 	defer func() {
-		close(stopCh)
+		cancel()
 		err := <-errCh
 		if err != nil {
 			t.Fatal(err)
@@ -148,7 +140,7 @@ func TestDynamicSource_CARotation(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := source.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
+		if err := source.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running source: %v", err)
 		}
 	}()

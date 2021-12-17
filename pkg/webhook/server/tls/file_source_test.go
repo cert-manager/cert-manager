@@ -17,6 +17,7 @@ limitations under the License.
 package tls
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -26,10 +27,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
+	logtesting "github.com/go-logr/logr/testing"
 	"golang.org/x/sync/errgroup"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -54,30 +56,27 @@ func TestFileSource_ReadsFile(t *testing.T) {
 		CertPath:       certFile,
 		KeyPath:        pkFile,
 		UpdateInterval: interval,
-		Log:            logtesting.TestLogger{T: t},
+		log:            logtesting.NewTestLogger(t),
 	}
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
+	defer cancel()
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
-		return source.Run(stopCh)
+		return source.Run(ctx)
 	})
 
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
 	if err != nil {
-		close(stopCh)
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		close(stopCh)
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
-		close(stopCh)
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
 	}
-	close(stopCh)
 	if err := errGroup.Wait(); err != nil {
 		t.Errorf("FileCertificateSource failed %v", err)
 	}
@@ -104,27 +103,24 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 		CertPath:       certFile,
 		KeyPath:        pkFile,
 		UpdateInterval: interval,
-		Log:            logtesting.TestLogger{T: t},
 	}
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
+	defer cancel()
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
-		return source.Run(stopCh)
+		return source.Run(ctx)
 	})
 
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
 	if err != nil {
-		close(stopCh)
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		close(stopCh)
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
-		close(stopCh)
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
 	}
 
@@ -137,20 +133,16 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	time.Sleep(interval * 2)
 	cert, err = source.GetCertificate(nil)
 	if err != nil {
-		close(stopCh)
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err = x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		close(stopCh)
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
-		close(stopCh)
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
 	}
 
-	close(stopCh)
 	if err := errGroup.Wait(); err != nil {
 		t.Errorf("FileCertificateSource failed: %v", err)
 	}

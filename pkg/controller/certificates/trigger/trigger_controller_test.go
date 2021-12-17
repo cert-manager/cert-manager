@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	logtest "github.com/go-logr/logr/testing"
+	logtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coretesting "k8s.io/client-go/testing"
@@ -440,7 +440,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotBackoff, gotDelay := shouldBackoffReissuingOnFailure(logtest.TestLogger{T: t}, clock, test.givenCert, test.givenNextCR)
+			gotBackoff, gotDelay := shouldBackoffReissuingOnFailure(logtesting.NewTestLogger(t), clock, test.givenCert, test.givenNextCR)
 			assert.Equal(t, test.wantBackoff, gotBackoff)
 			assert.Equal(t, test.wantDelay, gotDelay)
 		})

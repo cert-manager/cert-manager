@@ -75,7 +75,6 @@ func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.W
 		source = &tls.FileCertificateSource{
 			CertPath: opts.TLSConfig.Filesystem.CertFile,
 			KeyPath:  opts.TLSConfig.Filesystem.KeyFile,
-			Log:      log,
 		}
 	case opts.TLSConfig.DynamicConfigProvided():
 		restcfg, err := clientcmd.BuildConfigFromFlags("", opts.KubeConfig)
@@ -90,9 +89,7 @@ func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.W
 				SecretNamespace: opts.TLSConfig.Dynamic.SecretNamespace,
 				SecretName:      opts.TLSConfig.Dynamic.SecretName,
 				RESTConfig:      restcfg,
-				Log:             log,
 			},
-			Log: log,
 		}
 	default:
 		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
@@ -109,7 +106,6 @@ func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.W
 		ValidationWebhook: validationHook,
 		MutationWebhook:   mutationHook,
 		ConversionWebhook: conversionHook,
-		Log:               log,
 	}
 	for _, f := range optionFunctions {
 		f(s)
@@ -121,8 +117,8 @@ const componentWebhook = "webhook"
 
 func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 	ctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
-	ctx = logf.NewContext(ctx, nil, "webhook")
-	log := logf.FromContext(ctx)
+	log := logf.Log
+	ctx = logf.NewContext(ctx, log, "webhook")
 
 	cleanFlagSet := pflag.NewFlagSet(componentWebhook, pflag.ContinueOnError)
 	// Replaces all instances of `_` in flag names with `-`
@@ -193,7 +189,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 				os.Exit(1)
 			}
 
-			if err := srv.Run(stopCh); err != nil {
+			if err := srv.Run(ctx); err != nil {
 				log.Error(err, "Failed running server")
 				os.Exit(1)
 			}

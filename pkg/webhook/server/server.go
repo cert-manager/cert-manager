@@ -37,9 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	ciphers "k8s.io/component-base/cli/flag"
-	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
@@ -103,9 +101,7 @@ type Server struct {
 	MutationWebhook   handlers.MutatingAdmissionHook
 	ConversionWebhook handlers.ConversionHook
 
-	// Log is an optional logger to write informational and error messages to.
-	// If not specified, no messages will be logged.
-	Log logr.Logger
+	log logr.Logger
 
 	// CipherSuites is the list of allowed cipher suites for the server.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
@@ -120,13 +116,9 @@ type Server struct {
 
 type handleFunc func(context.Context, runtime.Object) (runtime.Object, error)
 
-func (s *Server) Run(stopCh <-chan struct{}) error {
-	if s.Log == nil {
-		s.Log = crlog.NullLogger{}
-	}
-
-	gctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
-	g, gctx := errgroup.WithContext(gctx)
+func (s *Server) Run(ctx context.Context) error {
+	s.log = logf.FromContext(ctx)
+	g, gctx := errgroup.WithContext(ctx)
 
 	// if a HealthzAddr is provided, start the healthz listener
 	if s.HealthzAddr != "" {
@@ -138,7 +130,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		healthMux := http.NewServeMux()
 		healthMux.HandleFunc("/healthz", s.handleHealthz)
 		healthMux.HandleFunc("/livez", s.handleLivez)
-		s.Log.V(logf.InfoLevel).Info("listening for insecure healthz connections", "address", s.HealthzAddr)
+		s.log.V(logf.InfoLevel).Info("listening for insecure healthz connections", "address", s.HealthzAddr)
 		server := &http.Server{
 			Handler: healthMux,
 		}
@@ -171,7 +163,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 		profilerMux := http.NewServeMux()
 		// Add pprof endpoints to this mux
 		profiling.Install(profilerMux)
-		s.Log.V(logf.InfoLevel).Info("running go profiler on", "address", s.PprofAddr)
+		s.log.V(logf.InfoLevel).Info("running go profiler on", "address", s.PprofAddr)
 		server := &http.Server{
 			Handler: profilerMux,
 		}
@@ -202,9 +194,9 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 
 	// wrap the listener with TLS if a CertificateSource is provided
 	if s.CertificateSource != nil {
-		s.Log.V(logf.InfoLevel).Info("listening for secure connections", "address", s.ListenAddr)
+		s.log.V(logf.InfoLevel).Info("listening for secure connections", "address", s.ListenAddr)
 		g.Go(func() error {
-			if err := s.CertificateSource.Run(gctx.Done()); (err != nil) && !errors.Is(err, context.Canceled) {
+			if err := s.CertificateSource.Run(gctx); (err != nil) && !errors.Is(err, context.Canceled) {
 				return err
 			}
 			return nil
@@ -224,7 +216,7 @@ func (s *Server) Run(stopCh <-chan struct{}) error {
 			PreferServerCipherSuites: true,
 		})
 	} else {
-		s.Log.V(logf.InfoLevel).Info("listening for insecure connections", "address", s.ListenAddr)
+		s.log.V(logf.InfoLevel).Info("listening for insecure connections", "address", s.ListenAddr)
 	}
 
 	s.listener = listener
@@ -312,7 +304,7 @@ func (s *Server) handle(inner handleFunc) func(w http.ResponseWriter, req *http.
 
 		data, err := io.ReadAll(req.Body)
 		if err != nil {
-			s.Log.Error(err, "failed to read request body")
+			s.log.Error(err, "failed to read request body")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -322,19 +314,19 @@ func (s *Server) handle(inner handleFunc) func(w http.ResponseWriter, req *http.
 		})
 		obj, _, err := codec.Decode(data, nil, nil)
 		if err != nil {
-			s.Log.Error(err, "failed to decode request body")
+			s.log.Error(err, "failed to decode request body")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		result, err := inner(req.Context(), obj)
 		if err != nil {
-			s.Log.Error(err, "failed to process webhook request")
+			s.log.Error(err, "failed to process webhook request")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		if err := codec.Encode(result, w); err != nil {
-			s.Log.Error(err, "failed to encode response body")
+			s.log.Error(err, "failed to encode response body")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -345,7 +337,7 @@ func (s *Server) handleHealthz(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	if s.CertificateSource != nil && !s.CertificateSource.Healthy() {
-		s.Log.V(logf.WarnLevel).Info("Health check failed as CertificateSource is unhealthy")
+		s.log.V(logf.WarnLevel).Info("Health check failed as CertificateSource is unhealthy")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

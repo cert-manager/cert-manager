@@ -22,17 +22,17 @@ import (
 	"testing"
 	"time"
 
+	logtesting "github.com/go-logr/logr/testing"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 )
 
 func Test_clockTimeSeconds(t *testing.T) {
 	fixedClock := fakeclock.NewFakeClock(time.Now())
-	m := New(logtesting.TestLogger{T: t}, fixedClock)
+	m := New(logtesting.NewTestLogger(t), fixedClock)
 
 	tests := map[string]struct {
 		metricName string

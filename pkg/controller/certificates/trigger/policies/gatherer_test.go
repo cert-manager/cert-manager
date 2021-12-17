@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	logtest "github.com/jetstack/cert-manager/pkg/logs/testing"
+	logtesting "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -140,7 +140,7 @@ func TestDataForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			fakeClockStart, _ := time.Parse(time.RFC3339, "2021-01-02T15:04:05Z07:00")
-			log := logtest.TestLogger{T: t}
+			log := logtesting.NewTestLogger(t)
 			turnOnKlogIfVerboseTest(t)
 
 			test.builder.T = t

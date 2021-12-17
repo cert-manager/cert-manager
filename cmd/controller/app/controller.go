@@ -70,12 +70,11 @@ const controllerAgentName = "cert-manager"
 const resyncPeriod = 10 * time.Hour
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
-	rootCtx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
-	rootCtx, cancelContext := context.WithCancel(rootCtx)
+	rootCtx, cancelContext := context.WithCancel(cmdutil.ContextWithStopCh(context.Background(), stopCh))
 	defer cancelContext()
-	g, rootCtx := errgroup.WithContext(rootCtx)
-	rootCtx = logf.NewContext(rootCtx, nil, "controller")
+	rootCtx = logf.NewContext(rootCtx, logf.Log, "controller")
 	log := logf.FromContext(rootCtx)
+	g, rootCtx := errgroup.WithContext(rootCtx)
 
 	ctx, kubeCfg, err := buildControllerContext(rootCtx, opts)
 	if err != nil {

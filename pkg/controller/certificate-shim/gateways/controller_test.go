@@ -24,6 +24,7 @@ import (
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/util/workqueue"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
@@ -183,6 +184,8 @@ type mockWorkqueue struct {
 	callsToAdd []interface{}
 }
 
+var _ workqueue.Interface = &mockWorkqueue{}
+
 func (m *mockWorkqueue) Add(arg0 interface{}) {
 	m.callsToAdd = append(m.callsToAdd, arg0)
 }
@@ -219,10 +222,15 @@ func (m *mockWorkqueue) NumRequeues(arg0 interface{}) int {
 }
 
 func (m *mockWorkqueue) ShutDown() {
-	m.t.Error("workqueue.NumRequeues was called but was not expected to be called")
+	m.t.Error("workqueue.ShutDown was called but was not expected to be called")
+}
+
+func (m *mockWorkqueue) ShutDownWithDrain() {
+	m.t.Error("workqueue.ShutDownWithDrain was called but was not expected to be called")
+
 }
 
 func (m *mockWorkqueue) ShuttingDown() bool {
-	m.t.Error("workqueue.NumRequeues was called but was not expected to be called")
+	m.t.Error("workqueue.ShuttingDown was called but was not expected to be called")
 	return false
 }
