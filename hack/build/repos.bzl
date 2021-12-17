@@ -4131,8 +4131,9 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/gengo",
-        sum = "h1:GohjlNKauSai7gN4wsJkeZ3WAJx4Sh+oT/b5IYn5suA=",
-        version = "v0.0.0-20210813121822-485abfe95c7c",
+        replace = "k8s.io/gengo",
+        sum = "h1:LTfmarWsAxo+qlLq6d4FunAM9ZQSq8i6QI+/btzVk+U=",
+        version = "v0.0.0-20211115164449-b448ea381d54",
     )
 
     go_repository(

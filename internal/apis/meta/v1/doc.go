@@ -17,7 +17,7 @@ limitations under the License.
 // +k8s:conversion-gen=github.com/jetstack/cert-manager/internal/apis/meta
 // +k8s:conversion-gen-external-types=github.com/jetstack/cert-manager/pkg/apis/meta/v1
 // +k8s:defaulter-gen=TypeMeta
-// +k8s:defaulter-gen-input=../../../../pkg/apis/meta/v1
+// +k8s:defaulter-gen-input=github.com/jetstack/cert-manager/pkg/apis/meta/v1
 
 // +groupName=meta.cert-manager.io
 package v1

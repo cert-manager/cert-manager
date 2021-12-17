@@ -105,28 +105,7 @@ conversiongen=$PWD/$7
 
 shift 7
 
-fake_gopath=""
-fake_repopath=""
-ensure-in-gopath() {
-  export GOROOT=$go_sdk
-
-  fake_gopath=$(mktemp -d -t codegen.gopath.XXXX)
-
-  fake_repopath=$fake_gopath/src/github.com/jetstack/cert-manager
-  mkdir -p "$fake_repopath"
-  cp -R "$BUILD_WORKSPACE_DIRECTORY/." "$fake_repopath"
-
-  export GOPATH=$fake_gopath
-  cd "$fake_repopath"
-  echo "Created fake GOPATH to run code generators in"
-}
-
-cleanup_gopath() {
-  export GO111MODULE=off
-  "$go" clean --modcache
-  rm -rf "$fake_gopath" || true
-}
-trap cleanup_gopath EXIT
+export GOROOT=$go_sdk
 
 # clean will delete files matching name in path.
 #
@@ -151,24 +130,6 @@ mkcp() {
 # Export mkcp for use in sub-shells
 export -f mkcp
 
-copyfiles() {
-  # Don't copy data if the workspace directory is already within the GOPATH
-  if [ "${BUILD_WORKSPACE_DIRECTORY:0:${#GOPATH}}" = "$GOPATH" ]; then
-    return 0
-  fi
-
-  path=$1
-  name=$2
-  if [[ ! -d "$path" ]]; then
-    return 0
-  fi
-  (
-    cd "$GOPATH/src/$module_name/$path"
-
-    find "." -name "$name" -exec bash -c "mkcp {} \"$BUILD_WORKSPACE_DIRECTORY/$path/{}\"" \;
-  )
-}
-
 gen-deepcopy() {
   clean pkg/apis 'zz_generated.deepcopy.go'
   clean pkg/acme/webhook/apis 'zz_generated.deepcopy.go'
@@ -180,10 +141,8 @@ gen-deepcopy() {
     --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     --output-file-base zz_generated.deepcopy \
+    --trim-path-prefix="$module_name" \
     --bounding-dirs "${module_name}"
-  for dir in "${deepcopy_inputs[@]}"; do
-    copyfiles "$dir" "zz_generated.deepcopy.go"
-  done
 }
 
 gen-clientsets() {
@@ -196,8 +155,8 @@ gen-clientsets() {
     --clientset-name versioned \
     --input-base "" \
     --input "$joined" \
+    --trim-path-prefix="$module_name" \
     --output-package "${client_package}"/clientset
-  copyfiles "${client_subpackage}/clientset" "*.go"
 }
 
 gen-listers() {
@@ -208,8 +167,8 @@ gen-listers() {
   "$listergen" \
     --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
+    --trim-path-prefix="$module_name" \
     --output-package "${client_package}"/listers
-  copyfiles "${client_subpackage}/listers" "*.go"
 }
 
 gen-informers() {
@@ -222,8 +181,8 @@ gen-informers() {
     --input-dirs "$joined" \
     --versioned-clientset-package "${client_package}"/clientset/versioned \
     --listers-package "${client_package}"/listers \
+    --trim-path-prefix="$module_name" \
     --output-package "${client_package}"/informers
-  copyfiles "${client_subpackage}/informers" "*.go"
 }
 
 gen-defaulters() {
@@ -235,10 +194,8 @@ gen-defaulters() {
   "$defaultergen" \
     --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
+    --trim-path-prefix="$module_name" \
     -O zz_generated.defaults
-  for dir in "${defaulter_inputs[@]}"; do
-    copyfiles "$dir" "zz_generated.defaults.go"
-  done
 }
 
 gen-conversions() {
@@ -258,24 +215,12 @@ gen-conversions() {
       --extra-peer-dirs $( IFS=$','; echo "${CONVERSION_EXTRA_PEER_PKGS[*]}" ) \
       --extra-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
       --input-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
+      --trim-path-prefix="$module_name" \
       -O zz_generated.conversion
-
-  # copy into source folder
-  for dir in "${conversion_inputs[@]}"; do
-    copyfiles "$dir" "zz_generated.conversion.go"
-  done
 }
 
 runfiles="$(pwd)"
-export GO111MODULE=off
-ensure-in-gopath
-old=${GOCACHE:-}
-export GOCACHE=$(mktemp -d -t codegen.gocache.XXXX)
-export GO111MODULE=on
-export GOSUMDB=sum.golang.org
-"$go_sdk/bin/go" mod vendor
-export GO111MODULE=off
-export GOCACHE=$old
+cd "$BUILD_WORKSPACE_DIRECTORY"
 
 gen-deepcopy
 gen-clientsets
@@ -285,6 +230,5 @@ gen-defaulters
 gen-conversions
 
 ## Call update-bazel
-export GO111MODULE=on
 cd "$runfiles"
 "$@"

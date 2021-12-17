@@ -236,4 +236,9 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.0 // indirect
 )
 
-replace golang.org/x/net => golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
+replace (
+	golang.org/x/net => golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
+
+	// Update gengo to ensure we have the --trim-path-prefix feature in code-generator tools.
+	k8s.io/gengo => k8s.io/gengo v0.0.0-20211115164449-b448ea381d54
+)
