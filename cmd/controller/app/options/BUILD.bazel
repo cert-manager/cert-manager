@@ -7,6 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/util:go_default_library",
+        "//internal/controller/feature:go_default_library",
         "//pkg/apis/certmanager:go_default_library",
         "//pkg/controller/acmechallenges:go_default_library",
         "//pkg/controller/acmeorders:go_default_library",
@@ -32,7 +33,6 @@ go_library(
         "//pkg/controller/certificatesigningrequests/venafi:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/issuers:go_default_library",
-        "//pkg/feature:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/feature:go_default_library",
