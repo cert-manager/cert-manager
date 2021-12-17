@@ -72,6 +72,7 @@ helm upgrade \
     --set startupapicheck.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
     --set featureGates="${FEATURE_GATES//,/\\,}" `# escape commas in --set by replacing , with \, (see https://github.com/helm/helm/issues/2952)` \
+    --set "webhook.extraArgs={--feature-gates=AllAlpha=true}" \
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
     "$REPO_ROOT/bazel-bin/deploy/charts/cert-manager/cert-manager.tgz"

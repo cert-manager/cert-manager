@@ -48,6 +48,12 @@ type WebhookConfiguration struct {
 	// pprofAddress configures the address on which /debug/pprof endpoint will be served if enabled.
 	// Defaults to 'localhost:6060'.
 	PprofAddress string `json:"pprofAddress,omitempty"`
+
+	// featureGates is a map of feature names to bools that enable or disable experimental
+	// features.
+	// Default: nil
+	// +optional
+	FeatureGates map[string]bool `json:"featureGates,omitempty"`
 }
 
 // TLSConfig configures how TLS certificates are sourced for serving.
