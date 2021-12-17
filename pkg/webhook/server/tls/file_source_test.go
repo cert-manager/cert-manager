@@ -59,7 +59,6 @@ func TestFileSource_ReadsFile(t *testing.T) {
 		log:            logtesting.NewTestLogger(t),
 	}
 	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
-	defer cancel()
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Run(ctx)
@@ -68,15 +67,19 @@ func TestFileSource_ReadsFile(t *testing.T) {
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
 	if err != nil {
+		cancel()
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
+		cancel()
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
+		cancel()
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
 	}
+	cancel()
 	if err := errGroup.Wait(); err != nil {
 		t.Errorf("FileCertificateSource failed %v", err)
 	}
@@ -105,7 +108,6 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 		UpdateInterval: interval,
 	}
 	ctx, cancel := context.WithCancel(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)))
-	defer cancel()
 	errGroup := new(errgroup.Group)
 	errGroup.Go(func() error {
 		return source.Run(ctx)
@@ -114,13 +116,16 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	time.Sleep(interval * 2)
 	cert, err := source.GetCertificate(nil)
 	if err != nil {
+		cancel()
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
+		cancel()
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
+		cancel()
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
 	}
 
@@ -133,16 +138,20 @@ func TestFileSource_UpdatesFile(t *testing.T) {
 	time.Sleep(interval * 2)
 	cert, err = source.GetCertificate(nil)
 	if err != nil {
+		cancel()
 		t.Fatalf("got an unexpected error: %v", err)
 	}
 	x509Crt, err = x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
+		cancel()
 		t.Fatalf("failed to decode x509 certificate: %v", err)
 	}
 	if x509Crt.Subject.SerialNumber != serial {
+		cancel()
 		t.Errorf("certificate had unexpected serial number. exp=%s, got=%s", serial, x509Crt.Subject.SerialNumber)
 	}
 
+	cancel()
 	if err := errGroup.Wait(); err != nil {
 		t.Errorf("FileCertificateSource failed: %v", err)
 	}
