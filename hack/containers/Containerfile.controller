@@ -1,0 +1,16 @@
+ARG BASE_IMAGE
+
+FROM $BASE_IMAGE
+
+ARG BINARY_PATH
+ARG LICENSE_PATH
+ARG LICENSES_PATH
+
+COPY $BINARY_PATH /app/cmd/controller/controller
+
+COPY $LICENSE_PATH /licenses/LICENSE
+COPY $LICENSES_PATH /licenses/LICENSES
+
+ENTRYPOINT ["/app/cmd/controller/controller"]
+
+# vim: syntax=dockerfile

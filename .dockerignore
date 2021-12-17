@@ -1,0 +1,7 @@
+bin/*
+bazel*
+
+!bin/server/**
+!bin/cmctl/cmctl-linux-*
+!bin/scratch/cert-manager.license
+!bin/scratch/cert-manager.licenses_notice
