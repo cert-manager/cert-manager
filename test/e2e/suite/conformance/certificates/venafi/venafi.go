@@ -56,14 +56,14 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 
 	provisioner := new(venafiProvisioner)
 	(&certificates.Suite{
-		Name:                "Venafi Issuer",
+		Name:                "Venafi TPP Issuer",
 		CreateIssuerFunc:    provisioner.createIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 
 	(&certificates.Suite{
-		Name:                "Venafi ClusterIssuer",
+		Name:                "Venafi TPP ClusterIssuer",
 		CreateIssuerFunc:    provisioner.createClusterIssuer,
 		DeleteIssuerFunc:    provisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
