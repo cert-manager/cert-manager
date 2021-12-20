@@ -37,13 +37,13 @@ HELM_darwin_amd64_SHA256SUM=84a1ff17dd03340652d96e8be5172a921c97825fd278a2113c82
 HELM_darwin_arm64_SHA256SUM=a50b499dbd0bbec90761d50974bf1e67cc6d503ea20d03b4a1275884065b7e9e
 
 bin/tools/helm: bin/scratch/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz | bin/tools
+	./hack/util/checkhash.sh $< $(HELM_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	@# O writes the specified file to stdout
 	tar xfO $< $(HOST_OS)-$(HOST_ARCH)/helm > $@
 	chmod +x $@
 
 bin/scratch/tools/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | bin/scratch/tools
 	curl -sSfL https://get.helm.sh/helm-v$(HELM_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz > $@
-	./hack/util/checkhash.sh $@ $(HELM_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
 ###########
 # kubectl #
@@ -54,12 +54,12 @@ KUBECTL_darwin_amd64_SHA256SUM=00bb3947ac6ff15690f90ee1a732d0a9a44360fc7743dbfee
 KUBECTL_darwin_arm64_SHA256SUM=c81a314ab7f0827a5376f8ffd6d47f913df046275d44c562915a822229819d77
 
 bin/tools/kubectl: bin/scratch/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+	./hack/util/checkhash.sh $< $(KUBECTL_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	cp $< $@
 	chmod +x $@
 
 bin/scratch/tools/kubectl_$(KUBECTL_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(HOST_OS)/$(HOST_ARCH)/kubectl > $@
-	./hack/util/checkhash.sh $@ $(KUBECTL_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
 ########
 # kind #
@@ -70,12 +70,12 @@ KIND_darwin_amd64_SHA256SUM=432bef555a70e9360b44661c759658265b9eaaf7f75f1beec4c4
 KIND_darwin_arm64_SHA256SUM=4f019c578600c087908ac59dd0c4ce1791574f153a70608adb372d5abc58cd47
 
 bin/tools/kind: bin/scratch/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+	./hack/util/checkhash.sh $< $(KIND_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	cp $< $@
 	chmod +x $@
 
 bin/scratch/tools/kind_$(KIND_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://github.com/kubernetes-sigs/kind/releases/download/v$(KIND_VERSION)/kind-$(HOST_OS)-$(HOST_ARCH) > $@
-	./hack/util/checkhash.sh $@ $(KIND_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
 ##########
 # cosign #
@@ -86,6 +86,7 @@ COSIGN_darwin_amd64_SHA256SUM=bcffa19e80f3e94d70e1fb1b0f591b0dec08926b31d3609fe3
 COSIGN_darwin_arm64_SHA256SUM=eda58f090d8f4f1db5a0e3a0d2d8845626181fe8aa1cea1791e0afa87fee7b5c
 
 bin/tools/cosign: bin/scratch/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+	./hack/util/checkhash.sh $< $(COSIGN_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	cp $< $@
 	chmod +x $@
 
@@ -93,7 +94,6 @@ bin/tools/cosign: bin/scratch/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_A
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
 bin/scratch/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://github.com/sigstore/cosign/releases/download/v$(COSIGN_VERSION)/cosign-$(HOST_OS)-$(HOST_ARCH) > $@
-	./hack/util/checkhash.sh $@ $(COSIGN_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
 #########
 # cmrel #
@@ -118,12 +118,12 @@ YTT_darwin_amd64_SHA256SUM=9662e3f8e30333726a03f7a5ae6231fbfb2cebb6c1aa3f545b253
 YTT_darwin_arm64_SHA256SUM=c970b2c13d4059f0bee3bf3ceaa09bd0674a62c24550453d90b284d885a06b7b
 
 bin/tools/ytt: bin/scratch/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+	./hack/util/checkhash.sh $< $(YTT_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	cp $< $@
 	chmod +x $@
 
 bin/scratch/tools/ytt_$(YTT_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://github.com/vmware-tanzu/carvel-ytt/releases/download/v$(YTT_VERSION)/ytt-$(HOST_OS)-$(HOST_ARCH) > $@
-	./hack/util/checkhash.sh $@ $(YTT_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 
 ######
 # yq #
@@ -134,9 +134,9 @@ YQ_darwin_amd64_SHA256SUM=5af6162d858b1adc4ad23ef11dff19ede5565d8841ac611b09500f
 YQ_darwin_arm64_SHA256SUM=665ae1af7c73866cba74dd878c12ac49c091b66e46c9ed57d168b43955f5dd69
 
 bin/tools/yq: bin/scratch/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/tools
+	./hack/util/checkhash.sh $< $(YQ_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
 	cp $< $@
 	chmod +x $@
 
 bin/scratch/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$(HOST_OS)_$(HOST_ARCH) > $@
-	./hack/util/checkhash.sh $@ $(YQ_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
