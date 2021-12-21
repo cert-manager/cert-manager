@@ -7,12 +7,12 @@ go_test(
         "//pkg/webhook/handlers/testdata/apis/testgroup/crds:all-srcs",
     ],
     deps = [
-        "//pkg/logs/testing:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v2:go_default_library",
         "//test/integration/framework:go_default_library",
+        "@com_github_go_logr_logr//testing:go_default_library",
         "@io_k8s_apimachinery//pkg/api/equality:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",

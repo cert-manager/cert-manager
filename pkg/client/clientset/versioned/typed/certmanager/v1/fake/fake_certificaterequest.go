@@ -117,7 +117,7 @@ func (c *FakeCertificateRequests) UpdateStatus(ctx context.Context, certificateR
 // Delete takes name of the certificateRequest and deletes it. Returns an error if one occurs.
 func (c *FakeCertificateRequests) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(certificaterequestsResource, c.ns, name), &certmanagerv1.CertificateRequest{})
+		Invokes(testing.NewDeleteActionWithOptions(certificaterequestsResource, c.ns, name, opts), &certmanagerv1.CertificateRequest{})
 
 	return err
 }

@@ -35,7 +35,7 @@ func NewACMESolverCommand(stopCh <-chan struct{}) *cobra.Command {
 		Short: "HTTP server used to solve ACME challenges.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootCtx := util.ContextWithStopCh(context.Background(), stopCh)
-			rootCtx = logf.NewContext(rootCtx, nil, "acmesolver")
+			rootCtx = logf.NewContext(rootCtx, logf.Log, "acmesolver")
 			log := logf.FromContext(rootCtx)
 
 			completedCh := make(chan struct{})

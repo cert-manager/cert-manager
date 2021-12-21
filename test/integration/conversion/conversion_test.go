@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	logtesting "github.com/go-logr/logr/testing"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,7 +30,6 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	testapi "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 	testv1 "github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
@@ -80,7 +80,7 @@ func TestConversion(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			log := logtesting.TestLogger{T: t}
+			log := logtesting.NewTestLogger(t)
 
 			scheme := runtime.NewScheme()
 			testapi.Install(scheme)

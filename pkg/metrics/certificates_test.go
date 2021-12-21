@@ -22,13 +22,13 @@ import (
 	"testing"
 	"time"
 
+	logtesting "github.com/go-logr/logr/testing"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -169,7 +169,7 @@ func TestCertificateMetrics(t *testing.T) {
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			m := New(logtesting.TestLogger{T: t}, clock.RealClock{})
+			m := New(logtesting.NewTestLogger(t), clock.RealClock{})
 			m.UpdateCertificate(context.TODO(), test.crt)
 
 			if err := testutil.CollectAndCompare(m.certificateExpiryTimeSeconds,
@@ -197,7 +197,7 @@ func TestCertificateMetrics(t *testing.T) {
 }
 
 func TestCertificateCache(t *testing.T) {
-	m := New(logtesting.TestLogger{T: t}, clock.RealClock{})
+	m := New(logtesting.NewTestLogger(t), clock.RealClock{})
 
 	crt1 := gen.Certificate("crt1",
 		gen.SetCertificateUID("uid-1"),

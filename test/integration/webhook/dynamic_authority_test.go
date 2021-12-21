@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
+	logtesting "github.com/go-logr/logr/testing"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +35,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/webhook/authority"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
@@ -44,7 +45,7 @@ import (
 // Ensure that when the controller is running against an empty API server, it
 // creates and stores a new CA keypair.
 func TestDynamicAuthority_Bootstrap(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -64,12 +65,10 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 		SecretNamespace: namespace,
 		SecretName:      "testsecret",
 		RESTConfig:      config,
-		Log:             logtesting.TestLogger{T: t},
 	}
-	stopCh := make(chan struct{})
 	errCh := make(chan error)
 	defer func() {
-		close(stopCh)
+		cancel()
 		err := <-errCh
 		if err != nil {
 			t.Fatal(err)
@@ -78,7 +77,7 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := auth.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
+		if err := auth.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running authority: %v", err)
 		}
 	}()
@@ -94,7 +93,7 @@ func TestDynamicAuthority_Bootstrap(t *testing.T) {
 // Ensures that when the controller is running and the CA Secret is deleted,
 // it is automatically recreated within a bounded amount of time.
 func TestDynamicAuthority_Recreates(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	ctx, cancel := context.WithTimeout(logr.NewContext(context.Background(), logtesting.NewTestLogger(t)), time.Second*40)
 	defer cancel()
 
 	config, stop := framework.RunControlPlane(t, ctx)
@@ -114,12 +113,10 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 		SecretNamespace: namespace,
 		SecretName:      "testsecret",
 		RESTConfig:      config,
-		Log:             logtesting.TestLogger{T: t},
 	}
-	stopCh := make(chan struct{})
 	errCh := make(chan error)
 	defer func() {
-		close(stopCh)
+		cancel()
 		err := <-errCh
 		if err != nil {
 			t.Fatal(err)
@@ -128,7 +125,7 @@ func TestDynamicAuthority_Recreates(t *testing.T) {
 	// run the dynamic authority controller in the background
 	go func() {
 		defer close(errCh)
-		if err := auth.Run(stopCh); err != nil && !errors.Is(err, context.Canceled) {
+		if err := auth.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			errCh <- fmt.Errorf("Unexpected error running authority: %v", err)
 		}
 	}()

@@ -110,7 +110,7 @@ func (c *FakeClusterIssuers) UpdateStatus(ctx context.Context, clusterIssuer *ce
 // Delete takes name of the clusterIssuer and deletes it. Returns an error if one occurs.
 func (c *FakeClusterIssuers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(clusterissuersResource, name), &certmanagerv1.ClusterIssuer{})
+		Invokes(testing.NewRootDeleteActionWithOptions(clusterissuersResource, name, opts), &certmanagerv1.ClusterIssuer{})
 	return err
 }
 

@@ -139,28 +139,21 @@ func WithRelatedResourceName(l logr.Logger, name, namespace, kind string) logr.L
 var contextKey = &struct{}{}
 
 func FromContext(ctx context.Context, names ...string) logr.Logger {
-	l := ctx.Value(contextKey)
-	if l == nil {
-		return Log
-	}
-	lT := l.(logr.Logger)
-	for _, n := range names {
-		lT = lT.WithName(n)
-	}
-	return lT
-}
-
-func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Context {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if l == nil {
-		l = FromContext(ctx)
+	l, err := logr.FromContext(ctx)
+	if err != nil {
+		l = Log
 	}
 	for _, n := range names {
 		l = l.WithName(n)
 	}
-	return context.WithValue(ctx, contextKey, l)
+	return l
+}
+
+func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Context {
+	for _, n := range names {
+		l = l.WithName(n)
+	}
+	return logr.NewContext(ctx, l)
 }
 
 func V(level int) klog.Verbose {

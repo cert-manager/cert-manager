@@ -31,13 +31,13 @@ import (
 	"testing"
 	"time"
 
+	logtesting "github.com/go-logr/logr/testing"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
-	logtesting "github.com/jetstack/cert-manager/pkg/logs/testing"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/webhook/server"
 )
@@ -57,7 +57,7 @@ type ServerOptions struct {
 }
 
 func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...app.ServerOption) (ServerOptions, StopFunc) {
-	log := logtesting.TestLogger{T: t}
+	log := logtesting.NewTestLogger(t)
 
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
 	webhookFlags := options.NewWebhookFlags()
@@ -98,16 +98,16 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	webhookConfig.SecurePort = pointer.Int(0)
 	webhookConfig.HealthzPort = pointer.Int(0)
 
-	stopCh := make(chan struct{})
 	errCh := make(chan error)
 	srv, err := app.NewServerWithOptions(log, *webhookFlags, *webhookConfig, argumentsForNewServerWithOptions...)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		defer close(errCh)
-		if err := srv.Run(stopCh); err != nil {
+		if err := srv.Run(ctx); err != nil {
 			errCh <- fmt.Errorf("error running webhook server: %v", err)
 		}
 	}()
@@ -132,7 +132,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 		CAPEM: caPEM,
 	}
 	return serverOpts, func() {
-		close(stopCh)
+		cancel()
 		err := <-errCh // Wait for shutdown
 		if err != nil {
 			t.Fatal(err)

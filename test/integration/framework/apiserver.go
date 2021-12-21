@@ -137,7 +137,7 @@ func init() {
 // patchCRDConversion overrides the conversion configuration of the CRDs that
 // are loaded in to the integration test API server,
 // configuring the conversion to be handled by the local webhook server.
-func patchCRDConversion(crds []apiextensionsv1.CustomResourceDefinition, url string, caPEM []byte) {
+func patchCRDConversion(crds []*apiextensionsv1.CustomResourceDefinition, url string, caPEM []byte) {
 	for i := range crds {
 		url := fmt.Sprintf("%s%s", url, "/convert")
 		crds[i].Spec.Conversion = &apiextensionsv1.CustomResourceConversion{
@@ -153,14 +153,14 @@ func patchCRDConversion(crds []apiextensionsv1.CustomResourceDefinition, url str
 	}
 }
 
-func readCustomResourcesAtPath(t *testing.T, path string) []apiextensionsv1.CustomResourceDefinition {
+func readCustomResourcesAtPath(t *testing.T, path string) []*apiextensionsv1.CustomResourceDefinition {
 	serializer := jsonserializer.NewSerializerWithOptions(jsonserializer.DefaultMetaFactory, internalScheme, internalScheme, jsonserializer.SerializerOptions{
 		Yaml: true,
 	})
 	converter := runtime.UnsafeObjectConvertor(internalScheme)
 	codec := versioning.NewCodec(serializer, serializer, converter, internalScheme, internalScheme, internalScheme, runtime.InternalGroupVersioner, runtime.InternalGroupVersioner, internalScheme.Name())
 
-	var crds []apiextensionsv1.CustomResourceDefinition
+	var crds []*apiextensionsv1.CustomResourceDefinition
 	if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -180,13 +180,13 @@ func readCustomResourcesAtPath(t *testing.T, path string) []apiextensionsv1.Cust
 	return crds
 }
 
-func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]apiextensionsv1.CustomResourceDefinition, error) {
+func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path string) ([]*apiextensionsv1.CustomResourceDefinition, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var crds []apiextensionsv1.CustomResourceDefinition
+	var crds []*apiextensionsv1.CustomResourceDefinition
 	for _, d := range strings.Split(string(data), "\n---\n") {
 		// skip empty YAML documents
 		if strings.TrimSpace(d) == "" {
@@ -203,7 +203,7 @@ func readCRDsAtPath(codec runtime.Codec, converter runtime.ObjectConvertor, path
 			return nil, err
 		}
 
-		crds = append(crds, out)
+		crds = append(crds, &out)
 	}
 
 	return crds, nil

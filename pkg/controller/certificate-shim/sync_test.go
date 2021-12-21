@@ -2431,7 +2431,7 @@ func TestSync(t *testing.T) {
 			}
 			b.Init()
 			defer b.Stop()
-			sync := SyncFnFor(b.Recorder, logr.DiscardLogger{}, b.CMClient, b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), controller.IngressShimOptions{
+			sync := SyncFnFor(b.Recorder, logr.Discard(), b.CMClient, b.SharedInformerFactory.Certmanager().V1().Certificates().Lister(), controller.IngressShimOptions{
 				DefaultIssuerName:                 test.DefaultIssuerName,
 				DefaultIssuerKind:                 test.DefaultIssuerKind,
 				DefaultIssuerGroup:                test.DefaultIssuerGroup,

@@ -53,7 +53,7 @@ type Builder struct {
 
 // New creates a basic Builder, setting the sync call to the one given
 func NewBuilder(controllerctx *Context, name string) *Builder {
-	ctx := logf.NewContext(controllerctx.RootContext, nil, name)
+	ctx := logf.NewContext(controllerctx.RootContext, logf.Log, name)
 	return &Builder{
 		context: controllerctx,
 		ctx:     ctx,

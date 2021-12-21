@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	logtesting "github.com/go-logr/logr/testing"
+
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -28,7 +30,7 @@ import (
 )
 
 func TestRunSuiteWithTSIG(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), nil, t.Name())
+	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
 		Zones:         []string{rfc2136TestZone},
 		EnableTSIG:    true,
@@ -71,7 +73,7 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 }
 
 func TestRunSuiteNoTSIG(t *testing.T) {
-	ctx := logf.NewContext(context.TODO(), nil, t.Name())
+	ctx := logf.NewContext(context.TODO(), logtesting.NewTestLogger(t), t.Name())
 	server := &testserver.BasicServer{
 		Zones: []string{rfc2136TestZone},
 	}

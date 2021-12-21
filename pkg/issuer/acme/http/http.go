@@ -48,6 +48,8 @@ const (
 	HTTP01Timeout = time.Minute * 15
 	// acmeSolverListenPort is the port acmesolver should listen on
 	acmeSolverListenPort = 8089
+
+	loggerName = "http01"
 )
 
 var (
@@ -92,10 +94,6 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 	}, nil
 }
 
-func http01LogCtx(ctx context.Context) context.Context {
-	return logf.NewContext(ctx, nil, "http01")
-}
-
 func http01IngressCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
 	if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
 		return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
@@ -118,7 +116,8 @@ func getServiceType(ch *cmacme.Challenge) (corev1.ServiceType, error) {
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
 func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
-	ctx = http01LogCtx(ctx)
+	log := logf.FromContext(ctx).WithName(loggerName)
+	ctx = logf.NewContext(ctx, log)
 
 	_, podErr := s.ensurePod(ctx, ch)
 	svc, svcErr := s.ensureService(ctx, ch)
@@ -148,8 +147,8 @@ func (s *Solver) Present(ctx context.Context, issuer v1.GenericIssuer, ch *cmacm
 }
 
 func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.Challenge) error {
-	ctx = logf.NewContext(http01LogCtx(ctx), nil, "selfCheck")
-	log := logf.FromContext(ctx)
+	log := logf.FromContext(ctx, loggerName, "selfCheck")
+	ctx = logf.NewContext(ctx, log)
 
 	// HTTP Present is idempotent and the state of the system may have
 	// changed since present was called by the controllers (killed pods, drained nodes)

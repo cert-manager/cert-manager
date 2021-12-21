@@ -6,7 +6,6 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/webhook/server",
     visibility = ["//visibility:public"],
     deps = [
-        "//cmd/util:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/profiling:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
@@ -21,7 +20,6 @@ go_library(
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
         "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
         "@io_k8s_component_base//cli/flag:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
     ],
 )
@@ -48,8 +46,8 @@ go_test(
     srcs = ["server_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/logs/testing:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
+        "@com_github_go_logr_logr//testing:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",

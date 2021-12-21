@@ -8,9 +8,9 @@ go_library(
     deps = [
         "//cmd/webhook/app:go_default_library",
         "//cmd/webhook/app/options:go_default_library",
-        "//pkg/logs/testing:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//pkg/webhook/server:go_default_library",
+        "@com_github_go_logr_logr//testing:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
         "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
         "@io_k8s_utils//pointer:go_default_library",
