@@ -244,8 +244,8 @@ func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi
 			return nil, nil
 		}
 		// If the Issuing condition on the Certificate is newer than the
-		// failure time on CertificateRequest it means that the
-		// CertificateRequest failed during previous issuance (for the
+		// failure time on CertificateRequest, it means that the
+		// CertificateRequest failed during the previous issuance (for the
 		// same revision). If it is a CertificateRequest that failed
 		// during the previous issuance, then it should be deleted so
 		// that we create a new one for this issuance.

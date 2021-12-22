@@ -605,9 +605,7 @@ func TestProcessItem(t *testing.T) {
 			if test.secrets != nil {
 				builder.KubeObjects = append(builder.KubeObjects, test.secrets...)
 			}
-			for _, req := range test.requests {
-				builder.CertManagerObjects = append(builder.CertManagerObjects, req)
-			}
+			builder.CertManagerObjects = append(builder.CertManagerObjects, test.requests...)
 			builder.Init()
 
 			// Register informers used by the controller using the registration wrapper
