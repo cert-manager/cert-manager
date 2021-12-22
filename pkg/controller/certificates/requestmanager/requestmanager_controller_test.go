@@ -80,11 +80,17 @@ func TestProcessItem(t *testing.T) {
 	)
 	fixedNow := metav1.NewTime(time.Now())
 	fixedClock := fakeclock.NewFakeClock(fixedNow.Time)
-	failedCRCondition := cmapi.CertificateRequestCondition{
+	failedCRConditionPreviousIssuance := cmapi.CertificateRequestCondition{
 		Type:               cmapi.CertificateRequestConditionReady,
 		Status:             cmmeta.ConditionFalse,
 		Reason:             cmapi.CertificateRequestReasonFailed,
 		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(-1 * time.Hour)},
+	}
+	failedCRConditionThisIssuance := cmapi.CertificateRequestCondition{
+		Type:               cmapi.CertificateRequestConditionReady,
+		Status:             cmmeta.ConditionFalse,
+		Reason:             cmapi.CertificateRequestReasonFailed,
+		LastTransitionTime: &metav1.Time{Time: fixedNow.Time.Add(1 * time.Minute)},
 	}
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.
@@ -534,7 +540,7 @@ func TestProcessItem(t *testing.T) {
 			},
 			certificate: gen.CertificateFrom(bundle1.certificate,
 				gen.SetCertificateNextPrivateKeySecretName("exists"),
-				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
 				gen.SetCertificateRevision(5),
 			),
 			requests: []runtime.Object{
@@ -543,7 +549,8 @@ func TestProcessItem(t *testing.T) {
 						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
 						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 					}),
-					gen.AddCertificateRequestStatusCondition(failedCRCondition),
+					gen.AddCertificateRequestStatusCondition(failedCRConditionPreviousIssuance),
+					gen.SetCertificateRequestFailureTime(metav1.Time{Time: fixedNow.Time.Add(time.Hour * -1)}),
 				),
 			},
 			expectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-notrandom"`},
@@ -556,6 +563,29 @@ func TestProcessItem(t *testing.T) {
 							cmapi.CertificateRequestRevisionAnnotationKey:   "6",
 						}),
 					)), relaxedCertificateRequestMatcher),
+			},
+		},
+		"should do nothing if the CertificateRequest that is valid for spec has failed during this issuance cycle": {
+			secrets: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "exists"},
+					Data:       map[string][]byte{corev1.TLSPrivateKeyKey: bundle1.privateKeyBytes},
+				},
+			},
+			certificate: gen.CertificateFrom(bundle1.certificate,
+				gen.SetCertificateNextPrivateKeySecretName("exists"),
+				gen.SetCertificateStatusCondition(cmapi.CertificateCondition{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, LastTransitionTime: &fixedNow}),
+				gen.SetCertificateRevision(5),
+			),
+			requests: []runtime.Object{
+				gen.CertificateRequestFrom(bundle1.certificateRequest,
+					gen.SetCertificateRequestAnnotations(map[string]string{
+						cmapi.CertificateRequestPrivateKeyAnnotationKey: "exists",
+						cmapi.CertificateRequestRevisionAnnotationKey:   "6",
+					}),
+					gen.AddCertificateRequestStatusCondition(failedCRConditionThisIssuance),
+					gen.SetCertificateRequestFailureTime(metav1.Time{Time: fixedNow.Time.Add(1 * time.Minute)}),
+				),
 			},
 		},
 	}
