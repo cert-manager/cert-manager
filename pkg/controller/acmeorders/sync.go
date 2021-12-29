@@ -106,6 +106,7 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	case anyAuthorizationsMissingMetadata(o):
 		log.V(logf.DebugLevel).Info("Fetching Authorizations from ACME server as status.authorizations contains unpopulated authorizations")
 		return c.fetchMetadataForAuthorizations(ctx, o, cl)
+	// TODO: is this state possible? Either remove this case or add a comment as to what path could lead to it
 	case o.Status.State == cmacme.Valid && o.Status.Certificate == nil:
 		log.V(logf.DebugLevel).Info("Order is in a Valid state but the Certificate data is empty, fetching existing Certificate")
 		return c.fetchCertificateData(ctx, cl, o)
@@ -505,24 +506,46 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		derBytes = block.Bytes
 	}
 
+	// Call to CreateOrderCert finalizes the ACME order. This call can only be made once.
 	certSlice, certURL, err := cl.CreateOrderCert(ctx, o.Status.FinalizeURL, derBytes, true)
-	// if an ACME error is returned and it's a 4xx error, mark this Order as
-	// failed and do not retry it until after applying the global backoff.
-	if acmeErr, ok := err.(*acmeapi.Error); ok {
-		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			log.Error(err, "failed to finalize Order resource due to bad request, marking Order as failed")
-			c.setOrderState(&o.Status, string(cmacme.Errored))
-			o.Status.Reason = fmt.Sprintf("Failed to finalize Order: %v", err)
-			return nil
+
+	acmeErr, ok := err.(*acmeapi.Error)
+
+	// If finalizing the order returns a 4xx error then either we have
+	// already finalized this order or the order can be considered failed.
+	if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+
+		// Check if finalizing the ACME order failed because it is
+		// already valid. This scenario is possible if the ACME order
+		// has already been finalized in an earlier reconcile, but the
+		// reconciler failed to update the status of the Order CR.
+		acmeOrder, getOrderErr := getACMEOrder(ctx, cl, o)
+		if acmeGetOrderErr, ok := getOrderErr.(*acmeapi.Error); ok {
+			if acmeGetOrderErr.StatusCode >= 400 && acmeGetOrderErr.StatusCode < 500 {
+				log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
+				c.setOrderState(&o.Status, string(cmacme.Errored))
+				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
+				return nil
+			}
 		}
+		if getOrderErr != nil {
+			return getOrderErr
+		}
+		if acmeOrder.Status == acmeapi.StatusValid {
+			log.V(logf.DebugLevel).Info("an attempt was made to finalize an order that has already been finalized. Marking the order as valid and fetching certificate data")
+			c.setOrderState(&o.Status, string(cmacme.Valid))
+			return c.fetchCertificateDataWithOrder(ctx, cl, *acmeOrder, o)
+		}
+
+		// Any other ACME 4xx error means that the Order can be considered failed.
+		log.Error(err, "failed to finalize Order resource due to bad request, marking Order as failed")
+		c.setOrderState(&o.Status, string(cmacme.Errored))
+		o.Status.Reason = fmt.Sprintf("Failed to finalize Order: %v", err)
+		return nil
 	}
-	// even if any other kind of error occurred, we always update the order
-	// status after calling Finalize - this allows us to record the current
-	// order's status on this order resource despite it not being returned
-	// directly by the acme client.
-	// This will catch cases where the Order cannot be finalized because it
-	// if it is already in the 'valid' state, as upon retry we will
-	// then retrieve the Certificate resource.
+
+	// Before checking whether the call to CreateOrderCert returned a
+	// non-4xx error, ensure the order status is up-to-date.
 	_, errUpdate := c.updateOrderStatus(ctx, cl, o)
 	if acmeErr, ok := errUpdate.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
@@ -535,7 +558,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	if errUpdate != nil {
 		return fmt.Errorf("error syncing order status: %v", errUpdate)
 	}
-	// check for errors from FinalizeOrder
+	// At this point, check for non-4xx errors from CreateOrderCert
 	if err != nil {
 		return fmt.Errorf("error finalizing order: %v", err)
 	}
@@ -612,13 +635,15 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 		return nil
 	}
 
-	// If the Order state has actually changed and we've not observed it,
-	// update the order status and let the change in the resource trigger
-	// a resync
+	return c.fetchCertificateDataWithOrder(ctx, cl, *acmeOrder, o)
+}
+
+func (c *controller) fetchCertificateDataWithOrder(ctx context.Context, cl acmecl.Interface, acmeOrder acmeapi.Order, o *cmacme.Order) error {
+	log := logf.FromContext(ctx)
+	// Certificate data can only be fetched for a valid order
 	if acmeOrder.Status != acmeapi.StatusValid {
 		return nil
 	}
-
 	certs, err := cl.FetchCert(ctx, acmeOrder.CertURL, true)
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {

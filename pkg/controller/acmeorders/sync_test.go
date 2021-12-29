@@ -569,11 +569,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 			order: gen.OrderFrom(testOrderErroredWithDetail, gen.SetOrderState(cmacme.Ready)),
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, gen.OrderFrom(testOrderErroredWithDetail, gen.SetOrderState(cmacme.Ready))},
-				ExpectedActions:    []testpkg.Action{
-					// testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
-					// 	"status",
-					// 	testOrderErroredWithDetail.Namespace, testOrderErroredWithDetail)),
-				},
+				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
@@ -588,6 +584,36 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 				},
 			},
 			expectErr: true,
+		},
+		"call FinalizeOrder, recover if finalize fails because order is already finalized": {
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderValid.Namespace, testOrderValid)),
+				},
+				ExpectedEvents: []string{
+					"Normal Complete Order completed successfully",
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderValid, nil
+				},
+				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+					return nil, "", &acmeError429
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+				FakeFetchCert: func(_ context.Context, url string, bundle bool) ([][]byte, error) {
+					return [][]byte{[]byte("test")}, nil
+				},
+			},
+			expectErr: false,
 		},
 		"call FinalizeOrder fetch alternate cert chain": {
 			order: testOrderReady.DeepCopy(),
