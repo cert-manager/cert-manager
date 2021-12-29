@@ -615,6 +615,53 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 			},
 			expectErr: false,
 		},
+		"call FinalizeOrder, recover if finalize fails because order is already finalized and fetch alternate cert chain": {
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestComPreferredChain, testOrderReady, testAuthorizationChallengeValid},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderValid.Namespace, testOrderValidAltCert)),
+				},
+				ExpectedEvents: []string{
+					"Normal Complete Order completed successfully",
+				},
+			},
+			acmeClient: &acmecl.FakeACME{
+				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
+					return testACMEOrderValid, nil
+				},
+				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
+					return nil, "", &acmeError429
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+				FakeListCertAlternates: func(_ context.Context, url string) ([]string, error) {
+					return []string{"http://alturl"}, nil
+
+				},
+				FakeFetchCert: func(_ context.Context, url string, bundle bool) ([][]byte, error) {
+					if url != "http://alturl" {
+						// This bit just ensures that we
+						// call it from the correct
+						// place. This is the same URL
+						// that is returned from
+						// FakeCertAlternates that
+						// should have been called
+						// before this.
+						return nil, errors.New("Cert URL is incorrect")
+					}
+					if !bundle {
+						return nil, errors.New("Expecting to be called with bundle=true")
+					}
+					return [][]byte{rawTestCert.Bytes}, nil
+				},
+			},
+			expectErr: false,
+		},
 		"call FinalizeOrder fetch alternate cert chain": {
 			order: testOrderReady.DeepCopy(),
 			builder: &testpkg.Builder{
