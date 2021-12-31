@@ -83,7 +83,8 @@ serviceAccount:
   # Automount API credentials for a Service Account.
   automountServiceAccountToken: true
 
-# Optional additional arguments
+# Additional command line flags to pass to cert-manager controller binary.
+# To see all available flags run docker run quay.io/jetstack/cert-manager-controller:<version> --help
 extraArgs: []
   # When this flag is enabled, secrets will be automatically removed when the certificate resource is deleted
   # - --enable-certificate-owner-ref=true
@@ -256,8 +257,11 @@ webhook:
   # Optional additional annotations to add to the webhook service
   # serviceAnnotations: {}
 
-  # Optional additional arguments for webhook
+  # Additional command line flags to pass to cert-manager webhook binary.
+  # To see all available flags run docker run quay.io/jetstack/cert-manager-webhook:<version> --help
   extraArgs: []
+  # Path to a file containing a WebhookConfiguration object used to configure the webhook
+  # - --config=<path-to-config-file>
 
   resources: {}
     # requests:
@@ -378,8 +382,11 @@ cainjector:
   # Optional additional annotations to add to the cainjector Pods
   # podAnnotations: {}
 
-  # Optional additional arguments for cainjector
+  # Additional command line flags to pass to cert-manager cainjector binary.
+  # To see all available flags run docker run quay.io/jetstack/cert-manager-cainjector:<version> --help
   extraArgs: []
+  # Enable profiling for cainjector
+  # - --enable-profiling=true
 
   resources: {}
     # requests:
@@ -451,7 +458,8 @@ startupapicheck:
   # Optional additional annotations to add to the startupapicheck Pods
   # podAnnotations: {}
 
-  # Optional additional arguments for startupapicheck
+  # Additional command line flags to pass to startupapicheck binary.
+  # To see all available flags run docker run quay.io/jetstack/cert-manager-ctl:<version> --help
   extraArgs: []
 
   resources: {}
