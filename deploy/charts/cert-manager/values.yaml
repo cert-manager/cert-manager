@@ -178,8 +178,12 @@ prometheus:
     interval: 60s
     scrapeTimeout: 30s
     labels: {}
+<<<<<<< HEAD
     honorLabels: false
   prometheusrule:
+=======
+  prometheusRule:
+>>>>>>> 789fbc526 (Process comments)
     enabled: false
     labels: {}
     rules:

@@ -1,11 +1,11 @@
-{{- if and .Values.prometheus.enabled .Values.prometheus.prometheusrule.enabled }}
+{{- if and .Values.prometheus.enabled .Values.prometheus.prometheusRule.enabled }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: {{ template "cert-manager.fullname" . }}
-{{- if .Values.prometheus.prometheusrule.namespace }}
-  namespace: {{ .Values.prometheus.prometheusrule.namespace }}
+{{- if .Values.prometheus.prometheusRule.namespace }}
+  namespace: {{ .Values.prometheus.prometheusRule.namespace }}
 {{- else }}
   namespace: {{ .Release.Namespace | quote }}
 {{- end }}
@@ -16,11 +16,11 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/component: "controller"
     helm.sh/chart: {{ include "cert-manager.chart" . }}
-{{- if .Values.prometheus.prometheusrule.labels }}
-{{- toYaml .Values.prometheus.prometheusrule.labels | nindent 4 }}
+{{- if .Values.prometheus.prometheusRule.labels }}
+{{- toYaml .Values.prometheus.prometheusRule.labels | nindent 4 }}
 {{- end }}
 spec:
-{{- with .Values.prometheus.prometheusrule.rules }}
+{{- with .Values.prometheus.prometheusRule.rules }}
   groups:
     - name: {{ template "cert-manager.name" $ }}.rules
       rules: {{ tpl (toYaml .) $ | nindent 8 }}
