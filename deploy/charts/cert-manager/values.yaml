@@ -43,7 +43,8 @@ installCRDs: false
 
 replicaCount: 1
 
-strategy: {}
+strategy:
+  {}
   # type: RollingUpdate
   # rollingUpdate:
   #   maxSurge: 0
@@ -84,7 +85,8 @@ serviceAccount:
   automountServiceAccountToken: true
 
 # Optional additional arguments
-extraArgs: []
+extraArgs:
+  []
   # Use this flag to set a namespace that cert-manager will use to store
   # supporting resources required for each ClusterIssuer (default is kube-system)
   # - --cluster-resource-namespace=kube-system
@@ -97,7 +99,8 @@ extraEnv: []
 # - name: SOME_VAR
 #   value: 'some value'
 
-resources: {}
+resources:
+  {}
   # requests:
   #   cpu: 10m
   #   memory: 32Mi
@@ -120,13 +123,13 @@ securityContext:
 
 # Container Security Context to be set on the controller component container
 # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-containerSecurityContext: {}
+containerSecurityContext:
+  {}
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
-
 
 volumes: []
 
@@ -159,7 +162,8 @@ podLabels: {}
 
 nodeSelector: {}
 
-ingressShim: {}
+ingressShim:
+  {}
   # defaultIssuerName: ""
   # defaultIssuerKind: ""
   # defaultIssuerGroup: ""
@@ -175,6 +179,18 @@ prometheus:
     scrapeTimeout: 30s
     labels: {}
     honorLabels: false
+  prometheusrule:
+    enabled: false
+    labels: {}
+    rules:
+      - alert: CertManagerAbsent
+        expr: absent(up{job="cert-manager"})
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          description: New certificates will not be able to be issued, and existing ones can't be renewed until cert-manager is back online.
+          summary: cert-manager has dissapeared from Prometheus service discovery.
 
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
@@ -224,7 +240,8 @@ webhook:
     # the apiVersion of WebhookConfiguration past v1alpha1.
     # securePort: 10250
 
-  strategy: {}
+  strategy:
+    {}
     # type: RollingUpdate
     # rollingUpdate:
     #   maxSurge: 0
@@ -237,7 +254,8 @@ webhook:
 
   # Container Security Context to be set on the webhook component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-  containerSecurityContext: {}
+  containerSecurityContext:
+    {}
     # capabilities:
     #   drop:
     #   - ALL
@@ -262,7 +280,8 @@ webhook:
   # Optional additional arguments for webhook
   extraArgs: []
 
-  resources: {}
+  resources:
+    {}
     # requests:
     #   cpu: 10m
     #   memory: 32Mi
@@ -347,14 +366,16 @@ webhook:
 
   # Overrides the mutating webhook and validating webhook so they reach the webhook
   # service using the `url` field instead of a service.
-  url: {}
+  url:
+    {}
     # host:
 
 cainjector:
   enabled: true
   replicaCount: 1
 
-  strategy: {}
+  strategy:
+    {}
     # type: RollingUpdate
     # rollingUpdate:
     #   maxSurge: 0
@@ -367,13 +388,13 @@ cainjector:
 
   # Container Security Context to be set on the cainjector component container
   # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-  containerSecurityContext: {}
+  containerSecurityContext:
+    {}
     # capabilities:
     #   drop:
     #   - ALL
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
-
 
   # Optional additional annotations to add to the cainjector Deployment
   # deploymentAnnotations: {}
@@ -384,7 +405,8 @@ cainjector:
   # Optional additional arguments for cainjector
   extraArgs: []
 
-  resources: {}
+  resources:
+    {}
     # requests:
     #   cpu: 10m
     #   memory: 32Mi
@@ -457,7 +479,8 @@ startupapicheck:
   # Optional additional arguments for startupapicheck
   extraArgs: []
 
-  resources: {}
+  resources:
+    {}
     # requests:
     #   cpu: 10m
     #   memory: 32Mi
