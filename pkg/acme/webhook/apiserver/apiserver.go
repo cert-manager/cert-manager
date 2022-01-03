@@ -123,18 +123,18 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		return nil, err
 	}
 
-	for _, solver := range solversByName(c.ExtraConfig.Solvers...) {
-		// TODO we're going to need a later k8s.io/apiserver so that we can get discovery to list a different group version for
-		// our endpoint which we'll use to back some custom storage which will consume the AdmissionReview type and give back the correct response
-		apiGroupInfo := genericapiserver.APIGroupInfo{
-			VersionedResourcesStorageMap: map[string]map[string]rest.Storage{},
-			// TODO unhardcode this.  It was hardcoded before, but we need to re-evaluate
-			OptionsExternalVersion: &schema.GroupVersion{Version: "v1alpha1"},
-			Scheme:                 Scheme,
-			ParameterCodec:         metav1.ParameterCodec,
-			NegotiatedSerializer:   Codecs,
-		}
+	// TODO we're going to need a later k8s.io/apiserver so that we can get discovery to list a different group version for
+	// our endpoint which we'll use to back some custom storage which will consume the AdmissionReview type and give back the correct response
+	apiGroupInfo := genericapiserver.APIGroupInfo{
+		VersionedResourcesStorageMap: map[string]map[string]rest.Storage{},
+		// TODO unhardcode this. It was hardcoded before, but we need to re-evaluate
+		OptionsExternalVersion: &schema.GroupVersion{Version: "v1alpha1"},
+		Scheme:                 Scheme,
+		ParameterCodec:         metav1.ParameterCodec,
+		NegotiatedSerializer:   Codecs,
+	}
 
+	for _, solver := range solversByName(c.ExtraConfig.Solvers...) {
 		challengeHandler := challengepayload.NewREST(solver)
 		v1alpha1storage, ok := apiGroupInfo.VersionedResourcesStorageMap["v1alpha1"]
 		if !ok {
@@ -154,10 +154,9 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 
 		v1alpha1storage[gvr.Resource] = challengeHandler
 		apiGroupInfo.VersionedResourcesStorageMap[gvr.Version] = v1alpha1storage
-
-		if err := s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo); err != nil {
-			return nil, err
-		}
+	}
+	if err := s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo); err != nil {
+		return nil, err
 	}
 
 	for i := range c.ExtraConfig.Solvers {
