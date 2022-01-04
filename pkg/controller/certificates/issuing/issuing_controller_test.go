@@ -71,16 +71,16 @@ func TestIssuingController(t *testing.T) {
 	exampleBundle := internaltest.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
 
 	exampleBundleAlt := internaltest.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
+	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 
 	issuingCert := gen.CertificateFrom(baseCert.DeepCopy(),
 		gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 			Type:               cmapi.CertificateConditionIssuing,
 			Status:             cmmeta.ConditionTrue,
 			ObservedGeneration: 3,
+			LastTransitionTime: &metaFixedClockStart,
 		}),
 	)
-
-	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 
 	tests := map[string]testT{
 		"if certificate is not in Issuing state, then do nothing": {
@@ -213,7 +213,38 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-
+		"if certificate is in Issuing state, one CertificateRequest that has failed during previous issuance, do nothing": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionReady,
+							Status:  cmmeta.ConditionFalse,
+							Reason:  cmapi.CertificateRequestReasonFailed,
+							Message: "The certificate request failed because of reasons",
+						}),
+						gen.SetCertificateRequestFailureTime(metav1.Time{Time: metaFixedClockStart.Time.Add(time.Hour * -1)}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{},
+			},
+			expectedErr: false,
+		},
 		"if certificate is in Issuing state, one CertificateRequest, but has failed, set failed state and log event": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{

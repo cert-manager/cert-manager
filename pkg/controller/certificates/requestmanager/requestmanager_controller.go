@@ -198,7 +198,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return err
 	}
 
-	requests, err = c.deleteCurrentFailedRequests(ctx, requests...)
+	requests, err = c.deleteCurrentFailedRequests(ctx, crt, requests...)
 	if err != nil {
 		return err
 	}
@@ -220,33 +220,43 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	return c.createNewCertificateRequest(ctx, crt, pk, nextRevision, nextPrivateKeySecret.Name)
 }
 
-func (c *controller) deleteCurrentFailedRequests(ctx context.Context, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
-	log := logf.FromContext(ctx)
+func (c *controller) deleteCurrentFailedRequests(ctx context.Context, crt *cmapi.Certificate, reqs ...*cmapi.CertificateRequest) ([]*cmapi.CertificateRequest, error) {
+	log := logf.FromContext(ctx).WithValues("Certificate", crt.Name)
 	var remaining []*cmapi.CertificateRequest
 	for _, req := range reqs {
 		log = logf.WithRelatedResource(log, req)
+
 		// Check if there are any 'current' CertificateRequests that
 		// failed during the previous issuance cycle. Those should be
 		// deleted so that a new one gets created and the issuance is
 		// re-tried. In practice no more than one CertificateRequest is
 		// expected at this point.
-		cond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
-		if cond == nil || cond.Status != cmmeta.ConditionFalse || cond.Reason != cmapi.CertificateRequestReasonFailed {
+		crReadyCond := apiutil.GetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady)
+		if crReadyCond == nil || crReadyCond.Status != cmmeta.ConditionFalse || crReadyCond.Reason != cmapi.CertificateRequestReasonFailed {
 			remaining = append(remaining, req)
 			continue
 		}
-		// TODO: once we have implemented exponential back off for
-		// Certificate failures, this should be changed accordingly.
-		now := c.clock.Now()
-		durationSinceFailure := now.Sub(cond.LastTransitionTime.Time)
-		if durationSinceFailure >= certificates.RetryAfterLastFailure {
+
+		certIssuingCond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)
+		if certIssuingCond == nil {
+			// This should never happen
+			log.V(logf.ErrorLevel).Info("Certificate does not have Issuing condition")
+			return nil, nil
+		}
+		// If the Issuing condition on the Certificate is newer than the
+		// failure time on CertificateRequest, it means that the
+		// CertificateRequest failed during the previous issuance (for the
+		// same revision). If it is a CertificateRequest that failed
+		// during the previous issuance, then it should be deleted so
+		// that we create a new one for this issuance.
+		if req.Status.FailureTime.Before(certIssuingCond.LastTransitionTime) {
+			log.V(logf.DebugLevel).Info("Found a failed CertificateRequest for previous issuance of this revision, deleting...")
 			if err := c.client.CertmanagerV1().CertificateRequests(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}); err != nil {
 				return nil, err
 			}
 			continue
 		}
 		remaining = append(remaining, req)
-
 	}
 	return remaining, nil
 }
