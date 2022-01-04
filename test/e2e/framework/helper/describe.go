@@ -17,11 +17,13 @@ limitations under the License.
 package helper
 
 import (
-	cmscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+	"os"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimejson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
-	"os"
+
+	cmscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 )
 
 func (h *Helper) describeKubeObject(object runtime.Object) error {
