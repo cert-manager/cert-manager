@@ -48,6 +48,9 @@ if [[ -n "$GINKGO_FOCUS" ]]; then GINKGO_FOCUS="--ginkgo.focus=${GINKGO_FOCUS}";
 # 'export GINKGO_SKIP="Venafi Cloud"' (skips all suites with 'Venafi Cloud' in the name).
 if  [[ -n "$GINKGO_SKIP" ]]; then GINKGO_SKIP="--ginkgo.skip=${GINKGO_SKIP}"; fi
 
+# Default feature gates to enable
+FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true}"
+
 # Configure PATH to use bazel provided e2e tools
 setup_tools
 
@@ -68,6 +71,7 @@ ginkgo -nodes 10 -flakeAttempts ${FLAKE_ATTEMPTS:-1} \
 	--report-dir="${ARTIFACTS:-$REPO_ROOT/_artifacts}" \
 	--acme-dns-server="$DNS_SERVER" \
 	--acme-ingress-ip="$INGRESS_IP" \
+	--feature-gates="${FEATURE_GATES}" \
 	${GINKGO_SKIP:+"$GINKGO_SKIP"} \
 	${GINKGO_FOCUS:+"$GINKGO_FOCUS"} \
 	"$@"

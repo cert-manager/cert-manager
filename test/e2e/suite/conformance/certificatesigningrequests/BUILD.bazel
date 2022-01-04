@@ -12,6 +12,7 @@ go_library(
         "//pkg/apis/experimental/v1alpha1:go_default_library",
         "//pkg/feature:go_default_library",
         "//pkg/util:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/helper/featureset:go_default_library",
         "//test/e2e/framework/helper/validation:go_default_library",
