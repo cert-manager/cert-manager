@@ -19,7 +19,6 @@ package secrettemplate
 import (
 	"bytes"
 	"context"
-	"os"
 	"strings"
 	"time"
 
@@ -33,7 +32,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/feature"
-	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -53,8 +52,7 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 	// Only run tests if the SecretTemplate feature is enabled. Skip otherwise.
 	it := func(name string, testfn func()) {
 		It(name, func() {
-			fgs := os.Getenv("FEATURE_GATES")
-			if !util.Contains(strings.Split(fgs, ","), string(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO)+"=true") {
+			if !utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
 				framework.Skipf("skipping Certificates SecretTemplate controller test since FEATURE_GATE %s is not enabled",
 					feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO)
 				return
