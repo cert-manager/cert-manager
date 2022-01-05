@@ -4,6 +4,10 @@ kind: Service
 metadata:
   name: {{ template "cert-manager.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
+{{- with .Values.serviceAnnotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
   labels:
     app: {{ include "cert-manager.name" . }}
     app.kubernetes.io/name: {{ include "cert-manager.name" . }}
