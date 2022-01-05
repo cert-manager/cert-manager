@@ -35,6 +35,7 @@ HOST_ARCH = $(shell $(GO) env GOARCH)
 
 include make/git.mk
 include make/tools.mk
+include make/ci.mk
 include make/base_images.mk
 include make/cmctl.mk
 include make/server.mk
