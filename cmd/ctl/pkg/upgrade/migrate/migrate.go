@@ -19,6 +19,7 @@ package migrate
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	apiextinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
@@ -156,8 +157,6 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 	}
 
 	for _, crd := range crdsRequiringMigration {
-		fmt.Fprintf(o.Out, "Migrating %q objects in group %q - this may take a while...\n", crd.Spec.Names.Kind, crd.Spec.Group)
-
 		if err := o.migrateResourcesForCRD(ctx, crd); err != nil {
 			fmt.Fprintf(o.ErrOut, "Failed to migrate resource: %v\n", err)
 			return err
@@ -223,6 +222,8 @@ func (o *Options) discoverCRDsRequiringMigration(ctx context.Context, desiredSto
 }
 
 func (o *Options) migrateResourcesForCRD(ctx context.Context, crd *apiext.CustomResourceDefinition) error {
+	startTime := time.Now()
+	fmt.Fprintf(o.Out, "Migrating %q objects in group %q - this may take a while (started at %s)...\n", crd.Spec.Names.Kind, crd.Spec.Group, startTime.Format(time.Stamp))
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   crd.Spec.Group,
@@ -238,6 +239,7 @@ func (o *Options) migrateResourcesForCRD(ctx context.Context, crd *apiext.Custom
 			return err
 		}
 	}
+	fmt.Fprintf(o.Out, " Successfully migrated %d %s objects in %s\n", len(list.Items), crd.Spec.Names.Kind, time.Now().Sub(startTime).Round(time.Second))
 	return nil
 }
 
