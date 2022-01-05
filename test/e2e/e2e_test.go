@@ -34,6 +34,8 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite"
 )
 
+var featureGates string
+
 func init() {
 	logs.InitLogs(flag.CommandLine)
 	framework.DefaultConfig.AddFlags(flag.CommandLine)
@@ -46,7 +48,6 @@ func init() {
 	ginkgoconfig.GinkgoConfig.RandomizeAllSpecs = true
 
 	wait.ForeverTestTimeout = time.Second * 60
-
 }
 
 func TestE2E(t *testing.T) {

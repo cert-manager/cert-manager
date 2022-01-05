@@ -19,14 +19,12 @@ package certificatesigningrequests
 import (
 	"crypto"
 	"fmt"
-	"os"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	certificatesv1 "k8s.io/api/certificates/v1"
 
 	"github.com/jetstack/cert-manager/pkg/feature"
-	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
 )
@@ -111,8 +109,7 @@ func (s *Suite) it(f *framework.Framework, name string, fn func(string), require
 		return
 	}
 	It(name, func() {
-		fgs := os.Getenv("FEATURE_GATES")
-		if !util.Contains(strings.Split(fgs, ","), string(feature.ExperimentalCertificateSigningRequestControllers)+"=true") {
+		if !utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalCertificateSigningRequestControllers) {
 			framework.Skipf("skipping CertificateSigningRequest controller test since FEATURE_GATE %s is not enabled",
 				feature.ExperimentalCertificateSigningRequestControllers)
 		}
