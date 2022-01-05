@@ -61,6 +61,7 @@ filegroup(
         "//cmd/ctl/pkg/install:all-srcs",
         "//cmd/ctl/pkg/renew:all-srcs",
         "//cmd/ctl/pkg/status:all-srcs",
+        "//cmd/ctl/pkg/upgrade:all-srcs",
         "//cmd/ctl/pkg/version:all-srcs",
     ],
     tags = ["automanaged"],

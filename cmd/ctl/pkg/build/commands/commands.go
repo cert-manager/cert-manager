@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/inspect"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/renew"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/status"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/upgrade"
 	"github.com/jetstack/cert-manager/cmd/ctl/pkg/version"
 )
 
@@ -56,6 +57,7 @@ func Commands() []RegisterCommandFunc {
 		approve.NewCmdApprove,
 		deny.NewCmdDeny,
 		check.NewCmdCheck,
+		upgrade.NewCmdUpgrade,
 
 		// Experimental features
 		experimental.NewCmdExperimental,
