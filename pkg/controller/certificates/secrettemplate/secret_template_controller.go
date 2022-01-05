@@ -205,7 +205,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	// In either case, the Secret needs to be re-reconciled with the Secrets
 	// Manager.
 	if !secretTemplateMatchesSecret(crt, secret) || !secretTemplateMatchManagedFields {
-		log.Info("miss-match between SecretTemplate and Secret, updating Secret annotations/labels")
+		log.Info("mismatch between SecretTemplate and Secret, updating Secret annotations/labels")
 		return c.secretsUpdateData(ctx, crt, secretsmanager.SecretData{
 			PrivateKey:  secret.Data[corev1.TLSPrivateKeyKey],
 			Certificate: secret.Data[corev1.TLSCertKey],
