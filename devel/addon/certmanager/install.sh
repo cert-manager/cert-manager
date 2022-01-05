@@ -38,7 +38,13 @@ check_tool helm
 # triggered on every call to this script.
 export APP_VERSION="$(date +"%s")"
 # Build a copy of the cert-manager release images using the :bazel image tag
-bazel run --stamp=true --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 "//devel/addon/certmanager:bundle"
+
+ARCH="$(uname -m)"
+if [ "$ARCH" == "arm64" ] ; then
+    bazel run --stamp=true --platforms=@io_bazel_rules_go//go/toolchain:linux_arm64 "//devel/addon/certmanager:bundle"
+else
+    bazel run --stamp=true --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 "//devel/addon/certmanager:bundle"
+fi
 
 # Load all images into the cluster
 load_image "quay.io/jetstack/cert-manager-controller:${APP_VERSION}" &
