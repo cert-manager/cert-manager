@@ -49,6 +49,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/integration/ctl/install_framework:all-srcs",
+        "//test/integration/ctl/migrate:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
