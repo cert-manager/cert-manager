@@ -38,7 +38,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/api/testing:all-srcs",
         "//pkg/api/util:all-srcs",
     ],
     tags = ["automanaged"],

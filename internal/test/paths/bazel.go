@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testing
+package paths
 
 import (
 	"fmt"
@@ -41,20 +41,15 @@ func PathForCRD(t *testing.T, name string) string {
 }
 
 func CRDDirectory(t *testing.T) string {
+	bazelDir := BazelBinDir
+	path := filepath.Join(bazelDir, "deploy", "crds")
+
+	// prefer RUNFILES_DIR if set
 	runfiles := os.Getenv("RUNFILES_DIR")
-	// BAZEL_BIN_DIR allows the developer to set a path to the bazel bin directory.
-	// This allows for the tests to be ran outside of Bazel, for example with Delve
-	// the Bazel bin directory still needs to be generated using Bazel.
-	bazelDir := os.Getenv("BAZEL_BIN_DIR")
-	if runfiles == "" && bazelDir == "" {
-		t.Fatalf("integration tests can only run within 'bazel test' environment or have BAZEL_BIN_DIR set")
-	}
-	var path string
-	if bazelDir != "" {
-		path = filepath.Join(bazelDir, "deploy", "crds")
-	} else {
+	if runfiles != "" {
 		path = filepath.Join(runfiles, "com_github_jetstack_cert_manager", "deploy", "crds")
 	}
+
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
