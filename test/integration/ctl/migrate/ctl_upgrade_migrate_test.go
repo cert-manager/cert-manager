@@ -77,7 +77,7 @@ func TestCtlUpgradeMigrate(t *testing.T) {
 	crdName := "testtypes.testgroup.testing.cert-manager.io"
 	restCfg, stop := framework.RunControlPlane(t, context.Background(),
 		framework.WithCRDDirectory("../../../../pkg/webhook/handlers/testdata/apis/testgroup/crds"),
-		framework.WithWebhookConversionHandler(handlers.NewSchemeBackedConverter(testlogger.TestLogger{T: t}, scheme)))
+		framework.WithWebhookConversionHandler(handlers.NewSchemeBackedConverter(testlogger.NewTestLogger(t), scheme)))
 	defer stop()
 
 	// Ensure the OpenAPI endpoint has been updated with the TestType CRD
