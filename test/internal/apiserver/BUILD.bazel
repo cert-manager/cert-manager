@@ -14,6 +14,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/test/internal/apiserver",
     visibility = ["//test:__subpackages__"],
     deps = [
+        "//internal/test/paths:go_default_library",
         "//test/internal/util:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/envtest:go_default_library",
     ],

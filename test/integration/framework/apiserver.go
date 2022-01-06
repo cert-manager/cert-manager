@@ -40,8 +40,8 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
+	"github.com/jetstack/cert-manager/internal/test/paths"
 	"github.com/jetstack/cert-manager/pkg/api"
-	apitesting "github.com/jetstack/cert-manager/pkg/api/testing"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	"github.com/jetstack/cert-manager/test/internal/apiserver"
 )
@@ -75,7 +75,7 @@ func WithWebhookConversionHandler(handler handlers.ConversionHook) RunControlPla
 
 func RunControlPlane(t *testing.T, ctx context.Context, optionFunctions ...RunControlPlaneOption) (*rest.Config, StopFunc) {
 	options := &controlPlaneOptions{
-		crdsDir: pointer.StringPtr(apitesting.CRDDirectory(t)),
+		crdsDir: pointer.StringPtr(paths.CRDDirectory(t)),
 	}
 
 	for _, f := range optionFunctions {

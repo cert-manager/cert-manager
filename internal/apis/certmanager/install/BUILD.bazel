@@ -47,8 +47,8 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//internal/apis/certmanager/fuzzer:go_default_library",
+        "//internal/test/paths:go_default_library",
         "//pkg/api:go_default_library",
-        "//pkg/api/testing:go_default_library",
         "@com_github_munnerz_crd_schema_fuzz//:go_default_library",
         "@io_k8s_apimachinery//pkg/api/apitesting/roundtrip:go_default_library",
     ],

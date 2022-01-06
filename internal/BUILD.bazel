@@ -16,6 +16,7 @@ filegroup(
         "//internal/apis/config/webhook:all-srcs",
         "//internal/apis/meta:all-srcs",
         "//internal/ingress:all-srcs",
+        "//internal/test/paths:all-srcs",
         "//internal/vault:all-srcs",
     ],
     tags = ["automanaged"],

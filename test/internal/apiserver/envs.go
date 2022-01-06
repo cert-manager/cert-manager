@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
+	"github.com/jetstack/cert-manager/internal/test/paths"
 	"github.com/jetstack/cert-manager/test/internal/util"
 )
 
@@ -45,11 +47,21 @@ Either re-run this test or set the %s environment variable.`, bin, key))
 }
 
 func getPath(name string, path ...string) (string, error) {
+	// Check to see if we are running in a `bazel test` environment and if so,
+	// use the RUNFILES_DIR environment variable to find dependencies.
 	bazelPath := util.GetTestPath(path...)
 	p, err := exec.LookPath(bazelPath)
 	if err == nil {
 		return p, nil
 	}
 
+	// Check for a bazel-bin directory which may contain the test dependencies
+	nextBazelPath := filepath.Join(append([]string{paths.BazelBinDir}, path...)...)
+	p, err = exec.LookPath(nextBazelPath)
+	if err == nil {
+		return p, nil
+	}
+
+	// Otherwise check the users PATH
 	return exec.LookPath(name)
 }
