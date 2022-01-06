@@ -14,7 +14,6 @@ HELM_VERSION=3.6.3
 KUBECTL_VERSION=1.22.1
 KIND_VERSION=0.11.1
 COSIGN_VERSION=1.3.1
-GINKGO_VERSION=v1.16.5
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
 K8S_RELEASE_NOTES_VERSION=0.7.0
 GOIMPORTS_VERSION=0.1.8
@@ -101,8 +100,9 @@ bin/scratch/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratc
 # ginkgo #
 ##########
 
-bin/tools/ginkgo: | bin/tools
-	GOBIN=$(shell pwd)/$(dir $@) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
+# We don't specify a version number here because we want to use the version in cert-manager's go.mod
+bin/tools/ginkgo: go.mod go.sum | bin/tools
+	GOBIN=$(shell pwd)/$(dir $@) go install github.com/onsi/ginkgo/ginkgo
 
 #########
 # cmrel #
