@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"time"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -160,7 +163,14 @@ func (m *Migrator) migrateResourcesForCRD(ctx context.Context, crd *apiext.Custo
 	}
 	fmt.Fprintf(m.Out, " %d resources to migrate\n", len(list.Items))
 	for _, obj := range list.Items {
-		if err := m.Client.Update(ctx, &obj); handleUpdateErr(err) != nil {
+		// retry on any kind of error to handle cases where e.g. the network connection to the apiserver fails
+		if err := retry.OnError(wait.Backoff{
+			Duration: time.Second, // wait 1s between attempts
+			Steps:    3,           // allow up to 3 attempts per object
+		}, func(err error) bool {
+			// Retry on any errors that are not otherwise skipped/ignored
+			return handleUpdateErr(err) != nil
+		}, func() error { return m.Client.Update(ctx, &obj) }); handleUpdateErr(err) != nil {
 			return err
 		}
 	}
