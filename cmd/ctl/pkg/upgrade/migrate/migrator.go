@@ -9,6 +9,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
@@ -110,13 +111,7 @@ func (m *Migrator) ensureCRDStorageVersionEquals(ctx context.Context, vers strin
 		}
 
 		// Discover the storage version
-		storageVersion := ""
-		for _, v := range crd.Spec.Versions {
-			if v.Storage {
-				storageVersion = v.Name
-				break
-			}
-		}
+		storageVersion := storageVersionForCRD(crd)
 
 		if storageVersion != vers {
 			fmt.Fprintf(m.Out, "CustomResourceDefinition object %q has storage version set to %q. You MUST upgrade to cert-manager v1.0-v1.6 before migrating resources for v1.7.\n", crdName, storageVersion)
@@ -178,12 +173,29 @@ func (m *Migrator) migrateResourcesForCRD(ctx context.Context, crd *apiext.Custo
 	return nil
 }
 
+// patchCRDStoredVersions will patch the `status.storedVersions` field of all passed in CRDs to be
+// set to an array containing JUST the current storage version.
+// This is only safe to run after a successful migration (i.e. a read/write of all resources of the given CRD type).
 func (m *Migrator) patchCRDStoredVersions(ctx context.Context, crds []*apiext.CustomResourceDefinition) error {
 	for _, crd := range crds {
 		// fetch a fresh copy of the CRD to avoid any conflict errors
 		freshCRD := &apiext.CustomResourceDefinition{}
 		if err := m.Client.Get(ctx, client.ObjectKey{Name: crd.Name}, freshCRD); err != nil {
 			return err
+		}
+
+		// Check the latest copy of the CRD to ensure that:
+		//   1) the storage version is the same as it was at the start of the migration
+		//   2) the status.storedVersion field has not changed, and if it has, it has only added the new/desired storage version
+		// This helps to avoid cases where the storage version was changed by a third-party midway through the migration,
+		// which could lead to corrupted apiservers when we patch the status.storedVersions field below.
+		expectedStorageVersion := storageVersionForCRD(crd)
+		if storageVersionForCRD(freshCRD) != expectedStorageVersion {
+			return newUnexpectedChangeError(crd)
+		}
+		newlyAddedVersions := storedVersionsAdded(crd, freshCRD)
+		if newlyAddedVersions.Len() != 0 || !newlyAddedVersions.Equal(sets.NewString(expectedStorageVersion)) {
+			return newUnexpectedChangeError(crd)
 		}
 
 		// Set the `status.storedVersions` field to 'v1'
@@ -195,6 +207,41 @@ func (m *Migrator) patchCRDStoredVersions(ctx context.Context, crds []*apiext.Cu
 	}
 
 	return nil
+}
+
+// storageVersionForCRD discovers the storage version for a given CRD.
+func storageVersionForCRD(crd *apiext.CustomResourceDefinition) string {
+	storageVersion := ""
+	for _, v := range crd.Spec.Versions {
+		if v.Storage {
+			storageVersion = v.Name
+			break
+		}
+	}
+	return storageVersion
+}
+
+// storedVersionsAdded returns a list of any versions added to the `status.storedVersions` field on
+// a CRD resource.
+func storedVersionsAdded(old, new *apiext.CustomResourceDefinition) sets.String {
+	oldStoredVersions := sets.NewString(old.Status.StoredVersions...)
+	newStoredVersions := sets.NewString(new.Status.StoredVersions...)
+	return newStoredVersions.Difference(oldStoredVersions)
+}
+
+// newUnexpectedChangeError creates a new 'error' that informs users that a change to the CRDs
+// was detected during the migration process and so the migration must be re-run.
+func newUnexpectedChangeError(crd *apiext.CustomResourceDefinition) error {
+	errorFmt := "" +
+		"The CRD %q unexpectedly changed during the migration. " +
+		"This means that either an object was persisted in a non-storage version during the migration, " +
+		"or the storage version was changed by someone else (or some automated deployment tooling) whilst the migration " +
+		"was in progress.\n\n" +
+		"All automated deployment tooling should be in a 'stable state' (i.e. no upgrades to cert-manager CRDs should be" +
+		"in progress whilst the migration is running).\n\n" +
+		"Please ensure no changes to the CRDs are made during the migration process and re-run the migration until you" +
+		"no longer see this message."
+	return fmt.Errorf(errorFmt, crd.Name)
 }
 
 // handleUpdateErr will absorb certain types of errors that we know can be skipped/passed on
