@@ -151,7 +151,7 @@ func (m *Migrator) migrateResourcesForCRD(ctx context.Context, crd *apiext.Custo
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   crd.Spec.Group,
-		Version: "v1",
+		Version: storageVersionForCRD(crd),
 		Kind:    crd.Spec.Names.ListKind,
 	})
 	if err := m.Client.List(ctx, list); err != nil {
@@ -199,8 +199,8 @@ func (m *Migrator) patchCRDStoredVersions(ctx context.Context, crds []*apiext.Cu
 			return newUnexpectedChangeError(crd)
 		}
 
-		// Set the `status.storedVersions` field to 'v1'
-		freshCRD.Status.StoredVersions = []string{"v1"}
+		// Set the `status.storedVersions` field to the target storage version
+		freshCRD.Status.StoredVersions = []string{storageVersionForCRD(crd)}
 
 		if err := m.Client.Status().Update(ctx, freshCRD); err != nil {
 			return err
