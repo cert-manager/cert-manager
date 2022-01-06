@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 )
 
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
@@ -67,6 +68,7 @@ func TestCheck(t *testing.T) {
 				test.challenge = &cmacme.Challenge{}
 			}
 			s := Solver{
+				Context:          &controller.Context{},
 				testReachability: countReachabilityTestCalls(&calls, test.reachabilityTest),
 				requiredPasses:   requiredCallsForPass,
 			}
