@@ -52,15 +52,16 @@ func NewMigrator(client client.Client, skipStoredVersionCheck bool, out, errOut 
 // It will attempt to migrate all resources defined as part of these CRDs to the
 // given 'targetVersion', and after completion will update the `status.storedVersions`
 // field on the corresponding CRD version to only contain the given targetVersion.
-func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string) error {
+// Returns 'true' if a migration was actually performed, and false if migration was not required.
+func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string) (bool, error) {
 	fmt.Fprintf(m.Out, "Checking all CustomResourceDefinitions have storage version set to '%s'\n", targetVersion)
-	allV1, allCRDs, err := m.ensureCRDStorageVersionEquals(ctx, targetVersion, names)
+	allTargetVersion, allCRDs, err := m.ensureCRDStorageVersionEquals(ctx, targetVersion, names)
 	if err != nil {
-		return err
+		return false, err
 	}
-	if !allV1 {
-		fmt.Fprintln(m.ErrOut, "It looks like you are running a pre-1.0 version of cert-manager. Please upgrade cert-manager to v1.6 before upgrading to v1.7.")
-		return fmt.Errorf("preflight checks failed")
+	if !allTargetVersion {
+		fmt.Fprintf(m.ErrOut, "It looks like you are running a version of cert-manager that does not set the storage version of CRDs to %q. Please upgrade cert-manager to v1.6 before upgrading to v1.7.\n", targetVersion)
+		return false, fmt.Errorf("preflight checks failed")
 	}
 	fmt.Fprintf(m.Out, "All CustomResourceDefinitions have %q configured as the storage version.\n", targetVersion)
 
@@ -70,11 +71,11 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 		crdsRequiringMigration, err = m.discoverCRDsRequiringMigration(ctx, targetVersion, names)
 		if err != nil {
 			fmt.Fprintf(m.ErrOut, "Failed to determine resource types that require migration: %v\n", err)
-			return err
+			return false, err
 		}
 		if len(crdsRequiringMigration) == 0 {
 			fmt.Fprintln(m.Out, "Nothing to do. cert-manager CRDs do not have 'status.storedVersions' containing old API versions. You may proceed to upgrade to cert-manager v1.7.")
-			return nil
+			return false, nil
 		}
 	} else {
 		fmt.Fprintln(m.Out, "Forcing migration of all CRD resources as --skip-stored-version-check=true")
@@ -88,18 +89,18 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 	for _, crd := range crdsRequiringMigration {
 		if err := m.migrateResourcesForCRD(ctx, crd); err != nil {
 			fmt.Fprintf(m.ErrOut, "Failed to migrate resource: %v\n", err)
-			return err
+			return false, err
 		}
 	}
 
 	fmt.Fprintf(m.Out, "Patching CRD resources to set 'status.storedVersions' to %q...\n", targetVersion)
 	if err := m.patchCRDStoredVersions(ctx, crdsRequiringMigration); err != nil {
 		fmt.Fprintf(m.ErrOut, "Failed to patch 'status.storedVersions' field: %v\n", err)
-		return err
+		return false, err
 	}
 
 	fmt.Fprintln(m.Out, "Successfully migrated all cert-manager resource types. It is now safe to proceed with upgrading to cert-manager v1.7.")
-	return nil
+	return true, nil
 }
 
 func (m *Migrator) ensureCRDStorageVersionEquals(ctx context.Context, vers string, names []string) (bool, []*apiext.CustomResourceDefinition, error) {
