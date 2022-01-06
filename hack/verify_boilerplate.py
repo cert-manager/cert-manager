@@ -192,13 +192,11 @@ def get_regexs():
     regexs["year"] = re.compile('YEAR')
     # dates can be 2014, 2015, 2016 or 2017, company holder names can be anything
     regexs["date"] = re.compile(get_dates())
-    # strip //go:build \n// +build \n\n build constraints We are currently using
-    # Go 1.17 where two forms of build constraints ('go:build', '+build') are
-    # added to files. This will need to change when we upgrade to a version of
-    # Go which only uses the 'go:build' format
-    # See https://go.googlesource.com/proposal/+/master/design/draft-gobuild.md
+    # strip the following build constraints/tags:
+    # //go:build
+    # // +build \n\n
     regexs["go_build_constraints"] = re.compile(
-        r"^(//go:build.*\n// \+build.*\n)+\n", re.MULTILINE)
+        r"^(//(go:build| \+build).*\n)+\n", re.MULTILINE)
     # strip #!.* from shell/python scripts
     regexs["shebang"] = re.compile(r"^(#!.*\n)\n*", re.MULTILINE)
     return regexs
