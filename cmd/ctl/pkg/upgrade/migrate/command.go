@@ -53,8 +53,8 @@ type Options struct {
 	genericclioptions.IOStreams
 	*factory.Factory
 
-	client client.Client
-	force  bool
+	client                 client.Client
+	skipStoredVersionCheck bool
 }
 
 // NewOptions returns initialized Options
@@ -80,7 +80,7 @@ func NewCmdMigrate(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 		},
 	}
 
-	cmd.Flags().BoolVarP(&o.force, "force", "f", o.force, ""+
+	cmd.Flags().BoolVar(&o.skipStoredVersionCheck, "skip-stored-version-check", o.skipStoredVersionCheck, ""+
 		"If true, all resources will be read and written regardless of the 'status.storedVersions' on the CRD resource. "+
 		"Use this mode if you have previously manually modified the 'status.storedVersions' field on CRD resources.")
 
@@ -112,7 +112,7 @@ func (o *Options) Complete() error {
 
 // Run executes renew command
 func (o *Options) Run(ctx context.Context, args []string) error {
-	return NewMigrator(o.client, o.force, o.Out, o.ErrOut).Run(ctx, "v1", []string{
+	_, err := NewMigrator(o.client, o.skipStoredVersionCheck, o.Out, o.ErrOut).Run(ctx, "v1", []string{
 		"certificates.cert-manager.io",
 		"certificaterequests.cert-manager.io",
 		"issuers.cert-manager.io",
@@ -120,4 +120,5 @@ func (o *Options) Run(ctx context.Context, args []string) error {
 		"orders.acme.cert-manager.io",
 		"challenges.acme.cert-manager.io",
 	})
+	return err
 }

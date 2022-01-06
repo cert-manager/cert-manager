@@ -24,7 +24,7 @@ type Migrator struct {
 	// If true, skip checking the 'status.storedVersion' before running the migration.
 	// By default, migration will only be run if the CRD contains storedVersions other
 	// than the desired target version.
-	Force bool
+	SkipStoredVersionCheck bool
 
 	// Writers to write informational & error messages to
 	Out, ErrOut io.Writer
@@ -32,7 +32,7 @@ type Migrator struct {
 
 // NewMigrator creates a new migrator with the given API client.
 // If either of out or errOut are nil, log messages will be discarded.
-func NewMigrator(client client.Client, force bool, out, errOut io.Writer) *Migrator {
+func NewMigrator(client client.Client, skipStoredVersionCheck bool, out, errOut io.Writer) *Migrator {
 	if out == nil {
 		out = io.Discard
 	}
@@ -41,10 +41,10 @@ func NewMigrator(client client.Client, force bool, out, errOut io.Writer) *Migra
 	}
 
 	return &Migrator{
-		Client: client,
-		Force:  force,
-		Out:    out,
-		ErrOut: errOut,
+		Client:                 client,
+		SkipStoredVersionCheck: skipStoredVersionCheck,
+		Out:                    out,
+		ErrOut:                 errOut,
 	}
 }
 
@@ -65,9 +65,9 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 	fmt.Fprintf(m.Out, "All CustomResourceDefinitions have %q configured as the storage version.\n", targetVersion)
 
 	crdsRequiringMigration := allCRDs
-	if !m.Force {
-		fmt.Fprintln(m.Out, "Looking for CRDs that contain resources that require migrating to 'v1'...")
-		crdsRequiringMigration, err = m.discoverCRDsRequiringMigration(ctx, "v1", names)
+	if !m.SkipStoredVersionCheck {
+		fmt.Fprintf(m.Out, "Looking for CRDs that contain resources that require migrating to %q...\n", targetVersion)
+		crdsRequiringMigration, err = m.discoverCRDsRequiringMigration(ctx, targetVersion, names)
 		if err != nil {
 			fmt.Fprintf(m.ErrOut, "Failed to determine resource types that require migration: %v\n", err)
 			return err
@@ -77,7 +77,7 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 			return nil
 		}
 	} else {
-		fmt.Fprintln(m.Out, "Forcing migration of all CRD resources as --force=true")
+		fmt.Fprintln(m.Out, "Forcing migration of all CRD resources as --skip-stored-version-check=true")
 	}
 
 	fmt.Fprintf(m.Out, "Found %d resource types that require migration:\n", len(crdsRequiringMigration))
