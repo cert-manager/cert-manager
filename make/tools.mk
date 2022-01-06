@@ -14,6 +14,7 @@ HELM_VERSION=3.6.3
 KUBECTL_VERSION=1.22.1
 KIND_VERSION=0.11.1
 COSIGN_VERSION=1.3.1
+GINKGO_VERSION=v1.16.5
 CMREL_VERSION=a1e2bad95be9688794fd0571c4c40e88cccf9173
 K8S_RELEASE_NOTES_VERSION=0.7.0
 GOIMPORTS_VERSION=0.1.8
@@ -27,7 +28,7 @@ bin/scratch/tools:
 	@mkdir -p $@
 
 .PHONY: tools
-tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/cmrel bin/tools/release-notes bin/tools/goimports bin/tools/ytt bin/tools/yq
+tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/goimports bin/tools/ytt bin/tools/yq
 
 ########
 # Helm #
@@ -95,6 +96,13 @@ bin/tools/cosign: bin/scratch/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_A
 # available! We could do something like "if system cosign is available, verify using that", but for now we'll skip
 bin/scratch/tools/cosign_$(COSIGN_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://github.com/sigstore/cosign/releases/download/v$(COSIGN_VERSION)/cosign-$(HOST_OS)-$(HOST_ARCH) > $@
+
+##########
+# ginkgo #
+##########
+
+bin/tools/ginkgo: | bin/tools
+	GOBIN=$(shell pwd)/$(dir $@) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
 
 #########
 # cmrel #
