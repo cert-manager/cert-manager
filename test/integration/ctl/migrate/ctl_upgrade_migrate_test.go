@@ -39,26 +39,32 @@ import (
 	"github.com/jetstack/cert-manager/test/integration/framework"
 )
 
-var (
-	equivalentResources = map[string]client.Object{
-		"v1": &v1.TestType{
+// Create a test resource at a given version.
+func newResourceAtVersion(t *testing.T, version string) client.Object {
+	switch version {
+	case "v1":
+		return &v1.TestType{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "object",
 				Namespace: "default",
 			},
 			TestField:          "abc",
 			TestFieldImmutable: "def",
-		},
-		"v2": &v2.TestType{
+		}
+	case "v2":
+		return &v2.TestType{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "object",
 				Namespace: "default",
 			},
 			TestField:          "abc",
 			TestFieldImmutable: "def",
-		},
+		}
+	default:
+		t.Fatalf("unknown version %q", version)
 	}
-)
+	return nil
+}
 
 func newScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
@@ -113,7 +119,7 @@ func TestCtlUpgradeMigrate(t *testing.T) {
 	}
 
 	// Create a resource
-	obj := equivalentResources[storageVersion]
+	obj := newResourceAtVersion(t, storageVersion)
 	if err := cl.Create(ctx, obj); err != nil {
 		t.Errorf("Failed to create test resource: %v", err)
 	}
@@ -129,8 +135,12 @@ func TestCtlUpgradeMigrate(t *testing.T) {
 
 	// Run the migrator and migrate all objects to the 'nonStorageVersion' (which is now the new storage version)
 	migrator := migrate.NewMigrator(cl, false, os.Stdout, os.Stderr)
-	if err := migrator.Run(ctx, nonStorageVersion, []string{crdName}); err != nil {
+	migrated, err := migrator.Run(ctx, nonStorageVersion, []string{crdName})
+	if err != nil {
 		t.Errorf("migrator failed to run: %v", err)
+	}
+	if !migrated {
+		t.Errorf("migrator didn't actually perform a migration")
 	}
 
 	// Check the status.storedVersions field to ensure it only contains one element
@@ -160,6 +170,178 @@ func TestCtlUpgradeMigrate(t *testing.T) {
 	}
 	if len(objList.Items) != 1 {
 		t.Fatalf("Expected a single TestType resource to exist")
+	}
+}
+
+func TestCtlUpgradeMigrate_FailsIfStorageVersionDoesNotEqualTargetVersion(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	// Create the control plane with the TestType conversion handlers registered
+	scheme := newScheme()
+	// name of the testtype CRD resource
+	crdName := "testtypes.testgroup.testing.cert-manager.io"
+	restCfg, stop := framework.RunControlPlane(t, context.Background(),
+		framework.WithCRDDirectory("../../../../pkg/webhook/handlers/testdata/apis/testgroup/crds"),
+		framework.WithWebhookConversionHandler(handlers.NewSchemeBackedConverter(testlogger.NewTestLogger(t), scheme)))
+	defer stop()
+
+	// Ensure the OpenAPI endpoint has been updated with the TestType CRD
+	framework.WaitForOpenAPIResourcesToBeLoaded(t, ctx, restCfg, schema.GroupVersionKind{
+		Group:   "testgroup.testing.cert-manager.io",
+		Version: "v1",
+		Kind:    "TestType",
+	})
+
+	// Create an API client
+	cl, err := client.New(restCfg, client.Options{Scheme: scheme})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Fetch a copy of the recently created TestType CRD
+	crd := &apiext.CustomResourceDefinition{}
+	if err := cl.Get(ctx, client.ObjectKey{Name: crdName}, crd); err != nil {
+		t.Fatal(err)
+	}
+
+	// Identify the current storage version and one non-storage version for this CRD.
+	storageVersion, nonStorageVersion := versionsForCRD(crd)
+	if storageVersion == "" || nonStorageVersion == "" {
+		t.Fatal("this test requires testdata with both a storage and non-storage version set")
+	}
+
+	// We expect this to fail, as we are attempting to migrate to the 'nonStorageVersion'.
+	migrator := migrate.NewMigrator(cl, false, os.Stdout, os.Stderr)
+	migrated, err := migrator.Run(ctx, nonStorageVersion, []string{crdName})
+	if err == nil {
+		t.Errorf("expected an error to be returned but we got none")
+	}
+	if err.Error() != "preflight checks failed" {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if migrated {
+		t.Errorf("migrator ran but it should not have")
+	}
+}
+
+func TestCtlUpgradeMigrate_SkipsMigrationIfNothingToDo(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	// Create the control plane with the TestType conversion handlers registered
+	scheme := newScheme()
+	// name of the testtype CRD resource
+	crdName := "testtypes.testgroup.testing.cert-manager.io"
+	restCfg, stop := framework.RunControlPlane(t, context.Background(),
+		framework.WithCRDDirectory("../../../../pkg/webhook/handlers/testdata/apis/testgroup/crds"),
+		framework.WithWebhookConversionHandler(handlers.NewSchemeBackedConverter(testlogger.NewTestLogger(t), scheme)))
+	defer stop()
+
+	// Ensure the OpenAPI endpoint has been updated with the TestType CRD
+	framework.WaitForOpenAPIResourcesToBeLoaded(t, ctx, restCfg, schema.GroupVersionKind{
+		Group:   "testgroup.testing.cert-manager.io",
+		Version: "v1",
+		Kind:    "TestType",
+	})
+
+	// Create an API client
+	cl, err := client.New(restCfg, client.Options{Scheme: scheme})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Fetch a copy of the recently created TestType CRD
+	crd := &apiext.CustomResourceDefinition{}
+	if err := cl.Get(ctx, client.ObjectKey{Name: crdName}, crd); err != nil {
+		t.Fatal(err)
+	}
+
+	// Identify the current storage version and one non-storage version for this CRD.
+	storageVersion, nonStorageVersion := versionsForCRD(crd)
+	if storageVersion == "" || nonStorageVersion == "" {
+		t.Fatal("this test requires testdata with both a storage and non-storage version set")
+	}
+
+	// Ensure the original storage version is the only one on the CRD
+	if len(crd.Status.StoredVersions) != 1 || crd.Status.StoredVersions[0] != storageVersion {
+		t.Errorf("Expected status.storedVersions to only contain the storage version %q but it was: %v", storageVersion, crd.Status.StoredVersions)
+	}
+
+	// Create a resource
+	obj := newResourceAtVersion(t, storageVersion)
+	if err := cl.Create(ctx, obj); err != nil {
+		t.Errorf("Failed to create test resource: %v", err)
+	}
+
+	// We expect this to succeed and for the migration to not be run
+	migrator := migrate.NewMigrator(cl, false, os.Stdout, os.Stderr)
+	migrated, err := migrator.Run(ctx, storageVersion, []string{crdName})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if migrated {
+		t.Errorf("migrator ran but it should not have")
+	}
+}
+
+func TestCtlUpgradeMigrate_ForcesMigrationIfSkipStoredVersionCheckIsEnabled(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	// Create the control plane with the TestType conversion handlers registered
+	scheme := newScheme()
+	// name of the testtype CRD resource
+	crdName := "testtypes.testgroup.testing.cert-manager.io"
+	restCfg, stop := framework.RunControlPlane(t, context.Background(),
+		framework.WithCRDDirectory("../../../../pkg/webhook/handlers/testdata/apis/testgroup/crds"),
+		framework.WithWebhookConversionHandler(handlers.NewSchemeBackedConverter(testlogger.NewTestLogger(t), scheme)))
+	defer stop()
+
+	// Ensure the OpenAPI endpoint has been updated with the TestType CRD
+	framework.WaitForOpenAPIResourcesToBeLoaded(t, ctx, restCfg, schema.GroupVersionKind{
+		Group:   "testgroup.testing.cert-manager.io",
+		Version: "v1",
+		Kind:    "TestType",
+	})
+
+	// Create an API client
+	cl, err := client.New(restCfg, client.Options{Scheme: scheme})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Fetch a copy of the recently created TestType CRD
+	crd := &apiext.CustomResourceDefinition{}
+	if err := cl.Get(ctx, client.ObjectKey{Name: crdName}, crd); err != nil {
+		t.Fatal(err)
+	}
+
+	// Identify the current storage version and one non-storage version for this CRD.
+	storageVersion, nonStorageVersion := versionsForCRD(crd)
+	if storageVersion == "" || nonStorageVersion == "" {
+		t.Fatal("this test requires testdata with both a storage and non-storage version set")
+	}
+
+	// Ensure the original storage version is the only one on the CRD
+	if len(crd.Status.StoredVersions) != 1 || crd.Status.StoredVersions[0] != storageVersion {
+		t.Errorf("Expected status.storedVersions to only contain the storage version %q but it was: %v", storageVersion, crd.Status.StoredVersions)
+	}
+
+	// Create a resource
+	obj := newResourceAtVersion(t, storageVersion)
+	if err := cl.Create(ctx, obj); err != nil {
+		t.Errorf("Failed to create test resource: %v", err)
+	}
+
+	// We expect this to force a migration
+	migrator := migrate.NewMigrator(cl, true, os.Stdout, os.Stderr)
+	migrated, err := migrator.Run(ctx, storageVersion, []string{crdName})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if !migrated {
+		t.Errorf("expected migrator to run due to skip flag being set")
 	}
 }
 
