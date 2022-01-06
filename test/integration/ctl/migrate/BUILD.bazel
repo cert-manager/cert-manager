@@ -7,7 +7,7 @@ go_test(
         "//pkg/webhook/handlers/testdata/apis/testgroup/crds:all-srcs",
     ],
     deps = [
-        "//cmd/ctl/pkg/upgrade/migrate:go_default_library",
+        "//cmd/ctl/pkg/upgrade/migrateapiversion:go_default_library",
         "//pkg/webhook/handlers:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",

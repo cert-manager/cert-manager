@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/upgrade/migrate"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/upgrade/migrateapiversion"
 )
 
 func NewCmdUpgrade(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
@@ -32,7 +32,7 @@ func NewCmdUpgrade(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 		Long:  `Note: this command does NOT actually upgrade cert-manager installations`,
 	}
 
-	cmds.AddCommand(migrate.NewCmdMigrate(ctx, ioStreams))
+	cmds.AddCommand(migrateapiversion.NewCmdMigrate(ctx, ioStreams))
 
 	return cmds
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package migrate
+package migrateapiversion
 
 import (
 	"context"
@@ -44,7 +44,7 @@ This command must be run with a cluster running cert-manager v1.0 or greater.`))
 
 	example = templates.Examples(i18n.T(build.WithTemplate(`
 # Check the cert-manager installation is ready to be upgraded to v1.7
-{{.BuildName}} upgrade migrate
+{{.BuildName}} upgrade migrate-api-version
 `)))
 )
 
@@ -69,7 +69,7 @@ func NewOptions(ioStreams genericclioptions.IOStreams) *Options {
 func NewCmdMigrate(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := NewOptions(ioStreams)
 	cmd := &cobra.Command{
-		Use:     "migrate",
+		Use:     "migrate-api-version",
 		Short:   "Migrate all existing persisted cert-manager resources to the v1 API version",
 		Long:    long,
 		Example: example,

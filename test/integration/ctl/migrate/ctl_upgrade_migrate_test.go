@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/upgrade/migrate"
+	"github.com/jetstack/cert-manager/cmd/ctl/pkg/upgrade/migrateapiversion"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/v1"
@@ -134,7 +134,7 @@ func TestCtlUpgradeMigrate(t *testing.T) {
 	}
 
 	// Run the migrator and migrate all objects to the 'nonStorageVersion' (which is now the new storage version)
-	migrator := migrate.NewMigrator(cl, false, os.Stdout, os.Stderr)
+	migrator := migrateapiversion.NewMigrator(cl, false, os.Stdout, os.Stderr)
 	migrated, err := migrator.Run(ctx, nonStorageVersion, []string{crdName})
 	if err != nil {
 		t.Errorf("migrator failed to run: %v", err)
@@ -212,7 +212,7 @@ func TestCtlUpgradeMigrate_FailsIfStorageVersionDoesNotEqualTargetVersion(t *tes
 	}
 
 	// We expect this to fail, as we are attempting to migrate to the 'nonStorageVersion'.
-	migrator := migrate.NewMigrator(cl, false, os.Stdout, os.Stderr)
+	migrator := migrateapiversion.NewMigrator(cl, false, os.Stdout, os.Stderr)
 	migrated, err := migrator.Run(ctx, nonStorageVersion, []string{crdName})
 	if err == nil {
 		t.Errorf("expected an error to be returned but we got none")
@@ -275,7 +275,7 @@ func TestCtlUpgradeMigrate_SkipsMigrationIfNothingToDo(t *testing.T) {
 	}
 
 	// We expect this to succeed and for the migration to not be run
-	migrator := migrate.NewMigrator(cl, false, os.Stdout, os.Stderr)
+	migrator := migrateapiversion.NewMigrator(cl, false, os.Stdout, os.Stderr)
 	migrated, err := migrator.Run(ctx, storageVersion, []string{crdName})
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -335,7 +335,7 @@ func TestCtlUpgradeMigrate_ForcesMigrationIfSkipStoredVersionCheckIsEnabled(t *t
 	}
 
 	// We expect this to force a migration
-	migrator := migrate.NewMigrator(cl, true, os.Stdout, os.Stderr)
+	migrator := migrateapiversion.NewMigrator(cl, true, os.Stdout, os.Stderr)
 	migrated, err := migrator.Run(ctx, storageVersion, []string{crdName})
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
