@@ -76,7 +76,7 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 		return false, err
 	}
 	if !allTargetVersion {
-		fmt.Fprintf(m.ErrOut, "It looks like you are running a version of cert-manager that does not set the storage version of CRDs to %q. Please upgrade cert-manager to v1.6 before upgrading to v1.7.\n", targetVersion)
+		fmt.Fprintf(m.ErrOut, "It looks like you are running a version of cert-manager that does not set the storage version of CRDs to %q. You MUST upgrade to cert-manager v1.0-v1.6 before migrating resources for v1.7.\n", targetVersion)
 		return false, fmt.Errorf("preflight checks failed")
 	}
 	fmt.Fprintf(m.Out, "All CustomResourceDefinitions have %q configured as the storage version.\n", targetVersion)
@@ -131,7 +131,7 @@ func (m *Migrator) ensureCRDStorageVersionEquals(ctx context.Context, vers strin
 		storageVersion := storageVersionForCRD(crd)
 
 		if storageVersion != vers {
-			fmt.Fprintf(m.Out, "CustomResourceDefinition object %q has storage version set to %q. You MUST upgrade to cert-manager v1.0-v1.6 before migrating resources for v1.7.\n", crdName, storageVersion)
+			fmt.Fprintf(m.Out, "CustomResourceDefinition object %q has storage version set to %q.\n", crdName, storageVersion)
 			return false, nil, nil
 		}
 
