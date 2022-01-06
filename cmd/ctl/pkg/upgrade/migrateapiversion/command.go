@@ -43,8 +43,15 @@ This must be run prior to upgrading to ensure your cluster is ready to upgrade t
 This command must be run with a cluster running cert-manager v1.0 or greater.`))
 
 	example = templates.Examples(i18n.T(build.WithTemplate(`
-# Check the cert-manager installation is ready to be upgraded to v1.7
+# Check the cert-manager installation is ready to be upgraded to v1.7 and perform necessary migrations
+# to ensure that the kube-apiserver has stored only v1 API versions.
 {{.BuildName}} upgrade migrate-api-version
+
+# Force migrations to be run, even if the 'status.storedVersion' field on the CRDs does not contain
+# old, deprecated API versions.
+# This should only be used if you have manually edited/patched the CRDs already.
+# It will force a read and a write of ALL cert-manager resources unconditionally.
+{{.BuildName}} upgrade migrate-api-version --skip-stored-version-check
 `)))
 )
 
