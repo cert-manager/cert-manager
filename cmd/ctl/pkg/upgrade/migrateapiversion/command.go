@@ -62,6 +62,8 @@ type Options struct {
 
 	client                 client.Client
 	skipStoredVersionCheck bool
+	qps                    float32
+	burst                  int
 }
 
 // NewOptions returns initialized Options
@@ -90,7 +92,8 @@ func NewCmdMigrate(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	cmd.Flags().BoolVar(&o.skipStoredVersionCheck, "skip-stored-version-check", o.skipStoredVersionCheck, ""+
 		"If true, all resources will be read and written regardless of the 'status.storedVersions' on the CRD resource. "+
 		"Use this mode if you have previously manually modified the 'status.storedVersions' field on CRD resources.")
-
+	cmd.Flags().Float32Var(&o.qps, "qps", 5, "Indicates the maximum QPS to the apiserver from the client.")
+	cmd.Flags().IntVar(&o.burst, "burst", 10, "Maximum burst value for queries set to the apiserver from the client.")
 	o.Factory = factory.New(ctx, cmd)
 
 	return cmd
@@ -109,6 +112,12 @@ func (o *Options) Complete() error {
 	cminstall.Install(scheme)
 	acmeinstall.Install(scheme)
 
+	if o.qps != 0 {
+		o.RESTConfig.QPS = o.qps
+	}
+	if o.burst != 0 {
+		o.RESTConfig.Burst = o.burst
+	}
 	o.client, err = client.New(o.RESTConfig, client.Options{Scheme: scheme})
 	if err != nil {
 		return err
