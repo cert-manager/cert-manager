@@ -194,7 +194,7 @@ func (m *Migrator) patchCRDStoredVersions(ctx context.Context, crds []*apiext.Cu
 			return newUnexpectedChangeError(crd)
 		}
 		newlyAddedVersions := storedVersionsAdded(crd, freshCRD)
-		if newlyAddedVersions.Len() != 0 || !newlyAddedVersions.Equal(sets.NewString(expectedStorageVersion)) {
+		if newlyAddedVersions.Len() != 0 && !newlyAddedVersions.Equal(sets.NewString(expectedStorageVersion)) {
 			return newUnexpectedChangeError(crd)
 		}
 
