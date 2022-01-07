@@ -35,7 +35,6 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/feature"
 	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"

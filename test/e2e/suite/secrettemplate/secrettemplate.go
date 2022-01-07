@@ -29,9 +29,9 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
+	"github.com/jetstack/cert-manager/internal/controller/feature"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/feature"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
