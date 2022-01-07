@@ -25,6 +25,7 @@ import (
 	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
 	configscheme "github.com/jetstack/cert-manager/internal/apis/config/webhook/scheme"
 	configv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 // WebhookFlags defines options that can only be configured via flags.
@@ -88,5 +89,6 @@ func AddConfigFlags(fs *pflag.FlagSet, c *config.WebhookConfiguration) {
 	fs.StringVar(&c.TLSConfig.MinTLSVersion, "tls-min-version", c.TLSConfig.MinTLSVersion,
 		"Minimum TLS version supported. "+
 			"Possible values: "+strings.Join(tlsPossibleVersions, ", "))
-
+	fs.Var(cliflag.NewMapStringBool(&c.FeatureGates), "feature-gates", "A set of key=value pairs that describe feature gates for alpha/experimental features. "+
+		"Options are:\n"+strings.Join(utilfeature.DefaultFeatureGate.KnownFeatures(), "\n"))
 }

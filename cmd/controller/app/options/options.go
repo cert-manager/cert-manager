@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	cmdutil "github.com/jetstack/cert-manager/cmd/util"
+	"github.com/jetstack/cert-manager/internal/controller/feature"
 	cm "github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
@@ -51,7 +52,6 @@ import (
 	csrvenaficontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/venafi"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
-	"github.com/jetstack/cert-manager/pkg/feature"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"

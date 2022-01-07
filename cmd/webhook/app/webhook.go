@@ -34,6 +34,7 @@ import (
 	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/pkg/webhook/authority"
 	"github.com/jetstack/cert-manager/pkg/webhook/configfile"
@@ -165,6 +166,12 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 				return
 			}
 
+			// set feature gates from initial flags-based config
+			if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(webhookConfig.FeatureGates); err != nil {
+				log.Error(err, "Failed to set feature gates from initial flags-based config")
+				os.Exit(1)
+			}
+
 			if err := options.ValidateWebhookFlags(webhookFlags); err != nil {
 				log.Error(err, "Failed to validate webhook flags")
 				os.Exit(1)
@@ -179,6 +186,11 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 
 				if err := webhookConfigFlagPrecedence(webhookConfig, args); err != nil {
 					log.Error(err, "Failed to merge flags with config file values")
+					os.Exit(1)
+				}
+				// update feature gates based on new config
+				if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(webhookConfig.FeatureGates); err != nil {
+					log.Error(err, "Failed to set feature gates from config file")
 					os.Exit(1)
 				}
 			}

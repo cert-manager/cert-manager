@@ -11,6 +11,7 @@ go_library(
         "//internal/apis/config/webhook:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "//pkg/webhook:go_default_library",
         "//pkg/webhook/authority:go_default_library",
         "//pkg/webhook/configfile:go_default_library",

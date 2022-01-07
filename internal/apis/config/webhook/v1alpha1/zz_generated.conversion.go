@@ -170,6 +170,7 @@ func autoConvert_v1alpha1_WebhookConfiguration_To_webhook_WebhookConfiguration(i
 	out.APIServerHost = in.APIServerHost
 	out.EnablePprof = in.EnablePprof
 	out.PprofAddress = in.PprofAddress
+	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
 	return nil
 }
 
@@ -188,6 +189,7 @@ func autoConvert_webhook_WebhookConfiguration_To_v1alpha1_WebhookConfiguration(i
 	out.APIServerHost = in.APIServerHost
 	out.EnablePprof = in.EnablePprof
 	out.PprofAddress = in.PprofAddress
+	out.FeatureGates = *(*map[string]bool)(unsafe.Pointer(&in.FeatureGates))
 	return nil
 }
 

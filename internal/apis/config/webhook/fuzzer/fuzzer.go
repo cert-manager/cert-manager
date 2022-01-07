@@ -36,6 +36,9 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.SecurePort == nil {
 				s.SecurePort = pointer.Int(123)
 			}
+			if s.PprofAddress == "" {
+				s.PprofAddress = "something:1234"
+			}
 		},
 	}
 }
