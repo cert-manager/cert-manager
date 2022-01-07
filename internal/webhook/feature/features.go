@@ -17,8 +17,9 @@ limitations under the License.
 package feature
 
 import (
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"k8s.io/component-base/featuregate"
+
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 const (
