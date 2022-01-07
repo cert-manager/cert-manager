@@ -21,10 +21,13 @@ import (
 	"crypto"
 	"fmt"
 
+	networkingv1beta1 "k8s.io/api/networking/v1"
 	core "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	netlisters "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/jetstack/cert-manager/internal/ingress"
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -50,6 +53,13 @@ type Acme struct {
 	// clientBuilder builds a new ACME client.
 	clientBuilder accounts.NewClientFunc
 
+	// ingressClassLister is used to list ingress classes.
+	ingressClassLister netlisters.IngressClassLister
+
+	// cert-manager may start either in "Ingress v1beta1" ("old" ingress) or
+	// "Ingress v1" ("new" ingress) mode.
+	usesOldV1beta1Ingress bool
+
 	// namespace of referenced resources when the given issuer is a ClusterIssuer
 	clusterResourceNamespace string
 	// used as a cache for ACME clients
@@ -66,12 +76,15 @@ func New(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, er
 	}
 
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+	ingressClassLister := ctx.KubeSharedInformerFactory.Networking().V1().IngressClasses().Lister()
 
 	a := &Acme{
 		issuer:                   issuer,
 		keyFromSecret:            newKeyFromSecret(secretsLister),
 		clientBuilder:            accounts.NewClient,
 		secretsClient:            ctx.Client.CoreV1(),
+		ingressClassLister:       ingressClassLister,
+		usesOldV1beta1Ingress:    ingress.HasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()),
 		recorder:                 ctx.Recorder,
 		clusterResourceNamespace: ctx.IssuerOptions.ClusterResourceNamespace,
 		accountRegistry:          ctx.ACMEOptions.AccountRegistry,

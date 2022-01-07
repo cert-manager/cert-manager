@@ -78,13 +78,13 @@ type InternalIngressNamespaceLister interface {
 // API Versions available in the discovery client.
 func NewListerInformer(ctx *controller.Context) (InternalIngressLister, cache.SharedIndexInformer, error) {
 	switch {
-	case hasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()):
+	case HasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()):
 		return &v1Lister{
 				lister: ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Lister(),
 			},
 			ctx.KubeSharedInformerFactory.Networking().V1().Ingresses().Informer(),
 			nil
-	case hasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()):
+	case HasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()):
 		return &v1beta1Lister{
 				lister: ctx.KubeSharedInformerFactory.Networking().V1beta1().Ingresses().Lister(),
 			},
@@ -98,11 +98,11 @@ func NewListerInformer(ctx *controller.Context) (InternalIngressLister, cache.Sh
 // NewCreateUpdater returns an InternalIngressCreateUpdater configured for v1 or v1beta1 ingresses depending on the
 // versions available in the discovery client
 func NewCreateUpdater(ctx *controller.Context) (InternalIngressCreateUpdater, error) {
-	if hasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()) {
+	if HasVersion(ctx.DiscoveryClient, networkingv1.SchemeGroupVersion.String()) {
 		return &v1CreaterUpdater{
 			client: ctx.Client,
 		}, nil
-	} else if hasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()) {
+	} else if HasVersion(ctx.DiscoveryClient, networkingv1beta1.SchemeGroupVersion.String()) {
 		return &v1beta1CreaterUpdater{
 			client: ctx.Client,
 		}, nil
@@ -111,7 +111,7 @@ func NewCreateUpdater(ctx *controller.Context) (InternalIngressCreateUpdater, er
 	}
 }
 
-func hasVersion(d discovery.DiscoveryInterface, GroupVersion string) bool {
+func HasVersion(d discovery.DiscoveryInterface, GroupVersion string) bool {
 	// check whether the GroupVersion is already known
 	knownVersions := knownAPIVersionCache.Load().(map[string]bool)
 	knownVersion, found := knownVersions[GroupVersion]

@@ -83,6 +83,36 @@ func (a *Acme) Setup(ctx context.Context) error {
 			msg)
 	}()
 
+	// With Ingress v1beta1, the `class` field was used to set the annotation
+	// `kubernetes.io/ingress.class`. With Ingress v1, the `class` field is used
+	// to set the spec.ingressClassName instead. Unlike the annotation, the
+	// ingressClassName requires an IngressClass resource so that the ingress
+	// controller can reconcile the ingress.
+	//
+	// This behavior change between v1beta1 and v1 may surprise people; on top
+	// of that, it is hard to find out that the problem is that an IngressClass
+	// resource is missing to get your HTTP-01 challenges to work.
+	//
+	// To remediate this, we set the issuer to "unready" with helpful debug
+	// information when the Ingress is v1 and the ingressClassName does not
+	// match any IngressClass object in the cluster.
+	for _, solver := range a.issuer.GetSpec().ACME.Solvers {
+		if solver.HTTP01 == nil || solver.HTTP01.Ingress == nil || solver.HTTP01.Ingress.Class == nil || *solver.HTTP01.Ingress.Class == "" {
+			continue
+		}
+
+		_, err := a.ingressClassLister.Get(*solver.HTTP01.Ingress.Class)
+		if !apierrors.IsNotFound(err) {
+			continue
+		}
+
+		reason = errorInvalidConfig
+		msg = fmt.Sprintf("the IngressClass %q does not exist, please create it", *solver.HTTP01.Ingress.Class)
+		log.Error(fmt.Errorf(msg), "no IngressClass found")
+
+		return nil
+	}
+
 	// check if user has specified a v1 account URL, and set a status condition if so.
 	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
 		reason = errorInvalidConfig
