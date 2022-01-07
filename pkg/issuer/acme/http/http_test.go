@@ -19,8 +19,13 @@ package http
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
+	"strings"
+	"sync/atomic"
 	"testing"
+
+	"github.com/miekg/dns"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -87,5 +92,100 @@ func TestCheck(t *testing.T) {
 				return
 			}
 		})
+	}
+}
+
+func TestReachabilityCustomDnsServers(t *testing.T) {
+	site := "https://cert-manager.io"
+	u, err := url.Parse(site)
+	if err != nil {
+		t.Fatalf("Failed to parse url %s: %v", site, err)
+	}
+	ips, err := net.LookupIP(u.Host)
+	if err != nil {
+		t.Fatalf("Failed to resolve %s: %v", u.Host, err)
+	}
+
+	dnsServerCalled := int32(0)
+
+	server := &dns.Server{Addr: "127.0.0.1:15353", Net: "udp"}
+	defer server.Shutdown()
+
+	dns.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
+		m := new(dns.Msg)
+		m.SetReply(r)
+
+		if r.Opcode != dns.OpcodeQuery {
+			return
+		}
+		for _, q := range m.Question {
+			if q.Name != u.Host+"." {
+				continue
+			}
+			switch q.Qtype {
+			case dns.TypeA:
+				t.Logf("A Query for %s\n", q.Name)
+				atomic.StoreInt32(&dnsServerCalled, 1)
+				for _, ip := range ips {
+					if strings.Contains(ip.String(), ":") {
+						continue
+					}
+					rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip))
+					if err == nil {
+						m.Answer = append(m.Answer, rr)
+					}
+				}
+			case dns.TypeAAAA:
+				t.Logf("AAAA Query for %s\n", q.Name)
+				atomic.StoreInt32(&dnsServerCalled, 1)
+				for _, ip := range ips {
+					if !strings.Contains(ip.String(), ":") {
+						continue
+					}
+					rr, err := dns.NewRR(fmt.Sprintf("%s AAAA %s", q.Name, ip))
+					if err == nil {
+						m.Answer = append(m.Answer, rr)
+					}
+				}
+			}
+		}
+		if err := w.WriteMsg(m); err != nil {
+			t.Errorf("failed to write DNS response: %v", err)
+		}
+	})
+	go server.ListenAndServe()
+
+	key := "there is no key"
+
+	tests := []struct {
+		name            string
+		dnsServers      []string
+		dnsServerCalled bool
+	}{
+		{
+			name:            "custom dns servers",
+			dnsServers:      []string{"127.0.0.1:15353"},
+			dnsServerCalled: true,
+		},
+		{
+			name:            "system dns servers",
+			dnsServerCalled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		atomic.StoreInt32(&dnsServerCalled, 0)
+		err = testReachability(context.Background(), u, key, tt.dnsServers)
+		switch {
+		case err == nil:
+			t.Errorf("Expected error for testReachability, but got none")
+		case strings.Contains(err.Error(), key):
+			called := atomic.LoadInt32(&dnsServerCalled) == 1
+			if called != tt.dnsServerCalled {
+				t.Errorf("Expected DNS server called: %v, but got %v", tt.dnsServerCalled, called)
+			}
+		default:
+			t.Errorf("Unexpected error: %v", err)
+		}
 	}
 }
