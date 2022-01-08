@@ -66,6 +66,8 @@ func init() {
 type Config struct {
 	GenericConfig *genericapiserver.RecommendedConfig
 	ExtraConfig   ExtraConfig
+
+	restConfig *restclient.Config
 }
 
 type ExtraConfig struct {
@@ -85,6 +87,8 @@ type ChallengeServer struct {
 type completedConfig struct {
 	GenericConfig genericapiserver.CompletedConfig
 	ExtraConfig   *ExtraConfig
+
+	restConfig *restclient.Config
 }
 
 type CompletedConfig struct {
@@ -97,6 +101,7 @@ func (c *Config) Complete() CompletedConfig {
 	completedCfg := completedConfig{
 		c.GenericConfig.Complete(),
 		&c.ExtraConfig,
+		c.restConfig,
 	}
 
 	completedCfg.GenericConfig.Version = &version.Info{
@@ -118,9 +123,11 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		GenericAPIServer: genericServer,
 	}
 
-	inClusterConfig, err := restclient.InClusterConfig()
-	if err != nil {
-		return nil, err
+	if c.restConfig == nil {
+		c.restConfig, err = restclient.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// TODO we're going to need a later k8s.io/apiserver so that we can get discovery to list a different group version for
@@ -167,7 +174,7 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		}
 		s.GenericAPIServer.AddPostStartHookOrDie(postStartName,
 			func(context genericapiserver.PostStartHookContext) error {
-				return solver.Initialize(inClusterConfig, context.StopCh)
+				return solver.Initialize(c.restConfig, context.StopCh)
 			},
 		)
 	}
