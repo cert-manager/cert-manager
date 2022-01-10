@@ -18,15 +18,21 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+if [ -z "${1:-}" ]; then
+	echo "usage: $0 <path to helm chart tarball>"
+	exit 1
+fi
+
+chart_tarball=$1
+
 chart_dir="deploy/charts/cert-manager"
 
-echo "Linting chart: ${chart_dir}"
+echo "Linting chart '${chart_tarball}' using internal dir '${chart_dir}'"
 
-bazel build //deploy/charts/cert-manager
 tmpdir="$(mktemp -d)"
 trap "rm -rf ${tmpdir}" EXIT
 
-tar -C "${tmpdir}" -xvf bazel-bin/deploy/charts/cert-manager/cert-manager.tgz
+tar -C "${tmpdir}" -xvf $chart_tarball
 
 if ! docker run -v "${tmpdir}":/workspace --workdir /workspace \
     quay.io/helmpack/chart-testing:v3.4.0 \

@@ -103,7 +103,8 @@ verify_deps:
 # requires docker
 .PHONY: verify_chart
 verify_chart:
-	$(HACK_DIR)/verify-chart-version.sh
+	bazel build //deploy/charts/cert-manager
+	$(HACK_DIR)/verify-chart-version.sh bazel-bin/deploy/charts/cert-manager/cert-manager.tgz
 
 .PHONY: verify_upgrade
 verify_upgrade:
