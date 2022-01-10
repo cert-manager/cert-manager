@@ -35,7 +35,7 @@ trap "rm -rf ${tmpdir}" EXIT
 tar -C "${tmpdir}" -xvf $chart_tarball
 
 if ! docker run -v "${tmpdir}":/workspace --workdir /workspace \
-    quay.io/helmpack/chart-testing:v3.4.0 \
+    quay.io/helmpack/chart-testing:v3.5.0 \
     ct lint \
         --check-version-increment=false \
         --validate-maintainers=false \
