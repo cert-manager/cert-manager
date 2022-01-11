@@ -13,6 +13,7 @@ go_library(
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/feature:go_default_library",
         "//pkg/util/pki:go_default_library",
