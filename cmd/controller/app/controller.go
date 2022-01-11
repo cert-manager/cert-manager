@@ -66,7 +66,7 @@ const controllerAgentName = "cert-manager"
 
 // This sets the informer's resync period to 10 hours
 // following the controller-runtime defaults
-//and following discussion: https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
+// and following discussion: https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
 const resyncPeriod = 10 * time.Hour
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
@@ -360,6 +360,7 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 			HTTP01SolverResourceRequestMemory: HTTP01SolverResourceRequestMemory,
 			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,
 			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
+			HTTP01SolverNameservers:           opts.ACMEHTTP01SolverNameservers,
 			DNS01CheckAuthoritative:           !opts.DNS01RecursiveNameserversOnly,
 			DNS01Nameservers:                  nameservers,
 			AccountRegistry:                   acmeAccountRegistry,

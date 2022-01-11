@@ -48,8 +48,10 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",
+        "//pkg/controller:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@com_github_miekg_dns//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//networking/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",

@@ -70,7 +70,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
+type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsServers []string) error
 
 // NewSolver returns a new ACME HTTP01 solver for the given *controller.Context.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
@@ -172,7 +172,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 
 	log.V(logf.DebugLevel).Info("running self check multiple times to ensure challenge has propagated", "required_passes", s.requiredPasses)
 	for i := 0; i < s.requiredPasses; i++ {
-		err := s.testReachability(ctx, url, ch.Spec.Key)
+		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url *url.URL, key string) error {
+func testReachability(ctx context.Context, url *url.URL, key string, dnsServers []string) error {
 	log := logf.FromContext(ctx)
 	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 
@@ -269,6 +269,28 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 		},
 	}
 
+	if len(dnsServers) != 0 {
+		transport.DialContext = func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+			// we need to increment a counter to iterate through the dns servers as the dialer will not
+			// return an error if the dns server is not responding.
+			counter := 0
+			dialer := &net.Dialer{
+				Timeout: 3 * time.Second,
+				Resolver: &net.Resolver{
+					PreferGo: true,
+					Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+						d := net.Dialer{
+							Timeout: 3 * time.Second,
+						}
+						s := dnsServers[counter%len(dnsServers)]
+						counter++
+						return d.DialContext(ctx, network, s)
+					},
+				},
+			}
+			return dialer.DialContext(ctx, network, addr)
+		}
+	}
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   time.Second * 10,
