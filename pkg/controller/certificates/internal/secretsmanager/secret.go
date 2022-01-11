@@ -35,6 +35,7 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
@@ -96,6 +97,9 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 		return err
 	}
 
+	log := logf.FromContext(ctx)
+	log = logf.WithResource(log, secret)
+
 	err = s.setValues(crt, secret, data)
 	if err != nil {
 		return err
@@ -103,22 +107,37 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 
 	// Apply instead of Create/Update if the Apply feature is enabled.
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
-		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx,
-			applycorev1.Secret(secret.Name, secret.Namespace).
-				WithAnnotations(secret.Annotations).
-				WithLabels(secret.Labels).
-				WithData(secret.Data).
-				WithType(secret.Type),
-			metav1.ApplyOptions{FieldManager: util.PrefixFromUserAgent(s.restConfig.UserAgent)})
-		return err
+		applyOpts := metav1.ApplyOptions{FieldManager: util.PrefixFromUserAgent(s.restConfig.UserAgent)}
+		applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
+			WithAnnotations(secret.Annotations).
+			WithLabels(secret.Labels).
+			WithData(secret.Data).
+			WithType(secret.Type)
+
+		log.V(logf.DebugLevel).Info("applying secret")
+
+		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
+		if apierrors.IsConflict(err) {
+			log.Error(err, "forcing apply due to field management conflict")
+			applyOpts.Force = true
+			_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to apply secret %s/%s: %w", secret.Namespace, secret.Name, err)
+		}
+
+		return nil
 	}
 
 	if secretExists {
 		// Currently we are always updating. We should devise a way to not have to
 		// call an update if it is not necessary.
+		log.V(logf.DebugLevel).Info("updating secret")
 		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	} else {
 		// If secret does not exist then create it and return.
+		log.V(logf.DebugLevel).Info("creating secret")
 		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
 	}
 
