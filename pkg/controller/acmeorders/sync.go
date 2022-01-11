@@ -511,22 +511,20 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 
 	acmeErr, ok := err.(*acmeapi.Error)
 
-	// If finalizing the order returns a 4xx error then either we have
-	// already finalized this order or the order can be considered failed.
-	if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+	// If finalizing the order returns a 403 error, the order may already be finalized.
+	// This scenario is possible if the ACME order has already been
+	// finalized in an earlier reconcile, but the reconciler failed
+	// to update the status of the Order CR.
+	// https://datatracker.ietf.org/doc/html/rfc8555#:~:text=A%20request%20to%20finalize%20an%20order%20will%20result%20in%20error,will%20indicate%20what%20action%20the%20client%20should%20take%20(see%20below).
+	if ok && acmeErr.StatusCode == 403 {
 
-		// Check if finalizing the ACME order failed because it is
-		// already valid. This scenario is possible if the ACME order
-		// has already been finalized in an earlier reconcile, but the
-		// reconciler failed to update the status of the Order CR.
 		acmeOrder, getOrderErr := getACMEOrder(ctx, cl, o)
-		if acmeGetOrderErr, ok := getOrderErr.(*acmeapi.Error); ok {
-			if acmeGetOrderErr.StatusCode >= 400 && acmeGetOrderErr.StatusCode < 500 {
-				log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
-				c.setOrderState(&o.Status, string(cmacme.Errored))
-				o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
-				return nil
-			}
+		acmeGetOrderErr, ok := getOrderErr.(*acmeapi.Error)
+		if ok && acmeGetOrderErr.StatusCode >= 400 && acmeGetOrderErr.StatusCode < 500 {
+			log.Error(err, "failed to retrieve the ACME order (4xx error) marking Order as failed")
+			c.setOrderState(&o.Status, string(cmacme.Errored))
+			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
+			return nil
 		}
 		if getOrderErr != nil {
 			return getOrderErr
@@ -537,7 +535,10 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 			return c.syncCertificateDataWithOrder(ctx, cl, *acmeOrder, o, issuer)
 		}
 
-		// Any other ACME 4xx error means that the Order can be considered failed.
+	}
+
+	// Any other ACME 4xx error means that the Order can be considered failed.
+	if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 		log.Error(err, "failed to finalize Order resource due to bad request, marking Order as failed")
 		c.setOrderState(&o.Status, string(cmacme.Errored))
 		o.Status.Reason = fmt.Sprintf("Failed to finalize Order: %v", err)
@@ -558,7 +559,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	if errUpdate != nil {
 		return fmt.Errorf("error syncing order status: %v", errUpdate)
 	}
-	// At this point, check for non-4xx errors from CreateOrderCert
+	// Check for non-4xx errors from CreateOrderCert
 	if err != nil {
 		return fmt.Errorf("error finalizing order: %v", err)
 	}

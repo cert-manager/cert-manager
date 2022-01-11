@@ -139,6 +139,10 @@ func TestSync(t *testing.T) {
 		StatusCode: 429,
 		Detail:     "some error",
 	}
+	acmeError403 := acmeapi.Error{
+		StatusCode: 403,
+		Detail:     "some error",
+	}
 
 	testOrderPending := gen.OrderFrom(testOrder, gen.SetOrderStatus(pendingStatus))
 	testOrderInvalid := testOrderPending.DeepCopy()
@@ -603,7 +607,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					return testACMEOrderValid, nil
 				},
 				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
-					return nil, "", &acmeError429
+					return nil, "", &acmeError403
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
@@ -633,7 +637,7 @@ rUCGwbCUDI0mxadJ3Bz4WxR6fyNpBK2yAinWEsikxqEt
 					return testACMEOrderValid, nil
 				},
 				FakeCreateOrderCert: func(_ context.Context, url string, csr []byte, bundle bool) ([][]byte, string, error) {
-					return nil, "", &acmeError429
+					return nil, "", &acmeError403
 				},
 				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
 					// TODO: assert s = "token"
