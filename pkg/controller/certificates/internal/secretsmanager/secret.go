@@ -366,7 +366,10 @@ func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Ce
 				Namespace: crt.Namespace,
 			},
 			Data: make(map[string][]byte),
-			Type: corev1.SecretTypeTLS,
+			// Use the existing Secret's type since this may not be of type
+			// `kubernetes.io/tls`, if for example it was created beforehand. Type is
+			// immutable, so we must keep it to its original value.
+			Type: existingSecret.Type,
 		}
 
 		// If owned keys are present on the existing secret, set on the applied

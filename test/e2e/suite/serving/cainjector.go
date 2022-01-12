@@ -247,8 +247,6 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 							certmanager.AllowsInjectionFromSecretAnnotation: "true",
 						},
 					},
-					Data: map[string][]byte{corev1.TLSPrivateKeyKey: nil, corev1.TLSCertKey: nil},
-					Type: corev1.SecretTypeTLS,
 				}
 				Expect(f.CRClient.Create(context.Background(), &annotatedSecret)).To(Succeed())
 
@@ -272,8 +270,6 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 							certmanager.AllowsInjectionFromSecretAnnotation: "false",
 						},
 					},
-					Data: map[string][]byte{corev1.TLSPrivateKeyKey: nil, corev1.TLSCertKey: nil},
-					Type: corev1.SecretTypeTLS,
 				}
 				Expect(f.CRClient.Create(context.Background(), &annotatedSecret)).To(Succeed())
 

@@ -838,14 +838,14 @@ func Test_getCertificateSecret(t *testing.T) {
 					Namespace: "test-namespace", Name: "test-secret",
 					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
 				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretType("test"),
 			},
 			expSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
 				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretType("test"),
 			},
 			expSecretExists: true,
 		},
@@ -856,13 +856,13 @@ func Test_getCertificateSecret(t *testing.T) {
 					Namespace: "test-namespace", Name: "test-secret",
 					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
 				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeOpaque,
 			},
 			expSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
 				},
-				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
+				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeOpaque,
 			},
 			expSecretExists: true,
 		},
@@ -880,6 +880,23 @@ func Test_getCertificateSecret(t *testing.T) {
 					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 				},
 				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
+			},
+			expSecretExists: true,
+		},
+		"if secret exists, applyFeature=true ownerRefFeature=true, expect the secret to be returned but only with the cert-manager managed data keys to be set, and owner references, with original Type set": {
+			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: true,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret",
+					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
+				},
+				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeOpaque,
+			},
+			expSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+				},
+				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeOpaque,
 			},
 			expSecretExists: true,
 		},

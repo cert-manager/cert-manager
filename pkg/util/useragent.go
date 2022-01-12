@@ -31,7 +31,8 @@ var CertManagerUserAgent = "cert-manager/" + version()
 // PrefixFromUserAgent takes the characters preceding the first /, quote
 // unprintable character and then trim what's beyond the FieldManagerMaxLength
 // limit.
-// Taken from https://github.com/kubernetes/kubernetes/blob/9a75e7b0fd1b567f774a3373be640e19b33e7ef1/staging/src/k8s.io/apiserver/pkg/endpoints/handlers/create.go#L252
+// Taken from
+// https://github.com/kubernetes/kubernetes/blob/9a75e7b0fd1b567f774a3373be640e19b33e7ef1/staging/src/k8s.io/apiserver/pkg/endpoints/handlers/create.go#L252
 func PrefixFromUserAgent(u string) string {
 	m := strings.Split(u, "/")[0]
 	buf := bytes.NewBuffer(nil)
