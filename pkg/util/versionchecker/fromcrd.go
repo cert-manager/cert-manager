@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (o *versionChecker) extractVersionFromCrd(ctx context.Context, crdName string) error {
+func (o *VersionChecker) extractVersionFromCrd(ctx context.Context, crdName string) error {
 	crdKey := client.ObjectKey{Name: crdName}
 
 	objv1 := &apiextensionsv1.CustomResourceDefinition{}
@@ -61,7 +61,7 @@ func (o *versionChecker) extractVersionFromCrd(ctx context.Context, crdName stri
 	return ErrCertManagerCRDsNotFound
 }
 
-func (o *versionChecker) extractVersionFromCrdv1(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) error {
+func (o *VersionChecker) extractVersionFromCrdv1(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) error {
 	if (crd.Spec.Conversion == nil) ||
 		(crd.Spec.Conversion.Webhook == nil) ||
 		(crd.Spec.Conversion.Webhook.ClientConfig == nil) ||
@@ -76,7 +76,7 @@ func (o *versionChecker) extractVersionFromCrdv1(ctx context.Context, crd *apiex
 	)
 }
 
-func (o *versionChecker) extractVersionFromCrdv1beta1(ctx context.Context, crd *apiextensionsv1beta1.CustomResourceDefinition) error {
+func (o *VersionChecker) extractVersionFromCrdv1beta1(ctx context.Context, crd *apiextensionsv1beta1.CustomResourceDefinition) error {
 	if (crd.Spec.Conversion == nil) ||
 		(crd.Spec.Conversion.WebhookClientConfig == nil) ||
 		(crd.Spec.Conversion.WebhookClientConfig.Service == nil) {

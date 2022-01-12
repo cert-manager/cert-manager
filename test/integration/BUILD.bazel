@@ -15,6 +15,7 @@ filegroup(
         "//test/integration/ctl:all-srcs",
         "//test/integration/framework:all-srcs",
         "//test/integration/validation:all-srcs",
+        "//test/integration/versionchecker:all-srcs",
         "//test/integration/webhook:all-srcs",
     ],
     tags = ["automanaged"],

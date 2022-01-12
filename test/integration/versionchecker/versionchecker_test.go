@@ -34,6 +34,8 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/jetstack/cert-manager/pkg/util/versionchecker"
 )
 
 //go:embed testdata/test_manifests.tar
@@ -109,7 +111,7 @@ func transformObjects(objects []runtime.RawExtension) ([]runtime.Object, error) 
 	return transformedObjects, nil
 }
 
-func setupFakeVersionChecker(manifest io.Reader) (*versionChecker, error) {
+func setupFakeVersionChecker(manifest io.Reader) (*versionchecker.VersionChecker, error) {
 	scheme := runtime.NewScheme()
 
 	if err := kubernetesscheme.AddToScheme(scheme); err != nil {
@@ -136,10 +138,7 @@ func setupFakeVersionChecker(manifest io.Reader) (*versionChecker, error) {
 		WithRuntimeObjects(objs...).
 		Build()
 
-	return &versionChecker{
-		client:         cl,
-		versionSources: map[string]string{},
-	}, nil
+	return versionchecker.NewFromClient(cl), nil
 }
 
 func TestVersionChecker(t *testing.T) {
