@@ -24,6 +24,7 @@ import (
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/test/acme/dns"
 	testserver "github.com/jetstack/cert-manager/test/acme/dns/server"
@@ -58,7 +59,7 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 		TSIGKeyName: rfc2136TestTsigKeyName,
 	}
 
-	fixture := dns.NewFixture(&Solver{},
+	fixture := dns.NewFixture(&rfc2136.Solver{},
 		dns.SetResolvedZone(rfc2136TestZone),
 		dns.SetResolvedFQDN(rfc2136TestFqdn),
 		dns.SetAllowAmbientCredentials(false),
@@ -90,7 +91,7 @@ func TestRunSuiteNoTSIG(t *testing.T) {
 		Nameserver: server.ListenAddr(),
 	}
 
-	fixture := dns.NewFixture(&Solver{},
+	fixture := dns.NewFixture(&rfc2136.Solver{},
 		dns.SetResolvedZone(rfc2136TestZone),
 		dns.SetResolvedFQDN(rfc2136TestFqdn),
 		dns.SetAllowAmbientCredentials(false),

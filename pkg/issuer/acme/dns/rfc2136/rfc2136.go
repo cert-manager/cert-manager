@@ -26,14 +26,11 @@ import (
 	"strings"
 	"time"
 
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-
 	"github.com/miekg/dns"
 
 	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
-
-var defaultPort = "53"
 
 // This list must be kept in sync with pkg/apis/certmanager/validation/issuer.go
 var supportedAlgorithms = map[string]string{
@@ -146,4 +143,14 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) er
 	}
 
 	return nil
+}
+
+// Nameserver returns the nameserver configured for this provider when it was created
+func (r *DNSProvider) Nameserver() string {
+	return r.nameserver
+}
+
+// TSIGAlgorithm returns the TSIG algorithm configured for this provider when it was created
+func (r *DNSProvider) TSIGAlgorithm() string {
+	return r.tsigAlgorithm
 }
