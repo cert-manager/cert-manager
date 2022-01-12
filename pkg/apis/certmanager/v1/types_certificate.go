@@ -188,7 +188,9 @@ type CertificateSpec struct {
 	// +optional
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"` // Validated by the validating webhook.
 
-	// AdditionalOutputFormats allows for requests for additional formats in which the private key should be written to the secret
+	// AdditionalOutputFormats allows for requests of additional output formats
+	// of the private key and the certificate to be written to the secret.
+	// This is an Alpha Feature and should be enabled with --feature-gates option.
 	// +optional
 	AdditionalOutputFormats []AdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
 }
@@ -253,7 +255,7 @@ var (
 	RotationPolicyAlways PrivateKeyRotationPolicy = "Always"
 )
 
-// OutputFormatType specifies which additional key formats should be added to Kubernetes secrets.
+// OutputFormatType specifies which additional output formats should be added to Kubernetes secrets.
 // Allowed values are `DER` or `CombinedPEM`.
 // When Type is set to `DER` an additional entry `key.der` will be created in the secret
 // containing the binary format of the key.
@@ -263,24 +265,24 @@ var (
 type OutputFormatType string
 
 const (
-	// AdditionalKeyOutputFormatDER requests that the DER binary format of the key
-	// is stored in the `key.der` key of a secret
-	AdditionalKeyOutputFormatDER OutputFormatType = "DER"
+	// AdditionalOutputFormatDER requests that the DER binary format of the key
+	// is stored in the `key.der` key of the certificate's secret.
+	AdditionalOutputFormatDER OutputFormatType = "DER"
 
-	// AdditionalKeyOutputFormatDERKey is the name of the data entry in the Secret resource
-	// used to store the DER formatted private key
-	AdditionalKeyOutputFormatDERKey string = "key.der"
+	// AdditionalOutputFormatDERKey is the name of the data entry in the Secret resource
+	// used to store the DER formatted private key.
+	AdditionalOutputFormatDERKey string = "key.der"
 
 	// AdditionalOutputFormatCombinedPEM requests that an entry containing both the PEM tls.crt and tls.key
-	// values concatenated is stored in the `tls-combined.pem` key of a secret
+	// values concatenated is stored in the `tls-combined.pem` key of the certificate's secret.
 	AdditionalOutputFormatCombinedPEM OutputFormatType = "CombinedPEM"
 
 	// AdditionalOutputFormatPEMKey is the name of the data entry in the Secret resource
-	// used to store the combined PEM certificate + key
+	// used to store the combined PEM certificate + key.
 	AdditionalOutputFormatPEMKey string = "tls-combined.pem"
 )
 
-// AdditionalOutputFormat wraps an additional key output format type
+// AdditionalOutputFormat wraps an additional output format type
 type AdditionalOutputFormat struct {
 	Type OutputFormatType `json:"type"`
 }

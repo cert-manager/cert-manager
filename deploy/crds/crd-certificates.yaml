@@ -68,16 +68,16 @@ spec:
                 - secretName
               properties:
                 additionalOutputFormats:
-                  description: AdditionalOutputFormats allows for requests for additional formats in which the private key should be written to the secret
+                  description: AdditionalOutputFormats allows for requests of additional output formats of the private key and the certificate to be written to the secret. This is an Alpha Feature and should be enabled with --feature-gates option.
                   type: array
                   items:
-                    description: AdditionalOutputFormat wraps an additional key output format type
+                    description: AdditionalOutputFormat wraps an additional output format type
                     type: object
                     required:
                       - type
                     properties:
                       type:
-                        description: OutputFormatType specifies which additional key formats should be added to Kubernetes secrets. Allowed values are `DER` or `CombinedPEM`. When Type is set to `DER` an additional entry `key.der` will be created in the secret containing the binary format of the key. When Type is set to `CombinedPEM` an additional entry `tls-combined.pem` will be created in the secret containing the PEM formatted certificate chain and key (tls.key + tls.crt concatenated)
+                        description: OutputFormatType specifies which additional output formats should be added to Kubernetes secrets. Allowed values are `DER` or `CombinedPEM`. When Type is set to `DER` an additional entry `key.der` will be created in the secret containing the binary format of the key. When Type is set to `CombinedPEM` an additional entry `tls-combined.pem` will be created in the secret containing the PEM formatted certificate chain and key (tls.key + tls.crt concatenated)
                         type: string
                         enum:
                           - DER

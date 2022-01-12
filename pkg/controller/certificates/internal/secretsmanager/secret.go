@@ -125,7 +125,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 
 func updateSecretWithAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
 	if crt.Spec.AdditionalOutputFormats == nil {
-		delete(secret.Data, cmapi.AdditionalKeyOutputFormatDERKey)
+		delete(secret.Data, cmapi.AdditionalOutputFormatDERKey)
 		delete(secret.Data, cmapi.AdditionalOutputFormatPEMKey)
 		return nil
 	}
@@ -135,21 +135,21 @@ func updateSecretWithAdditionalOutputFormats(crt *cmapi.Certificate, secret *cor
 
 	for _, f := range crt.Spec.AdditionalOutputFormats {
 		switch f.Type {
-		case cmapi.AdditionalKeyOutputFormatDER:
+		case cmapi.AdditionalOutputFormatDER:
 			additionalOutputFormatDER = true
 		case cmapi.AdditionalOutputFormatCombinedPEM:
 			additionalOutputFormatPEM = true
 		default:
-			return fmt.Errorf("Unknown additional output format %s", f.Type)
+			return fmt.Errorf("unknown additional output format %s", f.Type)
 		}
 	}
 
 	if additionalOutputFormatDER {
 		// Store binary format of the private key
 		block, _ := pem.Decode(data.PrivateKey)
-		secret.Data[cmapi.AdditionalKeyOutputFormatDERKey] = block.Bytes
+		secret.Data[cmapi.AdditionalOutputFormatDERKey] = block.Bytes
 	} else {
-		delete(secret.Data, cmapi.AdditionalKeyOutputFormatDERKey)
+		delete(secret.Data, cmapi.AdditionalOutputFormatDERKey)
 	}
 
 	if additionalOutputFormatPEM {
@@ -248,7 +248,9 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 
 		// Add additional output formats
 		if utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-			updateSecretWithAdditionalOutputFormats(crt, secret, data)
+			if err := updateSecretWithAdditionalOutputFormats(crt, secret, data); err != nil {
+				return fmt.Errorf("error during additional output format update: %w", err)
+			}
 		}
 	}
 	secret.Data[corev1.TLSPrivateKeyKey] = data.PrivateKey

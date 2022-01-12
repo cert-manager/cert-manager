@@ -262,7 +262,7 @@ func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
 	}
 }
 
-func SetCertificateAdditionalOutputFormats(additionalOutputFormats []v1.AdditionalOutputFormat) CertificateModifier {
+func SetCertificateAdditionalOutputFormats(additionalOutputFormats ...v1.AdditionalOutputFormat) CertificateModifier {
 	return func(crt *v1.Certificate) {
 		crt.Spec.AdditionalOutputFormats = additionalOutputFormats
 	}

@@ -125,7 +125,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should be able to create a certificate with additional private key formats", func() {
+		It("should be able to create a certificate with additional output formats", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)

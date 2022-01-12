@@ -166,7 +166,9 @@ type CertificateSpec struct {
 	// revisions will not be garbage collected. Default value is `nil`.
 	RevisionHistoryLimit *int32
 
-	// AdditionalOutputFormats allows for requests for additional formats in which the private key should be written to the secret
+	// AdditionalOutputFormats allows for requests of additional output formats
+	// of the private key and the certificate to be written to the secret.
+	// This is an Alpha Feature and should be enabled with --feature-gates option.
 	AdditionalOutputFormats []AdditionalOutputFormat
 }
 
@@ -208,7 +210,7 @@ type CertificatePrivateKey struct {
 	Size int
 }
 
-// OutputFormatType specifies which additional key formats should be added to Kubernetes secrets.
+// OutputFormatType specifies which additional output formats should be added to Kubernetes secrets.
 // Allowed values are `DER` or `CombinedPEM`.
 // When Type is set to `DER` an additional entry `key.der` will be created in the secret
 // containing the binary format of the key.
@@ -217,16 +219,16 @@ type CertificatePrivateKey struct {
 type OutputFormatType string
 
 const (
-	// AdditionalKeyOutputFormatDER requests that the DER binary format of the key
+	// AdditionalOutputFormatDER requests that the DER binary format of the key
 	// is stored in the `key.der` key of a secret
-	AdditionalKeyOutputFormatDER OutputFormatType = "DER"
+	AdditionalOutputFormatDER OutputFormatType = "DER"
 
 	// AdditionalOutputFormatCombinedPEM requests that an entry containing both the PEM tls.crt and tls.key
 	// values concatenated is stored in the `tls-combined.pem` key of a secret
 	AdditionalOutputFormatCombinedPEM OutputFormatType = "CombinedPEM"
 )
 
-// AdditionalOutputFormat wraps an additional key output format type
+// AdditionalOutputFormat wraps an additional output format type
 type AdditionalOutputFormat struct {
 	Type OutputFormatType
 }
