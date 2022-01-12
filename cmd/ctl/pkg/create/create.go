@@ -32,7 +32,7 @@ func NewCmdCreate(ctx context.Context, ioStreams genericclioptions.IOStreams) *c
 	return cmds
 }
 
-// Create a bare Create Command, without any subcommands
+// NewCmdCreateBare creates a bare Create Command, without any subcommands
 func NewCmdCreateBare() *cobra.Command {
 	return &cobra.Command{
 		Use:   "create",

@@ -39,6 +39,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
 
+// InjectorControllerOptions is a struct having injector controller options values
 type InjectorControllerOptions struct {
 	Namespace               string
 	LeaderElect             bool
@@ -60,6 +61,7 @@ type InjectorControllerOptions struct {
 	log logr.Logger
 }
 
+// AddFlags adds the various flags for injector controller options
 func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.Namespace, "namespace", "", ""+
 		"If set, this limits the scope of cainjector to a single namespace. "+
@@ -88,6 +90,7 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.PprofAddr, "profiler-address", cmdutil.DefaultProfilerAddr, "Address of the Go profiler (pprof) if enabled. This should never be exposed on a public interface.")
 }
 
+// NewInjectorControllerOptions returns a new InjectorControllerOptions
 func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOptions {
 	o := &InjectorControllerOptions{
 		StdOut: out,
