@@ -19,28 +19,36 @@ package secretsmanager
 import (
 	"context"
 	"encoding/pem"
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jetstack/cert-manager/internal/controller/feature"
+	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	apitypes "k8s.io/apimachinery/pkg/types"
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	"k8s.io/client-go/rest"
 	coretesting "k8s.io/client-go/testing"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
+	"k8s.io/utils/pointer"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
+	testcoreclients "github.com/jetstack/cert-manager/test/unit/coreclients"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	testcorelisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 var (
@@ -48,22 +56,17 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func TestSecretsManager(t *testing.T) {
-	type testT struct {
-		builder *testpkg.Builder
-
-		certificateOptions controllerpkg.CertificateOptions
-		certificate        *cmapi.Certificate
-		SecretData         SecretData
-
-		expectedErr bool
-	}
-
+// These tests where formally tested using the controllers testing package,
+// however is not compatible with the Apply API call now being used by the
+// SecretsManager.
+// See: https://github.com/kubernetes/client-go/issues/970
+func Test_SecretsManager(t *testing.T) {
 	baseCert := gen.Certificate("test",
 		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "foo.io"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 		gen.SetCertificateDNSNames("example.com"),
+		gen.SetCertificateUID(apitypes.UID("test-uid")),
 	)
 	baseCertBundle := internaltest.MustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
@@ -94,331 +97,283 @@ func TestSecretsManager(t *testing.T) {
 	block, _ := pem.Decode(baseCertBundle.PrivateKeyBytes)
 	tlsDerContent := block.Bytes
 
-	tests := map[string]testT{
+	tests := map[string]struct {
+		certificateOptions controllerpkg.CertificateOptions
+		certificate        *cmapi.Certificate
+		existingSecret     *corev1.Secret
+
+		secretData SecretData
+		applyFn    func(t *testing.T) testcoreclients.ApplyFn
+
+		expectedErr bool
+	}{
 		"if secret does not exists and unable to decode certificate, then error": {
-			certificate: baseCertBundle.Certificate,
-			SecretData:  SecretData{Certificate: []byte("test-cert"), CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			builder: &testpkg.Builder{
-				KubeObjects:     []runtime.Object{},
-				ExpectedActions: []testpkg.Action{},
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertBundle.Certificate,
+			existingSecret:     nil,
+			secretData:         SecretData{Certificate: []byte("test-cert"), CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(context.Context, *applycorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
+					t.Error("unexpected apply call")
+					return nil, nil
+				}
 			},
 			expectedErr: true,
 		},
 
-		"if secret does not exist, create new Secret, with owner enabled": {
-			certificate: baseCertBundle.Certificate,
-			certificateOptions: controllerpkg.CertificateOptions{
-				EnableOwnerRef: true,
-			},
-			SecretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewCreateAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						&corev1.Secret{
-							ObjectMeta: metav1.ObjectMeta{
-								Namespace: gen.DefaultTestNamespace,
-								Name:      "output",
-								Annotations: map[string]string{
-									cmapi.CertificateNameKey:       "test",
-									cmapi.IssuerGroupAnnotationKey: "foo.io",
-									cmapi.IssuerKindAnnotationKey:  "Issuer",
-									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
-
-									cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
-								},
-								Labels:          map[string]string{},
-								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(baseCertBundle.Certificate, certificateGvk)},
-							},
-							Data: map[string][]byte{
-								corev1.TLSCertKey:       baseCertBundle.CertBytes,
-								corev1.TLSPrivateKeyKey: []byte("test-key"),
-								cmmeta.TLSCAKey:         []byte("test-ca"),
-							},
-							Type: corev1.SecretTypeTLS,
-						},
-					)),
-				},
-			},
-			expectedErr: false,
-		},
-
-		"if secret does exist, update existing Secret and leave custom annotations, with owner enabled": {
-			certificate: baseCertBundle.Certificate,
-			certificateOptions: controllerpkg.CertificateOptions{
-				EnableOwnerRef: true,
-			},
-			SecretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: gen.DefaultTestNamespace,
-							Name:      "output",
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-							Labels: map[string]string{},
-						},
-						Data: map[string][]byte{
-							corev1.TLSCertKey:       []byte("foo"),
-							corev1.TLSPrivateKeyKey: []byte("foo"),
-							cmmeta.TLSCAKey:         []byte("foo"),
-						},
-						Type: corev1.SecretTypeTLS,
-					},
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						&corev1.Secret{
-							ObjectMeta: metav1.ObjectMeta{
-								Namespace: gen.DefaultTestNamespace,
-								Name:      "output",
-								Annotations: map[string]string{
-									"my-custom": "annotation",
-
-									cmapi.CertificateNameKey:       "test",
-									cmapi.IssuerGroupAnnotationKey: "foo.io",
-									cmapi.IssuerKindAnnotationKey:  "Issuer",
-									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
-
-									cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
-								},
-								Labels:          map[string]string{},
-								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(baseCertBundle.Certificate, certificateGvk)},
-							},
-							Data: map[string][]byte{
-								corev1.TLSCertKey:       baseCertBundle.CertBytes,
-								corev1.TLSPrivateKeyKey: []byte("test-key"),
-								cmmeta.TLSCAKey:         []byte("test-ca"),
-							},
-							Type: corev1.SecretTypeTLS,
-						},
-					)),
-				},
-			},
-			expectedErr: false,
-		},
-
-		"if secret does exist, update existing Secret and add annotations set in secretTemplate": {
-			certificate: baseCertWithSecretTemplate,
-			certificateOptions: controllerpkg.CertificateOptions{
-				EnableOwnerRef: true,
-			},
-			SecretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: gen.DefaultTestNamespace,
-							Name:      "output",
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-						},
-						Data: map[string][]byte{
-							corev1.TLSCertKey:       []byte("foo"),
-							corev1.TLSPrivateKeyKey: []byte("foo"),
-							cmmeta.TLSCAKey:         []byte("foo"),
-						},
-						Type: corev1.SecretTypeTLS,
-					},
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						&corev1.Secret{
-							ObjectMeta: metav1.ObjectMeta{
-								Namespace: gen.DefaultTestNamespace,
-								Name:      "output",
-								Annotations: map[string]string{
-									"my-custom": "annotation-from-secret",
-									"template":  "annotation",
-
-									cmapi.CertificateNameKey:       "test",
-									cmapi.IssuerGroupAnnotationKey: "foo.io",
-									cmapi.IssuerKindAnnotationKey:  "Issuer",
-									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
-
-									cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
-								},
-								Labels: map[string]string{
-									"template": "label",
-								},
-								OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(baseCertBundle.Certificate, certificateGvk)},
-							},
-							Data: map[string][]byte{
-								corev1.TLSCertKey:       baseCertBundle.CertBytes,
-								corev1.TLSPrivateKeyKey: []byte("test-key"),
-								cmmeta.TLSCAKey:         []byte("test-ca"),
-							},
-							Type: corev1.SecretTypeTLS,
-						},
-					)),
-				},
-			},
-			expectedErr: false,
-		},
-
 		"if secret does not exist, create new Secret, with owner disabled": {
-			certificate: baseCertBundle.Certificate,
-			certificateOptions: controllerpkg.CertificateOptions{
-				EnableOwnerRef: false,
-			},
-			SecretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewCreateAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						&corev1.Secret{
-							ObjectMeta: metav1.ObjectMeta{
-								Namespace: gen.DefaultTestNamespace,
-								Name:      "output",
-								Annotations: map[string]string{
-									cmapi.CertificateNameKey:       "test",
-									cmapi.IssuerGroupAnnotationKey: "foo.io",
-									cmapi.IssuerKindAnnotationKey:  "Issuer",
-									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertBundle.Certificate,
+			existingSecret:     nil,
+			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
 
-									cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
-								},
-								Labels: map[string]string{},
-							},
-							Data: map[string][]byte{
-								corev1.TLSCertKey:       baseCertBundle.CertBytes,
-								corev1.TLSPrivateKeyKey: []byte("test-key"),
-								cmmeta.TLSCAKey:         []byte("test-ca"),
-							},
-							Type: corev1.SecretTypeTLS,
-						},
-					)),
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName, cmapi.AltNamesAnnotationKey: strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:  strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey: strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(make(map[string]string)).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						}).
+						WithType(corev1.SecretTypeTLS)
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does not exist, create new Secret, with owner enabled": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:        baseCertBundle.Certificate,
+			existingSecret:     nil,
+			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expUID := apitypes.UID("test-uid")
+
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io", cmapi.IssuerKindAnnotationKey: "Issuer",
+								cmapi.IssuerNameAnnotationKey: "ca-issuer", cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey: strings.Join(baseCertBundle.Cert.DNSNames, ","), cmapi.IPSANAnnotationKey: strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey: strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(make(map[string]string)).
+						WithData(map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes, corev1.TLSPrivateKeyKey: []byte("test-key"), cmmeta.TLSCAKey: []byte("test-ca")}).
+						WithType(corev1.SecretTypeTLS).
+						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
+							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
+							Name: pointer.String("test"), UID: &expUID,
+							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+						})
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+
+		"if secret does exist, update existing Secret and leave custom annotations, with owner disabled": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertBundle.Certificate,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   gen.DefaultTestNamespace,
+					Name:        "output",
+					Annotations: map[string]string{"my-custom": "annotation"},
+					Labels:      map[string]string{},
 				},
+				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type: corev1.SecretTypeTLS,
+			},
+			secretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
+
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(make(map[string]string)).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						}).
+						WithType(corev1.SecretTypeTLS)
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+		"if secret does exist, update existing Secret and leave custom annotations, with owner enabled": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:        baseCertBundle.Certificate,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   gen.DefaultTestNamespace,
+					Name:        "output",
+					Annotations: map[string]string{"my-custom": "annotation"},
+					Labels:      map[string]string{},
+				},
+				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type: corev1.SecretTypeTLS,
+			},
+			secretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expUID := apitypes.UID("test-uid")
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
+
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(make(map[string]string)).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						}).
+						WithType(corev1.SecretTypeTLS).
+						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
+							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
+							Name: pointer.String("test"), UID: &expUID,
+							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+						})
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
 			},
 			expectedErr: false,
 		},
 
 		"if secret does not exist, create new Secret using the secret template": {
-			certificate: baseCertWithSecretTemplate,
-			certificateOptions: controllerpkg.CertificateOptions{
-				EnableOwnerRef: false,
-			},
-			SecretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewCreateAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						&corev1.Secret{
-							ObjectMeta: metav1.ObjectMeta{
-								Namespace: gen.DefaultTestNamespace,
-								Name:      "output",
-								Annotations: map[string]string{
-									"template":  "annotation",
-									"my-custom": "annotation-from-secret",
-
-									cmapi.CertificateNameKey:       "test",
-									cmapi.IssuerGroupAnnotationKey: "foo.io",
-									cmapi.IssuerKindAnnotationKey:  "Issuer",
-									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
-
-									cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
-								},
-								Labels: map[string]string{
-									"template": "label",
-								},
-							},
-							Data: map[string][]byte{
-								corev1.TLSCertKey:       baseCertBundle.CertBytes,
-								corev1.TLSPrivateKeyKey: []byte("test-key"),
-								cmmeta.TLSCAKey:         []byte("test-ca"),
-							},
-							Type: corev1.SecretTypeTLS,
-						},
-					)),
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: false},
+			certificate:        baseCertWithSecretTemplate,
+			existingSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   gen.DefaultTestNamespace,
+					Name:        "output",
+					Annotations: map[string]string{"my-custom": "annotation"},
+					Labels:      map[string]string{},
 				},
+				Data: map[string][]byte{corev1.TLSCertKey: []byte("foo"), corev1.TLSPrivateKeyKey: []byte("foo"), cmmeta.TLSCAKey: []byte("foo")},
+				Type: corev1.SecretTypeTLS,
+			},
+			secretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								"template":               "annotation",
+								"my-custom":              "annotation-from-secret",
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
+
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(map[string]string{"template": "label"}).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						}).
+						WithType(corev1.SecretTypeTLS)
+					assert.Equal(t, expCnf, gotCnf)
+
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
 			},
 			expectedErr: false,
 		},
 
-		"if secret does exist, update existing Secret and leave custom annotations, with owner disabled.": {
-			certificate: baseCertBundle.Certificate,
-			certificateOptions: controllerpkg.CertificateOptions{
-				EnableOwnerRef: false,
-			},
-			SecretData: SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
-			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: gen.DefaultTestNamespace,
-							Name:      "output",
-							Annotations: map[string]string{
-								"my-custom": "annotation",
-							},
-						},
-						Data: map[string][]byte{
-							corev1.TLSCertKey:       []byte("foo"),
-							corev1.TLSPrivateKeyKey: []byte("foo"),
-							cmmeta.TLSCAKey:         []byte("foo"),
-						},
-						Type: corev1.SecretTypeTLS,
-					},
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						&corev1.Secret{
-							ObjectMeta: metav1.ObjectMeta{
-								Namespace: gen.DefaultTestNamespace,
-								Name:      "output",
-								Annotations: map[string]string{
-									"my-custom": "annotation",
+		"if secret does exist, update existing Secret and add annotations set in secretTemplate": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:        baseCertWithSecretTemplate,
+			existingSecret:     nil,
+			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					expUID := apitypes.UID("test-uid")
+					expCnf := applycorev1.Secret("output", gen.DefaultTestNamespace).
+						WithAnnotations(
+							map[string]string{
+								"template":               "annotation",
+								"my-custom":              "annotation-from-secret",
+								cmapi.CertificateNameKey: "test", cmapi.IssuerGroupAnnotationKey: "foo.io",
+								cmapi.IssuerKindAnnotationKey: "Issuer", cmapi.IssuerNameAnnotationKey: "ca-issuer",
 
-									cmapi.CertificateNameKey:       "test",
-									cmapi.IssuerGroupAnnotationKey: "foo.io",
-									cmapi.IssuerKindAnnotationKey:  "Issuer",
-									cmapi.IssuerNameAnnotationKey:  "ca-issuer",
+								cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
+								cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
+								cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
+								cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
+							}).
+						WithLabels(map[string]string{"template": "label"}).
+						WithData(map[string][]byte{
+							corev1.TLSCertKey:       baseCertBundle.CertBytes,
+							corev1.TLSPrivateKeyKey: []byte("test-key"),
+							cmmeta.TLSCAKey:         []byte("test-ca"),
+						}).
+						WithType(corev1.SecretTypeTLS).
+						WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
+							APIVersion: pointer.String("cert-manager.io/v1"), Kind: pointer.String("Certificate"),
+							Name: pointer.String("test"), UID: &expUID,
+							Controller: pointer.Bool(true), BlockOwnerDeletion: pointer.Bool(true),
+						})
+					assert.Equal(t, expCnf, gotCnf)
 
-									cmapi.CommonNameAnnotationKey: baseCertBundle.Cert.Subject.CommonName,
-									cmapi.AltNamesAnnotationKey:   strings.Join(baseCertBundle.Cert.DNSNames, ","),
-									cmapi.IPSANAnnotationKey:      strings.Join(utilpki.IPAddressesToString(baseCertBundle.Cert.IPAddresses), ","),
-									cmapi.URISANAnnotationKey:     strings.Join(utilpki.URLsToString(baseCertBundle.Cert.URIs), ","),
-								},
-								Labels: map[string]string{},
-							},
-							Data: map[string][]byte{
-								corev1.TLSCertKey:       baseCertBundle.CertBytes,
-								corev1.TLSPrivateKeyKey: []byte("test-key"),
-								cmmeta.TLSCAKey:         []byte("test-ca"),
-							},
-							Type: corev1.SecretTypeTLS,
-						},
-					)),
-				},
+					expOpts := metav1.ApplyOptions{FieldManager: "cert-manager-test"}
+					assert.Equal(t, expOpts, gotOpts)
+
+					return nil, nil
+				}
 			},
 			expectedErr: false,
 		},
@@ -731,38 +686,70 @@ func TestSecretsManager(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+		"if apply conflicts, expect a secret Apply call": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:        baseCertWithSecretTemplate,
+			existingSecret:     nil,
+			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				call := 0
+				t.Cleanup(func() {
+					assert.Equal(t, 2, call, "expect apply call to execute twice")
+				})
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					defer func() {
+						call++
+					}()
+
+					if call == 0 {
+						return nil, apierrors.NewConflict(corev1.Resource("secret"), "conflict on field", errors.New("test"))
+					}
+					return nil, nil
+				}
+			},
+			expectedErr: false,
+		},
+		"if apply errors, expect error response": {
+			certificateOptions: controllerpkg.CertificateOptions{EnableOwnerRef: true},
+			certificate:        baseCertWithSecretTemplate,
+			existingSecret:     nil,
+			secretData:         SecretData{Certificate: baseCertBundle.CertBytes, CA: []byte("test-ca"), PrivateKey: []byte("test-key")},
+			applyFn: func(t *testing.T) testcoreclients.ApplyFn {
+				return func(_ context.Context, gotCnf *applycorev1.SecretApplyConfiguration, gotOpts metav1.ApplyOptions) (*corev1.Secret, error) {
+					return nil, errors.New("this is an error")
+				}
+			},
+			expectedErr: true,
+		},
 	}
 
 	// TODO: add to these tests once the JKS/PKCS12 support is updated
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			fixedClock.SetTime(fixedClockStart)
-			test.builder.Clock = fixedClock
-			test.builder.T = t
-			test.builder.Init()
-			defer test.builder.Stop()
+			secretClient := testcoreclients.NewFakeSecretsGetter(testcoreclients.SetFakeSecretsGetterApplyFn(test.applyFn(t)))
 
-			kubeClient := test.builder.Client
-			secretsLister := test.builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+			var mod testcorelisters.FakeSecretListerModifier
+			if test.existingSecret != nil {
+				mod = testcorelisters.SetFakeSecretNamespaceListerGet(test.existingSecret, nil)
+			} else {
+				mod = testcorelisters.SetFakeSecretNamespaceListerGet(nil, apierrors.NewNotFound(corev1.Resource("secret"), "not found"))
+			}
+			secretLister := testcorelisters.NewFakeSecretLister(mod)
 
 			testManager := New(
-				kubeClient,
-				secretsLister,
-				test.builder.RESTConfig,
+				secretClient, secretLister,
+				&rest.Config{UserAgent: "cert-manager-test"},
 				test.certificateOptions.EnableOwnerRef,
 			)
 
-			test.builder.Start()
-
-			err := testManager.UpdateData(context.Background(), test.certificate, test.SecretData)
+			err := testManager.UpdateData(context.Background(), test.certificate, test.secretData)
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}
 			if err == nil && test.expectedErr {
 				t.Errorf("expected to get an error but did not get one")
 			}
-			test.builder.CheckAndFinish(err)
 		})
 	}
 }
@@ -774,100 +761,17 @@ func Test_getCertificateSecret(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		secretApplyFeatureEnabled    bool
-		secretOwnerRefernecesEnabled bool
-		existingSecret               *corev1.Secret
-
-		expSecret       *corev1.Secret
-		expSecretExists bool
+		existingSecret *corev1.Secret
+		expSecret      *corev1.Secret
 	}{
-		"if secret doesn't exist, applyFeature=false ownerRefFeature=false, expect empty secret with no owner ref": {
-			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: false, existingSecret: nil,
+		"if secret doesn't exist, expect empty secret": {
+			existingSecret: nil,
 			expSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
 				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
 			},
-			expSecretExists: false,
 		},
-		"if secret doesn't exist, applyFeature=true ownerRefFeature=false, expect empty secret with no owner ref": {
-			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: false, existingSecret: nil,
-			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
-				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
-			},
-			expSecretExists: false,
-		},
-		"if secret doesn't exist, applyFeature=false ownerRefFeature=true, expect empty secret with owner ref": {
-			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: true, existingSecret: nil,
-			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}},
-				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
-			},
-			expSecretExists: false,
-		},
-		"if secret doesn't exist, applyFeature=true ownerRefFeature=true, expect empty secret with owner ref": {
-			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: true, existingSecret: nil,
-			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}},
-				Data:       make(map[string][]byte), Type: corev1.SecretTypeTLS,
-			},
-			expSecretExists: false,
-		},
-		"if secret exists, applyFeature=false ownerRefFeature=false, expect the exact same Secret to be returned": {
-			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: false,
-			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
-				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
-			},
-			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
-				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretTypeTLS,
-			},
-			expSecretExists: true,
-		},
-		"if secret exists, applyFeature=false ownerRefFeature=true, expect the exact same Secret to be returned but with OwnerReferences set": {
-			secretApplyFeatureEnabled: false, secretOwnerRefernecesEnabled: true,
-			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
-				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretType("test"),
-			},
-			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
-				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key")}, Type: corev1.SecretType("test"),
-			},
-			expSecretExists: true,
-		},
-		"if secret exists, applyFeature=true ownerRefFeature=false, expect the secret to be returned but only with the cert-manager managed data keys to be set": {
-			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: false,
-			existingSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-					Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"},
-				},
-				Data: map[string][]byte{"abc": []byte("123"), "hello-world": []byte("bar"), "tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeOpaque,
-			},
-			expSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret",
-				},
-				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeOpaque,
-			},
-			expSecretExists: true,
-		},
-		"if secret exists, applyFeature=true ownerRefFeature=true, expect the secret to be returned but only with the cert-manager managed data keys to be set, and owner references": {
-			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: true,
+		"if secret exists, expect the secret to be returned but only with the cert-manager managed data keys to be set": {
 			existingSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
@@ -877,14 +781,12 @@ func Test_getCertificateSecret(t *testing.T) {
 			},
 			expSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+					Namespace: "test-namespace", Name: "test-secret",
 				},
 				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeTLS,
 			},
-			expSecretExists: true,
 		},
-		"if secret exists, applyFeature=true ownerRefFeature=true, expect the secret to be returned but only with the cert-manager managed data keys to be set, and owner references, with original Type set": {
-			secretApplyFeatureEnabled: true, secretOwnerRefernecesEnabled: true,
+		"if secret exists, expect the secret to be returned but only with the cert-manager managed data keys to be set, with original Type set": {
 			existingSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace", Name: "test-secret",
@@ -894,27 +796,15 @@ func Test_getCertificateSecret(t *testing.T) {
 			},
 			expSecret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test-namespace", Name: "test-secret", OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+					Namespace: "test-namespace", Name: "test-secret",
 				},
 				Data: map[string][]byte{"tls.crt": []byte("cert"), "tls.key": []byte("key"), "ca.crt": []byte("ca")}, Type: corev1.SecretTypeOpaque,
 			},
-			expSecretExists: true,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if test.secretApplyFeatureEnabled {
-				assert.NoError(t,
-					utilfeature.DefaultMutableFeatureGate.Set("ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO=true"),
-				)
-			}
-			t.Cleanup(func() {
-				assert.NoError(t,
-					utilfeature.DefaultMutableFeatureGate.Set("ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO=false"),
-				)
-			})
-
 			// Create and initialise a new unit test builder.
 			builder := &testpkg.Builder{
 				T: t,
@@ -927,46 +817,18 @@ func Test_getCertificateSecret(t *testing.T) {
 			builder.Init()
 
 			s := SecretsManager{
-				kubeClient:                  builder.Client,
-				secretLister:                builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-				restConfig:                  builder.RESTConfig,
-				enableSecretOwnerReferences: test.secretOwnerRefernecesEnabled,
+				secretClient: builder.Client.CoreV1(),
+				secretLister: builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+				userAgent:    "cert-manager-test",
 			}
 
 			builder.Start()
 			defer builder.Stop()
 
-			gotSecret, gotSecretExists, err := s.getCertificateSecret(context.Background(), crt)
+			gotSecret, err := s.getCertificateSecret(context.Background(), crt)
 			assert.NoError(t, err)
 
-			assert.Equal(t, test.expSecretExists, gotSecretExists, "unexpected secret existed")
 			assert.Equal(t, test.expSecret, gotSecret, "unexpected returned secret")
-		})
-	}
-}
-
-func Test_secretWithMaybeOwnerRef(t *testing.T) {
-	tests := map[string]struct {
-		secretOwnerRefernecesEnabled bool
-		expOwnerReferneces           bool
-	}{
-		"if secret ownership disabled, expect no owner reference": {
-			secretOwnerRefernecesEnabled: false,
-			expOwnerReferneces:           false,
-		},
-		"if secret ownership enabled, expect owner reference": {
-			secretOwnerRefernecesEnabled: true,
-			expOwnerReferneces:           true,
-		},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			secret := (&SecretsManager{enableSecretOwnerReferences: test.secretOwnerRefernecesEnabled}).secretWithMaybeOwnerRef(
-				&cmapi.Certificate{ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-certificate"}},
-				&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"}},
-			)
-
-			assert.Equal(t, len(secret.OwnerReferences) > 0, test.expOwnerReferneces, "unexpected owner reference on Secret")
 		})
 	}
 }

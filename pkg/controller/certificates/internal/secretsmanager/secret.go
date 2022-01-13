@@ -27,17 +27,16 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
-	"k8s.io/client-go/kubernetes"
+	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 
-	"github.com/jetstack/cert-manager/internal/controller/feature"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -47,12 +46,12 @@ var (
 
 // SecretsManager creates and updates secrets with certificate and key data.
 type SecretsManager struct {
-	kubeClient   kubernetes.Interface
+	secretClient coreclient.SecretsGetter
 	secretLister corelisters.SecretLister
 
-	// restConfig is used for retrieving the Kubernetes client's User Agent. The
-	// User Agent is used for setting the field manager when Applying Secrets.
-	restConfig *rest.Config
+	// userAgent is the Kubernetes client's user agent. This is used for setting
+	// the field manager when Applying Secrets.
+	userAgent string
 
 	// if true, Secret resources created by the controller will have an
 	// 'owner reference' set, meaning when the Certificate is deleted, the
@@ -70,29 +69,25 @@ type SecretData struct {
 // true will mean that secrets will be deleted when the corresponding
 // Certificate is deleted.
 func New(
-	kubeClient kubernetes.Interface,
+	secretClient coreclient.SecretsGetter,
 	secretLister corelisters.SecretLister,
 	restConfig *rest.Config,
 	enableSecretOwnerReferences bool,
 ) *SecretsManager {
 	return &SecretsManager{
-		kubeClient:                  kubeClient,
+		secretClient:                secretClient,
 		secretLister:                secretLister,
-		restConfig:                  restConfig,
+		userAgent:                   util.PrefixFromUserAgent(restConfig.UserAgent),
 		enableSecretOwnerReferences: enableSecretOwnerReferences,
 	}
 }
 
-// UpdateData will ensure the Secret resource contains the given secret
-// data as well as appropriate metadata.
-// If the Secret resource does not exist, it will be created.
-// Otherwise, the existing resource will be updated.
+// UpdateData will ensure the Secret resource contains the given secret data as
+// well as appropriate metadata using an Apply call.
+// If the Secret resource does not exist, it will be created on Apply.
 // UpdateData will also update deprecated annotations if they exist.
-// If the ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO
-// feature is enabled, SecretsManager will perform an Apply rather than an
-// Update/Create on cert-manager managed fields.
 func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate, data SecretData) error {
-	secret, secretExists, err := s.getCertificateSecret(ctx, crt)
+	secret, err := s.getCertificateSecret(ctx, crt)
 	if err != nil {
 		return err
 	}
@@ -100,45 +95,40 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	log := logf.FromContext(ctx)
 	log = logf.WithResource(log, secret)
 
-	err = s.setValues(crt, secret, data)
-	if err != nil {
+	if err := s.setValues(crt, secret, data); err != nil {
 		return err
 	}
 
-	// Apply instead of Create/Update if the Apply feature is enabled.
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
-		applyOpts := metav1.ApplyOptions{FieldManager: util.PrefixFromUserAgent(s.restConfig.UserAgent)}
-		applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
-			WithAnnotations(secret.Annotations).
-			WithLabels(secret.Labels).
-			WithData(secret.Data).
-			WithType(secret.Type)
+	// Build Secret apply configuration and options.
+	applyOpts := metav1.ApplyOptions{FieldManager: s.userAgent}
+	applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
+		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
+		WithData(secret.Data).WithType(secret.Type)
 
-		log.V(logf.DebugLevel).Info("applying secret")
-
-		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
-		if apierrors.IsConflict(err) {
-			log.Error(err, "forcing apply due to field management conflict")
-			applyOpts.Force = true
-			_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
-		}
-
-		if err != nil {
-			return fmt.Errorf("failed to apply secret %s/%s: %w", secret.Namespace, secret.Name, err)
-		}
-
-		return nil
+	// If Secret owner reference is enabled, set it on the Secret. This results
+	// in a no-op if the Secret already exists and has the owner reference set,
+	// and visa-versa.
+	if s.enableSecretOwnerReferences {
+		ref := *metav1.NewControllerRef(crt, certificateGvk)
+		applyCnf = applyCnf.WithOwnerReferences(&applymetav1.OwnerReferenceApplyConfiguration{
+			APIVersion: &ref.APIVersion, Kind: &ref.Kind,
+			Name: &ref.Name, UID: &ref.UID,
+			Controller: ref.Controller, BlockOwnerDeletion: ref.BlockOwnerDeletion,
+		})
 	}
 
-	if secretExists {
-		// Currently we are always updating. We should devise a way to not have to
-		// call an update if it is not necessary.
-		log.V(logf.DebugLevel).Info("updating secret")
-		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
-	} else {
-		// If secret does not exist then create it and return.
-		log.V(logf.DebugLevel).Info("creating secret")
-		_, err = s.kubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+	log.V(logf.DebugLevel).Info("applying secret")
+
+	// Apply secret resource.
+	_, err = s.secretClient.Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
+	if apierrors.IsConflict(err) {
+		log.Error(err, "forcing apply due to field management conflict")
+		applyOpts.Force = true
+		_, err = s.secretClient.Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to apply secret %s/%s: %w", secret.Namespace, secret.Name, err)
 	}
 
 	return err
@@ -329,71 +319,51 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 // Certificate's SecretName.
 // If the secret doesn't exist, an empty Secret object with the Name and
 // Namespace is returned.
-// If ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO is
-// disabled, the returned existing secret will be returned, as is.
-// If ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO is
-// enabled, the returned secret will only contain the crt.tls
-// Returns true if the secret exists, false otherwise.
-func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Certificate) (*corev1.Secret, bool, error) {
+func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Certificate) (*corev1.Secret, error) {
 	// Fetch a copy of the existing Secret resource
 	existingSecret, err := s.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
 	// If secret doesn't exist yet, return an empty secret that should be
 	// created.
 	if apierrors.IsNotFound(err) {
-		return s.secretWithMaybeOwnerRef(crt, &corev1.Secret{
+		return &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      crt.Spec.SecretName,
 				Namespace: crt.Namespace,
 			},
 			Data: make(map[string][]byte),
 			Type: corev1.SecretTypeTLS,
-		}), false, nil
+		}, nil
 	}
 
 	// Transient error.
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	var secret *corev1.Secret
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
-		// if secret apply is enabled, only copy data keys to not take ownership of
-		// annotations or labels.
-		secret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      crt.Spec.SecretName,
-				Namespace: crt.Namespace,
-			},
-			Data: make(map[string][]byte),
-			// Use the existing Secret's type since this may not be of type
-			// `kubernetes.io/tls`, if for example it was created beforehand. Type is
-			// immutable, so we must keep it to its original value.
-			Type: existingSecret.Type,
-		}
+	// Only copy data keys to not take ownership of annotations or labels on
+	// Apply.
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      crt.Spec.SecretName,
+			Namespace: crt.Namespace,
+		},
+		Data: make(map[string][]byte),
+		// Use the existing Secret's type since this may not be of type
+		// `kubernetes.io/tls`, if for example it was created beforehand. Type is
+		// immutable, so we must keep it to its original value.
+		Type: existingSecret.Type,
+	}
 
-		// If owned keys are present on the existing secret, set on the applied
-		// secret.
-		if existingSecret.Data != nil {
-			for _, key := range []string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey} {
-				if v, ok := existingSecret.Data[key]; ok {
-					secret.Data[key] = v
-				}
+	// If owned keys are present on the existing secret, set on the applied
+	// secret.
+	if existingSecret.Data != nil {
+		for _, key := range []string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey} {
+			if v, ok := existingSecret.Data[key]; ok {
+				secret.Data[key] = v
 			}
 		}
-	} else {
-		secret = existingSecret.DeepCopy()
 	}
 
-	return s.secretWithMaybeOwnerRef(crt, secret), true, nil
-}
-
-// secretWithMaybeOwnerRef will return the same secret, but populates the owner
-// reference if Secret Owner Reference has been enabled.
-func (s *SecretsManager) secretWithMaybeOwnerRef(crt *cmapi.Certificate, secret *corev1.Secret) *corev1.Secret {
-	// secret will be overwritten by 'existingSecret' if existingSecret is non-nil
-	if s.enableSecretOwnerReferences {
-		secret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)}
-	}
-	return secret
+	return secret, nil
 }
