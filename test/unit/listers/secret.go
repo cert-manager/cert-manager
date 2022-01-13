@@ -38,8 +38,8 @@ type FakeSecretNamespaceLister struct {
 	GetFn  func(name string) (ret *corev1.Secret, err error)
 }
 
-func NewFakeSecretLister() *FakeSecretLister {
-	return &FakeSecretLister{
+func NewFakeSecretLister(mods ...FakeSecretListerModifier) *FakeSecretLister {
+	return FakeSecretListerFrom(&FakeSecretLister{
 		ListFn: func(selector labels.Selector) (ret []*corev1.Secret, err error) {
 			return nil, nil
 		},
@@ -47,18 +47,18 @@ func NewFakeSecretLister() *FakeSecretLister {
 		SecretsFn: func(namespace string) clientcorev1.SecretNamespaceLister {
 			return nil
 		},
-	}
+	}, mods...)
 }
 
-func NewFakeSecretNamespaceLister() *FakeSecretNamespaceLister {
-	return &FakeSecretNamespaceLister{
+func NewFakeSecretNamespaceLister(mods ...FakeSecretNamespaceListerModifier) *FakeSecretNamespaceLister {
+	return FakeSecretNamespaceListerFrom(&FakeSecretNamespaceLister{
 		ListFn: func(selector labels.Selector) (ret []*corev1.Secret, err error) {
 			return nil, nil
 		},
 		GetFn: func(name string) (ret *corev1.Secret, err error) {
 			return nil, nil
 		},
-	}
+	}, mods...)
 }
 
 func (f *FakeSecretLister) List(selector labels.Selector) (ret []*corev1.Secret, err error) {

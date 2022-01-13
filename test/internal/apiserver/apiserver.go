@@ -19,6 +19,7 @@ package apiserver
 import (
 	"testing"
 
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
@@ -41,6 +42,9 @@ func RunBareControlPlane(t *testing.T) (*envtest.Environment, StopFunc) {
 	if _, err := env.Start(); err != nil {
 		t.Fatalf("failed to start control plane: %v", err)
 	}
+
+	// Ensure we set a User Agent for the API server client.
+	env.Config.UserAgent = rest.DefaultKubernetesUserAgent()
 
 	return env, func() {
 		if err := env.Stop(); err != nil {
