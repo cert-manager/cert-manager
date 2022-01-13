@@ -36,6 +36,7 @@ type DNSProvider struct {
 	log              logr.Logger
 }
 
+// NewDNSProvider returns a new DNSProvider Instance with configuration
 func NewDNSProvider(project string, saBytes []byte, dns01Nameservers []string, ambient bool, hostedZoneName string) (*DNSProvider, error) {
 	// project is a required field
 	if project == "" {
