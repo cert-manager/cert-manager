@@ -20,11 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	errors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-
-	errors "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -63,20 +62,24 @@ type Interface interface {
 	Version(context.Context) (*Version, error)
 }
 
-type versionChecker struct {
+// VersionChecker implements a version checker using a controller-runtime client
+type VersionChecker struct {
 	client client.Client
 
 	versionSources map[string]string
 }
 
-// New returns a cert-manager version checker
-func New(restcfg *rest.Config, scheme *runtime.Scheme) (Interface, error) {
+// New returns a cert-manager version checker. Prefer New over NewFromClient
+// since New will ensure the scheme is configured correctly.
+func New(restcfg *rest.Config, scheme *runtime.Scheme) (*VersionChecker, error) {
 	if err := corev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
+
 	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
+
 	if err := apiextensionsv1beta1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
@@ -87,20 +90,30 @@ func New(restcfg *rest.Config, scheme *runtime.Scheme) (Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &versionChecker{
+
+	return &VersionChecker{
 		client:         cl,
 		versionSources: map[string]string{},
 	}, nil
 }
 
-// Determine the installed cert-manager version. First, we start by looking for
+// NewFromClient initialises a VersionChecker using the given client. Prefer New
+// instead, which will ensure that the scheme on the client is configured correctly.
+func NewFromClient(cl client.Client) *VersionChecker {
+	return &VersionChecker{
+		client:         cl,
+		versionSources: map[string]string{},
+	}
+}
+
+// Version determines the installed cert-manager version. First, we look for
 // the "certificates.cert-manager.io" CRD and try to extract the version from that
 // resource's labels. Then, if it uses a webhook, that webhook service resource's
 // labels are checked for a label. Lastly the pods linked to the webhook its labels
 // are checked and the image tag is used to determine the version.
 // If no "certificates.cert-manager.io" CRD is found, the older
 // "certificates.certmanager.k8s.io" CRD is tried too.
-func (o *versionChecker) Version(ctx context.Context) (*Version, error) {
+func (o *VersionChecker) Version(ctx context.Context) (*Version, error) {
 	// Use the "certificates.cert-manager.io" CRD as a starting point
 	err := o.extractVersionFromCrd(ctx, certificatesCertManagerCrdName)
 
@@ -128,11 +141,11 @@ func (o *versionChecker) Version(ctx context.Context) (*Version, error) {
 	return version, err
 }
 
-// Try to determine the version of the cert-manager install based on all found
+// determineVersion attempts to determine the version of the cert-manager install based on all found
 // versions. The function tries to reduce the found versions to 1 correct version.
 // An error is returned if no sources were found or if multiple different versions
 // were found.
-func (o *versionChecker) determineVersion() (*Version, error) {
+func (o *VersionChecker) determineVersion() (*Version, error) {
 	if len(o.versionSources) == 0 {
 		return nil, ErrVersionNotDetected
 	}

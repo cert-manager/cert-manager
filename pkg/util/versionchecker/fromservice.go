@@ -27,7 +27,7 @@ import (
 
 var imageVersion = regexp.MustCompile(`^quay.io/jetstack/cert-manager-webhook:(v(?:\d+)\.(?:\d+)\.(?:\d+)(?:.*))$`)
 
-func (o *versionChecker) extractVersionFromService(
+func (o *VersionChecker) extractVersionFromService(
 	ctx context.Context,
 	namespace string,
 	serviceName string,
