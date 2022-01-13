@@ -22,7 +22,9 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"strings"
 
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
@@ -370,6 +372,43 @@ func ExpectValidBasicConstraints(certificate *cmapi.Certificate, secret *corev1.
 	}
 
 	// TODO: also validate pathLen
+
+	return nil
+}
+
+// ExpectValidAdditionalOutputFormats assert that if additional output formats are requested
+// It contains the additional output format keys in the secret and the content are valid.
+func ExpectValidAdditionalOutputFormats(certificate *cmapi.Certificate, secret *corev1.Secret) error {
+	if len(certificate.Spec.AdditionalOutputFormats) > 0 {
+		for _, f := range certificate.Spec.AdditionalOutputFormats {
+			switch f.Type {
+			case cmapi.AdditionalOutputFormatDER:
+				if derKey, ok := secret.Data[cmapi.AdditionalOutputFormatDERKey]; ok {
+					privateKey := secret.Data[corev1.TLSPrivateKeyKey]
+					block, _ := pem.Decode(privateKey)
+					if !bytes.Equal(derKey, block.Bytes) {
+						return fmt.Errorf("expected additional output Format DER %s to contain the binary formated private Key", cmapi.AdditionalOutputFormatDERKey)
+					}
+				} else {
+					return fmt.Errorf("expected additional output format DER key %s to be present in secret", cmapi.AdditionalOutputFormatDERKey)
+				}
+			case cmapi.AdditionalOutputFormatCombinedPEM:
+				if combinedPem, ok := secret.Data[cmapi.AdditionalOutputFormatPEMKey]; ok {
+					privateKey := secret.Data[corev1.TLSPrivateKeyKey]
+					certificate := secret.Data[corev1.TLSCertKey]
+					expectedCombinedPem := []byte(strings.Join([]string{string(privateKey), string(certificate)}, "\n"))
+					if !bytes.Equal(combinedPem, expectedCombinedPem) {
+						return fmt.Errorf("expected additional output format CombinedPEM %s to contain the combination of privateKey and certificate", cmapi.AdditionalOutputFormatPEMKey)
+					}
+				} else {
+					return fmt.Errorf("expected additional output format CombinedPEM key %s to be present in secret", cmapi.AdditionalOutputFormatPEMKey)
+				}
+
+			default:
+				return fmt.Errorf("unknown additional output format %s", f.Type)
+			}
+		}
+	}
 
 	return nil
 }

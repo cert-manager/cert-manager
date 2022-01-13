@@ -38,6 +38,7 @@ func DefaultCertificateSet() []certificates.ValidationFunc {
 		certificates.ExpectValidPrivateKeyData,
 		certificates.ExpectConditionReadyObservedGeneration,
 		certificates.ExpectValidBasicConstraints,
+		certificates.ExpectValidAdditionalOutputFormats,
 	}
 }
 
