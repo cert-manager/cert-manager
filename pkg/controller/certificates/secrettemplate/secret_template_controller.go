@@ -104,10 +104,8 @@ func NewController(
 	}
 
 	secretsManager := secretsmanager.New(
-		kubeClient,
-		secretsInformer.Lister(),
-		restConfig,
-		certificateControllerOptions.EnableOwnerRef,
+		kubeClient.CoreV1(), secretsInformer.Lister(),
+		restConfig, certificateControllerOptions.EnableOwnerRef,
 	)
 
 	return &controller{

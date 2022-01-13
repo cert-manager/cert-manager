@@ -57,7 +57,6 @@ go_test(
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/certificates/internal/secretsmanager:go_default_library",
         "//pkg/controller/test:go_default_library",
-        "//pkg/util/feature:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",

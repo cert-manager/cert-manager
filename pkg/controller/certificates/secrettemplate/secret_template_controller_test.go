@@ -28,22 +28,10 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 func Test_ProcessItem(t *testing.T) {
 	const fieldManager = "cert-manager-unit-tests"
-
-	// Enable SecretTemplate feature gate. This controller will only be
-	// registered if this feature gate is enabled.
-	assert.NoError(t,
-		utilfeature.DefaultMutableFeatureGate.Set("ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO=true"),
-	)
-	t.Cleanup(func() {
-		assert.NoError(t,
-			utilfeature.DefaultMutableFeatureGate.Set("ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO=false"),
-		)
-	})
 
 	tests := map[string]struct {
 		// key that should be passed to ProcessItem.

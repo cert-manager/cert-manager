@@ -69,8 +69,11 @@ type controller struct {
 
 	client cmclient.Interface
 
-	// secretManager is used to create and update Secrets with certificate and key data
-	secretsManager *secretsmanager.SecretsManager
+	// secretsUpdateData is used by the SecretTemplate controller for
+	// re-reconciling Secrets where the SecretTemplate is not up to date with a
+	// Certificate's secret.
+	secretsUpdateData func(context.Context, *cmapi.Certificate, secretsmanager.SecretData) error
+
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
 }
@@ -120,10 +123,8 @@ func NewController(
 	}
 
 	secretsManager := secretsmanager.New(
-		kubeClient,
-		secretsInformer.Lister(),
-		restConfig,
-		certificateControllerOptions.EnableOwnerRef,
+		kubeClient.CoreV1(), secretsInformer.Lister(),
+		restConfig, certificateControllerOptions.EnableOwnerRef,
 	)
 
 	return &controller{
@@ -133,7 +134,7 @@ func NewController(
 		client:                   client,
 		recorder:                 recorder,
 		clock:                    clock,
-		secretsManager:           secretsManager,
+		secretsUpdateData:        secretsManager.UpdateData,
 		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
@@ -360,8 +361,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 		CA:          req.Status.CA,
 	}
 
-	err = c.secretsManager.UpdateData(ctx, crt, secretData)
-	if err != nil {
+	if err := c.secretsUpdateData(ctx, crt, secretData); err != nil {
 		return err
 	}
 
