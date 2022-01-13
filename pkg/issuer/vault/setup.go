@@ -96,13 +96,13 @@ func (v *Vault) Setup(ctx context.Context) error {
 	}
 
 	// check if all mandatory Vault Kubernetes fields are set.
-	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) == 0 || len(kubeAuth.Role) == 0) {
+	if kubeAuth != nil && len(kubeAuth.Role) == 0 {
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageKubeAuthFieldsRequired)
 		apiutil.SetIssuerCondition(v.issuer, v.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageKubeAuthFieldsRequired)
 		return nil
 	}
 
-	client, err := vaultinternal.New(v.resourceNamespace, v.secretsLister, v.issuer)
+	client, err := vaultinternal.New(v.resourceNamespace, v.secretsLister, v.issuer, false)
 	if err != nil {
 		s := messageVaultClientInitFailed + err.Error()
 		logf.V(logf.WarnLevel).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)

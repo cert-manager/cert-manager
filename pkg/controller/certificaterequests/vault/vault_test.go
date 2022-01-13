@@ -526,8 +526,8 @@ func runTest(t *testing.T, test testT) {
 
 	if test.fakeVault != nil {
 		vault.vaultClientBuilder = func(ns string, sl corelisters.SecretLister,
-			iss cmapi.GenericIssuer) (internalvault.Interface, error) {
-			return test.fakeVault.New(ns, sl, iss)
+			iss cmapi.GenericIssuer, ambient bool) (internalvault.Interface, error) {
+			return test.fakeVault.New(ns, sl, iss, false)
 		}
 	}
 

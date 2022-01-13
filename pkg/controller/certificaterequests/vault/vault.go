@@ -74,7 +74,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1.CertificateRequest, issuerObj v
 
 	resourceNamespace := v.issuerOptions.ResourceNamespace(issuerObj)
 
-	client, err := v.vaultClientBuilder(resourceNamespace, v.secretsLister, issuerObj)
+	client, err := v.vaultClientBuilder(resourceNamespace, v.secretsLister, issuerObj, v.issuerOptions.CanUseAmbientCredentials(issuerObj))
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 

@@ -40,4 +40,6 @@ const (
 	// (/v1/auth/kubernetes). The endpoint will then be called at `/login`, so
 	// left as the default, `/v1/auth/kubernetes/login` will be called.
 	DefaultVaultKubernetesAuthMountPath = "/v1/auth/kubernetes"
+
+	DefaultJWTFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )

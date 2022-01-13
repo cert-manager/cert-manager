@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -39,7 +40,7 @@ var _ Interface = &Vault{}
 // ClientBuilder is a function type that returns a new Interface.
 // Can be used in tests to create a mock signer of Vault certificate requests.
 type ClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1.GenericIssuer) (Interface, error)
+	issuer v1.GenericIssuer, ambient bool) (Interface, error)
 
 // Interface implements various high level functionality related to connecting
 // with a Vault server, verifying its status and signing certificate request for
@@ -66,6 +67,7 @@ type Vault struct {
 	secretsLister corelisters.SecretLister
 	issuer        v1.GenericIssuer
 	namespace     string
+	ambient       bool
 
 	client Client
 }
@@ -74,11 +76,12 @@ type Vault struct {
 // secrets lister.
 // Returned errors may be network failures and should be considered for
 // retrying.
-func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.GenericIssuer) (Interface, error) {
+func New(namespace string, secretsLister corelisters.SecretLister, issuer v1.GenericIssuer, ambient bool) (Interface, error) {
 	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
 		issuer:        issuer,
+		ambient:       ambient,
 	}
 
 	cfg, err := v.newConfig()
@@ -295,22 +298,33 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1.VaultAppRo
 }
 
 func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1.VaultKubernetesAuth) (string, error) {
-	secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
-	if err != nil {
-		return "", err
-	}
+	var jwt string
+	if kubernetesAuth.SecretRef.Name != "" {
+		secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
+		if err != nil {
+			return "", err
+		}
 
-	key := kubernetesAuth.SecretRef.Key
-	if key == "" {
-		key = v1.DefaultVaultTokenAuthSecretKey
-	}
+		key := kubernetesAuth.SecretRef.Key
+		if key == "" {
+			key = v1.DefaultVaultTokenAuthSecretKey
+		}
 
-	keyBytes, ok := secret.Data[key]
-	if !ok {
-		return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, v.namespace, kubernetesAuth.SecretRef.Name)
-	}
+		keyBytes, ok := secret.Data[key]
+		if !ok {
+			return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, v.namespace, kubernetesAuth.SecretRef.Name)
+		}
 
-	jwt := string(keyBytes)
+		jwt = string(keyBytes)
+	} else if v.ambient {
+		keyBytes, err := ioutil.ReadFile(v1.DefaultJWTFile)
+		if err != nil {
+			return "", fmt.Errorf("no data in default token file %s (Details: %s)", v1.DefaultJWTFile, err.Error())
+		}
+		jwt = string(keyBytes)
+	} else {
+		return "", errors.New("secret name is empty and ambient credentials not allowed")
+	}
 
 	parameters := map[string]string{
 		"role": kubernetesAuth.Role,
@@ -324,7 +338,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	url := filepath.Join(mountPath, "login")
 	request := client.NewRequest("POST", url)
-	err = request.SetJSONBody(parameters)
+	err := request.SetJSONBody(parameters)
 	if err != nil {
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
