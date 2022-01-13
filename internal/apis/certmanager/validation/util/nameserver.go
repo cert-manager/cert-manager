@@ -24,7 +24,7 @@ import (
 
 var defaultRFC2136Port = "53"
 
-// This function returns a valid nameserver (in the form <host>:<port>) for the RFC2136 provider
+// ValidNameserver validates the given nameserver for the RFC2136 provider, returning the sanitized nameserver - if valid - in the form "<host>:<port>".
 func ValidNameserver(nameserver string) (string, error) {
 	nameserver = strings.TrimSpace(nameserver)
 

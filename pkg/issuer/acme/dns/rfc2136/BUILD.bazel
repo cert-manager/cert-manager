@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -20,27 +20,6 @@ go_library(
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
         "@io_k8s_client_go//rest:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "provider_test.go",
-        "rfc2136_test.go",
-    ],
-    data = glob(["testdata/**"]),
-    embed = [":go_default_library"],
-    deps = [
-        "//pkg/apis/acme/v1:go_default_library",
-        "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/logs:go_default_library",
-        "//test/acme/dns:go_default_library",
-        "//test/acme/dns/server:go_default_library",
-        "@com_github_go_logr_logr//testing:go_default_library",
-        "@com_github_miekg_dns//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
     ],
 )
 
