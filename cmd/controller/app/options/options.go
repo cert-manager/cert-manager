@@ -198,6 +198,7 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
+		secrettemplate.ControllerName,
 	}
 
 	experimentalCertificateSigningRequestControllers = []string{
@@ -432,11 +433,6 @@ func (o *ControllerOptions) EnabledControllers() sets.String {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
 		logf.Log.Info("enabling the sig-network Gateway API certificate-shim and HTTP-01 solver")
 		enabled = enabled.Insert(shimgatewaycontroller.ControllerName)
-	}
-
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO) {
-		logf.Log.Info("enabling the SecretTemplate controller and using Apply operations for Secret management")
-		enabled = enabled.Insert(secrettemplate.ControllerName)
 	}
 
 	return enabled
