@@ -31,13 +31,11 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 
-	"github.com/jetstack/cert-manager/internal/controller/feature"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -87,9 +85,6 @@ func New(
 // well as appropriate metadata using an Apply call.
 // If the Secret resource does not exist, it will be created on Apply.
 // UpdateData will also update deprecated annotations if they exist.
-// If the ExperimentalSecretApplySecretTemplateControllerMinKubernetesVTODO
-// feature is enabled, SecretsManager will perform an Apply rather than an
-// Update/Create on cert-manager managed fields.
 func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate, data SecretData) error {
 	secret, err := s.getCertificateSecret(ctx, crt)
 	if err != nil {
