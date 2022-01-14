@@ -29,12 +29,6 @@ import (
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-var temporaryCertificatePolicyChain = policies.Chain{
-	policies.SecretDoesNotExist,
-	policies.SecretIsMissingData,
-	policies.SecretPublicKeysDiffer,
-}
-
 // ensureTemporaryCertificate will create a temporary certificate and store it
 // into the target Secret if:
 // - The temporary certificate annotation is present
@@ -60,7 +54,7 @@ func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.
 	input := policies.Input{Secret: secret}
 	// If the target Secret exists with a signed certificate and matching private
 	// key, do not issue.
-	if _, _, invalid := temporaryCertificatePolicyChain.Evaluate(input); !invalid {
+	if _, _, invalid := policies.NewTemporaryCertificatePolicyChain().Evaluate(input); !invalid {
 		return false, nil
 	}
 

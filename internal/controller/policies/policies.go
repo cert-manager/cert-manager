@@ -98,3 +98,13 @@ func NewSecretPostIssuancePolicyChain(fieldManager string) Chain {
 		SecretTemplateMismatchesSecretManagedFields(fieldManager),
 	}
 }
+
+// NewTemporaryCertificatePolicyChain includes policy checks for ensuing a
+// temporary certificate is valid.
+func NewTemporaryCertificatePolicyChain() Chain {
+	return Chain{
+		SecretDoesNotExist,
+		SecretIsMissingData,
+		SecretPublicKeysDiffer,
+	}
+}
