@@ -41,7 +41,7 @@ type ValidationFunc func(certificate *cmapi.Certificate, secret *corev1.Secret) 
 
 // ExpectValidKeysInSecret checks that the secret contains valid keys
 func ExpectValidKeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error {
-	validKeys := [5]string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey, cmapi.AdditionalOutputFormatDERKey, cmapi.AdditionalOutputFormatPEMKey}
+	validKeys := [5]string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey, cmapi.CertificateOutputFormatDERKey, cmapi.CertificateOutputFormatCombinedPEMKey}
 	nbValidKeys := 0
 	for k := range secret.Data {
 		for _, k2 := range validKeys {
@@ -382,26 +382,26 @@ func ExpectValidAdditionalOutputFormats(certificate *cmapi.Certificate, secret *
 	if len(certificate.Spec.AdditionalOutputFormats) > 0 {
 		for _, f := range certificate.Spec.AdditionalOutputFormats {
 			switch f.Type {
-			case cmapi.AdditionalOutputFormatDER:
-				if derKey, ok := secret.Data[cmapi.AdditionalOutputFormatDERKey]; ok {
+			case cmapi.CertificateOutputFormatDER:
+				if derKey, ok := secret.Data[cmapi.CertificateOutputFormatDERKey]; ok {
 					privateKey := secret.Data[corev1.TLSPrivateKeyKey]
 					block, _ := pem.Decode(privateKey)
 					if !bytes.Equal(derKey, block.Bytes) {
-						return fmt.Errorf("expected additional output Format DER %s to contain the binary formated private Key", cmapi.AdditionalOutputFormatDERKey)
+						return fmt.Errorf("expected additional output Format DER %s to contain the binary formated private Key", cmapi.CertificateOutputFormatDERKey)
 					}
 				} else {
-					return fmt.Errorf("expected additional output format DER key %s to be present in secret", cmapi.AdditionalOutputFormatDERKey)
+					return fmt.Errorf("expected additional output format DER key %s to be present in secret", cmapi.CertificateOutputFormatDERKey)
 				}
-			case cmapi.AdditionalOutputFormatCombinedPEM:
-				if combinedPem, ok := secret.Data[cmapi.AdditionalOutputFormatPEMKey]; ok {
+			case cmapi.CertificateOutputFormatCombinedPEM:
+				if combinedPem, ok := secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey]; ok {
 					privateKey := secret.Data[corev1.TLSPrivateKeyKey]
 					certificate := secret.Data[corev1.TLSCertKey]
 					expectedCombinedPem := []byte(strings.Join([]string{string(privateKey), string(certificate)}, "\n"))
 					if !bytes.Equal(combinedPem, expectedCombinedPem) {
-						return fmt.Errorf("expected additional output format CombinedPEM %s to contain the combination of privateKey and certificate", cmapi.AdditionalOutputFormatPEMKey)
+						return fmt.Errorf("expected additional output format CombinedPEM %s to contain the combination of privateKey and certificate", cmapi.CertificateOutputFormatCombinedPEMKey)
 					}
 				} else {
-					return fmt.Errorf("expected additional output format CombinedPEM key %s to be present in secret", cmapi.AdditionalOutputFormatPEMKey)
+					return fmt.Errorf("expected additional output format CombinedPEM key %s to be present in secret", cmapi.CertificateOutputFormatCombinedPEMKey)
 				}
 
 			default:

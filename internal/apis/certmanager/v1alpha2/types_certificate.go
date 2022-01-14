@@ -209,11 +209,12 @@ type CertificateSpec struct {
 	// +optional
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"` // Validated by the validating webhook.
 
-	// AdditionalOutputFormats allows for requests of additional output formats
-	// of the private key and the certificate to be written to the secret.
-	// This is an Alpha Feature and should be enabled with --feature-gates option.
+	// AdditionalOutputFormats defines extra output formats of the private key
+	// and signed certificate chain to be written to this Certificate's target
+	// Secret. This is an Alpha Feature and is only enabled with the
+	// `--feature-gates=AdditionalCertificateOutputFormats=true` option.
 	// +optional
-	AdditionalOutputFormats []AdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
+	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -449,26 +450,36 @@ type CertificateSecretTemplate struct {
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
-// OutputFormatType specifies which additional output formats should be added to Kubernetes secrets.
+// CertificateOutputFormatType specifies which output formats that can be
+// written to the Certificate's target Secret.
 // Allowed values are `DER` or `CombinedPEM`.
-// When Type is set to `DER` an additional entry `key.der` will be created in the secret
-// containing the binary format of the key.
-// When Type is set to `CombinedPEM` an additional entry `tls-combined.pem` will be created in the secret
-// containing the PEM formatted certificate chain and key (tls.key + tls.crt concatenated)
+// When Type is set to `DER` an additional entry `key.der` will be written to
+// the Secret, containing the binary format of the private key.
+// When Type is set to `CombinedPEM` an additional entry `tls-combined.pem`
+// will be written to the Secret, containing the PEM formatted private key and
+// signed certificate chain (tls.key + tls.crt concatenated).
 // +kubebuilder:validation:Enum=DER;CombinedPEM
-type OutputFormatType string
+type CertificateOutputFormatType string
 
 const (
-	// AdditionalOutputFormatDER requests that the DER binary format of the key
-	// is stored in the `key.der` key of a secret
-	AdditionalOutputFormatDER OutputFormatType = "DER"
+	// CertificateOutputFormatDER  writes the Certificate's private key in DER
+	// binary format to the `key.der` target Secret Data key.
+	CertificateOutputFormatDER CertificateOutputFormatType = "DER"
 
-	// AdditionalOutputFormatCombinedPEM requests that an entry containing both the PEM tls.crt and tls.key
-	// values concatenated is stored in the `tls-combined.pem` key of a secret
-	AdditionalOutputFormatCombinedPEM OutputFormatType = "CombinedPEM"
+	// CertificateOutputFormatCombinedPEM  writes the Certificate's signed
+	// certificate chain and private key, in PEM format, to the
+	// `tls-combined.pem` target Secret Data key. The value at this key will
+	// include the private key PEM document, followed by at least one new line
+	// character, followed by the chain of signed certificate PEM documents
+	// (`<private key> + \n + <signed certificate chain>`).
+	CertificateOutputFormatCombinedPEM CertificateOutputFormatType = "CombinedPEM"
 )
 
-// AdditionalOutputFormat wraps an additional key output format type
-type AdditionalOutputFormat struct {
-	Type OutputFormatType `json:"type"`
+// CertificateAdditionalOutputFormat defines an additional output format of a
+// Certificate resource. These contain supplementary data formats of the signed
+// certificate chain and paired private key.
+type CertificateAdditionalOutputFormat struct {
+	// Type is the name of the format type that should be written to the
+	// Certificate's target Secret.
+	Type CertificateOutputFormatType `json:"type"`
 }

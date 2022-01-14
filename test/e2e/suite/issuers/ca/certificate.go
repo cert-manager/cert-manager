@@ -129,7 +129,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
-			cert.Spec.AdditionalOutputFormats = []v1.AdditionalOutputFormat{
+			cert.Spec.AdditionalOutputFormats = []v1.CertificateAdditionalOutputFormat{
 				{Type: "DER"},
 				{Type: "CombinedPEM"},
 			}
