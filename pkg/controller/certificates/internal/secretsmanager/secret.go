@@ -32,11 +32,13 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 
+	"github.com/jetstack/cert-manager/internal/controller/feature"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -135,142 +137,30 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	return err
 }
 
-func updateSecretWithAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
-	if crt.Spec.AdditionalOutputFormats == nil {
-		delete(secret.Data, cmapi.CertificateOutputFormatDERKey)
-		delete(secret.Data, cmapi.CertificateOutputFormatCombinedPEMKey)
-		return nil
-	}
-
-	additionalOutputFormatDER := false
-	additionalOutputFormatPEM := false
-
-	for _, f := range crt.Spec.AdditionalOutputFormats {
-		switch f.Type {
-		case cmapi.CertificateOutputFormatDER:
-			additionalOutputFormatDER = true
-		case cmapi.CertificateOutputFormatCombinedPEM:
-			additionalOutputFormatPEM = true
-		default:
-			return fmt.Errorf("unknown additional output format %s", f.Type)
-		}
-	}
-
-	if additionalOutputFormatDER {
-		// Store binary format of the private key
-		block, _ := pem.Decode(data.PrivateKey)
-		secret.Data[cmapi.CertificateOutputFormatDERKey] = block.Bytes
-	} else {
-		delete(secret.Data, cmapi.CertificateOutputFormatDERKey)
-	}
-
-	if additionalOutputFormatPEM {
-		// Combine tls.key and tls.crt
-		secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = bytes.Join([][]byte{data.PrivateKey, data.Certificate}, []byte("\n"))
-	} else {
-		delete(secret.Data, cmapi.CertificateOutputFormatCombinedPEMKey)
-	}
-
-	return nil
-}
-
 // setValues will update the Secret resource 'secret' with the data contained
 // in the given secretData.
 // It will update labels and annotations on the Secret resource appropriately.
 // The Secret resource 's' must be non-nil, although may be a resource that does
 // not exist in the Kubernetes apiserver yet.
 // setValues will NOT actually update the resource in the apiserver.
-// If updating an existing Secret resource returned by an api client 'lister',
-// make sure to DeepCopy the object first to avoid modifying data in-cache.
-// It will also update depreciated issuer name and kind annotations if they exist.
+// It will also update depreciated issuer name and kind annotations if they
+// exist.
 func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
-	// initialize the `Data` field if it is nil
-	if secret.Data == nil {
-		secret.Data = make(map[string][]byte)
+	if err := s.setKeystores(crt, secret, data); err != nil {
+		return fmt.Errorf("failed to add keystores to Secret: %w", err)
 	}
 
-	// Only write a new PKCS12/JKS file if any of the private key/certificate/CA
-	// data has actually changed.
-	if data.PrivateKey != nil && data.Certificate != nil &&
-		(!bytes.Equal(secret.Data[corev1.TLSPrivateKeyKey], data.PrivateKey) ||
-			!bytes.Equal(secret.Data[corev1.TLSCertKey], data.Certificate) ||
-			!bytes.Equal(secret.Data[cmmeta.TLSCAKey], data.CA)) {
-
-		// Handle the experimental PKCS12 support
-		if crt.Spec.Keystores != nil && crt.Spec.Keystores.PKCS12 != nil && crt.Spec.Keystores.PKCS12.Create {
-			ref := crt.Spec.Keystores.PKCS12.PasswordSecretRef
-			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
-			if err != nil {
-				return fmt.Errorf("fetching PKCS12 keystore password from Secret: %v", err)
-			}
-			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
-				return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
-			}
-			pw := pwSecret.Data[ref.Key]
-			keystoreData, err := encodePKCS12Keystore(string(pw), data.PrivateKey, data.Certificate, data.CA)
-			if err != nil {
-				return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
-			}
-			// always overwrite the keystore entry for now
-			secret.Data[pkcs12SecretKey] = keystoreData
-
-			if len(data.CA) > 0 {
-				truststoreData, err := encodePKCS12Truststore(string(pw), data.CA)
-				if err != nil {
-					return fmt.Errorf("error encoding PKCS12 trust store bundle: %w", err)
-				}
-				// always overwrite the truststore entry
-				secret.Data[pkcs12TruststoreKey] = truststoreData
-			}
-		} else {
-			delete(secret.Data, pkcs12SecretKey)
-			delete(secret.Data, pkcs12TruststoreKey)
-		}
-
-		// Handle the experimental JKS support
-		if crt.Spec.Keystores != nil && crt.Spec.Keystores.JKS != nil && crt.Spec.Keystores.JKS.Create {
-			ref := crt.Spec.Keystores.JKS.PasswordSecretRef
-			pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
-			if err != nil {
-				return fmt.Errorf("fetching JKS keystore password from Secret: %v", err)
-			}
-			if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
-				return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
-			}
-			pw := pwSecret.Data[ref.Key]
-			keystoreData, err := encodeJKSKeystore(pw, data.PrivateKey, data.Certificate, data.CA)
-			if err != nil {
-				return fmt.Errorf("error encoding JKS bundle: %w", err)
-			}
-			// always overwrite the keystore entry
-			secret.Data[jksSecretKey] = keystoreData
-
-			if len(data.CA) > 0 {
-				truststoreData, err := encodeJKSTruststore(pw, data.CA)
-				if err != nil {
-					return fmt.Errorf("error encoding JKS trust store bundle: %w", err)
-				}
-				// always overwrite the keystore entry
-				secret.Data[jksTruststoreKey] = truststoreData
-			}
-		} else {
-			delete(secret.Data, jksSecretKey)
-			delete(secret.Data, jksTruststoreKey)
-		}
-
-		// Add additional output formats
-		if utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-			if err := updateSecretWithAdditionalOutputFormats(crt, secret, data); err != nil {
-				return fmt.Errorf("error during additional output format update: %w", err)
-			}
+	// Add additional output formats if feature enabled.
+	if utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
+		if err := setAdditionalOutputFormats(crt, secret, data); err != nil {
+			return fmt.Errorf("failed to add additional output formats to Secret: %w", err)
 		}
 	}
+
 	secret.Data[corev1.TLSPrivateKeyKey] = data.PrivateKey
 	secret.Data[corev1.TLSCertKey] = data.Certificate
 	if len(data.CA) > 0 {
 		secret.Data[cmmeta.TLSCAKey] = data.CA
-	} else {
-		delete(secret.Data, cmmeta.TLSCAKey)
 	}
 
 	if secret.Annotations == nil {
@@ -294,13 +184,8 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	secret.Annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 	secret.Annotations[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
 
-	// if the certificate data is empty, clear the subject related annotations
-	if len(data.Certificate) == 0 {
-		delete(secret.Annotations, cmapi.CommonNameAnnotationKey)
-		delete(secret.Annotations, cmapi.AltNamesAnnotationKey)
-		delete(secret.Annotations, cmapi.IPSANAnnotationKey)
-		delete(secret.Annotations, cmapi.URISANAnnotationKey)
-	} else {
+	// Only add certificate data if it exists
+	if len(data.Certificate) > 0 {
 		x509Cert, err := utilpki.DecodeX509CertificateBytes(data.Certificate)
 		// TODO: handle InvalidData here?
 		if err != nil {
@@ -316,12 +201,10 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 	return nil
 }
 
-// getCertificateSecret will return the Secret object corresponding to the
-// Certificate's SecretName.
-// If the secret doesn't exist, an empty Secret object with the Name and
-// Namespace is returned.
+// getCertificateSecret will return a secret which is ready for fields to be
+// applied. Only the Secret Type will be persisted from the original Secret.
 func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Certificate) (*corev1.Secret, error) {
-	// Fetch a copy of the existing Secret resource
+	// Get existing secret if it exists.
 	existingSecret, err := s.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
 	// If secret doesn't exist yet, return an empty secret that should be
@@ -342,9 +225,9 @@ func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Ce
 		return nil, err
 	}
 
-	// Only copy data keys to not take ownership of annotations or labels on
+	// Only copy Secret Type to not take ownership of annotations or labels on
 	// Apply.
-	secret := &corev1.Secret{
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crt.Spec.SecretName,
 			Namespace: crt.Namespace,
@@ -354,17 +237,87 @@ func (s *SecretsManager) getCertificateSecret(ctx context.Context, crt *cmapi.Ce
 		// `kubernetes.io/tls`, if for example it was created beforehand. Type is
 		// immutable, so we must keep it to its original value.
 		Type: existingSecret.Type,
-	}
+	}, nil
+}
 
-	// If owned keys are present on the existing secret, set on the applied
-	// secret.
-	if existingSecret.Data != nil {
-		for _, key := range []string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey} {
-			if v, ok := existingSecret.Data[key]; ok {
-				secret.Data[key] = v
+// setKeystores will set extra Secret Data keys according to any Keystores
+// which have been configured.
+func (s *SecretsManager) setKeystores(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
+	// Handle the experimental PKCS12 support
+	if crt.Spec.Keystores != nil && crt.Spec.Keystores.PKCS12 != nil && crt.Spec.Keystores.PKCS12.Create {
+		ref := crt.Spec.Keystores.PKCS12.PasswordSecretRef
+		pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+		if err != nil {
+			return fmt.Errorf("fetching PKCS12 keystore password from Secret: %v", err)
+		}
+		if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+			return fmt.Errorf("PKCS12 keystore password Secret contains no data for key %q", ref.Key)
+		}
+		pw := pwSecret.Data[ref.Key]
+		keystoreData, err := encodePKCS12Keystore(string(pw), data.PrivateKey, data.Certificate, data.CA)
+		if err != nil {
+			return fmt.Errorf("error encoding PKCS12 bundle: %w", err)
+		}
+		// always overwrite the keystore entry for now
+		secret.Data[pkcs12SecretKey] = keystoreData
+
+		if len(data.CA) > 0 {
+			truststoreData, err := encodePKCS12Truststore(string(pw), data.CA)
+			if err != nil {
+				return fmt.Errorf("error encoding PKCS12 trust store bundle: %w", err)
 			}
+			// always overwrite the truststore entry
+			secret.Data[pkcs12TruststoreKey] = truststoreData
 		}
 	}
 
-	return secret, nil
+	// Handle the experimental JKS support
+	if crt.Spec.Keystores != nil && crt.Spec.Keystores.JKS != nil && crt.Spec.Keystores.JKS.Create {
+		ref := crt.Spec.Keystores.JKS.PasswordSecretRef
+		pwSecret, err := s.secretLister.Secrets(crt.Namespace).Get(ref.Name)
+		if err != nil {
+			return fmt.Errorf("fetching JKS keystore password from Secret: %v", err)
+		}
+		if pwSecret.Data == nil || len(pwSecret.Data[ref.Key]) == 0 {
+			return fmt.Errorf("JKS keystore password Secret contains no data for key %q", ref.Key)
+		}
+		pw := pwSecret.Data[ref.Key]
+		keystoreData, err := encodeJKSKeystore(pw, data.PrivateKey, data.Certificate, data.CA)
+		if err != nil {
+			return fmt.Errorf("error encoding JKS bundle: %w", err)
+		}
+		// always overwrite the keystore entry
+		secret.Data[jksSecretKey] = keystoreData
+
+		if len(data.CA) > 0 {
+			truststoreData, err := encodeJKSTruststore(pw, data.CA)
+			if err != nil {
+				return fmt.Errorf("error encoding JKS trust store bundle: %w", err)
+			}
+			// always overwrite the keystore entry
+			secret.Data[jksTruststoreKey] = truststoreData
+		}
+	}
+
+	return nil
+}
+
+// setAdditionalOutputFormat will set extra Secret Data keys with additional
+// output formats according to any OutputFormats which have been configured.
+func setAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
+	for _, f := range crt.Spec.AdditionalOutputFormats {
+		switch f.Type {
+		case cmapi.CertificateOutputFormatDER:
+			// Store binary format of the private key
+			block, _ := pem.Decode(data.PrivateKey)
+			secret.Data[cmapi.CertificateOutputFormatDERKey] = block.Bytes
+		case cmapi.CertificateOutputFormatCombinedPEM:
+			// Combine tls.key and tls.crt
+			secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = bytes.Join([][]byte{data.PrivateKey, data.Certificate}, []byte("\n"))
+		default:
+			return fmt.Errorf("unknown additional output format %s", f.Type)
+		}
+	}
+
+	return nil
 }

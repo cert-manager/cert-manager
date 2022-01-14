@@ -60,25 +60,6 @@ func Test_ensureSecretData(t *testing.T) {
 			key:            "random-namespace/random-certificate",
 			expectedAction: false,
 		},
-		// TODO: re-enable this test once the readiness controller is aware on the
-		// non-issuing condition related secret data checks.
-		//"if Certificate and Secret exists, but the Certificate has no condition, do nothing": {
-		//	key: "test-namespace/test-name",
-		//	cert: &cmapi.Certificate{
-		//		ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
-		//		Spec: cmapi.CertificateSpec{
-		//			SecretName:     "test-secret",
-		//			SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
-		//		},
-		//		Status: cmapi.CertificateStatus{
-		//			Conditions: []cmapi.CertificateCondition{},
-		//		},
-		//	},
-		//	secret: &corev1.Secret{
-		//		ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
-		//	},
-		//	expectedAction: false,
-		//},
 		"if Certificate and Secret exists, but the Certificate has a True Issuing condition, do nothing": {key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
