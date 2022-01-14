@@ -46,6 +46,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 	utilkube "github.com/jetstack/cert-manager/pkg/util/kube"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
@@ -73,6 +74,10 @@ type controller struct {
 	// re-reconciling Secrets where the SecretTemplate is not up to date with a
 	// Certificate's secret.
 	secretsUpdateData func(context.Context, *cmapi.Certificate, secretsmanager.SecretData) error
+
+	// fieldManager is the string which will be used as the field Manager on
+	// fields created or edited by the cert-manager Kubernetes client.
+	fieldManager string
 
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
@@ -135,6 +140,7 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		secretsUpdateData:        secretsManager.UpdateData,
+		fieldManager:             util.PrefixFromUserAgent(restConfig.UserAgent),
 		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
@@ -167,8 +173,10 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		Type:   cmapi.CertificateConditionIssuing,
 		Status: cmmeta.ConditionTrue,
 	}) {
-		// Do nothing if an issuance is not in progress.
-		return nil
+		// If Certificate doesn't have Issuing=true condition then we should check
+		// to ensure all non-issuing related SecretData is correct on the
+		// Certificate's secret.
+		return c.ensureSecretData(ctx, log, crt)
 	}
 
 	if crt.Status.NextPrivateKeySecretName == nil ||

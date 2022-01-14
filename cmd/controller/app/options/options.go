@@ -44,7 +44,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/readiness"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/requestmanager"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/revisionmanager"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/secrettemplate"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger"
 	csracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/acme"
 	csrcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/ca"
@@ -175,7 +174,6 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
-		secrettemplate.ControllerName,
 	}
 
 	defaultEnabledControllers = []string{
@@ -198,7 +196,6 @@ var (
 		requestmanager.ControllerName,
 		readiness.ControllerName,
 		revisionmanager.ControllerName,
-		secrettemplate.ControllerName,
 	}
 
 	experimentalCertificateSigningRequestControllers = []string{

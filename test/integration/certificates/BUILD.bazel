@@ -6,7 +6,6 @@ go_test(
         "issuing_controller_test.go",
         "metrics_controller_test.go",
         "revisionmanager_controller_test.go",
-        "secret_template_controller_test.go",
         "trigger_controller_test.go",
     ],
     deps = [
@@ -18,7 +17,6 @@ go_test(
         "//pkg/controller/certificates/issuing:go_default_library",
         "//pkg/controller/certificates/metrics:go_default_library",
         "//pkg/controller/certificates/revisionmanager:go_default_library",
-        "//pkg/controller/certificates/secrettemplate:go_default_library",
         "//pkg/controller/certificates/trigger:go_default_library",
         "//pkg/controller/certificates/trigger/policies:go_default_library",
         "//pkg/logs:go_default_library",

@@ -25,7 +25,6 @@ go_library(
         "//pkg/controller/certificates/readiness:go_default_library",
         "//pkg/controller/certificates/requestmanager:go_default_library",
         "//pkg/controller/certificates/revisionmanager:go_default_library",
-        "//pkg/controller/certificates/secrettemplate:go_default_library",
         "//pkg/controller/certificates/trigger:go_default_library",
         "//pkg/controller/certificatesigningrequests/acme:go_default_library",
         "//pkg/controller/certificatesigningrequests/ca:go_default_library",

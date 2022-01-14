@@ -459,3 +459,232 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		t.Fatalf("Failed to wait for final state: %+v", crt)
 	}
 }
+
+// Test_IssuinfController_SecretTemplate performs a basic check to ensure that
+// values in a Certificate's SecretTemplate will be copied to the target
+// Secret- when they are both added and deleted.
+func Test_IssuingController_SecretTemplate(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
+
+	// Build, instantiate and run the issuing controller.
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+	controllerOptions := controllerpkg.CertificateOptions{
+		EnableOwnerRef: true,
+	}
+
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, config, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	c := controllerpkg.NewController(
+		ctx,
+		"issuing_test",
+		metrics.New(logf.Log, clock.RealClock{}),
+		ctrl.ProcessItem,
+		mustSync,
+		nil,
+		queue,
+	)
+	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer stopController()
+
+	var (
+		crtName                  = "testcrt"
+		revision                 = 1
+		namespace                = "testns"
+		nextPrivateKeySecretName = "next-private-key-test-crt"
+		secretName               = "test-crt-tls"
+	)
+
+	// Create Namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a new private key
+	sk, err := utilpki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Encode the private key as PKCS#1, the default format
+	skBytes := utilpki.EncodePKCS1PrivateKey(sk)
+
+	// Store new private key in secret
+	_, err = kubeClient.CoreV1().Secrets(namespace).Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nextPrivateKeySecretName,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			corev1.TLSPrivateKeyKey: skBytes,
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create Certificate
+	crt := gen.Certificate(crtName,
+		gen.SetCertificateNamespace(namespace),
+		gen.SetCertificateCommonName("my-common-name"),
+		gen.SetCertificateDNSNames("example.com", "foo.example.com"),
+		gen.SetCertificateIPs("1.2.3.4", "5.6.7.8"),
+		gen.SetCertificateURIs("spiffe://hello.world"),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateSecretName(secretName),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "testissuer", Group: "foo.io", Kind: "Issuer"}),
+	)
+
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, crt, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create x509 CSR from Certificate
+	csr, err := utilpki.GenerateCSR(crt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Encode CSR
+	csrDER, err := utilpki.EncodeCSR(csr, sk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	csrPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
+	})
+
+	// Sign Certificate
+	certTemplate, err := utilpki.GenerateTemplate(crt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Sign and encode the certificate
+	certPem, _, err := utilpki.SignCertificate(certTemplate, certTemplate, sk.Public(), sk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create CertificateRequest
+	req := gen.CertificateRequest(crtName,
+		gen.SetCertificateRequestNamespace(namespace),
+		gen.SetCertificateRequestCSR(csrPEM),
+		gen.SetCertificateRequestIssuer(crt.Spec.IssuerRef),
+		gen.SetCertificateRequestAnnotations(map[string]string{
+			cmapi.CertificateRequestRevisionAnnotationKey: fmt.Sprintf("%d", revision+1),
+		}),
+		gen.AddCertificateRequestOwnerReferences(*metav1.NewControllerRef(
+			crt,
+			cmapi.SchemeGroupVersion.WithKind("Certificate"),
+		)),
+	)
+	req, err = cmCl.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set CertificateRequest as ready
+	req.Status.CA = certPem
+	req.Status.Certificate = certPem
+	apiutil.SetCertificateRequestCondition(req, cmapi.CertificateRequestConditionReady, cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, "")
+	_, err = cmCl.CertmanagerV1().CertificateRequests(namespace).UpdateStatus(ctx, req, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Add Issuing condition to Certificate
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionTrue, "", "")
+	crt.Status.NextPrivateKeySecretName = &nextPrivateKeySecretName
+	crt.Status.Revision = &revision
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for the Certificate to have the 'Issuing' condition removed, and for
+	// the signed certificate, ca, and private key stored in the Secret.
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
+		if err != nil {
+			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
+			return false, nil
+		}
+
+		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil {
+			t.Logf("Certificate does not have expected condition, got=%#v", cond)
+			return false, nil
+		}
+
+		return true, nil
+	}, ctx.Done())
+
+	// Add labels and annotations to the SecretTemplate.
+	annotations := map[string]string{"annotation-1": "abc", "annotation-2": "123"}
+	labels := map[string]string{"labels-1": "abc", "labels-2": "123"}
+	crt = gen.CertificateFrom(crt, gen.SetCertificateSecretTemplate(annotations, labels))
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for the Annotations and Labels to be observed on the Secret.
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
+			return false, nil
+		}
+		for k, v := range annotations {
+			if gotV, ok := secret.Annotations[k]; !ok || v != gotV {
+				return false, nil
+			}
+		}
+		for k, v := range labels {
+			if gotV, ok := secret.Labels[k]; !ok || v != gotV {
+				return false, nil
+			}
+		}
+		return true, nil
+	}, ctx.Done())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Remove labels and annotations from the SecretTemplate.
+	crt.Spec.SecretTemplate = nil
+	crt, err = cmCl.CertmanagerV1().Certificates(namespace).Update(ctx, crt, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for the Annotations and Labels to be removed from the Secret.
+	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			t.Logf("Failed to fetch Secret resource, retrying: %s", err)
+			return false, nil
+		}
+		for k := range annotations {
+			if _, ok := secret.Annotations[k]; ok {
+				return false, nil
+			}
+		}
+		for k := range labels {
+			if _, ok := secret.Labels[k]; ok {
+				return false, nil
+			}
+		}
+		return true, nil
+	}, ctx.Done())
+	if err != nil {
+		t.Fatal(err)
+	}
+}

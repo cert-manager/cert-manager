@@ -92,7 +92,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 		return err
 	}
 
-	log := logf.FromContext(ctx)
+	log := logf.FromContext(ctx).WithName("secrets_manager")
 	log = logf.WithResource(log, secret)
 
 	if err := s.setValues(crt, secret, data); err != nil {

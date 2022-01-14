@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package secrettemplate
+package issuing
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
-func Test_ProcessItem(t *testing.T) {
+func Test_ensureSecretData(t *testing.T) {
 	const fieldManager = "cert-manager-unit-tests"
 
 	tests := map[string]struct {
@@ -60,8 +60,26 @@ func Test_ProcessItem(t *testing.T) {
 			key:            "random-namespace/random-certificate",
 			expectedAction: false,
 		},
-		"if Certificate and Secret exists, but the Certificate has no condition, do nothing": {
-			key: "test-namespace/test-name",
+		// TODO: re-enable this test once the readiness controller is aware on the
+		// non-issuing condition related secret data checks.
+		//"if Certificate and Secret exists, but the Certificate has no condition, do nothing": {
+		//	key: "test-namespace/test-name",
+		//	cert: &cmapi.Certificate{
+		//		ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
+		//		Spec: cmapi.CertificateSpec{
+		//			SecretName:     "test-secret",
+		//			SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
+		//		},
+		//		Status: cmapi.CertificateStatus{
+		//			Conditions: []cmapi.CertificateCondition{},
+		//		},
+		//	},
+		//	secret: &corev1.Secret{
+		//		ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
+		//	},
+		//	expectedAction: false,
+		//},
+		"if Certificate and Secret exists, but the Certificate has a True Issuing condition, do nothing": {key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
 				Spec: cmapi.CertificateSpec{
@@ -69,7 +87,7 @@ func Test_ProcessItem(t *testing.T) {
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{},
+					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue}},
 				},
 			},
 			secret: &corev1.Secret{
@@ -77,7 +95,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			expectedAction: false,
 		},
-		"if Certificate and Secret exists, but the Certificate has a False Ready condition, do nothing": {
+		"if Certificate exists without a Issuing condition, but Secret does not exist, do nothing": {
 			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
@@ -85,71 +103,12 @@ func Test_ProcessItem(t *testing.T) {
 					SecretName:     "test-secret",
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
-				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse}},
-				},
-			},
-			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
-			},
-			expectedAction: false,
-		},
-		"if Certificate and Secret exists, but the Certificate has a False Ready and a True Issuing condition, do nothing": {
-			key: "test-namespace/test-name",
-			cert: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
-				Spec: cmapi.CertificateSpec{
-					SecretName:     "test-secret",
-					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
-				},
-				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{
-						{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse},
-						{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue},
-					},
-				},
-			},
-			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
-			},
-			expectedAction: false,
-		},
-		"if Certificate is Ready and Secret exists, but the Certificate has a True Issuing condition, do nothing": {
-			key: "test-namespace/test-name",
-			cert: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
-				Spec: cmapi.CertificateSpec{
-					SecretName:     "test-secret",
-					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
-				},
-				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{
-						{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse},
-						{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse},
-					},
-				},
-			},
-			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-secret"},
-			},
-			expectedAction: false,
-		},
-		"if Certificate exists with a Ready condition, but Secret does not exist, do nothing": {
-			key: "test-namespace/test-name",
-			cert: &cmapi.Certificate{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
-				Spec: cmapi.CertificateSpec{
-					SecretName:     "test-secret",
-					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
-				},
-				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}},
-				},
+				Status: cmapi.CertificateStatus{},
 			},
 			secret:         nil,
 			expectedAction: false,
 		},
-		"if Certificate exists in a Ready condition, Secret exists and matches the SecretTemplate but no managed fields, should reconcile Secret": {
+		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate but no managed fields, should reconcile Secret": {
 			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
@@ -158,7 +117,7 @@ func Test_ProcessItem(t *testing.T) {
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}},
+					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse}},
 				},
 			},
 			secret: &corev1.Secret{
@@ -169,7 +128,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			expectedAction: true,
 		},
-		"if Certificate exists in a Ready condition, Secret exists and matches the SecretTemplate but the managed fields contains more than what is in the SecretTemplate, should reconcile Secret": {
+		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate but the managed fields contains more than what is in the SecretTemplate, should reconcile Secret": {
 			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
@@ -178,7 +137,7 @@ func Test_ProcessItem(t *testing.T) {
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}},
+					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse}},
 				},
 			},
 			secret: &corev1.Secret{
@@ -204,7 +163,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			expectedAction: true,
 		},
-		"if Certificate exists in a Ready condition, Secret exists and matches the SecretTemplate but the managed fields are managed by another manager, should reconcile Secret": {
+		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate but the managed fields are managed by another manager, should reconcile Secret": {
 			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
@@ -213,7 +172,7 @@ func Test_ProcessItem(t *testing.T) {
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}},
+					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse}},
 				},
 			},
 			secret: &corev1.Secret{
@@ -237,7 +196,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			expectedAction: true,
 		},
-		"if Certificate exists in a Ready condition, Secret exists and matches the SecretTemplate with the correct managed fields, should do nothing": {
+		"if Certificate exists in a false Issuing condition, Secret exists and matches the SecretTemplate with the correct managed fields, should do nothing": {
 			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
@@ -246,7 +205,7 @@ func Test_ProcessItem(t *testing.T) {
 					SecretTemplate: &cmapi.CertificateSecretTemplate{Annotations: map[string]string{"foo": "bar"}, Labels: map[string]string{"abc": "123"}},
 				},
 				Status: cmapi.CertificateStatus{
-					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue}},
+					Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse}},
 				},
 			},
 			secret: &corev1.Secret{
@@ -270,7 +229,7 @@ func Test_ProcessItem(t *testing.T) {
 			},
 			expectedAction: false,
 		},
-		"if Certificate exists in a Ready condition, Secret exists but does not match SecretTemplate, should apply the Labels and Annotations": {
+		"if Certificate exists in a false Issuing condition, Secret exists but does not match SecretTemplate, should apply the Labels and Annotations": {
 			key: "test-namespace/test-name",
 			cert: &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "test-namespace", Name: "test-name"},
@@ -280,7 +239,7 @@ func Test_ProcessItem(t *testing.T) {
 				},
 				Status: cmapi.CertificateStatus{
 					Conditions: []cmapi.CertificateCondition{
-						{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue},
+						{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse},
 						{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse},
 					},
 				},
