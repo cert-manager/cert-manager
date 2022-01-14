@@ -25,6 +25,7 @@ import (
 
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -110,6 +111,28 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
 			cert.Spec.PrivateKey.Algorithm = v1.Ed25519KeyAlgorithm
+
+			By("Creating a Certificate")
+			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			cert, err = f.Helper().WaitForCertificateReadyAndDoneIssuing(cert, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Validating the issued Certificate...")
+			err = f.Helper().ValidateCertificate(cert)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should be able to create a certificate with additional output formats", func() {
+			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
+
+			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
+			cert.Spec.AdditionalOutputFormats = []v1.AdditionalOutputFormat{
+				{Type: "DER"},
+				{Type: "CombinedPEM"},
+			}
 
 			By("Creating a Certificate")
 			cert, err := certClient.Create(context.TODO(), cert, metav1.CreateOptions{})

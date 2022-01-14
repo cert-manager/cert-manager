@@ -261,3 +261,9 @@ func SetCertificateRevisionHistoryLimit(limit int32) CertificateModifier {
 		crt.Spec.RevisionHistoryLimit = &limit
 	}
 }
+
+func SetCertificateAdditionalOutputFormats(additionalOutputFormats ...v1.AdditionalOutputFormat) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Spec.AdditionalOutputFormats = additionalOutputFormats
+	}
+}

@@ -40,6 +40,11 @@ const (
 	// ExperimentalGatewayAPISupport enables the gateway-shim controller and adds support for
 	// the Gateway API to the HTTP-01 challenge solver.
 	ExperimentalGatewayAPISupport featuregate.Feature = "ExperimentalGatewayAPISupport"
+
+	// alpha: v1.7.0
+	//
+	// AdditionalCertificateOutputFormats enable output additional format
+	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
 )
 
 func init() {
@@ -53,4 +58,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ValidateCAA: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
+	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
 }

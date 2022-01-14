@@ -31,8 +31,10 @@ import (
 	"github.com/jetstack/cert-manager/internal/api/validation"
 	internalcmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
+	"github.com/jetstack/cert-manager/internal/controller/feature"
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 // Validation functions for cert-manager Certificate types
@@ -76,6 +78,19 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 			break
 		default:
 			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa or ecdsa"))
+		}
+		if crt.AdditionalOutputFormats != nil {
+			if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
+				el = append(el, field.Forbidden(fldPath.Child("AdditionalOutputFormat"), "Feature gate AdditionalCertificateOutputFormats must be enabled"))
+			}
+			check := make(map[string]bool)
+			for _, val := range crt.AdditionalOutputFormats {
+				if _, exists := check[string(val.Type)]; !exists {
+					check[string(val.Type)] = true
+				} else {
+					el = append(el, field.Invalid(fldPath.Child("AdditionalOutputFormats"), crt.AdditionalOutputFormats, "Duplicate Type in additionalOutputFormats"))
+				}
+			}
 		}
 	}
 

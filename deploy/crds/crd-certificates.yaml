@@ -67,6 +67,21 @@ spec:
                 - issuerRef
                 - secretName
               properties:
+                additionalOutputFormats:
+                  description: AdditionalOutputFormats allows for requests of additional output formats of the private key and the certificate to be written to the secret. This is an Alpha Feature and should be enabled with --feature-gates option.
+                  type: array
+                  items:
+                    description: AdditionalOutputFormat wraps an additional output format type
+                    type: object
+                    required:
+                      - type
+                    properties:
+                      type:
+                        description: OutputFormatType specifies which additional output formats should be added to Kubernetes secrets. Allowed values are `DER` or `CombinedPEM`. When Type is set to `DER` an additional entry `key.der` will be created in the secret containing the binary format of the key. When Type is set to `CombinedPEM` an additional entry `tls-combined.pem` will be created in the secret containing the PEM formatted certificate chain and key (tls.key + tls.crt concatenated)
+                        type: string
+                        enum:
+                          - DER
+                          - CombinedPEM
                 commonName:
                   description: 'CommonName is a common name to be used on the Certificate. The CommonName should have a length of 64 characters or fewer to avoid generating invalid CSRs. This value is ignored by TLS clients when any subject alt name is set. This is x509 behaviour: https://tools.ietf.org/html/rfc6125#section-6.4.4'
                   type: string
