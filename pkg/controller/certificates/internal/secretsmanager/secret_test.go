@@ -56,7 +56,7 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-// These tests where formally tested using the controllers testing package,
+// These tests were formerly tested using the controllers testing package,
 // however is not compatible with the Apply API call now being used by the
 // SecretsManager.
 // See: https://github.com/kubernetes/client-go/issues/970

@@ -119,7 +119,8 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 
 	log.V(logf.DebugLevel).Info("applying secret")
 
-	// Apply secret resource.
+	// Apply secret resource. Don't force apply first, so we can catch the error
+	// and log it.
 	_, err = s.secretClient.Secrets(secret.Namespace).Apply(ctx, applyCnf, applyOpts)
 	if apierrors.IsConflict(err) {
 		log.Error(err, "forcing apply due to field management conflict")
