@@ -17,7 +17,6 @@ limitations under the License.
 package secretsmanager
 
 import (
-	"bytes"
 	"context"
 	"encoding/pem"
 	"fmt"
