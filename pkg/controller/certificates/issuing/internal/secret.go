@@ -17,6 +17,7 @@ limitations under the License.
 package internal
 
 import (
+	"bytes"
 	"context"
 	"encoding/pem"
 	"fmt"
@@ -31,11 +32,13 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 
+	"github.com/jetstack/cert-manager/internal/controller/feature"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -330,7 +333,7 @@ func setAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, d
 			// Combine tls.key and tls.crt
 			secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = bytes.Join([][]byte{data.PrivateKey, data.Certificate}, []byte("\n"))
 		default:
-			return fmt.Errorf("unknown additional output format %s", f.Type)
+			return fmt.Errorf("unknown additional output format %s", format.Type)
 		}
 	}
 

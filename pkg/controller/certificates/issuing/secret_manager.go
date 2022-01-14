@@ -25,7 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/jetstack/cert-manager/internal/policies"
+	"github.com/jetstack/cert-manager/internal/controller/policies"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
@@ -96,7 +96,7 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 		return c.secretsUpdateData(ctx, crt, data)
 	}
 
-	// SecretTemplate matches Secret, nothing to do.
+	// No Secret violations, nothing to do.
 
 	return nil
 }

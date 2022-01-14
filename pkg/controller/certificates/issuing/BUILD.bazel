@@ -10,7 +10,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/controller/certificates/issuing",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/policies:go_default_library",
+        "//internal/controller/policies:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
@@ -66,7 +66,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//internal/policies:go_default_library",
+        "//internal/controller/policies:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/certificates/issuing/internal:go_default_library",
