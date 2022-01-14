@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/jetstack/cert-manager/internal/policies"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
@@ -258,11 +259,11 @@ func Test_ensureSecretData(t *testing.T) {
 			assert.NoError(t, err)
 
 			var actionCalled bool
-			w.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, _ secretsmanager.SecretData) error {
+			w.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, _ internal.SecretData) error {
 				actionCalled = true
 				return nil
 			}
-			w.fieldManager = fieldManager
+			w.postIssuancePolicyChain = policies.NewSecretPostIssuancePolicyChain(fieldManager)
 
 			// Start the informers and begin processing updates.
 			builder.Start()

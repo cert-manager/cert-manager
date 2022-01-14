@@ -26,17 +26,18 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
+	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
-// Runs a full set of tests against the 'policy chain' once it is composed
-// together.
+// Runs a full set of tests against the trigger 'policy chain' once it is
+// composed together.
 // These tests account for the ordering of the policy chain, and are in place
 // to ensure we do not break behaviour when introducing a new policy or
 // modifying existing code.
-func TestDefaultPolicyChain(t *testing.T) {
+func Test_NewTriggerPolicyChain(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
-	staticFixedPrivateKey := internaltest.MustCreatePEMPrivateKey(t)
+	staticFixedPrivateKey := testcrypto.MustCreatePEMPrivateKey(t)
 	tests := map[string]struct {
 		// policy inputs
 		certificate *cmapi.Certificate
@@ -94,7 +95,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: internaltest.MustCreatePEMPrivateKey(t),
+					corev1.TLSPrivateKeyKey: testcrypto.MustCreatePEMPrivateKey(t),
 					corev1.TLSCertKey:       []byte("test"),
 				},
 			},
@@ -107,7 +108,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: []byte("invalid"),
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, testcrypto.MustCreatePEMPrivateKey(t),
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -120,8 +121,8 @@ func TestDefaultPolicyChain(t *testing.T) {
 			certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretName: "something"}},
 			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "something"},
 				Data: map[string][]byte{
-					corev1.TLSPrivateKeyKey: internaltest.MustCreatePEMPrivateKey(t),
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
+					corev1.TLSPrivateKeyKey: testcrypto.MustCreatePEMPrivateKey(t),
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, testcrypto.MustCreatePEMPrivateKey(t),
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -145,7 +146,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -171,7 +172,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -199,7 +200,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -229,7 +230,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
 						// It does not matter what certificate data is stored in the Secret
 						// as the CertificateRequest will be used to determine whether a
 						// re-issuance is required.
@@ -243,7 +244,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
 				},
-				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				Request: testcrypto.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 					CommonName: "old.example.com",
 				}}),
 			}},
@@ -270,7 +271,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
 						// It does not matter what certificate data is stored in the Secret
 						// as the CertificateRequest will be used to determine whether a
 						// re-issuance is required.
@@ -284,7 +285,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
 				},
-				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				Request: testcrypto.MustGenerateCSRImpl(t, staticFixedPrivateKey, &cmapi.Certificate{Spec: cmapi.CertificateSpec{
 					CommonName: "example.com",
 				}}),
 			}},
@@ -308,7 +309,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "old.example.com"}},
 					),
 				},
@@ -336,7 +337,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 					),
 				},
@@ -367,7 +368,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 1 minute time
@@ -404,7 +405,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 1 minute time
@@ -441,7 +442,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now(),
 						// expires in 30 minutes time
@@ -475,7 +476,7 @@ func TestDefaultPolicyChain(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
+					corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, staticFixedPrivateKey,
 						&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "example.com"}},
 						clock.Now().Add(time.Minute*-30),
 						// expires in 5 minutes time
@@ -503,6 +504,444 @@ func TestDefaultPolicyChain(t *testing.T) {
 			if test.reissue != reissue {
 				t.Errorf("unexpected 'reissue' exp=%v, got=%v", test.reissue, reissue)
 			}
+		})
+	}
+}
+
+func Test_SecretTemplateMismatchesSecret(t *testing.T) {
+	tests := map[string]struct {
+		tmpl         *cmapi.CertificateSecretTemplate
+		secret       *corev1.Secret
+		expViolation bool
+		expReason    string
+		expMessage   string
+	}{
+		"if SecretTemplate is nil, Secret Annotations and Labels are nil, return false": {
+			tmpl:         nil,
+			secret:       &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Annotations: nil, Labels: nil}},
+			expViolation: false,
+			expReason:    "",
+			expMessage:   "",
+		},
+		"if SecretTemplate is nil, Secret Annotations are nil, Labels are non-nil, return false": {
+			tmpl:         nil,
+			secret:       &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Annotations: nil, Labels: map[string]string{"foo": "bar"}}},
+			expViolation: false,
+			expReason:    "",
+			expMessage:   "",
+		},
+		"if SecretTemplate is nil, Secret Annotations are non-nil, Labels are nil, return false": {
+			tmpl:         nil,
+			secret:       &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "bar"}, Labels: nil}},
+			expViolation: false,
+			expReason:    "",
+			expMessage:   "",
+		},
+		"if SecretTemplate is nil, Secret Annotations and Labels are non-nil, return false": {
+			tmpl: nil,
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"foo": "bar"},
+				Labels:      map[string]string{"bar": "foo"},
+			}},
+			expViolation: false,
+			expReason:    "",
+			expMessage:   "",
+		},
+		"if SecretTemplate is non-nil, Secret Annotations match but Labels are nil, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      nil,
+			}},
+			expViolation: true,
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate Labels missing or incorrect value on Secret",
+		},
+		"if SecretTemplate is non-nil, Secret Labels match but Annotations are nil, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: nil,
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			}},
+			expViolation: true,
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
+		},
+		"if SecretTemplate is non-nil, Secret Labels match but Annotations don't match keys, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"foo2": "bar1", "foo1": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			}},
+			expViolation: true,
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
+		},
+		"if SecretTemplate is non-nil, Secret Annoations match but Labels don't match keys, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"def": "123", "abc": "456"},
+			}},
+			expViolation: true,
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate Labels missing or incorrect value on Secret",
+		},
+		"if SecretTemplate is non-nil, Secret Labels match but Annotations don't match values, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"foo1": "bar2", "foo2": "bar1"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			}},
+			expViolation: true,
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate Annotations missing or incorrect value on Secret",
+		},
+		"if SecretTemplate is non-nil, Secret Annotations match but Labels don't match values, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "456", "def": "123"},
+			}},
+			expViolation: true,
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate Labels missing or incorrect value on Secret",
+		},
+		"if SecretTemplate is non-nil, Secret Annotations and Labels match, return false": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			}},
+			expViolation: false,
+			expReason:    "",
+			expMessage:   "",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecret(Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
+				Secret:      test.secret,
+			})
+
+			assert.Equal(t, test.expReason, gotReason, "unexpected reason")
+			assert.Equal(t, test.expMessage, gotMessage, "unexpected message")
+			assert.Equal(t, test.expViolation, gotViolation, "unexpected violation")
+		})
+	}
+}
+
+func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
+	const fieldManager = "cert-manager-unit-test"
+
+	tests := map[string]struct {
+		tmpl         *cmapi.CertificateSecretTemplate
+		secret       []metav1.ManagedFieldsEntry
+		expReason    string
+		expMessage   string
+		expViolation bool
+	}{
+		"if template is nil and no managed fields, should return false": {
+			tmpl:         nil,
+			secret:       nil,
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if template is nil, managed fields is not nil but not managed by cert-manager, should return false": {
+			tmpl: nil,
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:bar": {}
+							},
+							"f:labels": {
+								"f:123": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if template is nil, managed fields is not nil but fields are nil, should return false": {
+			tmpl:         nil,
+			secret:       []metav1.ManagedFieldsEntry{{Manager: fieldManager, FieldsV1: nil}},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if template is not-nil but managed fields is nil, should return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo": "bar"},
+				Labels:      map[string]string{"abc": "123"},
+			},
+			secret:       nil,
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
+		"if template is nil but managed fields is not nil, should return true": {
+			tmpl: nil,
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo": {}
+							},
+							"f:labels": {
+								"f:abc": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "SecretTemplate is nil, but Secret contains extra managed entries",
+			expViolation: true,
+		},
+		"if template annotations do not match managed fields, should return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo3": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
+		"if template labels do not match managed fields, should return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:erg": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
+		"if template annotations and labels match managed fields, should return false": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if template annotations is a subset of managed fields, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:foo3": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
+		"if template labels is a subset of managed fields, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {},
+								"f:ghi": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
+		"if managed fields annotations is a subset of template, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"},
+				Labels:      map[string]string{"abc": "123", "def": "456"},
+			},
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
+		"if managed fields labels is a subset of template, return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
+			},
+			secret: []metav1.ManagedFieldsEntry{{
+				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
+		"if managed fields matches template but is split across multiple managed fields, should return false": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"},
+				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
+			},
+			secret: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:labels": {
+								"f:ghi": {}
+							}
+						}}`),
+				}},
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo3": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {}
+							}
+						}}`),
+				}},
+				{Manager: fieldManager,
+					FieldsV1: &metav1.FieldsV1{
+						Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {}
+							},
+							"f:labels": {
+								"f:abc": {},
+								"f:def": {}
+							}
+						}}`),
+					}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecretManagedFields(fieldManager)(Input{
+				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
+				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secret}},
+			})
+
+			assert.Equal(t, test.expReason, gotReason, "unexpected reason")
+			assert.Equal(t, test.expMessage, gotMessage, "unexpected message")
+			assert.Equal(t, test.expViolation, gotViolation, "unexpected violation")
 		})
 	}
 }

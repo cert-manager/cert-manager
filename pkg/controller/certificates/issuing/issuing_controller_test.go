@@ -33,9 +33,9 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
-	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -55,7 +55,7 @@ func TestIssuingController(t *testing.T) {
 		builder *testpkg.Builder
 
 		certificate             *cmapi.Certificate
-		expSecretUpdateDataCall *secretsmanager.SecretData
+		expSecretUpdateDataCall *internal.SecretData
 
 		expectedErr bool
 	}
@@ -71,9 +71,9 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateRevision(1),
 		gen.SetCertificateNextPrivateKeySecretName(nextPrivateKeySecretName),
 	)
-	exampleBundle := internaltest.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
+	exampleBundle := testcrypto.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
 
-	exampleBundleAlt := internaltest.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
+	exampleBundleAlt := testcrypto.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 
 	issuingCert := gen.CertificateFrom(baseCert.DeepCopy(),
@@ -186,7 +186,7 @@ func TestIssuingController(t *testing.T) {
 				CertManagerObjects: []runtime.Object{
 					issuingCert.DeepCopy(),
 					gen.CertificateRequestFrom(
-						internaltest.MustCreateCryptoBundle(t,
+						testcrypto.MustCreateCryptoBundle(t,
 							gen.CertificateFrom(issuingCert,
 								gen.SetCertificateDNSNames("foo.com"), // Mismatch since the cert has "example.com"
 							), fixedClock,
@@ -452,7 +452,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing The certificate has been successfully issued",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -506,7 +506,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing The certificate has been successfully issued",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -543,7 +543,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing Issued temporary certificate",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.LocalTemporaryCertificateBytes,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -591,7 +591,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing Issued temporary certificate",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.LocalTemporaryCertificateBytes,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -688,7 +688,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing Issued temporary certificate",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.LocalTemporaryCertificateBytes,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -783,7 +783,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing The certificate has been successfully issued",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -915,7 +915,7 @@ func TestIssuingController(t *testing.T) {
 			w.controller.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle.LocalTemporaryCertificateBytes)
 
 			var secretsUpdateDataCalled bool
-			w.controller.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, secretData secretsmanager.SecretData) error {
+			w.controller.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, secretData internal.SecretData) error {
 				secretsUpdateDataCalled = true
 				assert.Equal(t, *test.expSecretUpdateDataCall, secretData)
 				return nil

@@ -23,9 +23,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/jetstack/cert-manager/internal/policies"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -73,7 +73,7 @@ func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.
 	if err != nil {
 		return false, err
 	}
-	secretData := secretsmanager.SecretData{
+	secretData := internal.SecretData{
 		Certificate: certData,
 		PrivateKey:  pkData,
 	}

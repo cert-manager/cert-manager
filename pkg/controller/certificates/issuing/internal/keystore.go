@@ -20,7 +20,7 @@ limitations under the License.
 // release.
 // This should hopefully not exist by the next time you come to read this :)
 
-package secretsmanager
+package internal
 
 import (
 	"bytes"

@@ -17,7 +17,6 @@ limitations under the License.
 package issuing
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -25,13 +24,11 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/utils/pointer"
-	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
+	"github.com/jetstack/cert-manager/internal/policies"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -57,7 +54,12 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 		return err
 	}
 
-	secret = secret.DeepCopy()
+	// Check whether the Certificate's Secret has correct output format and
+	// metadata.
+	reason, message, isViolation := c.postIssuancePolicyChain.Evaluate(policies.Input{
+		Certificate: crt,
+		Secret:      secret,
+	})
 
 	var data secretsmanager.SecretData
 	if secret.Data != nil {

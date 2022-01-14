@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package secretsmanager
+package internal
 
 import (
 	"context"
@@ -64,10 +64,10 @@ type SecretData struct {
 	PrivateKey, Certificate, CA []byte
 }
 
-// New returns a new SecretsManager. Setting enableSecretOwnerReferences to
-// true will mean that secrets will be deleted when the corresponding
-// Certificate is deleted.
-func New(
+// NewSecretsManager returns a new SecretsManager. Setting
+// enableSecretOwnerReferences to true will mean that secrets will be deleted
+// when the corresponding Certificate is deleted.
+func NewSecretsManager(
 	secretClient coreclient.SecretsGetter,
 	secretLister corelisters.SecretLister,
 	restConfig *rest.Config,

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package secretsmanager
+package internal
 
 import (
 	"context"
@@ -42,9 +42,9 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	testcoreclients "github.com/jetstack/cert-manager/test/unit/coreclients"
+	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	testcorelisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
@@ -69,7 +69,7 @@ func Test_SecretsManager(t *testing.T) {
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateUID(apitypes.UID("test-uid")),
 	)
-	baseCertBundle := internaltest.MustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+	baseCertBundle := testcrypto.MustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
 	), fixedClock)
 
@@ -701,7 +701,7 @@ func Test_SecretsManager(t *testing.T) {
 			}
 			secretLister := testcorelisters.NewFakeSecretLister(mod)
 
-			testManager := New(
+			testManager := NewSecretsManager(
 				secretClient, secretLister,
 				&rest.Config{UserAgent: "cert-manager-test"},
 				test.certificateOptions.EnableOwnerRef,

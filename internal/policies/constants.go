@@ -41,4 +41,8 @@ const (
 	// Expired is a policy violation reason for a scenario where Certificate has
 	// expired.
 	Expired string = "Expired"
+	// SecretTemplateMisMatch is a policy violation whereby the Certificate's
+	// SecretTemplate is not reflected on the target Secret, either by having
+	// extra, missing, or wrong Annotations or Labels.
+	SecretTemplateMismatch string = "SecretTemplateMismatch"
 )

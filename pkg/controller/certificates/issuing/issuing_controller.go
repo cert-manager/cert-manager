@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
+	"github.com/jetstack/cert-manager/internal/policies"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -44,7 +45,7 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	utilkube "github.com/jetstack/cert-manager/pkg/util/kube"
@@ -73,11 +74,11 @@ type controller struct {
 	// secretsUpdateData is used by the SecretTemplate controller for
 	// re-reconciling Secrets where the SecretTemplate is not up to date with a
 	// Certificate's secret.
-	secretsUpdateData func(context.Context, *cmapi.Certificate, secretsmanager.SecretData) error
+	secretsUpdateData func(context.Context, *cmapi.Certificate, internal.SecretData) error
 
-	// fieldManager is the string which will be used as the field Manager on
-	// fields created or edited by the cert-manager Kubernetes client.
-	fieldManager string
+	// postIssuancePolicyChain is the policies chain to ensure that all Secret
+	// metadata and output formats are kept are present and correct.
+	postIssuancePolicyChain policies.Chain
 
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
@@ -127,7 +128,7 @@ func NewController(
 		certificateInformer.Informer().HasSynced,
 	}
 
-	secretsManager := secretsmanager.New(
+	secretsManager := internal.NewSecretsManager(
 		kubeClient.CoreV1(), secretsInformer.Lister(),
 		restConfig, certificateControllerOptions.EnableOwnerRef,
 	)
@@ -140,7 +141,7 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		secretsUpdateData:        secretsManager.UpdateData,
-		fieldManager:             util.PrefixFromUserAgent(restConfig.UserAgent),
+		postIssuancePolicyChain:  policies.NewSecretPostIssuancePolicyChain(util.PrefixFromUserAgent(restConfig.UserAgent)),
 		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
@@ -363,7 +364,7 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	if err != nil {
 		return err
 	}
-	secretData := secretsmanager.SecretData{
+	secretData := internal.SecretData{
 		PrivateKey:  pkData,
 		Certificate: req.Status.Certificate,
 		CA:          req.Status.CA,

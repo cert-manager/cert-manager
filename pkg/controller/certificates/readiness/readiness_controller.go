@@ -30,8 +30,8 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/clock"
 
+	"github.com/jetstack/cert-manager/internal/policies"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -40,7 +40,6 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
@@ -215,18 +214,6 @@ func policyEvaluator(chain policies.Chain, input policies.Input) cmapi.Certifica
 	}
 }
 
-// NewReadinessPolicyChain constructs an ordered chain of policies
-// that can be used to determine Certificate's Ready condition
-func NewReadinessPolicyChain(c clock.Clock) policies.Chain {
-	return policies.Chain{
-		policies.SecretDoesNotExist,
-		policies.SecretIsMissingData,
-		policies.SecretPublicKeysDiffer,
-		policies.CurrentCertificateRequestNotValidForSpec,
-		policies.CurrentCertificateHasExpired(c),
-	}
-}
-
 // controllerWrapper wraps the `controller` structure to make it implement
 // the controllerpkg.queueingController interface
 type controllerWrapper struct {
@@ -241,7 +228,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
-		NewReadinessPolicyChain(ctx.Clock),
+		policies.NewReadinessPolicyChain(ctx.Clock),
 		certificates.RenewalTime,
 		policyEvaluator,
 	)

@@ -3,11 +3,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "checks.go",
         "constants.go",
         "gatherer.go",
         "policies.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies",
+    importpath = "github.com/jetstack/cert-manager/internal/policies",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
@@ -20,25 +21,28 @@ go_library(
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/labels:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/sets:go_default_library",
         "@io_k8s_client_go//listers/core/v1:go_default_library",
+        "@io_k8s_sigs_structured_merge_diff_v4//fieldpath:go_default_library",
         "@io_k8s_utils//clock:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
 
 go_test(
     name = "go_default_test",
     srcs = [
+        "checks_test.go",
         "gatherer_test.go",
-        "policies_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/api:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/controller/certificates/internal/test:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//pkg/logs:go_default_library",
+        "//test/unit/crypto:go_default_library",
         "//test/unit/gen:go_default_library",
         "@com_github_go_logr_logr//testing:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",

@@ -14,73 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//Package policies provides functionality to evaluate Certificate's state
 package policies
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
+	"strings"
 	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/clock"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 )
-
-type Input struct {
-	Certificate *cmapi.Certificate
-	Secret      *corev1.Secret
-
-	// The "current" certificate request designates the certificate request that
-	// led to the current revision of the certificate. The "current" certificate
-	// request is by definition in a ready state, and can be seen as the source
-	// of information of the current certificate. Take a look at the gatherer
-	// package's documentation to see more about why we care about the "current"
-	// certificate request.
-	CurrentRevisionRequest *cmapi.CertificateRequest
-
-	// The "next" certificate request is the one that is currently being issued.
-	// Take a look at the gatherer package's documentation to see more about why
-	// we care about the "next" certificate request.
-	NextRevisionRequest *cmapi.CertificateRequest
-}
-
-// A Func evaluates the given input data and decides whether a
-// re-issuance is required, returning additional human readable information
-// in the 'reason' and 'message' return parameters if so.
-type Func func(Input) (reason, message string, reissue bool)
-
-// A Chain of PolicyFuncs to be evaluated in order.
-type Chain []Func
-
-// Evaluate will evaluate the entire policy chain using the provided input.
-// As soon as it is discovered that the input violates one policy,
-// Evaluate will return and not evaluate the rest of the chain.
-func (c Chain) Evaluate(input Input) (string, string, bool) {
-	for _, policyFunc := range c {
-		reason, message, violationFound := policyFunc(input)
-		if violationFound {
-			return reason, message, violationFound
-		}
-	}
-	return "", "", false
-}
-
-func NewTriggerPolicyChain(c clock.Clock) Chain {
-	return Chain{
-		SecretDoesNotExist,
-		SecretIsMissingData,
-		SecretPublicKeysDiffer,
-		SecretPrivateKeyMatchesSpec,
-		SecretIssuerAnnotationsNotUpToDate,
-		CurrentCertificateRequestNotValidForSpec,
-		CurrentCertificateNearingExpiry(c),
-	}
-}
 
 func SecretDoesNotExist(input Input) (string, string, bool) {
 	if input.Secret == nil {
@@ -280,4 +232,114 @@ func issuerGroupsEqual(l, r string) bool {
 		r = defaultIssuerGroup
 	}
 	return l == r
+}
+
+// SecretTemplateMismatchesSecret will inspect the given Secret's Annotations
+// and Labels, and compare these maps against those that appear on the given
+// Certificate's SecretTemplate.  Returns false if all the Certificate's
+// SecretTemplate Annotations and Labels appear on the Secret, or put another
+// way, the Secret Annotations/Labels are a subset of that in the Certificate's
+// SecretTemplate. Returns true otherwise.
+func SecretTemplateMismatchesSecret(input Input) (string, string, bool) {
+	if input.Certificate.Spec.SecretTemplate == nil {
+		return "", "", false
+	}
+
+	for kSpec, vSpec := range input.Certificate.Spec.SecretTemplate.Annotations {
+		if v, ok := input.Secret.Annotations[kSpec]; !ok || v != vSpec {
+			return SecretTemplateMismatch, "Certificate's SecretTemplate Annotations missing or incorrect value on Secret", true
+		}
+	}
+
+	for kSpec, vSpec := range input.Certificate.Spec.SecretTemplate.Labels {
+		if v, ok := input.Secret.Labels[kSpec]; !ok || v != vSpec {
+			return SecretTemplateMismatch, "Certificate's SecretTemplate Labels missing or incorrect value on Secret", true
+		}
+	}
+
+	return "", "", false
+}
+
+// SecretTemplateMismatchesSecretManagedFields will inspect the given Secret's
+// managed fields for its Annotations and Labels, and compare this against the
+// SecretTemplate on the given Certificate. Returns false if Annotations and
+// Labels match on both the Certificate's SecretTemplate and the Secret's
+// managed fields, false otherwise.
+// Returns true if the managed fields were not able to be decoded.
+func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
+	return func(input Input) (string, string, bool) {
+		managedLabels, managedAnnotations := sets.NewString(), sets.NewString()
+
+		for _, managedField := range input.Secret.ManagedFields {
+			// If the managed field isn't owned by the cert-manager controller, ignore.
+			if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
+				continue
+			}
+
+			// Decode the managed field.
+			var fieldset fieldpath.Set
+			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+				return SecretTemplateMismatch, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
+			}
+
+			// Extract the labels and annotations of the managed fields.
+			metadata := fieldset.Children.Descend(fieldpath.PathElement{
+				FieldName: pointer.String("metadata"),
+			})
+			labels := metadata.Children.Descend(fieldpath.PathElement{
+				FieldName: pointer.String("labels"),
+			})
+			annotations := metadata.Children.Descend(fieldpath.PathElement{
+				FieldName: pointer.String("annotations"),
+			})
+
+			// Gather the annotations and labels on the managed fields. Remove the '.'
+			// prefix which appears on managed field keys.
+			labels.Iterate(func(path fieldpath.Path) {
+				managedLabels.Insert(strings.TrimPrefix(path.String(), "."))
+			})
+			annotations.Iterate(func(path fieldpath.Path) {
+				managedAnnotations.Insert(strings.TrimPrefix(path.String(), "."))
+			})
+		}
+
+		// Check early for Secret Template being nil, and whether managed
+		// labels/annotations are not.
+		if input.Certificate.Spec.SecretTemplate == nil {
+			if len(managedLabels) > 0 || len(managedAnnotations) > 0 {
+				return SecretTemplateMismatch, "SecretTemplate is nil, but Secret contains extra managed entries", true
+			}
+			// SecretTemplate is nil. Managed annotations and labels are also empty.
+			// Return false.
+			return "", "", false
+		}
+
+		// SecretTemplate is not nil. Do length checks.
+		if len(input.Certificate.Spec.SecretTemplate.Labels) != len(managedLabels) ||
+			len(input.Certificate.Spec.SecretTemplate.Annotations) != len(managedAnnotations) {
+			return SecretTemplateMismatch, "Certificate's SecretTemplate doesn't match Secret", true
+		}
+
+		// Check equal unsorted for SecretTemplate keys, and the managed fields
+		// equivalents.
+		for _, smap := range []struct {
+			specMap    map[string]string
+			managedSet sets.String
+		}{
+			{specMap: input.Certificate.Spec.SecretTemplate.Labels, managedSet: managedLabels},
+			{specMap: input.Certificate.Spec.SecretTemplate.Annotations, managedSet: managedAnnotations},
+		} {
+
+			specSet := sets.NewString()
+			for kSpec := range smap.specMap {
+				specSet.Insert(kSpec)
+			}
+
+			if !specSet.Equal(smap.managedSet) {
+				return SecretTemplateMismatch, "Certificate's SecretTemplate doesn't match Secret", true
+			}
+		}
+
+		return "", "", false
+	}
 }
