@@ -304,8 +304,11 @@ type JKSKeystore struct {
 	// `passwordSecretRef` containing the issuing Certificate Authority
 	Create bool `json:"create"`
 
-	// PasswordSecretRef is a reference to a key in a Secret resource
-	// containing the password used to encrypt the JKS keystore.
+	// PasswordSecretRef is a reference to a key in a Secret resource containing
+	// the password used to encrypt the JKS keystore. Changing the password
+	// stored in this secret after the certificate is issued does not update
+	// `keystore.jks`. If you want to rotate this password, you must trigger a
+	// re-issuance of the certificate.
 	PasswordSecretRef cmmeta.SecretKeySelector `json:"passwordSecretRef"`
 }
 

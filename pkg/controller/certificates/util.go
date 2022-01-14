@@ -38,7 +38,7 @@ import (
 // before the request should be retried.
 // In future this should be replaced with a more dynamic exponential
 // back-off algorithm.
-const RetryAfterLastFailure = time.Hour
+const RetryAfterLastFailure = 10 * time.Second
 
 // PrivateKeyMatchesSpec returns an error if the private key bit size
 // doesn't match the provided spec. RSA, Ed25519 and ECDSA are supported.
