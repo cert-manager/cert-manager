@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go v1.40.21
 	github.com/cloudflare/cloudflare-go v0.20.0
 	github.com/cpu/goacmedns v0.1.1
+	github.com/davecgh/go-spew v1.1.1
 	github.com/digitalocean/godo v1.65.0
 	github.com/go-logr/logr v1.2.0
 	github.com/google/gofuzz v1.2.0
@@ -89,7 +90,6 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v20.10.11+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.12+incompatible // indirect

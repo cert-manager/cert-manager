@@ -18,6 +18,7 @@ package policies
 
 import (
 	"encoding/pem"
+	"fmt"
 	"testing"
 	"time"
 
@@ -27,10 +28,12 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/pointer"
 
+	"github.com/cert-manager/cert-manager/bazel-cert-manager/external/com_github_pmezard_go_difflib/difflib"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	testcrypto "github.com/cert-manager/cert-manager/test/unit/crypto"
 	"github.com/cert-manager/cert-manager/test/unit/gen"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -2163,4 +2166,221 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 			assert.Equal(t, test.expViolation, gotViolation)
 		})
 	}
+}
+
+func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
+	type Cert cmapi.Certificate // Those long types are making the lines go wee!
+	clock := &fakeclock.FakeClock{}
+	staticFixedPrivateKey := internaltest.MustCreatePEMPrivateKey(t)
+	tests := []struct {
+		// Means that the CertificateRequest is available along with the Secret.
+		// When set to false, only the Secret is available.
+		hasCR bool
+
+		// Set this func to nil if no change is to be made.
+		change func(c *Cert)
+
+		reissue bool
+	}{
+		// With no change to the Certificate and with or without the
+		// CertificateRequest available, no re-issuance is expected.
+		{hasCR: true, change: nil, reissue: false},
+		{hasCR: false, change: nil, reissue: false},
+
+		// When only the Secret is available, changing onf of the following
+		// fields are expected to trigger a re-issuance.
+		{hasCR: true, change: func(c *Cert) { c.Spec.CommonName = "changed" }, reissue: true},
+		{hasCR: true, change: func(c *Cert) { c.Spec.DNSNames = []string{"changed"} }, reissue: true},
+		{hasCR: true, change: func(c *Cert) { c.Spec.IPAddresses = []string{"4.3.2.1"} }, reissue: true},
+		{hasCR: true, change: func(c *Cert) { c.Spec.URIs = []string{"https://changed"} }, reissue: true},
+		{hasCR: true, change: func(c *Cert) { c.Spec.EmailAddresses = []string{"changed@bar.com"} }, reissue: true},
+		{hasCR: true, change: func(c *Cert) { c.Spec.IssuerRef = cmmeta.ObjectReference{Name: "changed"} }, reissue: true},
+		{hasCR: true, change: func(c *Cert) { c.Spec.PrivateKey.Algorithm = cmapi.ECDSAKeyAlgorithm }, reissue: true},
+		{hasCR: true, change: func(c *Cert) { c.Spec.PrivateKey.Size = 4096 }, reissue: true},
+
+		// When only the Secret is available,  changing one of the following
+		// fields does not trigger a re-issuance.
+		{hasCR: true, change: func(c *Cert) { c.Spec.Usages = []cmapi.KeyUsage{cmapi.UsageAny} }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.IsCA = false }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.EncodeUsagesInRequest = pointer.Bool(false) }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (2)
+		{hasCR: true, change: func(c *Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
+		{hasCR: true, change: func(c *Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
+
+		// When both the Secret and the CertificateRequest are available,
+		// changing one of the following fields is expected to trigger a
+		// re-issuance.
+		{hasCR: false, change: func(c *Cert) { c.Spec.CommonName = "changed" }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.DNSNames = []string{"changed"} }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.IPAddresses = []string{"4.3.2.1"} }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.URIs = []string{"https://changed"} }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.EmailAddresses = []string{"changed@bar.com"} }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.Usages = []cmapi.KeyUsage{cmapi.UsageAny} }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.IsCA = false }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.IssuerRef = cmmeta.ObjectReference{Name: "changed"} }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.PrivateKey.Algorithm = cmapi.ECDSAKeyAlgorithm }, reissue: true},
+		{hasCR: false, change: func(c *Cert) { c.Spec.PrivateKey.Size = 4096 }, reissue: true},
+
+		// When both the Secret and the CertificateRequest are available,
+		// changing one of the following fields does not trigger a re-issuance.
+		{hasCR: false, change: func(c *Cert) { c.Spec.EncodeUsagesInRequest = pointer.Bool(false) }, reissue: false},
+		{hasCR: false, change: func(c *Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
+		{hasCR: false, change: func(c *Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
+		{hasCR: false, change: func(c *Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
+		{hasCR: false, change: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // Surprising!
+		{hasCR: false, change: func(c *Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
+		{hasCR: false, change: func(c *Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
+		{hasCR: false, change: func(c *Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
+	}
+	policyChain := NewTriggerPolicyChain(clock)
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			original := &cmapi.Certificate{Spec: cmapi.CertificateSpec{
+				CommonName: "does-not-matter.example.com",
+				Subject: &cmapi.X509Subject{
+					Organizations:       []string{"org1", "org2"},
+					Countries:           []string{"us"},
+					OrganizationalUnits: []string{"ou1", "ou2"},
+					Localities:          []string{"loc1", "loc2"},
+					Provinces:           []string{"prov1", "prov2"},
+					StreetAddresses:     []string{"street1", "street2"},
+					PostalCodes:         []string{"post1", "post2"},
+					SerialNumber:        "12345",
+				},
+				Duration:       &metav1.Duration{Duration: 30 * 24 * time.Hour},
+				RenewBefore:    &metav1.Duration{Duration: 90 * 24 * time.Hour},
+				DNSNames:       []string{"example.com"},
+				IPAddresses:    []string{"1.2.3.4"},
+				URIs:           []string{"http://example.com"},
+				EmailAddresses: []string{"foo@bar.com"},
+				SecretName:     "does-not-matter",
+				SecretTemplate: &cmapi.CertificateSecretTemplate{
+					Labels: map[string]string{"foo": "bar"},
+				},
+				Keystores: &cmapi.CertificateKeystores{
+					JKS: &cmapi.JKSKeystore{
+						Create: true,
+						PasswordSecretRef: cmmeta.SecretKeySelector{
+							Key:                  "password",
+							LocalObjectReference: cmmeta.LocalObjectReference{Name: "foo"},
+						},
+					},
+					PKCS12: &cmapi.PKCS12Keystore{
+						Create: true,
+						PasswordSecretRef: cmmeta.SecretKeySelector{
+							Key:                  "password",
+							LocalObjectReference: cmmeta.LocalObjectReference{Name: "foo"},
+						},
+					},
+				},
+				IssuerRef: cmmeta.ObjectReference{
+					Name:  "testissuer",
+					Kind:  "IssuerKind",
+					Group: "group.example.com",
+				},
+				IsCA: true,
+				Usages: []cmapi.KeyUsage{
+					cmapi.UsageSigning,
+					cmapi.UsageDigitalSignature,
+					cmapi.UsageKeyEncipherment,
+				},
+				PrivateKey: &cmapi.CertificatePrivateKey{
+					Algorithm:      cmapi.RSAKeyAlgorithm,
+					Size:           2048,
+					RotationPolicy: cmapi.RotationPolicyNever,
+					Encoding:       cmapi.PKCS8,
+				},
+				EncodeUsagesInRequest: pointer.Bool(true),
+				RevisionHistoryLimit:  pointer.Int32(2),
+			}}
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "something",
+					Annotations: map[string]string{
+						cmapi.IssuerNameAnnotationKey:  "testissuer",
+						cmapi.IssuerKindAnnotationKey:  "IssuerKind",
+						cmapi.IssuerGroupAnnotationKey: "group.example.com",
+					},
+				},
+				Data: map[string][]byte{
+					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
+					corev1.TLSCertKey:       internaltest.MustCreateCert(t, staticFixedPrivateKey, original),
+				},
+			}
+			request := &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
+				IssuerRef: cmmeta.ObjectReference{
+					Name:  "testissuer",
+					Kind:  "IssuerKind",
+					Group: "group.example.com",
+				},
+				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, original),
+				IsCA:    true,
+				Usages: []cmapi.KeyUsage{
+					cmapi.UsageSigning,
+					cmapi.UsageDigitalSignature,
+					cmapi.UsageKeyEncipherment,
+				},
+				Duration: &metav1.Duration{Duration: 30 * 24 * time.Hour},
+			}}
+			changed := original.DeepCopy()
+			if test.change != nil {
+				test.change((*Cert)(changed))
+			}
+
+			if test.hasCR {
+				request = nil
+			}
+			gotReason, gotMessage, gotReissue := policyChain.Evaluate(Input{
+				Certificate:            changed,
+				CurrentRevisionRequest: request,
+				Secret:                 secret,
+			})
+
+			diff, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+				A:       difflib.SplitLines(spewConf.Sdump(original)),
+				B:       difflib.SplitLines(spewConf.Sdump(changed)),
+				Context: 1,
+			})
+
+			if test.change != nil && diff == "" {
+				t.Fatal("incorrect test case: the 'change' func is non-nil but no change has been detected on the certificate")
+			}
+
+			if test.reissue != gotReissue {
+				str := ""
+				if diff == "" {
+					str += "with no change to the Certificate"
+				} else {
+					str += fmt.Sprintf("with the following changes to the Certificate : %s", diff)
+				}
+				if test.hasCR {
+					str += " and with only the Secret available (no CertificateRequest)"
+				} else {
+					str += " and with both the CertificateRequest and Secret available"
+				}
+				if gotReason == "" {
+					gotReason = "the policyChain function did not return any explanatory reason"
+				}
+				if gotMessage == "" {
+					gotMessage = "the policyChain function did not return any explanatory message"
+				}
+
+				t.Errorf("%s, expected reissue=%v but got reissue=%v, reason: %s, message: %s", str, test.reissue, gotReissue, gotReason, gotMessage)
+			}
+		})
+	}
+}
+
+var spewConf = spew.ConfigState{
+	Indent:                  " ",
+	DisablePointerAddresses: true,
+	DisableCapacities:       true,
+	SortKeys:                true,
+	DisableMethods:          true,
+	MaxDepth:                10,
 }

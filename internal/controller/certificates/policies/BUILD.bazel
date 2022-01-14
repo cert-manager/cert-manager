@@ -47,6 +47,7 @@ go_test(
         "//pkg/logs:go_default_library",
         "//test/unit/crypto:go_default_library",
         "//test/unit/gen:go_default_library",
+        "@com_github_davecgh_go_spew//spew:go_default_library",
         "@com_github_go_logr_logr//testing:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
