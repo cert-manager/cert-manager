@@ -17,9 +17,11 @@ limitations under the License.
 package shimhelper
 
 import (
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"strconv"
+	"reflect"
 	"strings"
 	"time"
 
@@ -65,6 +67,52 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 
 	if commonName, found := ingLikeAnnotations[cmapi.CommonNameAnnotationKey]; found {
 		crt.Spec.CommonName = commonName
+	}
+
+	if emailAddresses, found := ingLikeAnnotations[cmapi.EmailsAnnotationKey]; found {
+		crt.Spec.EmailAddresses = strings.Split(emailAddresses, ",")
+	}
+
+	subject := &cmapi.X509Subject{}
+	if organizations, found := ingLikeAnnotations[cmapi.SubjectOrganizationsAnnotationKey]; found {
+		subject.Organizations = strings.Split(organizations, ",")
+	}
+
+	if organizationalUnits, found := ingLikeAnnotations[cmapi.SubjectOrganizationalUnitsAnnotationKey]; found {
+		subject.OrganizationalUnits = strings.Split(organizationalUnits, ",")
+	}
+
+	if countries, found := ingLikeAnnotations[cmapi.SubjectCountriesAnnotationKey]; found {
+		subject.Countries = strings.Split(countries, ",")
+	}
+
+	if provinces, found := ingLikeAnnotations[cmapi.SubjectProvincesAnnotationKey]; found {
+		subject.Provinces = strings.Split(provinces, ",")
+	}
+
+	if localities, found := ingLikeAnnotations[cmapi.SubjectLocalitiesAnnotationKey]; found {
+		subject.Localities = strings.Split(localities, ",")
+	}
+
+	if postalCodes, found := ingLikeAnnotations[cmapi.SubjectPostalCodesAnnotationKey]; found {
+		subject.PostalCodes = strings.Split(postalCodes, ",")
+	}
+
+	if streetAddresses, found := ingLikeAnnotations[cmapi.SubjectStreetAddressesAnnotationKey]; found {
+		addresses, err := splitWithEscapeCSV(streetAddresses)
+		if err != nil {
+			return fmt.Errorf("%w %q: %v", errInvalidIngressAnnotation, cmapi.SubjectStreetAddressesAnnotationKey, err)
+		}
+		subject.StreetAddresses = addresses
+	}
+
+	if serialNumber, found := ingLikeAnnotations[cmapi.SubjectSerialNumberAnnotationKey]; found {
+		subject.SerialNumber = serialNumber
+	}
+
+	emptySubject := &cmapi.X509Subject{}
+	if !reflect.DeepEqual(emptySubject, subject) {
+		crt.Spec.Subject = subject
 	}
 
 	if duration, found := ingLikeAnnotations[cmapi.DurationAnnotationKey]; found {
@@ -190,4 +238,27 @@ func translateAnnotations(crt *cmapi.Certificate, ingLikeAnnotations map[string]
 	}
 
 	return nil
+}
+
+// splitWithEscapeCSV parses the given input as a single line of CSV, which allows
+// a comma-separated list of strings to be parsed while allowing commas to be present
+// in each field. For example, a user can specify:
+// "10 Downing Street, Westminster",Manchester
+// to produce []string{"10 Downing Street, Westminster", "Manchester"}, keeping the comma
+// in the first address. Empty lines or multiple CSV records are both rejected.
+func splitWithEscapeCSV(in string) ([]string, error) {
+	reader := csv.NewReader(strings.NewReader(in))
+
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %q as CSV: %w", in, err)
+	}
+
+	if len(records) == 0 {
+		return nil, fmt.Errorf("no values found after parsing %q", in)
+	} else if len(records) > 1 {
+		return nil, fmt.Errorf("refusing to use %q as input as it parses as multiple lines of CSV", in)
+	}
+
+	return records[0], nil
 }
