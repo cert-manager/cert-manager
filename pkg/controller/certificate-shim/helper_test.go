@@ -40,11 +40,23 @@ func Test_translateAnnotations(t *testing.T) {
 
 	validAnnotations := func() map[string]string {
 		return map[string]string{
-			cmapi.CommonNameAnnotationKey:           "www.example.com",
-			cmapi.DurationAnnotationKey:             "168h", // 1 week
-			cmapi.RenewBeforeAnnotationKey:          "24h",
-			cmapi.UsagesAnnotationKey:               "server auth,signing",
-			cmapi.RevisionHistoryLimitAnnotationKey: "7",
+			cmapi.CommonNameAnnotationKey:                 "www.example.com",
+			cmapi.DurationAnnotationKey:                   "168h", // 1 week
+			cmapi.RenewBeforeAnnotationKey:                "24h",
+			cmapi.UsagesAnnotationKey:                     "server auth,signing",
+			cmapi.RevisionHistoryLimitAnnotationKey:       "7",
+			cmapi.EmailsAnnotationKey:                     "test@example.com",
+			cmapi.SubjectOrganizationsAnnotationKey:       "Test Organization",
+			cmapi.SubjectOrganizationalUnitsAnnotationKey: "Test Organizational Unit",
+			cmapi.SubjectCountriesAnnotationKey:           "Country",
+			cmapi.SubjectProvincesAnnotationKey:           "Province",
+			cmapi.SubjectLocalitiesAnnotationKey:          "City",
+			cmapi.SubjectStreetAddressesAnnotationKey:     "\"1725 Slough Avenue, Suite 200, Scranton Business Park\"",
+			cmapi.SubjectPostalCodesAnnotationKey:         "ABC123",
+			cmapi.SubjectSerialNumberAnnotationKey:        "123456",
+			cmapi.DurationAnnotationKey:                   "168h", // 1 week
+			cmapi.RenewBeforeAnnotationKey:                "24h",
+			cmapi.UsagesAnnotationKey:                     "server auth,signing",
 		}
 	}
 
@@ -125,6 +137,7 @@ func Test_translateAnnotations(t *testing.T) {
 				a.Equal(cmapi.Ed25519KeyAlgorithm, crt.Spec.PrivateKey.Algorithm)
 				a.Equal(cmapi.PKCS8, crt.Spec.PrivateKey.Encoding)
 				a.Equal(cmapi.RotationPolicyAlways, crt.Spec.PrivateKey.RotationPolicy)
+				a.Equal([]string{"1725 Slough Avenue, Suite 200, Scranton Business Park"}, crt.Spec.Subject.StreetAddresses)
 			},
 		},
 		"nil annotations": {
@@ -243,6 +256,14 @@ func Test_translateAnnotations(t *testing.T) {
 			mutate: func(tc *testCase) {
 				tc.annotations[cmapi.PrivateKeyAlgorithmAnnotationKey] = "ECDSA"
 				tc.annotations[cmapi.PrivateKeySizeAnnotationKey] = "128"
+			},
+			expectedError: errInvalidIngressAnnotation,
+		},
+		"bad street addresses": {
+			crt:         gen.Certificate("example-cert"),
+			annotations: validAnnotations(),
+			mutate: func(tc *testCase) {
+				tc.annotations[cmapi.SubjectStreetAddressesAnnotationKey] = "invalid csv\","
 			},
 			expectedError: errInvalidIngressAnnotation,
 		},
