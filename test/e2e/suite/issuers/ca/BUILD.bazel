@@ -13,9 +13,11 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
+        "//internal/controller/feature:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/util:go_default_library",
         "//test/unit/gen:go_default_library",
