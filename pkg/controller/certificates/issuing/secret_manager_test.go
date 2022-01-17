@@ -27,7 +27,9 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
+	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 func Test_ensureSecretData(t *testing.T) {
@@ -287,8 +289,16 @@ func Test_ensureSecretData(t *testing.T) {
 func Test_secretTemplateMatchesManagedFields(t *testing.T) {
 	const fieldManager = "cert-manager-unit-test"
 
+	baseCertBundle := internaltest.MustCreateCryptoBundle(t, gen.Certificate("test-certificate",
+		gen.SetCertificateCommonName("cert-manager"),
+		gen.SetCertificateDNSNames("example.com", "cert-manager.io"),
+		gen.SetCertificateIPs("1.1.1.1", "1.2.3.4"),
+		gen.SetCertificateURIs("spiffe.io//cert-manager.io/test", "spiffe.io//hello.world"),
+	), fixedClock)
+
 	tests := map[string]struct {
 		tmpl     *cmapi.CertificateSecretTemplate
+		data     secretsmanager.SecretData
 		secret   []metav1.ManagedFieldsEntry
 		expMatch bool
 	}{
@@ -532,6 +542,76 @@ func Test_secretTemplateMatchesManagedFields(t *testing.T) {
 			},
 			expMatch: true,
 		},
+		"if managed fields matches template and base cert-manager annotations are present with no certificate data, should return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+			},
+			secret: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+                "f:cert-manager.io/certificate-name": {},
+                "f:cert-manager.io/issuer-name": {},
+                "f:cert-manager.io/issuer-kind": {},
+                "f:cert-manager.io/issuer-group": {}
+							}
+						}}`),
+				}},
+			},
+			expMatch: true,
+		},
+		"if managed fields matches template and base cert-manager annotations are present with certificate data, should return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+			},
+			secret: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+                "f:cert-manager.io/certificate-name": {},
+                "f:cert-manager.io/issuer-name": {},
+                "f:cert-manager.io/issuer-kind": {},
+                "f:cert-manager.io/issuer-group": {},
+				        "f:cert-manager.io/common-name": {},
+				        "f:cert-manager.io/alt-names":  {},
+				        "f:cert-manager.io/ip-sans": {},
+				        "f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			data:     secretsmanager.SecretData{Certificate: baseCertBundle.CertBytes},
+			expMatch: true,
+		},
+		"if managed fields matches template and base cert-manager annotations are present with certificate data but certificate data is nil, should return false": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+			},
+			secret: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+                "f:cert-manager.io/certificate-name": {},
+                "f:cert-manager.io/issuer-name": {},
+                "f:cert-manager.io/issuer-kind": {},
+                "f:cert-manager.io/issuer-group": {},
+				        "f:cert-manager.io/common-name": {},
+				        "f:cert-manager.io/alt-names":  {},
+				        "f:cert-manager.io/ip-sans": {},
+				        "f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			data:     secretsmanager.SecretData{Certificate: nil},
+			expMatch: false,
+		},
 	}
 
 	for name, test := range tests {
@@ -541,6 +621,7 @@ func Test_secretTemplateMatchesManagedFields(t *testing.T) {
 			match, err := c.secretTemplateMatchesManagedFields(
 				&cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
 				&corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secret}},
+				test.data,
 			)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expMatch, match,

@@ -19,6 +19,7 @@ package issuing
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -58,16 +59,26 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 
 	secret = secret.DeepCopy()
 
+	var data secretsmanager.SecretData
+	if secret.Data != nil {
+		data = secretsmanager.SecretData{
+			PrivateKey:  secret.Data[corev1.TLSPrivateKeyKey],
+			Certificate: secret.Data[corev1.TLSCertKey],
+			CA:          secret.Data[cmmeta.TLSCAKey],
+		}
+	}
+
 	log = log.WithValues("secret", secret.Name)
 
 	// Check whether the Certificate's SecretTemplate matches that on the Secret.
-	secretTemplateMatchManagedFields, err := c.secretTemplateMatchesManagedFields(crt, secret)
+	secretTemplateMatchManagedFields, err := c.secretTemplateMatchesManagedFields(crt, secret, data)
 	if err != nil {
-		// An error here indicates that the managed fields are malformed, or the
-		// decoder doesn't understand the managed fields on the Secret. There is
-		// nothing more the controller can do here, so we exit nil so this
-		// controller doesn't end in an infinite loop.
-		log.Error(err, "failed to decode the Secret's managed field")
+		// An error here indicates that the managed fields are malformed and the
+		// decoder doesn't understand the managed fields on the Secret, or the
+		// signed certificate data could not be decoded. There is nothing more the
+		// controller can do here, so we exit nil so this controller doesn't end in
+		// an infinite loop.
+		log.Error(err, "failed to determine whether the SecretTemplate matches Secret")
 		return nil
 	}
 
@@ -80,11 +91,7 @@ func (c *controller) ensureSecretData(ctx context.Context, log logr.Logger, crt 
 	// Manager.
 	if !secretTemplateMatchesSecret(crt, secret) || !secretTemplateMatchManagedFields {
 		log.Info("mismatch between SecretTemplate and Secret, updating Secret annotations/labels")
-		return c.secretsUpdateData(ctx, crt, secretsmanager.SecretData{
-			PrivateKey:  secret.Data[corev1.TLSPrivateKeyKey],
-			Certificate: secret.Data[corev1.TLSCertKey],
-			CA:          secret.Data[cmmeta.TLSCAKey],
-		})
+		return c.secretsUpdateData(ctx, crt, data)
 	}
 
 	// SecretTemplate matches Secret, nothing to do.
@@ -125,8 +132,15 @@ func secretTemplateMatchesSecret(crt *cmapi.Certificate, secret *corev1.Secret) 
 // Labels match on both the Certificate's SecretTemplate and the Secret's
 // managed fields, false otherwise.
 // An error is returned if the managed fields were not able to be decoded.
-func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, secret *corev1.Secret) (bool, error) {
+func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, secret *corev1.Secret, data secretsmanager.SecretData) (bool, error) {
 	managedLabels, managedAnnotations := sets.NewString(), sets.NewString()
+
+	// Build the base annotations of the Secret, so we can omit them from the
+	// managed annotations when comparing against the SecretTemplate.
+	baseAnnotations, err := secretsmanager.SecretCertificateAnnotations(crt, data)
+	if err != nil {
+		return false, fmt.Errorf("failed to determine target Secret's base Annotations: %w", err)
+	}
 
 	for _, managedField := range secret.ManagedFields {
 		// If the managed field isn't owned by the cert-manager controller, ignore.
@@ -137,7 +151,7 @@ func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, 
 		// Decode the managed field.
 		var fieldset fieldpath.Set
 		if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
-			return false, err
+			return false, fmt.Errorf("failed to decode the Secret's managed field: %w", err)
 		}
 
 		// Extract the labels and annotations of the managed fields.
@@ -161,6 +175,12 @@ func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, 
 		})
 	}
 
+	// Remove the base Annotations from the managed Annotations so we can compare
+	// 1 to 1 against the SecretTemplate.
+	for k := range baseAnnotations {
+		managedAnnotations = managedAnnotations.Delete(k)
+	}
+
 	// Check early for Secret Template being nil, and whether managed
 	// labels/annotations are not.
 	if crt.Spec.SecretTemplate == nil {
@@ -173,8 +193,8 @@ func (c *controller) secretTemplateMatchesManagedFields(crt *cmapi.Certificate, 
 	}
 
 	// SecretTemplate is not nil. Do length checks.
-	if len(crt.Spec.SecretTemplate.Labels) != len(managedLabels) ||
-		len(crt.Spec.SecretTemplate.Annotations) != len(managedAnnotations) {
+	if len(crt.Spec.SecretTemplate.Labels) != managedLabels.Len() ||
+		len(crt.Spec.SecretTemplate.Annotations) != managedAnnotations.Len() {
 		return false, nil
 	}
 

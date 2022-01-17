@@ -137,6 +137,34 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	return err
 }
 
+// SecretCertificateAnnotations returns a map which should be set on all
+// Certificate Secret's Annotations, containing information about the Issuer
+// and Certificate.
+func SecretCertificateAnnotations(crt *cmapi.Certificate, data SecretData) (map[string]string, error) {
+	annotations := make(map[string]string)
+
+	annotations[cmapi.CertificateNameKey] = crt.Name
+	annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+	annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
+	annotations[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
+
+	// Only add certificate data if it exists
+	if len(data.Certificate) > 0 {
+		x509Cert, err := utilpki.DecodeX509CertificateBytes(data.Certificate)
+		// TODO: handle InvalidData here?
+		if err != nil {
+			return nil, err
+		}
+
+		annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
+		annotations[cmapi.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+		annotations[cmapi.IPSANAnnotationKey] = strings.Join(utilpki.IPAddressesToString(x509Cert.IPAddresses), ",")
+		annotations[cmapi.URISANAnnotationKey] = strings.Join(utilpki.URLsToString(x509Cert.URIs), ",")
+	}
+
+	return annotations, nil
+}
+
 // setValues will update the Secret resource 'secret' with the data contained
 // in the given secretData.
 // It will update labels and annotations on the Secret resource appropriately.
@@ -163,6 +191,11 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		secret.Data[cmmeta.TLSCAKey] = data.CA
 	}
 
+	annotations, err := SecretCertificateAnnotations(crt, data)
+	if err != nil {
+		return err
+	}
+
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
@@ -179,23 +212,8 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 		}
 	}
 
-	secret.Annotations[cmapi.CertificateNameKey] = crt.Name
-	secret.Annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	secret.Annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
-	secret.Annotations[cmapi.IssuerGroupAnnotationKey] = crt.Spec.IssuerRef.Group
-
-	// Only add certificate data if it exists
-	if len(data.Certificate) > 0 {
-		x509Cert, err := utilpki.DecodeX509CertificateBytes(data.Certificate)
-		// TODO: handle InvalidData here?
-		if err != nil {
-			return err
-		}
-
-		secret.Annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
-		secret.Annotations[cmapi.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
-		secret.Annotations[cmapi.IPSANAnnotationKey] = strings.Join(utilpki.IPAddressesToString(x509Cert.IPAddresses), ",")
-		secret.Annotations[cmapi.URISANAnnotationKey] = strings.Join(utilpki.URLsToString(x509Cert.URIs), ",")
+	for k, v := range annotations {
+		secret.Annotations[k] = v
 	}
 
 	return nil
