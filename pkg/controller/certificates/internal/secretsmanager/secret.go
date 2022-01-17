@@ -125,8 +125,8 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 
 func updateSecretWithAdditionalOutputFormats(crt *cmapi.Certificate, secret *corev1.Secret, data SecretData) error {
 	if crt.Spec.AdditionalOutputFormats == nil {
-		delete(secret.Data, cmapi.AdditionalOutputFormatDERKey)
-		delete(secret.Data, cmapi.AdditionalOutputFormatPEMKey)
+		delete(secret.Data, cmapi.CertificateOutputFormatDERKey)
+		delete(secret.Data, cmapi.CertificateOutputFormatCombinedPEMKey)
 		return nil
 	}
 
@@ -135,9 +135,9 @@ func updateSecretWithAdditionalOutputFormats(crt *cmapi.Certificate, secret *cor
 
 	for _, f := range crt.Spec.AdditionalOutputFormats {
 		switch f.Type {
-		case cmapi.AdditionalOutputFormatDER:
+		case cmapi.CertificateOutputFormatDER:
 			additionalOutputFormatDER = true
-		case cmapi.AdditionalOutputFormatCombinedPEM:
+		case cmapi.CertificateOutputFormatCombinedPEM:
 			additionalOutputFormatPEM = true
 		default:
 			return fmt.Errorf("unknown additional output format %s", f.Type)
@@ -147,16 +147,16 @@ func updateSecretWithAdditionalOutputFormats(crt *cmapi.Certificate, secret *cor
 	if additionalOutputFormatDER {
 		// Store binary format of the private key
 		block, _ := pem.Decode(data.PrivateKey)
-		secret.Data[cmapi.AdditionalOutputFormatDERKey] = block.Bytes
+		secret.Data[cmapi.CertificateOutputFormatDERKey] = block.Bytes
 	} else {
-		delete(secret.Data, cmapi.AdditionalOutputFormatDERKey)
+		delete(secret.Data, cmapi.CertificateOutputFormatDERKey)
 	}
 
 	if additionalOutputFormatPEM {
 		// Combine tls.key and tls.crt
-		secret.Data[cmapi.AdditionalOutputFormatPEMKey] = []byte(strings.Join([]string{string(data.PrivateKey), string(data.Certificate)}, "\n"))
+		secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey] = bytes.Join([][]byte{data.PrivateKey, data.Certificate}, []byte("\n"))
 	} else {
-		delete(secret.Data, cmapi.AdditionalOutputFormatPEMKey)
+		delete(secret.Data, cmapi.CertificateOutputFormatCombinedPEMKey)
 	}
 
 	return nil
