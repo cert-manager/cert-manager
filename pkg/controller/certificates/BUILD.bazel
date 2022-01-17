@@ -57,9 +57,15 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller/certificates/internal/test:go_default_library",
         "//pkg/util/pki:go_default_library",
+        "@com_github_davecgh_go_spew//spew:go_default_library",
+        "@com_github_pmezard_go_difflib//difflib:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_utils//pointer:go_default_library",
     ],
 )
