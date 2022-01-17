@@ -62,6 +62,18 @@ func getPath(name string, path ...string) (string, error) {
 		return p, nil
 	}
 
+	// check in bin/tools for a file provisioned using make
+	binToolsPath := filepath.Join(paths.BinToolsDir, name)
+	p, err = exec.LookPath(binToolsPath)
+	if err == nil {
+		return p, nil
+	}
+
 	// Otherwise check the users PATH
-	return exec.LookPath(name)
+	p, err = exec.LookPath(name)
+	if err == nil {
+		return p, nil
+	}
+
+	return "", fmt.Errorf("failed to find %q in bazel-bin, bin/tools, or in $PATH", name)
 }

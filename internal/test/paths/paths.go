@@ -39,7 +39,7 @@ var (
 	BinToolsDir = filepath.Join(BinDir, "tools")
 
 	// BinCRDDir is the filesystem path of templated CRDs created by Makefile commands
-	BinCRDDir = filepath.Join(BinDir, "crds")
+	BinCRDDir = filepath.Join(BinDir, "yaml", "templated-crds")
 
 	// BazelBinDir is the filesystem path to the bazel-bin directory within the
 	// root of the repository.

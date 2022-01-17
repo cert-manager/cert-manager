@@ -145,6 +145,12 @@ bin/helm/cert-manager-crds/templates/crd-templates.yaml: bin/scratch/yaml/cert-m
 bin/scratch/yaml/cert-manager-crd-templates.yaml: $(ALLCRDS) | bin/scratch/yaml
 	./hack/concat-yaml.sh $^ > $@
 
+.PHONY: templated-crds
+templated-crds: bin/yaml/templated-crds/crd-challenges.templated.yaml bin/yaml/templated-crds/crd-orders.templated.yaml bin/yaml/templated-crds/crd-certificaterequests.templated.yaml bin/yaml/templated-crds/crd-clusterissuers.templated.yaml bin/yaml/templated-crds/crd-issuers.templated.yaml bin/yaml/templated-crds/crd-certificates.templated.yaml
+
+bin/yaml/templated-crds/crd-challenges.templated.yaml bin/yaml/templated-crds/crd-orders.templated.yaml bin/yaml/templated-crds/crd-certificaterequests.templated.yaml bin/yaml/templated-crds/crd-clusterissuers.templated.yaml bin/yaml/templated-crds/crd-issuers.templated.yaml bin/yaml/templated-crds/crd-certificates.templated.yaml: bin/yaml/templated-crds/crd-%.templated.yaml: bin/yaml/cert-manager.yaml | bin/yaml/templated-crds
+	$(GO) run hack/extractcrd/main.go $< $* > $@
+
 ###############
 # Dir targets #
 ###############
@@ -170,4 +176,7 @@ bin/scratch/yaml:
 	@mkdir -p $@
 
 bin/scratch/manifests:
+	@mkdir -p $@
+
+bin/yaml/templated-crds:
 	@mkdir -p $@
