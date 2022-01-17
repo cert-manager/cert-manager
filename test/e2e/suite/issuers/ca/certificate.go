@@ -22,14 +22,15 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/jetstack/cert-manager/internal/controller/feature"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("CA Certificate", func() {
@@ -126,6 +127,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		})
 
 		It("should be able to create a certificate with additional output formats", func() {
+			// Output formats is only enabled via this feature gate being enabled.
+			// Don't run test if the gate isn't enabled.
+			if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
+				framework.Skipf("feature gate %s is not enabled, skipping test", feature.AdditionalCertificateOutputFormats)
+			}
+
 			certClient := f.CertManagerClientSet.CertmanagerV1().Certificates(f.Namespace.Name)
 
 			cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1.IssuerKind, nil, nil)
