@@ -28,8 +28,8 @@ elif ! command -v bazel &>/dev/null; then
 else
   (
     set -o xtrace
-    bazel build //pkg/util/versionchecker/testdata:test_manifests.tar
-    cp -f "$(bazel info bazel-bin)/pkg/util/versionchecker/testdata/test_manifests.tar" "$SCRIPT_ROOT"
+    bazel build //test/integration/versionchecker/testdata:test_manifests.tar
+    cp -f "$(bazel info bazel-bin)/test/integration/versionchecker/testdata/test_manifests.tar" "$SCRIPT_ROOT"
   )
   exit 0
 fi
