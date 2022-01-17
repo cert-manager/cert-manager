@@ -41,7 +41,7 @@ type ValidationFunc func(certificate *cmapi.Certificate, secret *corev1.Secret) 
 
 // ExpectValidKeysInSecret checks that the secret contains valid keys
 func ExpectValidKeysInSecret(_ *cmapi.Certificate, secret *corev1.Secret) error {
-	validKeys := [5]string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey, cmapi.CertificateOutputFormatDERKey, cmapi.CertificateOutputFormatCombinedPEMKey}
+	validKeys := []string{corev1.TLSPrivateKeyKey, corev1.TLSCertKey, cmmeta.TLSCAKey, cmapi.CertificateOutputFormatDERKey, cmapi.CertificateOutputFormatCombinedPEMKey}
 	nbValidKeys := 0
 	for k := range secret.Data {
 		for _, k2 := range validKeys {

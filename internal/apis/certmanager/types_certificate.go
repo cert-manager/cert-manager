@@ -170,7 +170,7 @@ type CertificateSpec struct {
 	// and signed certificate chain to be written to this Certificate's target
 	// Secret. This is an Alpha Feature and is only enabled with the
 	// `--feature-gates=AdditionalCertificateOutputFormats=true` option.
-	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
+	AdditionalOutputFormats []CertificateAdditionalOutputFormat
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -241,7 +241,7 @@ const (
 type CertificateAdditionalOutputFormat struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
-	Type CertificateOutputFormatType `json:"type"`
+	Type CertificateOutputFormatType
 }
 
 // Denotes how private keys should be generated or sourced when a Certificate
@@ -437,9 +437,9 @@ const (
 type CertificateSecretTemplate struct {
 	// Annotations is a key value map to be copied to the target Kubernetes Secret.
 	// +optional
-	Annotations map[string]string `json:"annotations,omitempty"`
+	Annotations map[string]string
 
 	// Labels is a key value map to be copied to the target Kubernetes Secret.
 	// +optional
-	Labels map[string]string `json:"labels,omitempty"`
+	Labels map[string]string
 }
