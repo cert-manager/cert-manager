@@ -73,6 +73,10 @@ func TestIssuingController(t *testing.T) {
 		gen.SetCertificateNextPrivateKeySecretName(nextPrivateKeySecretName),
 	)
 	exampleBundle := testcrypto.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
+	exampleBundleLocalTemporaryCertificateBytes, err := generateLocallySignedTemporaryCertificate(baseCert, exampleBundle.PrivateKeyBytes)
+	if err != nil {
+		panic("failed to generate test fixture: " + err.Error())
+	}
 
 	exampleBundleAlt := testcrypto.MustCreateCryptoBundle(t, baseCert.DeepCopy(), fixedClock)
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
@@ -705,7 +709,7 @@ func TestIssuingController(t *testing.T) {
 				},
 			},
 			expSecretUpdateDataCall: &internal.SecretData{
-				Certificate: exampleBundle.LocalTemporaryCertificateBytes,
+				Certificate: exampleBundleLocalTemporaryCertificateBytes,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
 			},
@@ -753,7 +757,7 @@ func TestIssuingController(t *testing.T) {
 				},
 			},
 			expSecretUpdateDataCall: &internal.SecretData{
-				Certificate: exampleBundle.LocalTemporaryCertificateBytes,
+				Certificate: exampleBundleLocalTemporaryCertificateBytes,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
 			},
@@ -850,7 +854,7 @@ func TestIssuingController(t *testing.T) {
 				},
 			},
 			expSecretUpdateDataCall: &internal.SecretData{
-				Certificate: exampleBundle.LocalTemporaryCertificateBytes,
+				Certificate: exampleBundleLocalTemporaryCertificateBytes,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
 			},
@@ -891,7 +895,7 @@ func TestIssuingController(t *testing.T) {
 							Labels: map[string]string{},
 						},
 						Data: map[string][]byte{
-							corev1.TLSCertKey:       exampleBundle.LocalTemporaryCertificateBytes, // Cert not valid but still matches private key
+							corev1.TLSCertKey:       exampleBundleLocalTemporaryCertificateBytes, // Cert not valid but still matches private key
 							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
 						},
 						Type: corev1.SecretTypeTLS,
@@ -1075,7 +1079,7 @@ func TestIssuingController(t *testing.T) {
 			w := controllerWrapper{}
 			_, _, err := w.Register(test.builder.Context)
 			require.NoError(t, err)
-			w.controller.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle.LocalTemporaryCertificateBytes)
+			w.controller.localTemporarySigner = testLocalTemporarySignerFn(exampleBundleLocalTemporaryCertificateBytes)
 
 			var secretsUpdateDataCalled bool
 			w.controller.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, secretData internal.SecretData) error {

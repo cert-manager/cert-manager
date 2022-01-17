@@ -2173,8 +2173,8 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
 	staticFixedPrivateKey := testcrypto.MustCreatePEMPrivateKey(t)
 	tests := []struct {
-		// Means that the CertificateRequest is available along with the Secret.
-		// When set to false, only the Secret is available.
+		// hasCR=true means that the CertificateRequest is available along with
+		// the Secret. When set to false, only the Secret is available.
 		hasCR bool
 
 		// Set this func to nil if no change is to be made.

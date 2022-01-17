@@ -152,7 +152,7 @@ func NewController(
 			fieldManager,
 		),
 		fieldManager:         fieldManager,
-		localTemporarySigner: certificates.GenerateLocallySignedTemporaryCertificate,
+		localTemporarySigner: certificate.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
 
