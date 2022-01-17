@@ -2171,7 +2171,7 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 	type Cert cmapi.Certificate // Those long types are making the lines go wee!
 	clock := &fakeclock.FakeClock{}
-	staticFixedPrivateKey := internaltest.MustCreatePEMPrivateKey(t)
+	staticFixedPrivateKey := testcrypto.MustCreatePEMPrivateKey(t)
 	tests := []struct {
 		// Means that the CertificateRequest is available along with the Secret.
 		// When set to false, only the Secret is available.
@@ -2207,7 +2207,7 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 		{hasCR: true, change: func(c *Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
 		{hasCR: true, change: func(c *Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
 		{hasCR: true, change: func(c *Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
-		{hasCR: true, change: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (2)
+		{hasCR: true, change: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (1)
 		{hasCR: true, change: func(c *Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
 		{hasCR: true, change: func(c *Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
 		{hasCR: true, change: func(c *Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
@@ -2233,10 +2233,15 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 		{hasCR: false, change: func(c *Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
 		{hasCR: false, change: func(c *Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
 		{hasCR: false, change: func(c *Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
-		{hasCR: false, change: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // Surprising!
+		{hasCR: false, change: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (1)
 		{hasCR: false, change: func(c *Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
 		{hasCR: false, change: func(c *Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
 		{hasCR: false, change: func(c *Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
+
+		// (1) You might be surprised to see reissue=false for the secretName
+		// field. That's because a change to the secretName will be handled
+		// before the policy chain is evaluated, since the policy chain expects
+		// a non-nil Secret and a possibly nil CertificateRequest.
 	}
 	policyChain := NewTriggerPolicyChain(clock)
 	for _, test := range tests {
@@ -2309,7 +2314,7 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 				},
 				Data: map[string][]byte{
 					corev1.TLSPrivateKeyKey: staticFixedPrivateKey,
-					corev1.TLSCertKey:       internaltest.MustCreateCert(t, staticFixedPrivateKey, original),
+					corev1.TLSCertKey:       testcrypto.MustCreateCert(t, staticFixedPrivateKey, original),
 				},
 			}
 			request := &cmapi.CertificateRequest{Spec: cmapi.CertificateRequestSpec{
@@ -2318,7 +2323,7 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 					Kind:  "IssuerKind",
 					Group: "group.example.com",
 				},
-				Request: internaltest.MustGenerateCSRImpl(t, staticFixedPrivateKey, original),
+				Request: testcrypto.MustGenerateCSRImpl(t, staticFixedPrivateKey, original),
 				IsCA:    true,
 				Usages: []cmapi.KeyUsage{
 					cmapi.UsageSigning,
