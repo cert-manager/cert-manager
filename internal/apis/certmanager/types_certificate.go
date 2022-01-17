@@ -125,7 +125,9 @@ type CertificateSpec struct {
 
 	// SecretTemplate defines annotations and labels to be copied to the
 	// Certificate's Secret. Labels and annotations on the Secret will be changed
-	// as they appear on the SecretTemplate.
+	// as they appear on the SecretTemplate when added or removed. SecretTemplate
+	// annotations are added in conjunction with, and cannot overwrite, the base
+	// set of annotations cert-manager sets on the Certificate's Secret.
 	SecretTemplate *CertificateSecretTemplate
 
 	// Keystores configures additional keystore output formats stored in the
