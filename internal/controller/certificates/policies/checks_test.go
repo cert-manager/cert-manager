@@ -27,6 +27,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -657,23 +658,32 @@ func Test_SecretTemplateMismatchesSecret(t *testing.T) {
 func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 	const fieldManager = "cert-manager-unit-test"
 
+	var (
+		fixedClockStart = time.Now()
+		fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
+		baseCertBundle  = testcrypto.MustCreateCryptoBundle(t,
+			gen.Certificate("test-certificate", gen.SetCertificateCommonName("cert-manager")), fixedClock)
+	)
+
 	tests := map[string]struct {
-		tmpl         *cmapi.CertificateSecretTemplate
-		secret       []metav1.ManagedFieldsEntry
+		tmpl                *cmapi.CertificateSecretTemplate
+		secretManagedFields []metav1.ManagedFieldsEntry
+		secretData          map[string][]byte
+
 		expReason    string
 		expMessage   string
 		expViolation bool
 	}{
 		"if template is nil and no managed fields, should return false": {
-			tmpl:         nil,
-			secret:       nil,
-			expReason:    "",
-			expMessage:   "",
-			expViolation: false,
+			tmpl:                nil,
+			secretManagedFields: nil,
+			expReason:           "",
+			expMessage:          "",
+			expViolation:        false,
 		},
 		"if template is nil, managed fields is not nil but not managed by cert-manager, should return false": {
 			tmpl: nil,
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: "not-cert-manager", FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -690,25 +700,25 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			expViolation: false,
 		},
 		"if template is nil, managed fields is not nil but fields are nil, should return false": {
-			tmpl:         nil,
-			secret:       []metav1.ManagedFieldsEntry{{Manager: fieldManager, FieldsV1: nil}},
-			expReason:    "",
-			expMessage:   "",
-			expViolation: false,
+			tmpl:                nil,
+			secretManagedFields: []metav1.ManagedFieldsEntry{{Manager: fieldManager, FieldsV1: nil}},
+			expReason:           "",
+			expMessage:          "",
+			expViolation:        false,
 		},
 		"if template is not-nil but managed fields is nil, should return true": {
 			tmpl: &cmapi.CertificateSecretTemplate{
 				Annotations: map[string]string{"foo": "bar"},
 				Labels:      map[string]string{"abc": "123"},
 			},
-			secret:       nil,
-			expReason:    SecretTemplateMismatch,
-			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
-			expViolation: true,
+			secretManagedFields: nil,
+			expReason:           SecretTemplateMismatch,
+			expMessage:          "Certificate's SecretTemplate doesn't match Secret",
+			expViolation:        true,
 		},
 		"if template is nil but managed fields is not nil, should return true": {
 			tmpl: nil,
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -729,7 +739,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -752,7 +762,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -775,7 +785,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -798,7 +808,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -822,7 +832,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -846,7 +856,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"},
 				Labels:      map[string]string{"abc": "123", "def": "456"},
 			},
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -869,7 +879,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
 				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
 			},
-			secret: []metav1.ManagedFieldsEntry{{
+			secretManagedFields: []metav1.ManagedFieldsEntry{{
 				Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:annotations": {
@@ -892,7 +902,7 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"},
 				Labels:      map[string]string{"abc": "123", "def": "456", "ghi": "789"},
 			},
-			secret: []metav1.ManagedFieldsEntry{
+			secretManagedFields: []metav1.ManagedFieldsEntry{
 				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
 					Raw: []byte(`{"f:metadata": {
 							"f:labels": {
@@ -930,13 +940,86 @@ func Test_SecretTemplateMismatchesSecretManagedFields(t *testing.T) {
 			expMessage:   "",
 			expViolation: false,
 		},
+		"if managed fields matches template and base cert-manager annotations are present with no certificate data, should return false": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+			},
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    "",
+			expMessage:   "",
+			expViolation: false,
+		},
+		"if managed fields matches template and base cert-manager annotations are present with certificate data, should return false": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+			},
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {},
+								"f:cert-manager.io/common-name": {},
+								"f:cert-manager.io/alt-names":  {},
+								"f:cert-manager.io/ip-sans": {},
+								"f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			secretData:   map[string][]byte{corev1.TLSCertKey: baseCertBundle.CertBytes},
+			expViolation: false,
+		},
+		"if managed fields matches template and base cert-manager annotations are present with certificate data but certificate data is nil, should return true": {
+			tmpl: &cmapi.CertificateSecretTemplate{
+				Annotations: map[string]string{"foo1": "bar1", "foo2": "bar2"},
+			},
+			secretManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: fieldManager, FieldsV1: &metav1.FieldsV1{
+					Raw: []byte(`{"f:metadata": {
+							"f:annotations": {
+								"f:foo1": {},
+								"f:foo2": {},
+								"f:cert-manager.io/certificate-name": {},
+								"f:cert-manager.io/issuer-name": {},
+								"f:cert-manager.io/issuer-kind": {},
+								"f:cert-manager.io/issuer-group": {},
+								"f:cert-manager.io/common-name": {},
+								"f:cert-manager.io/alt-names":  {},
+								"f:cert-manager.io/ip-sans": {},
+								"f:cert-manager.io/uri-sans": {}
+							}
+						}}`),
+				}},
+			},
+			expReason:    SecretTemplateMismatch,
+			expMessage:   "Certificate's SecretTemplate doesn't match Secret",
+			expViolation: true,
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			gotReason, gotMessage, gotViolation := SecretTemplateMismatchesSecretManagedFields(fieldManager)(Input{
 				Certificate: &cmapi.Certificate{Spec: cmapi.CertificateSpec{SecretTemplate: test.tmpl}},
-				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secret}},
+				Secret:      &corev1.Secret{ObjectMeta: metav1.ObjectMeta{ManagedFields: test.secretManagedFields}, Data: test.secretData},
 			})
 
 			assert.Equal(t, test.expReason, gotReason, "unexpected reason")

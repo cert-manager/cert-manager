@@ -19,10 +19,12 @@ package policies
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"strings"
 	"time"
 
+	internalcertificates "github.com/jetstack/cert-manager/internal/controller/certificates"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -159,7 +161,7 @@ func CurrentCertificateNearingExpiry(c clock.Clock) Func {
 		if err != nil {
 			// This case should never happen as it should always be caught by the
 			// secretPublicKeysMatch function beforehand, but handle it just in case.
-			return "InvalidCertificate", fmt.Sprintf("Failed to decode stored certificate: %v", err), true
+			return InvalidCertificate, fmt.Sprintf("Failed to decode stored certificate: %v", err), true
 		}
 
 		notBefore := metav1.NewTime(x509cert.NotBefore)
@@ -191,7 +193,7 @@ func CurrentCertificateHasExpired(c clock.Clock) Func {
 		if err != nil {
 			// This case should never happen as it should always be caught by the
 			// secretPublicKeysMatch function beforehand, but handle it just in case.
-			return "InvalidCertificate", fmt.Sprintf("Failed to decode stored certificate: %v", err), true
+			return InvalidCertificate, fmt.Sprintf("Failed to decode stored certificate: %v", err), true
 		}
 
 		if c.Now().After(cert.NotAfter) {
@@ -236,10 +238,11 @@ func issuerGroupsEqual(l, r string) bool {
 
 // SecretTemplateMismatchesSecret will inspect the given Secret's Annotations
 // and Labels, and compare these maps against those that appear on the given
-// Certificate's SecretTemplate.  Returns false if all the Certificate's
-// SecretTemplate Annotations and Labels appear on the Secret, or put another
-// way, the Secret Annotations/Labels are a subset of that in the Certificate's
-// SecretTemplate. Returns true otherwise.
+// Certificate's SecretTemplate.
+// Returns false if all the Certificate's SecretTemplate Annotations and Labels
+// appear on the Secret, or put another way, the Secret Annotations/Labels are
+// a subset of that in the Certificate's SecretTemplate.
+// Returns true otherwise.
 func SecretTemplateMismatchesSecret(input Input) (string, string, bool) {
 	if input.Certificate.Spec.SecretTemplate == nil {
 		return "", "", false
@@ -264,10 +267,25 @@ func SecretTemplateMismatchesSecret(input Input) (string, string, bool) {
 // managed fields for its Annotations and Labels, and compare this against the
 // SecretTemplate on the given Certificate. Returns false if Annotations and
 // Labels match on both the Certificate's SecretTemplate and the Secret's
-// managed fields, false otherwise.
-// Returns true if the managed fields were not able to be decoded.
+// managed fields, true otherwise.
+// Also returns true if the managed fields or signed certificate were not able
+// to be decoded.
 func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 	return func(input Input) (string, string, bool) {
+		// Only attempt to decode the signed certificate, if one is available.
+		var x509cert *x509.Certificate
+		if len(input.Secret.Data[corev1.TLSCertKey]) > 0 {
+			var err error
+			x509cert, err = pki.DecodeX509CertificateBytes(input.Secret.Data[corev1.TLSCertKey])
+			if err != nil {
+				// This case should never happen as it should always be caught by the
+				// secretPublicKeysMatch function beforehand, but handle it just in case.
+				return InvalidCertificate, fmt.Sprintf("Failed to decode stored certificate: %v", err), true
+			}
+		}
+
+		baseAnnotations := internalcertificates.AnnotationsForCertificateSecret(input.Certificate, x509cert)
+
 		managedLabels, managedAnnotations := sets.NewString(), sets.NewString()
 
 		for _, managedField := range input.Secret.ManagedFields {
@@ -279,7 +297,7 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 			// Decode the managed field.
 			var fieldset fieldpath.Set
 			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
-				return SecretTemplateMismatch, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
+				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
 			}
 
 			// Extract the labels and annotations of the managed fields.
@@ -301,6 +319,12 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 			annotations.Iterate(func(path fieldpath.Path) {
 				managedAnnotations.Insert(strings.TrimPrefix(path.String(), "."))
 			})
+		}
+
+		// Remove the base Annotations from the managed Annotations so we can compare
+		// 1 to 1 against the SecretTemplate.
+		for k := range baseAnnotations {
+			managedAnnotations = managedAnnotations.Delete(k)
 		}
 
 		// Check early for Secret Template being nil, and whether managed

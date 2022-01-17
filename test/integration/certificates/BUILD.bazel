@@ -9,7 +9,7 @@ go_test(
         "trigger_controller_test.go",
     ],
     deps = [
-        "//internal/controller/policies:go_default_library",
+        "//internal/controller/certificates/policies:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",

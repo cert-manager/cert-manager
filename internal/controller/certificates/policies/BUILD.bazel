@@ -8,9 +8,10 @@ go_library(
         "gatherer.go",
         "policies.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/controller/policies",
+    importpath = "github.com/jetstack/cert-manager/internal/controller/certificates/policies",
     visibility = ["//visibility:public"],
     deps = [
+        "//internal/controller/certificates:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/client/listers/certmanager/v1:go_default_library",
         "//pkg/controller/certificates:go_default_library",
