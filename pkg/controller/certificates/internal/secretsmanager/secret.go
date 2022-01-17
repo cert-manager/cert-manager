@@ -193,7 +193,7 @@ func (s *SecretsManager) setValues(crt *cmapi.Certificate, secret *corev1.Secret
 
 	annotations, err := SecretCertificateAnnotations(crt, data)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build Secret annotations: %w", err)
 	}
 
 	if secret.Annotations == nil {
