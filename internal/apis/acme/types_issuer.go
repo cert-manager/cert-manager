@@ -192,7 +192,7 @@ type ACMEChallengeSolverHTTP01 struct {
 	// create HTTPRoutes with the specified labels in the same namespace as the challenge.
 	// This solver is experimental, and fields / behaviour may change in the future.
 	// +optional
-	GatewayHTTPRoute *ACMEChallengeSolverHTTP01GatewayHTTPRoute `json:"gatewayHTTPRoute,omitempty"`
+	GatewayHTTPRoute *ACMEChallengeSolverHTTP01GatewayHTTPRoute
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {
@@ -226,12 +226,12 @@ type ACMEChallengeSolverHTTP01GatewayHTTPRoute struct {
 	// Optional service type for Kubernetes solver service. Supported values
 	// are NodePort or ClusterIP. If unset, defaults to NodePort.
 	// +optional
-	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
+	ServiceType corev1.ServiceType
 
 	// The labels that cert-manager will use when creating the temporary
 	// HTTPRoute needed for solving the HTTP-01 challenge. These labels
 	// must match the label selector of at least one Gateway.
-	Labels map[string]string `json:"labels,omitempty"`
+	Labels map[string]string
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
@@ -270,11 +270,11 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	Tolerations []corev1.Toleration
 
 	// If specified, the pod's priorityClassName.
-	PriorityClassName string `json:"priorityClassName,omitempty"`
+	PriorityClassName string
 
 	// If specified, the pod's service account
 	// +optional
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	ServiceAccountName string
 }
 
 type ACMEChallengeSolverHTTP01IngressTemplate struct {
