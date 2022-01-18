@@ -70,7 +70,7 @@ func NewMigrator(client client.Client, skipStoredVersionCheck bool, out, errOut 
 // field on the corresponding CRD version to only contain the given targetVersion.
 // Returns 'true' if a migration was actually performed, and false if migration was not required.
 func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string) (bool, error) {
-	fmt.Fprintf(m.Out, "Checking all CustomResourceDefinitions have storage version set to '%s'\n", targetVersion)
+	fmt.Fprintf(m.Out, "Checking all CustomResourceDefinitions have storage version set to \"%s\"\n", targetVersion)
 	allTargetVersion, allCRDs, err := m.ensureCRDStorageVersionEquals(ctx, targetVersion, names)
 	if err != nil {
 		return false, err
@@ -90,7 +90,7 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 			return false, err
 		}
 		if len(crdsRequiringMigration) == 0 {
-			fmt.Fprintln(m.Out, "Nothing to do. cert-manager CRDs do not have 'status.storedVersions' containing old API versions. You may proceed to upgrade to cert-manager v1.7.")
+			fmt.Fprintln(m.Out, "Nothing to do. cert-manager CRDs do not have \"status.storedVersions\" containing old API versions. You may proceed to upgrade to cert-manager v1.7.")
 			return false, nil
 		}
 	} else {
@@ -99,7 +99,7 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 
 	fmt.Fprintf(m.Out, "Found %d resource types that require migration:\n", len(crdsRequiringMigration))
 	for _, crd := range crdsRequiringMigration {
-		fmt.Fprintf(m.Out, " - %s\n", crd.Name)
+		fmt.Fprintf(m.Out, " - %s (%s)\n", crd.Name, crd.Spec.Names.Kind)
 	}
 
 	for _, crd := range crdsRequiringMigration {
@@ -109,13 +109,13 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 		}
 	}
 
-	fmt.Fprintf(m.Out, "Patching CRD resources to set 'status.storedVersions' to %q...\n", targetVersion)
+	fmt.Fprintf(m.Out, "Patching CRD resources to set \"status.storedVersions\" to %q...\n", targetVersion)
 	if err := m.patchCRDStoredVersions(ctx, crdsRequiringMigration); err != nil {
-		fmt.Fprintf(m.ErrOut, "Failed to patch 'status.storedVersions' field: %v\n", err)
+		fmt.Fprintf(m.ErrOut, "Failed to patch \"status.storedVersions\" field: %v\n", err)
 		return false, err
 	}
 
-	fmt.Fprintln(m.Out, "Successfully migrated all cert-manager resource types. It is now safe to proceed with upgrading to cert-manager v1.7.")
+	fmt.Fprintln(m.Out, "Successfully migrated all cert-manager resource types. It is now safe to proceed to upgrade to cert-manager v1.7.")
 	return true, nil
 }
 
@@ -163,7 +163,8 @@ func (m *Migrator) discoverCRDsRequiringMigration(ctx context.Context, desiredSt
 
 func (m *Migrator) migrateResourcesForCRD(ctx context.Context, crd *apiext.CustomResourceDefinition) error {
 	startTime := time.Now()
-	fmt.Fprintf(m.Out, "Migrating %q objects in group %q - this may take a while (started at %s)...\n", crd.Spec.Names.Kind, crd.Spec.Group, startTime.Format(time.Stamp))
+	timeFormat := "15:04:05"
+	fmt.Fprintf(m.Out, "Migrating %q objects in group %q - this may take a while (started at %s)...\n", crd.Spec.Names.Kind, crd.Spec.Group, startTime.Format(timeFormat))
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   crd.Spec.Group,
@@ -173,7 +174,7 @@ func (m *Migrator) migrateResourcesForCRD(ctx context.Context, crd *apiext.Custo
 	if err := m.Client.List(ctx, list); err != nil {
 		return err
 	}
-	fmt.Fprintf(m.Out, " %d resources to migrate\n", len(list.Items))
+	fmt.Fprintf(m.Out, " %d resources to migrate...\n", len(list.Items))
 	for _, obj := range list.Items {
 		// retry on any kind of error to handle cases where e.g. the network connection to the apiserver fails
 		if err := retry.OnError(wait.Backoff{
@@ -186,7 +187,9 @@ func (m *Migrator) migrateResourcesForCRD(ctx context.Context, crd *apiext.Custo
 			return err
 		}
 	}
-	fmt.Fprintf(m.Out, " Successfully migrated %d %s objects in %s\n", len(list.Items), crd.Spec.Names.Kind, time.Now().Sub(startTime).Round(time.Second))
+	// add 500ms to the duration to ensure we always round up
+	duration := time.Now().Sub(startTime) + (time.Millisecond * 500)
+	fmt.Fprintf(m.Out, " Successfully migrated %d %s objects in %s\n", len(list.Items), crd.Spec.Names.Kind, duration.Round(time.Second))
 	return nil
 }
 
@@ -254,7 +257,7 @@ func newUnexpectedChangeError(crd *apiext.CustomResourceDefinition) error {
 		"This means that either an object was persisted in a non-storage version during the migration, " +
 		"or the storage version was changed by someone else (or some automated deployment tooling) whilst the migration " +
 		"was in progress.\n\n" +
-		"All automated deployment tooling should be in a 'stable state' (i.e. no upgrades to cert-manager CRDs should be" +
+		"All automated deployment tooling should be in a stable state (i.e. no upgrades to cert-manager CRDs should be" +
 		"in progress whilst the migration is running).\n\n" +
 		"Please ensure no changes to the CRDs are made during the migration process and re-run the migration until you" +
 		"no longer see this message."
