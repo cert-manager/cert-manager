@@ -20,6 +20,8 @@ GOIMPORTS_VERSION=0.1.8
 YTT_VERSION=0.36.0
 YQ_VERSION=4.11.2
 
+KUBEBUILDER_ASSETS_VERSION=1.22.0
+
 bin/tools:
 	@mkdir -p $@
 
@@ -28,6 +30,9 @@ bin/scratch/tools:
 
 .PHONY: tools
 tools: bin/tools/helm bin/tools/kubectl bin/tools/kind bin/tools/cosign bin/tools/ginkgo bin/tools/cmrel bin/tools/release-notes bin/tools/goimports bin/tools/ytt bin/tools/yq
+
+.PHONY: integration-test-tools
+integration-test-tools: bin/tools/etcd bin/tools/kubectl bin/tools/kube-apiserver
 
 ########
 # Helm #
@@ -156,3 +161,37 @@ bin/tools/yq: bin/scratch/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH) | bin/t
 
 bin/scratch/tools/yq_$(YQ_VERSION)_$(HOST_OS)_$(HOST_ARCH): | bin/scratch/tools
 	curl -sSfL https://github.com/mikefarah/yq/releases/download/v$(YQ_VERSION)/yq_$(HOST_OS)_$(HOST_ARCH) > $@
+
+############################
+# kubebuilder-tools assets #
+# kube-apiserver / etcd    #
+############################
+
+
+KUBEBUILDER_TOOLS_linux_amd64_SHA256SUM=25daf3c5d7e8b63ea933e11cd6ca157868d71a12885aba97d1e7e1a15510713e
+KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM=bb27efb1d2ee43749475293408fc80b923324ab876e5da54e58594bbe2969c42
+
+# We get our testing binaries from kubebuilder-tools, but they don't currently
+# publish darwin/arm64 binaries because of a lack of etcd / kube-apiserver support;
+# as such, we install the amd64 versions and hope that Rosetta sorts the problem
+# out for us. This means that the hash we expect is the same as the amd64 hash.
+KUBEBUILDER_TOOLS_darwin_arm64_SHA256SUM=$(KUBEBUILDER_TOOLS_darwin_amd64_SHA256SUM)
+
+bin/tools/etcd: bin/scratch/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz | bin/tools
+	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
+	@# O writes the specified file to stdout
+	tar xfO $< kubebuilder/bin/etcd > $@ && chmod 775 $@
+
+bin/tools/kube-apiserver: bin/scratch/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz | bin/tools
+	./hack/util/checkhash.sh $< $(KUBEBUILDER_TOOLS_$(HOST_OS)_$(HOST_ARCH)_SHA256SUM)
+	@# O writes the specified file to stdout
+	tar xfO $< kubebuilder/bin/kube-apiserver > $@ && chmod 775 $@
+
+bin/scratch/tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(HOST_ARCH).tar.gz: | bin/scratch/tools
+ifeq ($(HOST_OS)-$(HOST_ARCH),darwin-arm64)
+	$(eval KUBEBUILDER_ARCH := amd64)
+	$(warning Downloading amd64 kubebuilder-tools for integration tests since darwin/arm64 isn't currently packaged. This will require rosetta in order to work)
+else
+	$(eval KUBEBUILDER_ARCH := $(HOST_ARCH))
+endif
+	curl -sSfL https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-$(KUBEBUILDER_ASSETS_VERSION)-$(HOST_OS)-$(KUBEBUILDER_ARCH).tar.gz > $@
