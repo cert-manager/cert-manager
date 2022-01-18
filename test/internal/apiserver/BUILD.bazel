@@ -16,6 +16,7 @@ go_library(
     deps = [
         "//internal/test/paths:go_default_library",
         "//test/internal/util:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/envtest:go_default_library",
     ],
 )

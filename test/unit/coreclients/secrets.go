@@ -47,10 +47,10 @@ func NewFakeSecretsGetterFrom(f *FakeSecretsGetter, mods ...FakeSecretsGetterMod
 	return f
 }
 
-func NewFakeSecretsGetter() *FakeSecretsGetter {
-	return &FakeSecretsGetter{
+func NewFakeSecretsGetter(mods ...FakeSecretsGetterModifier) *FakeSecretsGetter {
+	return NewFakeSecretsGetterFrom(&FakeSecretsGetter{
 		c: &fakeSecretClient{},
-	}
+	}, mods...)
 }
 
 // SetFakeSecretsGetterCreate is a modifier that can be used to set secret and
@@ -75,9 +75,19 @@ func SetFakeSecretsGetterGet(s *corev1.Secret, err error) FakeSecretsGetterModif
 	}
 }
 
+// SetFakeSecretsGetterApplyFn is a function that can be used to inject code
+// when the FakeSecretsGetter is Applied.
+func SetFakeSecretsGetterApplyFn(fn ApplyFn) FakeSecretsGetterModifier {
+	return func(f *FakeSecretsGetter) {
+		f.c.ApplyFn = fn
+	}
+}
+
 func (f *FakeSecretsGetter) Secrets(string) typedcorev1.SecretInterface {
 	return f.c
 }
+
+type ApplyFn func(context.Context, *applyconfigurationscorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error)
 
 type fakeSecretClient struct {
 	CreateFn           func() (*corev1.Secret, error)
@@ -88,7 +98,7 @@ type fakeSecretClient struct {
 	ListFn             func() (*corev1.SecretList, error)
 	WatchFn            func() (watch.Interface, error)
 	PatchFn            func() (*corev1.Secret, error)
-	ApplyFn            func() (*corev1.Secret, error)
+	ApplyFn            ApplyFn
 	// Currently there is no need to mock this interface
 	typedcorev1.SecretExpansion
 }
@@ -125,6 +135,6 @@ func (f *fakeSecretClient) Patch(context.Context, string, types.PatchType, []byt
 	return f.PatchFn()
 }
 
-func (f *fakeSecretClient) Apply(context.Context, *applyconfigurationscorev1.SecretApplyConfiguration, metav1.ApplyOptions) (*corev1.Secret, error) {
-	return f.ApplyFn()
+func (f *fakeSecretClient) Apply(ctx context.Context, cnf *applyconfigurationscorev1.SecretApplyConfiguration, opts metav1.ApplyOptions) (*corev1.Secret, error) {
+	return f.ApplyFn(ctx, cnf, opts)
 }
