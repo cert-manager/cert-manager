@@ -2169,7 +2169,8 @@ func Test_SecretOwnerReferenceValueMismatch(t *testing.T) {
 }
 
 func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
-	type Cert cmapi.Certificate // Those long types are making the lines go wee!
+	type Cert *cmapi.Certificate // Those long types are making the lines go wee!
+	type Sec *corev1.Secret
 	clock := &fakeclock.FakeClock{}
 	staticFixedPrivateKey := testcrypto.MustCreatePEMPrivateKey(t)
 
@@ -2261,15 +2262,16 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 	}}
 
 	tests := []struct {
-		noCR  bool // When true, pretend that the CertificateRequest was not found.
-		noSec bool // When true, pretend that the Secret was not found.
+		noCR     bool // When true, pretend that the CertificateRequest was not found.
+		noSecret bool // When true, pretend that the Secret was not found.
 
 		// Note that we do not test with changes to the CertificateRequest
 		// because this resource is supposed to be immutable.
-		cert   func(c *Cert)          // Nil if no change is to be made.
-		secret func(c *corev1.Secret) // Nil if no change is to be made.
+		c func(c Cert) // Change to the Certificate. Nil if no change is to be made.
+		s func(s Sec)  // Change to the Secret. Nil if no change is to be made.
 
 		reissue bool
+		msg     string // The reason followed by ": " and followed by the message.
 	}{
 		// Happy case: with no change to the Certificate nor the Secret, and
 		// with or without the CertificateRequest available, no re-issuance is
@@ -2278,67 +2280,96 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 		{noCR: true, reissue: false},
 
 		// When the Secret is missing or broken, a re-issuance is expected.
-		{noCR: true, noSec: true, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Data = nil }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Data[corev1.TLSPrivateKeyKey] = nil }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Data[corev1.TLSCertKey] = nil }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Data[corev1.TLSPrivateKeyKey] = []byte("invalid") }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Data[corev1.TLSCertKey] = []byte("invalid") }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Data[corev1.TLSPrivateKeyKey] = testcrypto.MustCreatePEMPrivateKey(t) }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Annotations["cert-manager.io/issuer-name"] = "change" }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Annotations["cert-manager.io/issuer-kind"] = "change" }, reissue: true},
-		{noCR: true, secret: func(s *corev1.Secret) { s.Annotations["cert-manager.io/issuer-group"] = "change" }, reissue: true},
+		{noCR: true, noSecret: true, reissue: true,
+			msg: "DoesNotExist: Issuing certificate as Secret does not exist"},
+		{noCR: true, s: func(s Sec) { s.Data = nil }, reissue: true,
+			msg: "MissingData: Issuing certificate as Secret does not contain any data"},
+		{noCR: true, s: func(s Sec) { s.Data[corev1.TLSPrivateKeyKey] = nil }, reissue: true,
+			msg: "MissingData: Issuing certificate as Secret does not contain a private key"},
+		{noCR: true, s: func(s Sec) { s.Data[corev1.TLSCertKey] = nil }, reissue: true,
+			msg: "MissingData: Issuing certificate as Secret does not contain a certificate"},
+		{noCR: true, s: func(s Sec) { s.Data[corev1.TLSPrivateKeyKey] = []byte("invalid") }, reissue: true,
+			msg: "InvalidKeyPair: Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in key input"},
+		{noCR: true, s: func(s Sec) { s.Data[corev1.TLSCertKey] = []byte("invalid") }, reissue: true,
+			msg: "InvalidKeyPair: Issuing certificate as Secret contains an invalid key-pair: tls: failed to find any PEM data in certificate input"},
+		{noCR: true, s: func(s Sec) { s.Data[corev1.TLSPrivateKeyKey] = testcrypto.MustCreatePEMPrivateKey(t) }, reissue: true,
+			msg: "InvalidKeyPair: Issuing certificate as Secret contains an invalid key-pair: tls: private key does not match public key"},
+		{noCR: true, s: func(s Sec) { s.Annotations["cert-manager.io/issuer-name"] = "change" }, reissue: true,
+			msg: "IncorrectIssuer: Issuing certificate as Secret was previously issued by IssuerKind.group.example.com/change"},
+		{noCR: true, s: func(s Sec) { s.Annotations["cert-manager.io/issuer-kind"] = "change" }, reissue: true,
+			msg: "IncorrectIssuer: Issuing certificate as Secret was previously issued by change.group.example.com/testissuer"},
+		{noCR: true, s: func(s Sec) { s.Annotations["cert-manager.io/issuer-group"] = "change" }, reissue: true,
+			msg: "IncorrectIssuer: Issuing certificate as Secret was previously issued by IssuerKind.change/testissuer"},
 
 		// When only the Secret is available, changing onf of the following
 		// fields are expected to trigger a re-issuance.
-		{noCR: true, cert: func(c *Cert) { c.Spec.CommonName = "changed" }, reissue: true},
-		{noCR: true, cert: func(c *Cert) { c.Spec.DNSNames = []string{"changed"} }, reissue: true},
-		{noCR: true, cert: func(c *Cert) { c.Spec.IPAddresses = []string{"4.3.2.1"} }, reissue: true},
-		{noCR: true, cert: func(c *Cert) { c.Spec.URIs = []string{"https://changed"} }, reissue: true},
-		{noCR: true, cert: func(c *Cert) { c.Spec.EmailAddresses = []string{"changed@bar.com"} }, reissue: true},
-		{noCR: true, cert: func(c *Cert) { c.Spec.IssuerRef = cmmeta.ObjectReference{Name: "changed"} }, reissue: true},
-		{noCR: true, cert: func(c *Cert) { c.Spec.PrivateKey.Algorithm = cmapi.ECDSAKeyAlgorithm }, reissue: true},
-		{noCR: true, cert: func(c *Cert) { c.Spec.PrivateKey.Size = 4096 }, reissue: true},
+		{noCR: true, c: func(c Cert) { c.Spec.CommonName = "changed" }, reissue: true,
+			msg: "SecretMismatch: Existing issued Secret is not up to date for spec: [spec.commonName]"},
+		{noCR: true, c: func(c Cert) { c.Spec.DNSNames = []string{"changed"} }, reissue: true,
+			msg: "SecretMismatch: Existing issued Secret is not up to date for spec: [spec.dnsNames]"},
+		{noCR: true, c: func(c Cert) { c.Spec.IPAddresses = []string{"4.3.2.1"} }, reissue: true,
+			msg: "SecretMismatch: Existing issued Secret is not up to date for spec: [spec.ipAddresses]"},
+		{noCR: true, c: func(c Cert) { c.Spec.URIs = []string{"https://changed"} }, reissue: true,
+			msg: "SecretMismatch: Existing issued Secret is not up to date for spec: [spec.uris]"},
+		{noCR: true, c: func(c Cert) { c.Spec.EmailAddresses = []string{"changed@bar.com"} }, reissue: true,
+			msg: "SecretMismatch: Existing issued Secret is not up to date for spec: [spec.emailAddresses]"},
+		{noCR: true, c: func(c Cert) { c.Spec.IssuerRef = cmmeta.ObjectReference{Name: "changed"} }, reissue: true,
+			msg: "IncorrectIssuer: Issuing certificate as Secret was previously issued by IssuerKind.group.example.com/testissuer"},
+		{noCR: true, c: func(c Cert) { c.Spec.PrivateKey.Algorithm = cmapi.ECDSAKeyAlgorithm }, reissue: true,
+			msg: "SecretMismatch: Existing private key is not up to date for spec: [spec.keyAlgorithm]"},
+		{noCR: true, c: func(c Cert) { c.Spec.PrivateKey.Size = 4096 }, reissue: true,
+			msg: "SecretMismatch: Existing private key is not up to date for spec: [spec.keySize]"},
 
 		// When only the Secret is available,  changing one of the following
 		// fields does not trigger a re-issuance.
-		{noCR: true, cert: func(c *Cert) { c.Spec.Usages = []cmapi.KeyUsage{cmapi.UsageAny} }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.IsCA = false }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.EncodeUsagesInRequest = pointer.Bool(false) }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (1)
-		{noCR: true, cert: func(c *Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
-		{noCR: true, cert: func(c *Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.Usages = []cmapi.KeyUsage{cmapi.UsageAny} }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.IsCA = false }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.EncodeUsagesInRequest = pointer.Bool(false) }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (1)
+		{noCR: true, c: func(c Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
+		{noCR: true, c: func(c Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
 
 		// When both the Secret and the CertificateRequest are available,
 		// changing one of the following fields is expected to trigger a
 		// re-issuance.
-		{cert: func(c *Cert) { c.Spec.CommonName = "changed" }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.DNSNames = []string{"changed"} }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.IPAddresses = []string{"4.3.2.1"} }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.URIs = []string{"https://changed"} }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.EmailAddresses = []string{"changed@bar.com"} }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.Usages = []cmapi.KeyUsage{cmapi.UsageAny} }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.IsCA = false }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.IssuerRef = cmmeta.ObjectReference{Name: "changed"} }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.PrivateKey.Algorithm = cmapi.ECDSAKeyAlgorithm }, reissue: true},
-		{cert: func(c *Cert) { c.Spec.PrivateKey.Size = 4096 }, reissue: true},
+		{c: func(c Cert) { c.Spec.CommonName = "changed" }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.commonName]"},
+		{c: func(c Cert) { c.Spec.DNSNames = []string{"changed"} }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.dnsNames]"},
+		{c: func(c Cert) { c.Spec.IPAddresses = []string{"4.3.2.1"} }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.ipAddresses]"},
+		{c: func(c Cert) { c.Spec.URIs = []string{"https://changed"} }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.uris]"},
+		{c: func(c Cert) { c.Spec.EmailAddresses = []string{"changed@bar.com"} }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.emailAddresses]"},
+		{c: func(c Cert) { c.Spec.Usages = []cmapi.KeyUsage{cmapi.UsageAny} }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.usages]"},
+		{c: func(c Cert) { c.Spec.IsCA = false }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.isCA]"},
+		{c: func(c Cert) { c.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: true,
+			msg: "RequestChanged: Fields on existing CertificateRequest resource not up to date: [spec.duration]"},
+		{c: func(c Cert) { c.Spec.IssuerRef = cmmeta.ObjectReference{Name: "changed"} }, reissue: true,
+			msg: "IncorrectIssuer: Issuing certificate as Secret was previously issued by IssuerKind.group.example.com/testissuer"},
+		{c: func(c Cert) { c.Spec.PrivateKey.Algorithm = cmapi.ECDSAKeyAlgorithm }, reissue: true,
+			msg: "SecretMismatch: Existing private key is not up to date for spec: [spec.keyAlgorithm]"},
+		{c: func(c Cert) { c.Spec.PrivateKey.Size = 4096 }, reissue: true,
+			msg: "SecretMismatch: Existing private key is not up to date for spec: [spec.keySize]"},
 
 		// When both the Secret and the CertificateRequest are available,
 		// changing one of the following fields does not trigger a re-issuance.
-		{cert: func(c *Cert) { c.Spec.EncodeUsagesInRequest = pointer.Bool(false) }, reissue: false},
-		{cert: func(c *Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
-		{cert: func(c *Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
-		{cert: func(c *Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
-		{cert: func(c *Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (1)
-		{cert: func(c *Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
-		{cert: func(c *Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
-		{cert: func(c *Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
+		{c: func(c Cert) { c.Spec.EncodeUsagesInRequest = pointer.Bool(false) }, reissue: false},
+		{c: func(c Cert) { c.Spec.Keystores = &cmapi.CertificateKeystores{} }, reissue: false},
+		{c: func(c Cert) { c.Spec.RenewBefore = &metav1.Duration{Duration: 1 * time.Hour} }, reissue: false},
+		{c: func(c Cert) { c.Spec.RevisionHistoryLimit = pointer.Int32(10) }, reissue: false},
+		{c: func(c Cert) { c.Spec.SecretName = "changed" }, reissue: false}, // (1)
+		{c: func(c Cert) { c.Spec.SecretTemplate = &cmapi.CertificateSecretTemplate{} }, reissue: false},
+		{c: func(c Cert) { c.Spec.PrivateKey.Encoding = cmapi.PKCS1 }, reissue: false},
+		{c: func(c Cert) { c.Spec.PrivateKey.RotationPolicy = cmapi.RotationPolicyAlways }, reissue: false},
 
 		// (1) You might be surprised to see reissue=false for the secretName
 		// field. That's because this case is actually handled in the test case
@@ -2350,7 +2381,7 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 			cert := originalCert.DeepCopy()
 			secret := originalSecret.DeepCopy()
 			cr := originalCR
-			if test.noSec {
+			if test.noSecret {
 				secret = nil
 			}
 			if test.noCR {
@@ -2358,25 +2389,25 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 			}
 
 			var diffCert, diffSecret string
-			if test.cert != nil {
-				test.cert((*Cert)(cert))
+			if test.c != nil {
+				test.c((Cert)(cert))
 				diffCert, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 					A:       difflib.SplitLines(spewConf.Sdump(originalCert)),
 					B:       difflib.SplitLines(spewConf.Sdump(cert)),
 					Context: 1,
 				})
-				if test.cert != nil && diffCert == "" {
+				if test.c != nil && diffCert == "" {
 					t.Fatal("incorrect test case: the func to change the Certificate is non-nil but no change has been detected on the Certificate")
 				}
 			}
-			if test.secret != nil {
-				test.secret((*corev1.Secret)(secret))
+			if test.s != nil {
+				test.s((*corev1.Secret)(secret))
 				diffSec, _ := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 					A:       difflib.SplitLines(spewConf.Sdump(originalSecret)),
 					B:       difflib.SplitLines(spewConf.Sdump(secret)),
 					Context: 1,
 				})
-				if test.secret != nil && diffSec == "" {
+				if test.s != nil && diffSec == "" {
 					t.Fatal("incorrect test case: the func to change the Secret is non-nil but no change has been detected on the Secret")
 				}
 			}
@@ -2416,6 +2447,14 @@ func TestDefaultPolicyChain_triggerReIssuanceCases(t *testing.T) {
 				}
 
 				t.Errorf("%s, expected reissue=%v but got reissue=%v%s", debug, test.reissue, gotReissue, reasonAndMessage)
+			}
+
+			expectedReasonAndMessage := gotReason
+			if gotMessage != "" {
+				expectedReasonAndMessage += ": " + gotMessage
+			}
+			if test.msg != expectedReasonAndMessage {
+				t.Errorf("the reason and message, of the form 'reason: message', was expected to be %q but got %q", test.msg, expectedReasonAndMessage)
 			}
 		})
 	}
