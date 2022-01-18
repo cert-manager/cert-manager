@@ -110,7 +110,7 @@ const (
 	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
 	WantInjectAnnotation = "cert-manager.io/inject-ca-from"
 
-	// WantInjectAPIServerCAAnnotation , if set to "true", will make the cainjector
+	// WantInjectAPIServerCAAnnotation will - if set to "true" - make the cainjector
 	// inject the CA certificate for the Kubernetes apiserver into the resource.
 	// It discovers the apiserver's CA by inspecting the service account credentials
 	// mounted into the cainjector pod.

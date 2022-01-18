@@ -43,8 +43,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-// CSRControllerName holds the controller name
 const (
+	// CSRControllerName holds the controller name
 	CSRControllerName = "certificatesigningrequests-issuer-selfsigned"
 )
 
