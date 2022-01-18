@@ -25,6 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
+// Vault Issuer for the certificate authority of Vault
 type Vault struct {
 	*controller.Context
 	issuer v1.GenericIssuer
@@ -37,6 +38,7 @@ type Vault struct {
 	resourceNamespace string
 }
 
+// NewVault returns a new Vault
 func NewVault(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, error) {
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
 

@@ -78,7 +78,7 @@ func KubeKeyUsageStrings(usage x509.KeyUsage) []certificatesv1.KeyUsage {
 	return usageStr
 }
 
-// ExtKeyUsageStrings returns the certificatesv1.KeyUsage and "unknown" if not found
+// KubeExtKeyUsageStrings returns the certificatesv1.KeyUsage and "unknown" if not found
 func KubeExtKeyUsageStrings(usage []x509.ExtKeyUsage) []certificatesv1.KeyUsage {
 	var usageStr []certificatesv1.KeyUsage
 

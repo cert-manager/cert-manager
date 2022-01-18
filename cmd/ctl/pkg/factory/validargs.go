@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ValidArgsCertificates returns a cobra ValidArgsFunction for listing Certificates.
+// ValidArgsListCertificates returns a cobra ValidArgsFunction for listing Certificates.
 func ValidArgsListCertificates(ctx context.Context, factory **Factory) func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 		if len(args) > 0 {
@@ -49,7 +49,7 @@ func ValidArgsListCertificates(ctx context.Context, factory **Factory) func(_ *c
 	}
 }
 
-// ValidArgsSecrets returns a cobra ValidArgsFunction for listing Secrets.
+// ValidArgsListSecrets returns a cobra ValidArgsFunction for listing Secrets.
 func ValidArgsListSecrets(ctx context.Context, factory **Factory) func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 		if len(args) > 0 {
@@ -75,7 +75,7 @@ func ValidArgsListSecrets(ctx context.Context, factory **Factory) func(_ *cobra.
 	}
 }
 
-// ValidArgsCertificateSigningRequests returns a cobra ValidArgsFunction for
+// ValidArgsListCertificateSigningRequests returns a cobra ValidArgsFunction for
 // listing CertificateSigningRequests.
 func ValidArgsListCertificateSigningRequests(ctx context.Context, factory **Factory) func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
@@ -102,7 +102,7 @@ func ValidArgsListCertificateSigningRequests(ctx context.Context, factory **Fact
 	}
 }
 
-// ValidArgsCertificateRequests returns a cobra ValidArgsFunction for listing
+// ValidArgsListCertificateRequests returns a cobra ValidArgsFunction for listing
 // CertificateRequests.
 func ValidArgsListCertificateRequests(ctx context.Context, factory **Factory) func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {

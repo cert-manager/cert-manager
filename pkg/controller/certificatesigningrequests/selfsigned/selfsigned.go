@@ -44,6 +44,7 @@ import (
 )
 
 const (
+	// CSRControllerName holds the controller name
 	CSRControllerName = "certificatesigningrequests-issuer-selfsigned"
 )
 
@@ -72,6 +73,7 @@ func init() {
 	})
 }
 
+// NewSelfSigned returns a new instance of SelfSigned type
 func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 	return &SelfSigned{
 		issuerOptions: ctx.IssuerOptions,

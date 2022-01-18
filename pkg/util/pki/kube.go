@@ -68,6 +68,7 @@ func DurationFromCertificateSigningRequest(csr *certificatesv1.CertificateSignin
 	return duration, nil
 }
 
+// BuildKeyUsagesKube returns a key usage and extended key usage of the x509 certificate
 func BuildKeyUsagesKube(usages []certificatesv1.KeyUsage) (x509.KeyUsage, []x509.ExtKeyUsage, error) {
 	var unk []certificatesv1.KeyUsage
 	if len(usages) == 0 {
