@@ -37,19 +37,13 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "pruning_test.go",
-        "roundtrip_test.go",
-    ],
+    srcs = ["roundtrip_test.go"],
     data = [
         "//deploy/crds:templated_files",
     ],
     embed = [":go_default_library"],
     deps = [
         "//internal/apis/certmanager/fuzzer:go_default_library",
-        "//internal/test/paths:go_default_library",
-        "//pkg/api:go_default_library",
-        "@com_github_munnerz_crd_schema_fuzz//:go_default_library",
         "@io_k8s_apimachinery//pkg/api/apitesting/roundtrip:go_default_library",
     ],
 )
