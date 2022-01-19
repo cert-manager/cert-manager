@@ -115,7 +115,7 @@ func (m *Migrator) Run(ctx context.Context, targetVersion string, names []string
 		return false, err
 	}
 
-	fmt.Fprintln(m.Out, "Successfully migrated all cert-manager resource types. It is now safe to proceed to upgrade to cert-manager v1.7.")
+	fmt.Fprintln(m.Out, "Successfully migrated all cert-manager resource types. It is now safe to upgrade to cert-manager v1.7.")
 	return true, nil
 }
 
