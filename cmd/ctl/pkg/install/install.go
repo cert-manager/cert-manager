@@ -96,32 +96,6 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 		Short: "Install cert-manager",
 		Long:  installDesc(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// The Helm client flagset and settings are configured to look up
-			// the default namespace in the following order:
-			// `--namespace` flag value, if the flag is supplied,
-			// `--namespace` flag default value, or
-			// `HELM_NAMESPACE` environment variable (if set).
-			//
-			// The Helm cli.New function does not provide an easy way to
-			// override the namespace lookup mechanism so here
-			// we check whether the user supplied the `--namespace` option,
-			// and if not we force the default value to `cert-manager`.
-			// The original default value is "" which would result in
-			// cert-manager being installed to the "default" namespace.
-			// See https://github.com/helm/helm/issues/9790
-			//
-			// The default value that is shown in the `--help` usage message is
-			// overridden elsewhere; when the flagset is configured (below).
-			namespaceFlag := cmd.Flags().Lookup("namespace")
-			if !namespaceFlag.Changed {
-				if err := namespaceFlag.Value.Set(defaultCertManagerNamespace); err != nil {
-					return fmt.Errorf("unexpected error while setting the default namespace: %v", err)
-				}
-			}
-			if settings.Debug {
-				cmd.DebugFlags()
-			}
-
 			options.client.Namespace = settings.Namespace()
 
 			rel, err := options.runInstall(ctx)
@@ -142,9 +116,17 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	}
 
 	settings.AddFlags(cmd.Flags())
+
+	// The Helm cli.New function does not provide an easy way to
+	// override the default of the namespace flag.
+	// See https://github.com/helm/helm/issues/9790
+	//
 	// Here we set the default value shown in the usage message.
-	// The actual default value is overridden in the RunE function above.
 	cmd.Flag("namespace").DefValue = defaultCertManagerNamespace
+	// Here we set the default value.
+	// The returned error is ignored because
+	// pflag.stringValue.Set always returns a nil.
+	cmd.Flag("namespace").Value.Set(defaultCertManagerNamespace)
 
 	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.Wait)
 
