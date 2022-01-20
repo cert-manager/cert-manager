@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+Copyright 2017 The Kubernetes Authors.
+Derived from https://github.com/kubernetes/kubernetes/blob/9d0d2e8ece9bdd0cd8c23be2f36eee5473afc648/staging/src/k8s.io/apiserver/pkg/admission/initializer/initializer_test.go
+*/
+
 package initializer_test
 
 import (
