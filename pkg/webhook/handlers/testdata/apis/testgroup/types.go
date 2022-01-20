@@ -33,4 +33,7 @@ type TestType struct {
 
 	// TestFieldImmutable cannot be changed after being set to a non-zero value
 	TestFieldImmutable string
+
+	// TestDefaultingField is used to test defaulting.
+	TestDefaultingField string
 }

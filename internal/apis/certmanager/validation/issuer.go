@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/internal/api/validation"
 	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
 	"github.com/jetstack/cert-manager/internal/apis/certmanager"
 	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util"
@@ -35,27 +34,25 @@ import (
 
 // Validation functions for cert-manager Issuer types.
 
-func ValidateIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, validation.WarningList) {
+func ValidateIssuer(a *admissionv1.AdmissionRequest, obj runtime.Object) (field.ErrorList, []string) {
 	iss := obj.(*certmanager.Issuer)
 	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
-	warnings = append(warnings, validateAPIVersion(a.RequestKind)...)
 	return allErrs, warnings
 }
 
-func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, validation.WarningList) {
+func ValidateUpdateIssuer(a *admissionv1.AdmissionRequest, oldObj, obj runtime.Object) (field.ErrorList, []string) {
 	iss := obj.(*certmanager.Issuer)
 	allErrs, warnings := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	// Admission request should never be nil
-	warnings = append(warnings, validateAPIVersion(a.RequestKind)...)
 	return allErrs, warnings
 }
 
-func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, validation.WarningList) {
+func ValidateIssuerSpec(iss *certmanager.IssuerSpec, fldPath *field.Path) (field.ErrorList, []string) {
 	return ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
 }
 
-func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
+func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (field.ErrorList, []string) {
+	var warnings []string
 	numConfigs := 0
 	el := field.ErrorList{}
 	if iss.ACME != nil {
@@ -106,8 +103,8 @@ func ValidateIssuerConfig(iss *certmanager.IssuerConfig, fldPath *field.Path) (f
 	return el, warnings
 }
 
-func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (field.ErrorList, validation.WarningList) {
-	var warnings validation.WarningList
+func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) (field.ErrorList, []string) {
+	var warnings []string
 	el := field.ErrorList{}
 	if len(iss.PrivateKey.Name) == 0 {
 		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))

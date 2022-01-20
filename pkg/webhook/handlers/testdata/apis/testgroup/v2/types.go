@@ -36,6 +36,11 @@ type TestType struct {
 
 	// TestFieldImmutable cannot be changed after being set to a non-zero value
 	TestFieldImmutable string `json:"testFieldImmutable"`
+
+	// TestDefaultingField is used to test defaulting.
+	// In the v1 API, it defaults to `set-in-v1`.
+	// In the v2 API, it defaults to `set-in-v2`.
+	TestDefaultingField string `json:"testDefaultingField,omitempty"`
 }
 
 const (

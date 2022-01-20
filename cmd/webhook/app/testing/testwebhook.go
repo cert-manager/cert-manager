@@ -36,8 +36,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 
-	"github.com/jetstack/cert-manager/cmd/webhook/app"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
+	"github.com/jetstack/cert-manager/internal/webhook"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/webhook/server"
 )
@@ -56,7 +56,7 @@ type ServerOptions struct {
 	CAPEM []byte
 }
 
-func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...app.ServerOption) (ServerOptions, StopFunc) {
+func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argumentsForNewServerWithOptions ...func(*server.Server)) (ServerOptions, StopFunc) {
 	log := logtesting.NewTestLogger(t)
 
 	fs := pflag.NewFlagSet("testset", pflag.ExitOnError)
@@ -99,7 +99,7 @@ func StartWebhookServer(t *testing.T, ctx context.Context, args []string, argume
 	webhookConfig.HealthzPort = pointer.Int(0)
 
 	errCh := make(chan error)
-	srv, err := app.NewServerWithOptions(log, *webhookFlags, *webhookConfig, argumentsForNewServerWithOptions...)
+	srv, err := webhook.NewCertManagerWebhookServer(log, *webhookFlags, *webhookConfig, argumentsForNewServerWithOptions...)
 	if err != nil {
 		t.Fatal(err)
 	}

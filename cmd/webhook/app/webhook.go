@@ -22,104 +22,26 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	cliflag "k8s.io/component-base/cli/flag"
 
 	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/cmd/webhook/app/options"
 	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
+	cmwebhook "github.com/jetstack/cert-manager/internal/webhook"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
-	"github.com/jetstack/cert-manager/pkg/webhook"
-	"github.com/jetstack/cert-manager/pkg/webhook/authority"
 	"github.com/jetstack/cert-manager/pkg/webhook/configfile"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
-	"github.com/jetstack/cert-manager/pkg/webhook/server"
-	"github.com/jetstack/cert-manager/pkg/webhook/server/tls"
 )
-
-var validationHook handlers.ValidatingAdmissionHook = handlers.NewRegistryBackedValidator(logf.Log, webhook.Scheme, webhook.ValidationRegistry)
-var mutationHook handlers.MutatingAdmissionHook = handlers.NewRegistryBackedMutator(logf.Log, webhook.Scheme, webhook.MutationRegistry)
-var conversionHook handlers.ConversionHook = handlers.NewSchemeBackedConverter(logf.Log, webhook.Scheme)
-
-type ServerOption func(*server.Server)
-
-// WithConversionHandler allows you to override the handler for the `/convert`
-// endpoint in tests.
-func WithConversionHandler(handler handlers.ConversionHook) ServerOption {
-	return func(s *server.Server) {
-		s.ConversionWebhook = handler
-	}
-}
-
-func NewServerWithOptions(log logr.Logger, _ options.WebhookFlags, opts config.WebhookConfiguration, optionFunctions ...ServerOption) (*server.Server, error) {
-	restcfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.KubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	cl, err := kubernetes.NewForConfig(restcfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating kubernetes client: %s", err)
-	}
-	validationHook.InitPlugins(cl)
-
-	var source tls.CertificateSource
-	switch {
-	case opts.TLSConfig.FilesystemConfigProvided():
-		log.V(logf.InfoLevel).Info("using TLS certificate from local filesystem", "private_key_path", opts.TLSConfig.Filesystem.KeyFile, "certificate", opts.TLSConfig.Filesystem.CertFile)
-		source = &tls.FileCertificateSource{
-			CertPath: opts.TLSConfig.Filesystem.CertFile,
-			KeyPath:  opts.TLSConfig.Filesystem.KeyFile,
-		}
-	case opts.TLSConfig.DynamicConfigProvided():
-		restcfg, err := clientcmd.BuildConfigFromFlags("", opts.KubeConfig)
-		if err != nil {
-			return nil, err
-		}
-
-		log.V(logf.InfoLevel).Info("using dynamic certificate generating using CA stored in Secret resource", "secret_namespace", opts.TLSConfig.Dynamic.SecretNamespace, "secret_name", opts.TLSConfig.Dynamic.SecretName)
-		source = &tls.DynamicSource{
-			DNSNames: opts.TLSConfig.Dynamic.DNSNames,
-			Authority: &authority.DynamicAuthority{
-				SecretNamespace: opts.TLSConfig.Dynamic.SecretNamespace,
-				SecretName:      opts.TLSConfig.Dynamic.SecretName,
-				RESTConfig:      restcfg,
-			},
-		}
-	default:
-		log.V(logf.WarnLevel).Info("serving insecurely as tls certificate data not provided")
-	}
-
-	s := &server.Server{
-		ListenAddr:        fmt.Sprintf(":%d", *opts.SecurePort),
-		HealthzAddr:       fmt.Sprintf(":%d", *opts.HealthzPort),
-		EnablePprof:       opts.EnablePprof,
-		PprofAddr:         opts.PprofAddress,
-		CertificateSource: source,
-		CipherSuites:      opts.TLSConfig.CipherSuites,
-		MinTLSVersion:     opts.TLSConfig.MinTLSVersion,
-		ValidationWebhook: validationHook,
-		MutationWebhook:   mutationHook,
-		ConversionWebhook: conversionHook,
-	}
-	for _, f := range optionFunctions {
-		f(s)
-	}
-	return s, nil
-}
 
 const componentWebhook = "webhook"
 
 func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 	ctx := cmdutil.ContextWithStopCh(context.Background(), stopCh)
 	log := logf.Log
-	ctx = logf.NewContext(ctx, log, "webhook")
+	ctx = logf.NewContext(ctx, log, componentWebhook)
 
 	cleanFlagSet := pflag.NewFlagSet(componentWebhook, pflag.ContinueOnError)
 	// Replaces all instances of `_` in flag names with `-`
@@ -195,7 +117,7 @@ func NewServerCommand(stopCh <-chan struct{}) *cobra.Command {
 				}
 			}
 
-			srv, err := NewServerWithOptions(log, *webhookFlags, *webhookConfig)
+			srv, err := cmwebhook.NewCertManagerWebhookServer(log, *webhookFlags, *webhookConfig)
 			if err != nil {
 				log.Error(err, "Failed initialising server")
 				os.Exit(1)

@@ -5,15 +5,10 @@ go_library(
     srcs = [
         "conversion.go",
         "interfaces.go",
-        "mutation.go",
-        "validation.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/webhook/handlers",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/api/mutation:go_default_library",
-        "//internal/api/validation:go_default_library",
-        "//internal/apis/certmanager/validation/plugins:go_default_library",
         "//pkg/logs:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//admission/v1:go_default_library",
@@ -21,38 +16,24 @@ go_library(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
-        "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/json:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/serializer/versioning:go_default_library",
-        "@io_k8s_apimachinery//pkg/util/validation/field:go_default_library",
-        "@io_k8s_client_go//kubernetes:go_default_library",
     ],
 )
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "conversion_test.go",
-        "mutation_test.go",
-        "validation_test.go",
-    ],
+    srcs = ["conversion_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//internal/api/mutation:go_default_library",
-        "//internal/api/validation:go_default_library",
-        "//pkg/logs:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup:go_default_library",
         "//pkg/webhook/handlers/testdata/apis/testgroup/install:go_default_library",
-        "//pkg/webhook/handlers/testdata/apis/testgroup/v1:go_default_library",
-        "//pkg/webhook/handlers/testdata/apis/testgroup/v2:go_default_library",
-        "@io_k8s_api//admission/v1:go_default_library",
         "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_klog_v2//klogr:go_default_library",
         "@io_k8s_utils//diff:go_default_library",
-        "@xyz_gomodules_jsonpatch_v2//:go_default_library",
     ],
 )
 
