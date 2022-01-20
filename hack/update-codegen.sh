@@ -142,7 +142,8 @@ gen-deepcopy() {
     --input-dirs "$joined" \
     --output-file-base zz_generated.deepcopy \
     --trim-path-prefix="$module_name" \
-    --bounding-dirs "${module_name}"
+    --bounding-dirs "${module_name}" \
+    --output-base ./
 }
 
 gen-clientsets() {
@@ -156,7 +157,8 @@ gen-clientsets() {
     --input-base "" \
     --input "$joined" \
     --trim-path-prefix="$module_name" \
-    --output-package "${client_package}"/clientset
+    --output-package "${client_package}"/clientset \
+    --output-base ./
 }
 
 gen-listers() {
@@ -168,7 +170,8 @@ gen-listers() {
     --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     --trim-path-prefix="$module_name" \
-    --output-package "${client_package}"/listers
+    --output-package "${client_package}"/listers \
+    --output-base ./
 }
 
 gen-informers() {
@@ -182,7 +185,8 @@ gen-informers() {
     --versioned-clientset-package "${client_package}"/clientset/versioned \
     --listers-package "${client_package}"/listers \
     --trim-path-prefix="$module_name" \
-    --output-package "${client_package}"/informers
+    --output-package "${client_package}"/informers \
+    --output-base ./
 }
 
 gen-defaulters() {
@@ -195,7 +199,8 @@ gen-defaulters() {
     --go-header-file hack/boilerplate/boilerplate.generatego.txt \
     --input-dirs "$joined" \
     --trim-path-prefix="$module_name" \
-    -O zz_generated.defaults
+    -O zz_generated.defaults \
+    --output-base ./
 }
 
 gen-conversions() {
@@ -216,7 +221,8 @@ gen-conversions() {
       --extra-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
       --input-dirs $( IFS=$','; echo "${CONVERSION_PKGS[*]}" ) \
       --trim-path-prefix="$module_name" \
-      -O zz_generated.conversion
+      -O zz_generated.conversion \
+      --output-base ./
 }
 
 runfiles="$(pwd)"
