@@ -116,7 +116,17 @@ func NewCmdInstall(ctx context.Context, ioStreams genericclioptions.IOStreams) *
 	}
 
 	settings.AddFlags(cmd.Flags())
+
+	// The Helm cli.New function does not provide an easy way to
+	// override the default of the namespace flag.
+	// See https://github.com/helm/helm/issues/9790
+	//
+	// Here we set the default value shown in the usage message.
 	cmd.Flag("namespace").DefValue = defaultCertManagerNamespace
+	// Here we set the default value.
+	// The returned error is ignored because
+	// pflag.stringValue.Set always returns a nil.
+	cmd.Flag("namespace").Value.Set(defaultCertManagerNamespace)
 
 	addInstallUninstallFlags(cmd.Flags(), &options.client.Timeout, &options.Wait)
 
