@@ -17,8 +17,10 @@ limitations under the License.
 package ingress
 
 import (
+	"regexp"
 	"testing"
 
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -32,14 +34,23 @@ var v1TestIngress = &networkingv1.Ingress{
 		Name:      "test-networkingv1-ingress",
 		Namespace: "test-networkingv1-namespace",
 		Annotations: map[string]string{
-			"test.key": "test.value",
+			"test.key":                    "test.value",
+			"kubernetes.io/ingress.class": "bogus-ingress-class",
 		},
 		Labels: map[string]string{
 			"labelkey": "labelvalue",
 		},
 	},
 	Spec: networkingv1.IngressSpec{
-		IngressClassName: pointer.String("bogus-ingress-class"),
+		// As discussed in https://github.com/jetstack/cert-manager/issues/4537
+		// the IngressClassName field is not directly equivalent to the
+		// kubernetes.io/ingress.class annotation. According to the Ingress graduation KEP:
+		// https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/758-ingress-api-group/README.md
+		// the annotation, if present, overrides this field.
+		//
+		// As the goal of cert-manager is to be as widely compatible as possible, we can only use the
+		// annotation to describe an ingress class.
+		IngressClassName: nil,
 		DefaultBackend: &networkingv1.IngressBackend{
 			Service: &networkingv1.IngressServiceBackend{
 				Name: "default-backend-svc",
@@ -183,6 +194,31 @@ func TestConvert_networking_Ingress_To_v1beta1_Ingress(t *testing.T) {
 				},
 			}
 			assert.Equal(t, expected, out, "conversion was not as expected")
+		},
+		"v1 -> v1beta1 -> v1 round trip preserves fields": func(t *testing.T) {
+			// Something mentioned in a previous code review is we should make sure we do not
+			// remove fields during conversion. There may be a better way of doing this, but this
+			// test will fill every field with a fuzzer and perform a conversion round trip.
+
+			base := new(networkingv1.Ingress)
+			f := fuzz.New().
+				// Filling both the port name and port number is invalid so skip the number for now
+				// (the fuzzer will put some negative ports in as well).
+				SkipFieldsWithPattern(regexp.MustCompile("Number")).
+				// The IngressClassNameLogic is tested below
+				SkipFieldsWithPattern(regexp.MustCompile("IngressClassName"))
+			f.Fuzz(base)
+
+			in := base.DeepCopy()
+			expected := in.DeepCopy()
+			intermediate := new(networkingv1beta1.Ingress)
+			out := new(networkingv1.Ingress)
+
+			err := Convert_networking_Ingress_To_v1beta1_Ingress(in, intermediate, nil)
+			assert.NoError(t, err, "conversion from v1 to v1beta1 should not fail")
+			err = Convert_v1beta1_Ingress_To_networking_Ingress(intermediate.DeepCopy(), out, nil)
+			assert.NoError(t, err, "conversion from v1beta1 to v1 should not fail")
+			assert.Equal(t, expected.Spec, out.Spec, "output Spec was not equal to input Spec after round trip")
 		},
 	}
 	for name, test := range tests {

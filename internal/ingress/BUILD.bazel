@@ -37,6 +37,7 @@ go_test(
     deps = [
         "//pkg/controller:go_default_library",
         "//test/unit/discovery:go_default_library",
+        "@com_github_google_gofuzz//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//networking/v1:go_default_library",
         "@io_k8s_api//networking/v1beta1:go_default_library",

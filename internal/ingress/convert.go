@@ -225,25 +225,7 @@ func autoConvert_networking_IngressBackend_To_v1beta1_IngressBackend(in *network
 //  out := new(networkingv1.Ingress)
 //  err := Convert_v1beta1_Ingress_To_networking_Ingress(in, out, nil)
 func Convert_v1beta1_Ingress_To_networking_Ingress(in *networkingv1beta1.Ingress, out *networkingv1.Ingress, s conversion.Scope) error {
-	err := autoConvert_v1beta1_Ingress_To_networking_Ingress(in, out, s)
-	if err != nil {
-		return err
-	}
-	// v1beta1 Ingresses should not have IngressClassName set but instead use the deprecated annotation.
-	// Move the ingress class from the annotations to the Spec
-	if in.Annotations == nil {
-		return nil
-	}
-	if ingressClass, found := in.Annotations["kubernetes.io/ingress.class"]; found {
-		out.Spec.IngressClassName = &ingressClass
-		// HERE BE DRAGONS:
-		// in.Annotations and out.Annotations point to the same map.
-		// This mutates in as well as out, so make sure in is not an object in
-		// client-go's cache, for example by only passing DeepCopy()d objects
-		// to Convert_v1beta1_Ingress_To_networking_Ingress
-		delete(out.Annotations, "kubernetes.io/ingress.class")
-	}
-	return nil
+	return autoConvert_v1beta1_Ingress_To_networking_Ingress(in, out, s)
 }
 
 func autoConvert_v1beta1_Ingress_To_networking_Ingress(in *networkingv1beta1.Ingress, out *networkingv1.Ingress, s conversion.Scope) error {
