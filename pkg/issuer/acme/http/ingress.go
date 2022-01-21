@@ -33,6 +33,14 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
+const (
+	// annotationIngressClass is the well-known annotation key
+	// for specifying ingress classes. It is currently not specified
+	// in the networking/v1 package, so it is duplicated here
+	// to avoid an extra import of networking/v1beta1.
+	annotationIngressClass = "kubernetes.io/ingress.class"
+)
+
 // getIngressesForChallenge returns a list of Ingresses that were created to solve
 // http challenges for the given domain
 func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*networkingv1.Ingress, error) {
@@ -137,10 +145,6 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	if err != nil {
 		return nil, err
 	}
-	var ingClass *string
-	if http01IngressCfg.Class != nil {
-		ingClass = http01IngressCfg.Class
-	}
 
 	podLabels := podLabels(ch)
 
@@ -148,6 +152,15 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 
 	// TODO: Figure out how to remove this without breaking users who depend on it.
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
+
+	// Use the Ingress Class annotation defined in networkingv1beta1 even though our Ingress objects
+	// are networkingv1, for maximum compatibility with all Ingress controllers.
+	// if the `kubernetes.io/ingress.class` annotation is present, it takes precedence over the
+	// `spec.IngressClassName` field.
+	// See discussion in https://github.com/jetstack/cert-manager/issues/4537.
+	if http01IngressCfg.Class != nil {
+		ingAnnotations[annotationIngressClass] = *http01IngressCfg.Class
+	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
 
@@ -165,7 +178,8 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: networkingv1.IngressSpec{
-			IngressClassName: ingClass,
+			// https://github.com/jetstack/cert-manager/issues/4537
+			IngressClassName: nil,
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: httpHost,
