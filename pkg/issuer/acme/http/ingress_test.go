@@ -533,6 +533,7 @@ func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
 					"nginx.ingress.kubernetes.io/whitelist-source-range":  "0.0.0.0/0,::/0",
 					"nginx.org/mergeable-ingress-type":                    "minion",
 					"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
+					"kubernetes.io/ingress.class":                         "nginx",
 				}
 				s.testResources[createdIngressKey] = expectedIngress
 				s.Builder.Sync()
