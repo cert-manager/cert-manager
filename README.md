@@ -34,7 +34,7 @@ Issues and PRs towards the documentation should be filed in the [website repo](h
 For the common use-case of automatically issuing TLS certificates to
 Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
 replacement, see the [cert-manager nginx ingress quick start
-guide](https://cert-manager.io/docs/tutorials/acme/ingress/).
+guide](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/).
 
 See [Installation](https://cert-manager.io/docs/installation/)
 within the [documentation](https://cert-manager.io/docs)
