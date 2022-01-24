@@ -19,6 +19,7 @@ package issuing
 import (
 	"context"
 	"crypto"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -34,8 +36,10 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
+	"k8s.io/utils/pointer"
 
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -46,6 +50,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates/issuing/internal"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	utilkube "github.com/cert-manager/cert-manager/pkg/util/kube"
 	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
@@ -78,6 +83,11 @@ type controller struct {
 	// metadata and output formats are kept are present and correct.
 	postIssuancePolicyChain policies.Chain
 
+	// fieldManager is the string which will be used as the Field Manager on
+	// fields created or edited by the cert-manager Kubernetes client during
+	// Apply API calls.
+	fieldManager string
+
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
 }
@@ -85,13 +95,13 @@ type controller struct {
 func NewController(
 	log logr.Logger,
 	kubeClient kubernetes.Interface,
-	fieldManager string,
 	client cmclient.Interface,
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
 	recorder record.EventRecorder,
 	clock clock.Clock,
 	certificateControllerOptions controllerpkg.CertificateOptions,
+	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 
 	// create a queue used to queue up items to be processed
@@ -140,6 +150,7 @@ func NewController(
 		clock:                    clock,
 		secretsUpdateData:        secretsManager.UpdateData,
 		postIssuancePolicyChain:  policies.NewSecretPostIssuancePolicyChain(fieldManager),
+		fieldManager:             fieldManager,
 		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
@@ -339,8 +350,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
 
-	_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-	if err != nil {
+	if err := c.updateOrApplyStatus(ctx, crt); err != nil {
 		return err
 	}
 
@@ -375,21 +385,52 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	//Set status.revision to revision of the CertificateRequest
 	crt.Status.Revision = &nextRevision
 
-	// Remove Issuing status condition
-	apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionIssuing)
+	message := "The certificate has been successfully issued"
+
+	// Set Issuing Condition to False.
+	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "Issued", message)
 
 	//Clear status.lastFailureTime (if set)
 	crt.Status.LastFailureTime = nil
 
-	_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
-	if err != nil {
+	if err := c.updateOrApplyStatus(ctx, crt); err != nil {
 		return err
 	}
 
-	message := "The certificate has been successfully issued"
 	c.recorder.Event(crt, corev1.EventTypeNormal, "Issuing", message)
 
 	return nil
+
+}
+
+// updateOrApplyStatus will update the controller status. If the
+// ServerSideApply feature is enabled, the managed fields will instead get
+// applied using the relevant Patch API call.
+func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate) error {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		crt := &cmapi.Certificate{
+			TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
+			Status: cmapi.CertificateStatus{
+				Revision:        crt.Status.Revision,
+				LastFailureTime: crt.Status.LastFailureTime,
+				Conditions:      []cmapi.CertificateCondition{*apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)},
+			},
+		}
+
+		crtData, err := json.Marshal(crt)
+		if err != nil {
+			return fmt.Errorf("failed to marshal certificate object: %w", err)
+		}
+		_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).Patch(
+			ctx, crt.Name, apitypes.ApplyPatchType, crtData,
+			metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: c.fieldManager}, "status",
+		)
+		return err
+	} else {
+		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
+		return err
+	}
 }
 
 // controllerWrapper wraps the `controller` structure to make it implement
@@ -404,13 +445,13 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 
 	ctrl, queue, mustSync := NewController(log,
 		ctx.Client,
-		ctx.FieldManager,
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,
 		ctx.Recorder,
 		ctx.Clock,
 		ctx.CertificateOptions,
+		ctx.FieldManager,
 	)
 	c.controller = ctrl
 
