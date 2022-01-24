@@ -12,6 +12,7 @@ go_library(
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/validation:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
     ],
 )
 
@@ -23,7 +24,10 @@ go_test(
         "version_test.go",
     ],
     embed = [":go_default_library"],
-    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
+    deps = [
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
+    ],
 )
 
 filegroup(
