@@ -248,7 +248,7 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if certificate is in Issuing state, one CertificateRequest, but has failed, set failed state and log event": {
+		"if certificate is in Issuing state, one CertificateRequest, and has failed for the first time during this series of attempts, set failed state with one issuance attempt and log event": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
@@ -290,6 +290,59 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Warning Failed The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
+				},
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one CertificateRequest, and has failed for the fifth time during this series of attempts, set failed state with five issuance attempts and log event": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert, gen.SetCertificateIssuanceAttempts(pointerToInt(4))),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestFailed,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+						gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+							Type:    cmapi.CertificateRequestConditionReady,
+							Status:  cmmeta.ConditionFalse,
+							Reason:  cmapi.CertificateRequestReasonFailed,
+							Message: "The certificate request failed because of reasons",
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionIssuing,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             "Failed",
+								Message:            "The certificate request has failed to complete and will be retried: The certificate request failed because of reasons",
+								LastTransitionTime: &metaFixedClockStart,
+								ObservedGeneration: 3,
+							}),
+							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointerToInt(5)),
 						),
 					)),
 				},
@@ -507,6 +560,113 @@ func TestIssuingController(t *testing.T) {
 				},
 			},
 			expSecretUpdateDataCall: &internal.SecretData{
+				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
+				PrivateKey:  exampleBundle.PrivateKeyBytes,
+				CA:          nil,
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one ready CertificateRequest and has last failure time set from previous issuance, set the Issuing condition to true, remove last failure time and store the signed certificate, ca, and private key to an existing secret, and log an event": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert, gen.SetCertificateLastFailureTime(metaFixedClockStart)),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: exampleBundle.Certificate.Namespace,
+							Name:      "output",
+							Annotations: map[string]string{
+								"my-custom": "annotation",
+							},
+							Labels: map[string]string{},
+						},
+						Type: corev1.SecretTypeTLS,
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateRevision(2),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal Issuing The certificate has been successfully issued",
+				},
+			},
+			expSecretUpdateDataCall: &secretsmanager.SecretData{
+				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
+				PrivateKey:  exampleBundle.PrivateKeyBytes,
+				CA:          nil,
+			},
+			expectedErr: false,
+		},
+		"if certificate is in Issuing state, one ready CertificateRequest and has last failure time and issuance attempts set from a previous issuance, set the Issuing condition to true, remove last failure time and issuance attempts and store the signed certificate, ca, and private key to an existing secret, and log an event": {
+			certificate: exampleBundle.Certificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.CertificateFrom(issuingCert, gen.SetCertificateLastFailureTime(metaFixedClockStart),
+						gen.SetCertificateIssuanceAttempts(pointerToInt(4))),
+					gen.CertificateRequestFrom(exampleBundle.CertificateRequestReady,
+						gen.AddCertificateRequestAnnotations(map[string]string{
+							cmapi.CertificateRequestRevisionAnnotationKey: "2", // Current Certificate revision=1
+						}),
+					)},
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nextPrivateKeySecretName,
+							Namespace: exampleBundle.Certificate.Namespace,
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle.PrivateKeyBytes,
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: exampleBundle.Certificate.Namespace,
+							Name:      "output",
+							Annotations: map[string]string{
+								"my-custom": "annotation",
+							},
+							Labels: map[string]string{},
+						},
+						Type: corev1.SecretTypeTLS,
+					},
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
+						exampleBundle.Certificate.Namespace,
+						gen.CertificateFrom(exampleBundle.Certificate,
+							gen.SetCertificateRevision(2),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal Issuing The certificate has been successfully issued",
+				},
+			},
+			expSecretUpdateDataCall: &secretsmanager.SecretData{
 				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -839,6 +999,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
 						),
 					)),
 				},
@@ -848,7 +1009,7 @@ func TestIssuingController(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if certificate is in Issuing state, one CertificateRequest, but has been denied, report denial and set last failed time": {
+		"if certificate is in Issuing state, one CertificateRequest, but has been denied, report denial and set last failed time and issuance attempts": {
 			certificate: exampleBundle.Certificate,
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
@@ -890,6 +1051,7 @@ func TestIssuingController(t *testing.T) {
 								ObservedGeneration: 3,
 							}),
 							gen.SetCertificateLastFailureTime(metaFixedClockStart),
+							gen.SetCertificateIssuanceAttempts(pointerToInt(1)),
 						),
 					)),
 				},
@@ -917,11 +1079,12 @@ func TestIssuingController(t *testing.T) {
 			var secretsUpdateDataCalled bool
 			w.controller.secretsUpdateData = func(_ context.Context, _ *cmapi.Certificate, secretData internal.SecretData) error {
 				secretsUpdateDataCalled = true
-				assert.Equal(t, *test.expSecretUpdateDataCall, secretData)
+				assert.Equal(t, *test.expSecretUpdateDataCall, secretData, "expected secretData: %#+v, got %#+v", *test.expSecretUpdateDataCall, secretData)
 				return nil
 			}
 			t.Cleanup(func() {
-				assert.Equal(t, test.expSecretUpdateDataCall != nil, secretsUpdateDataCalled)
+				wantsSecretUpdateDataCall := test.expSecretUpdateDataCall != nil
+				assert.Equal(t, test.expSecretUpdateDataCall != nil, secretsUpdateDataCalled, "expected secretUpdateData func to be called: %t was called: %t", wantsSecretUpdateDataCall, secretsUpdateDataCalled)
 			})
 
 			test.builder.Start()
@@ -942,4 +1105,8 @@ func TestIssuingController(t *testing.T) {
 			test.builder.CheckAndFinish(err)
 		})
 	}
+}
+
+func pointerToInt(i int) *int {
+	return &i
 }

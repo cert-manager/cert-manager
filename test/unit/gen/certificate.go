@@ -165,6 +165,11 @@ func SetCertificateLastFailureTime(p metav1.Time) CertificateModifier {
 		crt.Status.LastFailureTime = &p
 	}
 }
+func SetCertificateIssuanceAttempts(ia *int) CertificateModifier {
+	return func(crt *v1.Certificate) {
+		crt.Status.IssuanceAttempts = ia
+	}
+}
 
 func SetCertificateNotAfter(p metav1.Time) CertificateModifier {
 	return func(crt *v1.Certificate) {
