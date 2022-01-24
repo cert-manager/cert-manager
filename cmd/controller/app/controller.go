@@ -26,48 +26,26 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
-	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
-	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
-	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	cmdutil "github.com/jetstack/cert-manager/cmd/util"
 	"github.com/jetstack/cert-manager/internal/controller/feature"
 	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
-
-const controllerAgentName = "cert-manager"
-
-// This sets the informer's resync period to 10 hours
-// following the controller-runtime defaults
-// and following discussion: https://github.com/kubernetes-sigs/controller-runtime/pull/88#issuecomment-408500629
-const resyncPeriod = 10 * time.Hour
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	rootCtx, cancelContext := context.WithCancel(cmdutil.ContextWithStopCh(context.Background(), stopCh))
@@ -76,9 +54,16 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	log := logf.FromContext(rootCtx)
 	g, rootCtx := errgroup.WithContext(rootCtx)
 
-	ctx, kubeCfg, err := buildControllerContext(rootCtx, opts)
+	ctxFactory, err := buildControllerContextFactory(rootCtx, opts)
 	if err != nil {
-		return fmt.Errorf("error building controller context (options %v): %v", opts, err)
+		return err
+	}
+
+	// Build the base controller context for the cert-manager controller manager
+	// used here.
+	ctx, err := ctxFactory.Build()
+	if err != nil {
+		return err
 	}
 
 	enabledControllers := opts.EnabledControllers()
@@ -147,13 +132,13 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	if opts.LeaderElect {
 		g.Go(func() error {
 			log.V(logf.InfoLevel).Info("starting leader election")
-			leaderElectionClient, err := kubernetes.NewForConfig(rest.AddUserAgent(kubeCfg, "leader-election"))
+			ctx, err := ctxFactory.Build("leader-election")
 			if err != nil {
-				return fmt.Errorf("error creating leader election client: %v", err)
+				return err
 			}
 
 			errorCh := make(chan error, 1)
-			if err := startLeaderElection(rootCtx, opts, leaderElectionClient, ctx.Recorder, leaderelection.LeaderCallbacks{
+			if err := startLeaderElection(rootCtx, opts, ctx.Client, ctx.Recorder, leaderelection.LeaderCallbacks{
 				OnStartedLeading: func(_ context.Context) {
 					close(elected)
 				},
@@ -204,7 +189,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 			continue
 		}
 
-		iface, err := fn(ctx)
+		iface, err := fn(ctxFactory)
 		if err != nil {
 			err = fmt.Errorf("error starting controller: %v", err)
 
@@ -242,149 +227,96 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) error {
 	return nil
 }
 
-func buildControllerContext(ctx context.Context, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
-	log := logf.FromContext(ctx, "build-context")
-	// Load the users Kubernetes config
-	kubeCfg, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.Kubeconfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error creating rest config: %s", err.Error())
-	}
-
-	kubeCfg.QPS = opts.KubernetesAPIQPS
-	kubeCfg.Burst = opts.KubernetesAPIBurst
-
-	// Add User-Agent to client
-	kubeCfg = rest.AddUserAgent(kubeCfg, util.CertManagerUserAgent)
-
-	// Create a cert-manager api client
-	intcl, err := clientset.NewForConfig(kubeCfg)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error creating internal group client: %s", err.Error())
-	}
-
-	// Create a Kubernetes api client
-	cl, err := kubernetes.NewForConfig(kubeCfg)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
-	}
-
-	var gatewayAvailable bool
-	// Check if the Gateway API feature gate was enabled
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ExperimentalGatewayAPISupport) {
-		// check if the gateway API CRDs are available. If they are not found return an error
-		// which will cause cert-manager to crashloopbackoff
-		d := cl.Discovery()
-		resources, err := d.ServerResourcesForGroupVersion(gwapi.GroupVersion.String())
-		var GatewayAPINotAvailable = "the Gateway API CRDs do not seem to be present, but " + feature.ExperimentalGatewayAPISupport +
-			" is set to true. Please install the gateway-api CRDs."
-		switch {
-		case apierrors.IsNotFound(err):
-			return nil, nil, fmt.Errorf("%s (%w)", GatewayAPINotAvailable, err)
-		case err != nil:
-			return nil, nil, fmt.Errorf("while checking if the Gateway API CRD is installed: %w", err)
-		case len(resources.APIResources) == 0:
-			return nil, nil, fmt.Errorf("%s (found %d APIResources in %s)", GatewayAPINotAvailable, len(resources.APIResources), gwapi.GroupVersion.String())
-		default:
-			gatewayAvailable = true
-		}
-	}
-
-	// Create a GatewayAPI client.
-	gwcl, err := gwclient.NewForConfig(kubeCfg)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
-	}
+// buildControllerContextFactory builds a new controller ContextFactory which
+// can build controller contexts for each component.
+func buildControllerContextFactory(ctx context.Context, opts *options.ControllerOptions) (*controller.ContextFactory, error) {
+	log := logf.FromContext(ctx)
 
 	nameservers := opts.DNS01RecursiveNameservers
 	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
 	}
-	log.V(logf.InfoLevel).WithValues("nameservers", nameservers).Info("configured acme dns01 nameservers")
 
-	HTTP01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
+	log.V(logf.InfoLevel).WithName("build-context").
+		WithValues("nameservers", nameservers).
+		Info("configured acme dns01 nameservers")
+
+	http01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestCPU: %s", err.Error())
+		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestCPU: %w", err)
 	}
 
-	HTTP01SolverResourceRequestMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestMemory)
+	http01SolverResourceRequestMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestMemory)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestMemory: %s", err.Error())
+		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestMemory: %w", err)
 	}
 
-	HTTP01SolverResourceLimitsCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsCPU)
+	http01SolverResourceLimitsCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsCPU)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsCPU: %s", err.Error())
+		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsCPU: %w", err)
 	}
 
-	HTTP01SolverResourceLimitsMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsMemory)
+	http01SolverResourceLimitsMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsMemory)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %s", err.Error())
+		return nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %w", err)
 	}
-
-	// Create event broadcaster
-	// Add cert-manager types to the default Kubernetes Scheme so Events can be
-	// logged properly
-	intscheme.AddToScheme(scheme.Scheme)
-	gwscheme.AddToScheme(scheme.Scheme)
-	log.V(logf.DebugLevel).Info("creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(logf.WithInfof(log.V(logf.DebugLevel)).Infof)
-	eventBroadcaster.StartRecordingToSink(&clientv1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
-
-	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, resyncPeriod, informers.WithNamespace(opts.Namespace))
-	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, resyncPeriod, kubeinformers.WithNamespace(opts.Namespace))
-	gwSharedInformerFactory := gwinformers.NewSharedInformerFactoryWithOptions(gwcl, resyncPeriod, gwinformers.WithNamespace(opts.Namespace))
 
 	acmeAccountRegistry := accounts.NewDefaultRegistry()
 
-	return &controller.Context{
-		RootContext:               ctx,
-		StopCh:                    ctx.Done(),
-		RESTConfig:                kubeCfg,
-		Client:                    cl,
-		CMClient:                  intcl,
-		GWClient:                  gwcl,
-		DiscoveryClient:           cl.Discovery(),
-		Recorder:                  recorder,
-		KubeSharedInformerFactory: kubeSharedInformerFactory,
-		SharedInformerFactory:     sharedInformerFactory,
-		GWShared:                  gwSharedInformerFactory,
-		GatewaySolverEnabled:      gatewayAvailable,
-		Namespace:                 opts.Namespace,
-		Clock:                     clock.RealClock{},
-		Metrics:                   metrics.New(log, clock.RealClock{}),
+	ctxFactory, err := controller.NewContextFactory(ctx, controller.ContextOptions{
+		Kubeconfig:         opts.Kubeconfig,
+		KubernetesAPIQPS:   opts.KubernetesAPIQPS,
+		KubernetesAPIBurst: opts.KubernetesAPIBurst,
+		APIServerHost:      opts.APIServerHost,
+
+		Namespace: opts.Namespace,
+
+		Clock:   clock.RealClock{},
+		Metrics: metrics.New(log, clock.RealClock{}),
+
 		ACMEOptions: controller.ACMEOptions{
+			HTTP01SolverResourceRequestCPU:    http01SolverResourceRequestCPU,
+			HTTP01SolverResourceRequestMemory: http01SolverResourceRequestMemory,
+			HTTP01SolverResourceLimitsCPU:     http01SolverResourceLimitsCPU,
+			HTTP01SolverResourceLimitsMemory:  http01SolverResourceLimitsMemory,
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
-			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
-			HTTP01SolverResourceRequestMemory: HTTP01SolverResourceRequestMemory,
-			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,
-			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
-			HTTP01SolverNameservers:           opts.ACMEHTTP01SolverNameservers,
-			DNS01CheckAuthoritative:           !opts.DNS01RecursiveNameserversOnly,
-			DNS01Nameservers:                  nameservers,
-			AccountRegistry:                   acmeAccountRegistry,
-			DNS01CheckRetryPeriod:             opts.DNS01CheckRetryPeriod,
+			// Allows specifying a list of custom nameservers to perform HTTP01 checks on.
+			HTTP01SolverNameservers: opts.ACMEHTTP01SolverNameservers,
+
+			DNS01Nameservers:        nameservers,
+			DNS01CheckRetryPeriod:   opts.DNS01CheckRetryPeriod,
+			DNS01CheckAuthoritative: !opts.DNS01RecursiveNameserversOnly,
+
+			AccountRegistry: acmeAccountRegistry,
 		},
+
+		SchedulerOptions: controller.SchedulerOptions{
+			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
+		},
+
 		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
 		},
+
 		IngressShimOptions: controller.IngressShimOptions{
 			DefaultIssuerName:                 opts.DefaultIssuerName,
 			DefaultIssuerKind:                 opts.DefaultIssuerKind,
 			DefaultIssuerGroup:                opts.DefaultIssuerGroup,
 			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
 		},
+
 		CertificateOptions: controller.CertificateOptions{
 			EnableOwnerRef:           opts.EnableCertificateOwnerRef,
 			CopiedAnnotationPrefixes: opts.CopiedAnnotationPrefixes,
 		},
-		SchedulerOptions: controller.SchedulerOptions{
-			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
-		},
-	}, kubeCfg, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ctxFactory, nil
 }
 
 func startLeaderElection(ctx context.Context, opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, callbacks leaderelection.LeaderCallbacks) error {
