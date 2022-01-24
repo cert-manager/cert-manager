@@ -12,11 +12,23 @@ Thanks for opening a pull request! Here are some tips to get everything merged s
 
 -->
 
-## Pull Request Motivation
+### Pull Request Motivation
 
 <!-- Explain the motivation behind this PR. If there's a related issue or PR, link to it here! -->
 
-## Release Note
+### Kind
+
+<!--
+
+Pick a kind which best describes your PR from the following list:
+
+	<cleanup | bug | feature | documentation | design | flake>
+
+If you're unsure which is best or if you're not sure what we mean by "kind",
+just ignore this section and a maintainer will fill it in for you!
+-->
+
+### Release Note
 
 <!--
 
