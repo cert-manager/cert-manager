@@ -23,7 +23,7 @@ NAMESPACE="${NAMESPACE:-cert-manager}"
 # Release name to use with Helm
 RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 # Default feature gates to enable
-FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,AdditionalCertificateOutputFormats=true}"
+FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,AdditionalCertificateOutputFormats=true,ServerSideApply=true}"
 
 # As Feature Gates are added/removed, these lists should be updated.
 declare -a FEATURE_GATES_CONTROLLER_ALL=(\
