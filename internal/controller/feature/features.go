@@ -46,6 +46,11 @@ const (
 	//
 	// AdditionalCertificateOutputFormats enable output additional format
 	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
+
+	// alpha: v1.8.0
+	//
+	// ServerSideApply enables the use of ServerSideApply in all API calls.
+	ServerSideApply featuregate.Feature = "ServerSideApply"
 )
 
 func init() {
@@ -60,4 +65,5 @@ var defaultCertManagerFeatureGates = map[featuregate.Feature]featuregate.Feature
 	ExperimentalCertificateSigningRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 	ExperimentalGatewayAPISupport:                    {Default: false, PreRelease: featuregate.Alpha},
 	AdditionalCertificateOutputFormats:               {Default: false, PreRelease: featuregate.Alpha},
+	ServerSideApply:                                  {Default: false, PreRelease: featuregate.Alpha},
 }
