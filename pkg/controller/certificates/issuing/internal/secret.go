@@ -51,9 +51,8 @@ type SecretsManager struct {
 	secretClient coreclient.SecretsGetter
 	secretLister corelisters.SecretLister
 
-	// userAgent is the Kubernetes client's user agent. This is used for setting
-	// the field manager when Applying Secrets.
-	userAgent string
+	// fieldManager is the manager name used for the Apply operations on Secrets.
+	fieldManager string
 
 	// if true, Secret resources created by the controller will have an
 	// 'owner reference' set, meaning when the Certificate is deleted, the
@@ -79,7 +78,7 @@ func NewSecretsManager(
 	return &SecretsManager{
 		secretClient:                secretClient,
 		secretLister:                secretLister,
-		userAgent:                   util.PrefixFromUserAgent(restConfig.UserAgent),
+		fieldManager:                util.PrefixFromUserAgent(restConfig.UserAgent),
 		enableSecretOwnerReferences: enableSecretOwnerReferences,
 	}
 }
@@ -102,7 +101,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	}
 
 	// Build Secret apply configuration and options.
-	applyOpts := metav1.ApplyOptions{FieldManager: s.userAgent}
+	applyOpts := metav1.ApplyOptions{FieldManager: s.fieldManager}
 	applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
 		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
 		WithData(secret.Data).WithType(secret.Type)

@@ -788,7 +788,7 @@ func Test_getCertificateSecret(t *testing.T) {
 			s := SecretsManager{
 				secretClient: builder.Client.CoreV1(),
 				secretLister: builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-				userAgent:    "cert-manager-test",
+				fieldManager: "cert-manager-test",
 			}
 
 			builder.Start()
