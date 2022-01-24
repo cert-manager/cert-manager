@@ -30,21 +30,20 @@ import (
 	acmeutil "github.com/jetstack/cert-manager/pkg/acme/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 // NewClientFunc is a function type for building a new ACME client.
-type NewClientFunc func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey) acmecl.Interface
+type NewClientFunc func(*http.Client, cmacme.ACMEIssuer, *rsa.PrivateKey, string) acmecl.Interface
 
 var _ NewClientFunc = NewClient
 
 // NewClient is an implementation of NewClientFunc that returns a real ACME client.
-func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) acmecl.Interface {
+func NewClient(client *http.Client, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) acmecl.Interface {
 	return middleware.NewLogger(&acmeapi.Client{
 		Key:          privateKey,
 		HTTPClient:   client,
 		DirectoryURL: config.Server,
-		UserAgent:    util.CertManagerUserAgent,
+		UserAgent:    userAgent,
 		RetryBackoff: acmeutil.RetryBackoff,
 	})
 }
