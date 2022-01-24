@@ -80,4 +80,4 @@ fixed_coredns_config=$(
 )
 echo "Patched CoreDNS config:"
 echo "${fixed_coredns_config}"
-kubectl create configmap -oyaml coredns --dry-run --from-literal=Corefile="${fixed_coredns_config}" | kubectl apply --namespace kube-system -f -
+kubectl create configmap -oyaml coredns --dry-run=client --from-literal=Corefile="${fixed_coredns_config}" | kubectl apply --namespace kube-system -f -
