@@ -31,7 +31,7 @@ type Interface interface {
 
 // Constructor is a function that creates a new control loop given a
 // controller Context.
-type Constructor func(ctx *Context) (Interface, error)
+type Constructor func(ctx *ContextFactory) (Interface, error)
 
 var (
 	known = make(map[string]Constructor)
