@@ -35,6 +35,7 @@ go_test(
         "//pkg/apis/certmanager:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller:go_default_library",
         "//pkg/controller/certificatesigningrequests:go_default_library",
         "//pkg/controller/certificatesigningrequests/util:go_default_library",
         "//pkg/controller/test:go_default_library",

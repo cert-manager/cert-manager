@@ -42,6 +42,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -655,7 +656,7 @@ func TestProcessItem(t *testing.T) {
 
 			defer test.builder.Stop()
 
-			selfsigned := NewSelfSigned(test.builder.Context)
+			selfsigned := NewSelfSigned(test.builder.Context).(*SelfSigned)
 
 			if test.fakeLister != nil {
 				selfsigned.secretsLister = test.fakeLister
@@ -665,7 +666,10 @@ func TestProcessItem(t *testing.T) {
 				selfsigned.signingFn = test.signingFn
 			}
 
-			controller := certificatesigningrequests.New(apiutil.IssuerSelfSigned, selfsigned)
+			controller := certificatesigningrequests.New(
+				apiutil.IssuerSelfSigned,
+				func(*controller.Context) certificatesigningrequests.Signer { return selfsigned },
+			)
 			controller.Register(test.builder.Context)
 			test.builder.Start()
 

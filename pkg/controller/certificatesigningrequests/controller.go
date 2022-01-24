@@ -18,6 +18,7 @@ package certificatesigningrequests
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	certificatesv1 "k8s.io/api/certificates/v1"
@@ -37,10 +38,6 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-const (
-	ControllerName = "certificatesigningrequests"
-)
-
 var keyFunc = controllerpkg.KeyFunc
 
 // Signer is an implementation of a Kubernetes CertificateSigningRequest
@@ -48,6 +45,10 @@ var keyFunc = controllerpkg.KeyFunc
 type Signer interface {
 	Sign(context.Context, *certificatesv1.CertificateSigningRequest, cmapi.GenericIssuer) error
 }
+
+// Signer Contractor builds a Signer instance using the given controller
+// context.
+type SignerConstructor func(*controllerpkg.Context) Signer
 
 // Controller is a base Kubernetes CertificateSigningRequest controller. It is
 // responsible for orchestrating and performing shared operations that all
@@ -71,15 +72,15 @@ type Controller struct {
 	recorder record.EventRecorder
 
 	// Signer to call sign function
-	signer Signer
+	signerConstructor SignerConstructor
+	signer            Signer
 
 	// the signer kind to react to when a certificate signing request is synced
 	signerType string
 
-	// Extra informers that should be watched by this CertificateSigningRequest
-	// controller instance. These resources can be owned by
-	// CertificateSigningRequests that we resolve.
-	extraInformers []cache.SharedIndexInformer
+	// extraInformerResources are the set of resources which should cause
+	// reconciles if owned by a CertifcateRequest.
+	extraInformerResources []schema.GroupVersionResource
 
 	// used for testing
 	clock clock.Clock
@@ -96,40 +97,53 @@ type Controller struct {
 // is called in order to start the reflector. This is handled automatically
 // when the informer factory's Start method is called, if the given informer
 // was obtained using a SharedInformerFactory.
-func New(signerType string, signer Signer, extraInformers ...cache.SharedIndexInformer) *Controller {
+func New(signerType string, signerConstructor SignerConstructor, extraInformerResources ...schema.GroupVersionResource) *Controller {
 	return &Controller{
-		signerType:     signerType,
-		signer:         signer,
-		extraInformers: extraInformers,
+		signerType:             signerType,
+		signerConstructor:      signerConstructor,
+		extraInformerResources: extraInformerResources,
 	}
 }
 
 func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	componentName := "certificatesigningrequests-" + c.signerType
+
 	// construct a new named logger to be reused throughout the controller
-	c.log = logf.FromContext(ctx.RootContext, ControllerName)
+	c.log = logf.FromContext(ctx.RootContext, componentName)
 
 	// create a queue used to queue up items to be processed
-	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), componentName)
 
-	c.sarClient = ctx.Client.AuthorizationV1().SubjectAccessReviews()
+	kubeClient := ctx.Client
+	c.sarClient = kubeClient.AuthorizationV1().SubjectAccessReviews()
 
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1().Issuers()
 
 	// obtain references to all the informers used by this controller
 	csrInformer := ctx.KubeSharedInformerFactory.Certificates().V1().CertificateSigningRequests()
 
-	// Ensure we also catch all extra informers for this certificate controller instance
-	var extraInformersMustSync []cache.InformerSynced
-	for _, i := range c.extraInformers {
-		extraInformersMustSync = append(extraInformersMustSync, i.HasSynced)
-	}
-
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
-	mustSync := append([]cache.InformerSynced{
+	mustSync := []cache.InformerSynced{
 		csrInformer.Informer().HasSynced,
 		issuerInformer.Informer().HasSynced,
-	}, extraInformersMustSync...)
+	}
+
+	// Ensure we also catch all extra informers for this
+	// CertificateSigningRequest controller instance.
+	var extraInformers []cache.SharedIndexInformer
+	for _, i := range c.extraInformerResources {
+		// TODO (joshvanl): currently we only have an extra informer for
+		// cert-manager Orders. If extended to other informer factory sets, add a
+		// switch statement here for the group so that the correct shared informer
+		// can be selected.
+		extraInformer, err := ctx.SharedInformerFactory.ForResource(i)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get extra informer for %v: %w", i, err)
+		}
+		extraInformers = append(extraInformers, extraInformer.Informer())
+		mustSync = append(mustSync, extraInformer.Informer().HasSynced)
+	}
 
 	// if scoped to a single namespace
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
@@ -149,7 +163,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
 
 	// Ensure we catch extra informers that are owned by certificate signing requests
-	for _, i := range c.extraInformers {
+	for _, i := range extraInformers {
 		i.AddEventHandler(&controllerpkg.BlockingEventHandler{
 			WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(c.log, c.queue,
 				schema.GroupVersionKind{Version: "v1", Group: "certificates.k8s.io", Kind: "CertificateSigningRequest"},
@@ -165,7 +179,10 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.clock = ctx.Clock
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder
-	c.certClient = ctx.Client.CertificatesV1().CertificateSigningRequests()
+	c.certClient = kubeClient.CertificatesV1().CertificateSigningRequests()
+
+	// Construct the signer implementation with the built component context.
+	c.signer = c.signerConstructor(ctx)
 
 	c.log.V(logf.DebugLevel).Info("new certificate signing request controller registered",
 		"type", c.signerType)

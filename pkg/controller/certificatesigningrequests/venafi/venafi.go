@@ -60,14 +60,14 @@ type Venafi struct {
 }
 
 func init() {
-	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CSRControllerName).
-			For(certificatesigningrequests.New(apiutil.IssuerVenafi, NewVenafi(ctx))).
+			For(certificatesigningrequests.New(apiutil.IssuerVenafi, NewVenafi)).
 			Complete()
 	})
 }
 
-func NewVenafi(ctx *controllerpkg.Context) *Venafi {
+func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 	return &Venafi{
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
