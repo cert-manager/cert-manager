@@ -42,6 +42,7 @@ import (
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -652,12 +653,15 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Init()
 	defer test.builder.Stop()
 
-	ac := NewACME(test.builder.Context)
+	ac := NewACME(test.builder.Context).(*ACME)
 	if test.fakeOrderLister != nil {
 		ac.orderLister = test.fakeOrderLister
 	}
 
-	controller := certificaterequests.New(apiutil.IssuerACME, ac)
+	controller := certificaterequests.New(
+		apiutil.IssuerACME,
+		func(*controller.Context) certificaterequests.Issuer { return ac },
+	)
 	_, _, err := controller.Register(test.builder.Context)
 	if err != nil {
 		t.Errorf("Error registering the controller: %v", err)

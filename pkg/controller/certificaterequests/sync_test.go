@@ -37,6 +37,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/fake"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -763,7 +764,7 @@ func runTest(t *testing.T, test testT) {
 		}
 	}
 
-	c := New(util.IssuerSelfSigned, test.issuerImpl)
+	c := New(util.IssuerSelfSigned, func(*controller.Context) Issuer { return test.issuerImpl })
 	c.Register(test.builder.Context)
 
 	if test.helper != nil {

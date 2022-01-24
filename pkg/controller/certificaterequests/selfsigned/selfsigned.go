@@ -60,14 +60,14 @@ type SelfSigned struct {
 
 func init() {
 	// create certificate request controller for selfsigned issuer
-	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
-			For(certificaterequests.New(apiutil.IssuerSelfSigned, NewSelfSigned(ctx))).
+			For(certificaterequests.New(apiutil.IssuerSelfSigned, NewSelfSigned)).
 			Complete()
 	})
 }
 
-func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
+func NewSelfSigned(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &SelfSigned{
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
