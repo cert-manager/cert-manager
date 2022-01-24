@@ -66,7 +66,9 @@ func TestTriggerController(t *testing.T) {
 		t.Fatal(err)
 	}
 	shouldReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shouldReissue)
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory,
+		cmFactory, framework.NewEventRecorder(t), fakeClock, shouldReissue,
+		"cert-manage-certificates-trigger-test")
 	c := controllerpkg.NewController(
 		ctx,
 		"trigger_test",
@@ -178,7 +180,9 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	}
 
 	// Start the trigger controller
-	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue)
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory,
+		cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue,
+		"cert-manage-certificates-trigger-test")
 	c := controllerpkg.NewController(
 		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
 		"trigger_test",
