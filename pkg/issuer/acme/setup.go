@@ -156,7 +156,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// this function.
 	a.accountRegistry.RemoveClient(string(a.issuer.GetUID()))
 	httpClient := accounts.BuildHTTPClient(a.metrics, a.issuer.GetSpec().ACME.SkipTLSVerify)
-	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk)
+	cl := a.clientBuilder(httpClient, *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
 
 	// TODO: perform a complex check to determine whether we need to verify
 	// the existing registration with the ACME server.
@@ -211,7 +211,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		status = cmmeta.ConditionTrue
 
 		// ensure the cached client in the account registry is up to date
-		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
+		a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
 		return nil
 	}
 
@@ -313,7 +313,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 	// ensure the cached client in the account registry is up to date
-	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk)
+	a.accountRegistry.AddClient(httpClient, string(a.issuer.GetUID()), *a.issuer.GetSpec().ACME, rsaPk, a.userAgent)
 
 	return nil
 }

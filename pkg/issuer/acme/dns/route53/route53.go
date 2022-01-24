@@ -28,7 +28,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -41,6 +40,8 @@ type DNSProvider struct {
 	client           *route53.Route53
 	hostedZoneID     string
 	log              logr.Logger
+
+	userAgent string
 }
 
 type sessionProvider struct {
@@ -51,6 +52,7 @@ type sessionProvider struct {
 	Role            string
 	StsProvider     func(*session.Session) stsiface.STSAPI
 	log             logr.Logger
+	userAgent       string
 }
 
 func (d *sessionProvider) GetSession() (*session.Session, error) {
@@ -118,11 +120,11 @@ func (d *sessionProvider) GetSession() (*session.Session, error) {
 		sess.Config.WithRegion(d.Region)
 	}
 
-	sess.Handlers.Build.PushBack(request.WithAppendUserAgent(pkgutil.CertManagerUserAgent))
+	sess.Handlers.Build.PushBack(request.WithAppendUserAgent(d.userAgent))
 	return sess, nil
 }
 
-func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambient bool) (*sessionProvider, error) {
+func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambient bool, userAgent string) (*sessionProvider, error) {
 	return &sessionProvider{
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
@@ -131,6 +133,7 @@ func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambie
 		Role:            role,
 		StsProvider:     defaultSTSProvider,
 		log:             logf.Log.WithName("route53-session-provider"),
+		userAgent:       userAgent,
 	}, nil
 }
 
@@ -141,8 +144,12 @@ func defaultSTSProvider(sess *session.Session) stsiface.STSAPI {
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters or, if they're
 // unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
-	provider, err := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient)
+func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role string,
+	ambient bool,
+	dns01Nameservers []string,
+	userAgent string,
+) (*DNSProvider, error) {
+	provider, err := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -159,6 +166,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role str
 		hostedZoneID:     hostedZoneID,
 		dns01Nameservers: dns01Nameservers,
 		log:              logf.Log.WithName("route53"),
+		userAgent:        userAgent,
 	}, nil
 }
 

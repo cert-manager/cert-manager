@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 // CloudFlareAPIURL represents the API endpoint to call.
@@ -40,6 +39,8 @@ type DNSProvider struct {
 	authEmail        string
 	authKey          string
 	authToken        string
+
+	userAgent string
 }
 
 // DNSZone is the Zone-Record returned from Cloudflare (we`ll ignore everything we don't need)
@@ -52,15 +53,15 @@ type DNSZone struct {
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
 // Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
 // and CLOUDFLARE_API_KEY.
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProvider(dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
 	email := os.Getenv("CLOUDFLARE_EMAIL")
 	key := os.Getenv("CLOUDFLARE_API_KEY")
-	return NewDNSProviderCredentials(email, key, "", dns01Nameservers)
+	return NewDNSProviderCredentials(email, key, "", dns01Nameservers, userAgent)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
-func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string, userAgent string) (*DNSProvider, error) {
 	if (email == "" && key != "") || (key == "" && token == "") {
 		return nil, fmt.Errorf("no Cloudflare credential has been given (can be either an API key or an API token)")
 	}
@@ -86,6 +87,7 @@ func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []stri
 		authKey:          key,
 		authToken:        token,
 		dns01Nameservers: dns01Nameservers,
+		userAgent:        userAgent,
 	}, nil
 }
 
@@ -266,7 +268,7 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 	} else {
 		req.Header.Set("X-Auth-Key", c.authKey)
 	}
-	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
+	req.Header.Set("User-Agent", c.userAgent)
 
 	client := http.Client{
 		Timeout: 30 * time.Second,

@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
@@ -417,8 +418,11 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						IssuerOptions: controller.IssuerOptions{
-							IssuerAmbientCredentials: true,
+						RESTConfig: new(rest.Config),
+						ContextOptions: controller.ContextOptions{
+							IssuerOptions: controller.IssuerOptions{
+								IssuerAmbientCredentials: true,
+							},
 						},
 					},
 				},
@@ -447,8 +451,11 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						IssuerOptions: controller.IssuerOptions{
-							IssuerAmbientCredentials: false,
+						RESTConfig: new(rest.Config),
+						ContextOptions: controller.ContextOptions{
+							IssuerOptions: controller.IssuerOptions{
+								IssuerAmbientCredentials: false,
+							},
 						},
 					},
 				},
@@ -507,8 +514,11 @@ func TestRoute53AssumeRole(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						IssuerOptions: controller.IssuerOptions{
-							IssuerAmbientCredentials: true,
+						RESTConfig: new(rest.Config),
+						ContextOptions: controller.ContextOptions{
+							IssuerOptions: controller.IssuerOptions{
+								IssuerAmbientCredentials: true,
+							},
 						},
 					},
 				},
@@ -538,8 +548,11 @@ func TestRoute53AssumeRole(t *testing.T) {
 			solverFixture{
 				Builder: &test.Builder{
 					Context: &controller.Context{
-						IssuerOptions: controller.IssuerOptions{
-							IssuerAmbientCredentials: false,
+						RESTConfig: new(rest.Config),
+						ContextOptions: controller.ContextOptions{
+							IssuerOptions: controller.IssuerOptions{
+								IssuerAmbientCredentials: false,
+							},
 						},
 					},
 				},
