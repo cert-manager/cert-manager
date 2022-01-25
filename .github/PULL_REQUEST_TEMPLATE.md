@@ -1,20 +1,43 @@
-<!--  Thanks for sending a pull request!  Here are some tips for you:
-1. If this is your first time, read our contributor guidelines https://git.k8s.io/community/contributors/guide#your-first-contribution and developer guide https://git.k8s.io/community/contributors/devel/development.md#development-guide
-2. If you want *faster* PR reviews, read how: https://git.k8s.io/community/contributors/guide/pull-requests.md#best-practices-for-faster-reviews
-3. Follow the instructions for writing a release note: https://git.k8s.io/community/contributors/guide/release-notes.md
-4. If the PR is unfinished, see how to mark it: https://git.k8s.io/community/contributors/guide/pull-requests.md#marking-unfinished-pull-requests
+<!--
+
+Thanks for opening a pull request! Here are some tips to get everything merged smoothly:
+
+1. Read our contributor guidelines: https://cert-manager.io/docs/contributing/
+
+2. Make sure your commits are signed off: https://cert-manager.io/docs/contributing/sign-off/
+
+3. If the PR is unfinished, raise it as a draft or prefix the title with "WIP:" so it's clear to everyone.
+
+4. Be sure to allow edits from maintainers so it's easier for us to help: https://help.github.com/en/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork
+
 -->
 
-**What this PR does / why we need it**:
+### Pull Request Motivation
 
-**Which issue this PR fixes** *(optional, in `fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close that issue when PR gets merged)*: fixes #
+<!-- Explain the motivation behind this PR. If there's a related issue or PR, link to it here! -->
 
-**Special notes for your reviewer**:
+### Kind
 
-**Release note**:
-<!--  Steps to write your release note:
-1. Use the release-note-* labels to set the release note state (if you have access)
-2. Enter your extended release note in the below block; leaving it blank means using the PR title as the release note. If no release note is required, just write `NONE`.
+<!--
+
+Pick a kind which best describes your PR from the following list:
+
+	<cleanup | bug | feature | documentation | design | flake>
+
+If you're unsure which is best or if you're not sure what we mean by "kind",
+just ignore this section and a maintainer will fill it in for you!
 -->
+
+### Release Note
+
+<!--
+
+Should we mention this PR in release notes? If so, replace "NONE" with a line of text explaining what changed!
+
+For more details, see: https://git.k8s.io/community/contributors/guide/release-notes.md
+
+-->
+
 ```release-note
+NONE
 ```
