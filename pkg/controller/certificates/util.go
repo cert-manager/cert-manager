@@ -34,12 +34,6 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
-// The amount of time after the LastFailureTime of a Certificate
-// before the request should be retried.
-// In future this should be replaced with a more dynamic exponential
-// back-off algorithm.
-const RetryAfterLastFailure = time.Hour
-
 // PrivateKeyMatchesSpec returns an error if the private key bit size
 // doesn't match the provided spec. RSA, Ed25519 and ECDSA are supported.
 // If any error is returned, a list of violations will also be returned.

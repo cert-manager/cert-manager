@@ -612,7 +612,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing The certificate has been successfully issued",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
@@ -666,7 +666,7 @@ func TestIssuingController(t *testing.T) {
 					"Normal Issuing The certificate has been successfully issued",
 				},
 			},
-			expSecretUpdateDataCall: &secretsmanager.SecretData{
+			expSecretUpdateDataCall: &internal.SecretData{
 				Certificate: exampleBundle.CertificateRequestReady.Status.Certificate,
 				PrivateKey:  exampleBundle.PrivateKeyBytes,
 				CA:          nil,
