@@ -94,24 +94,7 @@ func TestTriggerController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
-		c, err := cmCl.CertmanagerV1().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
-		if err != nil {
-			t.Logf("Failed to fetch Certificate resource, retrying: %v", err)
-			return false, nil
-		}
-		if !apiutil.CertificateHasCondition(c, cmapi.CertificateCondition{
-			Type:   cmapi.CertificateConditionIssuing,
-			Status: cmmeta.ConditionTrue,
-		}) {
-			t.Logf("Certificate does not have expected condition, got=%#v", apiutil.GetCertificateCondition(c, cmapi.CertificateConditionIssuing))
-			return false, nil
-		}
-		return true, nil
-	}, ctx.Done())
-	if err != nil {
-		t.Fatal(err)
-	}
+	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, cert.Name)
 }
 
 func TestTriggerController_RenewNearExpiry(t *testing.T) {
@@ -221,26 +204,132 @@ func TestTriggerController_RenewNearExpiry(t *testing.T) {
 	// update some field to trigger a reconcile.
 	someRenewalTime := metav1.NewTime(now)
 	cert.Status.RenewalTime = &someRenewalTime
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
+}
+
+func TestTriggerController_ExpBackoff(t *testing.T) {
+	t.Log("Testing that trigger controller applies exponential backoff when retrying failed issuances...")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*40)
+	defer cancel()
+
+	config, stopFn := framework.RunControlPlane(t, ctx)
+	defer stopFn()
+
+	now := time.Now()
+	metaNow := metav1.NewTime(now)
+	fakeClock := &fakeclock.FakeClock{}
+	fakeClock.SetTime(metaNow.Time)
+	// Issuing condition will be applied because SecretDoesNotExist policy
+	// will evaluate to true. However, this is not what we are testing in
+	// this test.
+	shoudReissue := policies.NewTriggerPolicyChain(fakeClock).Evaluate
+	// Build, instantiate and run the trigger controller.
+	kubeClient, factory, cmCl, cmFactory := framework.NewClients(t, config)
+
+	namespace := "testns"
+	secretName := "example"
+	certName := "testcrt"
+
+	issuanceAttempts := 7
+	backoffPeriod := time.Hour * 32
+
+	// Create namespace
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create Certificate template
+	cert := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Name: certName, Namespace: namespace},
+		Spec: cmapi.CertificateSpec{
+			SecretName: secretName,
+			CommonName: "example.com",
+			IssuerRef:  cmmeta.ObjectReference{Name: "testissuer"}, // doesn't need to exist
+		},
+	}
+
+	// Start the trigger controller
+	ctrl, queue, mustSync := trigger.NewController(logf.Log, cmCl, factory, cmFactory, framework.NewEventRecorder(t), fakeClock, shoudReissue)
+	c := controllerpkg.NewController(
+		logf.NewContext(ctx, logf.Log, "trigger_controller_RenewNearExpiry"),
+		"trigger_test",
+		metrics.New(logf.Log, clock.RealClock{}),
+		ctrl.ProcessItem,
+		mustSync,
+		nil,
+		queue,
+	)
+	stopController := framework.StartInformersAndController(t, factory, cmFactory, c)
+	defer stopController()
+
+	// Create a Certificate
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).Create(ctx, cert, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. Test that Issuing condition gets set to True
+	t.Log("Ensuring Certificate does get the Issuing condition set to true initially...")
+	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
+
+	// Simulate issuance having failed
+	t.Log("Simulate issuance having failed for 7th time in a row")
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, certName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	apiutil.SetCertificateCondition(cert, 1, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "", "")
+	cert.Status.IssuanceAttempts = &issuanceAttempts
+	cert.Status.LastFailureTime = &metaNow
 	cert, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = wait.PollImmediateUntil(time.Millisecond*200, func() (done bool, err error) {
-		c, err := cmCl.CertmanagerV1().Certificates(cert.Namespace).Get(ctx, cert.Name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		if apiutil.CertificateHasCondition(c, cmapi.CertificateCondition{
-			Type:   cmapi.CertificateConditionIssuing,
-			Status: cmmeta.ConditionTrue,
-		}) {
-			return true, nil
-		}
-		return false, nil
-	}, ctx.Done())
+
+	// 2. Test that issuance is not attempted whilst in backoff period
+	// modify some cert field to ensure a reconcile gets triggered
+	t.Log("Advance clock to slightly before the end of the backoff period")
+	fakeClock.SetTime(now.Add(backoffPeriod - time.Minute))
+	someRenewalTime := metav1.NewTime(time.Now())
+	cert.Status.RenewalTime = &someRenewalTime
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
 	if err != nil {
-		t.Error("Failed waiting for Certificate to have Issuing condition")
+		t.Fatal(err)
 	}
+	t.Log("Ensuring Certificate does not have Issuing condition set to true for 2s...")
+	ensureCertificateDoesNotHaveIssuingCondition(ctx, t, cmCl, namespace, certName)
+
+	// 3. Test that issuance gets retried once the backoff period is over
+	t.Log("Advance clock to just after the backoff period")
+	fakeClock.SetTime(now.Add(backoffPeriod + time.Second))
+	// We need to update some field to trigger a reconcile (as advancing the
+	// clock does not cause the cert, that was set to be reconciled after the
+	// backoff period, to be reconciled now)
+	cert, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, certName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	someRenewalTime = metav1.NewTime(time.Now())
+	cert.Status.RenewalTime = &someRenewalTime
+	_, err = cmCl.CertmanagerV1().Certificates(namespace).UpdateStatus(ctx, cert, metav1.UpdateOptions{})
+	if err != nil {
+		// This is hacky, but it appears that sometimes the trigger
+		// controller gets triggered before renewal time is updated (but
+		// after the backoff time was set to have passed) and the
+		// issuing condition is already applied so this update will
+		// fail. This can be removed once we have server side apply.
+		t.Log("Ensuring Certificate does get the Issuing condition set to true after the backoff period")
+		ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
+	}
+
+	t.Log("Ensuring Certificate does get the Issuing condition set to true after the backoff period")
+	ensureCertificateHasIssuingCondition(ctx, t, cmCl, namespace, certName)
 }
 
 func ensureCertificateDoesNotHaveIssuingCondition(ctx context.Context, t *testing.T, cmCl cmclient.Interface, namespace, name string) {
@@ -272,6 +361,25 @@ func ensureCertificateDoesNotHaveIssuingCondition(ctx context.Context, t *testin
 		// this is the expected 'happy case'
 	default:
 		t.Fatal(err)
+	}
+}
+func ensureCertificateHasIssuingCondition(ctx context.Context, t *testing.T, cmCl cmclient.Interface, namespace, name string) {
+
+	err := wait.PollImmediateUntil(time.Millisecond*200, func() (done bool, err error) {
+		c, err := cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		if apiutil.CertificateHasCondition(c, cmapi.CertificateCondition{
+			Type:   cmapi.CertificateConditionIssuing,
+			Status: cmmeta.ConditionTrue,
+		}) {
+			return true, nil
+		}
+		return false, nil
+	}, ctx.Done())
+	if err != nil {
+		t.Error("Failed waiting for Certificate to have Issuing condition")
 	}
 }
 
