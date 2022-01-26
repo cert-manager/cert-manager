@@ -144,9 +144,6 @@ podLabels: {}
 # Optional additional labels to add to the controller Service
 # serviceLabels: {}
 
-# Optional additional annotations to add to the controller service
-# serviceAnnotations: {}
-
 # Optional DNS settings, useful if you have a public and private DNS zone for
 # the same domain on Route 53. What follows is an example of ensuring
 # cert-manager can access an ingress or DNS TXT records at all times.
@@ -259,9 +256,6 @@ webhook:
 
   # Optional additional annotations to add to the webhook ValidatingWebhookConfiguration
   # validatingWebhookConfigurationAnnotations: {}
-
-  # Optional additional annotations to add to the webhook service
-  # serviceAnnotations: {}
 
   # Additional command line flags to pass to cert-manager webhook binary.
   # To see all available flags run docker run quay.io/jetstack/cert-manager-webhook:<version> --help

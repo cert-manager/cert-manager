@@ -16,10 +16,6 @@ metadata:
     {{- with .Values.webhook.serviceLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- with .Values.webhook.serviceAnnotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
   type: {{ .Values.webhook.serviceType }}
   {{- with .Values.webhook.loadBalancerIP }}
