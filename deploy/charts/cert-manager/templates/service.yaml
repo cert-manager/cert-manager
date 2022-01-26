@@ -17,10 +17,6 @@ metadata:
     {{- with .Values.serviceLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- with .Values.serviceAnnotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
   type: ClusterIP
   ports:
