@@ -29,6 +29,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
@@ -72,7 +73,7 @@ func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challe
 // that the ingress has an appropriate challenge path configured
 func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (ing *networkingv1.Ingress, err error) {
 	log := logf.FromContext(ctx).WithName("ensureIngress")
-	httpDomainCfg, err := http01IngressCfgForChallenge(ch)
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -133,13 +134,13 @@ func (s *Solver) createIngress(ctx context.Context, ch *cmacme.Challenge, svcNam
 }
 
 func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
-	http01IngressCfg, err := http01IngressCfgForChallenge(ch)
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
 	var ingClass *string
-	if http01IngressCfg.Class != nil {
-		ingClass = http01IngressCfg.Class
+	if httpDomainCfg.Class != nil {
+		ingClass = httpDomainCfg.Class
 	}
 
 	podLabels := podLabels(ch)
@@ -148,6 +149,10 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 
 	// TODO: Figure out how to remove this without breaking users who depend on it.
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
+
+	if ingClass != nil {
+		ingAnnotations[cmapi.IngressClassAnnotationKey] = *ingClass
+	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
 
@@ -165,7 +170,6 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: networkingv1.IngressSpec{
-			IngressClassName: ingClass,
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: httpHost,
@@ -208,7 +212,7 @@ func (s *Solver) mergeIngressObjectMetaWithIngressResourceTemplate(ingress *netw
 }
 
 func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*networkingv1.Ingress, error) {
-	httpDomainCfg, err := http01IngressCfgForChallenge(ch)
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +270,7 @@ func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) err
 		return nil
 	}
 
-	httpDomainCfg, err := http01IngressCfgForChallenge(ch)
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return err
 	}

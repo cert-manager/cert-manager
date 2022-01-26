@@ -36,8 +36,6 @@ import (
 	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
 )
 
-// Important: these tests cannot run in parallel as the cache holds internal state at the package level.
-
 func TestFunctionalityAgainstV1(t *testing.T) {
 	// wipe known versions cache
 	cacheLock.Lock()
