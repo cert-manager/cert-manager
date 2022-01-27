@@ -199,7 +199,7 @@ func TestIssuingController(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Wait for the Certificate to have the 'Issuing' condition set to False, and
+	// Wait for the Certificate to have the 'Issuing' condition removed, and
 	// for the signed certificate, ca, and private key stored in the Secret.
 	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
@@ -208,13 +208,8 @@ func TestIssuingController(t *testing.T) {
 			return false, nil
 		}
 
-		if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
-			Type:    cmapi.CertificateConditionIssuing,
-			Status:  cmmeta.ConditionFalse,
-			Reason:  "Issued",
-			Message: "The certificate has been successfully issued",
-		}) {
-			t.Logf("Certificate does not have expected condition, got=%#v", apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing))
+		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil {
+			t.Logf("Certificate does not have expected condition, got=%#v", cond)
 			return false, nil
 		}
 
@@ -417,8 +412,8 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Wait for the Certificate to have the 'Issuing' condition set to False, and
-	// for the signed certificate, ca, and private key stored in the Secret.
+	// Wait for the Certificate to have the 'Issuing' condition removed, and for
+	// the signed certificate, ca, and private key stored in the Secret.
 	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
@@ -426,13 +421,8 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 			return false, nil
 		}
 
-		if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
-			Type:    cmapi.CertificateConditionIssuing,
-			Status:  cmmeta.ConditionFalse,
-			Reason:  "Issued",
-			Message: "The certificate has been successfully issued",
-		}) {
-			t.Logf("Certificate does not have expected condition, got=%#v", apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing))
+		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil {
+			t.Logf("Certificate does not have expected condition, got=%#v", cond)
 			return false, nil
 		}
 
@@ -630,8 +620,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Wait for the Certificate to have the 'Issuing' condition set to False, and
-	// for the signed certificate, ca, and private key stored in the Secret.
+	// Wait for the Certificate to have the 'Issuing' condition removed, and for
+	// the signed certificate, ca, and private key stored in the Secret.
 	err = wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
 		crt, err = cmCl.CertmanagerV1().Certificates(namespace).Get(ctx, crtName, metav1.GetOptions{})
 		if err != nil {
@@ -639,13 +629,8 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 			return false, nil
 		}
 
-		if !apiutil.CertificateHasCondition(crt, cmapi.CertificateCondition{
-			Type:    cmapi.CertificateConditionIssuing,
-			Status:  cmmeta.ConditionFalse,
-			Reason:  "Issued",
-			Message: "The certificate has been successfully issued",
-		}) {
-			t.Logf("Certificate does not have expected condition, got=%#v", apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing))
+		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil {
+			t.Logf("Certificate does not have expected condition, got=%#v", cond)
 			return false, nil
 		}
 
