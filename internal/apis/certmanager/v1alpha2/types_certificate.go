@@ -324,7 +324,7 @@ type CertificateStatus struct {
 	// List of status conditions to indicate the status of certificates.
 	// Known condition types are `Ready` and `Issuing`.
 	// +listType=map
-	// +listMapKey=Type
+	// +listMapKey=type
 	// +optional
 	Conditions []CertificateCondition `json:"conditions,omitempty"`
 
