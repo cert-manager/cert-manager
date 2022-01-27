@@ -35,8 +35,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
-	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
-	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	gwfake "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned/fake"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmfake "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/fake"

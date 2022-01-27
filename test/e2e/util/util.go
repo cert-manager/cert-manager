@@ -25,6 +25,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"net"
 	"net/url"
 	"time"
@@ -37,8 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
-	"sigs.k8s.io/gateway-api/apis/v1alpha1"
-	gwapiv1alpha1 "sigs.k8s.io/gateway-api/apis/v1alpha1"
+	gwapiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -370,38 +370,44 @@ func pathTypePrefix() *networkingv1.PathType {
 	return &p
 }
 
-func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) (*gwapiv1alpha1.Gateway, *gwapiv1alpha1.HTTPRoute) {
-	var hostnames []gwapiv1alpha1.Hostname
+func NewGateway(gatewayName, ns, secretName string, annotations map[string]string, dnsNames ...string) (*gwapiv1alpha2.Gateway, *gwapiv1alpha2.HTTPRoute) {
+	var hostnames []gwapiv1alpha2.Hostname
 	for _, dnsName := range dnsNames {
-		hostnames = append(hostnames, gwapiv1alpha1.Hostname(dnsName))
+		hostnames = append(hostnames, gwapiv1alpha2.Hostname(dnsName))
 	}
 
-	return &gwapiv1alpha1.Gateway{
+	return &gwapiv1alpha2.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        gatewayName,
 				Annotations: annotations,
 			},
-			Spec: gwapiv1alpha1.GatewaySpec{
+			Spec: gwapiv1alpha2.GatewaySpec{
 				GatewayClassName: "istio",
-				Listeners: []v1alpha1.Listener{{
-					Routes: gwapiv1alpha1.RouteBindingSelector{
-						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
-							"gw": gatewayName,
-						}},
+				Listeners: []gwapiv1alpha2.Listener{{
+					AllowedRoutes: &gwapiv1alpha2.AllowedRoutes{
+						Namespaces: &gwapiv1alpha2.RouteNamespaces{
+							From: func() *gwapiv1alpha2.FromNamespaces { f := gwapiv1alpha2.NamespacesFromSame; return &f }(),
+							Selector: &metav1.LabelSelector{MatchLabels: map[string]string{
+								"gw": gatewayName,
+							}},
+						},
+						Kinds: nil,
 					},
-					Port:     gwapiv1alpha1.PortNumber(80),
-					Hostname: (*gwapiv1alpha1.Hostname)(&dnsNames[0]),
-					TLS: &gwapiv1alpha1.GatewayTLSConfig{
-						CertificateRef: &gwapiv1alpha1.LocalObjectReference{
-							Name:  secretName,
-							Kind:  "Secret",
-							Group: "core",
+					Port:     gwapiv1alpha2.PortNumber(80),
+					Hostname: (*gwapiv1alpha2.Hostname)(&dnsNames[0]),
+					TLS: &gwapiv1alpha2.GatewayTLSConfig{
+						CertificateRefs: []*gwapiv1alpha2.SecretObjectReference{
+							{
+								Kind:      func() *gwapiv1alpha2.Kind { k := gwapiv1alpha2.Kind("Secret"); return &k }(),
+								Name:      gwapiv1alpha2.ObjectName(secretName),
+								Namespace: (*gwapiv1alpha2.Namespace)(&ns),
+							},
 						},
 					},
 				}},
 			},
 		},
-		&gwapiv1alpha1.HTTPRoute{
+		&gwapiv1alpha2.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:        gatewayName,
 				Annotations: annotations,
@@ -409,30 +415,37 @@ func NewGateway(gatewayName, ns, secretName string, annotations map[string]strin
 					"gw": gatewayName,
 				},
 			},
-			Spec: gwapiv1alpha1.HTTPRouteSpec{
-				Gateways: &gwapiv1alpha1.RouteGateways{
-					GatewayRefs: []gwapiv1alpha1.GatewayReference{{
-						Name:      gatewayName,
-						Namespace: ns,
-					}},
+			Spec: gwapiv1alpha2.HTTPRouteSpec{
+				CommonRouteSpec: gwapiv1alpha2.CommonRouteSpec{
+					ParentRefs: []gwapiv1alpha2.ParentRef{
+						{
+							Namespace: (*gwapiv1alpha2.Namespace)(&ns),
+							Name:      gwapiv1alpha2.ObjectName(gatewayName),
+						},
+					},
 				},
 				Hostnames: hostnames,
-				Rules: []gwapiv1alpha1.HTTPRouteRule{{
-					Matches: []gwapiv1alpha1.HTTPRouteMatch{{
-						Path: &gwapiv1alpha1.HTTPPathMatch{
-							Type:  ptrPathMatch(gwapiv1alpha1.PathMatchExact),
+				Rules: []gwapiv1alpha2.HTTPRouteRule{{
+					Matches: []gwapiv1alpha2.HTTPRouteMatch{{
+						Path: &gwapiv1alpha2.HTTPPathMatch{
+							Type:  ptrPathMatch(gwapiv1alpha2.PathMatchExact),
 							Value: ptrStr("/"),
 						},
 					}},
-					ForwardTo: []gwapiv1alpha1.HTTPRouteForwardTo{{
-						ServiceName: ptrStr("dummy-service"),
-						Port:        ptrPort(80),
+					BackendRefs: []gwapiv1alpha2.HTTPBackendRef{{
+						BackendRef: gwapiv1alpha2.BackendRef{
+							BackendObjectReference: gwapiv1alpha2.BackendObjectReference{
+								Name: "dummy-service",
+								Port: ptrPort(80),
+							},
+							Weight: pointer.Int32(1),
+						},
 					}},
 				}},
 			},
 		}
 }
-func ptrPathMatch(p gwapiv1alpha1.PathMatchType) *gwapiv1alpha1.PathMatchType {
+func ptrPathMatch(p gwapiv1alpha2.PathMatchType) *gwapiv1alpha2.PathMatchType {
 	return &p
 }
 
@@ -440,8 +453,8 @@ func ptrStr(s string) *string {
 	return &s
 }
 
-func ptrPort(port int32) *gwapiv1alpha1.PortNumber {
-	p := gwapiv1alpha1.PortNumber(port)
+func ptrPort(port int32) *gwapiv1alpha2.PortNumber {
+	p := gwapiv1alpha2.PortNumber(port)
 	return &p
 }
 

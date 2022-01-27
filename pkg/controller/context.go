@@ -36,9 +36,9 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
-	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
-	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/scheme"
-	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
+	gwscheme "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned/scheme"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions"
 
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
