@@ -130,6 +130,8 @@ type CertificateRequestSpec struct {
 type CertificateRequestStatus struct {
 	// List of status conditions to indicate the status of a CertificateRequest.
 	// Known condition types are `Ready` and `InvalidRequest`.
+	// +listType=map
+	// +listMapKey=type
 	// +optional
 	Conditions []CertificateRequestCondition `json:"conditions,omitempty"`
 
