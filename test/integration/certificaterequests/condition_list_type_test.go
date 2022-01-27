@@ -26,7 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	internalcertificaterequests "github.com/jetstack/cert-manager/internal/controller/certificaterequests"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/integration/framework"
 	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
@@ -63,100 +65,74 @@ func Test_ConditionsListType(t *testing.T) {
 	assert.NoError(t, err)
 
 	bundle := testcrypto.MustCreateCryptoBundle(t, &cmapi.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testns",
-			Name:      "test",
-			UID:       "test",
-		},
-		Spec: cmapi.CertificateSpec{CommonName: "test-bundle-1"}},
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Spec: cmapi.CertificateSpec{
+			CommonName: "test-bundle-1",
+			IssuerRef:  cmmeta.ObjectReference{Name: "test-bundle-1"},
+		}},
 		&fakeclock.FakeClock{},
 	)
+	req := bundle.CertificateRequest
+	req.OwnerReferences = nil
+	req.Name = name
 
 	t.Log("creating CertificateRequest")
-	_, err = aliceCMClient.CertmanagerV1().CertificateRequests(namespace).Create(ctx, bundle.CertificateRequest, metav1.CreateOptions{})
+	_, err = aliceCMClient.CertmanagerV1().CertificateRequests(namespace).Create(ctx, req, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
-	//t.Log("ensuring alice can set Ready condition")
-	//crt = &cmapi.Certificate{
-	//	TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-	//	ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
-	//	Status: cmapi.CertificateStatus{
-	//		Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
-	//	},
-	//}
-	//crtData, err := json.Marshal(crt)
-	//assert.NoError(t, err)
-	//_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Patch(
-	//	ctx, name, apitypes.ApplyPatchType, crtData,
-	//	metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: aliceFieldManager}, "status",
-	//)
-	//assert.NoError(t, err)
+	t.Log("ensuring alice can set Ready condition")
+	assert.NoError(t, internalcertificaterequests.ApplyStatus(ctx, aliceCMClient, aliceFieldManager, &cmapi.CertificateRequest{
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Status: cmapi.CertificateRequestStatus{
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
+		},
+	}))
 
-	//t.Log("ensuring bob can set a district issuing condition, without changing the ready condition")
-	//crt = &cmapi.Certificate{
-	//	TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-	//	ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
-	//	Status: cmapi.CertificateStatus{
-	//		Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
-	//	},
-	//}
-	//crtData, err = json.Marshal(crt)
-	//assert.NoError(t, err)
-	//_, err = bobCMClient.CertmanagerV1().Certificates(namespace).Patch(
-	//	ctx, name, apitypes.ApplyPatchType, crtData,
-	//	metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: bobFieldManager}, "status",
-	//)
-	//assert.NoError(t, err)
+	t.Log("ensuring bob can set a district random condition, without changing the ready condition")
+	assert.NoError(t, internalcertificaterequests.ApplyStatus(ctx, bobCMClient, bobFieldManager, &cmapi.CertificateRequest{
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Status: cmapi.CertificateRequestStatus{
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"}},
+		},
+	}))
 
-	//crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
-	//assert.NoError(t, err)
-	//assert.Equal(t, []cmapi.CertificateCondition{
-	//	{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
-	//	{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
-	//}, crt.Status.Conditions, "conditions did not match the expected 2 distinct condition types")
+	req, err = bobCMClient.CertmanagerV1().CertificateRequests(namespace).Get(ctx, name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, []cmapi.CertificateRequestCondition{
+		{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
+		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionTrue, Reason: "reason", Message: "message"},
+	}, req.Status.Conditions, "conditions did not match the expected 2 distinct condition types")
 
-	//t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
-	//crt = &cmapi.Certificate{
-	//	TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-	//	ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
-	//	Status: cmapi.CertificateStatus{
-	//		Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
-	//	},
-	//}
-	//crtData, err = json.Marshal(crt)
-	//assert.NoError(t, err)
-	//_, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Patch(
-	//	ctx, name, apitypes.ApplyPatchType, crtData,
-	//	metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: aliceFieldManager}, "status",
-	//)
-	//assert.NoError(t, err)
+	t.Log("alice should override an existing condition by another manager, and can delete an existing owned condition type through omission")
+	assert.NoError(t, internalcertificaterequests.ApplyStatus(ctx, aliceCMClient, aliceFieldManager, &cmapi.CertificateRequest{
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Status: cmapi.CertificateRequestStatus{
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"}},
+		},
+	}))
 
-	//crt, err = aliceCMClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
-	//assert.NoError(t, err)
-	//assert.Equal(t, []cmapi.CertificateCondition{
-	//	{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
-	//}, crt.Status.Conditions, "conditions did not match expected deleted ready condition, and overwritten issuing condition")
+	req, err = aliceCMClient.CertmanagerV1().CertificateRequests(namespace).Get(ctx, name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, []cmapi.CertificateRequestCondition{
+		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
+	}, req.Status.Conditions, "conditions did not match expected deleted ready condition, and overwritten random condition")
 
-	//t.Log("bob can re-add a Ready condition and not change Issuing condition")
-	//crt = &cmapi.Certificate{
-	//	TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
-	//	ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
-	//	Status: cmapi.CertificateStatus{
-	//		Conditions: []cmapi.CertificateCondition{{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
-	//	},
-	//}
-	//crtData, err = json.Marshal(crt)
-	//assert.NoError(t, err)
-	//_, err = bobCMClient.CertmanagerV1().Certificates(namespace).Patch(
-	//	ctx, name, apitypes.ApplyPatchType, crtData,
-	//	metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: bobFieldManager}, "status",
-	//)
-	//assert.NoError(t, err)
+	t.Log("bob can re-add a Ready condition and not change Random condition")
+	assert.NoError(t, internalcertificaterequests.ApplyStatus(ctx, bobCMClient, bobFieldManager, &cmapi.CertificateRequest{
+		TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateRequestKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Status: cmapi.CertificateRequestStatus{
+			Conditions: []cmapi.CertificateRequestCondition{{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"}},
+		},
+	}))
 
-	//crt, err = bobCMClient.CertmanagerV1().Certificates(namespace).Get(ctx, name, metav1.GetOptions{})
-	//assert.NoError(t, err)
-	//assert.Equal(t, []cmapi.CertificateCondition{
-	//	{Type: cmapi.CertificateConditionIssuing, Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
-	//	{Type: cmapi.CertificateConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"},
-	//}, crt.Status.Conditions, "expected bob to be able to add a distinct ready condition after no longer owning the issuing condition")
+	req, err = bobCMClient.CertmanagerV1().CertificateRequests(namespace).Get(ctx, name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, []cmapi.CertificateRequestCondition{
+		{Type: cmapi.CertificateRequestConditionType("Random"), Status: cmmeta.ConditionFalse, Reason: "another-reason", Message: "another-message"},
+		{Type: cmapi.CertificateRequestConditionReady, Status: cmmeta.ConditionFalse, Reason: "reason", Message: "message"},
+	}, req.Status.Conditions, "expected bob to be able to add a distinct ready condition after no longer owning the random condition")
 }

@@ -5,6 +5,7 @@ go_test(
     srcs = ["condition_list_type_test.go"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
         "//pkg/util:go_default_library",
         "//test/integration/framework:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
