@@ -35,17 +35,15 @@ import (
 // The given fieldManager is will be used as the FieldManager in
 // the Apply call.
 // Always sets Force Apply to true.
-func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, req *cmapi.CertificateRequest) error {
+func Apply(ctx context.Context, cl cmclient.Interface, fieldManager string, req *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
 	reqData, err := serializeApplyStatus(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = cl.CertmanagerV1().CertificateRequests(req.Namespace).Patch(
+	return cl.CertmanagerV1().CertificateRequests(req.Namespace).Patch(
 		ctx, req.Name, apitypes.ApplyPatchType, reqData,
 		metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: fieldManager})
-
-	return err
 }
 
 // ApplyStatus will make an Apply API call with the given client to the

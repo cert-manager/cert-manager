@@ -14,6 +14,7 @@ filegroup(
         "//internal/apis/config/webhook:all-srcs",
         "//internal/apis/meta:all-srcs",
         "//internal/cainjector/feature:all-srcs",
+        "//internal/controller/certificaterequests:all-srcs",
         "//internal/controller/certificates:all-srcs",
         "//internal/controller/feature:all-srcs",
         "//internal/ingress:all-srcs",
