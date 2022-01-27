@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -47,7 +46,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
 	utilkube "github.com/jetstack/cert-manager/pkg/util/kube"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/pkg/util/predicate"
@@ -87,7 +85,7 @@ type controller struct {
 func NewController(
 	log logr.Logger,
 	kubeClient kubernetes.Interface,
-	restConfig *rest.Config,
+	fieldManager string,
 	client cmclient.Interface,
 	factory informers.SharedInformerFactory,
 	cmFactory cminformers.SharedInformerFactory,
@@ -130,7 +128,7 @@ func NewController(
 
 	secretsManager := internal.NewSecretsManager(
 		kubeClient.CoreV1(), secretsInformer.Lister(),
-		restConfig, certificateControllerOptions.EnableOwnerRef,
+		fieldManager, certificateControllerOptions.EnableOwnerRef,
 	)
 
 	return &controller{
@@ -141,7 +139,7 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		secretsUpdateData:        secretsManager.UpdateData,
-		postIssuancePolicyChain:  policies.NewSecretPostIssuancePolicyChain(util.PrefixFromUserAgent(restConfig.UserAgent)),
+		postIssuancePolicyChain:  policies.NewSecretPostIssuancePolicyChain(fieldManager),
 		localTemporarySigner:     certificates.GenerateLocallySignedTemporaryCertificate,
 	}, queue, mustSync
 }
@@ -406,7 +404,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 
 	ctrl, queue, mustSync := NewController(log,
 		ctx.Client,
-		ctx.RESTConfig,
+		ctx.FieldManager,
 		ctx.CMClient,
 		ctx.KubeSharedInformerFactory,
 		ctx.SharedInformerFactory,

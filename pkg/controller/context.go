@@ -70,6 +70,9 @@ type Context struct {
 	// to exit
 	StopCh <-chan struct{}
 
+	// FieldManager is the string that should be used as the field manager when
+	// applying API object. This value is derived from the user agent.
+	FieldManager string
 	// RESTConfig is the loaded Kubernetes apiserver rest client configuration
 	RESTConfig *rest.Config
 	// Client is a Kubernetes clientset
@@ -280,6 +283,7 @@ func (c *ContextFactory) Build(component ...string) (*Context, error) {
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: util.PrefixFromUserAgent(restConfig.UserAgent)})
 
 	ctx := *c.ctx
+	ctx.FieldManager = util.PrefixFromUserAgent(restConfig.UserAgent)
 	ctx.RESTConfig = restConfig
 	ctx.Client = clients.kubeClient
 	ctx.CMClient = clients.cmClient
