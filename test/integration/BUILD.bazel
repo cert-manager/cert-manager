@@ -16,6 +16,7 @@ filegroup(
         "//test/integration/framework:all-srcs",
         "//test/integration/fuzz/acme:all-srcs",
         "//test/integration/fuzz/cert-manager:all-srcs",
+        "//test/integration/issuers:all-srcs",
         "//test/integration/rfc2136_dns01:all-srcs",
         "//test/integration/validation:all-srcs",
         "//test/integration/versionchecker:all-srcs",
