@@ -19,7 +19,6 @@ package keymanager
 import (
 	"context"
 	"crypto"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -29,15 +28,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -323,20 +321,10 @@ func (c *controller) setNextPrivateKeySecretName(ctx context.Context, crt *cmapi
 // applied using the relevant Patch API call.
 func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		crt := &cmapi.Certificate{
-			TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
 			Status:     cmapi.CertificateStatus{NextPrivateKeySecretName: crt.Status.NextPrivateKeySecretName},
-		}
-		crtData, err := json.Marshal(crt)
-		if err != nil {
-			return fmt.Errorf("failed to marshal certificate object: %w", err)
-		}
-		_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).Patch(
-			ctx, crt.Name, apitypes.ApplyPatchType, crtData,
-			metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: c.fieldManager}, "status",
-		)
-		return err
+		})
 	} else {
 		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 		return err

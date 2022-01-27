@@ -19,7 +19,6 @@ package issuing
 import (
 	"context"
 	"crypto"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -28,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -36,8 +34,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
-	"k8s.io/utils/pointer"
 
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
 	"github.com/cert-manager/cert-manager/internal/controller/certificates/policies"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
@@ -350,7 +348,7 @@ func (c *controller) failIssueCertificate(ctx context.Context, log logr.Logger, 
 	crt = crt.DeepCopy()
 	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, reason, message)
 
-	if err := c.updateOrApplyStatus(ctx, crt); err != nil {
+	if err := c.updateOrApplyStatus(ctx, crt, false); err != nil {
 		return err
 	}
 
@@ -385,18 +383,17 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	//Set status.revision to revision of the CertificateRequest
 	crt.Status.Revision = &nextRevision
 
-	message := "The certificate has been successfully issued"
-
-	// Set Issuing Condition to False.
-	apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "Issued", message)
+	// Remove Issuing status condition
+	apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionIssuing)
 
 	//Clear status.lastFailureTime (if set)
 	crt.Status.LastFailureTime = nil
 
-	if err := c.updateOrApplyStatus(ctx, crt); err != nil {
+	if err := c.updateOrApplyStatus(ctx, crt, true); err != nil {
 		return err
 	}
 
+	message := "The certificate has been successfully issued"
 	c.recorder.Event(crt, corev1.EventTypeNormal, "Issuing", message)
 
 	return nil
@@ -406,27 +403,30 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 // updateOrApplyStatus will update the controller status. If the
 // ServerSideApply feature is enabled, the managed fields will instead get
 // applied using the relevant Patch API call.
-func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate) error {
+// conditionRemove should be true if the Issuing condition has been removed by
+// this controller. If the ServerSideApply feature is enabled and condition
+// have been removed, the Issuing condition will be set to False before
+// applying.
+func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate, conditionRemoved bool) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		crt := &cmapi.Certificate{
-			TypeMeta:   metav1.TypeMeta{Kind: cmapi.CertificateKind, APIVersion: cmapi.SchemeGroupVersion.Identifier()},
+		if conditionRemoved {
+			message := "The certificate has been successfully issued"
+			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "Issued", message)
+		}
+
+		var conditions []cmapi.CertificateCondition
+		if cond := apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing); cond != nil {
+			conditions = []cmapi.CertificateCondition{*cond}
+		}
+
+		return internalcertificates.ApplyStatus(ctx, c.client, c.fieldManager, &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{Namespace: crt.Namespace, Name: crt.Name},
 			Status: cmapi.CertificateStatus{
 				Revision:        crt.Status.Revision,
 				LastFailureTime: crt.Status.LastFailureTime,
-				Conditions:      []cmapi.CertificateCondition{*apiutil.GetCertificateCondition(crt, cmapi.CertificateConditionIssuing)},
+				Conditions:      conditions,
 			},
-		}
-
-		crtData, err := json.Marshal(crt)
-		if err != nil {
-			return fmt.Errorf("failed to marshal certificate object: %w", err)
-		}
-		_, err = c.client.CertmanagerV1().Certificates(crt.Namespace).Patch(
-			ctx, crt.Name, apitypes.ApplyPatchType, crtData,
-			metav1.PatchOptions{Force: pointer.Bool(true), FieldManager: c.fieldManager}, "status",
-		)
-		return err
+		})
 	} else {
 		_, err := c.client.CertmanagerV1().Certificates(crt.Namespace).UpdateStatus(ctx, crt, metav1.UpdateOptions{})
 		return err
