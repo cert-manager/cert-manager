@@ -1203,5 +1203,8 @@ spec:
                       type:
                         description: Type of the condition, known values are (`Ready`).
                         type: string
+                  x-kubernetes-list-map-keys:
+                    - type
+                  x-kubernetes-list-type: map
       served: true
       storage: true

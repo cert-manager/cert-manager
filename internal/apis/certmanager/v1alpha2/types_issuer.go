@@ -287,6 +287,8 @@ type CAIssuer struct {
 type IssuerStatus struct {
 	// List of status conditions to indicate the status of a CertificateRequest.
 	// Known condition types are `Ready`.
+	// +listType=map
+	// +listMapKey=type
 	// +optional
 	Conditions []IssuerCondition `json:"conditions,omitempty"`
 
