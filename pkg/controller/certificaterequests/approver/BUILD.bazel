@@ -9,6 +9,8 @@ go_library(
     importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificaterequests/approver",
     visibility = ["//visibility:public"],
     deps = [
+        "//internal/controller/certificaterequests:go_default_library",
+        "//internal/controller/feature:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
@@ -16,6 +18,7 @@ go_library(
         "//pkg/client/listers/certmanager/v1:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",

@@ -47,6 +47,7 @@ type Controller struct {
 
 	certificateRequestLister cmlisters.CertificateRequestLister
 	cmClient                 cmclient.Interface
+	fieldManager             string
 
 	recorder record.EventRecorder
 
@@ -74,6 +75,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	c.certificateRequestLister = certificateRequestInformer.Lister()
 	c.cmClient = ctx.CMClient
+	c.fieldManager = ctx.FieldManager
 	c.recorder = ctx.Recorder
 
 	c.log.V(logf.DebugLevel).Info("certificate request approver controller registered")
