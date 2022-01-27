@@ -24,16 +24,17 @@ import (
 	"strings"
 	"time"
 
-	internalcertificates "github.com/jetstack/cert-manager/internal/controller/certificates"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
+
+	internalcertificates "github.com/jetstack/cert-manager/internal/controller/certificates"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func SecretDoesNotExist(input Input) (string, string, bool) {
@@ -240,8 +241,8 @@ func issuerGroupsEqual(l, r string) bool {
 // and Labels, and compare these maps against those that appear on the given
 // Certificate's SecretTemplate.
 // Returns false if all the Certificate's SecretTemplate Annotations and Labels
-// appear on the Secret, or put another way, the Secret Annotations/Labels are
-// a subset of that in the Certificate's SecretTemplate.
+// appear on the Secret, or put another way, the Certificate's SecretTemplate
+// is a subset of that in the Secret's Annotations/Labels.
 // Returns true otherwise.
 func SecretTemplateMismatchesSecret(input Input) (string, string, bool) {
 	if input.Certificate.Spec.SecretTemplate == nil {
