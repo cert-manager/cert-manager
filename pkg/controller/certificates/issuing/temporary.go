@@ -23,17 +23,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/jetstack/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/internal/secretsmanager"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates/issuing/internal"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
-
-var temporaryCertificatePolicyChain = policies.Chain{
-	policies.SecretDoesNotExist,
-	policies.SecretIsMissingData,
-	policies.SecretPublicKeysDiffer,
-}
 
 // ensureTemporaryCertificate will create a temporary certificate and store it
 // into the target Secret if:
@@ -60,7 +54,7 @@ func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.
 	input := policies.Input{Secret: secret}
 	// If the target Secret exists with a signed certificate and matching private
 	// key, do not issue.
-	if _, _, invalid := temporaryCertificatePolicyChain.Evaluate(input); !invalid {
+	if _, _, invalid := policies.NewTemporaryCertificatePolicyChain().Evaluate(input); !invalid {
 		return false, nil
 	}
 
@@ -73,7 +67,7 @@ func (c *controller) ensureTemporaryCertificate(ctx context.Context, crt *cmapi.
 	if err != nil {
 		return false, err
 	}
-	secretData := secretsmanager.SecretData{
+	secretData := internal.SecretData{
 		Certificate: certData,
 		PrivateKey:  pkData,
 	}

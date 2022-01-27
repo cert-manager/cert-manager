@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package secretsmanager
+package internal
 
 import (
 	"context"
@@ -42,9 +42,9 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 	testcoreclients "github.com/jetstack/cert-manager/test/unit/coreclients"
+	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	testcorelisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
@@ -69,7 +69,7 @@ func Test_SecretsManager(t *testing.T) {
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateUID(apitypes.UID("test-uid")),
 	)
-	baseCertBundle := internaltest.MustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+	baseCertBundle := testcrypto.MustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
 	), fixedClock)
 
@@ -701,7 +701,7 @@ func Test_SecretsManager(t *testing.T) {
 			}
 			secretLister := testcorelisters.NewFakeSecretLister(mod)
 
-			testManager := New(
+			testManager := NewSecretsManager(
 				secretClient, secretLister,
 				&rest.Config{UserAgent: "cert-manager-test"},
 				test.certificateOptions.EnableOwnerRef,
@@ -798,67 +798,6 @@ func Test_getCertificateSecret(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, test.expSecret, gotSecret, "unexpected returned secret")
-		})
-	}
-}
-
-func Test_SecretCertificateAnnotations(t *testing.T) {
-	baseCertBundle := internaltest.MustCreateCryptoBundle(t, gen.Certificate("test-certificate",
-		gen.SetCertificateCommonName("cert-manager"),
-		gen.SetCertificateDNSNames("example.com", "cert-manager.io"),
-		gen.SetCertificateIPs("1.1.1.1", "1.2.3.4"),
-		gen.SetCertificateURIs("spiffe.io//cert-manager.io/test", "spiffe.io//hello.world"),
-	), fixedClock)
-
-	tests := map[string]struct {
-		crt            *cmapi.Certificate
-		data           SecretData
-		expAnnotations map[string]string
-		expError       bool
-	}{
-		"if data contains valid certificate, expect all Annotations to be present": {
-			crt: gen.CertificateFrom(baseCertBundle.Certificate,
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "another-test-issuer", Kind: "GoogleCASIssuer", Group: "my-group.hello.world"}),
-			),
-			data: SecretData{Certificate: baseCertBundle.CertBytes},
-			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "another-test-issuer",
-				"cert-manager.io/issuer-kind":      "GoogleCASIssuer",
-				"cert-manager.io/issuer-group":     "my-group.hello.world",
-				"cert-manager.io/common-name":      "cert-manager",
-				"cert-manager.io/alt-names":        "example.com,cert-manager.io",
-				"cert-manager.io/ip-sans":          "1.1.1.1,1.2.3.4",
-				"cert-manager.io/uri-sans":         "spiffe.io//cert-manager.io/test,spiffe.io//hello.world",
-			},
-			expError: false,
-		},
-		"if no certificate data, then expect no X.509 related annotations": {
-			crt: gen.Certificate("test-certificate",
-				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "test-issuer", Kind: "", Group: "cert-manager.io"}),
-			),
-			data: SecretData{Certificate: nil},
-			expAnnotations: map[string]string{
-				"cert-manager.io/certificate-name": "test-certificate",
-				"cert-manager.io/issuer-name":      "test-issuer",
-				"cert-manager.io/issuer-kind":      "Issuer",
-				"cert-manager.io/issuer-group":     "cert-manager.io",
-			},
-			expError: false,
-		},
-		"if data contains invalid certificate data, expect error": {
-			crt:            gen.Certificate("test-certificate"),
-			data:           SecretData{Certificate: []byte("invalid data")},
-			expAnnotations: nil,
-			expError:       true,
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			gotAnnotations, gotErr := SecretCertificateAnnotations(test.crt, test.data)
-			assert.Equal(t, test.expError, gotErr != nil, "%v", gotErr)
-			assert.Equal(t, test.expAnnotations, gotAnnotations)
 		})
 	}
 }

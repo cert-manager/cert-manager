@@ -28,11 +28,11 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/jetstack/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -42,7 +42,7 @@ func Test_controller_ProcessItem(t *testing.T) {
 
 	// We don't need to full bundle, just a simple CertificateRequest.
 	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {
-		return internaltest.MustCreateCryptoBundle(t, crt, fixedClock).CertificateRequest
+		return testcrypto.MustCreateCryptoBundle(t, crt, fixedClock).CertificateRequest
 	}
 
 	tests := map[string]struct {
@@ -324,7 +324,7 @@ func Test_shouldBackoffReissuingOnFailure(t *testing.T) {
 
 	// We don't need to full bundle, just a simple CertificateRequest.
 	createCertificateRequestOrPanic := func(crt *cmapi.Certificate) *cmapi.CertificateRequest {
-		return internaltest.MustCreateCryptoBundle(t, crt, clock).CertificateRequest
+		return testcrypto.MustCreateCryptoBundle(t, crt, clock).CertificateRequest
 	}
 
 	tests := map[string]struct {

@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/controller/certificates/readiness",
     visibility = ["//visibility:public"],
     deps = [
+        "//internal/controller/certificates/policies:go_default_library",
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
@@ -14,7 +15,6 @@ go_library(
         "//pkg/client/listers/certmanager/v1:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/certificates:go_default_library",
-        "//pkg/controller/certificates/trigger/policies:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//pkg/util/predicate:go_default_library",
@@ -28,7 +28,6 @@ go_library(
         "@io_k8s_client_go//listers/core/v1:go_default_library",
         "@io_k8s_client_go//tools/cache:go_default_library",
         "@io_k8s_client_go//util/workqueue:go_default_library",
-        "@io_k8s_utils//clock:go_default_library",
     ],
 )
 
@@ -51,13 +50,13 @@ go_test(
     srcs = ["readiness_controller_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//internal/controller/certificates/policies:go_default_library",
         "//pkg/apis/certmanager/v1:go_default_library",
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/certificates:go_default_library",
-        "//pkg/controller/certificates/internal/test:go_default_library",
-        "//pkg/controller/certificates/trigger/policies:go_default_library",
         "//pkg/controller/test:go_default_library",
+        "//test/unit/crypto:go_default_library",
         "//test/unit/gen:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",

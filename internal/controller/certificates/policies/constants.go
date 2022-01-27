@@ -26,6 +26,9 @@ const (
 	// InvalidKeyPair is a policy violation reason for a scenario where public
 	// key of certificate does not match private key.
 	InvalidKeyPair string = "InvalidKeyPair"
+	// InvalidCertificate is a policy violation whereby the signed certificate in
+	// the Input Secret could not be parsed or decoded.
+	InvalidCertificate string = "InvalidCertificate"
 	// SecretMismatch is a policy violation reason for a scenario where Secret's
 	// private key does not match spec.
 	SecretMismatch string = "SecretMismatch"
@@ -41,4 +44,11 @@ const (
 	// Expired is a policy violation reason for a scenario where Certificate has
 	// expired.
 	Expired string = "Expired"
+	// SecretTemplateMisMatch is a policy violation whereby the Certificate's
+	// SecretTemplate is not reflected on the target Secret, either by having
+	// extra, missing, or wrong Annotations or Labels.
+	SecretTemplateMismatch string = "SecretTemplateMismatch"
+	// ManagedFieldsParseError is a policy violation whereby cert-manager was
+	// unable to decode the managed fields on a resource.
+	ManagedFieldsParseError string = "ManagedFieldsParseError"
 )

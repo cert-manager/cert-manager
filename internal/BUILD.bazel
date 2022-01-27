@@ -13,6 +13,7 @@ filegroup(
         "//internal/apis/certmanager:all-srcs",
         "//internal/apis/config/webhook:all-srcs",
         "//internal/apis/meta:all-srcs",
+        "//internal/controller/certificates:all-srcs",
         "//internal/controller/feature:all-srcs",
         "//internal/ingress:all-srcs",
         "//internal/plugin:all-srcs",

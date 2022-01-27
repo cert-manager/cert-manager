@@ -26,13 +26,13 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	"github.com/jetstack/cert-manager/internal/controller/certificates/policies"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	internaltest "github.com/jetstack/cert-manager/pkg/controller/certificates/internal/test"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates/trigger/policies"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	testcrypto "github.com/jetstack/cert-manager/test/unit/crypto"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -55,7 +55,7 @@ func TestProcessItem(t *testing.T) {
 	now := time.Now().UTC()
 	metaNow := metav1.NewTime(now)
 	// private key to be used to generate X509 certificate
-	privKey := internaltest.MustCreatePEMPrivateKey(t)
+	privKey := testcrypto.MustCreatePEMPrivateKey(t)
 	cert := &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "testns", Name: "test"},
 		Spec: cmapi.CertificateSpec{
@@ -253,7 +253,7 @@ func TestProcessItem(t *testing.T) {
 				mods := make([]gen.SecretModifier, 0)
 				// If the test scenario needs a secret with a valid X509 cert.
 				if test.notBefore != nil && test.notAfter != nil {
-					x509Bytes := internaltest.MustCreateCertWithNotBeforeAfter(t, privKey, cert, test.notBefore.Time, test.notAfter.Time)
+					x509Bytes := testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey, cert, test.notBefore.Time, test.notAfter.Time)
 					mods = append(mods,
 						gen.SetSecretData(map[string][]byte{
 							"tls.crt": x509Bytes,
@@ -329,7 +329,7 @@ func TestProcessItem(t *testing.T) {
 // Test the evaluation of the ordered policy chain as a whole.
 func TestNewReadinessPolicyChain(t *testing.T) {
 	clock := &fakeclock.FakeClock{}
-	privKey := internaltest.MustCreatePEMPrivateKey(t)
+	privKey := testcrypto.MustCreatePEMPrivateKey(t)
 	tests := map[string]struct {
 		// policy inputs
 		cert   *cmapi.Certificate
@@ -395,7 +395,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				map[string][]byte{
 					corev1.TLSPrivateKeyKey: privKey,
 					// generate a different private key
-					corev1.TLSCertKey: internaltest.MustCreateCert(t, internaltest.MustCreatePEMPrivateKey(t),
+					corev1.TLSCertKey: testcrypto.MustCreateCert(t, testcrypto.MustCreatePEMPrivateKey(t),
 						gen.Certificate("something else", gen.SetCertificateCommonName("example.com"))),
 				})),
 			reason:         policies.InvalidKeyPair,
@@ -418,7 +418,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				gen.SetSecretData(
 					map[string][]byte{
 						corev1.TLSPrivateKeyKey: privKey,
-						corev1.TLSCertKey: internaltest.MustCreateCert(t, privKey,
+						corev1.TLSCertKey: testcrypto.MustCreateCert(t, privKey,
 							gen.Certificate("something else", gen.SetCertificateCommonName("old.example.com"))),
 					},
 				),
@@ -432,7 +432,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 					},
 				),
 				gen.SetCertificateRequestCSR(
-					internaltest.MustGenerateCSRImpl(t, privKey,
+					testcrypto.MustGenerateCSRImpl(t, privKey,
 						gen.Certificate("somethingelse",
 							gen.SetCertificateCommonName("old.example.com"))))),
 			reason:         policies.RequestChanged,
@@ -456,7 +456,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				gen.SetSecretData(
 					map[string][]byte{
 						corev1.TLSPrivateKeyKey: privKey,
-						corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, privKey,
+						corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey,
 							gen.Certificate("something", gen.SetCertificateCommonName("new.example.com")),
 							clock.Now().Add(-3*time.Hour), clock.Now().Add(-1*time.Hour),
 						),
@@ -490,7 +490,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 				gen.SetSecretData(
 					map[string][]byte{
 						corev1.TLSPrivateKeyKey: privKey,
-						corev1.TLSCertKey: internaltest.MustCreateCertWithNotBeforeAfter(t, privKey,
+						corev1.TLSCertKey: testcrypto.MustCreateCertWithNotBeforeAfter(t, privKey,
 							&cmapi.Certificate{Spec: cmapi.CertificateSpec{CommonName: "new.example.com"}},
 							clock.Now(), clock.Now().Add(time.Hour*3),
 						),
@@ -504,7 +504,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 						Group: "group.example.com",
 					},
 				),
-				gen.SetCertificateRequestCSR(internaltest.MustGenerateCSRImpl(t, privKey,
+				gen.SetCertificateRequestCSR(testcrypto.MustGenerateCSRImpl(t, privKey,
 					gen.Certificate("something",
 						gen.SetCertificateCommonName("new.example.com")))),
 			),
@@ -512,7 +512,7 @@ func TestNewReadinessPolicyChain(t *testing.T) {
 			message: "",
 		},
 	}
-	policyChain := NewReadinessPolicyChain(clock)
+	policyChain := policies.NewReadinessPolicyChain(clock)
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			reason, message, violationFound := policyChain.Evaluate(policies.Input{

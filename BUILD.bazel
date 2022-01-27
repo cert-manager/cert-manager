@@ -88,6 +88,7 @@ filegroup(
         "//test/internal/apiserver:all-srcs",
         "//test/internal/util:all-srcs",
         "//test/unit/coreclients:all-srcs",
+        "//test/unit/crypto:all-srcs",
         "//test/unit/discovery:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",

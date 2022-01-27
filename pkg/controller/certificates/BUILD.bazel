@@ -39,8 +39,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/controller/certificates/internal/secretsmanager:all-srcs",
-        "//pkg/controller/certificates/internal/test:all-srcs",
         "//pkg/controller/certificates/issuing:all-srcs",
         "//pkg/controller/certificates/keymanager:all-srcs",
         "//pkg/controller/certificates/metrics:all-srcs",
