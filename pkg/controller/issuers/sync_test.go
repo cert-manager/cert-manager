@@ -80,7 +80,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 
 	issuerCopy := issuer.DeepCopy()
 	issuerCopy.Status = newStatus
-	_, err = c.updateIssuerStatus(context.TODO(), issuer, issuerCopy)
+	err = c.updateIssuerStatus(context.TODO(), issuer, issuerCopy)
 	assertErrIsNil(t, fatalf, err)
 
 	actions := filter(cmClient.Actions())

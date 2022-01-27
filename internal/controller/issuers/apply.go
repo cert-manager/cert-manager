@@ -21,12 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
 // ApplyIssuerStatus will make an Apply API call with the given client to the
