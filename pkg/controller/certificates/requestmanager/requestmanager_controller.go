@@ -38,6 +38,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
+	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -47,6 +49,7 @@ import (
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
@@ -69,6 +72,11 @@ type controller struct {
 	recorder                 record.EventRecorder
 	clock                    clock.Clock
 	copiedAnnotationPrefixes []string
+
+	// fieldManager is the string which will be used as the Field Manager on
+	// fields created or edited by the cert-manager Kubernetes client during
+	// Apply API calls.
+	fieldManager string
 }
 
 func NewController(
@@ -79,6 +87,7 @@ func NewController(
 	recorder record.EventRecorder,
 	clock clock.Clock,
 	certificateControllerOptions controllerpkg.CertificateOptions,
+	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*1, time.Second*30), ControllerName)
@@ -118,6 +127,7 @@ func NewController(
 		recorder:                 recorder,
 		clock:                    clock,
 		copiedAnnotationPrefixes: certificateControllerOptions.CopiedAnnotationPrefixes,
+		fieldManager:             fieldManager,
 	}, queue, mustSync
 }
 
@@ -388,16 +398,28 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		},
 	}
 
-	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
+	cr, err = c.createOrApply(ctx, cr)
 	if err != nil {
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed to create CertificateRequest: "+err.Error())
 		return err
 	}
+
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, reasonRequested, "Created new CertificateRequest resource %q", cr.Name)
 	if err := c.waitForCertificateRequestToExist(cr.Namespace, cr.Name); err != nil {
 		return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried")
 	}
 	return nil
+}
+
+// createOrApply will create a CertificateRequest. If the ServerSideApply
+// feature is enabled, the Apply PATCH API operation will be used instead of
+// UPDATE.
+func (c *controller) createOrApply(ctx context.Context, cr *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		return internalcertificaterequests.Apply(ctx, c.client, c.fieldManager, cr)
+	} else {
+		return c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
+	}
 }
 
 func (c *controller) waitForCertificateRequestToExist(namespace, name string) error {
@@ -430,6 +452,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.Recorder,
 		ctx.Clock,
 		ctx.CertificateOptions,
+		ctx.FieldManager,
 	)
 	c.controller = ctrl
 
