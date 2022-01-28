@@ -24,8 +24,8 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
-// Create CRDs. Before calling this function, we made sure that the CRDs
-// are not yet installed on the cluster.
+// CreateCRDs creates cert manager CRDs. Before calling this function, we
+// made sure that the CRDs are not yet installed on the cluster.
 func CreateCRDs(allCRDs []*resource.Info, cfg *action.Configuration) error {
 	log.Printf("Creating the cert-manager CRDs")
 	// Create all CRDs

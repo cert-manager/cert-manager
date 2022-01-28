@@ -46,6 +46,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
 
+// ControllerName is name of the controller
 const ControllerName = "certificates-trigger"
 
 // This controller observes the state of the certificate's currently
@@ -67,6 +68,7 @@ type controller struct {
 	dataForCertificate func(context.Context, *cmapi.Certificate) (policies.Input, error)
 }
 
+// NewController generates and returns a new controller instance
 func NewController(
 	log logr.Logger,
 	client cmclient.Interface,

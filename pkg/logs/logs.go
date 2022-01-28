@@ -35,13 +35,16 @@ import (
 )
 
 var (
+	// Log is a new logr.logger which serializes output and writes via klog
 	Log = klogr.New().WithName("cert-manager")
 )
 
 const (
 	// Following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
 
-	ErrorLevel        = 0
+	// ErrorLevel sets the error level value for logger
+	ErrorLevel = 0
+	// WarnLevel sets the warning level value for logger
 	WarnLevel         = 1
 	InfoLevel         = 2
 	ExtendedInfoLevel = 3
@@ -81,6 +84,7 @@ func FlushLogs() {
 }
 
 const (
+	// ResourceNameKey sets the value for resource name key
 	ResourceNameKey      = "resource_name"
 	ResourceNamespaceKey = "resource_namespace"
 	ResourceKindKey      = "resource_kind"
@@ -92,6 +96,7 @@ const (
 	RelatedResourceVersionKey   = "related_resource_version"
 )
 
+// WithResource returns the logs of the resources
 func WithResource(l logr.Logger, obj metav1.Object) logr.Logger {
 	var gvk schema.GroupVersionKind
 
@@ -110,6 +115,7 @@ func WithResource(l logr.Logger, obj metav1.Object) logr.Logger {
 	)
 }
 
+// WithRelatedResource returns the logs of the related resources present
 func WithRelatedResource(l logr.Logger, obj metav1.Object) logr.Logger {
 	var gvk schema.GroupVersionKind
 
@@ -128,6 +134,7 @@ func WithRelatedResource(l logr.Logger, obj metav1.Object) logr.Logger {
 	)
 }
 
+// WithRelatedResourceName returns logs with names only for the related resources
 func WithRelatedResourceName(l logr.Logger, name, namespace, kind string) logr.Logger {
 	return l.WithValues(
 		RelatedResourceNameKey, name,
@@ -138,6 +145,7 @@ func WithRelatedResourceName(l logr.Logger, name, namespace, kind string) logr.L
 
 var contextKey = &struct{}{}
 
+// FromContext returns a logger from context given
 func FromContext(ctx context.Context, names ...string) logr.Logger {
 	l, err := logr.FromContext(ctx)
 	if err != nil {
@@ -149,6 +157,7 @@ func FromContext(ctx context.Context, names ...string) logr.Logger {
 	return l
 }
 
+// NewContext returns a logger instance with context given and a specified name element added to loggers name
 func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Context {
 	for _, n := range names {
 		l = l.WithName(n)
@@ -156,6 +165,7 @@ func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Con
 	return logr.NewContext(ctx, l)
 }
 
+// V returns if verbosity of the call site is as the level set
 func V(level int) klog.Verbose {
 	return klog.V(klog.Level(level))
 }
@@ -168,6 +178,7 @@ type LogWithFormat struct {
 	logr.Logger
 }
 
+// WithInfof adds Infof method to log messages
 func WithInfof(l logr.Logger) *LogWithFormat {
 	return &LogWithFormat{l}
 }

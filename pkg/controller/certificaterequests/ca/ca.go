@@ -38,12 +38,14 @@ import (
 )
 
 const (
+	// CRControllerName is the name of the controller
 	CRControllerName = "certificaterequests-issuer-ca"
 )
 
 type templateGenerator func(*cmapi.CertificateRequest) (*x509.Certificate, error)
 type signingFn func([]*x509.Certificate, crypto.Signer, *x509.Certificate) (pki.PEMBundle, error)
 
+// CA is the struct definition for the certificate authority
 type CA struct {
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
@@ -64,7 +66,11 @@ func init() {
 	})
 }
 
+
 func NewCA(ctx *controllerpkg.Context) certificaterequests.Issuer {
+
+// NewCA returns a new instance of CA using the context provided
+
 	return &CA{
 		issuerOptions:     ctx.IssuerOptions,
 		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
