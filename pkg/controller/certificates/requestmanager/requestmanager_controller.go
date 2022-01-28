@@ -38,8 +38,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	internalcertificaterequests "github.com/cert-manager/cert-manager/internal/controller/certificaterequests"
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -49,7 +47,6 @@ import (
 	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
 	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/cert-manager/cert-manager/pkg/util/predicate"
 )
@@ -398,7 +395,7 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		},
 	}
 
-	cr, err = c.createOrApply(ctx, cr)
+	cr, err = c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
 	if err != nil {
 		c.recorder.Eventf(crt, corev1.EventTypeWarning, reasonRequestFailed, "Failed to create CertificateRequest: "+err.Error())
 		return err
@@ -409,17 +406,6 @@ func (c *controller) createNewCertificateRequest(ctx context.Context, crt *cmapi
 		return fmt.Errorf("failed whilst waiting for CertificateRequest to exist - this may indicate an apiserver running slowly. Request will be retried")
 	}
 	return nil
-}
-
-// createOrApply will create a CertificateRequest. If the ServerSideApply
-// feature is enabled, the Apply PATCH API operation will be used instead of
-// UPDATE.
-func (c *controller) createOrApply(ctx context.Context, cr *cmapi.CertificateRequest) (*cmapi.CertificateRequest, error) {
-	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
-		return internalcertificaterequests.Apply(ctx, c.client, c.fieldManager, cr)
-	} else {
-		return c.client.CertmanagerV1().CertificateRequests(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
-	}
 }
 
 func (c *controller) waitForCertificateRequestToExist(namespace, name string) error {
