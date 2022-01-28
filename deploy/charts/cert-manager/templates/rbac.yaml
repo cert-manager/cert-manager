@@ -515,7 +515,7 @@ rules:
     verbs: ["get", "list", "watch", "update"]
   - apiGroups: ["certificates.k8s.io"]
     resources: ["certificatesigningrequests/status"]
-    verbs: ["update"]
+    verbs: ["update", "patch"]
   - apiGroups: ["certificates.k8s.io"]
     resources: ["signers"]
     resourceNames: ["issuers.cert-manager.io/*", "clusterissuers.cert-manager.io/*"]
