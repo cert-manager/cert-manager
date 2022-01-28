@@ -57,6 +57,9 @@ type Venafi struct {
 	recorder      record.EventRecorder
 
 	clientBuilder venaficlient.VenafiClientBuilder
+
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
 }
 
 func init() {
@@ -74,6 +77,7 @@ func NewVenafi(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 		certClient:    ctx.Client.CertificatesV1().CertificateSigningRequests(),
 		recorder:      ctx.Recorder,
 		clientBuilder: venaficlient.New,
+		fieldManager:  ctx.FieldManager,
 	}
 }
 
@@ -113,7 +117,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 			message := fmt.Sprintf("Failed to parse %q annotation: %s", experimentalapi.CertificateSigningRequestVenafiCustomFieldsAnnotationKey, err)
 			v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorCustomFields", message)
 			util.CertificateSigningRequestSetFailed(csr, "ErrorCustomFields", message)
-			_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+			_, userr := util.UpdateOrApplyStatus(ctx, v.certClient, csr, certificatesv1.CertificateFailed, v.fieldManager)
 			return userr
 		}
 	}
@@ -124,7 +128,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		log.Error(err, message)
 		v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorParseDuration", message)
 		util.CertificateSigningRequestSetFailed(csr, "ErrorParseDuration", message)
-		_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		_, userr := util.UpdateOrApplyStatus(ctx, v.certClient, csr, certificatesv1.CertificateFailed, v.fieldManager)
 		return userr
 	}
 
@@ -144,7 +148,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 				log.Error(err, "")
 				v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorCustomFields", err.Error())
 				util.CertificateSigningRequestSetFailed(csr, "ErrorCustomFields", err.Error())
-				_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+				_, userr := util.UpdateOrApplyStatus(ctx, v.certClient, csr, certificatesv1.CertificateFailed, v.fieldManager)
 				return userr
 
 			default:
@@ -152,7 +156,7 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 				log.Error(err, message)
 				v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorRequest", message)
 				util.CertificateSigningRequestSetFailed(csr, "ErrorRequest", message)
-				_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+				_, userr := util.UpdateOrApplyStatus(ctx, v.certClient, csr, certificatesv1.CertificateFailed, v.fieldManager)
 				return userr
 			}
 		}
@@ -194,12 +198,12 @@ func (v *Venafi) Sign(ctx context.Context, csr *certificatesv1.CertificateSignin
 		log.Error(err, message)
 		v.recorder.Event(csr, corev1.EventTypeWarning, "ErrorParse", message)
 		util.CertificateSigningRequestSetFailed(csr, "ErrorParse", message)
-		_, userr := v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+		_, userr := util.UpdateOrApplyStatus(ctx, v.certClient, csr, certificatesv1.CertificateFailed, v.fieldManager)
 		return userr
 	}
 
 	csr.Status.Certificate = bundle.ChainPEM
-	csr, err = v.certClient.UpdateStatus(ctx, csr, metav1.UpdateOptions{})
+	csr, err = util.UpdateOrApplyStatus(ctx, v.certClient, csr, "", v.fieldManager)
 	if err != nil {
 		message := "Error updating certificate"
 		v.recorder.Eventf(csr, corev1.EventTypeWarning, "SigningError", "%s: %s", message, err)

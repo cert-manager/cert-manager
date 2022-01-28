@@ -63,6 +63,9 @@ type Controller struct {
 	csrLister  certificateslisters.CertificateSigningRequestLister
 	sarClient  authzclient.SubjectAccessReviewInterface
 
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
+
 	queue workqueue.RateLimitingInterface
 
 	// logger to be used by this controller
@@ -180,6 +183,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder
 	c.certClient = kubeClient.CertificatesV1().CertificateSigningRequests()
+	c.fieldManager = ctx.FieldManager
 
 	// Construct the signer implementation with the built component context.
 	c.signer = c.signerConstructor(ctx)
