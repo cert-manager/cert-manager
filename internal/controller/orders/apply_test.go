@@ -24,7 +24,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 func Test_serializeApplyStatus(t *testing.T) {

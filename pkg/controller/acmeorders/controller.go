@@ -63,6 +63,9 @@ type controller struct {
 	// clientset used to update cert-manager API resources
 	cmClient cmclient.Interface
 
+	// fieldManager is the manager name used for the Apply operations on Secrets.
+	fieldManager string
+
 	// maintain a reference to the workqueue for this controller
 	// so the handleOwnedResource method can enqueue resources
 	queue workqueue.RateLimitingInterface
@@ -84,6 +87,7 @@ func NewController(
 	recorder record.EventRecorder,
 	clock clock.Clock,
 	isNamespaced bool,
+	fieldManager string,
 ) (*controller, workqueue.RateLimitingInterface, []cache.InformerSynced) {
 
 	// Create a queue used to queue up Orders to be processed.
@@ -217,6 +221,7 @@ func (c *controllerWrapper) Register(ctx *controllerpkg.Context) (workqueue.Rate
 		ctx.Recorder,
 		ctx.Clock,
 		isNamespaced,
+		ctx.FieldManager,
 	)
 	c.controller = ctrl
 

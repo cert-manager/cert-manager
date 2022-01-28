@@ -21,12 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
 // ApplyStatus will make a Apply API call with the given client to the order's
