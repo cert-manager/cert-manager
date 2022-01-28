@@ -548,6 +548,12 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// This field is required.
 	Nameserver string `json:"nameserver"`
 
+	// The Zone that is set as origin in the Update record. When using CNAME or
+	// NS to delegate the ACME domain use the target domain.
+	// ``_acme-challenge.example.com`` -> ``"zone": "example.com"``
+	// +optional
+	Zone string `json:"zone,omitempty"`
+
 	// The name of the secret containing the TSIG value.
 	// If ``tsigKeyName`` is defined, this field is required.
 	// +optional

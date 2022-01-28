@@ -47,13 +47,14 @@ type DNSProvider struct {
 	tsigAlgorithm string
 	tsigKeyName   string
 	tsigSecret    string
+	zoneOverwrite string
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for rfc2136 dynamic update. To disable TSIG
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
-func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, zone string) (*DNSProvider, error) {
 	logf.Log.V(logf.DebugLevel).Info("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
@@ -106,6 +107,14 @@ func (r *DNSProvider) CleanUp(_, fqdn, zone, value string) error {
 }
 
 func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) error {
+	logf.V(logf.WarnLevel).InfoS(
+		"rfc2136 Provider updating record:",
+		"action", action,
+		"fqdn", fqdn,
+		"zone", zone,
+		"value", value,
+		"ttl", ttl,
+	)
 	// Create RR
 	rr := new(dns.TXT)
 	rr.Hdr = dns.RR_Header{Name: fqdn, Rrtype: dns.TypeTXT, Class: dns.ClassINET, Ttl: uint32(ttl)}
