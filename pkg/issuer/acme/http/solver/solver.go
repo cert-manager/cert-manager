@@ -25,6 +25,7 @@ import (
 	"github.com/go-logr/logr"
 )
 
+// HTTP01Solver is the HTTP server used to solve the ACME challenge
 type HTTP01Solver struct {
 	ListenPort int
 
@@ -35,6 +36,7 @@ type HTTP01Solver struct {
 	http.Server
 }
 
+// Listen performs all validations and serves a http Server based on values present
 func (h *HTTP01Solver) Listen(log logr.Logger) error {
 	log.Info("starting listener",
 		"expected_domain", h.Domain,

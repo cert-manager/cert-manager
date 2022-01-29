@@ -28,6 +28,7 @@ const (
 	successReady = "IsReady"
 )
 
+// Setup sets an issuer condition based on the context provided
 func (c *SelfSigned) Setup(ctx context.Context) error {
 	apiutil.SetIssuerCondition(c.issuer, c.issuer.GetGeneration(), v1.IssuerConditionReady, cmmeta.ConditionTrue, successReady, "")
 	return nil

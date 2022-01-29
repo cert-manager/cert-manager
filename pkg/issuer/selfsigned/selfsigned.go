@@ -33,6 +33,7 @@ type SelfSigned struct {
 	secretsLister corelisters.SecretLister
 }
 
+// NewSelfSigned returns a new instance of the SelfSigned struct based on values provided.
 func NewSelfSigned(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, error) {
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
 

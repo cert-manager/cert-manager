@@ -27,6 +27,7 @@ import (
 	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/install"
 )
 
+// NewCmdExperimental defines the cobra command to use the experimental flag
 func NewCmdExperimental(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	cmds := &cobra.Command{
 		Use:     "experimental",

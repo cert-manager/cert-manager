@@ -19,4 +19,5 @@ limitations under the License.
 // Package acme contains types in the acme cert-manager API group
 package acme
 
+// GroupName holds value of the group name
 const GroupName = "acme.cert-manager.io"

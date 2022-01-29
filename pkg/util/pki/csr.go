@@ -36,6 +36,7 @@ import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
+// IPAddressesForCertificate returns all the associated IPAddresses from the Certificate
 func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
 	var ipAddresses []net.IP
 	var ip net.IP
@@ -48,6 +49,7 @@ func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
 	return ipAddresses
 }
 
+// URIsForCertificate returns all the associated URIs from the Certificate
 func URIsForCertificate(crt *v1.Certificate) ([]*url.URL, error) {
 	uris, err := URLsFromStrings(crt.Spec.URIs)
 	if err != nil {
@@ -57,6 +59,7 @@ func URIsForCertificate(crt *v1.Certificate) ([]*url.URL, error) {
 	return uris, nil
 }
 
+// DNSNamesForCertificate returns all the associated DNSNames from the Certificate
 func DNSNamesForCertificate(crt *v1.Certificate) ([]string, error) {
 	_, err := URLsFromStrings(crt.Spec.DNSNames)
 	if err != nil {
@@ -66,6 +69,7 @@ func DNSNamesForCertificate(crt *v1.Certificate) ([]string, error) {
 	return crt.Spec.DNSNames, nil
 }
 
+// URLsFromStrings Parses all the urls into URL structure and returns them
 func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
 	var urls []*url.URL
 	var errs []string
@@ -87,6 +91,7 @@ func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
 	return urls, nil
 }
 
+// IPAddressesToString converts all the IPAddresses provided to string format
 func IPAddressesToString(ipAddresses []net.IP) []string {
 	var ipNames []string
 	for _, ip := range ipAddresses {
@@ -95,6 +100,7 @@ func IPAddressesToString(ipAddresses []net.IP) []string {
 	return ipNames
 }
 
+// URLsToString converts all the URLs provided to string format
 func URLsToString(uris []*url.URL) []string {
 	var uriStrs []string
 	for _, uri := range uris {
@@ -143,6 +149,7 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
+// BuildKeyUsages returns the relevant x509.KeyUsage and x509.ExtKeyUsage
 func BuildKeyUsages(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
 	if isCA {
@@ -166,6 +173,7 @@ func BuildKeyUsages(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x5
 	return
 }
 
+// BuildCertManagerKeyUsages returns all the cmapi.KeyUsage along with the x509.ExtKeyUsage
 func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.KeyUsage {
 	usages := apiutil.KeyUsageStrings(ku)
 	usages = append(usages, apiutil.ExtKeyUsageStrings(eku)...)

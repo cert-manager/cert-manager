@@ -28,6 +28,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
 )
 
+// GroupName sets the group name based on the env variable
 var GroupName = os.Getenv("GROUP_NAME")
 
 func main() {

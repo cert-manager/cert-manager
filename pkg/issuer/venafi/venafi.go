@@ -46,6 +46,7 @@ type Venafi struct {
 	log logr.Logger
 }
 
+// NewVenafi creates an instance of Venafi based on values provided
 func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Interface, error) {
 	return &Venafi{
 		issuer:            issuer,
