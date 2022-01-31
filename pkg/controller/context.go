@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,6 +32,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/utils/clock"
 	gwapi "sigs.k8s.io/gateway-api/apis/v1alpha1"
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
@@ -229,6 +231,8 @@ type ContextFactory struct {
 
 // NewContextFactory builds a ContextFactory that builds controller Contexts
 // that have been configured for that components User Agent.
+// All resulting Context's and clients contain the same RateLimiter and
+// corresponding QPS and Burst buckets.
 func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactory, error) {
 	// Load the users Kubernetes config
 	restConfig, err := clientcmd.BuildConfigFromFlags(opts.APIServerHost, opts.Kubeconfig)
@@ -238,6 +242,18 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 	restConfig = util.RestConfigWithUserAgent(restConfig)
 	restConfig.QPS = opts.KubernetesAPIQPS
 	restConfig.Burst = opts.KubernetesAPIBurst
+
+	// Construct a single RateLimiter used across all built Context's clients. A
+	// single rate limiter (with corresponding QPS and Burst buckets) are
+	// preserved for all Contexts.
+	// Adapted from
+	// https://github.com/kubernetes/client-go/blob/v0.23.3/kubernetes/clientset.go#L431-L435
+	if restConfig.RateLimiter == nil && restConfig.QPS > 0 {
+		if restConfig.Burst <= 0 {
+			return nil, errors.New("burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
+		}
+		restConfig.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(restConfig.QPS, restConfig.Burst)
+	}
 
 	clients, err := buildClients(restConfig)
 	if err != nil {
