@@ -17,8 +17,11 @@ limitations under the License.
 package cainjector
 
 import (
+	"path"
+
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -54,6 +57,31 @@ func (t *mutatingWebhookTarget) SetCA(data []byte) {
 		t.obj.Webhooks[ind].ClientConfig.CABundle = data
 	}
 }
+func (t *mutatingWebhookTarget) AsApplyObject() client.Object {
+	obj := &admissionreg.MutatingWebhookConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: path.Join(admissionreg.SchemeGroupVersion.Group, admissionreg.SchemeGroupVersion.Version),
+			Kind:       "MutatingWebhookConfiguration",
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: t.obj.Name},
+	}
+
+	for i := range t.obj.Webhooks {
+		obj.Webhooks = append(obj.Webhooks,
+			admissionreg.MutatingWebhook{
+				// Name is used as slice key.
+				Name:                    t.obj.Webhooks[i].Name,
+				SideEffects:             t.obj.Webhooks[i].SideEffects,
+				AdmissionReviewVersions: t.obj.Webhooks[i].AdmissionReviewVersions,
+				ClientConfig: admissionreg.WebhookClientConfig{
+					CABundle: t.obj.Webhooks[i].ClientConfig.CABundle,
+				},
+			},
+		)
+	}
+
+	return obj
+}
 
 // validatingWebhookInjector knows how to create an InjectTarget a ValidatingWebhookConfiguration.
 type validatingWebhookInjector struct{}
@@ -82,6 +110,32 @@ func (t *validatingWebhookTarget) SetCA(data []byte) {
 	}
 }
 
+func (t *validatingWebhookTarget) AsApplyObject() client.Object {
+	obj := &admissionreg.ValidatingWebhookConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: path.Join(admissionreg.SchemeGroupVersion.Group, admissionreg.SchemeGroupVersion.Version),
+			Kind:       "ValidatingWebhookConfiguration",
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: t.obj.Name},
+	}
+
+	for i := range t.obj.Webhooks {
+		obj.Webhooks = append(obj.Webhooks,
+			admissionreg.ValidatingWebhook{
+				// Name is used as slice key.
+				Name:                    t.obj.Webhooks[i].Name,
+				SideEffects:             t.obj.Webhooks[i].SideEffects,
+				AdmissionReviewVersions: t.obj.Webhooks[i].AdmissionReviewVersions,
+				ClientConfig: admissionreg.WebhookClientConfig{
+					CABundle: t.obj.Webhooks[i].ClientConfig.CABundle,
+				},
+			},
+		)
+	}
+
+	return obj
+}
+
 // apiServiceInjector knows how to create an InjectTarget for APICAReferences
 type apiServiceInjector struct{}
 
@@ -105,6 +159,20 @@ func (t *apiServiceTarget) AsObject() client.Object {
 
 func (t *apiServiceTarget) SetCA(data []byte) {
 	t.obj.Spec.CABundle = data
+}
+func (t *apiServiceTarget) AsApplyObject() client.Object {
+	return &apireg.APIService{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: path.Join(apireg.SchemeGroupVersion.Group, apireg.SchemeGroupVersion.Version),
+			Kind:       "APIService",
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: t.obj.Name},
+		Spec: apireg.APIServiceSpec{
+			VersionPriority:      t.obj.Spec.VersionPriority,
+			GroupPriorityMinimum: t.obj.Spec.GroupPriorityMinimum,
+			CABundle:             t.obj.Spec.CABundle,
+		},
+	}
 }
 
 // TODO(directxman12): conversion webhooks
@@ -139,4 +207,26 @@ func (t *crdConversionTarget) SetCA(data []byte) {
 		t.obj.Spec.Conversion.Webhook.ClientConfig = &apiext.WebhookClientConfig{}
 	}
 	t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle = data
+}
+func (t *crdConversionTarget) AsApplyObject() client.Object {
+	obj := &apiext.CustomResourceDefinition{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: path.Join(apiext.SchemeGroupVersion.Group, apiext.SchemeGroupVersion.Version),
+			Kind:       "CustomResourceDefinition",
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: t.obj.Name},
+		Spec: apiext.CustomResourceDefinitionSpec{
+			Group:    t.obj.Spec.Group,
+			Scope:    t.obj.Spec.Scope,
+			Versions: t.obj.Spec.Versions,
+			Names: apiext.CustomResourceDefinitionNames{
+				Kind:   t.obj.Spec.Names.Kind,
+				Plural: t.obj.Spec.Names.Plural,
+			},
+		},
+	}
+	if wh := t.obj.Spec.Conversion.Webhook; wh != nil && wh.ClientConfig != nil {
+		obj.Spec.Conversion.Webhook.ClientConfig.CABundle = t.obj.Spec.Conversion.Webhook.ClientConfig.CABundle
+	}
+	return obj
 }

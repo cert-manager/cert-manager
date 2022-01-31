@@ -22,11 +22,14 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/jetstack/cert-manager/internal/cainjector/feature"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -64,6 +67,13 @@ type InjectTarget interface {
 	// AsObject returns this injectable as an object.
 	// It should be a pointer suitable for mutation.
 	AsObject() client.Object
+
+	// AsApplyObject returns this injectable as an object that only contains
+	// fields which are managed by the ca-injector (CA Data) and immutable fields
+	// that must be present in Apply calls; intended for use for Apply Patch
+	// calls.
+	// It should be a pointer suitable for mutation.
+	AsApplyObject() client.Object
 
 	// SetCA sets the CA of this target to the given certificate data (in the standard
 	// PEM format used across Kubernetes).  In cases where multiple CA fields exist per
@@ -105,6 +115,9 @@ type genericInjectReconciler struct {
 
 	log logr.Logger
 	client.Client
+
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
 
 	resourceName string // just used for logging
 }
@@ -171,7 +184,14 @@ func (r *genericInjectReconciler) Reconcile(_ context.Context, req ctrl.Request)
 	target.SetCA(caData)
 
 	// actually update with injected CA data
-	if err := r.Client.Update(ctx, target.AsObject()); err != nil {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		err = r.Client.Patch(ctx, target.AsApplyObject(), client.Apply, &client.PatchOptions{
+			Force: pointer.Bool(true), FieldManager: r.fieldManager,
+		})
+	} else {
+		err = r.Client.Update(ctx, target.AsObject())
+	}
+	if err != nil {
 		log.Error(err, "unable to update target object with new CA data")
 		return ctrl.Result{}, err
 	}

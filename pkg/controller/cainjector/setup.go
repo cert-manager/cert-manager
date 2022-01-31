@@ -22,6 +22,7 @@ import (
 	"os"
 
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"golang.org/x/sync/errgroup"
 	admissionreg "k8s.io/api/admissionregistration/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -138,6 +139,7 @@ func newGenericInjectionController(ctx context.Context, groupName string, mgr ct
 				log:          log.WithName("generic-inject-reconciler"),
 				resourceName: setup.resourceName,
 				injector:     setup.injector,
+				fieldManager: util.PrefixFromUserAgent(mgr.GetConfig().UserAgent),
 			},
 			Log: log,
 		})
