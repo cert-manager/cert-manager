@@ -74,6 +74,9 @@ spec:
           {{- with .Values.cainjector.extraArgs }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
+          {{- if .Values.cainjector.featureGates }}
+          - --feature-gates={{ .Values.cainjector.featureGates }}
+          {{- end }}
           env:
           - name: POD_NAMESPACE
             valueFrom:

@@ -354,6 +354,9 @@ webhook:
 cainjector:
   enabled: true
   replicaCount: 1
+  # Comma separated list of feature gates that should be enabled on the
+  # ca-injector pod.
+  featureGates: ""
 
   strategy: {}
     # type: RollingUpdate
