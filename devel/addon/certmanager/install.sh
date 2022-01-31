@@ -24,6 +24,7 @@ NAMESPACE="${NAMESPACE:-cert-manager}"
 RELEASE_NAME="${RELEASE_NAME:-cert-manager}"
 # Default feature gates to enable
 FEATURE_GATES="${FEATURE_GATES:-ExperimentalCertificateSigningRequestControllers=true,ExperimentalGatewayAPISupport=true,AdditionalCertificateOutputFormats=true}"
+FEATURE_GATES_CA_INJECTOR="${FEATURE_GATES_CA_INJECTOR:-ServerSideApply=true}"
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/../../lib/lib.sh"
@@ -72,6 +73,7 @@ helm upgrade \
     --set startupapicheck.image.tag="${APP_VERSION}" \
     --set installCRDs=true \
     --set featureGates="${FEATURE_GATES//,/\\,}" `# escape commas in --set by replacing , with \, (see https://github.com/helm/helm/issues/2952)` \
+    --set cainjector.featureGates="${FEATURE_GATES_CA_INJECTOR//,/\\,}" \
     --set "webhook.extraArgs={--feature-gates=AllAlpha=true}" \
     --set "extraArgs={--dns01-recursive-nameservers=${SERVICE_IP_PREFIX}.16:53,--dns01-recursive-nameservers-only=true}" \
     "$RELEASE_NAME" \
