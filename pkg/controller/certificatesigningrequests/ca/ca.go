@@ -66,14 +66,14 @@ type CA struct {
 
 func init() {
 	// create certificate request controller for ca issuer
-	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CSRControllerName).
-			For(certificatesigningrequests.New(apiutil.IssuerCA, NewCA(ctx))).
+			For(certificatesigningrequests.New(apiutil.IssuerCA, NewCA)).
 			Complete()
 	})
 }
 
-func NewCA(ctx *controllerpkg.Context) *CA {
+func NewCA(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 	return &CA{
 		issuerOptions:     ctx.IssuerOptions,
 		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),

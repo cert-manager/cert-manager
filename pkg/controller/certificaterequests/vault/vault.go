@@ -49,15 +49,15 @@ type Vault struct {
 
 func init() {
 	// create certificate request controller for vault issuer
-	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
-			For(certificaterequests.New(apiutil.IssuerVault, NewVault(ctx))).
+			For(certificaterequests.New(apiutil.IssuerVault, NewVault)).
 			Complete()
 	})
 }
 
 // NewVault returns a new Vault instance with the given controller context.
-func NewVault(ctx *controllerpkg.Context) *Vault {
+func NewVault(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &Vault{
 		issuerOptions:      ctx.IssuerOptions,
 		secretsLister:      ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),

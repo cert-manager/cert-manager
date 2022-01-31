@@ -34,7 +34,6 @@ import (
 	apitypes "k8s.io/apimachinery/pkg/types"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	"k8s.io/client-go/rest"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 	"k8s.io/utils/pointer"
@@ -703,7 +702,7 @@ func Test_SecretsManager(t *testing.T) {
 
 			testManager := NewSecretsManager(
 				secretClient, secretLister,
-				&rest.Config{UserAgent: "cert-manager-test"},
+				"cert-manager-test",
 				test.certificateOptions.EnableOwnerRef,
 			)
 
@@ -788,7 +787,7 @@ func Test_getCertificateSecret(t *testing.T) {
 			s := SecretsManager{
 				secretClient: builder.Client.CoreV1(),
 				secretLister: builder.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-				userAgent:    "cert-manager-test",
+				fieldManager: "cert-manager-test",
 			}
 
 			builder.Start()

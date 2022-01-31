@@ -40,6 +40,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -430,10 +431,13 @@ func TestProcessItem(t *testing.T) {
 
 			defer test.builder.Stop()
 
-			vault := NewVault(test.builder.Context)
+			vault := NewVault(test.builder.Context).(*Vault)
 			vault.clientBuilder = test.clientBuilder
 
-			controller := certificatesigningrequests.New(apiutil.IssuerVault, vault)
+			controller := certificatesigningrequests.New(
+				apiutil.IssuerVault,
+				func(*controller.Context) certificatesigningrequests.Signer { return vault },
+			)
 			controller.Register(test.builder.Context)
 			test.builder.Start()
 

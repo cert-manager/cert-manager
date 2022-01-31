@@ -162,9 +162,7 @@ func (b *Builder) Init() {
 // RESTConfig with a `cert-manager/unit-test` User Agent.
 func (b *Builder) InitWithRESTConfig() {
 	b.Init()
-	b.RESTConfig = &rest.Config{
-		UserAgent: "cert-manager/unit-test",
-	}
+	b.RESTConfig = util.RestConfigWithUserAgent(new(rest.Config), "unit-testing")
 }
 
 func (b *Builder) FakeKubeClient() *kubefake.Clientset {

@@ -30,14 +30,12 @@ import (
 	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	coreclient "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/rest"
 
 	"github.com/jetstack/cert-manager/internal/controller/certificates"
 	"github.com/jetstack/cert-manager/internal/controller/feature"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -51,9 +49,8 @@ type SecretsManager struct {
 	secretClient coreclient.SecretsGetter
 	secretLister corelisters.SecretLister
 
-	// userAgent is the Kubernetes client's user agent. This is used for setting
-	// the field manager when Applying Secrets.
-	userAgent string
+	// fieldManager is the manager name used for the Apply operations on Secrets.
+	fieldManager string
 
 	// if true, Secret resources created by the controller will have an
 	// 'owner reference' set, meaning when the Certificate is deleted, the
@@ -73,13 +70,13 @@ type SecretData struct {
 func NewSecretsManager(
 	secretClient coreclient.SecretsGetter,
 	secretLister corelisters.SecretLister,
-	restConfig *rest.Config,
+	fieldManager string,
 	enableSecretOwnerReferences bool,
 ) *SecretsManager {
 	return &SecretsManager{
 		secretClient:                secretClient,
 		secretLister:                secretLister,
-		userAgent:                   util.PrefixFromUserAgent(restConfig.UserAgent),
+		fieldManager:                fieldManager,
 		enableSecretOwnerReferences: enableSecretOwnerReferences,
 	}
 }
@@ -102,7 +99,7 @@ func (s *SecretsManager) UpdateData(ctx context.Context, crt *cmapi.Certificate,
 	}
 
 	// Build Secret apply configuration and options.
-	applyOpts := metav1.ApplyOptions{FieldManager: s.userAgent}
+	applyOpts := metav1.ApplyOptions{FieldManager: s.fieldManager}
 	applyCnf := applycorev1.Secret(secret.Name, secret.Namespace).
 		WithAnnotations(secret.Annotations).WithLabels(secret.Labels).
 		WithData(secret.Data).WithType(secret.Type)

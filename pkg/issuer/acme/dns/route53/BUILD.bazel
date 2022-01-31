@@ -8,7 +8,6 @@ go_library(
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//pkg/logs:go_default_library",
-        "//pkg/util:go_default_library",
         "@com_github_aws_aws_sdk_go//aws:go_default_library",
         "@com_github_aws_aws_sdk_go//aws/awserr:go_default_library",
         "@com_github_aws_aws_sdk_go//aws/credentials:go_default_library",

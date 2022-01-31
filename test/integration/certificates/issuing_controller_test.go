@@ -59,7 +59,7 @@ func TestIssuingController(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, config, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -263,7 +263,7 @@ func TestIssuingController_PKCS8_PrivateKey(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, config, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",
@@ -476,7 +476,7 @@ func Test_IssuingController_SecretTemplate(t *testing.T) {
 		EnableOwnerRef: true,
 	}
 
-	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, config, cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
+	ctrl, queue, mustSync := issuing.NewController(logf.Log, kubeClient, "cert-manager-issuing-test", cmCl, factory, cmFactory, framework.NewEventRecorder(t), clock.RealClock{}, controllerOptions)
 	c := controllerpkg.NewController(
 		ctx,
 		"issuing_test",

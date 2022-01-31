@@ -27,16 +27,12 @@ import (
 // Builder is used to build controllers that implement the queuingController
 // interface
 type Builder struct {
-	// the root controller context, used when calling Register() on
-	// the queueingController
-	context *Context
+	// the root controller context factory. Used to build a component context
+	// which is passed when calling Register() on the queueing Controller.
+	contextFactory *ContextFactory
 
 	// name is the name for this controller
 	name string
-
-	// a reference to the root context for this controller, used
-	// as a basis for other contexts and for logging
-	ctx context.Context
 
 	// the actual controller implementation
 	impl queueingController
@@ -52,12 +48,10 @@ type Builder struct {
 }
 
 // New creates a basic Builder, setting the sync call to the one given
-func NewBuilder(controllerctx *Context, name string) *Builder {
-	ctx := logf.NewContext(controllerctx.RootContext, logf.Log, name)
+func NewBuilder(controllerctx *ContextFactory, name string) *Builder {
 	return &Builder{
-		context: controllerctx,
-		ctx:     ctx,
-		name:    name,
+		contextFactory: controllerctx,
+		name:           name,
 	}
 }
 
@@ -86,16 +80,20 @@ func (b *Builder) First(function func(context.Context)) *Builder {
 }
 
 func (b *Builder) Complete() (Interface, error) {
-	if b.context == nil {
-		return nil, fmt.Errorf("controller context must be non-nil")
+	controllerctx, err := b.contextFactory.Build(b.name)
+	if err != nil {
+		return nil, err
 	}
+
+	ctx := logf.NewContext(controllerctx.RootContext, logf.Log, b.name)
+
 	if b.impl == nil {
 		return nil, fmt.Errorf("controller implementation must be non-nil")
 	}
-	queue, mustSync, err := b.impl.Register(b.context)
+	queue, mustSync, err := b.impl.Register(controllerctx)
 	if err != nil {
 		return nil, fmt.Errorf("error registering controller: %v", err)
 	}
 
-	return NewController(b.ctx, b.name, b.context.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
+	return NewController(ctx, b.name, controllerctx.Metrics, b.impl.ProcessItem, mustSync, b.runDurationFuncs, queue), nil
 }

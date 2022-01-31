@@ -563,7 +563,7 @@ func runTest(t *testing.T, test testT) {
 
 	defer test.builder.Stop()
 
-	ca := NewCA(test.builder.Context)
+	ca := NewCA(test.builder.Context).(*CA)
 
 	if test.fakeLister != nil {
 		ca.secretsLister = test.fakeLister
@@ -576,7 +576,10 @@ func runTest(t *testing.T, test testT) {
 		ca.signingFn = test.signingFn
 	}
 
-	controller := certificatesigningrequests.New(apiutil.IssuerCA, ca)
+	controller := certificatesigningrequests.New(
+		apiutil.IssuerCA,
+		func(*controller.Context) certificatesigningrequests.Signer { return ca },
+	)
 	controller.Register(test.builder.Context)
 	test.builder.Start()
 

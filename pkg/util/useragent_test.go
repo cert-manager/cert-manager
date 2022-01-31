@@ -17,10 +17,47 @@ limitations under the License.
 package util
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/rest"
 )
+
+func Test_RestConfigWithUserAgent(t *testing.T) {
+	AppGitCommit = "test-commit"
+
+	tests := map[string]struct {
+		component     []string
+		expRestConfig rest.Config
+	}{
+		"if no component name given, expect just cert-manager field manager": {
+			component: nil,
+			expRestConfig: rest.Config{
+				UserAgent: "cert-manager/canary-test-commit (" + runtime.GOOS + "/" + runtime.GOARCH + ") cert-manager/test-commit",
+			},
+		},
+		"if single component name given, expect cert-manager with single component field manager": {
+			component: []string{"controller"},
+			expRestConfig: rest.Config{
+				UserAgent: "cert-manager-controller/canary-test-commit (" + runtime.GOOS + "/" + runtime.GOARCH + ") cert-manager/test-commit",
+			},
+		},
+		"if multiple component names given, expect cert-manager with multiple component field manager": {
+			component: []string{"controller", "issuing-foo", "bar"},
+			expRestConfig: rest.Config{
+				UserAgent: "cert-manager-controller-issuing-foo-bar/canary-test-commit (" + runtime.GOOS + "/" + runtime.GOARCH + ") cert-manager/test-commit",
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotRestConfig := RestConfigWithUserAgent(new(rest.Config), test.component...)
+			assert.Equal(t, &test.expRestConfig, gotRestConfig)
+		})
+	}
+}
 
 // Adapted from
 // https://github.com/kubernetes/apiserver/blob/cecf3a2e57ffdfa8f3b36db4ee0c44e59ad656e9/pkg/endpoints/handlers/create_test.go#L24

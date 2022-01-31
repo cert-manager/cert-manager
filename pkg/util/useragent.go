@@ -18,15 +18,24 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/validation"
+	"k8s.io/client-go/rest"
 )
 
-// CertManagerUserAgent is the user agent that http clients in this codebase should use
-var CertManagerUserAgent = "cert-manager/" + version()
+// RestConfigWithUserAgent returns a copy of the Kubernetes REST config with
+// the User Agent set which includes the optional component strings given.
+func RestConfigWithUserAgent(restConfig *rest.Config, component ...string) *rest.Config {
+	restConfig = rest.CopyConfig(restConfig)
+	restConfig.UserAgent = fmt.Sprintf("%s/%s (%s) cert-manager/%s",
+		strings.Join(append([]string{"cert-manager"}, component...), "-"),
+		version(), VersionInfo().Platform, VersionInfo().GitCommit)
+	return restConfig
+}
 
 // PrefixFromUserAgent takes the characters preceding the first /, quote
 // unprintable character and then trim what's beyond the FieldManagerMaxLength

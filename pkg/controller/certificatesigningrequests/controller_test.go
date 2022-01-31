@@ -33,6 +33,7 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/fake"
 	"github.com/jetstack/cert-manager/pkg/controller/certificatesigningrequests/util"
@@ -591,7 +592,7 @@ func TestController(t *testing.T) {
 				return test.sarReaction(t)(action)
 			})
 
-			controller := New(test.signerType, test.signerImpl(t))
+			controller := New(test.signerType, func(*controller.Context) Signer { return test.signerImpl(t) })
 			_, _, err := controller.Register(builder.Context)
 			if err != nil {
 				t.Fatal(err)

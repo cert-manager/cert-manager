@@ -57,6 +57,9 @@ type Acme struct {
 
 	// metrics is used to create instrumented ACME clients
 	metrics *metrics.Metrics
+
+	// userAgent is the string used as the UserAgent when making HTTP calls.
+	userAgent string
 }
 
 // New returns a new ACME issuer interface for the given issuer.
@@ -76,6 +79,7 @@ func New(ctx *controller.Context, issuer v1.GenericIssuer) (issuer.Interface, er
 		clusterResourceNamespace: ctx.IssuerOptions.ClusterResourceNamespace,
 		accountRegistry:          ctx.ACMEOptions.AccountRegistry,
 		metrics:                  ctx.Metrics,
+		userAgent:                ctx.RESTConfig.UserAgent,
 	}
 
 	return a, nil

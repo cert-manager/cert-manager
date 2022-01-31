@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/miekg/dns"
+	"k8s.io/client-go/rest"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -34,9 +35,9 @@ import (
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
 // of calls to a reachabilityTest.
 func countReachabilityTestCalls(counter *int, t reachabilityTest) reachabilityTest {
-	return func(ctx context.Context, url *url.URL, key string, dnsServers []string) error {
+	return func(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error {
 		*counter++
-		return t(ctx, url, key, dnsServers)
+		return t(ctx, url, key, dnsServers, userAgent)
 	}
 }
 
@@ -50,14 +51,14 @@ func TestCheck(t *testing.T) {
 	tests := []testT{
 		{
 			name: "should pass",
-			reachabilityTest: func(context.Context, *url.URL, string, []string) error {
+			reachabilityTest: func(context.Context, *url.URL, string, []string, string) error {
 				return nil
 			},
 			expectedErr: false,
 		},
 		{
 			name: "should error",
-			reachabilityTest: func(context.Context, *url.URL, string, []string) error {
+			reachabilityTest: func(context.Context, *url.URL, string, []string, string) error {
 				return fmt.Errorf("failed")
 			},
 			expectedErr: true,
@@ -73,7 +74,7 @@ func TestCheck(t *testing.T) {
 				test.challenge = &cmacme.Challenge{}
 			}
 			s := Solver{
-				Context:          &controller.Context{},
+				Context:          &controller.Context{RESTConfig: new(rest.Config)},
 				testReachability: countReachabilityTestCalls(&calls, test.reachabilityTest),
 				requiredPasses:   requiredCallsForPass,
 			}
@@ -175,7 +176,7 @@ func TestReachabilityCustomDnsServers(t *testing.T) {
 
 	for _, tt := range tests {
 		atomic.StoreInt32(&dnsServerCalled, 0)
-		err = testReachability(context.Background(), u, key, tt.dnsServers)
+		err = testReachability(context.Background(), u, key, tt.dnsServers, "cert-manager-test")
 		switch {
 		case err == nil:
 			t.Errorf("Expected error for testReachability, but got none")

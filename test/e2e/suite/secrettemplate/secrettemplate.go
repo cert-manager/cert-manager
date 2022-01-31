@@ -266,10 +266,9 @@ var _ = framework.CertManagerDescribe("Certificate SecretTemplate", func() {
 
 			var managedLabels, managedAnnotations []string
 			for _, managedField := range secret.ManagedFields {
-				// The manager of the controller is currently "controller" which is
-				// based on the user agent of the controller binary. This manager name
-				// would change if the User Agent is changed.
-				if managedField.Manager != "controller" || managedField.FieldsV1 == nil {
+				// The field manager of the issuing controller is currently
+				// "cert-manager-certificates-issuing".
+				if managedField.Manager != "cert-manager-certificates-issuing" || managedField.FieldsV1 == nil {
 					continue
 				}
 

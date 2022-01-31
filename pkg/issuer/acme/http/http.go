@@ -39,7 +39,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -70,7 +69,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsServers []string) error
+type reachabilityTest func(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error
 
 // NewSolver returns a new ACME HTTP01 solver for the given *controller.Context.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
@@ -172,7 +171,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1.GenericIssuer, ch *cmacme.
 
 	log.V(logf.DebugLevel).Info("running self check multiple times to ensure challenge has propagated", "required_passes", s.requiredPasses)
 	for i := 0; i < s.requiredPasses; i++ {
-		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers)
+		err := s.testReachability(ctx, url, ch.Spec.Key, s.HTTP01SolverNameservers, s.Context.RESTConfig.UserAgent)
 		if err != nil {
 			return err
 		}
@@ -211,7 +210,7 @@ func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url *url.URL, key string, dnsServers []string) error {
+func testReachability(ctx context.Context, url *url.URL, key string, dnsServers []string, userAgent string) error {
 	log := logf.FromContext(ctx)
 	log.V(logf.DebugLevel).Info("performing HTTP01 reachability check")
 
@@ -219,7 +218,7 @@ func testReachability(ctx context.Context, url *url.URL, key string, dnsServers 
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
+	req.Header.Set("User-Agent", userAgent)
 
 	// The ACME spec says that a verifier should try on http port 80 first, but to follow any
 	// redirects which may be returned. Let's Encrypt, in practice, follows redirects for HTTP

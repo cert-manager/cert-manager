@@ -59,14 +59,14 @@ type Vault struct {
 }
 
 func init() {
-	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+	controllerpkg.Register(CSRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CSRControllerName).
-			For(certificatesigningrequests.New(apiutil.IssuerVault, NewVault(ctx))).
+			For(certificatesigningrequests.New(apiutil.IssuerVault, NewVault)).
 			Complete()
 	})
 }
 
-func NewVault(ctx *controllerpkg.Context) *Vault {
+func NewVault(ctx *controllerpkg.Context) certificatesigningrequests.Signer {
 	return &Vault{
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),

@@ -55,14 +55,14 @@ type Venafi struct {
 
 func init() {
 	// create certificate request controller for venafi issuer
-	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
-			For(certificaterequests.New(apiutil.IssuerVenafi, NewVenafi(ctx))).
+			For(certificaterequests.New(apiutil.IssuerVenafi, NewVenafi)).
 			Complete()
 	})
 }
 
-func NewVenafi(ctx *controllerpkg.Context) *Venafi {
+func NewVenafi(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &Venafi{
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),

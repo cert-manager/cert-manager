@@ -28,7 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmacmeclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
 	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -61,18 +61,21 @@ type ACME struct {
 
 func init() {
 	// create certificate request controller for acme issuer
-	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.ContextFactory) (controllerpkg.Interface, error) {
 		// watch owned Order resources and trigger resyncs of CertificateRequests
-		// that own Orders automatically
-		orderInformer := ctx.SharedInformerFactory.Acme().V1().Orders().Informer()
+		// that own Orders automatically.
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
-			For(certificaterequests.New(apiutil.IssuerACME, NewACME(ctx), orderInformer)).
+			For(certificaterequests.New(
+				apiutil.IssuerACME,
+				NewACME,
+				cmacme.SchemeGroupVersion.WithResource("orders"),
+			)).
 			Complete()
 	})
 }
 
 // NewACME returns a configured controller.
-func NewACME(ctx *controllerpkg.Context) *ACME {
+func NewACME(ctx *controllerpkg.Context) certificaterequests.Issuer {
 	return &ACME{
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
@@ -88,7 +91,7 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 // and sent back to the Kubernetes API server for processing.
 // The order controller then processes the order. The CertificateRequest
 // is then updated with the result.
-func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (a *ACME) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuer cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	// If we can't decode the CSR PEM we have to hard fail
@@ -215,7 +218,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1.CertificateRequest, issuer v1.Ge
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool) (*cmacme.Order, error) {
+func buildOrder(cr *cmapi.CertificateRequest, csr *x509.CertificateRequest, enableDurationFeature bool) (*cmacme.Order, error) {
 	var ipAddresses []string
 	for _, ip := range csr.IPAddresses {
 		ipAddresses = append(ipAddresses, ip.String())
@@ -272,7 +275,7 @@ func buildOrder(cr *v1.CertificateRequest, csr *x509.CertificateRequest, enableD
 			// Annotations include the filtered annotations copied from the Certificate.
 			Annotations: cr.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, v1.SchemeGroupVersion.WithKind(v1.CertificateRequestKind)),
+				*metav1.NewControllerRef(cr, cmapi.SchemeGroupVersion.WithKind(cmapi.CertificateRequestKind)),
 			},
 		},
 		Spec: spec,

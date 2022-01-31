@@ -40,6 +40,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/venafi/client"
@@ -820,7 +821,7 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Init()
 	defer test.builder.Stop()
 
-	v := NewVenafi(test.builder.Context)
+	v := NewVenafi(test.builder.Context).(*Venafi)
 
 	if test.fakeSecretLister != nil {
 		v.secretsLister = test.fakeSecretLister
@@ -833,7 +834,10 @@ func runTest(t *testing.T, test testT) {
 		}
 	}
 
-	controller := certificaterequests.New(apiutil.IssuerVenafi, v)
+	controller := certificaterequests.New(
+		apiutil.IssuerVenafi,
+		func(*controller.Context) certificaterequests.Issuer { return v },
+	)
 	controller.Register(test.builder.Context)
 	test.builder.Start()
 

@@ -35,7 +35,7 @@ var ErrNotFound = errors.New("ACME client for issuer not initialised/available")
 type Registry interface {
 	// AddClient will ensure the registry has a stored ACME client for the Issuer
 	// object with the given UID, configuration and private key.
-	AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey)
+	AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string)
 
 	// RemoveClient will remove a registered client using the UID of the Issuer
 	// resource that constructed it.
@@ -110,9 +110,9 @@ type clientWithMeta struct {
 
 // AddClient will ensure the registry has a stored ACME client for the Issuer
 // object with the given UID, configuration and private key.
-func (r *registry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
+func (r *registry) AddClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
 	// ensure the client is up to date for the current configuration
-	r.ensureClient(client, uid, config, privateKey)
+	r.ensureClient(client, uid, config, privateKey, userAgent)
 }
 
 // ensureClient will ensure an ACME client with the given parameters is registered.
@@ -120,7 +120,7 @@ func (r *registry) AddClient(client *http.Client, uid string, config cmacme.ACME
 // the client will NOT be mutated or replaced, allowing this method to be called
 // even if the client does not need replacing/updating without causing issues for
 // consumers of the registry.
-func (r *registry) ensureClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey) {
+func (r *registry) ensureClient(client *http.Client, uid string, config cmacme.ACMEIssuer, privateKey *rsa.PrivateKey, userAgent string) {
 	// acquire a read-write lock even if we hit the fast-path where the client
 	// is already present to avoid having to RLock, RUnlock and Lock again,
 	// which could itself cause a race
@@ -134,7 +134,7 @@ func (r *registry) ensureClient(client *http.Client, uid string, config cmacme.A
 	// create a new client if one is not registered or if the
 	// 'metadata' does not match
 	r.clients[uid] = clientWithMeta{
-		Interface:     NewClient(client, config, privateKey),
+		Interface:     NewClient(client, config, privateKey, userAgent),
 		stableOptions: newOpts,
 	}
 }
