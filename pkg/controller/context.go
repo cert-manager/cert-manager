@@ -59,7 +59,7 @@ const resyncPeriod = 10 * time.Hour
 // We purposely don't have specific informers/listers here, and instead keep a
 // reference to a SharedInformerFactory so that controllers can choose
 // themselves which listers are required.
-// Each component should be given district Contexts, built from the
+// Each component should be given distinct Contexts, built from the
 // ContextFactory that has configured the underlying client to use separate
 // User Agents.
 type Context struct {
@@ -236,6 +236,8 @@ func NewContextFactory(ctx context.Context, opts ContextOptions) (*ContextFactor
 		return nil, fmt.Errorf("error creating rest config: %w", err)
 	}
 	restConfig = util.RestConfigWithUserAgent(restConfig)
+	restConfig.QPS = opts.KubernetesAPIQPS
+	restConfig.Burst = opts.KubernetesAPIBurst
 
 	clients, err := buildClients(restConfig)
 	if err != nil {
