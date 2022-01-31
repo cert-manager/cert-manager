@@ -36,6 +36,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/cainjector"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/util/profiling"
 )
 
@@ -88,6 +89,8 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.BoolVar(&o.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, "Enable profiling for cainjector")
 	fs.StringVar(&o.PprofAddr, "profiler-address", cmdutil.DefaultProfilerAddr, "Address of the Go profiler (pprof) if enabled. This should never be exposed on a public interface.")
+
+	utilfeature.DefaultMutableFeatureGate.AddFlag(fs)
 }
 
 // NewInjectorControllerOptions returns a new InjectorControllerOptions
@@ -131,18 +134,20 @@ servers and webhook servers.`,
 }
 
 func (o InjectorControllerOptions) RunInjectorController(ctx context.Context) error {
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                        api.Scheme,
-		Namespace:                     o.Namespace,
-		LeaderElection:                o.LeaderElect,
-		LeaderElectionNamespace:       o.LeaderElectionNamespace,
-		LeaderElectionID:              "cert-manager-cainjector-leader-election",
-		LeaderElectionReleaseOnCancel: true,
-		LeaseDuration:                 &o.LeaseDuration,
-		RenewDeadline:                 &o.RenewDeadline,
-		RetryPeriod:                   &o.RetryPeriod,
-		MetricsBindAddress:            "0",
-	})
+	mgr, err := ctrl.NewManager(
+		util.RestConfigWithUserAgent(ctrl.GetConfigOrDie(), "ca-injector"),
+		ctrl.Options{
+			Scheme:                        api.Scheme,
+			Namespace:                     o.Namespace,
+			LeaderElection:                o.LeaderElect,
+			LeaderElectionNamespace:       o.LeaderElectionNamespace,
+			LeaderElectionID:              "cert-manager-cainjector-leader-election",
+			LeaderElectionReleaseOnCancel: true,
+			LeaseDuration:                 &o.LeaseDuration,
+			RenewDeadline:                 &o.RenewDeadline,
+			RetryPeriod:                   &o.RetryPeriod,
+			MetricsBindAddress:            "0",
+		})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %v", err)
 	}
