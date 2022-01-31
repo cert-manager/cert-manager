@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["apply.go"],
-    importpath = "github.com/jetstack/cert-manager/internal/controller/challenges",
+    importpath = "github.com/cert-manager/cert-manager/internal/controller/challenges",
     visibility = ["//:__subpackages__"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",

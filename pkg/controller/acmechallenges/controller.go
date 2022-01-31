@@ -23,7 +23,6 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -54,6 +53,9 @@ type controller struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 	secretLister        corelisters.SecretLister
+
+	// fieldManager is the manager name used for the Apply operations.
+	fieldManager string
 
 	// ACME challenge solvers are instantiated once at the time of controller
 	// construction.
@@ -139,6 +141,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
+	c.fieldManager = ctx.FieldManager
 	c.accountRegistry = ctx.ACMEOptions.AccountRegistry
 
 	c.httpSolver, err = http.NewSolver(ctx)
@@ -183,7 +186,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
-		_, err := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(ctx, ch, metav1.UpdateOptions{})
+		_, err := c.updateStatusOrApply(ctx, ch)
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return

@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
+	internalchallenges "github.com/cert-manager/cert-manager/internal/controller/challenges"
 	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	"github.com/cert-manager/cert-manager/pkg/acme"
 	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
@@ -76,8 +77,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		if apiequality.Semantic.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
-		_, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(ctx, ch, metav1.UpdateOptions{})
-		if updateErr != nil {
+		if _, updateErr := c.updateStatusOrApply(ctx, ch); updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}
 	}()
@@ -253,14 +253,14 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 
 	defer func() {
 		// call UpdateStatus first as we may have updated the challenge.status.reason field
-		ch, updateErr := c.cmClient.AcmeV1().Challenges(ch.Namespace).UpdateStatus(ctx, ch, metav1.UpdateOptions{})
+		ch, updateErr := c.updateStatusOrApply(ctx, ch)
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return
 		}
 		// call Update to remove the metadata.finalizers entry
 		ch.Finalizers = ch.Finalizers[1:]
-		_, updateErr = c.cmClient.AcmeV1().Challenges(ch.Namespace).Update(ctx, ch, metav1.UpdateOptions{})
+		_, updateErr = c.updateOrApply(ctx, ch)
 		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return
@@ -423,4 +423,20 @@ func (c *controller) solverFor(challengeType cmacme.ACMEChallengeType) (solver, 
 		return c.dnsSolver, nil
 	}
 	return nil, fmt.Errorf("no solver for %q implemented", challengeType)
+}
+
+func (c *controller) updateOrApply(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		return internalchallenges.Apply(ctx, c.cmClient, c.fieldManager, challenge)
+	} else {
+		return c.cmClient.AcmeV1().Challenges(challenge.Namespace).Update(ctx, challenge, metav1.UpdateOptions{})
+	}
+}
+
+func (c *controller) updateStatusOrApply(ctx context.Context, challenge *cmacme.Challenge) (*cmacme.Challenge, error) {
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		return internalchallenges.ApplyStatus(ctx, c.cmClient, c.fieldManager, challenge)
+	} else {
+		return c.cmClient.AcmeV1().Challenges(challenge.Namespace).UpdateStatus(ctx, challenge, metav1.UpdateOptions{})
+	}
 }
