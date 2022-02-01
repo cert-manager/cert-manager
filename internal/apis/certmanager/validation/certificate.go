@@ -26,11 +26,12 @@ import (
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	metavalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	internalcmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
 	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
-	"github.com/jetstack/cert-manager/internal/controller/feature"
+	"github.com/jetstack/cert-manager/internal/webhook/feature"
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
@@ -78,19 +79,6 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 		default:
 			el = append(el, field.Invalid(fldPath.Child("privateKey", "algorithm"), crt.PrivateKey.Algorithm, "must be either empty or one of rsa or ecdsa"))
 		}
-		if crt.AdditionalOutputFormats != nil {
-			if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
-				el = append(el, field.Forbidden(fldPath.Child("AdditionalOutputFormat"), "Feature gate AdditionalCertificateOutputFormats must be enabled"))
-			}
-			check := make(map[string]bool)
-			for _, val := range crt.AdditionalOutputFormats {
-				if _, exists := check[string(val.Type)]; !exists {
-					check[string(val.Type)] = true
-				} else {
-					el = append(el, field.Invalid(fldPath.Child("AdditionalOutputFormats"), crt.AdditionalOutputFormats, "Duplicate Type in additionalOutputFormats"))
-				}
-			}
-		}
 	}
 
 	if crt.Duration != nil || crt.RenewBefore != nil {
@@ -111,6 +99,8 @@ func ValidateCertificateSpec(crt *internalcmapi.CertificateSpec, fldPath *field.
 			el = append(el, validateSecretTemplateAnnotations(crt, fldPath)...)
 		}
 	}
+
+	el = append(el, validateAdditionalOutputFormats(crt, fldPath)...)
 
 	return el
 }
@@ -222,5 +212,28 @@ func ValidateDuration(crt *internalcmapi.CertificateSpec, fldPath *field.Path) f
 	if crt.RenewBefore != nil && crt.RenewBefore.Duration >= duration {
 		el = append(el, field.Invalid(fldPath.Child("renewBefore"), crt.RenewBefore.Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, crt.RenewBefore.Duration)))
 	}
+	return el
+}
+
+func validateAdditionalOutputFormats(crt *internalcmapi.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	var el field.ErrorList
+
+	if !utilfeature.DefaultFeatureGate.Enabled(feature.AdditionalCertificateOutputFormats) {
+		if len(crt.AdditionalOutputFormats) > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("additionalOutputFormats"), "feature gate AdditionalCertificateOutputFormats must be enabled"))
+		}
+		return el
+	}
+
+	// Ensure the set of output formats is unique, keyed on "Type".
+	aofSet := sets.NewString()
+	for _, val := range crt.AdditionalOutputFormats {
+		if aofSet.Has(string(val.Type)) {
+			el = append(el, field.Duplicate(fldPath.Child("additionalOutputFormats").Key("type"), string(val.Type)))
+			continue
+		}
+		aofSet.Insert(string(val.Type))
+	}
+
 	return el
 }
