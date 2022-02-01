@@ -384,6 +384,8 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 	crt.Status.Revision = &nextRevision
 
 	// Remove Issuing status condition
+	// TODO @joshvanl: Once we move to only server-side apply API calls, this
+	// should be changed to setting the Issuing condition to False.
 	apiutil.RemoveCertificateCondition(crt, cmapi.CertificateConditionIssuing)
 
 	//Clear status.lastFailureTime (if set)
@@ -409,6 +411,9 @@ func (c *controller) issueCertificate(ctx context.Context, nextRevision int, crt
 // applying.
 func (c *controller) updateOrApplyStatus(ctx context.Context, crt *cmapi.Certificate, conditionRemoved bool) error {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.ServerSideApply) {
+		// TODO @joshvanl: Once we move to only server-side apply API calls,
+		// `conditionRemoved` can be removed and setting the Issuing condition to
+		// False can be moved to the `issueCertificate` func.
 		if conditionRemoved {
 			message := "The certificate has been successfully issued"
 			apiutil.SetCertificateCondition(crt, crt.Generation, cmapi.CertificateConditionIssuing, cmmeta.ConditionFalse, "Issued", message)

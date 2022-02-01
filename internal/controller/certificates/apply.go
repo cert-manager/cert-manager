@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The cert-manager Authors.
+Copyright 2022 The cert-manager Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@ import (
 	cmclient "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 )
 
-// ApplyStatus will make a Apply API call with the given client to the
+// ApplyStatus will make a Patch API call with the given client to the
 // certificates status sub-resource endpoint. All data in the given Certificate
 // object is dropped; expect for the name, namespace, and status object. The
-// given fieldManager is will be used as the FieldManager in the Apply call.
-// Always sets Force Apply to true.
+// given fieldManager is will be used as the FieldManager in the Patch call.
+// Always sets Force Patch to true.
 func ApplyStatus(ctx context.Context, cl cmclient.Interface, fieldManager string, crt *cmapi.Certificate) error {
 	crtData, err := serializeApplyStatus(crt)
 	if err != nil {
