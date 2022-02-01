@@ -48,6 +48,10 @@ const (
 	// SecretTemplate is not reflected on the target Secret, either by having
 	// extra, missing, or wrong Annotations or Labels.
 	SecretTemplateMismatch string = "SecretTemplateMismatch"
+	// AdditionalOutputFormatsMismatch is a policy violation whereby the
+	// Certificate's AdditionalOutputFormats is not reflected on the target
+	// Secret, either by having extra, missing, or wrong values.
+	AdditionalOutputFormatsMismatch string = "AdditionalOutputFormatsMismatch"
 	// ManagedFieldsParseError is a policy violation whereby cert-manager was
 	// unable to decode the managed fields on a resource.
 	ManagedFieldsParseError string = "ManagedFieldsParseError"

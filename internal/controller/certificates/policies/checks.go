@@ -368,3 +368,103 @@ func SecretTemplateMismatchesSecretManagedFields(fieldManager string) Func {
 		return "", "", false
 	}
 }
+
+// SecretAdditionalOutputFormatsDataMissmatch inspects the given Certificate's
+// AdditionalOutputFormats against the given Secret. It ensures that for each
+// additional output format defined, the corresponding data key and correct
+// value is present in the Secret Data.
+// Returns true when there is a violation when an AdditionalOutputFormat is
+// defined, but either the key is missing, or the value at the key in the
+// Secret data contains the wrong value.
+func SecretAdditionalOutputFormatsDataMismatch(input Input) (string, string, bool) {
+	const message = "Certificate's AdditionalOutputFormats doesn't match Secret Data"
+	for _, format := range input.Certificate.Spec.AdditionalOutputFormats {
+		switch format.Type {
+		case cmapi.CertificateOutputFormatCombinedPEM:
+			v, ok := input.Secret.Data[cmapi.CertificateOutputFormatCombinedPEMKey]
+			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatCombinedPEM(
+				input.Secret.Data[corev1.TLSPrivateKeyKey],
+				input.Secret.Data[corev1.TLSCertKey],
+			)) {
+				return AdditionalOutputFormatsMismatch, message, true
+			}
+
+		case cmapi.CertificateOutputFormatDER:
+			v, ok := input.Secret.Data[cmapi.CertificateOutputFormatDERKey]
+			if !ok || !bytes.Equal(v, internalcertificates.OutputFormatDER(input.Secret.Data[corev1.TLSPrivateKeyKey])) {
+				return AdditionalOutputFormatsMismatch, message, true
+			}
+		}
+	}
+
+	return "", "", false
+}
+
+// SecretAdditionalOutputFormatsOwnerMismatch inspects the given Certificate's
+// AdditionalOutputFormats against the given Secret. It ensures that additional
+// output formats present on the Secret, whose fields are managed by the field
+// manager, are only and must be present if defined on the Certificate.
+//
+// Returns true when there is a violation by- an additional output format is
+// defined on the Certificate but not present or managed by the field manager
+// on the Secret, or an additional output format that is managed by the field
+// manager is present on the Secret but not defined on the Certificate.
+//
+// Also returns true with a ManagedFieldsParseError reason if the managed
+// fields of the Secret were not able to be decoded, however should be
+// considered a non re-triable error.
+func SecretAdditionalOutputFormatsOwnerMismatch(fieldManager string) Func {
+	const message = "Certificate's AdditionalOutputFormats doesn't match Secret ManagedFields"
+	return func(input Input) (string, string, bool) {
+		var (
+			crtHasCombinedPEM, crtHasDER       bool
+			secretHasCombinedPEM, secretHasDER bool
+		)
+
+		// Gather which additional output formats have been defined on the
+		// Certificate.
+		for _, format := range input.Certificate.Spec.AdditionalOutputFormats {
+			switch format.Type {
+			case cmapi.CertificateOutputFormatCombinedPEM:
+				crtHasCombinedPEM = true
+			case cmapi.CertificateOutputFormatDER:
+				crtHasDER = true
+			}
+		}
+
+		// Determine whether an output format key exists on the Secret which is
+		// owned my the field manager.
+		for _, managedField := range input.Secret.ManagedFields {
+			if managedField.Manager != fieldManager || managedField.FieldsV1 == nil {
+				continue
+			}
+
+			var fieldset fieldpath.Set
+			if err := fieldset.FromJSON(bytes.NewReader(managedField.FieldsV1.Raw)); err != nil {
+				return ManagedFieldsParseError, fmt.Sprintf("failed to decode managed fields on Secret: %s", err), true
+			}
+
+			if fieldset.Has(fieldpath.Path{
+				{FieldName: pointer.String("data")},
+				{FieldName: pointer.String(cmapi.CertificateOutputFormatCombinedPEMKey)},
+			}) {
+				secretHasCombinedPEM = true
+			}
+
+			if fieldset.Has(fieldpath.Path{
+				{FieldName: pointer.String("data")},
+				{FieldName: pointer.String(cmapi.CertificateOutputFormatDERKey)},
+			}) {
+				secretHasDER = true
+			}
+		}
+
+		// Format present or missing on the Certificate should be reflected on the
+		// Secret.
+		if crtHasCombinedPEM != secretHasCombinedPEM || crtHasDER != secretHasDER {
+			return AdditionalOutputFormatsMismatch, message, true
+		}
+
+		return "", "", false
+	}
+}
