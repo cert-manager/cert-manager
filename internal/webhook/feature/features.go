@@ -23,15 +23,19 @@ import (
 )
 
 const (
-// FeatureName will enable XYZ feature.
-// Fill this section out with additional details about the feature.
-//
-// Owner (responsible for graduating feature through to GA): @username
-// Alpha: vX.Y
-// Beta: ...
-//FeatureName featuregate.Feature = "FeatureName"
+	// FeatureName will enable XYZ feature.
+	// Fill this section out with additional details about the feature.
+	//
+	// Owner (responsible for graduating feature through to GA): @username
+	// Alpha: vX.Y
+	// Beta: ...
+	//FeatureName featuregate.Feature = "FeatureName"
 
-// Insert features below this line to maintain the template above.
+	// Owner: @joshvanl
+	// alpha: v1.7.1
+	//
+	// AdditionalCertificateOutputFormats enable output additional format
+	AdditionalCertificateOutputFormats featuregate.Feature = "AdditionalCertificateOutputFormats"
 )
 
 func init() {
@@ -44,5 +48,5 @@ func init() {
 //   utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
 // Where utilfeature is github.com/jetstack/cert-manager/pkg/util/feature.
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	//FeatureName: {Default: false, PreRelease: featuregate.Alpha},
+	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
 }
