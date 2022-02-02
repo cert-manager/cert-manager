@@ -36,6 +36,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/controller/cainjector"
 	logf "github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/cert-manager/cert-manager/pkg/util/profiling"
 )
 
@@ -88,6 +89,8 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.BoolVar(&o.EnablePprof, "enable-profiling", cmdutil.DefaultEnableProfiling, "Enable profiling for cainjector")
 	fs.StringVar(&o.PprofAddr, "profiler-address", cmdutil.DefaultProfilerAddr, "Address of the Go profiler (pprof) if enabled. This should never be exposed on a public interface.")
+
+	utilfeature.DefaultMutableFeatureGate.AddFlag(fs)
 }
 
 // NewInjectorControllerOptions returns a new InjectorControllerOptions
