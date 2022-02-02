@@ -19,7 +19,7 @@ package v1alpha3
 import (
 	"k8s.io/apimachinery/pkg/conversion"
 
-	"github.com/jetstack/cert-manager/internal/apis/certmanager"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager"
 )
 
 func Convert_v1alpha3_CertificateSpec_To_certmanager_CertificateSpec(in *CertificateSpec, out *certmanager.CertificateSpec, s conversion.Scope) error {

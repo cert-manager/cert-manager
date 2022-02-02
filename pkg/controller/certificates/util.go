@@ -29,9 +29,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // The amount of time after the LastFailureTime of a Certificate
@@ -316,7 +316,7 @@ func RenewalTime(notBefore, notAfter time.Time, renewBeforeOverride *metav1.Dura
 	// non-truncated value here would potentially cause Certificates to be
 	// re-queued for renewal earlier than the calculated renewal time thus
 	// causing Certificates to not be automatically renewed. See
-	// https://github.com/jetstack/cert-manager/pull/4399.
+	// https://github.com/cert-manager/cert-manager/pull/4399.
 	rt := metav1.NewTime(notAfter.Add(-1 * renewBefore).Truncate(time.Second))
 	return &rt
 }

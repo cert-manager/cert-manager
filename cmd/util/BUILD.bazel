@@ -10,7 +10,7 @@ go_library(
         "signal_posix.go",
         "signal_windows.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/cmd/util",
+    importpath = "github.com/cert-manager/cert-manager/cmd/util",
     visibility = ["//visibility:public"],
 )
 

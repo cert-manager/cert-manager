@@ -23,7 +23,7 @@ package dnsproviders
 import (
 	"fmt"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 )
 
 var (

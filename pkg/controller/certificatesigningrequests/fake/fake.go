@@ -21,7 +21,7 @@ import (
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type Signer struct {

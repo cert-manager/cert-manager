@@ -40,16 +40,16 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 
 	"github.com/go-logr/logr"
-	"github.com/jetstack/cert-manager/internal/controller/feature"
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	cmscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/pkg/util"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
+	informers "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 // This sets the informer's resync period to 10 hours

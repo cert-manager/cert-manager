@@ -22,8 +22,8 @@ limitations under the License.
 package certmanager
 
 import (
-	acme "github.com/jetstack/cert-manager/internal/apis/acme"
-	meta "github.com/jetstack/cert-manager/internal/apis/meta"
+	acme "github.com/cert-manager/cert-manager/internal/apis/acme"
+	meta "github.com/cert-manager/cert-manager/internal/apis/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )

@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["scheduler.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/acmechallenges/scheduler",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme:go_default_library",

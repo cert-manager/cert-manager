@@ -24,11 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	acmevalidation "github.com/jetstack/cert-manager/internal/apis/acme/validation"
-	cmvalidation "github.com/jetstack/cert-manager/internal/apis/certmanager/validation"
-	acmev1 "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	admission "github.com/jetstack/cert-manager/pkg/webhook/admission"
+	acmevalidation "github.com/cert-manager/cert-manager/internal/apis/acme/validation"
+	cmvalidation "github.com/cert-manager/cert-manager/internal/apis/certmanager/validation"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	admission "github.com/cert-manager/cert-manager/pkg/webhook/admission"
 )
 
 const PluginName = "ResourceValidation"

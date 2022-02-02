@@ -19,8 +19,8 @@ package listers
 import (
 	"k8s.io/apimachinery/pkg/labels"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	acmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	acmelisters "github.com/cert-manager/cert-manager/pkg/client/listers/acme/v1"
 )
 
 var _ acmelisters.OrderLister = &FakeOrderLister{}

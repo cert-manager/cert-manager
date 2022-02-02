@@ -22,8 +22,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/jetstack/cert-manager/internal/test/paths"
-	"github.com/jetstack/cert-manager/test/internal/util"
+	"github.com/cert-manager/cert-manager/internal/test/paths"
+	"github.com/cert-manager/cert-manager/test/internal/util"
 )
 
 // setEnvTestEnv configures environment variables for controller-runtime's

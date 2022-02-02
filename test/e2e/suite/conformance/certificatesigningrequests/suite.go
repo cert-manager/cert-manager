@@ -23,10 +23,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	certificatesv1 "k8s.io/api/certificates/v1"
 
-	"github.com/jetstack/cert-manager/internal/controller/feature"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper/featureset"
+	"github.com/cert-manager/cert-manager/internal/controller/feature"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
+	"github.com/cert-manager/cert-manager/test/e2e/framework"
+	"github.com/cert-manager/cert-manager/test/e2e/framework/helper/featureset"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any

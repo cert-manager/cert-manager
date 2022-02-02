@@ -28,10 +28,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	gwlisters "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	shimhelper "github.com/jetstack/cert-manager/pkg/controller/certificate-shim"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	shimhelper "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (

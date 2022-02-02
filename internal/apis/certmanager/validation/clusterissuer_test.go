@@ -23,7 +23,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 )
 
 func TestValidateClusterIssuer(t *testing.T) {

@@ -21,7 +21,7 @@ import (
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
 )
 
 func ValidateWebhookConfiguration(cfg *config.WebhookConfiguration) error {

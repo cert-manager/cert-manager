@@ -28,10 +28,10 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/yaml"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/versionchecker"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/versionchecker"
 )
 
 // Version is a struct for version information

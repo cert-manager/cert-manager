@@ -28,8 +28,8 @@ import (
 
 	"github.com/miekg/dns"
 
-	"github.com/jetstack/cert-manager/internal/apis/certmanager/validation/util"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/internal/apis/certmanager/validation/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 // This list must be kept in sync with pkg/apis/certmanager/validation/issuer.go

@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	cmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
 )
 
 // Validation functions for cert-manager ClusterIssuer types.

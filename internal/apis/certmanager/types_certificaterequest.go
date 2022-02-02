@@ -19,7 +19,7 @@ package certmanager
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 )
 
 const (

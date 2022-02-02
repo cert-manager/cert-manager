@@ -1,6 +1,6 @@
-CMCTL_GOFLAGS=$(GOFLAGS) -ldflags '-X "github.com/jetstack/cert-manager/cmd/ctl/pkg/build.name=cmctl" -X "github.com/jetstack/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion=true"'
+CMCTL_GOFLAGS=$(GOFLAGS) -ldflags '-X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build.name=cmctl" -X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion=true"'
 
-KUBECTL_PLUGIN_GOFLAGS=$(GOFLAGS) -ldflags '-X "github.com/jetstack/cert-manager/cmd/ctl/pkg/build.name=kubectl cert-manager" -X "github.com/jetstack/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion=false"'
+KUBECTL_PLUGIN_GOFLAGS=$(GOFLAGS) -ldflags '-X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build.name=kubectl cert-manager" -X "github.com/cert-manager/cert-manager/cmd/ctl/pkg/build/commands.registerCompletion=false"'
 
 bin/cmctl:
 	@mkdir -p $@

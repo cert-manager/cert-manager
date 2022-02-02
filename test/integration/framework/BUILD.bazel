@@ -6,7 +6,7 @@ go_library(
         "apiserver.go",
         "helpers.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/integration/framework",
+    importpath = "github.com/cert-manager/cert-manager/test/integration/framework",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/webhook/app/testing:go_default_library",

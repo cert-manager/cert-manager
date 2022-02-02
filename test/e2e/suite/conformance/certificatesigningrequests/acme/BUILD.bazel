@@ -7,7 +7,7 @@ go_library(
         "dns01.go",
         "http01.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificatesigningrequests/acme",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificatesigningrequests/acme",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",

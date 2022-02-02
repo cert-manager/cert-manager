@@ -6,7 +6,7 @@ go_library(
         "coverage.go",
         "faketestdeps.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/util/coverage",
+    importpath = "github.com/cert-manager/cert-manager/pkg/util/coverage",
     visibility = ["//visibility:public"],
     deps = [
         "@io_k8s_apimachinery//pkg/util/wait:go_default_library",

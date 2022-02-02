@@ -7,7 +7,7 @@ go_library(
         "certificates.go",
         "metrics.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/metrics",
+    importpath = "github.com/cert-manager/cert-manager/pkg/metrics",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1:go_default_library",

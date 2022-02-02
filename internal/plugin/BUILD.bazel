@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["plugins.go"],
-    importpath = "github.com/jetstack/cert-manager/internal/plugin",
+    importpath = "github.com/cert-manager/cert-manager/internal/plugin",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/plugin/admission/apideprecation:go_default_library",

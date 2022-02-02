@@ -19,8 +19,8 @@ package v1
 import (
 	"k8s.io/apimachinery/pkg/conversion"
 
-	"github.com/jetstack/cert-manager/internal/apis/meta"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	"github.com/cert-manager/cert-manager/internal/apis/meta"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 )
 
 // Convert_meta_LocalObjectReference_To_v1_LocalObjectReference is explicitly defined to avoid issues in conversion-gen

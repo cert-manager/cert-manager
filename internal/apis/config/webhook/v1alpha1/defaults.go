@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 
-	"github.com/jetstack/cert-manager/pkg/apis/config/webhook/v1alpha1"
+	"github.com/cert-manager/cert-manager/pkg/apis/config/webhook/v1alpha1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {

@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func Test_fingerprintCert(t *testing.T) {

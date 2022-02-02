@@ -17,11 +17,11 @@ limitations under the License.
 package plugin
 
 import (
-	"github.com/jetstack/cert-manager/internal/plugin/admission/apideprecation"
-	certificaterequestapproval "github.com/jetstack/cert-manager/internal/plugin/admission/certificaterequest/approval"
-	certificaterequestidentity "github.com/jetstack/cert-manager/internal/plugin/admission/certificaterequest/identity"
-	"github.com/jetstack/cert-manager/internal/plugin/admission/resourcevalidation"
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/internal/plugin/admission/apideprecation"
+	certificaterequestapproval "github.com/cert-manager/cert-manager/internal/plugin/admission/certificaterequest/approval"
+	certificaterequestidentity "github.com/cert-manager/cert-manager/internal/plugin/admission/certificaterequest/identity"
+	"github.com/cert-manager/cert-manager/internal/plugin/admission/resourcevalidation"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 

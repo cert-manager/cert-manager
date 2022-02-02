@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["profiling.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/util/profiling",
+    importpath = "github.com/cert-manager/cert-manager/pkg/util/profiling",
     visibility = ["//visibility:public"],
 )
 

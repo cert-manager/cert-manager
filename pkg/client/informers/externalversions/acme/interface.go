@@ -19,8 +19,8 @@ limitations under the License.
 package acme
 
 import (
-	v1 "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/acme/v1"
-	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/acme/v1"
+	internalinterfaces "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

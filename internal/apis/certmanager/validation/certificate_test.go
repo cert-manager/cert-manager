@@ -27,11 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 
-	internalcmapi "github.com/jetstack/cert-manager/internal/apis/certmanager"
-	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
-	"github.com/jetstack/cert-manager/internal/webhook/feature"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	internalcmapi "github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
+	"github.com/cert-manager/cert-manager/internal/webhook/feature"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 	"github.com/stretchr/testify/assert"
 )
 

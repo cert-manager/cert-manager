@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/build"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/build"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 
 	"github.com/spf13/cobra"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
@@ -36,7 +36,7 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/jetstack/cert-manager/pkg/ctl"
+	"github.com/cert-manager/cert-manager/pkg/ctl"
 )
 
 var (

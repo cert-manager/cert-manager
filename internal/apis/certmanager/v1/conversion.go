@@ -21,8 +21,8 @@ import (
 
 	conversion "k8s.io/apimachinery/pkg/conversion"
 
-	certmanager "github.com/jetstack/cert-manager/internal/apis/certmanager"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	certmanager "github.com/cert-manager/cert-manager/internal/apis/certmanager"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 // Convert_v1_CertificateSpec_To_certmanager_CertificateSpec

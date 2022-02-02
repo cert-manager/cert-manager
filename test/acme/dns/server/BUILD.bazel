@@ -7,7 +7,7 @@ go_library(
         "rfc2136.go",
         "server.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/acme/dns/server",
+    importpath = "github.com/cert-manager/cert-manager/test/acme/dns/server",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/logs:go_default_library",

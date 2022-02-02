@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["scheme.go"],
-    importpath = "github.com/jetstack/cert-manager/internal/apis/config/webhook/scheme",
+    importpath = "github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/apis/config/webhook:go_default_library",

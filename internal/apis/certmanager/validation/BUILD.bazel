@@ -10,7 +10,7 @@ go_library(
         "issuer.go",
         "warnings.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/apis/certmanager/validation",
+    importpath = "github.com/cert-manager/cert-manager/internal/apis/certmanager/validation",
     visibility = ["//visibility:public"],
     deps = [
         "//internal/apis/acme:go_default_library",

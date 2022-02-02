@@ -23,8 +23,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
-	config "github.com/jetstack/cert-manager/internal/apis/config/webhook"
-	"github.com/jetstack/cert-manager/internal/apis/config/webhook/scheme"
+	config "github.com/cert-manager/cert-manager/internal/apis/config/webhook"
+	"github.com/cert-manager/cert-manager/internal/apis/config/webhook/scheme"
 )
 
 // Filesystem is an interface used to mock out calls to ReadFile

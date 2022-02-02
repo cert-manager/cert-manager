@@ -6,7 +6,7 @@ go_library(
         "helper.go",
         "sync.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificate-shim",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/certificate-shim",
     visibility = ["//visibility:public"],
     deps = [
         "//internal/ingress:go_default_library",

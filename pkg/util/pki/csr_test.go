@@ -30,8 +30,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util"
 )
 
 func buildCertificate(cn string, dnsNames ...string) *cmapi.Certificate {
@@ -719,7 +719,7 @@ func TestEncodeX509Chain(t *testing.T) {
 			expErr:     false,
 		},
 		"chain with a non-root cert where issuer matches subject should include that cert but not root": {
-			// see https://github.com/jetstack/cert-manager/issues/4142#issuecomment-884248923
+			// see https://github.com/cert-manager/cert-manager/issues/4142#issuecomment-884248923
 			inputCerts: []*x509.Certificate{root.cert, intA1.cert, leafInterCN.cert},
 			expChain:   joinPEM(intA1.pem, leafInterCN.pem),
 			expErr:     false,

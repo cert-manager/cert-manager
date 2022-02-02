@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	certificatesv1 "k8s.io/api/certificates/v1"
 
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func TestGenerateTemplateFromCertificateSigningRequest(t *testing.T) {

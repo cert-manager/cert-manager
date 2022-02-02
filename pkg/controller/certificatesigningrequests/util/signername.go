@@ -19,7 +19,7 @@ package util
 import (
 	"strings"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 type SignerIssuerRef struct {

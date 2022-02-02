@@ -10,7 +10,7 @@ go_library(
         "recorder.go",
         "util.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/controller/test",
+    importpath = "github.com/cert-manager/cert-manager/pkg/controller/test",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",

@@ -32,8 +32,8 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
 
-	"github.com/jetstack/cert-manager/pkg/controller"
-	discoveryfake "github.com/jetstack/cert-manager/test/unit/discovery"
+	"github.com/cert-manager/cert-manager/pkg/controller"
+	discoveryfake "github.com/cert-manager/cert-manager/test/unit/discovery"
 )
 
 // Important: these tests cannot run in parallel as the cache holds internal state at the package level.

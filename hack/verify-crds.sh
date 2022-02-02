@@ -67,7 +67,7 @@ echo "SUCCESS: generated CRDs up-to-date"
 # Verify that CRDs don't contain status fields as that causes issues when they
 # are managed by some CD tools. This check is necessary because currently
 # controller-gen adds a status field that needs to be removed manually.
-# See https://github.com/jetstack/cert-manager/pull/4379 for context
+# See https://github.com/cert-manager/cert-manager/pull/4379 for context
 crdPath="${tmpfiles}/deploy/crds"
 yq=$(realpath "$4")
 

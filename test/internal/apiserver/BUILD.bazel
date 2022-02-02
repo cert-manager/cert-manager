@@ -11,7 +11,7 @@ go_library(
         "//hack/bin:io_kubernetes_kube-apiserver",
         "//hack/bin:kubectl",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/internal/apiserver",
+    importpath = "github.com/cert-manager/cert-manager/test/internal/apiserver",
     visibility = ["//test:__subpackages__"],
     deps = [
         "//internal/test/paths:go_default_library",

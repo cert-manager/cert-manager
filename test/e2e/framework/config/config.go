@@ -27,7 +27,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/clientcmd"
 
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 var featureGates string

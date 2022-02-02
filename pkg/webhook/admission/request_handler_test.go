@@ -31,9 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/diff"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/admission"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
+	"github.com/cert-manager/cert-manager/pkg/webhook/admission"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers/testdata/apis/testgroup/install"
 )
 
 var (

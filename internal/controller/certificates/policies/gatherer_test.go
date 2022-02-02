@@ -32,11 +32,11 @@ import (
 	"k8s.io/klog/v2"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	cmscheme "github.com/jetstack/cert-manager/pkg/api"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/api"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func TestDataForCertificate(t *testing.T) {

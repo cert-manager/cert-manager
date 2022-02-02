@@ -31,7 +31,7 @@ import (
 	jks "github.com/pavel-v-chernykh/keystore-go/v4"
 	"software.sslmate.com/src/go-pkcs12"
 
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 const (

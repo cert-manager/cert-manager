@@ -31,10 +31,10 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
-	internalcertificates "github.com/jetstack/cert-manager/internal/controller/certificates"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	internalcertificates "github.com/cert-manager/cert-manager/internal/controller/certificates"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/certificates"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func SecretDoesNotExist(input Input) (string, string, bool) {

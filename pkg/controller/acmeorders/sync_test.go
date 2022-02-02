@@ -30,13 +30,13 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	schedulertest "github.com/jetstack/cert-manager/pkg/scheduler/test"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	testpkg "github.com/cert-manager/cert-manager/pkg/controller/test"
+	schedulertest "github.com/cert-manager/cert-manager/pkg/scheduler/test"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func TestSync(t *testing.T) {

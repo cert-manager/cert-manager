@@ -31,7 +31,7 @@ import (
 
 	"golang.org/x/crypto/ocsp"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 )
 
 func fingerprintCert(cert *x509.Certificate) string {

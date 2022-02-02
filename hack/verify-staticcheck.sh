@@ -19,7 +19,7 @@ set -o nounset
 set -o pipefail
 
 # This script is currently not run as part of any automated tests.
-# https://github.com/jetstack/cert-manager/pull/3037#issue-440523030
+# https://github.com/cert-manager/cert-manager/pull/3037#issue-440523030
 # It will also currently only work on linux/amd64, darwin/amd64.
 
 REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" > /dev/null && pwd )"

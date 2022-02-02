@@ -39,12 +39,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	webhooktesting "github.com/jetstack/cert-manager/cmd/webhook/app/testing"
-	"github.com/jetstack/cert-manager/internal/test/paths"
-	"github.com/jetstack/cert-manager/internal/webhook"
-	"github.com/jetstack/cert-manager/pkg/api"
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
-	"github.com/jetstack/cert-manager/test/internal/apiserver"
+	webhooktesting "github.com/cert-manager/cert-manager/cmd/webhook/app/testing"
+	"github.com/cert-manager/cert-manager/internal/test/paths"
+	"github.com/cert-manager/cert-manager/internal/webhook"
+	"github.com/cert-manager/cert-manager/pkg/api"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
+	"github.com/cert-manager/cert-manager/test/internal/apiserver"
 )
 
 type StopFunc func()

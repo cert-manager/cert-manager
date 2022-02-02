@@ -28,16 +28,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 
-	accountstest "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/acmeorders"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/test/integration/framework"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	accountstest "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllerpkg "github.com/cert-manager/cert-manager/pkg/controller"
+	"github.com/cert-manager/cert-manager/pkg/controller/acmeorders"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/pkg/metrics"
+	"github.com/cert-manager/cert-manager/test/integration/framework"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func TestAcmeOrdersController(t *testing.T) {
@@ -229,7 +229,7 @@ func TestAcmeOrdersController(t *testing.T) {
 	// re-queue the Order so that when the ACME order does become 'ready', we
 	// finalize our Order and, in the success scenario, it eventually becomes
 	// valid.
-	// https://github.com/jetstack/cert-manager/issues/2868
+	// https://github.com/cert-manager/cert-manager/issues/2868
 
 	// Set the Challenge state to valid- the status of the ACME order remains 'pending'.
 	chal = chal.DeepCopy()

@@ -27,8 +27,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 func mustGenerateRSA(t *testing.T, keySize int) crypto.PrivateKey {
@@ -346,7 +346,7 @@ func TestRenewalTime(t *testing.T) {
 		// This test case is here to guard against an earlier bug where
 		// a non-truncated renewal time returned from this function
 		// caused certs to not be renewed.
-		// See https://github.com/jetstack/cert-manager/pull/4399
+		// See https://github.com/cert-manager/cert-manager/pull/4399
 		"certificate's duration is skewed by a second": {
 			notBefore:           now,
 			notAfter:            now.Add(time.Hour * 24).Add(time.Second * -1),

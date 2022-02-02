@@ -19,11 +19,11 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	acmev1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
-	fakeacmev1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1/fake"
-	certmanagerv1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
-	fakecertmanagerv1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1/fake"
+	clientset "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
+	acmev1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1"
+	fakeacmev1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/acme/v1/fake"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	fakecertmanagerv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

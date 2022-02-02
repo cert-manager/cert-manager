@@ -6,7 +6,7 @@ go_library(
         "initializer.go",
         "interfaces.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook/admission/initializer",
+    importpath = "github.com/cert-manager/cert-manager/pkg/webhook/admission/initializer",
     visibility = ["//:__subpackages__"],
     deps = [
         "//pkg/webhook/admission:go_default_library",

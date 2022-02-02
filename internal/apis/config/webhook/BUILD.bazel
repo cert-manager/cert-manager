@@ -8,7 +8,7 @@ go_library(
         "types.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/apis/config/webhook",
+    importpath = "github.com/cert-manager/cert-manager/internal/apis/config/webhook",
     visibility = ["//:__subpackages__"],
     deps = [
         "//pkg/apis/config/webhook:go_default_library",

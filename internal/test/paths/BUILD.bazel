@@ -9,7 +9,7 @@ go_library(
     data = [
         "//deploy/crds:crds.yaml",
     ],
-    importpath = "github.com/jetstack/cert-manager/internal/test/paths",
+    importpath = "github.com/cert-manager/cert-manager/internal/test/paths",
     visibility = ["//:__subpackages__"],
 )
 

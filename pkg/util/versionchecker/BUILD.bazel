@@ -8,7 +8,7 @@ go_library(
         "fromservice.go",
         "versionchecker.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/util/versionchecker",
+    importpath = "github.com/cert-manager/cert-manager/pkg/util/versionchecker",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_pkg_errors//:go_default_library",

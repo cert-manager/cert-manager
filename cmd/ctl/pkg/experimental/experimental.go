@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/create/certificatesigningrequest"
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/install"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/create"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/create/certificatesigningrequest"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/install"
 )
 
 func NewCmdExperimental(ctx context.Context, ioStreams genericclioptions.IOStreams) *cobra.Command {

@@ -28,8 +28,8 @@ import (
 	"github.com/miekg/dns"
 	"k8s.io/client-go/rest"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/controller"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller"
 )
 
 // countReachabilityTestCalls is a wrapper function that allows us to count the number

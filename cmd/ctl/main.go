@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	ctlcmd "github.com/jetstack/cert-manager/cmd/ctl/cmd"
-	"github.com/jetstack/cert-manager/cmd/util"
+	ctlcmd "github.com/cert-manager/cert-manager/cmd/ctl/cmd"
+	"github.com/cert-manager/cert-manager/cmd/util"
 )
 
 func main() {

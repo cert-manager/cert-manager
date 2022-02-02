@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apijson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 )
 
 // RequestHandler is an implementation of the webhook's request handling that

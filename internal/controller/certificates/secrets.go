@@ -20,9 +20,9 @@ import (
 	"crypto/x509"
 	"strings"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	utilpki "github.com/jetstack/cert-manager/pkg/util/pki"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	utilpki "github.com/cert-manager/cert-manager/pkg/util/pki"
 )
 
 // AnnotationsForCertificateSecret returns a map which is set on all

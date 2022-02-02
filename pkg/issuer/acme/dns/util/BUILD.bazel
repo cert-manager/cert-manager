@@ -6,7 +6,7 @@ go_library(
         "dns.go",
         "wait.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util",
+    importpath = "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/logs:go_default_library",

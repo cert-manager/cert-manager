@@ -19,8 +19,8 @@ package certmanager
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmacme "github.com/jetstack/cert-manager/internal/apis/acme"
-	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
+	cmacme "github.com/cert-manager/cert-manager/internal/apis/acme"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

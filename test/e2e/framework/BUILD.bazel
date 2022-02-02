@@ -8,7 +8,7 @@ go_library(
         "testenv.go",
         "util.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/framework",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/framework",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [

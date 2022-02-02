@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["discovery.go"],
-    importpath = "github.com/jetstack/cert-manager/test/unit/discovery",
+    importpath = "github.com/cert-manager/cert-manager/test/unit/discovery",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_googleapis_gnostic//openapiv2:go_default_library",

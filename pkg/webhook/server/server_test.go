@@ -27,7 +27,7 @@ import (
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
+	"github.com/cert-manager/cert-manager/pkg/webhook/handlers"
 )
 
 func TestConvert(t *testing.T) {

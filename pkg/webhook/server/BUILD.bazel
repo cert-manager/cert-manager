@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["server.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/webhook/server",
+    importpath = "github.com/cert-manager/cert-manager/pkg/webhook/server",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/logs:go_default_library",

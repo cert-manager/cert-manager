@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	cmmeta "github.com/jetstack/cert-manager/internal/apis/meta"
+	cmmeta "github.com/cert-manager/cert-manager/internal/apis/meta"
 )
 
 // ACMEIssuer contains the specification for an ACME issuer.
@@ -111,7 +111,7 @@ type ACMEExternalAccountBinding struct {
 	// Deprecated: keyAlgorithm exists for historical compatibility reasons and
 	// should not be used. golang/x/crypto/acme hardcodes the algorithm to HS256
 	// so setting this field will have no effect.
-	// See https://github.com/jetstack/cert-manager/issues/3220#issuecomment-809438314
+	// See https://github.com/cert-manager/cert-manager/issues/3220#issuecomment-809438314
 	KeyAlgorithm HMACKeyAlgorithm
 }
 

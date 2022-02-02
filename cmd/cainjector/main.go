@@ -24,9 +24,9 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/jetstack/cert-manager/cmd/cainjector/app"
-	"github.com/jetstack/cert-manager/cmd/util"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/cmd/cainjector/app"
+	"github.com/cert-manager/cert-manager/cmd/util"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func main() {

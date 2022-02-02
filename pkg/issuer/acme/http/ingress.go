@@ -28,9 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/http/solver"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 const (
@@ -157,7 +157,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 	// are networkingv1, for maximum compatibility with all Ingress controllers.
 	// if the `kubernetes.io/ingress.class` annotation is present, it takes precedence over the
 	// `spec.IngressClassName` field.
-	// See discussion in https://github.com/jetstack/cert-manager/issues/4537.
+	// See discussion in https://github.com/cert-manager/cert-manager/issues/4537.
 	if http01IngressCfg.Class != nil {
 		ingAnnotations[annotationIngressClass] = *http01IngressCfg.Class
 	}
@@ -178,7 +178,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*networkingv1.I
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: networkingv1.IngressSpec{
-			// https://github.com/jetstack/cert-manager/issues/4537
+			// https://github.com/cert-manager/cert-manager/issues/4537
 			IngressClassName: nil,
 			Rules: []networkingv1.IngressRule{
 				{

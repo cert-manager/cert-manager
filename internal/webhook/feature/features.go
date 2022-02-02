@@ -19,7 +19,7 @@ package feature
 import (
 	"k8s.io/component-base/featuregate"
 
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (
@@ -46,7 +46,7 @@ func init() {
 // To add a new feature, define a key for it above and add it here.
 // To check whether a feature is enabled, use:
 //   utilfeature.DefaultFeatureGate.Enabled(feature.FeatureName)
-// Where utilfeature is github.com/jetstack/cert-manager/pkg/util/feature.
+// Where utilfeature is github.com/cert-manager/cert-manager/pkg/util/feature.
 var webhookFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	AdditionalCertificateOutputFormats: {Default: false, PreRelease: featuregate.Alpha},
 }

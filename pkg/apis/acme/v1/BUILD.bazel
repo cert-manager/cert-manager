@@ -12,7 +12,7 @@ go_library(
         "types_order.go",
         "zz_generated.deepcopy.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/apis/acme/v1",
+    importpath = "github.com/cert-manager/cert-manager/pkg/apis/acme/v1",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme:go_default_library",

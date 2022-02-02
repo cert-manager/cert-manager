@@ -20,17 +20,17 @@ import (
 	"errors"
 	"testing"
 
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	v1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/azuredns"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/clouddns"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/route53"
+	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 const (

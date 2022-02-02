@@ -17,9 +17,9 @@ limitations under the License.
 package fake
 
 import (
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	issuerpkg "github.com/cert-manager/cert-manager/pkg/issuer"
 )
 
 type Helper struct {

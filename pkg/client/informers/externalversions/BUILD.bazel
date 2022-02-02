@@ -6,7 +6,7 @@ go_library(
         "factory.go",
         "generic.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/client/informers/externalversions",
+    importpath = "github.com/cert-manager/cert-manager/pkg/client/informers/externalversions",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1:go_default_library",

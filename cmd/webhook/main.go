@@ -19,9 +19,9 @@ package main
 import (
 	"flag"
 
-	"github.com/jetstack/cert-manager/cmd/util"
-	"github.com/jetstack/cert-manager/cmd/webhook/app"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/cert-manager/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/cmd/webhook/app"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
 func main() {

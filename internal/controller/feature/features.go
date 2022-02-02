@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/featuregate"
 
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
+	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
 const (

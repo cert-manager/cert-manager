@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["acmedns.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns",
+    importpath = "github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/acmedns",
     visibility = ["//visibility:public"],
     deps = ["@com_github_cpu_goacmedns//:go_default_library"],
 )

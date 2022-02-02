@@ -19,7 +19,7 @@ package test
 import (
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/scheduler"
+	"github.com/cert-manager/cert-manager/pkg/scheduler"
 )
 
 var _ scheduler.ScheduledWorkQueue = &FakeScheduler{}

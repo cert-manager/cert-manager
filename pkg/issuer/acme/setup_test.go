@@ -33,19 +33,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	"github.com/jetstack/cert-manager/pkg/acme/accounts"
-	fakeregistry "github.com/jetstack/cert-manager/pkg/acme/accounts/test"
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/test/unit/coreclients"
-	"github.com/jetstack/cert-manager/test/unit/gen"
+	"github.com/cert-manager/cert-manager/pkg/acme/accounts"
+	fakeregistry "github.com/cert-manager/cert-manager/pkg/acme/accounts/test"
+	acmecl "github.com/cert-manager/cert-manager/pkg/acme/client"
+	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
+	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	controllertest "github.com/cert-manager/cert-manager/pkg/controller/test"
+	"github.com/cert-manager/cert-manager/pkg/util"
+	"github.com/cert-manager/cert-manager/pkg/util/errors"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
+	"github.com/cert-manager/cert-manager/test/unit/coreclients"
+	"github.com/cert-manager/cert-manager/test/unit/gen"
 )
 
 func TestAcme_Setup(t *testing.T) {
@@ -90,7 +90,7 @@ func TestAcme_Setup(t *testing.T) {
 
 		// eabSecret is a mock value for secret with EAB key that user would have created.
 		// 'ZEdWemRBbz0K' is 'test' double base64-encoded.
-		// cert-manager only accepts double-encoded values, see https://github.com/jetstack/cert-manager/pull/3877#discussion_r610717791 .
+		// cert-manager only accepts double-encoded values, see https://github.com/cert-manager/cert-manager/pull/3877#discussion_r610717791 .
 		eabSecret = gen.Secret(someString,
 			gen.SetSecretData(map[string][]byte{"key": []byte("ZEdWemRBbz0K")}))
 

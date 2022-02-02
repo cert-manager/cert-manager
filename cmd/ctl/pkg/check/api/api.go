@@ -31,9 +31,9 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/jetstack/cert-manager/cmd/ctl/pkg/factory"
-	cmcmdutil "github.com/jetstack/cert-manager/cmd/util"
-	"github.com/jetstack/cert-manager/pkg/util/cmapichecker"
+	"github.com/cert-manager/cert-manager/cmd/ctl/pkg/factory"
+	cmcmdutil "github.com/cert-manager/cert-manager/cmd/util"
+	"github.com/cert-manager/cert-manager/pkg/util/cmapichecker"
 )
 
 // Options is a struct to support check api command
@@ -75,7 +75,7 @@ func (o *Options) Complete() error {
 
 	// We pass the scheme that is used in the RESTConfig's NegotiatedSerializer,
 	// this makes sure that the cmapi is also added to NegotiatedSerializer's scheme
-	// see: https://github.com/jetstack/cert-manager/pull/4205#discussion_r668660271
+	// see: https://github.com/cert-manager/cert-manager/pull/4205#discussion_r668660271
 	o.APIChecker, err = cmapichecker.New(o.RESTConfig, scheme.Scheme, o.Namespace)
 	if err != nil {
 		return fmt.Errorf("Error: %v", err)

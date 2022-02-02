@@ -6,7 +6,7 @@ go_library(
         "suite.go",
         "tests.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificatesigningrequests",
+    importpath = "github.com/cert-manager/cert-manager/test/e2e/suite/conformance/certificatesigningrequests",
     visibility = ["//visibility:public"],
     deps = [
         "//internal/controller/feature:go_default_library",

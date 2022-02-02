@@ -30,9 +30,9 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 
-	acmeinstall "github.com/jetstack/cert-manager/internal/apis/acme/install"
-	cminstall "github.com/jetstack/cert-manager/internal/apis/certmanager/install"
-	metainstall "github.com/jetstack/cert-manager/internal/apis/meta/install"
+	acmeinstall "github.com/cert-manager/cert-manager/internal/apis/acme/install"
+	cminstall "github.com/cert-manager/cert-manager/internal/apis/certmanager/install"
+	metainstall "github.com/cert-manager/cert-manager/internal/apis/meta/install"
 )
 
 // Define a Scheme that has all cert-manager API types registered, including
